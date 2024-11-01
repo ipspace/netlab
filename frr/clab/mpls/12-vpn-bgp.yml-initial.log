@@ -7,15 +7,15 @@ ok: [dut]
 ok: [pe2]
 ok: [ce1]
 ok: [ce2]
-ok: [p2]
 ok: [p1]
+ok: [p2]
 
 TASK [Find device readiness script] ********************************************
 ok: [dut]
 ok: [pe2]
 ok: [ce1]
-ok: [ce2]
 ok: [p1]
+ok: [ce2]
 ok: [p2]
 
 TASK [Wait for device to become ready] *****************************************
@@ -65,20 +65,6 @@ ok: [dut] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.13 ce1" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.17 ce2" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.1 dut" >>/tmp/hosts
-    echo "10.1.0.14 dut-tenant" >>/tmp/hosts
-    echo "10.0.0.5 10.1.0.2 10.1.0.5 p1" >>/tmp/hosts
-    echo "10.0.0.6 10.1.0.6 10.1.0.9 p2" >>/tmp/hosts
-    echo "10.0.0.4 10.1.0.10 pe2" >>/tmp/hosts
-    echo "10.1.0.18 pe2-tenant" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -123,6 +109,7 @@ ok: [dut] =>
     # Set Ethernet interface MTU
     ip link set eth1 mtu 1500
     ip link set eth2 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -171,20 +158,6 @@ ok: [pe2] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.13 ce1" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.17 ce2" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.1 dut" >>/tmp/hosts
-    echo "10.1.0.14 dut-tenant" >>/tmp/hosts
-    echo "10.0.0.5 10.1.0.2 10.1.0.5 p1" >>/tmp/hosts
-    echo "10.0.0.6 10.1.0.6 10.1.0.9 p2" >>/tmp/hosts
-    echo "10.0.0.4 10.1.0.10 pe2" >>/tmp/hosts
-    echo "10.1.0.18 pe2-tenant" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -229,6 +202,7 @@ ok: [pe2] =>
     # Set Ethernet interface MTU
     ip link set eth1 mtu 1500
     ip link set eth2 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -277,20 +251,6 @@ ok: [ce1] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.13 ce1" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.17 ce2" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.1 dut" >>/tmp/hosts
-    echo "10.1.0.14 dut-tenant" >>/tmp/hosts
-    echo "10.0.0.5 10.1.0.2 10.1.0.5 p1" >>/tmp/hosts
-    echo "10.0.0.6 10.1.0.6 10.1.0.9 p2" >>/tmp/hosts
-    echo "10.0.0.4 10.1.0.10 pe2" >>/tmp/hosts
-    echo "10.1.0.18 pe2-tenant" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -333,6 +293,7 @@ ok: [ce1] =>
     #
     # Set Ethernet interface MTU
     ip link set eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -357,6 +318,99 @@ ok: [ce1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [p2] => 
+  msg: |-
+    initial configuration for p2
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    #
+    # Create loopbacks and stub devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+    #
+    # Set Ethernet interface MTU
+    ip link set eth1 mtu 1500
+    ip link set eth2 mtu 1500
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname p2
+    !
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.6/32
+    !
+    interface eth1
+     no shutdown
+     description p2 -> p1
+     ip address 10.1.0.6/30
+    !
+    interface eth2
+     no shutdown
+     description p2 -> pe2
+     ip address 10.1.0.9/30
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
 ok: [ce2] => 
   msg: |-
     initial configuration for ce2
@@ -375,20 +429,6 @@ ok: [ce2] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.13 ce1" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.17 ce2" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.1 dut" >>/tmp/hosts
-    echo "10.1.0.14 dut-tenant" >>/tmp/hosts
-    echo "10.0.0.5 10.1.0.2 10.1.0.5 p1" >>/tmp/hosts
-    echo "10.0.0.6 10.1.0.6 10.1.0.9 p2" >>/tmp/hosts
-    echo "10.0.0.4 10.1.0.10 pe2" >>/tmp/hosts
-    echo "10.1.0.18 pe2-tenant" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -432,6 +472,7 @@ ok: [ce2] =>
     #
     # Set Ethernet interface MTU
     ip link set eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -475,20 +516,6 @@ ok: [p1] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.13 ce1" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.17 ce2" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.1 dut" >>/tmp/hosts
-    echo "10.1.0.14 dut-tenant" >>/tmp/hosts
-    echo "10.0.0.5 10.1.0.2 10.1.0.5 p1" >>/tmp/hosts
-    echo "10.0.0.6 10.1.0.6 10.1.0.9 p2" >>/tmp/hosts
-    echo "10.0.0.4 10.1.0.10 pe2" >>/tmp/hosts
-    echo "10.1.0.18 pe2-tenant" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -533,6 +560,7 @@ ok: [p1] =>
     # Set Ethernet interface MTU
     ip link set eth1 mtu 1500
     ip link set eth2 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -562,131 +590,20 @@ ok: [p1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [p2] => 
-  msg: |-
-    initial configuration for p2
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)#"
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.13 ce1" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.17 ce2" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.1 dut" >>/tmp/hosts
-    echo "10.1.0.14 dut-tenant" >>/tmp/hosts
-    echo "10.0.0.5 10.1.0.2 10.1.0.5 p1" >>/tmp/hosts
-    echo "10.0.0.6 10.1.0.6 10.1.0.9 p2" >>/tmp/hosts
-    echo "10.0.0.4 10.1.0.10 pe2" >>/tmp/hosts
-    echo "10.1.0.18 pe2-tenant" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    #
-    # Create loopbacks and stub devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
-    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
-    ip link set eth2 mtu 1500
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname p2
-    !
-    vrf mgmt
-     exit-vrf
-    !
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ip address 10.0.0.6/32
-    !
-    interface eth1
-     no shutdown
-     description p2 -> p1
-     ip address 10.1.0.6/30
-    !
-    interface eth2
-     no shutdown
-     description p2 -> pe2
-     ip address 10.1.0.9/30
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [dut]
 ok: [pe2]
 ok: [ce1]
 ok: [ce2]
-ok: [p2]
 ok: [p1]
+ok: [p2]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for dut, pe2, ce1, ce2, p1, p2
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [ce2 -> localhost]
 changed: [dut -> localhost]
-changed: [p1 -> localhost]
-changed: [pe2 -> localhost]
-changed: [p2 -> localhost]
-changed: [ce1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [dut]
@@ -700,10 +617,10 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for dut, pe2, ce1, ce2, p1, p2
 
 TASK [template] ****************************************************************
-changed: [ce1]
-changed: [ce2]
-changed: [p1]
 changed: [pe2]
+changed: [ce1]
+changed: [p1]
+changed: [ce2]
 changed: [dut]
 changed: [p2]
 
@@ -712,16 +629,16 @@ ok: [dut]
 ok: [pe2]
 ok: [ce1]
 ok: [p2]
-ok: [ce2]
 ok: [p1]
+ok: [ce2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+changed: [dut]
+changed: [ce1]
 changed: [pe2]
 changed: [ce2]
-changed: [ce1]
 changed: [p2]
 changed: [p1]
-changed: [dut]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [dut]
@@ -787,6 +704,8 @@ ok: [ce1] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.1/32
     !
     !
@@ -819,6 +738,8 @@ ok: [ce2] =>
       neighbor 10.1.0.18 description pe2
     !
      address-family ipv4 unicast
+    !
+  
     !
       network 10.0.0.2/32
     !
@@ -853,6 +774,8 @@ ok: [dut] =>
       neighbor 10.0.0.4 update-source lo
     !
      address-family ipv4 unicast
+    !
+  
     !
       network 10.0.0.3/32
     !
@@ -890,6 +813,8 @@ ok: [pe2] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.4/32
     !
     !
@@ -919,10 +844,10 @@ skipping: [p2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for ce1, ce2, dut, pe2
 
 TASK [template] ****************************************************************
-changed: [ce1]
-changed: [ce2]
-changed: [dut]
 changed: [pe2]
+changed: [ce1]
+changed: [dut]
+changed: [ce2]
 
 TASK [set_fact] ****************************************************************
 ok: [ce1]
@@ -937,9 +862,9 @@ skipping: [dut]
 skipping: [pe2]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [dut]
 changed: [ce2]
 changed: [ce1]
+changed: [dut]
 changed: [pe2]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
@@ -974,6 +899,7 @@ ok: [dut] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -1000,6 +926,7 @@ ok: [p1] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
   
     exit
     !
@@ -1033,6 +960,7 @@ ok: [p2] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -1065,6 +993,7 @@ ok: [pe2] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -1094,10 +1023,10 @@ skipping: [ce2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for dut, p1, p2, pe2
 
 TASK [template] ****************************************************************
+changed: [p1]
+changed: [dut]
 changed: [pe2]
 changed: [p2]
-changed: [dut]
-changed: [p1]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
@@ -1112,9 +1041,9 @@ skipping: [p2]
 skipping: [pe2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [p2]
-changed: [dut]
 changed: [p1]
+changed: [dut]
+changed: [p2]
 changed: [pe2]
 
 TASK [Figure out whether to deploy the module mpls on current device] **********
@@ -1122,8 +1051,8 @@ ok: [ce1]
 ok: [ce2]
 ok: [dut]
 ok: [p1]
-ok: [p2]
 ok: [pe2]
+ok: [p2]
 
 TASK [Find configuration template for mpls] ************************************
 skipping: [ce1]
@@ -1299,14 +1228,14 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for dut, p1, p2, pe2
 
 TASK [template] ****************************************************************
-changed: [p2]
-changed: [p1]
 changed: [dut]
+changed: [p1]
 changed: [pe2]
+changed: [p2]
 
 TASK [set_fact] ****************************************************************
-ok: [dut]
 ok: [p1]
+ok: [dut]
 ok: [p2]
 ok: [pe2]
 
@@ -1376,8 +1305,8 @@ ok: [dut] =>
      neighbor 10.1.0.13 remote-as 65100
      neighbor 10.1.0.13 description ce1
      address-family ipv4 unicast
-    !
       redistribute connected
+  
       label vpn export auto
       export vpn
       import vpn
@@ -1428,8 +1357,8 @@ ok: [pe2] =>
      neighbor 10.1.0.17 remote-as 65101
      neighbor 10.1.0.17 description ce2
      address-family ipv4 unicast
-    !
       redistribute connected
+  
       label vpn export auto
       export vpn
       import vpn
@@ -1483,12 +1412,12 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-ce1                        : ok=29   changed=5    unreachable=0    failed=0    skipped=16   rescued=0    ignored=0   
-ce2                        : ok=29   changed=5    unreachable=0    failed=0    skipped=16   rescued=0    ignored=0   
+ce1                        : ok=28   changed=4    unreachable=0    failed=0    skipped=16   rescued=0    ignored=0   
+ce2                        : ok=28   changed=4    unreachable=0    failed=0    skipped=16   rescued=0    ignored=0   
 dut                        : ok=52   changed=12   unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-p1                         : ok=37   changed=7    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
-p2                         : ok=37   changed=7    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
-pe2                        : ok=51   changed=11   unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+p1                         : ok=36   changed=6    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
+p2                         : ok=36   changed=6    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
+pe2                        : ok=50   changed=10   unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 
 
 

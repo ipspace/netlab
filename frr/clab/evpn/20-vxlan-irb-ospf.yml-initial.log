@@ -6,8 +6,8 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [s1]
 ok: [s2]
 ok: [h1]
-ok: [h2]
 ok: [h3]
+ok: [h2]
 ok: [h4]
 
 TASK [Find device readiness script] ********************************************
@@ -65,20 +65,6 @@ ok: [s1] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "172.16.0.3 h1" >>/tmp/hosts
-    echo "172.16.1.4 h2" >>/tmp/hosts
-    echo "172.16.2.5 h3" >>/tmp/hosts
-    echo "172.16.3.6 h4" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.1 s1" >>/tmp/hosts
-    echo "172.16.0.1 172.16.2.1 172.16.1.1 s1-tenant" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.2 s2" >>/tmp/hosts
-    echo "172.16.1.2 172.16.3.2 172.16.0.2 s2-tenant" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -125,6 +111,7 @@ ok: [s1] =>
     ip link set eth1 mtu 1600
     ip link set eth2 mtu 1500
     ip link set eth3 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -147,10 +134,12 @@ ok: [s1] =>
     !
     interface eth2
      no shutdown
+     description [Access VLAN red] s1 -> h1
      ! no ip address
     !
     interface eth3
      no shutdown
+     description [Access VLAN green] s1 -> h3
      ! no ip address
     !
     interface vlan1000
@@ -191,20 +180,6 @@ ok: [s2] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "172.16.0.3 h1" >>/tmp/hosts
-    echo "172.16.1.4 h2" >>/tmp/hosts
-    echo "172.16.2.5 h3" >>/tmp/hosts
-    echo "172.16.3.6 h4" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.1 s1" >>/tmp/hosts
-    echo "172.16.0.1 172.16.2.1 172.16.1.1 s1-tenant" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.2 s2" >>/tmp/hosts
-    echo "172.16.1.2 172.16.3.2 172.16.0.2 s2-tenant" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -251,6 +226,7 @@ ok: [s2] =>
     ip link set eth1 mtu 1600
     ip link set eth2 mtu 1500
     ip link set eth3 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -273,10 +249,12 @@ ok: [s2] =>
     !
     interface eth2
      no shutdown
+     description [Access VLAN blue] s2 -> h2
      ! no ip address
     !
     interface eth3
      no shutdown
+     description [Access VLAN purple] s2 -> h4
      ! no ip address
     !
     interface vlan1001
@@ -353,64 +331,6 @@ ok: [h1] =>
     ip route del 10.2.0.0/24 2>/dev/null
     set -e
     ip route add 10.2.0.0/24 via 172.16.0.1
-    #
-    # Print the final routing table
-    ip route
-ok: [h2] => 
-  msg: |-
-    initial configuration for h2
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.1.4/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    # lan prefix: 172.16.0.0/16 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 172.16.0.0/16 2>/dev/null
-    set -e
-    ip route add 172.16.0.0/16 via 172.16.1.2
-    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 10.0.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.0.0.0/24 via 172.16.1.2
-    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.1.0/24
-    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 10.1.0.0/16 2>/dev/null
-    set -e
-    ip route add 10.1.0.0/16 via 172.16.1.2
-    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
-    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 10.2.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.2.0.0/24 via 172.16.1.2
     #
     # Print the final routing table
     ip route
@@ -530,6 +450,64 @@ ok: [h4] =>
     #
     # Print the final routing table
     ip route
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.1.4/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.1.2
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.1.2
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.1.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.1.2
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.1.2
+    #
+    # Print the final routing table
+    ip route
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [s1]
@@ -545,7 +523,6 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml fo
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [s1 -> localhost]
-changed: [s2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [s1]
@@ -578,11 +555,11 @@ ok: [h4]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
-changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-eNCdqkQq-h1.sh] **********
+TASK [Initial container configuration via /tmp/config-QZqTHpcd-h1.sh] **********
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
@@ -591,8 +568,8 @@ changed: [h4 -> localhost]
 TASK [file] ********************************************************************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
-changed: [h3 -> localhost]
 changed: [h4 -> localhost]
+changed: [h3 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -627,18 +604,24 @@ ok: [s1] =>
     #
     if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
       brctl addbr vlan1000
+  
+  
       ip link set dev vlan1000 up
       ip addr flush dev vlan1000
       ip addr add 172.16.0.1/24 dev vlan1000
     fi
     if [ ! -e /sys/devices/virtual/net/vlan1002 ]; then
       brctl addbr vlan1002
+  
+  
       ip link set dev vlan1002 up
       ip addr flush dev vlan1002
       ip addr add 172.16.2.1/24 dev vlan1002
     fi
     if [ ! -e /sys/devices/virtual/net/vlan1001 ]; then
       brctl addbr vlan1001
+  
+  
       ip link set dev vlan1001 up
       ip addr flush dev vlan1001
       ip addr add 172.16.1.1/24 dev vlan1001
@@ -657,18 +640,24 @@ ok: [s2] =>
     #
     if [ ! -e /sys/devices/virtual/net/vlan1001 ]; then
       brctl addbr vlan1001
+  
+  
       ip link set dev vlan1001 up
       ip addr flush dev vlan1001
       ip addr add 172.16.1.2/24 dev vlan1001
     fi
     if [ ! -e /sys/devices/virtual/net/vlan1003 ]; then
       brctl addbr vlan1003
+  
+  
       ip link set dev vlan1003 up
       ip addr flush dev vlan1003
       ip addr add 172.16.3.2/24 dev vlan1003
     fi
     if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
       brctl addbr vlan1000
+  
+  
       ip link set dev vlan1000 up
       ip addr flush dev vlan1000
       ip addr add 172.16.0.2/24 dev vlan1000
@@ -686,8 +675,8 @@ TASK [Deploy vlan configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s1, s2
 
 TASK [template] ****************************************************************
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [set_fact] ****************************************************************
 ok: [s1]
@@ -732,6 +721,8 @@ ok: [s1] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.1/32
     !
     !
@@ -768,6 +759,8 @@ ok: [s2] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.2/32
     !
     !
@@ -791,8 +784,8 @@ TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s1, s2
 
 TASK [template] ****************************************************************
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [set_fact] ****************************************************************
 ok: [s1]
@@ -803,8 +796,8 @@ skipping: [s1]
 skipping: [s2]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [s1]
@@ -827,6 +820,7 @@ ok: [s1] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
   
     exit
     !
@@ -855,6 +849,7 @@ ok: [s2] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -878,8 +873,8 @@ TASK [Deploy ospf configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s1, s2
 
 TASK [template] ****************************************************************
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [set_fact] ****************************************************************
 ok: [s1]
@@ -937,9 +932,9 @@ ok: [s1] =>
      no bgp default ipv4-unicast
      bgp router-id 10.0.0.1
      address-family ipv4 unicast
-    !
       redistribute connected
       redistribute ospf
+  
       label vpn export auto
       export vpn
       import vpn
@@ -960,6 +955,7 @@ ok: [s1] =>
   
      redistribute bgp
      redistribute connected
+  
     exit
     !
     interface vlan1000
@@ -1018,9 +1014,9 @@ ok: [s2] =>
      no bgp default ipv4-unicast
      bgp router-id 10.0.0.2
      address-family ipv4 unicast
-    !
       redistribute connected
       redistribute ospf
+  
       label vpn export auto
       export vpn
       import vpn
@@ -1041,6 +1037,7 @@ ok: [s2] =>
   
      redistribute bgp
      redistribute connected
+  
     exit
     !
     interface vlan1001
@@ -1339,7 +1336,7 @@ h2                         : ok=12   changed=3    unreachable=0    failed=0    s
 h3                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 h4                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 s1                         : ok=68   changed=15   unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
-s2                         : ok=68   changed=15   unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+s2                         : ok=67   changed=14   unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
 
 
 

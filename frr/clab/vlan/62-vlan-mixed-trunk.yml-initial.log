@@ -7,8 +7,8 @@ ok: [s1]
 ok: [s2]
 ok: [h1]
 ok: [h2]
-ok: [h3]
 ok: [h4]
+ok: [h3]
 
 TASK [Find device readiness script] ********************************************
 ok: [s1]
@@ -34,16 +34,16 @@ ok: [s1]
 ok: [s2]
 ok: [h1]
 ok: [h2]
-ok: [h3]
 ok: [h4]
+ok: [h3]
 
 TASK [Find configuration template for initial] *********************************
 ok: [s1]
 ok: [s2]
 ok: [h1]
 ok: [h2]
-ok: [h4]
 ok: [h3]
+ok: [h4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [s1] => 
@@ -64,18 +64,6 @@ ok: [s1] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "172.16.0.1 h1" >>/tmp/hosts
-    echo "172.16.0.2 h2" >>/tmp/hosts
-    echo "172.16.2.3 h3" >>/tmp/hosts
-    echo "172.16.3.4 h4" >>/tmp/hosts
-    echo "10.0.0.5 172.16.2.5 172.16.4.5 s1" >>/tmp/hosts
-    echo "10.0.0.6 172.16.3.6 172.16.4.6 s2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -123,6 +111,7 @@ ok: [s1] =>
     ip link set eth1 mtu 1500
     ip link set eth2 mtu 1500
     ip link set eth3 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -145,6 +134,7 @@ ok: [s1] =>
     !
     interface eth2
      no shutdown
+     description [Access VLAN red] s1 -> h1
      ! no ip address
     !
     interface eth3
@@ -152,18 +142,134 @@ ok: [s1] =>
      description s1 -> h3 [stub]
      ip address 172.16.2.5/24
     !
-    interface eth1.1001
+    interface eth1.701
      no shutdown
      description s1 -> s2
      ip address 172.16.4.5/24
     !
-    interface eth1.1000
+    interface eth1.700
      no shutdown
+     description [SubIf VLAN red] s1 -> s2
      ! no ip address
     !
-    interface vlan1000
+    interface vlan700
      no shutdown
-     description VLAN red (1000) -> [h1,s2,h2]
+     description VLAN red (700) -> [h1,s2,h2]
+     ! no ip address
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
+ok: [s2] => 
+  msg: |-
+    initial configuration for s2
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    #
+    # Create loopbacks and stub devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+    sysctl -qw net.ipv6.conf.eth3.disable_ipv6=1
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+    #
+    # Set Ethernet interface MTU
+    ip link set eth1 mtu 1500
+    ip link set eth2 mtu 1500
+    ip link set eth3 mtu 1500
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname s2
+    !
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.6/32
+    !
+    interface eth1
+     no shutdown
+     description s2 -> s1
+     ! no ip address
+    !
+    interface eth2
+     no shutdown
+     description [Access VLAN red] s2 -> h2
+     ! no ip address
+    !
+    interface eth3
+     no shutdown
+     description s2 -> h4 [stub]
+     ip address 172.16.3.6/24
+    !
+    interface eth1.701
+     no shutdown
+     description s2 -> s1
+     ip address 172.16.4.6/24
+    !
+    interface eth1.700
+     no shutdown
+     description [SubIf VLAN red] s2 -> s1
+     ! no ip address
+    !
+    interface vlan700
+     no shutdown
+     description VLAN red (700) -> [h1,s1,h2]
      ! no ip address
     !
     do write
@@ -206,130 +312,6 @@ ok: [h1] =>
     #
     # Print the final routing table
     ip route
-ok: [s2] => 
-  msg: |-
-    initial configuration for s2
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)#"
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "172.16.0.1 h1" >>/tmp/hosts
-    echo "172.16.0.2 h2" >>/tmp/hosts
-    echo "172.16.2.3 h3" >>/tmp/hosts
-    echo "172.16.3.4 h4" >>/tmp/hosts
-    echo "10.0.0.5 172.16.2.5 172.16.4.5 s1" >>/tmp/hosts
-    echo "10.0.0.6 172.16.3.6 172.16.4.6 s2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    #
-    # Create loopbacks and stub devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
-    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
-    sysctl -qw net.ipv6.conf.eth3.disable_ipv6=1
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
-    ip link set eth2 mtu 1500
-    ip link set eth3 mtu 1500
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname s2
-    !
-    vrf mgmt
-     exit-vrf
-    !
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ip address 10.0.0.6/32
-    !
-    interface eth1
-     no shutdown
-     description s2 -> s1
-     ! no ip address
-    !
-    interface eth2
-     no shutdown
-     ! no ip address
-    !
-    interface eth3
-     no shutdown
-     description s2 -> h4 [stub]
-     ip address 172.16.3.6/24
-    !
-    interface eth1.1001
-     no shutdown
-     description s2 -> s1
-     ip address 172.16.4.6/24
-    !
-    interface eth1.1000
-     no shutdown
-     ! no ip address
-    !
-    interface vlan1000
-     no shutdown
-     description VLAN red (1000) -> [h1,s1,h2]
-     ! no ip address
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
 ok: [h2] => 
   msg: |-
     initial configuration for h2
@@ -487,9 +469,9 @@ TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [s1]
 ok: [s2]
 ok: [h1]
-ok: [h3]
 ok: [h2]
 ok: [h4]
+ok: [h3]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for s1, s2
@@ -497,7 +479,6 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml fo
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [s1 -> localhost]
-changed: [s2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [s1]
@@ -515,8 +496,8 @@ ok: [s1]
 ok: [s2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [s1]
@@ -531,10 +512,10 @@ ok: [h4]
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
-changed: [h4 -> localhost]
 changed: [h3 -> localhost]
+changed: [h4 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-tCLgtZzf-h1.sh] **********
+TASK [Initial container configuration via /tmp/config-CnciDAuv-h1.sh] **********
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 changed: [h3 -> localhost]
@@ -542,9 +523,9 @@ changed: [h4 -> localhost]
 
 TASK [file] ********************************************************************
 changed: [h2 -> localhost]
-changed: [h4 -> localhost]
-changed: [h1 -> localhost]
 changed: [h3 -> localhost]
+changed: [h1 -> localhost]
+changed: [h4 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -573,22 +554,24 @@ ok: [s1] =>
     #
     set -e # Exit immediately when any command fails
     #
-    if [ ! -e /sys/devices/virtual/net/eth1.1001 ]; then
-      ip link add link eth1 name eth1.1001 type vlan id 1001
-      ip link set dev eth1.1001 up
+    if [ ! -e /sys/devices/virtual/net/eth1.701 ]; then
+      ip link add link eth1 name eth1.701 type vlan id 701
+      ip link set dev eth1.701 up
     fi
-    if [ ! -e /sys/devices/virtual/net/eth1.1000 ]; then
-      ip link add link eth1 name eth1.1000 type vlan id 1000
-      ip link set dev eth1.1000 up
+    if [ ! -e /sys/devices/virtual/net/eth1.700 ]; then
+      ip link add link eth1 name eth1.700 type vlan id 700
+      ip link set dev eth1.700 up
     fi
-    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
-      brctl addbr vlan1000
-      ip link set dev vlan1000 up
-      ip addr flush dev vlan1000
+    if [ ! -e /sys/devices/virtual/net/vlan700 ]; then
+      brctl addbr vlan700
+  
+  
+      ip link set dev vlan700 up
+      ip addr flush dev vlan700
     fi
   
-    brctl addif vlan1000 eth2
-    brctl addif vlan1000 eth1.1000
+    brctl addif vlan700 eth2
+    brctl addif vlan700 eth1.700
     exit 0
 ok: [s2] => 
   msg: |-
@@ -598,22 +581,24 @@ ok: [s2] =>
     #
     set -e # Exit immediately when any command fails
     #
-    if [ ! -e /sys/devices/virtual/net/eth1.1001 ]; then
-      ip link add link eth1 name eth1.1001 type vlan id 1001
-      ip link set dev eth1.1001 up
+    if [ ! -e /sys/devices/virtual/net/eth1.701 ]; then
+      ip link add link eth1 name eth1.701 type vlan id 701
+      ip link set dev eth1.701 up
     fi
-    if [ ! -e /sys/devices/virtual/net/eth1.1000 ]; then
-      ip link add link eth1 name eth1.1000 type vlan id 1000
-      ip link set dev eth1.1000 up
+    if [ ! -e /sys/devices/virtual/net/eth1.700 ]; then
+      ip link add link eth1 name eth1.700 type vlan id 700
+      ip link set dev eth1.700 up
     fi
-    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
-      brctl addbr vlan1000
-      ip link set dev vlan1000 up
-      ip addr flush dev vlan1000
+    if [ ! -e /sys/devices/virtual/net/vlan700 ]; then
+      brctl addbr vlan700
+  
+  
+      ip link set dev vlan700 up
+      ip addr flush dev vlan700
     fi
   
-    brctl addif vlan1000 eth2
-    brctl addif vlan1000 eth1.1000
+    brctl addif vlan700 eth2
+    brctl addif vlan700 eth1.700
     exit 0
 
 TASK [Find configuration deployment deploy_script for vlan] ********************
@@ -632,8 +617,8 @@ ok: [s1]
 ok: [s2]
 
 TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [run vtysh to import vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
 skipping: [s1]
@@ -661,6 +646,7 @@ ok: [s1] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -673,7 +659,7 @@ ok: [s1] =>
      ip ospf network point-to-point
      ip ospf passive
     !
-    interface eth1.1001
+    interface eth1.701
     ! s1 -> s2
      ip ospf area 0.0.0.0
      ip ospf network point-to-point
@@ -694,6 +680,7 @@ ok: [s2] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -706,7 +693,7 @@ ok: [s2] =>
      ip ospf network point-to-point
      ip ospf passive
     !
-    interface eth1.1001
+    interface eth1.701
     ! s2 -> s1
      ip ospf area 0.0.0.0
      ip ospf network point-to-point
@@ -747,7 +734,7 @@ h2                         : ok=12   changed=3    unreachable=0    failed=0    s
 h3                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 h4                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 s1                         : ok=32   changed=7    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
-s2                         : ok=32   changed=7    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
+s2                         : ok=31   changed=6    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
 
 
 

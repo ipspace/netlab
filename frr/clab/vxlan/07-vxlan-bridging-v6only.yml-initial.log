@@ -55,16 +55,6 @@ ok: [s1] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "172.16.0.1 2001:db8:a::1 h1" >>/tmp/hosts
-    echo "172.16.0.2 2001:db8:a::2 h2" >>/tmp/hosts
-    echo "2001:db8:0:3::1 2001:db8:f::1 s1" >>/tmp/hosts
-    echo "2001:db8:0:4::1 2001:db8:f::2 s2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -112,6 +102,7 @@ ok: [s1] =>
     # Set Ethernet interface MTU
     ip link set eth1 mtu 1600
     ip link set eth2 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -139,6 +130,7 @@ ok: [s1] =>
     !
     interface eth2
      no shutdown
+     description [Access VLAN red] s1 -> h1
      ! no ip address
     !
     interface vlan1000
@@ -210,16 +202,6 @@ ok: [s2] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "172.16.0.1 2001:db8:a::1 h1" >>/tmp/hosts
-    echo "172.16.0.2 2001:db8:a::2 h2" >>/tmp/hosts
-    echo "2001:db8:0:3::1 2001:db8:f::1 s1" >>/tmp/hosts
-    echo "2001:db8:0:4::1 2001:db8:f::2 s2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -267,6 +249,7 @@ ok: [s2] =>
     # Set Ethernet interface MTU
     ip link set eth1 mtu 1600
     ip link set eth2 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -294,6 +277,7 @@ ok: [s2] =>
     !
     interface eth2
      no shutdown
+     description [Access VLAN red] s2 -> h2
      ! no ip address
     !
     interface vlan1000
@@ -358,7 +342,6 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for 
 included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for h1, h2
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [s2 -> localhost]
 changed: [s1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
@@ -369,8 +352,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for s1, s2
 
 TASK [template] ****************************************************************
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [set_fact] ****************************************************************
 ok: [s1]
@@ -392,13 +375,13 @@ TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-KeeDUUfY-h1.sh] **********
-changed: [h1 -> localhost]
+TASK [Initial container configuration via /tmp/config-FSDcUdAr-h1.sh] **********
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [file] ********************************************************************
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -430,6 +413,8 @@ ok: [s1] =>
     #
     if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
       brctl addbr vlan1000
+  
+  
       ip link set dev vlan1000 up
       ip addr flush dev vlan1000
     fi
@@ -446,6 +431,8 @@ ok: [s2] =>
     #
     if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
       brctl addbr vlan1000
+  
+  
       ip link set dev vlan1000 up
       ip addr flush dev vlan1000
     fi
@@ -469,8 +456,8 @@ ok: [s1]
 ok: [s2]
 
 TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [run vtysh to import vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
 skipping: [s1]
@@ -507,6 +494,7 @@ ok: [s1] =>
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
   
+  
     exit
   
     !
@@ -533,6 +521,7 @@ ok: [s2] =>
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
   
+  
     exit
   
     !
@@ -558,8 +547,8 @@ skipping: [s1]
 skipping: [s2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [Figure out whether to deploy the module vxlan on current device] *********
 ok: [s1]
@@ -649,8 +638,8 @@ TASK [Deploy vxlan configuration] **********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s1, s2
 
 TASK [template] ****************************************************************
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [set_fact] ****************************************************************
 ok: [s1]
@@ -671,7 +660,7 @@ PLAY RECAP *********************************************************************
 h1                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 s1                         : ok=41   changed=9    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
-s2                         : ok=41   changed=9    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+s2                         : ok=40   changed=8    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
 
 
 

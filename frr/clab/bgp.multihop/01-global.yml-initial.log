@@ -50,15 +50,6 @@ ok: [dut] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.1 10.1.0.5 2001:db8:1:2::1 2001:db8:3::1 2001:db8:3:1::1 c1" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.2 192.168.42.1 2001:db8:1:1::1 2001:db8:3::2 2001:db8:42::1 dut" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.6 2001:db8:1:3::1 2001:db8:3:1::2 pe2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -115,6 +106,7 @@ ok: [dut] =>
     # Set Ethernet interface MTU
     ip link set eth1 mtu 1500
     ip link set eth2 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -142,7 +134,7 @@ ok: [dut] =>
     !
     interface eth2
      no shutdown
-     description dut -> stub
+     description dut -> stub [stub]
      ip address 192.168.42.1/24
      ipv6 address 2001:db8:42::1/64
      ipv6 nd ra-interval 5
@@ -170,15 +162,6 @@ ok: [pe2] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.1 10.1.0.5 2001:db8:1:2::1 2001:db8:3::1 2001:db8:3:1::1 c1" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.2 192.168.42.1 2001:db8:1:1::1 2001:db8:3::2 2001:db8:42::1 dut" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.6 2001:db8:1:3::1 2001:db8:3:1::2 pe2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -225,6 +208,7 @@ ok: [pe2] =>
     #
     # Set Ethernet interface MTU
     ip link set eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -272,15 +256,6 @@ ok: [c1] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.1 10.1.0.5 2001:db8:1:2::1 2001:db8:3::1 2001:db8:3:1::1 c1" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.2 192.168.42.1 2001:db8:1:1::1 2001:db8:3::2 2001:db8:42::1 dut" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.6 2001:db8:1:3::1 2001:db8:3:1::2 pe2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -332,6 +307,7 @@ ok: [c1] =>
     # Set Ethernet interface MTU
     ip link set eth1 mtu 1500
     ip link set eth2 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -380,8 +356,6 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for 
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [dut -> localhost]
-changed: [pe2 -> localhost]
-changed: [c1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [dut]
@@ -392,9 +366,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for dut, pe2, c1
 
 TASK [template] ****************************************************************
+changed: [dut]
 changed: [c1]
 changed: [pe2]
-changed: [dut]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
@@ -460,6 +434,8 @@ ok: [dut] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.1/32
     !
       network 192.168.42.0/24
@@ -471,6 +447,8 @@ ok: [dut] =>
       neighbor 10.0.0.3 send-community large
     !
      address-family ipv6 unicast
+    !
+  
     !
       network 2001:db8:1:1::/64
     !
@@ -511,6 +489,8 @@ ok: [pe2] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.3/32
     !
     !
@@ -521,6 +501,8 @@ ok: [pe2] =>
       neighbor 10.0.0.1 send-community large
     !
      address-family ipv6 unicast
+    !
+  
     !
       network 2001:db8:1:3::/64
     !
@@ -584,6 +566,7 @@ ok: [c1] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -624,6 +607,7 @@ ok: [c1] =>
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
   
+  
     exit
   
     !
@@ -640,6 +624,7 @@ ok: [dut] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
   
     exit
     !
@@ -681,6 +666,7 @@ ok: [dut] =>
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
   
+  
     exit
   
     !
@@ -697,6 +683,7 @@ ok: [pe2] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
   
     exit
     !
@@ -728,6 +715,7 @@ ok: [pe2] =>
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
   
+  
     exit
   
     !
@@ -742,8 +730,8 @@ TASK [Deploy ospf configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for c1, dut, pe2
 
 TASK [template] ****************************************************************
-changed: [c1]
 changed: [pe2]
+changed: [c1]
 changed: [dut]
 
 TASK [set_fact] ****************************************************************
@@ -757,9 +745,9 @@ skipping: [dut]
 skipping: [pe2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [pe2]
 changed: [dut]
 changed: [c1]
+changed: [pe2]
 
 PLAY [Deploy custom deployment templates] **************************************
 
@@ -777,8 +765,8 @@ skipping: [dut]
 skipping: [pe2]
 
 TASK [Check is the configuration template is a file] ***************************
-ok: [dut -> localhost]
 ok: [pe2 -> localhost]
+ok: [dut -> localhost]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -845,9 +833,9 @@ TASK [run vtysh to import bgp.session config from /home/pipi/net101/tools/netsim
 skipping: [pe2]
 
 PLAY RECAP *********************************************************************
-c1                         : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+c1                         : ok=24   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
 dut                        : ok=40   changed=9    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
-pe2                        : ok=48   changed=11   unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
+pe2                        : ok=47   changed=10   unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
 
 
 

@@ -17,11 +17,11 @@ TASK [Find device readiness script] ********************************************
 ok: [s1]
 ok: [s2]
 ok: [s3]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 ok: [h3]
-ok: [h4]
 ok: [h5]
+ok: [h4]
 ok: [h6]
 
 TASK [Wait for device to become ready] *****************************************
@@ -42,8 +42,8 @@ TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [s1]
 ok: [s2]
 ok: [s3]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 ok: [h3]
 ok: [h4]
 ok: [h5]
@@ -80,21 +80,6 @@ ok: [s1] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "172.16.0.1 h1" >>/tmp/hosts
-    echo "172.16.0.2 h2" >>/tmp/hosts
-    echo "172.16.0.3 h3" >>/tmp/hosts
-    echo "172.16.1.4 h4" >>/tmp/hosts
-    echo "172.16.1.5 h5" >>/tmp/hosts
-    echo "172.16.1.6 h6" >>/tmp/hosts
-    echo "10.0.0.7 10.1.0.1 10.1.0.9 s1" >>/tmp/hosts
-    echo "10.0.0.8 10.1.0.2 10.1.0.5 s2" >>/tmp/hosts
-    echo "10.0.0.9 10.1.0.6 10.1.0.10 s3" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -143,6 +128,7 @@ ok: [s1] =>
     ip link set eth2 mtu 1600
     ip link set eth3 mtu 1500
     ip link set eth4 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -170,10 +156,12 @@ ok: [s1] =>
     !
     interface eth3
      no shutdown
+     description [Access VLAN red] s1 -> h1
      ! no ip address
     !
     interface eth4
      no shutdown
+     description [Access VLAN blue] s1 -> h4
      ! no ip address
     !
     interface vlan1000
@@ -209,21 +197,6 @@ ok: [s2] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "172.16.0.1 h1" >>/tmp/hosts
-    echo "172.16.0.2 h2" >>/tmp/hosts
-    echo "172.16.0.3 h3" >>/tmp/hosts
-    echo "172.16.1.4 h4" >>/tmp/hosts
-    echo "172.16.1.5 h5" >>/tmp/hosts
-    echo "172.16.1.6 h6" >>/tmp/hosts
-    echo "10.0.0.7 10.1.0.1 10.1.0.9 s1" >>/tmp/hosts
-    echo "10.0.0.8 10.1.0.2 10.1.0.5 s2" >>/tmp/hosts
-    echo "10.0.0.9 10.1.0.6 10.1.0.10 s3" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -272,6 +245,7 @@ ok: [s2] =>
     ip link set eth2 mtu 1600
     ip link set eth3 mtu 1500
     ip link set eth4 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -299,10 +273,12 @@ ok: [s2] =>
     !
     interface eth3
      no shutdown
+     description [Access VLAN red] s2 -> h2
      ! no ip address
     !
     interface eth4
      no shutdown
+     description [Access VLAN blue] s2 -> h5
      ! no ip address
     !
     interface vlan1000
@@ -338,21 +314,6 @@ ok: [s3] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "172.16.0.1 h1" >>/tmp/hosts
-    echo "172.16.0.2 h2" >>/tmp/hosts
-    echo "172.16.0.3 h3" >>/tmp/hosts
-    echo "172.16.1.4 h4" >>/tmp/hosts
-    echo "172.16.1.5 h5" >>/tmp/hosts
-    echo "172.16.1.6 h6" >>/tmp/hosts
-    echo "10.0.0.7 10.1.0.1 10.1.0.9 s1" >>/tmp/hosts
-    echo "10.0.0.8 10.1.0.2 10.1.0.5 s2" >>/tmp/hosts
-    echo "10.0.0.9 10.1.0.6 10.1.0.10 s3" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -401,6 +362,7 @@ ok: [s3] =>
     ip link set eth2 mtu 1600
     ip link set eth3 mtu 1500
     ip link set eth4 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -428,10 +390,12 @@ ok: [s3] =>
     !
     interface eth3
      no shutdown
+     description [Access VLAN red] s3 -> h3
      ! no ip address
     !
     interface eth4
      no shutdown
+     description [Access VLAN blue] s3 -> h6
      ! no ip address
     !
     interface vlan1000
@@ -484,42 +448,6 @@ ok: [h1] =>
     #
     # Print the final routing table
     ip route
-ok: [h6] => 
-  msg: |-
-    initial configuration for h6
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.1.6/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.1.6/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    #
-    # Print the final routing table
-    ip route
 ok: [h3] => 
   msg: |-
     initial configuration for h3
@@ -547,42 +475,6 @@ ok: [h3] =>
     ip addr del 172.16.0.3/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.0.3/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    #
-    # Print the final routing table
-    ip route
-ok: [h4] => 
-  msg: |-
-    initial configuration for h4
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.1.4/24 dev eth1
     ip link set eth1 mtu 1500
     #
     # Add routes to IPv4 address pools pointing to the first neighbor on the first link
@@ -664,16 +556,88 @@ ok: [h5] =>
     #
     # Print the final routing table
     ip route
+ok: [h6] => 
+  msg: |-
+    initial configuration for h6
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.1.6/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.1.6/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
+ok: [h4] => 
+  msg: |-
+    initial configuration for h4
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.1.4/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [s1]
 ok: [s2]
 ok: [s3]
 ok: [h1]
-ok: [h2]
-ok: [h5]
 ok: [h3]
+ok: [h2]
 ok: [h4]
+ok: [h5]
 ok: [h6]
 
 TASK [Deploy initial configuration] ********************************************
@@ -682,8 +646,6 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml fo
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [s1 -> localhost]
-changed: [s2 -> localhost]
-changed: [s3 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [s1]
@@ -695,8 +657,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for
 
 TASK [template] ****************************************************************
 changed: [s1]
-changed: [s3]
 changed: [s2]
+changed: [s3]
 
 TASK [set_fact] ****************************************************************
 ok: [s1]
@@ -704,9 +666,9 @@ ok: [s2]
 ok: [s3]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+changed: [s3]
 changed: [s2]
 changed: [s1]
-changed: [s3]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [s1]
@@ -722,28 +684,28 @@ ok: [h5]
 ok: [h6]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 changed: [h5 -> localhost]
 changed: [h6 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
-changed: [h2 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-wYCcOxsL-h1.sh] **********
+TASK [Initial container configuration via /tmp/config-XZbYMJum-h1.sh] **********
 changed: [h2 -> localhost]
-changed: [h3 -> localhost]
 changed: [h1 -> localhost]
-changed: [h6 -> localhost]
-changed: [h5 -> localhost]
+changed: [h3 -> localhost]
 changed: [h4 -> localhost]
+changed: [h5 -> localhost]
+changed: [h6 -> localhost]
 
 TASK [file] ********************************************************************
-changed: [h5 -> localhost]
-changed: [h3 -> localhost]
-changed: [h6 -> localhost]
 changed: [h1 -> localhost]
-changed: [h2 -> localhost]
+changed: [h6 -> localhost]
 changed: [h4 -> localhost]
+changed: [h3 -> localhost]
+changed: [h5 -> localhost]
+changed: [h2 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -778,11 +740,15 @@ ok: [s1] =>
     #
     if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
       brctl addbr vlan1000
+  
+  
       ip link set dev vlan1000 up
       ip addr flush dev vlan1000
     fi
     if [ ! -e /sys/devices/virtual/net/vlan1001 ]; then
       brctl addbr vlan1001
+  
+  
       ip link set dev vlan1001 up
       ip addr flush dev vlan1001
     fi
@@ -800,11 +766,15 @@ ok: [s2] =>
     #
     if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
       brctl addbr vlan1000
+  
+  
       ip link set dev vlan1000 up
       ip addr flush dev vlan1000
     fi
     if [ ! -e /sys/devices/virtual/net/vlan1001 ]; then
       brctl addbr vlan1001
+  
+  
       ip link set dev vlan1001 up
       ip addr flush dev vlan1001
     fi
@@ -822,11 +792,15 @@ ok: [s3] =>
     #
     if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
       brctl addbr vlan1000
+  
+  
       ip link set dev vlan1000 up
       ip addr flush dev vlan1000
     fi
     if [ ! -e /sys/devices/virtual/net/vlan1001 ]; then
       brctl addbr vlan1001
+  
+  
       ip link set dev vlan1001 up
       ip addr flush dev vlan1001
     fi
@@ -844,8 +818,8 @@ TASK [Deploy vlan configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s1, s2, s3
 
 TASK [template] ****************************************************************
-changed: [s1]
 changed: [s2]
+changed: [s1]
 changed: [s3]
 
 TASK [set_fact] ****************************************************************
@@ -855,8 +829,8 @@ ok: [s3]
 
 TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
 changed: [s2]
-changed: [s3]
 changed: [s1]
+changed: [s3]
 
 TASK [run vtysh to import vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
 skipping: [s1]
@@ -886,6 +860,7 @@ ok: [s1] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
   
     exit
     !
@@ -919,6 +894,7 @@ ok: [s2] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -951,6 +927,7 @@ ok: [s3] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -980,9 +957,9 @@ TASK [Deploy ospf configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s1, s2, s3
 
 TASK [template] ****************************************************************
+changed: [s3]
 changed: [s2]
 changed: [s1]
-changed: [s3]
 
 TASK [set_fact] ****************************************************************
 ok: [s1]
@@ -995,8 +972,8 @@ skipping: [s2]
 skipping: [s3]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [s2]
 changed: [s1]
+changed: [s2]
 changed: [s3]
 
 TASK [Figure out whether to deploy the module vxlan on current device] *********
@@ -1215,8 +1192,8 @@ h4                         : ok=12   changed=3    unreachable=0    failed=0    s
 h5                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 h6                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 s1                         : ok=41   changed=9    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
-s2                         : ok=41   changed=9    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
-s3                         : ok=41   changed=9    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+s2                         : ok=40   changed=8    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+s3                         : ok=40   changed=8    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
 
 
 

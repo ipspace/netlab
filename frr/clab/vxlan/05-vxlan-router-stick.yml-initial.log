@@ -55,17 +55,6 @@ ok: [ros] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "172.16.0.3 h1" >>/tmp/hosts
-    echo "172.16.1.4 h2" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.1 ros" >>/tmp/hosts
-    echo "172.16.0.2 172.16.1.2 ros-tenant" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.2 s1" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -108,6 +97,7 @@ ok: [ros] =>
     #
     # Set Ethernet interface MTU
     ip link set eth1 mtu 1600
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -161,17 +151,6 @@ ok: [s1] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "172.16.0.3 h1" >>/tmp/hosts
-    echo "172.16.1.4 h2" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.1 ros" >>/tmp/hosts
-    echo "172.16.0.2 172.16.1.2 ros-tenant" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.2 s1" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -218,6 +197,7 @@ ok: [s1] =>
     ip link set eth1 mtu 1600
     ip link set eth2 mtu 1500
     ip link set eth3 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -240,10 +220,12 @@ ok: [s1] =>
     !
     interface eth2
      no shutdown
+     description [Access VLAN red] s1 -> h1
      ! no ip address
     !
     interface eth3
      no shutdown
+     description [Access VLAN blue] s1 -> h2
      ! no ip address
     !
     interface vlan1000
@@ -389,7 +371,6 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml fo
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [ros -> localhost]
-changed: [s1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [ros]
@@ -399,8 +380,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for ros, s1
 
 TASK [template] ****************************************************************
-changed: [ros]
 changed: [s1]
+changed: [ros]
 
 TASK [set_fact] ****************************************************************
 ok: [ros]
@@ -422,9 +403,9 @@ TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-alGzxRNj-h1.sh] **********
-changed: [h2 -> localhost]
+TASK [Initial container configuration via /tmp/config-VXGmSTxy-h1.sh] **********
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [file] ********************************************************************
 changed: [h1 -> localhost]
@@ -461,12 +442,16 @@ ok: [ros] =>
     #
     if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
       brctl addbr vlan1000
+  
+  
       ip link set dev vlan1000 up
       ip addr flush dev vlan1000
       ip addr add 172.16.0.2/24 dev vlan1000
     fi
     if [ ! -e /sys/devices/virtual/net/vlan1001 ]; then
       brctl addbr vlan1001
+  
+  
       ip link set dev vlan1001 up
       ip addr flush dev vlan1001
       ip addr add 172.16.1.2/24 dev vlan1001
@@ -483,11 +468,15 @@ ok: [s1] =>
     #
     if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
       brctl addbr vlan1000
+  
+  
       ip link set dev vlan1000 up
       ip addr flush dev vlan1000
     fi
     if [ ! -e /sys/devices/virtual/net/vlan1001 ]; then
       brctl addbr vlan1001
+  
+  
       ip link set dev vlan1001 up
       ip addr flush dev vlan1001
     fi
@@ -504,8 +493,8 @@ TASK [Deploy vlan configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for ros, s1
 
 TASK [template] ****************************************************************
-changed: [s1]
 changed: [ros]
+changed: [s1]
 
 TASK [set_fact] ****************************************************************
 ok: [ros]
@@ -541,6 +530,7 @@ ok: [ros] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -567,6 +557,7 @@ ok: [s1] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
   
     exit
     !
@@ -654,6 +645,7 @@ ok: [ros] =>
      timers lsa min-arrival 100
   
      redistribute connected
+  
     exit
     !
     interface vlan1000
@@ -838,7 +830,7 @@ PLAY RECAP *********************************************************************
 h1                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 ros                        : ok=50   changed=11   unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-s1                         : ok=43   changed=9    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+s1                         : ok=42   changed=8    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
 
 
 

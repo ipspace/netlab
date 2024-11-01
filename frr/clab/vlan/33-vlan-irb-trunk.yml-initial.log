@@ -65,18 +65,6 @@ ok: [s1] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "172.16.0.1 h1" >>/tmp/hosts
-    echo "172.16.0.2 h2" >>/tmp/hosts
-    echo "172.16.1.3 h3" >>/tmp/hosts
-    echo "172.16.1.4 h4" >>/tmp/hosts
-    echo "10.0.0.5 172.16.0.5 172.16.1.5 s1" >>/tmp/hosts
-    echo "10.0.0.6 172.16.0.6 172.16.1.6 s2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -123,6 +111,7 @@ ok: [s1] =>
     ip link set eth1 mtu 1500
     ip link set eth2 mtu 1500
     ip link set eth3 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -145,28 +134,32 @@ ok: [s1] =>
     !
     interface eth2
      no shutdown
+     description [Access VLAN red] s1 -> h1
      ! no ip address
     !
     interface eth3
      no shutdown
+     description [Access VLAN blue] s1 -> h3
      ! no ip address
     !
-    interface eth1.1001
+    interface eth1.701
      no shutdown
+     description [SubIf VLAN blue] s1 -> s2
      ! no ip address
     !
-    interface eth1.1000
+    interface eth1.700
      no shutdown
+     description [SubIf VLAN red] s1 -> s2
      ! no ip address
     !
-    interface vlan1000
+    interface vlan700
      no shutdown
-     description VLAN red (1000) -> [h1,s2,h2]
+     description VLAN red (700) -> [h1,s2,h2]
      ip address 172.16.0.5/24
     !
-    interface vlan1001
+    interface vlan701
      no shutdown
-     description VLAN blue (1001) -> [h3,s2,h4]
+     description VLAN blue (701) -> [h3,s2,h4]
      ip address 172.16.1.5/24
     !
     do write
@@ -192,18 +185,6 @@ ok: [s2] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "172.16.0.1 h1" >>/tmp/hosts
-    echo "172.16.0.2 h2" >>/tmp/hosts
-    echo "172.16.1.3 h3" >>/tmp/hosts
-    echo "172.16.1.4 h4" >>/tmp/hosts
-    echo "10.0.0.5 172.16.0.5 172.16.1.5 s1" >>/tmp/hosts
-    echo "10.0.0.6 172.16.0.6 172.16.1.6 s2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -250,6 +231,7 @@ ok: [s2] =>
     ip link set eth1 mtu 1500
     ip link set eth2 mtu 1500
     ip link set eth3 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -272,28 +254,32 @@ ok: [s2] =>
     !
     interface eth2
      no shutdown
+     description [Access VLAN red] s2 -> h2
      ! no ip address
     !
     interface eth3
      no shutdown
+     description [Access VLAN blue] s2 -> h4
      ! no ip address
     !
-    interface eth1.1001
+    interface eth1.701
      no shutdown
+     description [SubIf VLAN blue] s2 -> s1
      ! no ip address
     !
-    interface eth1.1000
+    interface eth1.700
      no shutdown
+     description [SubIf VLAN red] s2 -> s1
      ! no ip address
     !
-    interface vlan1000
+    interface vlan700
      no shutdown
-     description VLAN red (1000) -> [h1,s1,h2]
+     description VLAN red (700) -> [h1,s1,h2]
      ip address 172.16.0.6/24
     !
-    interface vlan1001
+    interface vlan701
      no shutdown
-     description VLAN blue (1001) -> [h3,s1,h4]
+     description VLAN blue (701) -> [h3,s1,h4]
      ip address 172.16.1.6/24
     !
     do write
@@ -358,64 +344,6 @@ ok: [h1] =>
     #
     # Print the final routing table
     ip route
-ok: [h3] => 
-  msg: |-
-    initial configuration for h3
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.1.3/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.1.3/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    # lan prefix: 172.16.0.0/16 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 172.16.0.0/16 2>/dev/null
-    set -e
-    ip route add 172.16.0.0/16 via 172.16.1.5
-    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 10.0.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.0.0.0/24 via 172.16.1.5
-    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.1.0/24
-    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 10.1.0.0/16 2>/dev/null
-    set -e
-    ip route add 10.1.0.0/16 via 172.16.1.5
-    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
-    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 10.2.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.2.0.0/24 via 172.16.1.5
-    #
-    # Print the final routing table
-    ip route
 ok: [h2] => 
   msg: |-
     initial configuration for h2
@@ -471,6 +399,64 @@ ok: [h2] =>
     ip route del 10.2.0.0/24 2>/dev/null
     set -e
     ip route add 10.2.0.0/24 via 172.16.0.6
+    #
+    # Print the final routing table
+    ip route
+ok: [h3] => 
+  msg: |-
+    initial configuration for h3
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.1.3/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.1.3/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.1.5
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.1.5
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.1.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.1.5
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.1.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.1.5
     #
     # Print the final routing table
     ip route
@@ -538,15 +524,14 @@ ok: [s1]
 ok: [s2]
 ok: [h1]
 ok: [h2]
-ok: [h3]
 ok: [h4]
+ok: [h3]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for s1, s2
 included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for h1, h2, h3, h4
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [s2 -> localhost]
 changed: [s1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
@@ -557,8 +542,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for s1, s2
 
 TASK [template] ****************************************************************
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [set_fact] ****************************************************************
 ok: [s1]
@@ -580,20 +565,20 @@ ok: [h4]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h2 -> localhost]
-changed: [h3 -> localhost]
 changed: [h1 -> localhost]
+changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-QmRssffF-h1.sh] **********
-changed: [h3 -> localhost]
+TASK [Initial container configuration via /tmp/config-JmfitpqE-h1.sh] **********
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
 TASK [file] ********************************************************************
-changed: [h4 -> localhost]
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h4 -> localhost]
 changed: [h3 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
@@ -622,31 +607,35 @@ ok: [s1] =>
     #
     set -e # Exit immediately when any command fails
     #
-    if [ ! -e /sys/devices/virtual/net/eth1.1001 ]; then
-      ip link add link eth1 name eth1.1001 type vlan id 1001
-      ip link set dev eth1.1001 up
+    if [ ! -e /sys/devices/virtual/net/eth1.701 ]; then
+      ip link add link eth1 name eth1.701 type vlan id 701
+      ip link set dev eth1.701 up
     fi
-    if [ ! -e /sys/devices/virtual/net/eth1.1000 ]; then
-      ip link add link eth1 name eth1.1000 type vlan id 1000
-      ip link set dev eth1.1000 up
+    if [ ! -e /sys/devices/virtual/net/eth1.700 ]; then
+      ip link add link eth1 name eth1.700 type vlan id 700
+      ip link set dev eth1.700 up
     fi
-    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
-      brctl addbr vlan1000
-      ip link set dev vlan1000 up
-      ip addr flush dev vlan1000
-      ip addr add 172.16.0.5/24 dev vlan1000
+    if [ ! -e /sys/devices/virtual/net/vlan700 ]; then
+      brctl addbr vlan700
+  
+  
+      ip link set dev vlan700 up
+      ip addr flush dev vlan700
+      ip addr add 172.16.0.5/24 dev vlan700
     fi
-    if [ ! -e /sys/devices/virtual/net/vlan1001 ]; then
-      brctl addbr vlan1001
-      ip link set dev vlan1001 up
-      ip addr flush dev vlan1001
-      ip addr add 172.16.1.5/24 dev vlan1001
+    if [ ! -e /sys/devices/virtual/net/vlan701 ]; then
+      brctl addbr vlan701
+  
+  
+      ip link set dev vlan701 up
+      ip addr flush dev vlan701
+      ip addr add 172.16.1.5/24 dev vlan701
     fi
   
-    brctl addif vlan1000 eth2
-    brctl addif vlan1001 eth3
-    brctl addif vlan1001 eth1.1001
-    brctl addif vlan1000 eth1.1000
+    brctl addif vlan700 eth2
+    brctl addif vlan701 eth3
+    brctl addif vlan701 eth1.701
+    brctl addif vlan700 eth1.700
     exit 0
 ok: [s2] => 
   msg: |-
@@ -656,31 +645,35 @@ ok: [s2] =>
     #
     set -e # Exit immediately when any command fails
     #
-    if [ ! -e /sys/devices/virtual/net/eth1.1001 ]; then
-      ip link add link eth1 name eth1.1001 type vlan id 1001
-      ip link set dev eth1.1001 up
+    if [ ! -e /sys/devices/virtual/net/eth1.701 ]; then
+      ip link add link eth1 name eth1.701 type vlan id 701
+      ip link set dev eth1.701 up
     fi
-    if [ ! -e /sys/devices/virtual/net/eth1.1000 ]; then
-      ip link add link eth1 name eth1.1000 type vlan id 1000
-      ip link set dev eth1.1000 up
+    if [ ! -e /sys/devices/virtual/net/eth1.700 ]; then
+      ip link add link eth1 name eth1.700 type vlan id 700
+      ip link set dev eth1.700 up
     fi
-    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
-      brctl addbr vlan1000
-      ip link set dev vlan1000 up
-      ip addr flush dev vlan1000
-      ip addr add 172.16.0.6/24 dev vlan1000
+    if [ ! -e /sys/devices/virtual/net/vlan700 ]; then
+      brctl addbr vlan700
+  
+  
+      ip link set dev vlan700 up
+      ip addr flush dev vlan700
+      ip addr add 172.16.0.6/24 dev vlan700
     fi
-    if [ ! -e /sys/devices/virtual/net/vlan1001 ]; then
-      brctl addbr vlan1001
-      ip link set dev vlan1001 up
-      ip addr flush dev vlan1001
-      ip addr add 172.16.1.6/24 dev vlan1001
+    if [ ! -e /sys/devices/virtual/net/vlan701 ]; then
+      brctl addbr vlan701
+  
+  
+      ip link set dev vlan701 up
+      ip addr flush dev vlan701
+      ip addr add 172.16.1.6/24 dev vlan701
     fi
   
-    brctl addif vlan1000 eth2
-    brctl addif vlan1001 eth3
-    brctl addif vlan1001 eth1.1001
-    brctl addif vlan1000 eth1.1000
+    brctl addif vlan700 eth2
+    brctl addif vlan701 eth3
+    brctl addif vlan701 eth1.701
+    brctl addif vlan700 eth1.700
     exit 0
 
 TASK [Find configuration deployment deploy_script for vlan] ********************
@@ -699,8 +692,8 @@ ok: [s1]
 ok: [s2]
 
 TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [run vtysh to import vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
 skipping: [s1]
@@ -715,7 +708,7 @@ h2                         : ok=12   changed=3    unreachable=0    failed=0    s
 h3                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 h4                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 s1                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-s2                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+s2                         : ok=22   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 
 
 

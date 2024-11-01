@@ -96,17 +96,6 @@ ok: [s1] =>
     echo
     SCRIPT
     #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "172.16.0.1 h1" >>/tmp/hosts
-    echo "172.16.0.2 h2" >>/tmp/hosts
-    echo "172.16.1.3 h3" >>/tmp/hosts
-    echo "172.16.2.4 h4" >>/tmp/hosts
-    echo "10.0.0.5 172.16.1.5 172.16.2.5 s1" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -155,6 +144,7 @@ ok: [s1] =>
     ip link set eth2 mtu 1500
     ip link set eth3 mtu 1500
     ip link set eth4 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -172,33 +162,37 @@ ok: [s1] =>
     !
     interface eth1
      no shutdown
+     description [Access VLAN red] s1 -> h1
      ! no ip address
     !
     interface eth2
      no shutdown
+     description [Access VLAN red] s1 -> h2
      ! no ip address
     !
     interface eth3
      no shutdown
+     description [Access VLAN blue] s1 -> h3
      ! no ip address
     !
     interface eth4
      no shutdown
+     description [Access VLAN green] s1 -> h4
      ! no ip address
     !
-    interface vlan1000
+    interface vlan700
      no shutdown
-     description VLAN red (1000) -> [h1,h2] [stub]
+     description VLAN red (700) -> [h1,h2] [stub]
      ! no ip address
     !
-    interface vlan1001
+    interface vlan701
      no shutdown
-     description VLAN blue (1001) -> [h3] [stub]
+     description VLAN blue (701) -> [h3] [stub]
      ip address 172.16.1.5/24
     !
-    interface vlan1002
+    interface vlan702
      no shutdown
-     description VLAN green (1002) -> [h4] [stub]
+     description VLAN green (702) -> [h4] [stub]
      ip address 172.16.2.5/24
     !
     do write
@@ -397,22 +391,22 @@ ok: [h3]
 ok: [h4]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
-changed: [h3 -> localhost]
+changed: [h1 -> localhost]
 changed: [h4 -> localhost]
+changed: [h3 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-yvCBLYft-h1.sh] **********
-changed: [h2 -> localhost]
+TASK [Initial container configuration via /tmp/config-erpWlYek-h1.sh] **********
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
 TASK [file] ********************************************************************
 changed: [h4 -> localhost]
-changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -437,28 +431,34 @@ ok: [s1] =>
     #
     set -e # Exit immediately when any command fails
     #
-    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
-      brctl addbr vlan1000
-      ip link set dev vlan1000 up
-      ip addr flush dev vlan1000
+    if [ ! -e /sys/devices/virtual/net/vlan700 ]; then
+      brctl addbr vlan700
+  
+  
+      ip link set dev vlan700 up
+      ip addr flush dev vlan700
     fi
-    if [ ! -e /sys/devices/virtual/net/vlan1001 ]; then
-      brctl addbr vlan1001
-      ip link set dev vlan1001 up
-      ip addr flush dev vlan1001
-      ip addr add 172.16.1.5/24 dev vlan1001
+    if [ ! -e /sys/devices/virtual/net/vlan701 ]; then
+      brctl addbr vlan701
+  
+  
+      ip link set dev vlan701 up
+      ip addr flush dev vlan701
+      ip addr add 172.16.1.5/24 dev vlan701
     fi
-    if [ ! -e /sys/devices/virtual/net/vlan1002 ]; then
-      brctl addbr vlan1002
-      ip link set dev vlan1002 up
-      ip addr flush dev vlan1002
-      ip addr add 172.16.2.5/24 dev vlan1002
+    if [ ! -e /sys/devices/virtual/net/vlan702 ]; then
+      brctl addbr vlan702
+  
+  
+      ip link set dev vlan702 up
+      ip addr flush dev vlan702
+      ip addr add 172.16.2.5/24 dev vlan702
     fi
   
-    brctl addif vlan1000 eth1
-    brctl addif vlan1000 eth2
-    brctl addif vlan1001 eth3
-    brctl addif vlan1002 eth4
+    brctl addif vlan700 eth1
+    brctl addif vlan700 eth2
+    brctl addif vlan701 eth3
+    brctl addif vlan702 eth4
     exit 0
 
 TASK [Find configuration deployment deploy_script for vlan] ********************
