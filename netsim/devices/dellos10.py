@@ -25,9 +25,11 @@ class OS10(_Quirks):
 
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
-    check_vlan_ospf(node.name,node.get('interfaces',[]),'default')
-    for vname,vdata in node.get('vrfs',{}).items():
-      check_vlan_ospf(node.name,vdata.get('ospf.interfaces',[]),vname)
+    # OSPF limitation only applies when using virtual-networks, regular VLAN SVI supports OSPF
+    if topology.get('defaults.devices.dellos10.group_vars.use_virtual_networks',True):
+      check_vlan_ospf(node.name,node.get('interfaces',[]),'default')
+      for vname,vdata in node.get('vrfs',{}).items():
+        check_vlan_ospf(node.name,vdata.get('ospf.interfaces',[]),vname)
 
   def check_config_sw(self, node: Box, topology: Box) -> None:
     need_ansible_collection(node,'dellemc.os10')
