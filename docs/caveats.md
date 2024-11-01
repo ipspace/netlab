@@ -123,24 +123,20 @@ See also [Cisco IOSv](caveats-iosv) SSH, OSPF, RIPng, and BGP caveats.
 (cisco-iosv-ssh)=
 ### SSH Access to Cisco IOSv
 
-Cisco IOSv SSH implementation uses RSA keys and older encryption algorithms that might not be allowed on newer Linux distributions. Most users running recent Ansible versions on Ubuntu won't notice that as Ansible uses the `ansible-pylibssh` package (installed together with Ansible) as its interface to `libssh`.
+Cisco IOSv SSH implementation uses RSA keys and older encryption algorithms that might not be allowed on newer Linux distributions.
 
-If you're still experiencing SSH key exchange errors, try these workarounds:
+Most users running recent Ansible versions won't notice the problem; Ansible uses the `ansible-pylibssh` package (installed together with Ansible) as its interface to `libssh` and adjusts the SSH algorithms as needed.
 
-* Add the following configuration to `~/.ssh/config` file[^CSP]:
+We added a similar mechanism to _netlab_ commands that use SSH to connect to network devices. These commands append group variable `netlab_ssh_args` (when defined) to the **ssh** command; the value of that variable for Cisco IOS/IOS-XE devices is set to:
 
 ```
-Host 192.168.121.*
-    KexAlgorithms +diffie-hellman-group1-sha1,diffie-hellman-group14-sha1
-    PubkeyAcceptedKeyTypes +ssh-rsa
-    HostbasedAcceptedAlgorithms +ssh-rsa
-    HostKeyAlgorithms +ssh-rsa
+group_vars:
+  netlab_ssh_args: "-o KexAlgorithms=+diffie-hellman-group-exchange-sha1 -o PubkeyAcceptedKeyTypes=ssh-rsa -o HostKeyAlgorithms=+ssh-rsa"
 ```
 
-* It seems that some `libssh` implementations cannot handle the `+` specification in the `~/.ssh/config` file. Try removing the `+` sign in the crypto algorithm specifications or listing all standard algorithms and adding the legacy ones.
-* Additionaly, you might have to execute `sudo update-crypto-policies --set LEGACY` on AlmaLinux/RHEL.
+You can change the additional SSH arguments with the node **netlab_ssh_args** parameter or with the **defaults.devices._device_.group_vars.netlab_ssh_args** [system default](defaults).
 
-[^CSP]: Change the address range if you're using a different IP prefix for the management network or if you're using the *multilab* plugin.
+Additionally, you might have to execute `sudo update-crypto-policies --set LEGACY` on AlmaLinux/RHEL.
 
 (caveats-iol)=
 ## Cisco IOS on Linux (IOL) and IOL Layer-2 Image
