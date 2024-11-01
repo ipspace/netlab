@@ -26,6 +26,7 @@ BGP_SESSIONS = ['ibgp','ebgp']
 
 _ERROR_LOG: list = []
 _WARNING_LOG: list = []
+_HINTS_CACHE: list = []
 
 err_class_map = {                       # Map error classes into short error codes
   'MissingDependency':  'DEPEND',
@@ -187,7 +188,7 @@ def error(
       skip_header: typing.Optional[bool] = None,
       exit_on_error: bool = False) -> None:
 
-  global _ERROR_LOG,err_class_map,_WARNING_LOG,QUIET,err_color_map,_error_header_printed
+  global _ERROR_LOG,err_class_map,_WARNING_LOG,_HINTS_CACHE,QUIET,err_color_map,_error_header_printed
 
   err_name = category.__name__
   err_line = f'{err_name} in {module}: {text}' if module else f'{err_name}: {text}'
@@ -220,7 +221,9 @@ def error(
       print(err_line,file=sys.stderr)
 
   if more_hints is not None:                                        # Caller supplied hints, print them with HINT label
-    print_more_hints(more_hints,h_warning=category is Warning,indent=indent)
+    if more_hints not in _HINTS_CACHE:
+      print_more_hints(more_hints,h_warning=category is Warning,indent=indent)
+    _HINTS_CACHE.append(more_hints)
 
   if more_data is not None:                                         # Caller supplied data, print it with DATA label
     print_more_hints(more_data,'DATA','bright_black',h_warning=category is Warning,indent=indent)
@@ -421,9 +424,10 @@ def debug_active(flag: str) -> bool:
 init_log_system: initialize the logging system (used to run test cases)
 """
 def init_log_system(header: bool = True) -> None:
-  global _ERROR_LOG,_error_header_printed
+  global _ERROR_LOG,_HINTS_CACHE,_error_header_printed
 
   _ERROR_LOG = []                                 # Clear the error log
+  _HINTS_CACHE = []                               # And the hints cache
   _error_header_printed = not header              # Mark header as printed if we don't want to have one
 
   _types.init_wrong_type()
