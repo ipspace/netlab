@@ -83,7 +83,7 @@ A dictionary describing an individual link contains *node names* and *additional
 
 You can use most link attributes on individual node attachments (dictionary under *node name* key). You can also use these node attachment attributes:
 
-* **ifindex** -- optional per-node interface index used to generate the interface/port name. Use this parameter to select specific ports to match typical network designs (for example, high-speed ports for uplinks) when the virtualization provider supports mapping host interfaces into VM/container interfaces.  The **ifindex** parameter currently works for [genuine containers](clab-images) (not the [*vrnetlab* containers](clab-vrnetlab) that run a VM inside a container) and external devices. It does not work correctly with virtual machines; either VMs started in the Vagrant/libvirt environment or the VMs running inside the *vrnetlab* containers.
+* **ifindex** -- optional per-node interface index used to generate the interface/port name ([more details](links-ifname)).
 * **ifname** -- target interface name. Use to create tunnel interfaces on some platforms or to create unusual interface types.
 
 [^NOIP]: You might need links without IP configuration to test VLANs, bridging, or EVPN.
@@ -304,6 +304,7 @@ These interface addresses are assigned to the three nodes during the topology tr
 
 [^smm]: Not recommended for obvious reasons, but you could do it.
 
+(links-custom-pools)=
 ## Selecting Custom Address Pools
 
 The address pool used to generate IPv4 and IPv6 prefixes for a link is selected based on link type ([see above](#link-types), also *[Address Pool Overview](addressing.md)*).
@@ -329,6 +330,7 @@ links:
 You can also use the **unnumbered** link attribute to get a single unnumbered link. Using an unnumbered pool is recommended when testing network-wide addressing changes.
 ```
 
+(links-mtu)=
 ## Changing MTU
 
 All devices supported by *netlab* are assumed to use ancient default layer-3 MTU value of 1500 bytes. Most VM-based network devices already use that default; container-based devices have their MTU set to 1500 through system settings.
@@ -393,8 +395,9 @@ defaults.devices.cumulus.mtu: 1500
 
 ### Lab-wide MTU
 
-The **defaults.interfaces.mtu** setting specifies the lab-wide default MTU value. If necessary, you can change that value with the node, link, or interface **mtu** parameter.
+The **defaults.interfaces.mtu** setting specifies the lab-wide default MTU value. You can change that value with the node, link, or interface **mtu** parameter if necessary.
 
+(links-gateway)=
 ## Hosts and Default Gateways
 
 A lab device could be a networking device or a host[^HOST]. Links with attached hosts are treated slightly differently than the regular links:
@@ -408,6 +411,7 @@ A lab device could be a networking device or a host[^HOST]. Links with attached 
 
 [^NOPASS]: To turn a link with hosts attached into a transit link, set link **role** to **lan** (or any other role).
 
+(links-bridge)=
 ## Bridge Names
 
 Point-to-point links between network devices are implemented with P2P tunnels (assuming the virtualization environment supports them).
@@ -417,6 +421,34 @@ Multi-access and stub links are implemented with custom networks (as supported b
 * *name* is the [topology name](topology-overview.md) or current directory name;
 * *N* is the link ID (position of link object in **links** list) starting with 1.
 
+(links-ifname)=
+## Changing Interface Names
+
+If you want to recreate a physical network with a *netlab* lab topology, you might want to match the interface names on lab devices to the actual interface names in your network. You might also want to change the device interface names to implement a particular wiring convention (for example, connecting uplinks to high-numbered ports).
+
+There are two mechanisms to change an interface name in the lab topology:
+
+* The **ifname** interface parameter specifies the desired interface name. You can use it with virtual interfaces (for example, loopbacks or tunnels) or when [configuring physical devices with _netlab_](lab-external). Do not use the **ifname** parameter to change the Ethernet interface names on virtual machines or containers.
+* Use the **ifindex** interface parameter to change the Ethernet interface names. The final interface name is derived from the **ifindex** parameter using the device-specific interface naming scheme[^INS]. Do not use the **ifindex** parameter on virtual interfaces (tunnels, loopbacks, VLANs, LAGs)
+
+[^INS]: Many devices use **ifindex** in interface name. For example, **ifindex** set to three might result in the interface name **GigabitEthernet3**. Some devices use the `slot/port` naming convention; **ifindex** set to seven might result in the interface name **GigabitEthernet1/3**.
+
+You don't have to use a contiguous range of **ifindex** values or sort them. *netlab* sorts the interfaces based on their **ifindex** parameter and adjusts the virtualization provider configuration to match the virtual NICs to the specified **ifindex** values:
+
+* The [*libvirt* virtualization provider](lab-libvirt) inserts additional NICs to ensure the virtual machine gets enough virtual interfaces to match the specified **ifindex** values.
+
+```{warning}
+Virtual machines have "maximum NICs" restrictions that depend on the device network operating system. _netlab_ does not check whether the specified **‌ifindex** value exceeds that restriction.
+```
+
+* The [*clab* virtualization provider](lab-clab) changes the container interface names based on the specified **ifindex** values.
+
+```{tip}
+* _netlab_ assumes that the network device containers you're using can deal with non-sequential interface names. Most true containers can do that, and most [*vrnetlab* containers](clab-vrnetlab) correctly map the outside Ethernet interfaces to VM interfaces.
+* *‌vrnetlab* containers run a virtual machine within a container. That virtual machine might have its own "maximum NICs" restrictions.
+```
+
+(links-augment-link)=
 ## Augmenting Link Data
 
 The *netlab* data transformation code heavily augments link and corresponding node data. The additional link attributes include:
@@ -509,12 +541,13 @@ Final link data:
   type: lan
 ```
 
+(links-augment-node)=
 ## Augmenting Node Data
 
 Link processing code adds link (interface) data to all nodes connected to links. The link data is created as **interfaces** dictionary within the node data and includes:
 
 * Interface index
-* Interface name (derived from device data)
+* Interface name (derived from interface index and device data)
 * IPv4 and/or IPv6 addressing
 * Neighbor information (node name, remote interface name, remote IPv4/IPv6 address)
 * Remote node ID and interface ID for point-to-point links

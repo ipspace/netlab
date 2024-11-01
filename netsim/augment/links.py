@@ -250,6 +250,14 @@ def create_regular_interface(node: Box, ifdata: Box, defaults: Box) -> None:
   # Allow user to select a specific interface index per link
   if 'ifindex' not in ifdata:
     ifdata.ifindex = get_unique_ifindex(node,start=ifindex_offset)
+  else:
+    node._set_ifindex = True
+    if ifdata.ifindex < ifindex_offset:
+      log.error(
+        f'Interface ifindex for device {node.device} (node {node.name}) cannot be lower than {ifindex_offset}',
+        category=log.IncorrectValue,
+        more_data = [ 'Interface data: ', str(ifdata) ],
+        module='links')
 
   # Set interface name -- either in 'ifname' field (for the "real" interface name)
   # or in the "netlab_ifname" field to track what netlab would have generated

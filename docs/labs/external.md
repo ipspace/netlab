@@ -1,3 +1,4 @@
+(lab-external)=
 # External Provider
 
 You can use *netlab* to create addressing plans and device configurations for a hardware lab **as long as the topology file contains an accurate description of the hardware lab**. 

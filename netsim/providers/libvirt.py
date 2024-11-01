@@ -13,7 +13,7 @@ import tempfile
 import netaddr
 import argparse
 
-from ..data import types,get_empty_box
+from ..data import types,get_empty_box,get_box
 from ..utils import log,strings
 from ..utils import files as _files
 from . import _Provider
@@ -188,6 +188,43 @@ def get_linux_bridge_name(virsh_bridge: str) -> typing.Optional[str]:
   return None
 
 """
+pad_node_interfaces: Insert bogus interfaces in the node interface list to cope with the
+required ifindex values.
+"""
+def pad_node_interfaces(node: Box, topology: Box) -> None:
+  phy_iflist = [ intf for intf in node.interfaces if intf.ifindex < 1000 ]
+  vir_iflist = [ intf for intf in node.interfaces if intf.ifindex >= 1000 ]
+  phy_iflist.sort(key=lambda intf: intf.ifindex)
+
+  dev_data = devices.get_consolidated_device_data(node,topology.defaults)
+  ifindex = dev_data.get('ifindex_offset',1)
+  ifname_format = dev_data.interface_name
+  pad_iflist = []
+
+  while phy_iflist:
+    if phy_iflist[0].ifindex > ifindex:
+
+      pad_ifdata = get_box({
+        'ifindex': ifindex,
+        'type': 'p2p',
+        'remote_id': node.id,
+        'remote_ifindex': 666,
+        'linkindex': 0,
+        'neighbors': [],
+      })
+      pad_ifdata.ifname = strings.eval_format(ifname_format,pad_ifdata)
+      pad_iflist.append(pad_ifdata)
+    else:
+      pad_iflist.append(phy_iflist[0])
+      phy_iflist = phy_iflist[1:]
+
+    ifindex = ifindex + 1
+
+  node.interfaces = pad_iflist + vir_iflist
+  if 'nic_adapter_count' not in node.libvirt:
+    node.libvirt.nic_adapter_count = len(pad_iflist) + 1
+
+"""
 Create batches of 'vagrant up' command to deal with very large topologies
 
 * Split node names into libvirt.batch_size - sized batches
@@ -247,6 +284,10 @@ class Libvirt(_Provider):
         l.type = 'lan'
         if not 'bridge' in l:
           l.bridge = "%s_%d" % (topology.name[0:10],l.linkindex)
+
+  def node_post_transform(self, node: Box, topology: Box) -> None:
+    if node.get('_set_ifindex'):
+      pad_node_interfaces(node,topology)
 
   def transform_node_images(self, topology: Box) -> None:
     self.node_image_version(topology)
