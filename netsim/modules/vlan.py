@@ -297,14 +297,33 @@ def validate_link_vlan_attributes(link: Box,v_attr: Box,topology: Box) -> bool:
   return link_ok
 
 """
-check_link_interface_attributes -- validate that the interfaces in bridge/IRB mode do not
-carry any extra attributes
+check_link_interface_attributes:
+
+Validate that the interfaces in bridge/IRB mode
+
+* do not carry any extra attributes
+* are not connected to global VLANs with 'mode: route'
 """
 def check_link_interface_attributes(link: Box, intf: Box, topology: Box) -> None:
   valid_attr = list(topology.defaults.vlan.attributes.phy_ifattr) + [ 'node','_vlan_mode' ]
   vlan_mode = get_vlan_interface_mode(intf)                 # Get interface VLAN forwarding mode
   if vlan_mode is None or vlan_mode == 'route':             # No access VLAN or routed subinterface
     return                                                  # ... interface attributes are OK
+
+  if 'vlan_name' in link and 'vlans' in topology:           # Check forwarding mode for global access VLANs
+    if link.vlan_name in topology.vlans:                    # Is the access VLAN a global VLAN?
+      vname = link.vlan_name
+      vlan_fwd = topology.vlans[vname].get('mode','')
+      #
+      # Do we have a bridge/IRB device connected to a routed VLAN (and do we care)?
+      if vlan_fwd == 'route' and topology.defaults.vlan.warnings.mixed_fwd_check:
+        log.error(
+          f"Node {intf.node} using VLAN forwarding mode {vlan_mode} is connected to global routed VLAN {vname} " +\
+          f"on {link._linkname}",
+          category=log.IncorrectType,
+          hint='fwd_mode_check',
+          module='vlan')        
+        return
 
   invalid = []                                              # This is where we collect invalid attributes
   for attr in intf.keys():                                  # Now iterate over interface attributes
