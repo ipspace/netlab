@@ -2,10 +2,9 @@
 # Edgeshark
 
 Edgeshark discovers the virtual communication on container hosts and can provide live capture with Wireshark with a single click.
-Capture function requires installation of [cshargextcap](https://github.com/siemens/cshargextcap) Wireshark plugin. 
-Detailed plugin installation instructions for multiple platforms are provided by the upstream.
+The capture function requires the installation of the [cshargextcap](https://github.com/siemens/cshargextcap) Wireshark plugin. The [plugin repository](https://github.com/siemens/cshargextcap) provides detailed installation instructions for multiple platforms.
 
-* Add the following lines to the lab topology file to use Edgeshark with _netlab_:
+Add the following lines to a lab topology file to use Edgeshark with _netlab_:
 
 ```
 tools:
@@ -14,7 +13,8 @@ tools:
 
 **Notes:**
 
-* A single instance of Edgeshark can discover the virtual communication of one or more labs on the host.
-* If you are running multilabs with netlab and want to use the tool, enable Edgeshark as a tool in just one of them, preferably the longest lived one.
-* The Edgeshark instance will be broken down when the netlab lab instance that started it is broken down. 
-* Edgeshark supports a subset of _netlab_-supported platforms. _netlab_ does not check whether Edgeshark supports all the devices used in the lab topology.
+* Edgeshark can capture traffic on virtual interfaces but not on *libvirt* point-to-point tunnels ([more details](libvirt-capture)).
+* A single instance of Edgeshark can discover the virtual communication of all labs running on your server.
+* If you use the [multilab plugin](plugin-multilab), enable Edgeshark in a single (preferably dedicated) lab instance.
+* The Edgeshark containers will be stopped when the netlab lab instance that started them is shut down. 
+* Edgeshark works with a subset of _netlab_-supported platforms. _netlab_ does not check whether Edgeshark supports all the devices used in the lab topology.

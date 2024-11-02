@@ -1,3 +1,4 @@
+(plugin-multilab)=
 # Running Multiple Labs on Linux Servers
 
 Using the default settings, *netlab* cannot run more than a single lab instance on a Linux server as it relies on the default network names and IP prefixes used by the *vagrant-libvirt* plugin and *containerlab* orchestration system.
