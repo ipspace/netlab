@@ -141,7 +141,7 @@ Additionally, you might have to execute `sudo update-crypto-policies --set LEGAC
 ## Cisco IOS on Linux (IOL) and IOL Layer-2 Image
 
 * The Cisco IOL and IOL L2 images work only as containers created with Roman Dodin's fork of [vrnetlab](https://github.com/hellt/vrnetlab/).
-* You need Containerlab 0.58.0 or greater to run these images.
+* You need Containerlab 0.59.0 or greater to run these images.
 * You cannot use VLANs 1002 through 1005 with Cisco IOL layer-2 image
 
 See also [common Cisco IOS](caveats-iosv) caveats.
