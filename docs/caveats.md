@@ -104,7 +104,6 @@ See also [CSR 1000v](caveats-csr) and [Cisco IOSv](caveats-iosv) caveats.
 ## Cisco CSR 1000v
 
 * Cisco CSR 1000v does not support interface MTU lower than 1500 bytes or IP MTU higher than 1500 bytes.
-* VLAN subinterfaces can be configured on Cisco CSR 1000v but do not work. CSR 1000v cannot be used as a router-on-a-VLAN-trunk device.
 * The minimum VXLAN VNI accepted by Cisco CSR 1000v is 4096. Using lower VNI values triggers a configuration error that is not caught by Ansible, resulting in a weird failure of the **netlab initial** command.
 
 See also [Cisco IOSv](caveats-iosv) SSH, OSPF, RIPng, and BGP caveats.
