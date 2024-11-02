@@ -57,7 +57,7 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
 
     member = l2_ifdata + member                  # Copy L2 data into member link
     member.linkindex = len(topology.links)+1
-    member.parentindex = l.linkindex             # Keep track of parent
+    member.lag._parentindex = l.linkindex        # Keep track of parent
     if log.debug_active('lag'):
       print(f'LAG create_lag_member_links -> adding link {member}')
     topology.links.append(member)
@@ -110,6 +110,7 @@ class LAG(_Module):
       if 'lag' not in i:
         continue
 
+      i.lag = node.get('lag',{}) + i.lag
       lacp_mode = i.get('lag.lacp_mode')  # Inheritance copying is done elsewhere
       if lacp_mode=='passive' and not features.lag.get('passive',False):
         log.error(f'Node {node.name} does not support passive LACP configured on interface {i.ifname}',
