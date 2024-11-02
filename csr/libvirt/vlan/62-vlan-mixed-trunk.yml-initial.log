@@ -13,10 +13,10 @@ ok: [s2]
 TASK [Find device readiness script] ********************************************
 ok: [h1]
 ok: [h2]
-ok: [s1]
-ok: [h3]
-ok: [s2]
 ok: [h4]
+ok: [h3]
+ok: [s1]
+ok: [s2]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [s1]
@@ -32,56 +32,78 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1,
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [h1]
 ok: [h2]
-ok: [h4]
 ok: [h3]
 ok: [s1]
+ok: [h4]
 ok: [s2]
 
 TASK [Find configuration template for initial] *********************************
 ok: [h1]
-ok: [h3]
 ok: [h2]
-ok: [s1]
 ok: [h4]
+ok: [s1]
+ok: [h3]
 ok: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [h2] => 
+ok: [s1] => 
   msg: |-
-    initial configuration for h2
+    initial configuration for s1
     =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.31.1.2/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.31.1.2/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    #
-    # Print the final routing table
-    ip route
+    hostname s1
+    !
+    no ip domain lookup
+    !
+    lldp run
+    !
+    ip host h1 172.16.0.1
+    ip host h2 172.16.0.2
+    ip host h3 172.16.2.3
+    ip host h4 172.16.3.4
+    ip host s2 10.0.0.6 172.16.3.6 172.16.4.6
+    !
+    ip routing
+    !
+  
+    !
+    !
+    interface Loopback0
+     ip address 10.0.0.5 255.255.255.255
+    !
+    interface GigabitEthernet1
+     no lldp transmit
+     no lldp receive
+    !
+    interface GigabitEthernet2
+     no shutdown
+     description s1 -> s2
+    !
+    interface GigabitEthernet3
+     no shutdown
+     description [Access VLAN red] s1 -> h1
+    !
+    interface GigabitEthernet4
+     no shutdown
+     description s1 -> h3 [stub]
+     ip address 172.16.2.5 255.255.255.0
+    !
+    interface GigabitEthernet2.1
+     no shutdown
+     encapsulation dot1Q 701
+     description s1 -> s2
+     ip address 172.16.4.5 255.255.255.0
+    !
+    interface BDI700
+     no shutdown
+     description VLAN red (700) -> [h1,s2,h2]
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
+    !
+    no banner exec
+    no banner login
+    no banner incoming
 ok: [h1] => 
   msg: |-
     initial configuration for h1
@@ -106,9 +128,9 @@ ok: [h1] =>
     #
     ip link set dev eth1 up
     set +e
-    ip addr del 172.31.1.1/24 dev eth1 2>/dev/null
+    ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
     set -e
-    ip addr add 172.31.1.1/24 dev eth1
+    ip addr add 172.16.0.1/24 dev eth1
     ip link set eth1 mtu 1500
     #
     # Add routes to IPv4 address pools pointing to the first neighbor on the first link
@@ -118,21 +140,21 @@ ok: [h1] =>
     #
     # Print the final routing table
     ip route
-ok: [s1] => 
+ok: [s2] => 
   msg: |-
-    initial configuration for s1
+    initial configuration for s2
     =========================================
-    hostname s1
+    hostname s2
     !
     no ip domain lookup
     !
     lldp run
     !
-    ip host h1 172.31.1.1
-    ip host h2 172.31.1.2
-    ip host h3 172.31.1.3
-    ip host h4 172.31.1.4
-    ip host s2 10.0.0.6
+    ip host h1 172.16.0.1
+    ip host h2 172.16.0.2
+    ip host h3 172.16.2.3
+    ip host h4 172.16.3.4
+    ip host s1 10.0.0.5 172.16.2.5 172.16.4.5
     !
     ip routing
     !
@@ -140,7 +162,7 @@ ok: [s1] =>
     !
     !
     interface Loopback0
-     ip address 10.0.0.5 255.255.255.255
+     ip address 10.0.0.6 255.255.255.255
     !
     interface GigabitEthernet1
      no lldp transmit
@@ -148,23 +170,26 @@ ok: [s1] =>
     !
     interface GigabitEthernet2
      no shutdown
-     description s1 -> s2
+     description s2 -> s1
     !
     interface GigabitEthernet3
      no shutdown
-     description [Access VLAN red] s1 -> h1
+     description [Access VLAN red] s2 -> h2
     !
     interface GigabitEthernet4
      no shutdown
-     description [Access VLAN blue] s1 -> h3
+     description s2 -> h4 [stub]
+     ip address 172.16.3.6 255.255.255.0
+    !
+    interface GigabitEthernet2.1
+     no shutdown
+     encapsulation dot1Q 701
+     description s2 -> s1
+     ip address 172.16.4.6 255.255.255.0
     !
     interface BDI700
      no shutdown
-     description VLAN red (700) -> [s2,h1,h2]
-    !
-    interface BDI701
-     no shutdown
-     description VLAN blue (701) -> [h3,s2,h4]
+     description VLAN red (700) -> [h1,s1,h2]
     !
     !
     line vty 0 4
@@ -173,6 +198,42 @@ ok: [s1] =>
     no banner exec
     no banner login
     no banner incoming
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.2/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.2/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
 ok: [h3] => 
   msg: |-
     initial configuration for h3
@@ -197,15 +258,37 @@ ok: [h3] =>
     #
     ip link set dev eth1 up
     set +e
-    ip addr del 172.31.1.3/24 dev eth1 2>/dev/null
+    ip addr del 172.16.2.3/24 dev eth1 2>/dev/null
     set -e
-    ip addr add 172.31.1.3/24 dev eth1
+    ip addr add 172.16.2.3/24 dev eth1
     ip link set eth1 mtu 1500
     #
     # Add routes to IPv4 address pools pointing to the first neighbor on the first link
     #
     # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
     #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.2.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.2.5
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.2.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.2.5
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.2.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.2.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.2.5
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.2.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.2.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.2.5
     #
     # Print the final routing table
     ip route
@@ -233,79 +316,46 @@ ok: [h4] =>
     #
     ip link set dev eth1 up
     set +e
-    ip addr del 172.31.1.4/24 dev eth1 2>/dev/null
+    ip addr del 172.16.3.4/24 dev eth1 2>/dev/null
     set -e
-    ip addr add 172.31.1.4/24 dev eth1
+    ip addr add 172.16.3.4/24 dev eth1
     ip link set eth1 mtu 1500
     #
     # Add routes to IPv4 address pools pointing to the first neighbor on the first link
     #
     # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
     #
+    # lan prefix: 172.16.0.0/16 local subnet: 172.16.3.0/24
+    set +e
+    ip route del 172.16.0.0/16 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.3.6
+    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.3.0/24
+    set +e
+    ip route del 10.0.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.3.6
+    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.3.0/24
+    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.3.0/24
+    set +e
+    ip route del 10.1.0.0/16 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.3.6
+    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.3.0/24
+    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.3.0/24
+    set +e
+    ip route del 10.2.0.0/24 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.3.6
     #
     # Print the final routing table
     ip route
-ok: [s2] => 
-  msg: |-
-    initial configuration for s2
-    =========================================
-    hostname s2
-    !
-    no ip domain lookup
-    !
-    lldp run
-    !
-    ip host h1 172.31.1.1
-    ip host h2 172.31.1.2
-    ip host h3 172.31.1.3
-    ip host h4 172.31.1.4
-    ip host s1 10.0.0.5
-    !
-    ip routing
-    !
-  
-    !
-    !
-    interface Loopback0
-     ip address 10.0.0.6 255.255.255.255
-    !
-    interface GigabitEthernet1
-     no lldp transmit
-     no lldp receive
-    !
-    interface GigabitEthernet2
-     no shutdown
-     description s2 -> s1
-    !
-    interface GigabitEthernet3
-     no shutdown
-     description [Access VLAN red] s2 -> h2
-    !
-    interface GigabitEthernet4
-     no shutdown
-     description [Access VLAN blue] s2 -> h4
-    !
-    interface BDI700
-     no shutdown
-     description VLAN red (700) -> [s1,h1,h2]
-    !
-    interface BDI701
-     no shutdown
-     description VLAN blue (701) -> [h3,s1,h4]
-    !
-    !
-    line vty 0 4
-     exec-timeout 0 0
-    !
-    no banner exec
-    no banner login
-    no banner incoming
 
 TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [h3]
 ok: [h1]
 ok: [h2]
 ok: [s1]
+ok: [h3]
 ok: [h4]
 ok: [s2]
 
@@ -327,20 +377,20 @@ ok: [h3]
 ok: [h4]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
-changed: [h3 -> localhost]
-changed: [h4 -> localhost]
 changed: [h1 -> localhost]
+changed: [h4 -> localhost]
+changed: [h3 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-NTvRarJG-h1.sh] **********
-changed: [h2 -> localhost]
-changed: [h3 -> localhost]
-changed: [h4 -> localhost]
+TASK [Initial container configuration via /tmp/config-cjqKOtwW-h1.sh] **********
 changed: [h1 -> localhost]
+changed: [h3 -> localhost]
+changed: [h2 -> localhost]
+changed: [h4 -> localhost]
 
 TASK [file] ********************************************************************
-changed: [h1 -> localhost]
 changed: [h4 -> localhost]
+changed: [h1 -> localhost]
 changed: [h3 -> localhost]
 changed: [h2 -> localhost]
 
@@ -352,6 +402,7 @@ ok: [s2]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=vlan)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=ospf)
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [s1]
@@ -368,56 +419,46 @@ ok: [s1] =>
     =========================================
     !
     bridge-domain 701
-     member GigabitEthernet2 service-instance 701
-     member GigabitEthernet4 service-instance 701
     !
     bridge-domain 700
      member GigabitEthernet2 service-instance 700
      member GigabitEthernet3 service-instance 700
     !
     interface GigabitEthernet2
-     service instance 701 ethernet
-      encapsulation dot1q 701
-      rewrite ingress tag pop 1
-      rewrite egress tag push dot1q 701
      service instance 700 ethernet
-      encapsulation untagged
+      encapsulation dot1q 700
+      rewrite ingress tag pop 1
+      rewrite egress tag push dot1q 700
     !
     interface GigabitEthernet3
      service instance 700 ethernet
       encapsulation untagged
     !
-    interface GigabitEthernet4
-     service instance 701 ethernet
-      encapsulation untagged
+    interface GigabitEthernet2.1
+     encapsulation dot1Q 701
 ok: [s2] => 
   msg: |-
     vlan configuration for s2
     =========================================
     !
     bridge-domain 701
-     member GigabitEthernet2 service-instance 701
-     member GigabitEthernet4 service-instance 701
     !
     bridge-domain 700
      member GigabitEthernet2 service-instance 700
      member GigabitEthernet3 service-instance 700
     !
     interface GigabitEthernet2
-     service instance 701 ethernet
-      encapsulation dot1q 701
-      rewrite ingress tag pop 1
-      rewrite egress tag push dot1q 701
      service instance 700 ethernet
-      encapsulation untagged
+      encapsulation dot1q 700
+      rewrite ingress tag pop 1
+      rewrite egress tag push dot1q 700
     !
     interface GigabitEthernet3
      service instance 700 ethernet
       encapsulation untagged
     !
-    interface GigabitEthernet4
-     service instance 701 ethernet
-      encapsulation untagged
+    interface GigabitEthernet2.1
+     encapsulation dot1Q 701
 
 TASK [Find configuration deployment deploy_script for vlan] ********************
 ok: [s1]
@@ -427,6 +468,75 @@ TASK [Deploy vlan configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for s1, s2
 
 TASK [ios_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/csr.j2] ***
+changed: [s1]
+changed: [s2]
+
+TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [s1]
+ok: [s2]
+
+TASK [Find configuration template for ospf] ************************************
+ok: [s1]
+ok: [s2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [s1] => 
+  msg: |-
+    ospf configuration for s1
+    =========================================
+    router ospf 1
+     router-id 10.0.0.5
+     passive-interface GigabitEthernet4
+  
+  
+    !
+    interface Loopback0
+    !
+     ip ospf 1 area 0.0.0.0
+    !
+    interface GigabitEthernet4
+    ! s1 -> h3
+     ip ospf 1 area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    interface GigabitEthernet2.1
+    ! s1 -> s2
+     ip ospf 1 area 0.0.0.0
+     ip ospf network point-to-point
+    !
+ok: [s2] => 
+  msg: |-
+    ospf configuration for s2
+    =========================================
+    router ospf 1
+     router-id 10.0.0.6
+     passive-interface GigabitEthernet4
+  
+  
+    !
+    interface Loopback0
+    !
+     ip ospf 1 area 0.0.0.0
+    !
+    interface GigabitEthernet4
+    ! s2 -> h4
+     ip ospf 1 area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    interface GigabitEthernet2.1
+    ! s2 -> s1
+     ip ospf 1 area 0.0.0.0
+     ip ospf network point-to-point
+    !
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+ok: [s1]
+ok: [s2]
+
+TASK [Deploy ospf configuration] ***********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for s1, s2
+
+TASK [ios_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/ios.j2] ***
 changed: [s2]
 changed: [s1]
 
@@ -438,19 +548,15 @@ h1                         : ok=12   changed=3    unreachable=0    failed=0    s
 h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 h3                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 h4                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-s1                         : ok=17   changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-s2                         : ok=17   changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+s1                         : ok=24   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+s2                         : ok=24   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 
 
 
-The devices under test are simple bridges with a VLAN trunk between
-them. One of the trunk members is a native VLAN. Both VLANs are
-using the same IP prefix to identify potential inter-VLAN leaking.
+The VLAN trunk between layer-3 switches has a combination
+of bridged and routed VLANs. If this test case does not produce
+a usable network, remove the 'vlan.mixed_trunk' device feature flag.
 
-* h1 and h2 should be able to ping each other
-* h3 and h4 should be able to ping each other
-* h1 should not be able to reach h3
-
-Please note it might take a while for the lab to work due to
-STP learning phase
+* h1 and h2 should be able to ping each other, but not h3 or h4
+* h3 and h4 should be able to ping each other, but not h1 or h2
 
