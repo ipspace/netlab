@@ -308,9 +308,14 @@ These devices support additional control-plane protocols or BGP address families
 **Notes:**
 * FRHP = First-Hop Redundancy Protocol (anycast gateway or VRRP)
 
-```{tip}
-See [integration test results](https://release.netlab.tools/) for more details.
-```
+(platform-layer-2-support)=
+The layer-2 control plane [configuration modules](module-reference.md) are supported on these devices[^NSM]:
+
+| Operating system      | [Spanning<br>Tree Protocol](module/stp.md) | [Link Aggregation<br>Groups](module/lag.md) |
+| --------------------- |:--:|:--:|
+| Arista EOS            | ✅ | ✅ |
+| Cumulus Linux         | ✅ | ✅ |
+| FRR                   | ✅ | ✅ |
 
 (platform-dataplane-support)=
 The data plane [configuration modules](module-reference.md) are supported on these devices[^NSM]:
@@ -352,6 +357,10 @@ Network services [configuration modules](module-reference.md) are also supported
 | Operating system      | [DHCP](module/dhcp.md) | [DHCPv6](module/dhcp.md) |
 | --------------------- | :--: | :--: |
 | dnsmasq               | ✅   |  ✅  |
+
+```{tip}
+See [integration test results](https://release.netlab.tools/) for more details.
+```
 
 ## IPv6 Support
 
