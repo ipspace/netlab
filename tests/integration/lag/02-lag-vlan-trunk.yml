@@ -1,0 +1,40 @@
+---
+message: |
+  The device under test is a layer-2 switch connected with a LAG VLAN trunk to
+  another layer-2 switch. Host in the same VLAN should be able to ping each
+  other.
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h1, h2, h3, h4 ]
+    device: linux
+    provider: clab
+  switches:
+    members: [ dut, xs ]
+    module: [ lag, vlan ]
+  probe:
+    members: [ xs ]
+    device: frr
+
+vlans:
+  v1:
+    links: [ dut-h1, xs-h2 ]
+  v2:
+    links: [ dut-h3, xs-h4 ]
+
+links:
+- vlan.trunk: [ v1, v2 ]
+  lag.members: [ dut-xs, dut-xs ]
+
+validate:
+  ping_v1:
+    description: Pinging H2 from H1 on VLAN v1
+    nodes: [ h1 ]
+    wait_msg: Waiting for STP to enable the ports
+    wait: 45
+    plugin: ping('h2')
+  ping_v2:
+    description: Pinging H4 from H3 on VLAN v2
+    wait: 10
+    nodes: [ h3 ]
+    plugin: ping('h4')

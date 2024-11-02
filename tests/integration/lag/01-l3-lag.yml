@@ -1,36 +1,25 @@
 ---
 message: |
-  The devices under test are a pair of routers with a L3 LAG link between them
-  h1 and h2 should be able to ping each other
+  The device under is a router with a L3 LAG link connected to a FRR device. The
+  devices should be able to establish an OSPF adjacency.
+
 groups:
-  _auto_create: True
-  hosts:
-    members: [ h1, h2 ]
-    device: linux
-    provider: clab
   switches:
-    members: [ r1,r2,r3 ]
+    members: [ dut, xr ]
     module: [ lag, ospf ]
 
+nodes:
+  dut:
+  xr:
+    device: frr
+
 links:
-- lag.members: [r1-r2,r1-r2]
-- lag.ifindex: 0 # Name it as 'bond0' -> First one becomes 'bond1'
-  lag.members: 
-  - r2:
-      ifindex: 3
-    r3:
-      ifindex: 3
-  - r2:
-      ifindex: 4
-    r3:
-      ifindex: 4
-- h1-r1
-- r3-h2
+- lag.members: [ dut-xr, dut-xr ]
 
 validate:
-  ping:
-    description: Pinging H2 from H1
-    nodes: [ h1 ]
-    wait_msg: Waiting for STP to enable the ports
-    wait: 45
-    plugin: ping('h2')
+  adj:
+    description: Check OSPF adjacencies
+    wait_msg: Waiting for OSPF adjacency process to complete
+    wait: 50
+    nodes: [ xr ]
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id)
