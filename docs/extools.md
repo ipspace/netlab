@@ -48,6 +48,7 @@ _netlab_ includes definitions for the following tools:
 
    extool/graphite.md
    extool/suzieq.md
+   extool/edgeshark.md
 ```
 
 It's relatively easy to add your own tools to the **defaults.tools** dictionary. Read [](dev/extools.md) for more details.
