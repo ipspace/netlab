@@ -66,6 +66,16 @@ def check_dhcp_clients(node: Box, topology: Box) -> None:
       category=log.IncorrectType,
       module='quirks')
 
+def check_l3_lag(node: Box, topology: Box) -> None:
+  for intf in node.interfaces:
+    if intf.type != 'lag':
+      continue
+    if intf.get('ipv4',False) is not False or intf.get('ipv6',False) is not False:
+      log.error(
+        f"Interface {intf.ifname} on Arista EOS node {node.name} cannot have IPv4/IPv6 addresses",
+        category=log.IncorrectType,
+        module='quirks')
+
 def configure_ceos_attributes(node: Box, topology: Box) -> None:
   serialnumber = node.eos.get('serialnumber',None)
   systemmacaddr = node.eos.get('systemmacaddr',None)
@@ -107,5 +117,7 @@ class EOS(_Quirks):
       check_shared_mac(node,topology)
     if 'dhcp' in mods:
       check_dhcp_clients(node,topology)
+    if 'lag' in mods:
+      check_l3_lag(node,topology)
     if 'eos' in node:
       configure_ceos_attributes(node,topology)
