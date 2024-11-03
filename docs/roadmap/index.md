@@ -8,4 +8,5 @@ These documents describe potential future _netlab_ functionality. Please feel fr
 
    tools.md
    external-interface.md
+   usage.md
 ```
