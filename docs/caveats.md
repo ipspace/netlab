@@ -134,7 +134,7 @@ group_vars:
   netlab_ssh_args: "-o KexAlgorithms=+diffie-hellman-group-exchange-sha1 -o PubkeyAcceptedKeyTypes=ssh-rsa -o HostKeyAlgorithms=+ssh-rsa"
 ```
 
-You can change the additional SSH arguments with the node **netlab_ssh_args** parameter or with the **defaults.devices._device_.group_vars.netlab_ssh_args** [system default](defaults).
+You can change the additional SSH arguments with the node **netlab_ssh_args** parameter or with the **defaults.devices._device_.group_vars.netlab_ssh_args** [system default](defaults.md).
 
 Additionally, you might have to execute `sudo update-crypto-policies --set LEGACY` on AlmaLinux/RHEL.
 

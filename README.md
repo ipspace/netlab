@@ -6,7 +6,7 @@
 * Create *containerlab* configuration file
 * Create Ansible inventory and configuration file
 * Create IPv4 and IPv6 addressing plan and OSPFv2, OSPFv3, EIGRP, IS-IS, and BGP routing design
-* Configure IPv4, IPv6, DHCP, DHCPv6, VLANs, VRFs, VXLAN, LLDP, BFD, OSPFv2, OSPFv3, EIGRP, IS-IS, BGP, RIPv2, RIPng, VRRP, anycast gateways, route maps, prefix lists, AS-path prefix lists, route redistribution, default route origination, MPLS, BGP-LU, L3VPN (VPNv4 + VPNv6), 6PE, EVPN, SR-MPLS, or SRv6 on your lab devices.
+* Configure IPv4, IPv6, DHCP, DHCPv6, VLANs, VRFs, VXLAN, LLDP, BFD, OSPFv2, OSPFv3, EIGRP, IS-IS, BGP, RIPv2, RIPng, VRRP, LACP, STP, anycast gateways, route maps, prefix lists, AS-path prefix lists, route redistribution, default route origination, MPLS, BGP-LU, L3VPN (VPNv4 + VPNv6), 6PE, EVPN, SR-MPLS, or SRv6 on your lab devices.
 
 Instead of wasting time creating lab topology in a GUI and configuring boring details, you'll start with a lab preconfigured according to your specifications.
 
@@ -14,7 +14,7 @@ Interested? [Read the documentation](https://netlab.tools) and [installation gui
 
 ## Releases
 
-The latest release is [release 1.9.1](https://github.com/ipspace/netlab/releases/tag/release_1.9.1). It should be pretty stable, but if you encounter bugs, please report them as [GitHub issues](https://github.com/ipspace/netlab/issues/new/choose) and use release [1.9.0-post1](https://github.com/ipspace/netlab/releases/tag/release_1.9.0-post1) or [1.8.4-post2](https://github.com/ipspace/netlab/releases/tag/release_1.8.4-post2).
+The latest release is [release 1.9.2](https://github.com/ipspace/netlab/releases/tag/release_1.9.2). It should be pretty stable, but if you encounter bugs, please report them as [GitHub issues](https://github.com/ipspace/netlab/issues/new/choose) and use release [1.9.1](https://github.com/ipspace/netlab/releases/tag/release_1.9.1) or [1.8.4-post2](https://github.com/ipspace/netlab/releases/tag/release_1.8.4-post2).
 
 <!--
 If you encounter bugs using release 1.7.x, please downgrade to [1.6.4](https://github.com/ipspace/netlab/releases/tag/release_1.6.4) and [open a GitHub issue](https://github.com/ipspace/netlab/issues).

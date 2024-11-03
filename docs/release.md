@@ -1,6 +1,16 @@
 Release Notes
 =============
 
+**[Release 1.9.2](release-1.9.2) (2024-11-03)**
+
+* [](module-stp)
+* [](module-lag)
+* The **[netlab exec](netlab-exec)** command can execute the same command on a set of network devices
+* _netlab_ [supports](platform-devices) Cisco IOS on Linux (IOL), IOL layer-2 image, and IOSv/IOSvL2 in [*vrnetlab* containers](clab-vrnetlab)
+* [Edgeshark](https://github.com/siemens/edgeshark) can be used [as an external tool](extool-edgeshark) to provide GUI-based access to lab packet capture
+
+[More details...](release-1.9.2)
+
 **[Release 1.9.1](release-1.9.1) (2024-10-05)**
 
 * [**netlab capture**](netlab-capture) command implements packet capture on VM- or container interfaces
@@ -8,6 +18,8 @@ Release Notes
 * RIPv2/Ripng [route import](rip-params) and [VRF instances](rip-vrf)
 * [Configurable RIPv2/RIPng protocol timers](rip-timers)
 * Support for [Cisco IOSv layer-2 image](https://developer.cisco.com/docs/modeling-labs/iosvl2/#iosvl2)
+
+[More details...](release-1.9.1)
 
 **[Release 1.9.0-post1](release-1.9.0-post1) (2024-08-26)**
 
