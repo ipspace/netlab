@@ -19,3 +19,7 @@ Finally, we would need a number of **timestamps**:
 The user could inspect the usage data with **netlab usage show**, reset it with **netlab usage reset**, and upload it with **netlab usage upload**.
 
 While it's relatively easy to implement the data collection part, the infrastructure supporting the uploads remains a mystery.
+
+## Option A - separate GitHub project ```netlab_usage```
+One option is to use GitHub for collecting usage data: Using a separate repo, Netlab would push and commit the usage file to a location under that repo.
+Security wise, this would require an access token with limited write permissions (hence the separate repo - not sure if we could restrict access well enough within 1 repo)
