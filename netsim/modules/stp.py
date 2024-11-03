@@ -10,24 +10,19 @@ from . import _Module
 
 class STP(_Module):
 
-  # Check for device support for globally selected STP protocol variant
-  def node_pre_transform(self, node: Box, topology: Box) -> None:
-
-    protocol = topology.get("stp.protocol","stp")
+  # Check stp.supported_protocols, stp.priority, stp.port_priority, per VLAN support and stp.enable_per_port
+  def node_post_transform(self, node: Box, topology: Box) -> None:
+    if not node.get("stp.enable", True):   # if STP is disabled, don't complain about feature support
+      return
     features = devices.get_device_features(node,topology.defaults)
 
+    protocol = topology.get("stp.protocol","stp")
     supported_protocols = features.get("stp.supported_protocols",[])
     if protocol not in supported_protocols:
       log.error(
         f'node {node.name} (device {node.device}) does not support requested STP protocol ({protocol})',
         log.IncorrectValue,
         'stp')
-
-  # Check max port_priority values
-  def node_post_transform(self, node: Box, topology: Box) -> None:
-    if not node.get("stp.enable", True):
-      return
-    features = devices.get_device_features(node,topology.defaults)
 
     priority = node.get('stp.priority',0)
     if priority and (priority % 4096):
