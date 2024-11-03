@@ -416,12 +416,12 @@ class VRF(_Module):
 
     init_vrf_static_ids(topology)
 
+    normalize_vrf_ids(topology)                         # Normalize global and node vrfs, if any
     if not 'vrfs' in topology:                          # No global VRFs, nothing to do
       return
 
     create_vrf_links(topology)                          # Create VRF links (and remove 'links' attribute)
     log.exit_on_error()
-    normalize_vrf_ids(topology)
     populate_vrf_static_ids(topology)
     set_vrf_ids(topology,topology)
     set_import_export_rt(topology,topology)
