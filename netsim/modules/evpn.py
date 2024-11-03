@@ -186,7 +186,7 @@ def register_static_transit_vni(topology: Box) -> None:
       continue
 
     for vrf_name,vrf_data in n.vrfs.items():
-      if vrf_data.get('evpn.transit_vni',None):
+      if vrf_data and vrf_data.get('evpn.transit_vni',None):
         log.error(
           f'evpn.transit_vni can be specified only on global VRFs (found in {vrf_name} on {n.name}',
           log.IncorrectValue,
