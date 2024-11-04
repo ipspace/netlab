@@ -1,0 +1,216 @@
+bgp:
+  advertise_loopback: true
+  as: 65000
+  community:
+    ebgp:
+    - standard
+    ibgp:
+    - standard
+    - extended
+  next_hop_self: true
+evpn:
+  session:
+  - ibgp
+groups:
+  as65000:
+    members:
+    - n1
+    - n2
+input:
+- topology/input/null-vrfs.yml
+- package:topology-defaults.yml
+links:
+- interfaces:
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.1/30
+    node: n1
+    vrf: node
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.2/30
+    node: n2
+  linkindex: 1
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.0/30
+  type: p2p
+module:
+- bgp
+- vrf
+- evpn
+name: input
+nodes:
+  n1:
+    af:
+      ipv4: true
+      vpnv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65000
+      community:
+        ebgp:
+        - standard
+        - large
+        ibgp:
+        - standard
+        - large
+        - extended
+        ibgp_localas:
+        - standard
+        - large
+        - extended
+      ipv4: true
+      neighbors:
+      - _source_ifname: lo
+        activate:
+          ipv4: true
+        as: 65000
+        evpn: true
+        ipv4: 10.0.0.2
+        name: n2
+        type: ibgp
+      next_hop_self: true
+      router_id: 10.0.0.1
+    box: quay.io/frrouting/frr:10.0.1
+    clab:
+      binds:
+      - clab_files/n1/daemons:/etc/frr/daemons
+      - clab_files/n1/hosts:/etc/hosts
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts
+      kind: linux
+    device: frr
+    evpn:
+      session:
+      - ibgp
+    hostname: clab-input-n1
+    id: 1
+    interfaces:
+    - ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.1/30
+      linkindex: 1
+      mtu: 1500
+      name: n1 -> n2
+      neighbors:
+      - ifname: eth1
+        ipv4: 10.1.0.2/30
+        node: n2
+      type: p2p
+      vrf: node
+    loopback:
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.1/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.101
+      mac: 08:4f:a9:00:00:01
+    module:
+    - bgp
+    - vrf
+    - evpn
+    mtu: 1500
+    name: n1
+    vrf:
+      as: 65000
+    vrfs:
+      node:
+        af:
+          ipv4: true
+        bgp:
+          import:
+            connected:
+              auto: true
+        export:
+        - '65000:1'
+        id: 1
+        import:
+        - '65000:1'
+        rd: '65000:1'
+        vrfidx: 100
+  n2:
+    af:
+      ipv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65000
+      community:
+        ebgp:
+        - standard
+        - large
+        ibgp:
+        - standard
+        - large
+        - extended
+        ibgp_localas:
+        - standard
+        - large
+        - extended
+      ipv4: true
+      neighbors:
+      - _source_ifname: lo
+        activate:
+          ipv4: true
+        as: 65000
+        evpn: true
+        ipv4: 10.0.0.1
+        name: n1
+        type: ibgp
+      next_hop_self: true
+      router_id: 10.0.0.2
+    box: quay.io/frrouting/frr:10.0.1
+    clab:
+      binds:
+      - clab_files/n2/daemons:/etc/frr/daemons
+      - clab_files/n2/hosts:/etc/hosts
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts
+      kind: linux
+    device: frr
+    evpn:
+      session:
+      - ibgp
+    hostname: clab-input-n2
+    id: 2
+    interfaces:
+    - ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.2/30
+      linkindex: 1
+      mtu: 1500
+      name: n2 -> n1
+      neighbors:
+      - ifname: eth1
+        ipv4: 10.1.0.1/30
+        node: n1
+        vrf: node
+      type: p2p
+    loopback:
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.2/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.102
+      mac: 08:4f:a9:00:00:02
+    module:
+    - bgp
+    - vrf
+    - evpn
+    mtu: 1500
+    name: n2
+    vrf:
+      as: 65000
+provider: clab
+vrf:
+  as: 65000
