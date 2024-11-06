@@ -31,7 +31,7 @@ See https://infohub.delltechnologies.com/en-us/l/dell-emc-smartfabric-os10-virtu
 Note: Anycast also requires VLT configuration on the switch, which Netlab currently does not do
 
 """
-def check_anycast_gateways(node: Box):
+def check_anycast_gateways(node: Box) -> None:
   err_data = []
   for intf in node.get('interfaces',[]):
     if intf.type != 'svi' and intf.get('gateway.anycast',None):
@@ -40,7 +40,7 @@ def check_anycast_gateways(node: Box):
   if err_data:
     report_quirk(
       f'Dell OS10 (node {node.name}) does not support anycast on non-SVI interfaces',
-      quirk='svi_anycast',
+      quirk='non_svi_anycast',
       more_data=err_data,
       node=node)
 
