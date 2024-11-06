@@ -1,27 +1,21 @@
+{% if gateway.anycast.mac is defined %}
+ip virtual-router mac-address {{ gateway.anycast.mac | hwaddr('linux') }}
+{% endif %}
+
+{% if 'vrrp' in gateway %}
+! Enable VRRPv3, OS10 defaults to VRRPv2 if not configured
+vrrp version 3
+{% endif %}
+
 {% for intf in interfaces if intf.gateway.protocol is defined %}
-
-{%   if loop.first %}
-!
-{%     if gateway.anycast.mac is defined %}
-{% set anycast_mac = '{}{}:{}{}:{}{}:{}{}:{}{}:{}{}'.format(*gateway.anycast.mac|replace('.', '')) -%}
-ip virtual-router mac-address {{ anycast_mac }}
-{%     endif %}
-{%     if intf.gateway.protocol == 'vrrp' %}
-vrrp version {{ 3 if 'ipv6' in af else 2 }}
-{%     endif %}
-!
-{%   endif %}
-
 !
 interface {{ intf.ifname }}
-
 {%   if intf.gateway.protocol == 'anycast' and 'ipv4' in intf.gateway %}
   ip virtual-router address {{ intf.gateway.ipv4|ipaddr('address') }}
 {%   endif %}
 {%   if intf.gateway.protocol == 'anycast' and 'ipv6' in intf.gateway %}
   ipv6 virtual-router address {{ intf.gateway.ipv6|ipaddr('address') }}
 {%   endif %}
-
 
 {%   if intf.gateway.protocol == 'vrrp' %}
 
