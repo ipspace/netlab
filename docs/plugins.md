@@ -14,6 +14,7 @@
    plugins/check.config.md
    plugins/fabric.md
    plugins/multilab.md
+   plugins/vrrp.version.md
 ```
 
 Plugins needed by a topology file are listed in the **plugin** top-level element, for example:
