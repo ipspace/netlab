@@ -44,6 +44,8 @@ def check_anycast_gateways(node: Box) -> None:
       more_data=err_data,
       node=node)
 
+
+
 class OS10(_Quirks):
 
   @classmethod

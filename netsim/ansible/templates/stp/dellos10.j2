@@ -1,9 +1,9 @@
 {% if not stp.enable|default(True) %}
 spanning-tree disable
 {% else %}
-{%  set proto_map = { 'stp': 'rstp', 'rstp': 'rstp', 'pvrst': 'rapid-pvst', 'mstp': 'mstp' } %}
+{%  set proto_map = { 'stp': 'rstp', 'rstp': 'rstp', 'pvrst': 'rapid-pvst', 'mstp': 'mst' } %}
 {%  set mode = proto_map[stp.protocol] %}
-{# options are rstp, mstp or rapid-pvst (default if not set) #}
+{# options are rstp, mst or rapid-pvst (default if not set) #}
 spanning-tree mode {{ mode }}
 
 {%  if stp.protocol=='stp' %}
@@ -34,8 +34,11 @@ interface {{ ifdata.ifname }}
 #
 # Use 4x port_priority to get the same 4-bit value on the wire
 #
+{%     if stp.protocol=='pvrst' %}
  spanning-tree vlan {{ ifdata.vlan.trunk_id|default(ifdata.vlan.access_id) }} priority {{ ifdata.stp.port_priority * 4 }}
-#
+{%     else %}
+ spanning-tree rstp priority {{ ifdata.stp.port_priority * 4 }}
+{%     endif %}
 {%    endif %} 
 {%   endif %}
 {% endfor %}
