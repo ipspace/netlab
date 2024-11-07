@@ -335,6 +335,44 @@ def augment_node_device_data(n: Box, defaults: Box) -> None:
     n.pop('_daemon_config',None)
 
 '''
+Set addresses of the main loopback interface
+'''
+def loopback_interface(n: Box, pools: Box, topology: Box) -> None:
+  n.loopback.type = 'loopback'
+  n.loopback.neighbors = []
+  n.loopback.virtual_interface = True
+  lbname = devices.get_loopback_name(n,topology)
+  if lbname:
+    n.loopback.ifname = lbname
+    n.loopback.ifindex = 0
+
+  pool = n.get('loopback.pool','loopback')
+  prefix_list = addressing.get(pools,[ pool ],n.id)
+
+  for af in prefix_list:
+    if prefix_list[af] is True:
+      log.error(
+        f"Address pool {pool} cannot contain unnumbered/LLA addresses",
+        category=log.IncorrectType,
+        module='nodes')
+    elif not n.loopback[af] and not (prefix_list[af] is False):
+      if af == 'ipv6':
+        if prefix_list[af].prefixlen == 128:
+          n.loopback[af] = str(prefix_list[af])
+        else:
+          n.loopback[af] = addressing.get_addr_mask(prefix_list[af],1)
+      else:
+        n.loopback[af] = str(prefix_list[af])
+      n.af[af] = True
+
+  for af in log.AF_LIST:
+    if af in n.loopback and not isinstance(n.loopback[af],str):
+      log.error(
+        f'{af} address on the main loopback interface of node {n.name} must be a CIDR prefix',
+        category=log.IncorrectType,
+        module='nodes')  
+
+'''
 Main node transformation code
 
 * set node ID
@@ -366,32 +404,7 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
 
     n.af = {}                                                 # Nodes must have AF attribute
     if n.get('role','') != 'host':
-      n.loopback.type = 'loopback'
-      n.loopback.neighbors = []
-      n.loopback.virtual_interface = True
-      prefix_list = addressing.get(pools,[ n.get('loopback.pool','loopback') ],n.id)
-      for af in prefix_list:
-        if isinstance(prefix_list[af],bool):
-          if prefix_list[af]:
-            log.fatal(
-              f"Loopback addresses must be valid IP prefixes, not 'True': {prefix_list}",
-              module='topology',
-              header=True)
-        elif not n.loopback[af]:
-          if af == 'ipv6':
-            if prefix_list[af].prefixlen == 128:
-              n.loopback[af] = str(prefix_list[af])
-            else:
-              n.loopback[af] = addressing.get_addr_mask(prefix_list[af],1)
-          else:
-            n.loopback[af] = str(prefix_list[af])
-          n.af[af] = True
-
-    if n.get('role','') != 'host':
-      lbname = devices.get_loopback_name(n,topology)
-      if lbname:
-        n.loopback.ifname = lbname
-        n.loopback.ifindex = 0
+      loopback_interface(n,pools,topology)
 
     augment_mgmt_if(n,defaults,topology.addressing.mgmt)
     providers.execute_node("augment_node_data",n,topology)
