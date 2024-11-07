@@ -112,7 +112,6 @@ def check_group_data_structure(
   '''
 
   list_of_modules = modules.list_of_modules(topology)
-  group_attr = topology.defaults.attributes.group
 
   # Allow provider- and tool- specific node attributes
   extra = get_object_attributes(['providers','tools'],topology)
@@ -128,6 +127,18 @@ def check_group_data_structure(
       continue
 
     gpath=f'{gpath}.{grp}'
+    g_type = gdata.get('type','node')
+    gt_values = ['node','vlan','vrf']
+    if g_type not in gt_values:
+      log.error(
+        f"Invalid group type for group {grp}; can be {','.join(gt_values)}",
+        category=log.IncorrectType,
+        module='groups')
+
+    g_namespace = [ f'{g_type}_group' ]
+    g_namespace.extend(topology.defaults.attributes[g_namespace[0]].get('_namespace',[]))
+    group_attr = topology.defaults.attributes[g_namespace[0]]
+
     g_modules = gdata.get('module',[])
     if g_modules:                           # Modules specified in the group -- we know what these nodes will use
       gm_source = 'group'
@@ -139,8 +150,8 @@ def check_group_data_structure(
       data=gdata,
       topology=topology,
       data_path=gpath,
-      data_name='group',
-      attr_list=[ 'group','node' ],
+      data_name=g_namespace[0],
+      attr_list=g_namespace,
       module='groups',
       modules=g_modules,
       module_source=gm_source,
