@@ -148,20 +148,21 @@ def create_vlan_service(vname: str, topology: Box) -> None:
     vlan_aware_bundle_service(vlan,vname,topology)
 
 """
-Validate that there's no evpn.bundle setting on node VRFs
+Validate that there are no evpn parameters on node VRFs
 """
 
-def validate_no_node_vrf_bundle(node: Box, topology: Box) -> None:
-  if not 'vrfs' in node:                                            # No VRFs defined in the node, move on
+def validate_no_node_vrf_attributes(node: Box, topology: Box) -> None:
+  if not 'vrfs' in node:                          # No VRFs defined in the node, move on
     return
-  for vname,vdata in node.vrfs.items():
-    if not vdata.get('evpn.bundle',None):                           # EVPN bundle not set in VRF, move on
+  for vname,vdata in node.vrfs.items():           # Iterate over VRFs
+    if not isinstance(vdata,Box):                 # We're still dealing with dirty data, just avoid this
       continue
-    log.error(
-      f'VRF {vname} in node {node.name} cannot have evpn.bundle attribute',
-      log.IncorrectValue,
-      'evpn',
-      hint='node_bundle')
+    if 'evpn' in vdata:
+      log.error(
+        f'VRF {vname} in node {node.name} cannot have evpn attributes',
+        log.IncorrectValue,
+        'evpn',
+        hint='node_attr')
 
 """
 Validate transit VNI values and register them with the VNI set
@@ -180,17 +181,6 @@ def register_static_transit_vni(topology: Box) -> None:
           'evpn')
         continue
       vni_set.add(transit_vni)
-
-  for n in topology.nodes.values():
-    if not 'vrfs' in n:
-      continue
-
-    for vrf_name,vrf_data in n.vrfs.items():
-      if vrf_data.get('evpn.transit_vni',None):
-        log.error(
-          f'evpn.transit_vni can be specified only on global VRFs (found in {vrf_name} on {n.name}',
-          log.IncorrectValue,
-          'evpn')
 
 """
 Set transit VNI values for symmetrical IRB VRFs (REFACTOR to use _dataplane)
@@ -407,7 +397,7 @@ class EVPN(_Module):
       module='evpn')
 
   def node_pre_transform(self, node: Box, topology: Box) -> None:
-    validate_no_node_vrf_bundle(node,topology)
+    validate_no_node_vrf_attributes(node,topology)
 
   def module_post_node_transform(self, topology: Box) -> None:
     validate_evpn_lists(topology,'topology',topology,create=True)
