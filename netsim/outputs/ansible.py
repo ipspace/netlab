@@ -81,7 +81,7 @@ def get_host_addresses(topology: Box) -> Box:
     if 'loopback' in node:                                  # Create a list of all usable interfaces
       intf_list = [ node.loopback ] + node.interfaces       # ... starting with loopback
       for af in ['ipv4','ipv6']:
-        if af in node.loopback:
+        if af in node.loopback and isinstance(node.loopback[af],str):
           lb = str(netaddr.IPNetwork(node.loopback[af]).ip) # Extract IP address from the CIDR prefix
           append_to_list(hosts[name],'loopback',lb)
 
