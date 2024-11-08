@@ -104,7 +104,7 @@ def validate_vlan_attributes(obj: Box, topology: Box) -> None:
     vlan_pool.extend(['vlan','lan'])
     pfx_list = links.assign_link_prefix(vdata,vlan_pool,topology.pools,topology.nodes,f'{obj_path}.{vname}')
     vdata.prefix = addressing.rebuild_prefix(pfx_list)
-    if not 'allocation' in vdata.prefix:
+    if vdata.prefix and not 'allocation' in vdata.prefix:
       vdata.prefix.allocation = 'id_based'
 
 """
@@ -652,7 +652,7 @@ def create_vlan_links(link: Box, v_attr: Box, topology: Box) -> None:
         for intf in link_data.interfaces:
           intf.vlan.mode = 'route'
       else:
-        link_data.prefix = prefix
+        link_data.prefix = prefix or {}                     # Normalize False to {}
 
       topology.links.append(link_data)
 
@@ -689,8 +689,8 @@ def create_loopback_vlan_links(topology: Box) -> None:
       link_data = { '_linkname': f'nodes.{n.name}.vlans.{vname}' }      # Create a vlan_member link with fake parent (nobody should ever use it)
       link_data = create_vlan_link_data(link_data,vname,'loopback',topology)
       prefix = topology.vlans[vname].get('prefix',None)                 # Copy VLAN prefix into link_data
-      if prefix:
-        link_data.prefix = prefix
+      if prefix is not None:
+        link_data.prefix = prefix or {}
 
       # Create interface data using fake parent interface
       fake_parent = data.get_box({'node': n.name})

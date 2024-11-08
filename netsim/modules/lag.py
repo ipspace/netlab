@@ -27,7 +27,7 @@ create_lag_member_links -- iterate over topology.links and expand any that have 
 def create_lag_member_links(l: Box, topology: Box) -> None:
   lag_members = l.lag.members
   l.lag.pop("members",None)                      # Remove explicit list of members
-  l2_ifdata = { 'type': "p2p", 'prefix': False } # Construct an L2 member link
+  l2_ifdata = { 'type': "p2p", 'prefix': {} }    # Construct an L2 member link
   for a in list(topology.defaults.lag.attributes.lag_l2_ifattr):
     if a in l:
       l2_ifdata[a] = l[a]
