@@ -41,4 +41,5 @@ You can set the **‌stp.enable** parameter in the **‌vlans** dictionary to en
 
 ## Interface Parameters
 
-* **stp.port_priority** (int 0..255, some platforms have lower max values and/or require multiples of N) -- STP port priority for selecting between multiple ports; ports are blocked based on priority (lower value = higher priority). The priority is sent over the wire (4 bits) as the most significant part of the port ID; it is used by the node *receiving* it (!) to decide which port(s) to unblock.
+* **stp.port_priority** (int 0..15) -- STP port priority for selecting between multiple ports; ports are blocked based on priority (lower value = higher priority). The priority is sent over the wire (4 bits) as the most significant part of the port ID; it is used by the node *receiving* it (!) to decide which port(s) to unblock. Note that on many platforms, the value that ends up in the configuration is a multiple (x16) of this attribute
+

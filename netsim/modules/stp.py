@@ -31,23 +31,9 @@ class STP(_Module):
             log.IncorrectValue,
             'stp')
 
-    port_priority = features.get('stp.port_priority', { 'max': 255 } )
     for intf in node.get('interfaces',[]):
       if 'stp' not in intf:
         continue
-      
-      val = intf.get('stp.port_priority',0)
-      if val > port_priority.max:
-        log.error(
-          f'node {node.name} (device {node.device}) only supports stp.port_priority up to {port_priority.max}, found {val}',
-          log.IncorrectValue,
-          'stp')
-      elif 'multiple' in port_priority and (val % port_priority.multiple):
-        log.error(
-          f'node {node.name} (device {node.device}) stp.port_priority {val} must be a multiple of {port_priority.multiple}',
-          log.IncorrectValue,
-          'stp')
-
       if 'enable' in intf.stp and not features.get('stp.enable_per_port',False):
         log.error(
           f'node {node.name} (device {node.device}) does not support enabling/disabling STP only on a specific port ({intf.ifname})',
