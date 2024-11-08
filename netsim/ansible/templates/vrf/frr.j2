@@ -4,7 +4,8 @@ set -e # Exit immediately when any command fails
 #
 
 # Create VRF tables
-{% for vname,vdata in vrfs.items() %}
+{% set _vrfs = vrfs|default({}) %}
+{% for vname,vdata in _vrfs.items() %}
 if [ ! -e /sys/devices/virtual/net/{{vname}} ]; then
 ip link add {{vname}} type vrf table {{ vdata.vrfidx }}
 fi
@@ -17,5 +18,7 @@ sysctl -qw net.ipv6.conf.{{ i.ifname }}.keep_addr_on_down=1
 ip link set {{ i.ifname }} master {{ i.vrf }}
 {% endfor %}
 
-{% include "frr.frr-config.j2" +%}
+{% if _vrfs %}
+{%   include "frr.frr-config.j2" +%}
+{% endif %}
 exit $?
