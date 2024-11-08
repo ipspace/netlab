@@ -129,6 +129,7 @@ def check_group_data_structure(
     gpath=f'{gpath}.{grp}'
     g_type = gdata.get('type','node')
     gt_values = ['node','vlan','vrf']
+    g_objects = topology.get(f'{g_type}s',{})
     if g_type not in gt_values:
       log.error(
         f"Invalid group type for group {grp}; can be {','.join(gt_values)}",
@@ -169,7 +170,8 @@ def check_group_data_structure(
 
     must_be_list(gdata,'module',gpath,create_empty=False,module='groups',valid_values=sorted(list_of_modules))
 
-    if 'node_data' in gdata:                 # Validate node_data attributes (if any)
+    # Validate node_data attributes (if any)
+    if 'node_data' in gdata and g_type == 'node':
       log.error(
         text=f'Group {grp} uses an obsolete attribute node_data. Migrate node parameters into group definition',
         category=Warning,
@@ -207,12 +209,12 @@ def check_group_data_structure(
       continue
 
     if prune_members:
-      gdata.members = [ n for n in gdata.members if n in topology.nodes or n in parent.groups ]
+      gdata.members = [ n for n in gdata.members if n in g_objects or n in parent.groups ]
     else:
       for n in gdata.members:
-        if not n in topology.nodes and not n in parent.groups:
+        if not n in g_objects and not n in parent.groups:
           log.error(
-            text=f'Member {n} of {grp_namespace}group {grp} is not a valid node or group name',
+            text=f'Member {n} of {grp_namespace}group {grp} is not a valid {g_type} or group name',
             category=log.IncorrectValue,
             module='groups')
 
@@ -275,11 +277,16 @@ def add_node_level_groups(topology: Box) -> None:
     must_be_list(n,'group',f'nodes.{name}')
 
     for grpname in n.group:
-      if not grpname in topology.groups:
-        topology.groups[grpname] = { 'members': [] }      # Create an empty new group if needed
+      # Sanity check for node groups
+      if topology.groups[grpname].get('type','node') != 'node':
+        log.error(
+          f"Cannot use the 'group' attribute in node {n.name} to add a node to a non-node group {grpname}",
+          category=log.IncorrectType,
+          module='groups')
+        continue
 
-      if not name in topology.groups[grpname].members:  # Node not yet in the target group
-        topology.groups[grpname].members.append(name)   # Add node to the end of the member list
+      # Add node name to the target group
+      data.append_to_list(topology.groups[grpname],'members',name)
 
 '''
 Check recursive group definitions
