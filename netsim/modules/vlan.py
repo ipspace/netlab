@@ -6,7 +6,7 @@ from box import Box
 
 from . import _Module,get_effective_module_attribute,_dataplane
 from ..utils import log
-from .. import data, utils
+from .. import data
 from ..data import get_empty_box,get_box,get_global_parameter
 from ..augment import devices,groups,links,addressing
 
@@ -850,11 +850,10 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
         vlan_ifdata.vlan.mode = vlan_mode
       vlan_ifdata.vlan.name = access_vlan
       vlan_ifdata.ifindex = node.interfaces[-1].ifindex + 1                 # Fill in the rest of interface data:
-      vlan_ifdata.ifname = utils.strings.eval_format(svi_name, {            # ... ifindex, ifname, description
-                              'vlan'  : vlan_data.id,
-                              'bvi'   : vlan_data.bridge_group,
-                              'ifname': ifdata.ifname,
-                              'topology': topology})                        # Name may depend on topology settings
+      vlan_ifdata.ifname = svi_name.format(                                 # ... ifindex, ifname, description
+                              vlan=vlan_data.id,
+                              bvi=vlan_data.bridge_group,
+                              ifname=ifdata.ifname)
       vlan_ifdata.name = f'VLAN {access_vlan} ({vlan_data.id})'
       vlan_ifdata.virtual_interface = True                                  # Mark interface as virtual
       vlan_ifdata.type = "svi"
