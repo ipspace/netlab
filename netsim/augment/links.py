@@ -419,12 +419,13 @@ def assign_link_prefix(
       link_path: str = 'links') -> Box:
 
   if 'prefix' in link:                                    # Does the link have prefix parameters?
+    if not link.prefix:                                   # There should be no prefix on this link, get out
+      link.pop('prefix',None)
+      return data.get_empty_box()
+
     pfx_data = addressing.parse_prefix(link.prefix,path=link_path)
     if log.debug_active('addr'):                          # pragma: no cover (debugging printout)
       print(f'link {link_path} got prefix {pfx_data} from {link.prefix}')
-    
-    if link.prefix is False:                              # There should be no prefix on this link, get out
-      return pfx_data
 
     if isinstance(link.prefix,str):                       # Is the prefix an IPv4 address?
       link.prefix = addressing.rebuild_prefix(pfx_data)   # ... convert it to prefix dictionary
@@ -990,7 +991,7 @@ def set_default_gateway(link: Box, nodes: Box) -> None:
   link.pop('host_count',None)
 
   # No IPv4 prefix on the link or unnumbered IPv4 link
-  if link.prefix is False or not 'ipv4' in link.prefix or isinstance(link.prefix.ipv4,bool):
+  if not 'ipv4' in link.prefix or isinstance(link.prefix.ipv4,bool):
     return
 
   if log.debug_active('links'):
