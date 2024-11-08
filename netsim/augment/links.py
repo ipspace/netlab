@@ -990,7 +990,7 @@ def set_default_gateway(link: Box, nodes: Box) -> None:
   link.pop('host_count',None)
 
   # No IPv4 prefix on the link or unnumbered IPv4 link
-  if not 'ipv4' in link.prefix or isinstance(link.prefix.ipv4,bool):
+  if link.prefix is False or not 'ipv4' in link.prefix or isinstance(link.prefix.ipv4,bool):
     return
 
   if log.debug_active('links'):
