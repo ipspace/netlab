@@ -115,6 +115,16 @@ def normalize_vrf_dict(obj: Box, topology: Box) -> None:
       obj.vrfs[vname] = {}
 
     vdata = obj.vrfs[vname]
+    if vname in topology.defaults.vrf.attributes.reserved:
+      r_list = ','.join(sorted(topology.defaults.vrf.attributes.reserved))
+      log.error(
+        f"Cannot use VRF {vname} in {obj_name} to avoid confusion with vendor built-in names",
+        more_hints=[
+          f'Reserved VRF names are {r_list}',
+          'Set defaults.vrf.attributes.reserved attribute to change that list' ],
+        category=log.IncorrectValue,
+        module='vrf')
+
     if 'rd' in vdata:
       if vdata.rd is None:      # RD set to None can be used to auto-generate RD while preventing RD inheritance
         continue                # ... skip the rest of the checks

@@ -55,7 +55,7 @@ These platforms support routing protocols in VRFs:
 | VyOS                  | ✅  | ✅  | ✅  |
 
 ```{note}
-* IS-IS and EIGRP cannot be run within a VRF, but both configuration modules are VRF-aware -- they will not try to configure IS-IS or EIGRP routing on VRF interfaces
+* You cannot run EIGRP within a VRF, but the configuration module is VRF-aware -- it will not try to configure EIGRP routing on VRF interfaces
 * IBGP within a VRF instance does not work. PE-routers and CE-routers MUST HAVE different BGP AS numbers
 * See [VRF Integration Tests Results](https://release.netlab.tools/_html/coverage.vrf) for more details.
 ```
@@ -85,6 +85,7 @@ The keys of the **vrfs** dictionary are VRF names; the values are VRF definition
 Empty VRF definition will get [default RD and RT values](default-vrf-values) assigned during the topology transformation process.
 
 ```{warning}
+* Some VRF names (for example, *‌base*, *‌mgmt*, *‌system*, and *‌global*) cannot be used because they're used internally by network operating systems.
 * Do not reuse VRF names when defining node-specific VRFs. To implement complex VPN topologies, a subtle interaction between global and node-specific VRFs is needed, and _netlab_ assumes that the VRFs with the same name refer to the same routing and forwarding instance.
 * Global VRFs will not be instantiated on a node using the _vrf_ module unless the node is attached to a [VRF link](module-vrf-interface). If you want to create a VRF that uses no external interfaces, add the VRF name to the node **‌vrfs** dictionary.
 * The **‌vrfs** dictionary and the _vrf_ module will be removed from a node with no VRF interfaces or [VRF loopback interfaces](vrf-loopback).
