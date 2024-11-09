@@ -35,7 +35,8 @@ VLANs are supported on these platforms:
 | Cisco Catalyst 8000v  | ✅  | ✅  | ❌   | ✅ | ✅ |
 | Cisco CSR 1000v       | ✅  | ✅  | ✅  | ✅ | ✅ |
 | Cisco Nexus OS        | ✅  | ✅  | ✅  | ✅  | ✅  |
-| Cumulus Linux         | ✅  | ✅  | ❌[❗](caveats-cumulus)  | ✅ | ✅ |
+| Cumulus Linux 4.x     | ✅  | ✅  | ❌[❗](caveats-cumulus)  | ✅ | ✅ |
+| Cumulus 5.x (NVUE)    | ✅  | ✅  | ❌[❗](caveats-cumulus)  | ✅ | ✅ |
 | Dell OS10             | ✅  | ✅  | ❌   | ✅ | ✅ |
 | FRR [❗](caveats-frr) | ✅  | ✅  | ✅  | ✅ | ✅ |
 | Juniper vMX           | ✅  | ✅  | ✅  | ✅ | ✅ |
