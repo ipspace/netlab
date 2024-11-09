@@ -37,8 +37,8 @@ TASK [Find configuration template for initial] *********************************
 ok: [r1]
 ok: [r2]
 ok: [s1]
-ok: [ros]
 ok: [s2]
+ok: [ros]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [r1] => 
@@ -102,6 +102,7 @@ ok: [r1] =>
     #
     # Set Ethernet interface MTU
     ip link set eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -187,6 +188,7 @@ ok: [r2] =>
     #
     # Set Ethernet interface MTU
     ip link set eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -276,6 +278,7 @@ ok: [s1] =>
     ip link set eth1 mtu 1500
     ip link set eth2 mtu 1500
     ip link set eth3 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -298,18 +301,22 @@ ok: [s1] =>
     !
     interface eth2
      no shutdown
+     description [Access VLAN red] s1 -> r1
      ! no ip address
     !
     interface eth3
      no shutdown
+     description [Access VLAN blue] s1 -> r2
      ! no ip address
     !
     interface eth1.701
      no shutdown
+     description [SubIf VLAN blue] s1 -> s2
      ! no ip address
     !
     interface eth1.700
      no shutdown
+     description [SubIf VLAN red] s1 -> s2
      ! no ip address
     !
     interface vlan700
@@ -412,6 +419,7 @@ ok: [s2] =>
     # Set Ethernet interface MTU
     ip link set eth1 mtu 1500
     ip link set eth2 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -439,18 +447,22 @@ ok: [s2] =>
     !
     interface eth1.701
      no shutdown
+     description [SubIf VLAN blue] s2 -> s1
      ! no ip address
     !
     interface eth1.700
      no shutdown
+     description [SubIf VLAN red] s2 -> s1
      ! no ip address
     !
     interface eth2.701
      no shutdown
+     description [SubIf VLAN blue] s2 -> ros
      ! no ip address
     !
     interface eth2.700
      no shutdown
+     description [SubIf VLAN red] s2 -> ros
      ! no ip address
     !
     interface vlan701
@@ -472,18 +484,15 @@ TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [r1]
 ok: [r2]
 ok: [s1]
-ok: [s2]
 ok: [ros]
+ok: [s2]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for r1, r2, s1, s2
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for ros
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [s1 -> localhost]
-changed: [s2 -> localhost]
 changed: [r1 -> localhost]
-changed: [r2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [r1]
@@ -495,9 +504,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, s1, s2
 
 TASK [template] ****************************************************************
-changed: [s2]
-changed: [s1]
 changed: [r1]
+changed: [s1]
+changed: [s2]
 changed: [r2]
 
 TASK [set_fact] ****************************************************************
@@ -507,8 +516,8 @@ ok: [s1]
 ok: [s2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r1]
 changed: [r2]
+changed: [r1]
 changed: [s1]
 changed: [s2]
 
@@ -575,12 +584,16 @@ ok: [s1] =>
     fi
     if [ ! -e /sys/devices/virtual/net/vlan700 ]; then
       brctl addbr vlan700
+  
+  
       ip link set dev vlan700 up
       ip addr flush dev vlan700
       ip addr add 172.16.0.2/24 dev vlan700
     fi
     if [ ! -e /sys/devices/virtual/net/vlan701 ]; then
       brctl addbr vlan701
+  
+  
       ip link set dev vlan701 up
       ip addr flush dev vlan701
       ip addr add 172.16.1.2/24 dev vlan701
@@ -617,12 +630,16 @@ ok: [s2] =>
     fi
     if [ ! -e /sys/devices/virtual/net/vlan701 ]; then
       brctl addbr vlan701
+  
+  
       ip link set dev vlan701 up
       ip addr flush dev vlan701
       ip addr add 172.16.1.3/24 dev vlan701
     fi
     if [ ! -e /sys/devices/virtual/net/vlan700 ]; then
       brctl addbr vlan700
+  
+  
       ip link set dev vlan700 up
       ip addr flush dev vlan700
       ip addr add 172.16.0.3/24 dev vlan700
@@ -720,8 +737,8 @@ TASK [debug] *******************************************************************
 skipping: [ros]
 
 TASK [template] ****************************************************************
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [set_fact] ****************************************************************
 ok: [s1]
@@ -743,47 +760,15 @@ ok: [s1]
 ok: [s2]
 
 TASK [Find configuration template for ospf] ************************************
-ok: [r1]
 skipping: [s1]
-ok: [r2]
+ok: [r1]
 skipping: [s2]
+ok: [r2]
 ok: [ros]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [s1]
 skipping: [s2]
-ok: [ros] => 
-  msg: |-
-    ospf configuration for ros
-    =========================================
-    updates:
-  
-  
-    - path: /network-instance[name=default]
-      value:
-        router-id: 10.0.0.1
-        protocols:
-          ospf:
-            instance:
-            - name: "0"
-              version: ospf-v2
-              admin-state: enable
-              max-ecmp-paths: 64
-              area:
-              - area-id: 0.0.0.0
-                interface:
-                - interface-name: system0.0
-                  passive: True
-              - area-id: 0.0.0.0
-                interface:
-                - interface-name: ethernet-1/1.701
-                  failure-detection:
-                    enable-bfd: False
-              - area-id: 0.0.0.0
-                interface:
-                - interface-name: ethernet-1/1.700
-                  failure-detection:
-                    enable-bfd: False
 ok: [r1] => 
   msg: |-
     ospf configuration for r1
@@ -838,6 +823,38 @@ ok: [r2] =>
   
     !
     do write
+ok: [ros] => 
+  msg: |-
+    ospf configuration for ros
+    =========================================
+    updates:
+  
+  
+    - path: /network-instance[name=default]
+      value:
+        router-id: 10.0.0.1
+        protocols:
+          ospf:
+            instance:
+            - name: "0"
+              version: ospf-v2
+              admin-state: enable
+              max-ecmp-paths: 64
+              area:
+              - area-id: 0.0.0.0
+                interface:
+                - interface-name: system0.0
+                  passive: True
+              - area-id: 0.0.0.0
+                interface:
+                - interface-name: ethernet-1/1.701
+                  failure-detection:
+                    enable-bfd: False
+              - area-id: 0.0.0.0
+                interface:
+                - interface-name: ethernet-1/1.700
+                  failure-detection:
+                    enable-bfd: False
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 skipping: [s1]
@@ -853,8 +870,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for ros
 
 TASK [template] ****************************************************************
-changed: [r1]
 changed: [r2]
+changed: [r1]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -882,10 +899,10 @@ skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
 r1                         : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-r2                         : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+r2                         : ok=24   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
 ros                        : ok=27   changed=3    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-s1                         : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-s2                         : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+s1                         : ok=24   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+s2                         : ok=24   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
 
 
 

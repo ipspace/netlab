@@ -169,6 +169,7 @@ ok: [r2] =>
     # Set Ethernet interface MTU
     ip link set eth1 mtu 1500
     ip link set eth2 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -259,6 +260,7 @@ ok: [rc] =>
     #
     # Set Ethernet interface MTU
     ip link set eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -344,6 +346,7 @@ ok: [x1] =>
     #
     # Set Ethernet interface MTU
     ip link set eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -389,9 +392,7 @@ TASK [debug] *******************************************************************
 skipping: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [rc -> localhost]
 changed: [r2 -> localhost]
-changed: [x1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [r2]
@@ -403,8 +404,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for
 
 TASK [template] ****************************************************************
 changed: [x1]
-changed: [rc]
 changed: [r2]
+changed: [rc]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
@@ -413,8 +414,8 @@ ok: [x1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [r2]
-changed: [x1]
 changed: [rc]
+changed: [x1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r2]
@@ -426,8 +427,8 @@ PLAY [Deploy module-specific configurations] ***********************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
 ok: [r2]
-ok: [x1]
 ok: [rc]
+ok: [x1]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, rc, x1 => (item=bgp)
@@ -442,13 +443,13 @@ ok: [x1]
 TASK [Find configuration template for bgp] *************************************
 ok: [dut]
 ok: [r2]
-ok: [x1]
 ok: [rc]
+ok: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [r2] => 
+ok: [rc] => 
   msg: |-
-    bgp configuration for r2
+    bgp configuration for rc
     =========================================
     !
     router bgp 65000
@@ -460,7 +461,7 @@ ok: [r2] =>
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
-      bgp router-id 10.0.0.2
+      bgp router-id 10.0.0.10
     !
       neighbor 10.0.0.1 remote-as 65000
       neighbor 10.0.0.1 description dut
@@ -470,9 +471,10 @@ ok: [r2] =>
     !
   
     !
-      network 10.0.0.2/32
+      network 10.0.0.10/32
     !
     !
+      network 172.0.42.0/24
     !
       neighbor 10.0.0.1 activate
       neighbor 10.0.0.1 next-hop-self
@@ -482,6 +484,7 @@ ok: [r2] =>
       neighbor 10.0.0.1 send-community extended
     !
     !
+    ip route 172.0.42.0/24 Null0
     !
     do write
 ok: [dut] => 
@@ -711,6 +714,44 @@ ok: [dut] =>
             admin-state: enable
   
           peer-as: 65101
+ok: [r2] => 
+  msg: |-
+    bgp configuration for r2
+    =========================================
+    !
+    router bgp 65000
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.2
+    !
+      neighbor 10.0.0.1 remote-as 65000
+      neighbor 10.0.0.1 description dut
+      neighbor 10.0.0.1 update-source lo
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.2/32
+    !
+    !
+    !
+      neighbor 10.0.0.1 activate
+      neighbor 10.0.0.1 next-hop-self
+      no neighbor 10.0.0.1 send-community all
+      neighbor 10.0.0.1 send-community standard
+      neighbor 10.0.0.1 send-community large
+      neighbor 10.0.0.1 send-community extended
+    !
+    !
+    !
+    do write
 ok: [x1] => 
   msg: |-
     bgp configuration for x1
@@ -746,52 +787,12 @@ ok: [x1] =>
     !
     !
     do write
-ok: [rc] => 
-  msg: |-
-    bgp configuration for rc
-    =========================================
-    !
-    router bgp 65000
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.10
-    !
-      neighbor 10.0.0.1 remote-as 65000
-      neighbor 10.0.0.1 description dut
-      neighbor 10.0.0.1 update-source lo
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-      network 10.0.0.10/32
-    !
-    !
-      network 172.0.42.0/24
-    !
-      neighbor 10.0.0.1 activate
-      neighbor 10.0.0.1 next-hop-self
-      no neighbor 10.0.0.1 send-community all
-      neighbor 10.0.0.1 send-community standard
-      neighbor 10.0.0.1 send-community large
-      neighbor 10.0.0.1 send-community extended
-    !
-    !
-    ip route 172.0.42.0/24 Null0
-    !
-    do write
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [dut]
 ok: [r2]
-ok: [x1]
 ok: [rc]
+ok: [x1]
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
@@ -822,8 +823,8 @@ skipping: [rc]
 skipping: [x1]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [rc]
 changed: [r2]
+changed: [rc]
 changed: [x1]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
@@ -1008,8 +1009,8 @@ changed: [rc]
 PLAY RECAP *********************************************************************
 dut                        : ok=27   changed=3    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 r2                         : ok=32   changed=7    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
-rc                         : ok=40   changed=9    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
-x1                         : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+rc                         : ok=39   changed=8    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+x1                         : ok=24   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
 
 
 

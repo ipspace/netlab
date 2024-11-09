@@ -7,18 +7,18 @@ ok: [r1]
 ok: [r2]
 ok: [h1]
 ok: [h2]
-ok: [h3]
 ok: [d1]
+ok: [h3]
 ok: [d2]
 
 TASK [Find device readiness script] ********************************************
 ok: [r1]
 ok: [r2]
 ok: [h1]
-ok: [d1]
 ok: [h2]
-ok: [h3]
+ok: [d1]
 ok: [d2]
+ok: [h3]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [r1]
@@ -36,8 +36,8 @@ TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [r1]
 ok: [r2]
 ok: [h1]
-ok: [h3]
 ok: [h2]
+ok: [h3]
 ok: [d1]
 ok: [d2]
 
@@ -45,9 +45,9 @@ TASK [Find configuration template for initial] *********************************
 ok: [r1]
 ok: [r2]
 ok: [h1]
+ok: [d1]
 ok: [h2]
 ok: [h3]
-ok: [d1]
 ok: [d2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -117,6 +117,7 @@ ok: [r1] =>
     # Set Ethernet interface MTU
     ip link set eth1 mtu 1500
     ip link set eth2 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -150,6 +151,68 @@ ok: [r1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [d1] => 
+  msg: |-
+    initial configuration for d1
+    =========================================
+  
+    updates:
+    - path: /system/mtu
+      value:
+       default-port-mtu: 1514
+       default-l2-mtu: 1514
+       default-ip-mtu: 1500
+       _annotate_default-ip-mtu: "Custom system wide setting, overrides default 1500"
+  
+    - path: /interface[name=system0]/subinterface[index=0]
+      value:
+       description: "No description"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "10.0.0.1/32"
+  
+  
+    - path: /interface[name=ethernet-1/1]
+      value:
+       subinterface:
+        index: 0
+        description: "d1 ~ r1"
+  
+    - path: /interface[name=ethernet-1/1]/subinterface[index=0]
+      value:
+       description: "d1 ~ r1"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "172.16.33.1/24"
+          primary: [null]
+       ipv6:
+        admin-state: enable
+        address:
+        - ip-prefix: "2001:db8:cafe:33::1/64"
+        neighbor-discovery:
+         learn-unsolicited: link-local
+        router-advertisement:
+         router-role:
+          admin-state: enable             # no ipv6 nd suppress-ra
+          min-advertisement-interval: 4   # Leaving this at platform default 200..600 takes too long at startup
+          _annotate_min-advertisement-interval: "Reduced from platform default 200s"
+          max-advertisement-interval: 5
+  
+  
+  
+    - path: /network-instance[name=default]
+      value:
+       type: default
+       interface:
+       - name: system0.0
+  
+    - path: /network-instance[name=default]
+      value:
+       type: default
+       interface:
+       - name: ethernet-1/1.0
 ok: [r2] => 
   msg: |-
     initial configuration for r2
@@ -216,6 +279,7 @@ ok: [r2] =>
     # Set Ethernet interface MTU
     ip link set eth1 mtu 1500
     ip link set eth2 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -249,68 +313,6 @@ ok: [r2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [d2] => 
-  msg: |-
-    initial configuration for d2
-    =========================================
-  
-    updates:
-    - path: /system/mtu
-      value:
-       default-port-mtu: 1514
-       default-l2-mtu: 1514
-       default-ip-mtu: 1500
-       _annotate_default-ip-mtu: "Custom system wide setting, overrides default 1500"
-  
-    - path: /interface[name=system0]/subinterface[index=0]
-      value:
-       description: "No description"
-       ipv4:
-        admin-state: enable
-        address:
-        - ip-prefix: "10.0.0.2/32"
-  
-  
-    - path: /interface[name=ethernet-1/1]
-      value:
-       subinterface:
-        index: 0
-        description: "d2 ~ r2"
-  
-    - path: /interface[name=ethernet-1/1]/subinterface[index=0]
-      value:
-       description: "d2 ~ r2"
-       ipv4:
-        admin-state: enable
-        address:
-        - ip-prefix: "172.16.44.1/24"
-          primary: [null]
-       ipv6:
-        admin-state: enable
-        address:
-        - ip-prefix: "2001:db8:cafe:44::1/64"
-        neighbor-discovery:
-         learn-unsolicited: link-local
-        router-advertisement:
-         router-role:
-          admin-state: enable             # no ipv6 nd suppress-ra
-          min-advertisement-interval: 4   # Leaving this at platform default 200..600 takes too long at startup
-          _annotate_min-advertisement-interval: "Reduced from platform default 200s"
-          max-advertisement-interval: 5
-  
-  
-  
-    - path: /network-instance[name=default]
-      value:
-       type: default
-       interface:
-       - name: system0.0
-  
-    - path: /network-instance[name=default]
-      value:
-       type: default
-       interface:
-       - name: ethernet-1/1.0
 ok: [h1] => 
   msg: |-
     initial configuration for h1
@@ -369,9 +371,9 @@ ok: [h1] =>
     #
     # Print the final routing table
     ip route
-ok: [d1] => 
+ok: [d2] => 
   msg: |-
-    initial configuration for d1
+    initial configuration for d2
     =========================================
   
     updates:
@@ -388,27 +390,27 @@ ok: [d1] =>
        ipv4:
         admin-state: enable
         address:
-        - ip-prefix: "10.0.0.1/32"
+        - ip-prefix: "10.0.0.2/32"
   
   
     - path: /interface[name=ethernet-1/1]
       value:
        subinterface:
         index: 0
-        description: "d1 ~ r1"
+        description: "d2 ~ r2"
   
     - path: /interface[name=ethernet-1/1]/subinterface[index=0]
       value:
-       description: "d1 ~ r1"
+       description: "d2 ~ r2"
        ipv4:
         admin-state: enable
         address:
-        - ip-prefix: "172.16.33.1/24"
+        - ip-prefix: "172.16.44.1/24"
           primary: [null]
        ipv6:
         admin-state: enable
         address:
-        - ip-prefix: "2001:db8:cafe:33::1/64"
+        - ip-prefix: "2001:db8:cafe:44::1/64"
         neighbor-discovery:
          learn-unsolicited: link-local
         router-advertisement:
@@ -554,8 +556,8 @@ ok: [r2]
 ok: [h1]
 ok: [h2]
 ok: [d1]
-ok: [d2]
 ok: [h3]
+ok: [d2]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for r1, r2
@@ -563,7 +565,6 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml fo
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for d1, d2
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [r2 -> localhost]
 changed: [r1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
@@ -574,16 +575,16 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2
 
 TASK [template] ****************************************************************
-changed: [r2]
 changed: [r1]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
 ok: [r2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r2]
 changed: [r1]
+changed: [r2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r1]
@@ -599,14 +600,14 @@ changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-yzrRaKEr-h1.sh] **********
-changed: [h2 -> localhost]
-changed: [h1 -> localhost]
+TASK [Initial container configuration via /tmp/config-XwvGMASj-h1.sh] **********
 changed: [h3 -> localhost]
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [file] ********************************************************************
-changed: [h3 -> localhost]
 changed: [h2 -> localhost]
+changed: [h3 -> localhost]
 changed: [h1 -> localhost]
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
@@ -614,8 +615,8 @@ ok: [d1]
 ok: [d2]
 
 TASK [Update SRL initial node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2)] ***
-changed: [d1]
 changed: [d2]
+changed: [d1]
 
 TASK [debug] *******************************************************************
 skipping: [d1]
@@ -642,8 +643,8 @@ ok: [r2]
 
 TASK [Find configuration template for vlan] ************************************
 skipping: [r1]
-ok: [d1]
 skipping: [r2]
+ok: [d1]
 ok: [d2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -660,11 +661,13 @@ ok: [d1] =>
        subinterface:
        - index: 1000
          type: bridged
+         description: "Access VLAN edge d1 ~ h1"
   
   
     - path: /network-instance[name=vlan1000]
       value:
        type: mac-vrf
+       description: "Access VLAN edge d1 ~ h1"
        interface:
        - name: ethernet-1/2.1000
   
@@ -674,11 +677,13 @@ ok: [d1] =>
        subinterface:
        - index: 1000
          type: bridged
+         description: "Access VLAN edge d1 ~ d2"
   
   
     - path: /network-instance[name=vlan1000]
       value:
        type: mac-vrf
+       description: "Access VLAN edge d1 ~ d2"
        interface:
        - name: ethernet-1/3.1000
   
@@ -721,11 +726,13 @@ ok: [d2] =>
        subinterface:
        - index: 1000
          type: bridged
+         description: "Access VLAN edge d2 ~ d1"
   
   
     - path: /network-instance[name=vlan1000]
       value:
        type: mac-vrf
+       description: "Access VLAN edge d2 ~ d1"
        interface:
        - name: ethernet-1/2.1000
   
@@ -735,11 +742,13 @@ ok: [d2] =>
        subinterface:
        - index: 1000
          type: bridged
+         description: "Access VLAN edge d2 ~ h2"
   
   
     - path: /network-instance[name=vlan1000]
       value:
        type: mac-vrf
+       description: "Access VLAN edge d2 ~ h2"
        interface:
        - name: ethernet-1/3.1000
   
@@ -798,14 +807,14 @@ skipping: [d2]
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [d1]
 ok: [d2]
-ok: [r2]
 ok: [r1]
+ok: [r2]
 
 TASK [Find configuration template for ospf] ************************************
 ok: [d1]
 ok: [d2]
-ok: [r2]
 ok: [r1]
+ok: [r2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [d1] => 
@@ -850,6 +859,75 @@ ok: [d1] =>
     - path: /network-instance[name=default]
       value:
         router-id: 10.0.0.1
+        protocols:
+          ospf:
+            instance:
+            - name: "1"
+              version: ospf-v3
+              address-family: ipv6-unicast
+              admin-state: enable
+              max-ecmp-paths: 64
+              area:
+              - area-id: 0.0.0.0
+                interface:
+                - interface-name: system0.0
+                  passive: True
+              - area-id: 0.0.0.0
+                interface:
+                - interface-name: ethernet-1/1.0
+                  interface-type: "point-to-point"
+                  failure-detection:
+                    enable-bfd: False
+           # OSPF not configured on external interface ethernet-1/2
+           # OSPF not configured on external interface ethernet-1/3
+              - area-id: 0.0.0.0
+                interface:
+                - interface-name: irb0.1000
+                  passive: True
+                  failure-detection:
+                    enable-bfd: False
+ok: [d2] => 
+  msg: |-
+    ospf configuration for d2
+    =========================================
+    updates:
+  
+  
+    - path: /network-instance[name=default]
+      value:
+        router-id: 10.0.0.2
+        protocols:
+          ospf:
+            instance:
+            - name: "0"
+              version: ospf-v2
+              admin-state: enable
+              max-ecmp-paths: 64
+              area:
+              - area-id: 0.0.0.0
+                interface:
+                - interface-name: system0.0
+                  passive: True
+              - area-id: 0.0.0.0
+                interface:
+                - interface-name: ethernet-1/1.0
+                  interface-type: "point-to-point"
+                  failure-detection:
+                    enable-bfd: False
+           # OSPF not configured on external interface ethernet-1/2
+           # OSPF not configured on external interface ethernet-1/3
+              - area-id: 0.0.0.0
+                interface:
+                - interface-name: irb0.1000
+                  passive: True
+                  failure-detection:
+                    enable-bfd: False
+  
+  
+  
+    - path: /network-instance[name=default]
+      value:
+        router-id: 10.0.0.2
         protocols:
           ospf:
             instance:
@@ -926,75 +1004,6 @@ ok: [r1] =>
   
     !
     do write
-ok: [d2] => 
-  msg: |-
-    ospf configuration for d2
-    =========================================
-    updates:
-  
-  
-    - path: /network-instance[name=default]
-      value:
-        router-id: 10.0.0.2
-        protocols:
-          ospf:
-            instance:
-            - name: "0"
-              version: ospf-v2
-              admin-state: enable
-              max-ecmp-paths: 64
-              area:
-              - area-id: 0.0.0.0
-                interface:
-                - interface-name: system0.0
-                  passive: True
-              - area-id: 0.0.0.0
-                interface:
-                - interface-name: ethernet-1/1.0
-                  interface-type: "point-to-point"
-                  failure-detection:
-                    enable-bfd: False
-           # OSPF not configured on external interface ethernet-1/2
-           # OSPF not configured on external interface ethernet-1/3
-              - area-id: 0.0.0.0
-                interface:
-                - interface-name: irb0.1000
-                  passive: True
-                  failure-detection:
-                    enable-bfd: False
-  
-  
-  
-    - path: /network-instance[name=default]
-      value:
-        router-id: 10.0.0.2
-        protocols:
-          ospf:
-            instance:
-            - name: "1"
-              version: ospf-v3
-              address-family: ipv6-unicast
-              admin-state: enable
-              max-ecmp-paths: 64
-              area:
-              - area-id: 0.0.0.0
-                interface:
-                - interface-name: system0.0
-                  passive: True
-              - area-id: 0.0.0.0
-                interface:
-                - interface-name: ethernet-1/1.0
-                  interface-type: "point-to-point"
-                  failure-detection:
-                    enable-bfd: False
-           # OSPF not configured on external interface ethernet-1/2
-           # OSPF not configured on external interface ethernet-1/3
-              - area-id: 0.0.0.0
-                interface:
-                - interface-name: irb0.1000
-                  passive: True
-                  failure-detection:
-                    enable-bfd: False
 ok: [r2] => 
   msg: |-
     ospf configuration for r2
@@ -1047,8 +1056,8 @@ ok: [r2] =>
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [d1]
-ok: [r1]
 ok: [d2]
+ok: [r1]
 ok: [r2]
 
 TASK [Deploy ospf configuration] ***********************************************
@@ -1143,8 +1152,8 @@ ok: [d1]
 ok: [d2]
 
 TASK [Update SRL gateway node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/gateway/srlinux.j2)] ***
-changed: [d2]
 changed: [d1]
+changed: [d2]
 
 TASK [debug] *******************************************************************
 skipping: [d1]
@@ -1160,7 +1169,7 @@ h1                         : ok=12   changed=3    unreachable=0    failed=0    s
 h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 h3                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 r1                         : ok=27   changed=5    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
-r2                         : ok=27   changed=5    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+r2                         : ok=26   changed=4    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
 
 
 
