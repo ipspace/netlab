@@ -13,10 +13,12 @@ The following table describes per-platform support of individual STP features:
 | ------------------ |:---:|:---:|:---:|:---:|:---:|
 | Arista EOS[^EOS]   | ✅  | ✅  | ✅  | ✅ |  ✅ |
 | Cumulus Linux[^CL] | ✅  |  ❌  | ✅  | ❌   |  ✅ |
+| Dell OS10[^OS10]   | ✅  | ✅  | ✅  | ✅ |  ✅ |
 | FRR[^FRR]          | ✅  |  ❌  |  ❌  |  ✅ | ❌   |
 
 [^EOS]: MSTP is enabled by default
 [^CL]: STP is enabled by default
+[^OS10]: PVRST is enabled by default
 [^FRR]: STP is disabled by default
 
 ```{tip}

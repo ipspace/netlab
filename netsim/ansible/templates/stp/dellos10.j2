@@ -1,0 +1,45 @@
+{% if not stp.enable|default(True) %}
+spanning-tree disable
+{% else %}
+{%  set proto_map = { 'stp': 'rstp', 'rstp': 'rstp', 'pvrst': 'rapid-pvst', 'mstp': 'mst' } %}
+{%  set mode = proto_map[stp.protocol] %}
+{# options are rstp, mst or rapid-pvst (default if not set) #}
+spanning-tree mode {{ mode }}
+
+{%  if stp.protocol=='stp' %}
+spanning-tree rstp force-version stp
+{%  endif %}
+
+{% if 'priority' in stp %}
+spanning-tree rstp priority {{ stp.priority }}
+{% endif %}
+
+{# Check for per-VLAN enable and priority; implies Rapid-PVST #}
+{% if vlans is defined %}
+{%   for vname,vdata in vlans.items() if 'stp' in vdata %}
+{%    if not vdata.stp.enable|default(True) %}
+spanning-tree vlan {{ vdata.id }} disable
+{%    elif 'priority' in vdata.stp %}
+spanning-tree vlan {{ vdata.id }} priority {{ vdata.stp.priority }}
+{%    endif %}
+{%   endfor +%}
+{% endif %}
+
+{% for ifdata in interfaces if 'stp' in ifdata %}
+{%   if ifdata.vlan.trunk_id is defined or ifdata.vlan.access_id is defined %}
+interface {{ ifdata.ifname }}
+{%    if not ifdata.stp.enable|default(True) %}
+ spanning-tree disable
+{%    elif 'port_priority' in ifdata.stp %}
+#
+# Use 16x port_priority to get the correct 4-bit value on the wire
+#
+{%     if stp.protocol=='pvrst' %}
+ spanning-tree vlan {{ ifdata.vlan.trunk_id|default(ifdata.vlan.access_id) }} priority {{ ifdata.stp.port_priority * 16 }}
+{%     else %}
+ spanning-tree rstp priority {{ ifdata.stp.port_priority * 16 }}
+{%     endif %}
+{%    endif %} 
+{%   endif %}
+{% endfor %}
+{% endif %}
