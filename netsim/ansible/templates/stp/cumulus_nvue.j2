@@ -3,5 +3,45 @@
       domain:
         br_default:
           stp:
+            mode: {{ 'pvrst' if stp.protocol=='pvrst' else 'rstp' }}
             state:
               {{ 'up' if stp.enable|default(True) else 'down' }}: {}
+{% if 'priority' in stp %}
+            priority: {{ stp.priority }}
+{% endif %}
+{% if vlans is defined %}
+{%  for vname,vdata in vlans.items() if vdata.stp.priority is defined %}
+{%   if loop.first %}
+            vlan:
+{%   endif %}
+             '{{ vdata.id }}':
+               bridge-priority: {{ vdata.stp.priority }}
+{%  endfor %}
+{% endif %}
+
+# When using PVRST, NVidia recommends to increase from default 2000 pps
+{% if stp.protocol=='pvrst' %}
+    system:
+      control-plane:
+        policer:
+          rpvst:
+            burst: 7200
+            rate: 7200
+{% endif %}
+{% for ifdata in interfaces if 'stp' in ifdata  %}
+{%  if loop.first %}
+    interface:
+{%  endif %}
+      {{ ifdata.ifname }}:
+        bridge:
+          domain:
+            br_default:
+              stp:
+{%  if not ifdata.stp.enable|default(True) %}
+                bpdu-filter: on
+{%  elif 'port_priority' in ifdata.stp %}
+                vlan:
+                  '{{ ifdata.vlan.access_id|default(1) }}':
+                    priority: {{ ifdata.stp.port_priority * 16 }}
+{%  endif %}
+{% endfor %}

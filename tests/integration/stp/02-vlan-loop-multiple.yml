@@ -5,44 +5,58 @@ message: |
   If STP is enabled, this topology requires per-VLAN STP (PVRST); the VLANs themselves don't form a loop, but the links do.
   Per-VLAN priority settings should make S1 root for red, and S2 for blue VLAN
 
-  * h1 and h2 should be able to ping each other
-  * h3 and h4 should be able to ping each other
-  * h1 should not be able to reach h3
+  * h1, h2 and h3 should be able to ping each other
+  * h4, h5 and h6 should be able to ping each other
+  * h1,h2,h3 should not be able to reach h4,h5,h6
 
   For FRR, use
   ```docker exec -it clab-stp-s1 /usr/sbin/brctl showstp vlan1000``` and
-  ```docker exec -it clab-stp-s2 /usr/sbin/brctl showstp vlan1001``` and
+  ```docker exec -it clab-stp-s2 /usr/sbin/brctl showstp vlan1001```
+
+  For Cumulus NVUE:
+  ```netlab exec "s*" nv show bridge domain br_default stp vlan```
 
 stp.protocol: pvrst # Topology requires running STP per VLAN
 
 groups:
   _auto_create: True
+  switches:
+    members: [ s1, s2, s3 ]
+    module: [ vlan, stp ]
   hosts:
-    members: [ h1, h2, h3, h4 ]
+    members: [ h1, h2, h3, h4, h5, h6 ]
     device: linux
     provider: clab
-  switches:
-    members: [ s1,s2,s3 ]
-    module: [ vlan, stp ]
 
 vlans:
   red:
     mode: bridge
-    links: [ s1-h1, s2-h2, s1-s2 ]  # NOT s1-s3
+    links: [ s1-h1, s2-h2, s3-h3 ]  # NOT s1-s3
   blue:
     mode: bridge
-    links: [ s1-h3, s3-h4, s1-s3 ]  # NOT s1-s2
+    links: [ s1-h4, s2-h5, s3-h6 ]  # NOT s1-s2
 
 links:
+# For platforms using a single Linux bridge these need to be trunk ports, not access ports,
+# and the native vlan must be defined on all inter-switch links
+- s1:
+  s2:
+  vlan.trunk: [ red ]
+  vlan.native: red
+- s1:
+  s3:
+  vlan.trunk: [ blue ]
+  vlan.native: blue
 - s2:
   s3:
-  # vlan.trunk: [ red, blue ]
-  vlan.access: red
+  vlan.trunk: [ red, blue ]
+  vlan.native: red
+  # vlan.access: red
 
-- s2:
-  s3:
-  # vlan.trunk: [ red, blue ]
-  vlan.access: blue
+#- s2:
+#  s3:
+#  # vlan.trunk: [ red, blue ]
+#  vlan.access: blue
 
 nodes:
  s1:
@@ -52,18 +66,38 @@ nodes:
 
 validate:
   ping_red:
-    description: Ping-based reachability test in VLAN red
+    description: Ping-based reachability test in VLAN red h1->h2
     nodes: [ h1 ]
     wait_msg: Waiting for STP to enable the ports
     wait: 45
     plugin: ping('h2')
+  ping_red2:
+    description: Ping-based reachability test in VLAN red h1->h3
+    nodes: [ h1 ]
+    plugin: ping('h3')
+  ping_red3:
+    description: Ping-based reachability test in VLAN red h2->h3
+    nodes: [ h2 ]
+    plugin: ping('h3')
   ping_blue:
-    description: Ping-based reachability test in VLAN blue
-    nodes: [ h3 ]
+    description: Ping-based reachability test in VLAN blue h4->h5
+    nodes: [ h4 ]
     wait_msg: Waiting for STP to enable the ports
     wait: 20
-    plugin: ping('h4')
+    plugin: ping('h5')
+  ping_blue2:
+    description: Ping-based reachability test in VLAN blue h4->h6
+    nodes: [ h4 ]
+    plugin: ping('h6')
+  ping_blue3:
+    description: Ping-based reachability test in VLAN blue h5->h6
+    nodes: [ h5 ]
+    plugin: ping('h6')
   inter_vlan:
-    description: Ping-based reachability test between blue and red VLANs
+    description: Ping-based reachability test between blue and red VLANs h1->h4
     nodes: [ h1 ]
-    plugin: ping('h3',expect='fail')
+    plugin: ping('h4',expect='fail')
+  inter_vlan2:
+    description: Ping-based reachability test between blue and red VLANs h1->h5
+    nodes: [ h1 ]
+    plugin: ping('h5',expect='fail')
