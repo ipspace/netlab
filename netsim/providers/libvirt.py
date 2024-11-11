@@ -387,8 +387,13 @@ class Libvirt(_Provider):
           ['sudo','sh','-c',f'echo 0x4000 >/sys/class/net/{linux_bridge}/bridge/group_fwd_mask']):
         log.error(f"Cannot set forwarding mask on Linux bridge {linux_bridge}")
         continue
+      log.print_verbose(f"... set LLDP enabled flag on {linux_bridge}")
+      if not external_commands.run_command(
+          ['sudo','sh','-c',f'brctl stp {linux_bridge} off']):
+        log.error(f"Cannot disable STP on Linux bridge {linux_bridge}")
+        continue
+      log.print_verbose(f"... disabled STP on {linux_bridge}")
 
-      log.print_verbose(f"... setting LLDP enabled flag on {linux_bridge}")
 
   def get_lab_status(self) -> Box:
     try:
