@@ -62,7 +62,7 @@ def replace_xml_mgmt_subnet(xml: str, mgmt: Box, m_subnet: str) -> str:
     xml = xml.replace(f"'{o_addr}'",f"'{d_net[d_start]}'")
 
   eui = netaddr.EUI(mgmt.mac)
-  while d_start < d_net.size - 2:
+  while d_start < min(d_net.size,256) - 2:
     eui[5] = mac_cnt
     xstring = f"<host mac='{str(eui).replace('-',':')}' ip='{d_net[d_start]}'/>\n<!--more-->"
     xml = xml.replace("<!--more-->",xstring)
