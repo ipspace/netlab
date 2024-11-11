@@ -10,6 +10,7 @@ import argparse
 from . import _Provider,get_forwarded_ports
 from ..utils import log, strings
 from ..data import filemaps, get_empty_box, append_to_list
+from ..data.types import must_be_dict
 from ..cli import is_dry_run,external_commands
 from ..augment import devices
 from ..cli import external_commands
@@ -127,13 +128,12 @@ def load_kmods(topology: Box) -> None:
     ddata = devices.get_provider_data(ndata,defs)           # Get device data for the current node
     if 'kmods' not in ddata:                                # Kmods attribute is not there, the device is not using kernel modules
       continue
-    kdata = ndata.kmods or clab_kmods                       # Get device-specific or system-wide kernel module definition
-    if isinstance(kdata,list):                              # ... some devices specify just the netlab modules that need kmods
-      kdata = { k:clab_kmods[k] for k in kdata}             # ... in which case build the dictionary from system-wide values
+    must_be_dict(ddata,'kmods',path=f'defaults.devices.{ndata.device}.clab',create_empty=True)
+    kdata = clab_kmods + ddata.kmods                        # Merge device-specific modules with system-wide kernel module definition
 
     # At this point, we have device-specific dictionary mapping netlab modules into kernel modules
     #
-    for m in ndata.module:                                  # Now iterate over all the netlab modules the node uses
+    for m in (['initial']+ndata.get('module',[])):          # Now iterate over all the netlab modules the node uses
       if m not in kdata:                                    # ... and if the netlab modules does not need kernel modules
         continue                                            # ... move on
       for kmod in kdata[m]:                                 # Next, add individual kernel modules in the kdata entry
@@ -179,7 +179,7 @@ class Containerlab(_Provider):
         self.create_extra_files(n,topology)
 
   def pre_start_lab(self, topology: Box) -> None:
-    log.print_verbose('pre-start hook for Containerlab - create any bridges')
+    log.print_verbose('pre-start hook for Containerlab - create any bridges and load kernel modules')
     for brname in list_bridges(topology):
       if use_ovs_bridge(topology):
         create_ovs_bridge(brname)
