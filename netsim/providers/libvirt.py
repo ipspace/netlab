@@ -14,7 +14,7 @@ import netaddr
 import argparse
 
 from ..data import types,get_empty_box,get_box
-from ..utils import log,strings
+from ..utils import log,strings,linuxbridge
 from ..utils import files as _files
 from . import _Provider
 from ..augment import devices
@@ -383,17 +383,14 @@ class Libvirt(_Provider):
 
       l.bridge = linux_bridge
       log.print_verbose(f"... network {brname} maps into {linux_bridge}")
-      if not external_commands.run_command(
-          ['sudo','sh','-c',f'echo 0x4000 >/sys/class/net/{linux_bridge}/bridge/group_fwd_mask']):
+      if not linuxbridge.configure_bridge_forwarding(brname):
         log.error(f"Cannot set forwarding mask on Linux bridge {linux_bridge}")
         continue
-      log.print_verbose(f"... set LLDP enabled flag on {linux_bridge}")
       if not external_commands.run_command(
           ['sudo','sh','-c',f'brctl stp {linux_bridge} off']):
         log.error(f"Cannot disable STP on Linux bridge {linux_bridge}")
         continue
       log.print_verbose(f"... disabled STP on {linux_bridge}")
-
 
   def get_lab_status(self) -> Box:
     try:

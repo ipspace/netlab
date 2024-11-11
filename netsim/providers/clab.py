@@ -8,7 +8,7 @@ import pathlib
 import argparse
 
 from . import _Provider,get_forwarded_ports
-from ..utils import log, strings
+from ..utils import log, strings, linuxbridge
 from ..data import filemaps, get_empty_box, append_to_list
 from ..data.types import must_be_dict
 from ..cli import is_dry_run,external_commands
@@ -39,14 +39,8 @@ def create_linux_bridge( brname: str ) -> bool:
     return False
   log.print_verbose( f"Enable Linux bridge '{brname}': {status}" )
 
-  status = external_commands.run_command(
-      ['sudo','sh','-c',f'echo 65528 >/sys/class/net/{brname}/bridge/group_fwd_mask'],
-      check_result=True,
-      return_stdout=True)
-  if status is False:
-    return False
-  log.print_verbose( f"Enable LLDP,LACP,802.1X forwarding on Linux bridge '{brname}': {status}" )
-  return True
+  status = linuxbridge.configure_bridge_forwarding(brname)
+  return status
 
 def destroy_linux_bridge( brname: str ) -> bool:
   status = external_commands.run_command(
