@@ -128,7 +128,7 @@ def load_kmods(topology: Box) -> None:
     ddata = devices.get_provider_data(ndata,defs)           # Get device data for the current node
     if 'kmods' not in ddata:                                # Kmods attribute is not there, the device is not using kernel modules
       continue
-    must_be_dict(ddata,'kmods',path=f'clab.{ndata.device}',create_empty=True)
+    must_be_dict(ddata,'kmods',path=f'defaults.devices.{ndata.device}.clab',create_empty=True)
     kdata = clab_kmods + ddata.kmods                        # Merge device-specific modules with system-wide kernel module definition
 
     # At this point, we have device-specific dictionary mapping netlab modules into kernel modules
