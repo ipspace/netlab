@@ -534,6 +534,11 @@ def must_be_bool(value: typing.Any) -> dict:
   return { '_valid': True } if isinstance(value,bool) else { '_type': 'a boolean' }
 
 @type_test()
+def must_be_bool_false(value: typing.Any) -> dict:
+
+  return { '_valid': True } if value is False else { '_type': 'False' }
+
+@type_test()
 def must_be_asn2(value: typing.Any) -> dict:                          # 2-octet ASN (in case we need it somewhere)
   err = 'an AS number (integer between 1 and 65535)'
   if not isinstance(value,int) or isinstance(value,bool):             # value must be an int

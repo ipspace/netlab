@@ -189,17 +189,6 @@ def validate(topology: Box) -> None:
         module_source=f'nodes.{intf.node}',
         module='links')                                 # Function is called from 'links' module
 
-    # Validate link prefix attributes, but only if it's a dictionary. Other cases will be handled by prefix parsing routines
-    if 'prefix' in l_data and isinstance(l_data.prefix,Box):
-      validate_attributes(
-        data=l_data.prefix,                             # Validate link prefix
-        topology=topology,
-        data_path=f'{l_data._linkname}.prefix',         # Topology path to link prefix
-        data_name=f'prefix',
-        attr_list=['prefix'],                           # We're checking prefix attributes
-        modules=[],                                     # No module attributes in prefix
-        module='links')
-
 """
 Get the link attributes that have to be propagated to interfaces: full set
 of attributes minus the 'no_propagate' attributes 
@@ -990,7 +979,7 @@ def set_default_gateway(link: Box, nodes: Box) -> None:
   link.pop('host_count',None)
 
   # No IPv4 prefix on the link or unnumbered IPv4 link
-  if not 'ipv4' in link.prefix or isinstance(link.prefix.ipv4,bool):
+  if not link.prefix or 'ipv4' not in link.prefix or isinstance(link.prefix.ipv4,bool):
     return
 
   if log.debug_active('links'):
