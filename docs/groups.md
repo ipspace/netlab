@@ -1,6 +1,6 @@
 # Groups of Lab Objects (Nodes, VLANs, VRFs)
 
-If you have several lab objects (nodes, VLANs, or VRFs) with similar attributes, use _netlab_ groups to apply a set of valid attributes to all of them.
+If you have several lab objects (nodes, VLANs, or VRFs) with similar attributes, use _netlab_ groups to apply a set of valid attributes to all of them ([link groups](link-groups) are defined within the [links list](topo-links)).
 
 You can define custom groups in lab topology or *netlab* defaults. *netlab* also creates node groups based on node devices (for example, *iosv* or *eos* group) and based on node **bgp.as** attribute (for example, *as65000* for all nodes with **bgp.as** set to 65000)
 
@@ -50,6 +50,10 @@ groups:
     members: [ red_vrf, blue_vrf ]
     type: vrf
     loopback: True
+```
+
+```{tip}
+[Link groups](link-groups) are defined within the [links list](topo-links).
 ```
 
 (default-groups)=
