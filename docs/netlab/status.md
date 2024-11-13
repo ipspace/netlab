@@ -3,7 +3,7 @@
 
 **netlab status** command displays the running lab instances and the provider-specific workloads (*[libvirt](../labs/libvirt.md)* virtual machines or *[containerlab](../labs/clab.md)* containers).
 
-This command uses the *netlab* status file (default: `~/.netlab/status.yml`) to get the state of running lab instances. The status file is updated by **netlab up** and **netlab down** commands.
+This command uses the *netlab* status file (default: `~/.netlab/status.yml`) to get the state of running lab instances and [provider-specific status commands](netlab-status-provider) to get the workload state. The status file is updated by **netlab up** and **netlab down** commands.
 
 ## Usage
 
@@ -61,6 +61,10 @@ Lab default in /home/user/net101/tools/X
 └─────────┴────────┴─────────────────────────────┴─────────────────┴────────────┴──────────┴────────────────┴──────────────┘
 ```
 
+(netlab-status-provider)=
+```{tip}
+**‌netlab status** executes **‌vagrant status --machine-readable** to get the status of Vagrant-controlled virtual machines and **‌docker ps** to get the status of running containers. The **vagrant status‌** might take a few seconds when executed on large labs and significantly longer if Vagrant cannot determine the state of a virtual machine (returning **‌inaccessible**).
+```
 ## Display Lab Instance Log
 
 The **netlab status --log** command displays a detailed lab instance log, including state changes and executed commands:
