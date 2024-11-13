@@ -21,7 +21,7 @@ from . import nodes
 '''
 Return members of the specified group. Recurse through child groups if needed
 '''
-def group_members(topology: Box, group: str, count: int = 0) -> list:
+def group_members(topology: Box, group: str, grp_type: str = 'node', count: int = 0) -> list:
   members: typing.List[str] = []
   if not group in topology.groups:  # pragma: no cover (just-in case catch, impossible to get here)
     log.error(
@@ -36,11 +36,16 @@ def group_members(topology: Box, group: str, count: int = 0) -> list:
       module='groups',
       header=True)
 
-  for m in topology.groups[group].members:
-    if m in topology.nodes:
+  gdata = topology.groups[group]
+  if gdata.get('type','node') != grp_type:
+    return []
+
+  for m in gdata.members:
+    m_ns = grp_type + 's'
+    if m in topology[m_ns]:
       members = members + [ m ]
     if m in topology.groups:
-      members = members + group_members(topology,m,count + 1)
+      members = members + group_members(topology,m,grp_type,count + 1)
 
   return members
 
@@ -112,7 +117,6 @@ def check_group_data_structure(
   '''
 
   list_of_modules = modules.list_of_modules(topology)
-  group_attr = topology.defaults.attributes.group
 
   # Allow provider- and tool- specific node attributes
   extra = get_object_attributes(['providers','tools'],topology)
@@ -128,6 +132,19 @@ def check_group_data_structure(
       continue
 
     gpath=f'{gpath}.{grp}'
+    g_type = gdata.get('type','node')
+    gt_values = ['node','vlan','vrf']
+    g_objects = topology.get(f'{g_type}s',{})
+    if g_type not in gt_values:
+      log.error(
+        f"Invalid group type for group {grp}; can be {','.join(gt_values)}",
+        category=log.IncorrectType,
+        module='groups')
+
+    g_namespace = [ f'{g_type}_group' ]
+    g_namespace.extend(topology.defaults.attributes[g_namespace[0]].get('_namespace',[]))
+    group_attr = topology.defaults.attributes[g_namespace[0]]
+
     g_modules = gdata.get('module',[])
     if g_modules:                           # Modules specified in the group -- we know what these nodes will use
       gm_source = 'group'
@@ -139,8 +156,8 @@ def check_group_data_structure(
       data=gdata,
       topology=topology,
       data_path=gpath,
-      data_name='group',
-      attr_list=[ 'group','node' ],
+      data_name=g_namespace[0],
+      attr_list=g_namespace,
       module='groups',
       modules=g_modules,
       module_source=gm_source,
@@ -158,7 +175,8 @@ def check_group_data_structure(
 
     must_be_list(gdata,'module',gpath,create_empty=False,module='groups',valid_values=sorted(list_of_modules))
 
-    if 'node_data' in gdata:                 # Validate node_data attributes (if any)
+    # Validate node_data attributes (if any)
+    if 'node_data' in gdata and g_type == 'node':
       log.error(
         text=f'Group {grp} uses an obsolete attribute node_data. Migrate node parameters into group definition',
         category=Warning,
@@ -196,12 +214,12 @@ def check_group_data_structure(
       continue
 
     if prune_members:
-      gdata.members = [ n for n in gdata.members if n in topology.nodes or n in parent.groups ]
+      gdata.members = [ n for n in gdata.members if n in g_objects or n in parent.groups ]
     else:
       for n in gdata.members:
-        if not n in topology.nodes and not n in parent.groups:
+        if not n in g_objects and not n in parent.groups:
           log.error(
-            text=f'Member {n} of {grp_namespace}group {grp} is not a valid node or group name',
+            text=f'Member {n} of {grp_namespace}group {grp} is not a valid {g_type} or group name',
             category=log.IncorrectValue,
             module='groups')
 
@@ -241,18 +259,17 @@ def auto_create_members(
       if n in topology.get('groups',{}) or n in topology.get('defaults.groups',{}):
         continue
 
-      if n in topology.nodes:                     # Skip if the member is already a known node
+      obj_ns = gdata.get('type','node') + 's'
+
+      if n in topology[obj_ns]:                   # Skip if the member is already a known object
         continue
 
-      topology.nodes[n].name = n                  # Otherwise create an empty node data structure
-      topology.nodes[n].interfaces = []           # ... with an empty interface list
+      if obj_ns == 'nodes':                       # For auto-created nodes...
+        topology[obj_ns][n].name = n              # ... create an empty node data structure
+        topology[obj_ns][n].interfaces = []       # ... with an empty interface list
+      else:
+        topology[obj_ns][n] = {}                  # For all others, create a placeholder object
   
-  '''
-  Transform group-as-list into group-as-dictionary
-  '''
-  for grp in parent.groups.keys():
-    gpath = f'{parent_path or "topology"}.groups.{grp}'
-
 '''
 Add node-level group settings to global groups
 '''
@@ -264,11 +281,16 @@ def add_node_level_groups(topology: Box) -> None:
     must_be_list(n,'group',f'nodes.{name}')
 
     for grpname in n.group:
-      if not grpname in topology.groups:
-        topology.groups[grpname] = { 'members': [] }      # Create an empty new group if needed
+      # Sanity check for node groups
+      if topology.groups[grpname].get('type','node') != 'node':
+        log.error(
+          f"Cannot use the 'group' attribute in node {n.name} to add a node to a non-node group {grpname}",
+          category=log.IncorrectType,
+          module='groups')
+        continue
 
-      if not name in topology.groups[grpname].members:  # Node not yet in the target group
-        topology.groups[grpname].members.append(name)   # Add node to the end of the member list
+      # Add node name to the target group
+      data.append_to_list(topology.groups[grpname],'members',name)
 
 '''
 Check recursive group definitions
@@ -369,22 +391,28 @@ def copy_group_node_data(topology: Box,pfx: str) -> None:
     if not 'node_data' in gdata:                                      # No group data, skip
       continue
 
-    g_members = group_members(topology,grp)                           # Get recursive list of members
+    g_type = gdata.get('type','node')
+    g_members = group_members(topology,grp,g_type)                    # Get recursive list of members
     if log.debug_active('groups'):
       print(f'copy node data {grp}: {gdata.node_data}')
+
+    g_ns = g_type + 's'                                               # Get the target object dictionary
     for name in g_members:                                            # Iterate over group members
-      if not name in topology.nodes:                                  # Member is not a node, skip it
-        continue
+      if not name in topology[g_ns]:                                  # Unknown member, skip it
+        continue                                                      # ... should have been detected earlier
 
       if log.debug_active('groups'):
-        print(f'... merging node data with {name}')
+        print(f'... merging {g_type} data with {name}')
       merge_data = data.get_box(gdata.node_data)
-      if 'module' in topology.nodes[name]:
+      if g_type == 'node' and 'module' in topology.nodes[name]:
         for m in topo_modules:
           if not m in topology.nodes[name].module:
             merge_data.pop(m,None)
 
-      topology.nodes[name] = merge_data + topology.nodes[name]
+      if topology[g_ns][name] is None:                                # We're early in data processing, some objects
+        topology[g_ns][name] = {}                                     # ... might not have been initialized
+      if isinstance(topology[g_ns][name],Box):                        # If the object is a box
+        topology[g_ns][name] = merge_data + topology[g_ns][name]      # ... merge group data with it
 
 '''
 Export node_data from groups to topology
@@ -567,14 +595,21 @@ def node_config_templates(topology: Box) -> None:
   with node templates.
   '''
 
-  for group_name in reverse_topsort(topology):
-    if not 'config' in topology.groups[group_name]:
+  for group_name in reverse_topsort(topology):              # Iterate over all groups
+    gdata = topology.groups[group_name]
+    if not 'config' in gdata:                               # Skip a group if it has no 'config' attribute
       continue
 
     must_be_list(topology.groups[group_name],'config',f'groups.{group_name}')
-    g_members = group_members(topology,group_name)
-    for name,ndata in topology.nodes.items():
-      if name in g_members or group_name == 'all':
+    g_members = group_members(topology,group_name)          # Get node members of the group
+    if not g_members:
+      return
+
+    for name,ndata in topology.nodes.items():               # Iterate over nodes
+      if name in g_members or group_name == 'all':          # Match members or 'all' group
+        #
+        # Make sure the node 'config' attribute is a list and prepend group config value to it
+        # ... because the node config template might modify the settings from the group config template
         if not must_be_list(ndata,'config',f'nodes.{name}') is None:
           ndata.config = topology.groups[group_name].config + ndata.config
 

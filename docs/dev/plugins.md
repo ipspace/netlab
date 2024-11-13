@@ -90,7 +90,7 @@ devices:
 
 All anycast servers in a BGP anycast topology should have the same AS number but [do not need IBGP sessions between themselves](https://blog.ipspace.net/2022/01/netsim-plugins.html). A [custom plugin](https://github.com/ipspace/netlab-examples/tree/master/plugins/adjust-bgp-sessions) deletes IBGP sessions for any node with **bgp.anycast** attribute.
 
-The topology file used in the BGP anycast example uses [group node data](../groups.md#setting-node-data-in-groups) on a [BGP AS group](../groups.md#automatic-bgp-groups) to set **bgp.anycast** node attribute on any node in AS 65101
+The topology file used in the BGP anycast example uses [group node data](groups-object-data) on a [BGP AS group](../groups.md#automatic-bgp-groups) to set **bgp.anycast** node attribute on any node in AS 65101
 
 ```yaml
 plugin: [ bgp.anycast ]

@@ -36,7 +36,7 @@ The [**‌--show** option](netlab-connect-show) must be used _after_ the host pa
 
 **netlab connect** uses the lab snapshot file (default: `netlab.snapshot.yml`) to read device- and node information. You can overwrite the default snapshot file with the `--snapshot` command line parameter.
 
-**netlab connect** command uses the following device data. Most of that data is derived from the device **group_vars**, although you can override it on [node-](node-ansible-data) or [custom group](group-node-data) level; use the **[`netlab inspect --node _name_`](inspect.md)** command to inspect it.
+**netlab connect** command uses the following device data. Most of that data is derived from the device **group_vars**, although you can override it on [node-](node-ansible-data) or [custom group](groups-object-data) level; use the **[`netlab inspect --node _name_`](inspect.md)** command to inspect it.
 
 * `ansible_connection`: Use **docker exec** if the connection is set to `docker`[^cd]. Use **ssh** if the connection is set to `ssh`, `paramiko`[^cp], `network_cli`[^cc], or `netconf`[^cn]. Fail for all other connection types.
 * `ansible_host`: IP address or alternate FQDN for the lab device (default: hostname specified on the command line)

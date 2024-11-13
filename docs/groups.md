@@ -1,11 +1,15 @@
-# Groups of Lab Devices (Nodes)
+# Groups of Lab Objects (Nodes, VLANs, VRFs)
 
-Network devices (nodes) used in a virtual lab are automatically grouped into platform-specific groups like *iosv* or *nxos*. You can use these groups or custom groups to:
+If you have several lab objects (nodes, VLANs, or VRFs) with similar attributes, use _netlab_ groups to apply a set of valid attributes to all of them ([link groups](link-groups) are defined within the [links list](topo-links)).
 
-* Set node attributes or Ansible group variables
+You can define custom groups in lab topology or *netlab* defaults. *netlab* also creates node groups based on node devices (for example, *iosv* or *eos* group) and based on node **bgp.as** attribute (for example, *as65000* for all nodes with **bgp.as** set to 65000)
+
+You can use custom- and netlab-created object groups to set node, VLAN, or VRF attributes. You can also use the node groups to:
+
+* Set Ansible group variables
 * Set device type or [configuration modules](module-reference.md) for a set of devices
 * Attach additional configuration templates to a set of devices
-* Limit the scope of **[netlab](netlab/cli.md)** commands that invoke Ansible playbooks. 
+* Limit the scope of **[netlab](netlab/cli.md)** commands that invoke Ansible playbooks.
 
 For example, you could use `netlab config mpls.j2 --limit iosv` to deploy configuration specified in Jinja2 template `mpls.j2` only on Cisco IOSv devices.
 
@@ -16,10 +20,10 @@ For example, you could use `netlab config mpls.j2 --limit iosv` to deploy config
    :backlinks: none
 ```
 
-## Custom Node Groups
+(groups-create)=
+## Creating Custom Object Groups
 
-Virtual lab topology can specify additional (custom) device groups in the **groups** top-level parameter. The **groups** parameter must be a dictionary with group names as dictionary keys. Dictionary values could be either a list of member nodes or a further dictionary specifying **members**:
-
+Lab topology can specify custom object groups in the **groups** top-level parameter. The **groups** parameter must be a dictionary with group names as dictionary keys. Dictionary values could be either a list of member nodes or a further dictionary specifying **members**:
 
 ```
 ---
@@ -33,16 +37,24 @@ groups:
     members: [ d,e,f ]
 ```
 
-The custom node groups are used to create additional groups in the Ansible inventory file. You can use custom node groups in any **netlab** command that invokes an Ansible playbook.
+The custom groups are assumed to contain nodes. To create a VLAN or a VRF group, set the group **type** to **vlan** or **vrf**, for example:
 
-For example, `netlab config mpls.j2 --limit g1` would deploy configuration template `mpls.j2` only on lab devices A, B, and C.
+```
+groups:
+  ce_vlan:
+    members: [ red_vlan, blue_vlan ]
+    type: vlan
+    ospf.cost: 1
+    vlan.mode: route
+  ce_vrf:
+    members: [ red_vrf, blue_vrf ]
+    type: vrf
+    loopback: True
+```
 
-(group-special-names)=
-### Special Group Names
-
-The following groups have special meaning in *netlab*-generated Ansible inventory:
-
-* `unprovisioned`: **netlab up** and **netlab initial** will skip devices in this group while deploying device configurations.
+```{tip}
+[Link groups](link-groups) are defined within the [links list](topo-links).
+```
 
 (default-groups)=
 ### Default Groups
@@ -59,20 +71,20 @@ The only peculiarity of the default groups is the handling of group members:
 
 [^DGM]: That makes it possible to have default group members not present in the lab topology.
 
-(group-node-data)=
-## Setting Node Data in Groups
+(groups-object-data)=
+## Setting Object Data in Groups
 
-Sometimes, you'd like to set a node attribute for all group members. For example, in a BGP anycast scenario, we should set **[bgp.advertise_loopback](module/bgp.md#advertised-bgp-prefixes)** to *false* on all anycast server -- they should advertise only the anycast prefix, not individual loopback prefixes. 
+Sometimes, you'd like to set an attribute for all group members. For example, in a BGP anycast scenario, we should set **[bgp.advertise_loopback](module/bgp.md#advertised-bgp-prefixes)** to *false* on all anycast server -- they should advertise only the anycast prefix, not individual loopback prefixes. 
 
-While it's perfectly OK to set the desired attribute(s) on individual nodes, it's much more convenient to set them in a group definition -- you can use any valid node attribute (including configuration module node attributes[^MNA]) in group definitions[^NDT].
+While it's perfectly OK to set the desired attribute(s) on individual nodes, it's much more convenient to specify them in a group definition -- you can use any valid node, VLAN, or VRF attribute (including configuration module attributes[^MNA]) in group definitions[^NDT].
 
-[^MNA]: If a group definition contains a **module** attribute, you cannot set attributes for modules not listed in the **module** attribute in the group definition.
+[^MNA]: If a node group definition contains a **module** attribute, you cannot set attributes for modules not listed in the **module** attribute in the group definition. VLAN and VRF groups can use only modules specified in the topology-level **module** attribute.
  
 [^NDT]: Node attributes were stored in **node_data** group attribute prior to *netlab* release 1.4. While you can still use the **node_data** dictionary, it has a few undesired side effects that we'll not fix. It is deprecated in release 1.8; using it will generate a warning during the data transformation phase.
 
-The node group attribute will be set on all members of the group. The data is [deep-merged](defaults.md#deep-merging) with the existing node data -- for example, you could set **bgp.advertise_loopback** attribute in group definition without affecting **bgp.as** node attribute[^NDGP].
+The group attributes will be set on all members of the group. The data is [deep-merged](defaults-deep-merging) with the existing object data -- for example, you could set **bgp.advertise_loopback** attribute in group definition without affecting **bgp.as** node attribute[^NDGP].
 
-[^NDGP]: In a topology with hierarchical groups, attributes from the innermost groups take precedence. Node attributes from groups with static members have precedence over node attributes from BGP-generated groups.
+[^NDGP]: In a topology with [hierarchical groups](groups-hierarchy), attributes from the innermost groups take precedence. Node attributes from groups with static members have precedence over node attributes from BGP-generated groups.
 
 Using this functionality, a BGP anycast topology file becomes much more concise than it would have been otherwise:
 
@@ -93,9 +105,10 @@ groups:
 nodes: [ l1, l2, l3, s1, a1, a2, a3 ]
 ```
 
-### Using Group Node Data with VRFs and VLANs
+(groups-node-vlan-vrf)=
+### Specifying VLANs and VRFs in Node Groups
 
-VRFs and VLANs mentioned in **vrfs** or **vlans** group attributes will be defined as global (topology-wide) VRFs/VLANs. The VLAN ID/VNI or VRF RT/RD values will be copied from **vlans**/**vrfs** into global **vlans**/**vrfs**. Every VLAN  needs a unique ID/VNI (likewise for VRF RT/RD), so you cannot define different ID/VNI or RT/RD values for the same VLAN/VRF in different groups.
+VRFs and VLANs mentioned in a node group's **vrfs** or **vlans** attributes become global (topology-wide) VRFs/VLANs. The VLAN ID/VNI or VRF RT/RD values (when specified) are copied from the **vlans**/**vrfs** group data into global **vlans**/**vrfs** dictionaries. Every VLAN needs a unique ID/VNI (likewise for VRF RT/RD), so you cannot define different ID/VNI or RT/RD values for the same VLAN/VRF in multiple groups.
 
 Example:
 
@@ -119,22 +132,23 @@ links:
   vlan.trunk: [ red, blue ]
 ```
 
-The above topology will:
+The above topology:
 
-* Create topology-wide *red* and *blue* VLANs.
-* Auto-assign VLAN ID and VNI to those VLANs.
-* Copy group **vlans** into R1 and R2 (setting OSPF cost for VLAN interfaces)
-* Merge the global **vlans** definitions into **nodes.r1.vlans** and **nodes.r2.vlans**, ensuring the VLANs on R1 and R2 have the correct VLAN ID/VNI.
+* Creates topology-wide *red* and *blue* VLANs.
+* Auto-assigns VLAN ID and VNI to those VLANs.
+* Copies group **vlans** into R1 and R2 (setting OSPF cost for VLAN interfaces)
+* Merges the global **vlans** definitions into **nodes.r1.vlans** and **nodes.r2.vlans**, ensuring the VLANs on R1 and R2 have the correct VLAN ID/VNI.
 
 ```{tip}
 As the group VLANs/VRFs are copied into all nodes in a group, you'll get all VLANs/VRFs (and VLAN interfaces) mentioned in the group definition defined on all group members regardless of whether they use those VLANs/VRFs.
 ```
 
-## Setting Device Type or List of Modules in Groups
+(groups-device-module)=
+### Setting Device Type or List of Modules in Node Groups
 
-You can set node device type (**device** attribute) or the list of configuration modules (**module** attribute) in group definitions, but only on groups with static members.
+You can set node device type (**device** attribute) or the list of configuration modules (**module** attribute) in a node group definition, but only on groups with static members.
 
-The device type is copied from groups to nodes with no **device** attribute. Modules listed in a group are added to the node **module** attribute. The merging of node- and group modules takes precedence over the global (topology-level) list of modules.
+The device type is copied from a group definition to member nodes with no **device** attribute. Modules listed in a group are added to the member node **module** attribute. The merging of node- and group modules takes precedence over the global (topology-level) list of modules.
 
 The following example uses this functionality to:
 
@@ -159,15 +173,34 @@ nodes: [ l1, l2, l3, s1, a1, a2, a3 ]
 ```
 
 **Notes:**
-* The BGP module specified in the **anycast** group is added to the list of modules specified in the group members. No group members have an explicit module definition, resulting in `module: [ bgp ]` being set on A1, A2, and A3.
+* _netlab_ adds the BGP module specified in the **anycast** group to the list of modules of individual group members. No group members have an explicit module definition, resulting in `module: [ bgp ]` being set on A1, A2, and A3.
 * Device type specified in the **anycast** group is copied into A1, A2, and A3.
 * Default device type specified in **defaults.device** is copied into nodes that still have no device type (L1, L2, L3, S1)
 * Default list of modules (`module: [ bgp, ospf ]`) is copied into nodes that still have no **module** attribute (L1, L2, L3, S1).
 
-(group-ansible-vars)
-## Ansible Group Variables
+(groups-ansible-inventory)=
+## Netlab Groups in Ansible Inventory
 
-Group definition could include Ansible group inventory variables in the **vars** element, a dictionary of name/value pairs. The following example creates two groups (g1 and g2) and sets Ansible group variables on g2.
+The custom node groups are used to create additional groups in the Ansible inventory file. You can use custom node groups in any **netlab** command that invokes an Ansible playbook.
+
+For example, given the following lab topology, `netlab config mpls.j2 --limit g1` would deploy configuration template `mpls.j2` only on lab devices A, B, and C.
+
+```
+---
+defaults.device: iosv
+  
+nodes: [ a,b,c,d,e,f ]
+
+groups:
+  g1: [ a,b,c ]
+  g2:
+    members: [ d,e,f ]
+```
+
+(group-ansible-vars)=
+### Ansible Group Variables
+
+A node group definition could include Ansible group inventory variables in the **vars** element (a dictionary of name/value pairs). The following example creates two groups (g1 and g2) and sets Ansible group variables on g2.
 
 ```
 ---
@@ -188,9 +221,16 @@ Group variables are stored in **group_vars** directory when **[netlab create](ne
 
 ```{warning}
 * Use this functionality only when you need custom attributes in Jinja2 templates but don't want to specify them as [valid node attributes](extend-attributes.md).
-* You cannot use Ansible group variables to overwrite node data specified in a custom group. The [group node data](group-node-data) is copied into the node data and stored in Ansible host variables.
+* You cannot use Ansible group variables to overwrite node data specified in a custom group. The [group node data](groups-object-data) is copied into the node data and stored in Ansible host variables.
 * Ansible inventory is not used in the **[‌netlab connect](netlab/connect.md)** command. To overwrite connection-specific variables (connection method, username, password), specify `ansible_something` or `netlab_something` variables in node data. See [Node Attributes](node-ansible-data) for more details.
 ```
+
+(group-special-names)=
+### Special Ansible Group Names
+
+The following groups have special meaning in *netlab*-generated Ansible inventory:
+
+* `unprovisioned`: **netlab up** and **netlab initial** will skip devices in this group while deploying device configurations.
 
 ### Changing Group Variables for Predefined Groups
 
@@ -229,7 +269,7 @@ groups.cumulus.vars.ansible_user: other
 
 ## Automatic BGP Groups
 
-The BGP module creates a group named *asnnn* where *nnn* is the AS number for every BGP AS present in the lab topology. The members of the group are all nodes in that autonomous system.
+The BGP module creates a node group named *asnnn* where *nnn* is the AS number for every BGP AS present in the lab topology. The members of the group are all nodes in that autonomous system.
 
 You can set inventory variables (with **vars** attribute), deployment templates (with **config** attribute), or node data on an automatic BGP group, but you cannot specify static group members.
 
@@ -312,6 +352,7 @@ groups:
     - e
 ```
 
+(groups-hierarchy)=
 ## Hierarchical Groups
 
 *netlab* supports _hierarchical groups_ -- groups could be members of other groups, for example:
@@ -339,9 +380,9 @@ g2:
     d: {}
 ```
 
-### Node Data in Hierarchical Groups
+### Object Data in Hierarchical Groups
 
-When faced with a group hierarchy, processing of node data takes great care to use the node values specified in the most specific group (see also [](custom-config-groups))
+When faced with a group hierarchy, processing of object (node, VLAN, or VRF) data takes great care to use the object values specified in the most specific group (see also [](custom-config-groups))
 
 Continuing the previous example, now with node data in groups[^FINV]:
 
@@ -362,7 +403,7 @@ groups:
 * Nodes **a**, **b** and **d** (direct and indirect members of group **g2**) will have the node attribute **foo** set to **bar**.
 * Node **e** (member of group **g3**) will have the node attribute **foo** set to **baz** -- **g3** overwrites the **foo** value set by the parent group **g2**.
 
-Group node data processing performs [deep dictionary merge](defaults.md#deep-merging) when an attribute specified in the group ‌and the current value of the node attribute are both dictionaries, allowing you to specify various parts of the same dictionary in different groups, for example:
+Group data processing performs [deep dictionary merge](defaults-deep-merging) when an attribute specified in the group ‌and the current value of the member attribute are both dictionaries, allowing you to define various parts of the same data structure in different groups, for example:
 
 ```
 nodes:
@@ -394,14 +435,14 @@ groups:
 * Nodes **c** and **f** do not have any BGP-related attributes
 
 (groups-auto-create)=
-## Create Nodes From Group Members
+## Create Objects From Group Members
 
-The group **members** attribute must contain valid node names specified in the **nodes** dictionary to prevent typos and duplicate names. However, if a group contains **\_auto\_create**  attribute set to *True*, _netlab_ creates missing nodes from group members. You can set the **\_auto\_create** attribute:
+To prevent typos and duplicate names, the group **members** attribute must contain valid group-type-specific object names specified in the **nodes**, **vlans**, or **vrfs** dictionary. However, if a group contains **\_auto\_create**  attribute set to *True*, *netlab* creates missing objects from group members. You can set the **\_auto\_create** attribute:
 
 * In individual groups. You can specify the **\_auto\_create** attribute in individual default groups to create nodes in all labs using those defaults.
 * In **groups** or **defaults.groups** dictionary. The global **\_auto\_create**  attribute does not apply to default groups.
 
-For example, the following topology creates nodes from the members of all topology groups (due to global **\_auto\_create** attribute) and from the members of the **g2** default group:
+For example, due to the global **\_auto\_create** attribute, the following topology creates nodes from the members of all topology groups (**g3**). It also creates nodes from the members of the **g2** default group due to the group **\_auto\_create** attribute.
 
 ```
 defaults:

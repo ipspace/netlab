@@ -108,7 +108,7 @@ def get_valid_attributes(
 
       remove_required_flag(add_attr)                        # Remove required flags from the secondary namespace attributes
 
-    valid += add_attr                                       # ... nope, add to list of attributes and move on
+    valid = add_attr + valid                                # ... nope, merge with existing list and move on
 
     internal_atlist = f'{atlist}_internal'                  # Internal object attributes (used by links)
     if internal_atlist in attributes:                       # Add internal attributes if they exist
