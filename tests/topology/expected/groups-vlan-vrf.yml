@@ -2,11 +2,11 @@ groups:
   ce_vlan:
     members:
     - red_vlan
+    - blue_vlan
     node_data:
+      mode: route
       ospf:
         cost: 1
-      vlan:
-        mode: route
       vrf: red_vrf
     type: vlan
   ce_vrf:
@@ -21,7 +21,7 @@ groups:
     - h1
     - h2
   sw:
-    device: eos
+    device: none
     members:
     - s1
     - s2
@@ -31,70 +31,74 @@ input:
 links:
 - bridge: input_1
   gateway:
-    ipv4: 172.16.0.4/24
+    ipv4: 172.16.2.4/24
   interfaces:
   - ifindex: 1
     ifname: eth1
-    ipv4: 172.16.0.1/24
+    ipv4: 172.16.2.1/24
     node: h1
-  - _vlan_mode: irb
+  - _vlan_mode: route
     ifindex: 1
-    ifname: Ethernet1
-    ipv4: 172.16.0.4/24
+    ifname: eth1
+    ipv4: 172.16.2.4/24
     node: s2
     vlan:
-      access: red_vlan
+      access: blue_vlan
+      mode: route
   linkindex: 1
   node_count: 2
   ospf:
     cost: 1
   prefix:
-    allocation: id_based
-    ipv4: 172.16.0.0/24
+    ipv4: 172.16.2.0/24
+  role: stub
   type: lan
   vlan:
-    access: red_vlan
+    access: blue_vlan
     mode: route
   vrf: red_vrf
 - bridge: input_2
   gateway:
-    ipv4: 172.16.0.4/24
+    ipv4: 172.16.3.4/24
   interfaces:
   - ifindex: 1
     ifname: eth1
-    ipv4: 172.16.0.2/24
+    ipv4: 172.16.3.2/24
     node: h2
-  - _vlan_mode: irb
+  - _vlan_mode: route
     ifindex: 2
-    ifname: Ethernet2
-    ipv4: 172.16.0.4/24
+    ifname: eth2
+    ipv4: 172.16.3.4/24
     node: s2
     vlan:
-      access: red_vlan
+      access: blue_vlan
+      mode: route
   linkindex: 2
   node_count: 2
   ospf:
     cost: 1
   prefix:
-    allocation: id_based
-    ipv4: 172.16.0.0/24
+    ipv4: 172.16.3.0/24
+  role: stub
   type: lan
   vlan:
-    access: red_vlan
+    access: blue_vlan
     mode: route
   vrf: red_vrf
 - interfaces:
   - ifindex: 1
-    ifname: Ethernet1
+    ifname: eth1
     node: s1
     vlan:
       trunk:
+        blue_vlan: {}
         red_vlan: {}
   - ifindex: 3
-    ifname: Ethernet3
+    ifname: eth3
     node: s2
     vlan:
       trunk:
+        blue_vlan: {}
         red_vlan: {}
   linkindex: 3
   node_count: 2
@@ -102,7 +106,48 @@ links:
   type: p2p
   vlan:
     trunk:
+      blue_vlan: {}
       red_vlan: {}
+- bridge: input_4
+  interfaces:
+  - _vlan_mode: irb
+    ifindex: 2
+    ifname: eth2
+    ipv4: 172.16.0.3/24
+    node: s1
+    vlan:
+      access: red_vlan
+  linkindex: 4
+  node_count: 1
+  ospf:
+    cost: 2
+  prefix:
+    allocation: id_based
+    ipv4: 172.16.0.0/24
+  type: lan
+  vlan:
+    access: red_vlan
+  vrf: red_vrf
+- bridge: input_5
+  interfaces:
+  - _vlan_mode: irb
+    ifindex: 4
+    ifname: eth4
+    ipv4: 172.16.0.4/24
+    node: s2
+    vlan:
+      access: red_vlan
+  linkindex: 5
+  node_count: 1
+  ospf:
+    cost: 2
+  prefix:
+    allocation: id_based
+    ipv4: 172.16.0.0/24
+  type: lan
+  vlan:
+    access: red_vlan
+  vrf: red_vrf
 module:
 - vlan
 - ospf
@@ -118,23 +163,18 @@ nodes:
     interfaces:
     - bridge: input_1
       gateway:
-        ipv4: 172.16.0.4/24
+        ipv4: 172.16.2.4/24
       ifindex: 1
       ifname: eth1
-      ipv4: 172.16.0.1/24
+      ipv4: 172.16.2.1/24
       linkindex: 1
-      name: h1 -> [s2,s1,h2]
+      name: h1 -> s2
       neighbors:
-      - ifname: Vlan1000
-        ipv4: 172.16.0.4/24
+      - ifname: eth1
+        ipv4: 172.16.2.4/24
         node: s2
         vrf: red_vrf
-      - ifname: Vlan1000
-        ipv4: 172.16.0.3/24
-        node: s1
-      - ifname: eth1
-        ipv4: 172.16.0.2/24
-        node: h2
+      role: stub
       type: lan
     mgmt:
       ifname: eth0
@@ -151,23 +191,18 @@ nodes:
     interfaces:
     - bridge: input_2
       gateway:
-        ipv4: 172.16.0.4/24
+        ipv4: 172.16.3.4/24
       ifindex: 1
       ifname: eth1
-      ipv4: 172.16.0.2/24
+      ipv4: 172.16.3.2/24
       linkindex: 2
-      name: h2 -> [s2,s1,h1]
+      name: h2 -> s2
       neighbors:
-      - ifname: Vlan1000
-        ipv4: 172.16.0.4/24
+      - ifname: eth2
+        ipv4: 172.16.3.4/24
         node: s2
         vrf: red_vrf
-      - ifname: Vlan1000
-        ipv4: 172.16.0.3/24
-        node: s1
-      - ifname: eth1
-        ipv4: 172.16.0.1/24
-        node: h1
+      role: stub
       type: lan
     mgmt:
       ifname: eth0
@@ -179,39 +214,65 @@ nodes:
     af:
       ipv4: true
       vpnv4: true
-    box: arista/veos
-    device: eos
+    box: none
+    device: none
     id: 3
     interfaces:
     - ifindex: 1
-      ifname: Ethernet1
+      ifname: eth1
       linkindex: 3
       name: s1 -> s2
       neighbors:
-      - ifname: Ethernet3
+      - ifname: eth3
         node: s2
+      subif_index: 1
       type: p2p
       vlan:
         trunk:
+          blue_vlan: {}
           red_vlan: {}
         trunk_id:
         - 1000
-    - bridge_group: 1
+    - bridge: input_4
+      ifindex: 2
+      ifname: eth2
+      linkindex: 4
+      name: '[Access VLAN red_vlan] s1 -> stub'
+      neighbors: []
+      type: lan
+      vlan:
+        access: red_vlan
+        access_id: 1000
+    - bridge_group: 2
       ifindex: 3
+      ifname: eth1.1001
+      ipv4: 172.16.4.3/24
+      name: s1 -> s2
+      neighbors:
+      - ifname: eth3.1001
+        ipv4: 172.16.4.4/24
+        node: s2
+        vrf: red_vrf
+      parent_ifindex: 1
+      parent_ifname: eth1
+      type: vlan_member
+      virtual_interface: true
+      vlan:
+        access_id: 1001
+        mode: route
+        name: blue_vlan
+        routed_link: true
+      vrf: red_vrf
+    - bridge_group: 1
+      ifindex: 5
       ifname: Vlan1000
       ipv4: 172.16.0.3/24
-      name: VLAN red_vlan (1000) -> [s2,h1,h2]
+      name: VLAN red_vlan (1000) -> [s2]
       neighbors:
       - ifname: Vlan1000
         ipv4: 172.16.0.4/24
         node: s2
         vrf: red_vrf
-      - ifname: eth1
-        ipv4: 172.16.0.1/24
-        node: h1
-      - ifname: eth1
-        ipv4: 172.16.0.2/24
-        node: h2
       type: svi
       virtual_interface: true
       vlan:
@@ -236,7 +297,7 @@ nodes:
       type: loopback
       virtual_interface: true
     mgmt:
-      ifname: Management1
+      ifname: eth0
       ipv4: 192.168.121.103
       mac: 08:4f:a9:00:00:03
     module:
@@ -245,19 +306,27 @@ nodes:
     - vrf
     name: s1
     vlan:
-      max_bridge_group: 1
+      max_bridge_group: 2
     vlans:
+      blue_vlan:
+        bridge_group: 2
+        id: 1001
+        mode: route
+        ospf:
+          cost: 1
+        prefix:
+          allocation: id_based
+          ipv4: 172.16.1.0/24
+        vrf: red_vrf
       red_vlan:
         bridge_group: 1
         id: 1000
         mode: irb
         ospf:
-          cost: 1
+          cost: 2
         prefix:
           allocation: id_based
           ipv4: 172.16.0.0/24
-        vlan:
-          mode: route
         vrf: red_vrf
     vrf:
       as: 65000
@@ -280,29 +349,46 @@ nodes:
           af:
             ipv4: true
           area: 0.0.0.0
-          import:
-            connected:
-              auto: true
           interfaces:
-          - bridge_group: 1
+          - bridge_group: 2
             ifindex: 3
+            ifname: eth1.1001
+            ipv4: 172.16.4.3/24
+            name: s1 -> s2
+            neighbors:
+            - ifname: eth3.1001
+              ipv4: 172.16.4.4/24
+              node: s2
+              vrf: red_vrf
+            ospf:
+              area: 0.0.0.0
+              cost: 1
+              network_type: point-to-point
+              passive: false
+            parent_ifindex: 1
+            parent_ifname: eth1
+            type: vlan_member
+            virtual_interface: true
+            vlan:
+              access_id: 1001
+              mode: route
+              name: blue_vlan
+              routed_link: true
+            vrf: red_vrf
+          - bridge_group: 1
+            ifindex: 5
             ifname: Vlan1000
             ipv4: 172.16.0.3/24
-            name: VLAN red_vlan (1000) -> [s2,h1,h2]
+            name: VLAN red_vlan (1000) -> [s2]
             neighbors:
             - ifname: Vlan1000
               ipv4: 172.16.0.4/24
               node: s2
               vrf: red_vrf
-            - ifname: eth1
-              ipv4: 172.16.0.1/24
-              node: h1
-            - ifname: eth1
-              ipv4: 172.16.0.2/24
-              node: h2
             ospf:
               area: 0.0.0.0
-              cost: 1
+              cost: 2
+              network_type: point-to-point
               passive: false
             type: svi
             virtual_interface: true
@@ -328,64 +414,96 @@ nodes:
     af:
       ipv4: true
       vpnv4: true
-    box: arista/veos
-    device: eos
+    box: none
+    device: none
     id: 4
     interfaces:
     - bridge: input_1
+      bridge_group: 1
       ifindex: 1
-      ifname: Ethernet1
+      ifname: eth1
+      ipv4: 172.16.2.4/24
       linkindex: 1
-      name: '[Access VLAN red_vlan] s2 -> h1'
+      name: s2 -> h1
       neighbors:
       - ifname: eth1
-        ipv4: 172.16.0.1/24
+        ipv4: 172.16.2.1/24
         node: h1
+      role: stub
       type: lan
       vlan:
-        access: red_vlan
-        access_id: 1000
+        mode: route
+      vrf: red_vrf
     - bridge: input_2
+      bridge_group: 1
       ifindex: 2
-      ifname: Ethernet2
+      ifname: eth2
+      ipv4: 172.16.3.4/24
       linkindex: 2
-      name: '[Access VLAN red_vlan] s2 -> h2'
+      name: s2 -> h2
       neighbors:
       - ifname: eth1
-        ipv4: 172.16.0.2/24
+        ipv4: 172.16.3.2/24
         node: h2
+      role: stub
       type: lan
       vlan:
-        access: red_vlan
-        access_id: 1000
+        mode: route
+      vrf: red_vrf
     - ifindex: 3
-      ifname: Ethernet3
+      ifname: eth3
       linkindex: 3
       name: s2 -> s1
       neighbors:
-      - ifname: Ethernet1
+      - ifname: eth1
         node: s1
+      subif_index: 1
       type: p2p
       vlan:
         trunk:
+          blue_vlan: {}
           red_vlan: {}
         trunk_id:
         - 1000
+    - bridge: input_5
+      ifindex: 4
+      ifname: eth4
+      linkindex: 5
+      name: '[Access VLAN red_vlan] s2 -> stub'
+      neighbors: []
+      type: lan
+      vlan:
+        access: red_vlan
+        access_id: 1000
     - bridge_group: 1
       ifindex: 5
+      ifname: eth3.1001
+      ipv4: 172.16.4.4/24
+      name: s2 -> s1
+      neighbors:
+      - ifname: eth1.1001
+        ipv4: 172.16.4.3/24
+        node: s1
+        vrf: red_vrf
+      parent_ifindex: 3
+      parent_ifname: eth3
+      type: vlan_member
+      virtual_interface: true
+      vlan:
+        access_id: 1001
+        mode: route
+        name: blue_vlan
+        routed_link: true
+      vrf: red_vrf
+    - bridge_group: 2
+      ifindex: 7
       ifname: Vlan1000
       ipv4: 172.16.0.4/24
-      name: VLAN red_vlan (1000) -> [s1,h1,h2]
+      name: VLAN red_vlan (1000) -> [s1]
       neighbors:
       - ifname: Vlan1000
         ipv4: 172.16.0.3/24
         node: s1
-      - ifname: eth1
-        ipv4: 172.16.0.1/24
-        node: h1
-      - ifname: eth1
-        ipv4: 172.16.0.2/24
-        node: h2
       type: svi
       virtual_interface: true
       vlan:
@@ -410,7 +528,7 @@ nodes:
       type: loopback
       virtual_interface: true
     mgmt:
-      ifname: Management1
+      ifname: eth0
       ipv4: 192.168.121.104
       mac: 08:4f:a9:00:00:04
     module:
@@ -419,19 +537,27 @@ nodes:
     - vrf
     name: s2
     vlan:
-      max_bridge_group: 1
+      max_bridge_group: 2
     vlans:
-      red_vlan:
+      blue_vlan:
         bridge_group: 1
-        id: 1000
-        mode: irb
+        id: 1001
+        mode: route
         ospf:
           cost: 1
         prefix:
           allocation: id_based
+          ipv4: 172.16.1.0/24
+        vrf: red_vrf
+      red_vlan:
+        bridge_group: 2
+        id: 1000
+        mode: irb
+        ospf:
+          cost: 2
+        prefix:
+          allocation: id_based
           ipv4: 172.16.0.0/24
-        vlan:
-          mode: route
         vrf: red_vrf
     vrf:
       as: 65000
@@ -454,28 +580,87 @@ nodes:
           af:
             ipv4: true
           area: 0.0.0.0
-          import:
-            connected:
-              auto: true
           interfaces:
-          - bridge_group: 1
-            ifindex: 5
-            ifname: Vlan1000
-            ipv4: 172.16.0.4/24
-            name: VLAN red_vlan (1000) -> [s1,h1,h2]
+          - bridge: input_1
+            bridge_group: 1
+            ifindex: 1
+            ifname: eth1
+            ipv4: 172.16.2.4/24
+            linkindex: 1
+            name: s2 -> h1
             neighbors:
-            - ifname: Vlan1000
-              ipv4: 172.16.0.3/24
-              node: s1
             - ifname: eth1
-              ipv4: 172.16.0.1/24
+              ipv4: 172.16.2.1/24
               node: h1
+            ospf:
+              area: 0.0.0.0
+              cost: 1
+              network_type: point-to-point
+              passive: true
+            role: stub
+            type: lan
+            vlan:
+              mode: route
+            vrf: red_vrf
+          - bridge: input_2
+            bridge_group: 1
+            ifindex: 2
+            ifname: eth2
+            ipv4: 172.16.3.4/24
+            linkindex: 2
+            name: s2 -> h2
+            neighbors:
             - ifname: eth1
-              ipv4: 172.16.0.2/24
+              ipv4: 172.16.3.2/24
               node: h2
             ospf:
               area: 0.0.0.0
               cost: 1
+              network_type: point-to-point
+              passive: true
+            role: stub
+            type: lan
+            vlan:
+              mode: route
+            vrf: red_vrf
+          - bridge_group: 1
+            ifindex: 5
+            ifname: eth3.1001
+            ipv4: 172.16.4.4/24
+            name: s2 -> s1
+            neighbors:
+            - ifname: eth1.1001
+              ipv4: 172.16.4.3/24
+              node: s1
+              vrf: red_vrf
+            ospf:
+              area: 0.0.0.0
+              cost: 1
+              network_type: point-to-point
+              passive: false
+            parent_ifindex: 3
+            parent_ifname: eth3
+            type: vlan_member
+            virtual_interface: true
+            vlan:
+              access_id: 1001
+              mode: route
+              name: blue_vlan
+              routed_link: true
+            vrf: red_vrf
+          - bridge_group: 2
+            ifindex: 7
+            ifname: Vlan1000
+            ipv4: 172.16.0.4/24
+            name: VLAN red_vlan (1000) -> [s1]
+            neighbors:
+            - ifname: Vlan1000
+              ipv4: 172.16.0.3/24
+              node: s1
+            ospf:
+              area: 0.0.0.0
+              cost: 2
+              network_type: point-to-point
               passive: false
             type: svi
             virtual_interface: true
@@ -501,30 +686,32 @@ ospf:
   area: 0.0.0.0
 provider: libvirt
 vlans:
-  red_vlan:
-    host_count: 2
-    id: 1000
-    neighbors:
-    - ifname: Vlan1000
-      ipv4: 172.16.0.4/24
-      node: s2
-      vrf: red_vrf
-    - ifname: Vlan1000
-      ipv4: 172.16.0.3/24
-      node: s1
-    - ifname: eth1
-      ipv4: 172.16.0.1/24
-      node: h1
-    - ifname: eth1
-      ipv4: 172.16.0.2/24
-      node: h2
+  blue_vlan:
+    id: 1001
+    mode: route
     ospf:
       cost: 1
     prefix:
       allocation: id_based
+      ipv4: 172.16.1.0/24
+    vrf: red_vrf
+  red_vlan:
+    host_count: 0
+    id: 1000
+    mode: irb
+    neighbors:
+    - ifname: Vlan1000
+      ipv4: 172.16.0.3/24
+      node: s1
+    - ifname: Vlan1000
+      ipv4: 172.16.0.4/24
+      node: s2
+      vrf: red_vrf
+    ospf:
+      cost: 2
+    prefix:
+      allocation: id_based
       ipv4: 172.16.0.0/24
-    vlan:
-      mode: route
     vrf: red_vrf
 vrf:
   as: 65000
