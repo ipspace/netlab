@@ -1,5 +1,5 @@
 #
-# Arista EOS quirks
+# Cumulus NVUE quirks
 #
 from box import Box
 

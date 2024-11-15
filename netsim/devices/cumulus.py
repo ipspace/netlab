@@ -3,7 +3,7 @@
 #
 from box import Box
 
-from . import _Quirks, report_quirk
+from . import _Quirks
 from ..utils import log
 from ..augment import devices
 

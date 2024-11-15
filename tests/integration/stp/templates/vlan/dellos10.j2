@@ -1,0 +1,33 @@
+! First of all, create association VLAN<->Virtual-Network -> commented out for STP interop test
+{% if vlans is defined %}
+{%   for vlan_name, vlan in vlans.items() %}
+! virtual-network {{ vlan.id }}
+!   exit
+interface vlan {{ vlan.id }}
+  description "VLAN {{ vlan_name }}"
+!  virtual-network {{ vlan.id }}
+  exit
+{%   endfor %}
+{% endif %}
+!
+{% for ifdata in interfaces if ifdata.vlan is defined %}
+!
+interface {{ ifdata.ifname }}
+{%   if ifdata.vlan.access_id is defined %}
+ switchport mode access
+ switchport access vlan {{ ifdata.vlan.access_id }}
+{%   endif %}
+{%   if ifdata.vlan.trunk_id is defined %}
+ switchport mode trunk
+
+{%     set vid_list = [] %}
+{%     for vid in ifdata.vlan.trunk_id if vid != ifdata.vlan.access_id|default(0) %}
+{{       vid_list.append(vid) }}
+{%     endfor %}
+
+ switchport trunk allowed vlan {{ vid_list|join(",") }}
+{%     if ifdata.vlan.native is defined %}
+ switchport access vlan {{ ifdata.vlan.access_id }}
+{%     endif %}
+{%   endif %}
+{% endfor +%}
