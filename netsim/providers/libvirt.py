@@ -383,7 +383,7 @@ class Libvirt(_Provider):
 
       l.bridge = linux_bridge
       log.print_verbose(f"... network {brname} maps into {linux_bridge}")
-      if not linuxbridge.configure_bridge_forwarding(brname):
+      if not linuxbridge.configure_bridge_forwarding(linux_bridge):
         log.error(f"Cannot set forwarding mask on Linux bridge {linux_bridge}")
         continue
       if not external_commands.run_command(
