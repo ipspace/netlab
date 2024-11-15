@@ -28,7 +28,7 @@
             burst: 7200
             rate: 7200
 {% endif %}
-{% for ifdata in interfaces if 'stp' in ifdata  %}
+{% for ifdata in interfaces if 'stp' in ifdata or ifdata.vlan.trunk|default({})|dict2items|map(attribute='value')|selectattr('stp','defined') %}
 {%  if loop.first %}
     interface:
 {%  endif %}
@@ -37,11 +37,25 @@
           domain:
             br_default:
               stp:
-{%  if not ifdata.stp.enable|default(True) %}
+{%  if 'stp' in ifdata %}
+{%   if not ifdata.stp.enable|default(True) %}
                 bpdu-filter: on
-{%  elif 'port_priority' in ifdata.stp %}
+{%   elif 'port_priority' in ifdata.stp %}
                 vlan:
                   '{{ ifdata.vlan.access_id|default(1) }}':
                     priority: {{ ifdata.stp.port_priority * 16 }}
+{%   endif %}
+{%  elif ifdata.vlan.trunk_id is defined %}
+{%   for id in ifdata.vlan.trunk_id %}
+{%    if loop.first %}
+                vlan:
+{%    endif %}
+{%    for vname,vdata in vlans.items() if vdata.id==id %}
+{%     if vname in ifdata.vlan.trunk and ifdata.vlan.trunk[vname].stp.port_priority is defined %}
+                  '{{ id }}':
+                    priority: {{ ifdata.vlan.trunk[vname].stp.port_priority * 16 }}
+{%     endif %}
+{%    endfor %}
+{%   endfor %}
 {%  endif %}
 {% endfor %}
