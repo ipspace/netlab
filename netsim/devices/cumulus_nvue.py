@@ -20,7 +20,16 @@ def nvue_check_stp_features(node: Box, topology: Box) -> None:
         err_data.append(f'Non-VLAN interface {i.ifname}')
       elif stp_protocol!='pvrst':
         err_data.append(f'VLAN interface without PVRST {i.ifname}')
-  
+
+  if stp_protocol!='pvrst':
+    for i in node.interfaces:
+      if not i.get('vlan.trunk',{}):
+        continue
+      for vname,vdata in i.vlan.trunk.items():
+        if 'stp' in vdata and 'port_priority' in vdata.stp:  # AttributeNotImplemented("mstpctl-treeportprio") in NVUE
+          err_data.append(f'Trunk VLAN {vname} interface without PVRST {i.ifname}({i.get("name","?")})')
+
+
   if err_data:
     report_quirk(
       f'node {node.name} does not support STP port_priority on non-VLAN interfaces or without PVRST ({stp_protocol})',
