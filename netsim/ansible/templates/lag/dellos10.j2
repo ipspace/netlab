@@ -1,12 +1,27 @@
-{% for intf in interfaces if intf.type == 'lag' %}
+{# Provision internal Virtual Line Trunking (VLT) domain #}
+{% for intf in interfaces if intf.type == 'mlag_peer' %}
+vlt-domain {{ intf.lag.mlag.peergroup }}
+ backup destination {{ intf.lag.mlag.peer }}
+ vlt-mac {{ intf.lag.mlag.mac | hwaddr('linux') }}
 {%   for ch in interfaces if ch.lag._parentindex|default(False) == intf.linkindex %}
+ discovery-interface {{ ch.ifname }}
+{%   endfor %}
+{% endfor %}
+
+{% for intf in interfaces if intf.type == 'lag' %}
+interface {{ intf.ifname }}
+{%  if 'mlag' in intf.lag %}
+  vlt-port-channel {{ intf.lag.ifindex }}
+{%  endif %}
+{%  for ch in interfaces if ch.lag._parentindex|default(False) == intf.linkindex %}
 !
-{%     set _lag_mode = 
-         'on' if intf.lag.lacp|default('') == 'off' else
-         'active' if intf.lag.lacp_mode|default('') == 'active' else 
-         'passive' %}
+{%   set _lag_mode = 
+      'on' if intf.lag.lacp|default('') == 'off' else
+      'active' if intf.lag.lacp_mode|default('') == 'active' else 
+      'passive' %}
 interface {{ ch.ifname }}
   channel-group {{ intf.lag.ifindex }} mode {{ _lag_mode }}
-  lacp rate {{ 'fast' if intf.lag.lacp|default('') == 'fast' else 'normal' }}
-{%   endfor %}
+  lacp rate {{ 'fast' if ch.lag.lacp|default(intf.lag.lacp) == 'fast' else 'normal' }}
+!
+{%  endfor %}
 {% endfor %}

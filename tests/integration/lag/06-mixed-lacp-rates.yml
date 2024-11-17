@@ -1,0 +1,31 @@
+---
+message: |
+  The device under is a router with a L3 LAG link connected to a FRR device, using mixed LACP rates
+  The devices should be able to establish an OSPF adjacency.
+
+groups:
+  switches:
+    members: [ dut, xr ]
+    module: [ lag, ospf ]
+
+nodes:
+  dut:
+  xr:
+    device: frr
+
+links:
+- lag.members: 
+  - dut:
+    xr:
+    lag.lacp: fast
+  - dut:
+    xr:
+    lag.lacp: slow
+
+validate:
+  adj:
+    description: Check OSPF adjacencies
+    wait_msg: Waiting for OSPF adjacency process to complete
+    wait: 50
+    nodes: [ xr ]
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id)

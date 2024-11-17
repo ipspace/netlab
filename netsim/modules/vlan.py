@@ -876,6 +876,8 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
       if '_vlan_saved' in attr:                                             # Skip the saved attributes
         continue
       if not attr in skip_ifattr:                                           # ... and physical interface attributes
+        if log.debug_active('vlan'):
+          print(f"create_svi_interfaces: Removing {attr}")
         ifdata.pop(attr,None)
 
     ifdata.vlan.access_id = vlan_data.id                                    # Add VLAN ID to interface data to simplify config templates
