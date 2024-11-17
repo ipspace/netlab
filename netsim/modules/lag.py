@@ -107,10 +107,10 @@ class LAG(_Module):
   def node_post_transform(self, node: Box, topology: Box) -> None:
     features = devices.get_device_features(node,topology.defaults)
     for i in node.interfaces:
-      if 'lag' not in i:
+      if i.type!='lag':
         continue
 
-      i.lag = node.get('lag',{}) + i.lag
+      i.lag = node.get('lag',{}) + i.lag  # Merge node level lag attributes
       lacp_mode = i.get('lag.lacp_mode')  # Inheritance copying is done elsewhere
       if lacp_mode=='passive' and not features.lag.get('passive',False):
         log.error(f'Node {node.name} does not support passive LACP configured on interface {i.ifname}',
