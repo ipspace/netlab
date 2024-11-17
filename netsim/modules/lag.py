@@ -247,8 +247,6 @@ class LAG(_Module):
   def node_post_transform(self, node: Box, topology: Box) -> None:
     features = devices.get_device_features(node,topology.defaults)
     for i in node.interfaces:
-      if 'lag' not in i:
-        continue
       if i.get('lag.mlag.peergroup',None):  # Fill in peer loopback IP and vMAC for MLAG peer links
         populate_mlag_peer(node,i,topology)
       elif i.type=='lag':
