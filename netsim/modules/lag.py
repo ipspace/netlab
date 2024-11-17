@@ -35,9 +35,7 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
       return
     l.pop('lag.mlag',None)                                                # Remove from link, put it on M-side interfaces only
 
-  lag_members = l.lag.members
-  l.lag.pop("members",None)                                               # Remove explicit list of members
-  l2_ifdata = data.get_box({ 'type': "p2p", 'prefix': False })            # Construct an L2 member link
+  l2_ifdata = data.get_box({ 'type': "p2p", 'prefix': False, 'lag': {} }) # Construct an L2 member link
   for a in list(topology.defaults.lag.attributes.lag_l2_ifattr):
     if a in l:
       l2_ifdata[a] = l[a]
@@ -84,23 +82,22 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
   def determine_mlag_sides(member: Box, oneSide: str) -> typing.Tuple[str,str]:
     _first_pair = [ i.node for i in l.interfaces ]
     mlag_1_side = [ i.node for i in member.interfaces if i.node in _first_pair ]
-    if len(mlag_1_side)==1:
+    if len(mlag_1_side)>=1:
       if oneSide is None:
         oneSide = mlag_1_side[0]
       if oneSide==mlag_1_side[0]:
         _mSide = [ i for i in member.interfaces if i.node!=oneSide ]
-        # l.interfaces = l.interfaces + _mSide
         mlag_device = topology.nodes[ _mSide[0].node ].device
         return (mlag_1_side[0],mlag_device)
 
-    log.error(f'Links in MLAG {l.lag.ifindex} must connect exactly 1 node to M other nodes',
+    log.error(f'Links in MLAG {l.lag.ifindex} must connect exactly 1 node to M other nodes ({l.lag.members})',
       category=log.IncorrectValue,
       module='lag')
     return ("<error>",None)
 
   mlag_1_side = None                              # Node on the '1' side of MLAG link
   mlag_device = None                              # Device type of the 'M' side
-  for idx,member in enumerate(lag_members):
+  for idx,member in enumerate(l.lag.members):
     member = links.adjust_link_object(member,f'{l._linkname}.lag[{idx+1}]',topology.nodes)
 
     if 'lag' in member:                           # Catch potential sources for inconsistency
@@ -132,6 +129,8 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
         mlag_device = topology.nodes[_n].device   # Set MLAG device type for peer link
     elif is_mlag:                                 # Figure out which node is on the "1" side starting at 2nd member
       mlag_1_side, mlag_device = determine_mlag_sides(member,mlag_1_side)
+      if mlag_1_side=="<error>":
+        return
     else:
       base = { n.node for n in l.interfaces }     # List the (2) nodes from the first link
       others = { n.node for n in member.interfaces if n.node not in base }
@@ -150,6 +149,7 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
           return
         if is_mlag:
           i.lag.mlag = True                       # Put 'mlag' flag on M-side (only)
+  l.lag.pop("members",None)                       # Remove explicit list of members
 
 def process_lag_links(topology: Box) -> None:
   for l in list(topology.links):
