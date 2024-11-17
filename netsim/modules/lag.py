@@ -35,6 +35,12 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
   for idx,member in enumerate(lag_members):
     member = links.adjust_link_object(member,f'{l._linkname}.lag[{idx+1}]',topology.nodes)
 
+    if 'lag' in member:                                        # Catch potential sources for inconsistency
+      log.error(f'LAG attributes must be configured on the link, not member interface {member._linkname}: {member.lag}',
+        category=log.IncorrectAttr,
+        module='lag')
+      return
+
     if len(member.interfaces)!=2:                              # Check that there are exactly 2 nodes involved
       log.error(f'Link {member._linkname} in LAG {l.lag.ifindex} must have exactly 2 nodes',
       category=log.IncorrectAttr,
