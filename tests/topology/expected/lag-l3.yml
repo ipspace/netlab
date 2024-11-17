@@ -9,27 +9,26 @@ links:
 - bridge: input_1
   interfaces:
   - ifindex: 30000
-    ifname: bond1
-    ipv4: 10.1.0.1/30
+    ifname: port-channel1
     node: r1
   - ifindex: 30000
-    ifname: bond1
-    ipv4: 10.1.0.2/30
+    ifname: port-channel1
     node: r2
   lag:
     ifindex: 1
   linkindex: 1
   mtu: 1600
   node_count: 2
-  prefix:
-    ipv4: 10.1.0.0/30
+  prefix: false
+  stp:
+    enable: false
   type: lag
 - interfaces:
   - ifindex: 1
-    ifname: eth1
+    ifname: Ethernet1
     node: r1
   - ifindex: 1
-    ifname: eth1
+    ifname: Ethernet1
     node: r2
   lag:
     _parentindex: 1
@@ -37,13 +36,15 @@ links:
   mtu: 1600
   node_count: 2
   prefix: false
+  stp:
+    enable: false
   type: p2p
 - interfaces:
   - ifindex: 2
-    ifname: eth2
+    ifname: Ethernet2
     node: r1
   - ifindex: 2
-    ifname: eth2
+    ifname: Ethernet2
     node: r2
   lag:
     _parentindex: 1
@@ -51,30 +52,30 @@ links:
   mtu: 1600
   node_count: 2
   prefix: false
+  stp:
+    enable: false
   type: p2p
 module:
+- vlan
 - lag
+- stp
 name: input
 nodes:
   r1:
     af:
       ipv4: true
-    box: quay.io/frrouting/frr:10.0.1
+    box: ceos:4.32.1F
     clab:
-      binds:
-      - clab_files/r1/daemons:/etc/frr/daemons
-      - clab_files/r1/hosts:/etc/hosts
-      config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts
-      kind: linux
-    device: frr
+      env:
+        CLAB_MGMT_VRF: management
+        INTFTYPE: et
+      kind: ceos
+    device: eos
     hostname: clab-input-r1
     id: 1
     interfaces:
     - ifindex: 30000
-      ifname: bond1
-      ipv4: 10.1.0.1/30
+      ifname: port-channel1
       lag:
         ifindex: 1
         lacp: fast
@@ -84,32 +85,47 @@ nodes:
       mtu: 1600
       name: r1 -> r2
       neighbors:
-      - ifname: bond1
-        ipv4: 10.1.0.2/30
+      - ifname: port-channel1
         node: r2
+        stp:
+          enable: false
+      stp:
+        enable: false
       type: lag
       virtual_interface: true
-    - ifindex: 1
-      ifname: eth1
+    - clab:
+        name: et1
+      ifindex: 1
+      ifname: Ethernet1
       lag:
         _parentindex: 1
       linkindex: 2
       mtu: 1600
       name: r1 -> r2
       neighbors:
-      - ifname: eth1
+      - ifname: Ethernet1
         node: r2
+        stp:
+          enable: false
+      stp:
+        enable: false
       type: p2p
-    - ifindex: 2
-      ifname: eth2
+    - clab:
+        name: et2
+      ifindex: 2
+      ifname: Ethernet2
       lag:
         _parentindex: 1
       linkindex: 3
       mtu: 1600
       name: r1 -> r2
       neighbors:
-      - ifname: eth2
+      - ifname: Ethernet2
         node: r2
+        stp:
+          enable: false
+      stp:
+        enable: false
       type: p2p
     lag:
       lacp: fast
@@ -117,38 +133,38 @@ nodes:
       mode: 802.3ad
     loopback:
       ifindex: 0
-      ifname: lo
+      ifname: Loopback0
       ipv4: 10.0.0.1/32
       neighbors: []
       type: loopback
       virtual_interface: true
     mgmt:
-      ifname: eth0
+      ifname: Management0
       ipv4: 192.168.121.101
       mac: 08:4f:a9:00:00:01
     module:
+    - vlan
     - lag
-    mtu: 1500
+    - stp
     name: r1
+    stp:
+      enable: true
+      protocol: stp
   r2:
     af:
       ipv4: true
-    box: quay.io/frrouting/frr:10.0.1
+    box: ceos:4.32.1F
     clab:
-      binds:
-      - clab_files/r2/daemons:/etc/frr/daemons
-      - clab_files/r2/hosts:/etc/hosts
-      config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts
-      kind: linux
-    device: frr
+      env:
+        CLAB_MGMT_VRF: management
+        INTFTYPE: et
+      kind: ceos
+    device: eos
     hostname: clab-input-r2
     id: 2
     interfaces:
     - ifindex: 30000
-      ifname: bond1
-      ipv4: 10.1.0.2/30
+      ifname: port-channel1
       lag:
         ifindex: 1
         lacp: fast
@@ -158,32 +174,47 @@ nodes:
       mtu: 1600
       name: r2 -> r1
       neighbors:
-      - ifname: bond1
-        ipv4: 10.1.0.1/30
+      - ifname: port-channel1
         node: r1
+        stp:
+          enable: false
+      stp:
+        enable: false
       type: lag
       virtual_interface: true
-    - ifindex: 1
-      ifname: eth1
+    - clab:
+        name: et1
+      ifindex: 1
+      ifname: Ethernet1
       lag:
         _parentindex: 1
       linkindex: 2
       mtu: 1600
       name: r2 -> r1
       neighbors:
-      - ifname: eth1
+      - ifname: Ethernet1
         node: r1
+        stp:
+          enable: false
+      stp:
+        enable: false
       type: p2p
-    - ifindex: 2
-      ifname: eth2
+    - clab:
+        name: et2
+      ifindex: 2
+      ifname: Ethernet2
       lag:
         _parentindex: 1
       linkindex: 3
       mtu: 1600
       name: r2 -> r1
       neighbors:
-      - ifname: eth2
+      - ifname: Ethernet2
         node: r1
+        stp:
+          enable: false
+      stp:
+        enable: false
       type: p2p
     lag:
       lacp: fast
@@ -191,17 +222,24 @@ nodes:
       mode: 802.3ad
     loopback:
       ifindex: 0
-      ifname: lo
+      ifname: Loopback0
       ipv4: 10.0.0.2/32
       neighbors: []
       type: loopback
       virtual_interface: true
     mgmt:
-      ifname: eth0
+      ifname: Management0
       ipv4: 192.168.121.102
       mac: 08:4f:a9:00:00:02
     module:
+    - vlan
     - lag
-    mtu: 1500
+    - stp
     name: r2
+    stp:
+      enable: true
+      protocol: stp
 provider: clab
+stp:
+  enable: true
+  protocol: stp

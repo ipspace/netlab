@@ -1,5 +1,5 @@
 input:
-- topology/input/lag-l3-vlan-trunk.yml
+- topology/input/lag-l3-access-vlan.yml
 - package:topology-defaults.yml
 lag:
   lacp: fast
@@ -8,30 +8,31 @@ lag:
 links:
 - bridge: input_1
   interfaces:
-  - ifindex: 30000
+  - _vlan_mode: irb
+    ifindex: 30000
     ifname: bond1
+    ipv4: 172.16.0.1/24
     node: r1
     vlan:
-      trunk:
-        v1: {}
-        v2: {}
-  - ifindex: 30000
+      access: v1
+  - _vlan_mode: irb
+    ifindex: 30000
     ifname: bond1
+    ipv4: 172.16.0.2/24
     node: r2
     vlan:
-      trunk:
-        v1: {}
-        v2: {}
+      access: v1
   lag:
     ifindex: 1
+    lacp: 'off'
   linkindex: 1
   node_count: 2
-  prefix: {}
+  prefix:
+    allocation: id_based
+    ipv4: 172.16.0.0/24
   type: lag
   vlan:
-    trunk:
-      v1: {}
-      v2: {}
+    access: v1
 - interfaces:
   - ifindex: 1
     ifname: eth1
@@ -61,10 +62,10 @@ links:
 - interfaces:
   - ifindex: 3
     ifname: eth3
-    node: r1
+    node: r2
   - ifindex: 3
     ifname: eth3
-    node: r2
+    node: r1
   lag:
     _parentindex: 1
   linkindex: 4
@@ -95,19 +96,21 @@ nodes:
     - ifindex: 30000
       ifname: bond1
       lag:
-        ifindex: 1
         lacp: fast
         lacp_mode: active
         mode: 802.3ad
       linkindex: 1
       mtu: 1500
-      name: r1 -> r2
+      name: '[Access VLAN v1] r1 -> r2'
       neighbors:
       - ifname: bond1
+        ipv4: 172.16.0.2/24
         node: r2
-      subif_index: 2
       type: lag
       virtual_interface: true
+      vlan:
+        access: v1
+        access_id: 1000
     - ifindex: 1
       ifname: eth1
       lag:
@@ -141,36 +144,8 @@ nodes:
       - ifname: eth3
         node: r2
       type: p2p
-    - ifindex: 4
-      ifname: bond1.1000
-      name: '[SubIf VLAN v1] r1 -> r2'
-      neighbors:
-      - ifname: eth4
-        ipv4: 172.16.0.2/24
-        node: r2
-      parent_ifindex: 30000
-      parent_ifname: bond1
-      type: vlan_member
-      virtual_interface: true
-      vlan:
-        access: v1
-        access_id: 1000
-    - ifindex: 5
-      ifname: bond1.1001
-      name: '[SubIf VLAN v2] r1 -> r2'
-      neighbors:
-      - ifname: eth5
-        ipv4: 172.16.1.2/24
-        node: r2
-      parent_ifindex: 30000
-      parent_ifname: bond1
-      type: vlan_member
-      virtual_interface: true
-      vlan:
-        access: v2
-        access_id: 1001
     - bridge_group: 1
-      ifindex: 6
+      ifindex: 4
       ifname: vlan1000
       ipv4: 172.16.0.1/24
       name: VLAN v1 (1000) -> [r2]
@@ -183,20 +158,6 @@ nodes:
       vlan:
         mode: irb
         name: v1
-    - bridge_group: 2
-      ifindex: 7
-      ifname: vlan1001
-      ipv4: 172.16.1.1/24
-      name: VLAN v2 (1001) -> [r2]
-      neighbors:
-      - ifname: vlan1001
-        ipv4: 172.16.1.2/24
-        node: r2
-      type: svi
-      virtual_interface: true
-      vlan:
-        mode: irb
-        name: v2
     lag:
       lacp: fast
       lacp_mode: active
@@ -218,7 +179,7 @@ nodes:
     mtu: 1500
     name: r1
     vlan:
-      max_bridge_group: 2
+      max_bridge_group: 1
     vlans:
       v1:
         bridge_group: 1
@@ -227,13 +188,6 @@ nodes:
         prefix:
           allocation: id_based
           ipv4: 172.16.0.0/24
-      v2:
-        bridge_group: 2
-        id: 1001
-        mode: irb
-        prefix:
-          allocation: id_based
-          ipv4: 172.16.1.0/24
   r2:
     af:
       ipv4: true
@@ -253,19 +207,21 @@ nodes:
     - ifindex: 30000
       ifname: bond1
       lag:
-        ifindex: 1
         lacp: fast
         lacp_mode: active
         mode: 802.3ad
       linkindex: 1
       mtu: 1500
-      name: r2 -> r1
+      name: '[Access VLAN v1] r2 -> r1'
       neighbors:
       - ifname: bond1
+        ipv4: 172.16.0.1/24
         node: r1
-      subif_index: 2
       type: lag
       virtual_interface: true
+      vlan:
+        access: v1
+        access_id: 1000
     - ifindex: 1
       ifname: eth1
       lag:
@@ -299,36 +255,8 @@ nodes:
       - ifname: eth3
         node: r1
       type: p2p
-    - ifindex: 4
-      ifname: bond1.1000
-      name: '[SubIf VLAN v1] r2 -> r1'
-      neighbors:
-      - ifname: eth4
-        ipv4: 172.16.0.1/24
-        node: r1
-      parent_ifindex: 30000
-      parent_ifname: bond1
-      type: vlan_member
-      virtual_interface: true
-      vlan:
-        access: v1
-        access_id: 1000
-    - ifindex: 5
-      ifname: bond1.1001
-      name: '[SubIf VLAN v2] r2 -> r1'
-      neighbors:
-      - ifname: eth5
-        ipv4: 172.16.1.1/24
-        node: r1
-      parent_ifindex: 30000
-      parent_ifname: bond1
-      type: vlan_member
-      virtual_interface: true
-      vlan:
-        access: v2
-        access_id: 1001
     - bridge_group: 1
-      ifindex: 6
+      ifindex: 4
       ifname: vlan1000
       ipv4: 172.16.0.2/24
       name: VLAN v1 (1000) -> [r1]
@@ -341,20 +269,6 @@ nodes:
       vlan:
         mode: irb
         name: v1
-    - bridge_group: 2
-      ifindex: 7
-      ifname: vlan1001
-      ipv4: 172.16.1.2/24
-      name: VLAN v2 (1001) -> [r1]
-      neighbors:
-      - ifname: vlan1001
-        ipv4: 172.16.1.1/24
-        node: r1
-      type: svi
-      virtual_interface: true
-      vlan:
-        mode: irb
-        name: v2
     lag:
       lacp: fast
       lacp_mode: active
@@ -376,7 +290,7 @@ nodes:
     mtu: 1500
     name: r2
     vlan:
-      max_bridge_group: 2
+      max_bridge_group: 1
     vlans:
       v1:
         bridge_group: 1
@@ -385,13 +299,6 @@ nodes:
         prefix:
           allocation: id_based
           ipv4: 172.16.0.0/24
-      v2:
-        bridge_group: 2
-        id: 1001
-        mode: irb
-        prefix:
-          allocation: id_based
-          ipv4: 172.16.1.0/24
 provider: clab
 vlans:
   v1:
@@ -407,16 +314,3 @@ vlans:
     prefix:
       allocation: id_based
       ipv4: 172.16.0.0/24
-  v2:
-    host_count: 0
-    id: 1001
-    neighbors:
-    - ifname: vlan1001
-      ipv4: 172.16.1.2/24
-      node: r2
-    - ifname: vlan1001
-      ipv4: 172.16.1.1/24
-      node: r1
-    prefix:
-      allocation: id_based
-      ipv4: 172.16.1.0/24
