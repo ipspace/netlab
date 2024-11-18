@@ -87,6 +87,7 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
         oneSide = mlag_1_side[0]
       if oneSide==mlag_1_side[0]:
         _mSide = [ i for i in member.interfaces if i.node!=oneSide ]
+        l.interfaces = l.interfaces + [ i for i in _mSide if i.node not in _first_pair ]
         mlag_device = topology.nodes[ _mSide[0].node ].device
         return (mlag_1_side[0],mlag_device)
 
