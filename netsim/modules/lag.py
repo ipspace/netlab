@@ -58,11 +58,12 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
       return False
     
     if 'reserved_ifindex_range' in features.lag:                          # Exclude any reserved port channel IDs
-      if l.lag.ifindex in features.lag.reserved_ifindex_range:
+      if l.lag.get('ifindex',0) in features.lag.reserved_ifindex_range:
         log.error(f'Selected lag.ifindex({l.lag.ifindex}) for {linkname} overlaps with device specific reserved range ' +
                   f'{features.lag.reserved_ifindex_range} for node {_n.name} ({_n.device})',
           category=log.IncorrectValue,
           module='lag')
+        return False
 
     return True
 
