@@ -56,6 +56,14 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
         category=log.IncorrectAttr,
         module='lag')
       return False
+    
+    if 'reserved_ifindex_range' in features.lag:                          # Exclude any reserved port channel IDs
+      if l.lag.ifindex in features.lag.reserved_ifindex_range:
+        log.error(f'Selected lag.ifindex({l.lag.ifindex}) for {linkname} overlaps with device specific reserved range ' +
+                  f'{features.lag.reserved_ifindex_range} for node {_n.name} ({_n.device})',
+          category=log.IncorrectValue,
+          module='lag')
+
     return True
 
   """
@@ -113,7 +121,7 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
         module='lag')
       return
 
-    for i in member.interfaces:                   # Check that both nodes support LAG
+    for i in member.interfaces:                   # Check that they all support LAG
       if not check_lag_support(i.node,member._linkname):
         return
 
@@ -143,13 +151,14 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
   #
   # Post processing - at this point we finally know which is the 1-side node for M-LAG
   #
-  if is_mlag or l.get('lag.mlag.peergroup',None): # For MLAG links or internal MLAG link between switches
+  if is_mlag or l.type=='mlag_peer':              # For MLAG links or internal MLAG link between switches
     for i in l.interfaces:
       if i.node!=mlag_1_side:
         if not check_mlag_support(i.node,l._linkname,mlag_device):
           return
         if is_mlag:
           i.lag.mlag = True                       # Put 'mlag' flag on M-side (only)
+
   l.lag.pop("members",None)                       # Remove explicit list of members
 
 def process_lag_links(topology: Box) -> None:
@@ -169,7 +178,6 @@ def process_lag_links(topology: Box) -> None:
       l.prefix = False                            # L2-only
     else:
       l.type = 'lag'
-
       if 'ifindex' not in l.lag:                  # Use user provided lag.ifindex, if any
         l.lag.ifindex = _dataplane.get_next_id(ID_SET)
 
@@ -202,7 +210,7 @@ def populate_mlag_peer(intf: Box, topology: Box) -> None:
     _mac = netaddr.EUI(_mlag_peer.mac)                                      # Generate unique virtual MAC per MLAG group
     _mac._set_value(_mac.value + intf.get('lag.mlag.peergroup',0) % 65536 ) # ...based on lag.mlag.peergroup
     intf.lag.mlag.mac = str(_mac)
-  
+
   for v in ['vlan','ifindex']:
     if v in _mlag_peer:
       intf.lag.mlag[v] = _mlag_peer[v]
