@@ -174,6 +174,22 @@ def process_lag_links(topology: Box) -> None:
 
     create_lag_member_links(l,topology)
 
+#
+# populate_mlag_peer - Lookup the IPv4 loopback address for the mlag peer, and derive a virtual MAC to use
+#
+def populate_mlag_peer(intf: Box, topology: Box) -> None:
+  _n = intf.neighbors[0].node
+  peer = topology.nodes[_n]
+  if 'ipv4' in peer.loopback:
+    intf.lag.mlag.peer = str(netaddr.IPNetwork(peer.loopback.ipv4).ip)
+  else:
+    log.error(f'Node {peer.name} must have an IPv4 address on its loopback interface to support MLAG',
+        category=log.IncorrectValue,
+        module='lag')
+  _mac = netaddr.EUI(topology.get('defaults.lag.mlag.macbase'))       # Generate unique virtual MAC per MLAG group
+  _mac._set_value(_mac.value + intf.get('lag.mlag.group',0) % 65536 ) # ...based on lag.mlag.group
+  intf.lag.mlag.mac = str(_mac)                   
+
 class LAG(_Module):
 
   def module_pre_transform(self, topology: Box) -> None:
@@ -194,11 +210,7 @@ class LAG(_Module):
     features = devices.get_device_features(node,topology.defaults)
     for i in node.interfaces:
       if i.type=='mlag_peer':               # Fill in peer loopback IP and vMAC for MLAG peer links
-        _n = i.neighbors[0].node
-        i.lag.mlag.peer = str(netaddr.IPNetwork(topology.nodes[_n].loopback.ipv4).ip)
-        _mac = netaddr.EUI(topology.get('defaults.lag.mlag.macbase'))
-        _mac._set_value(_mac.value + i.get('lag.mlag.group',0) % 65536 )
-        i.lag.mlag.mac = str(_mac)          # Generate unique virtual MAC per MLAG group
+        populate_mlag_peer(i,topology)
       elif i.type=='lag':
         i.lag = node.get('lag',{}) + i.lag  # Merge node level settings with interface overrides
         lacp_mode = i.get('lag.lacp_mode')  # Inheritance copying is done elsewhere
