@@ -188,7 +188,7 @@ def populate_mlag_peer(intf: Box, topology: Box) -> None:
         module='lag')
   _mac = netaddr.EUI(topology.get('defaults.lag.mlag.macbase'))       # Generate unique virtual MAC per MLAG group
   _mac._set_value(_mac.value + intf.get('lag.mlag.group',0) % 65536 ) # ...based on lag.mlag.group
-  intf.lag.mlag.mac = str(_mac)                   
+  intf.lag.mlag.mac = str(_mac)
 
 class LAG(_Module):
 
