@@ -61,7 +61,7 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
   """
   check_mlag_support - check if the given node supports mlag and has the same device type
   """
-  def check_mlag_support(node: str, linkname: str, mlag_device: str) -> bool:
+  def check_mlag_support(node: str, linkname: str, mlag_device: typing.Optional[str]) -> bool:
     _n = topology.nodes[node]
     features = devices.get_device_features(_n,topology.defaults)
     if not features.lag.get('mlag',False):
@@ -79,7 +79,7 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
   """ 
   determine_mlag_sides - figure out which node forms the "1" side of an 1:M MLAG group, and the device type of its M-side peer
   """
-  def determine_mlag_sides(member: Box, oneSide: str) -> typing.Tuple[str,str]:
+  def determine_mlag_sides(member: Box, oneSide: typing.Optional[str]) -> typing.Tuple[str,typing.Optional[str]]:
     _first_pair = [ i.node for i in l.interfaces ]
     mlag_1_side = [ i.node for i in member.interfaces if i.node in _first_pair ]
     if len(mlag_1_side)>=1:
@@ -124,7 +124,7 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
       print(f'LAG create_lag_member_links -> adding link {member}')
     topology.links.append(member)
     if not l.interfaces:                          # Copy interfaces from first member link
-      l.interfaces = member.interfaces + []       # Deep copy, assumes all links have same 2 nodes
+      l.interfaces = member.interfaces + []       # Deep copy, starting with 2 nodes from first member
       if l.type=='mlag_peer':
         _n = l.interfaces[0].node
         mlag_device = topology.nodes[_n].device   # Set MLAG device type for peer link
