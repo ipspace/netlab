@@ -181,15 +181,31 @@ def process_lag_links(topology: Box) -> None:
 def populate_mlag_peer(intf: Box, topology: Box) -> None:
   _n = intf.neighbors[0].node
   peer = topology.nodes[_n]
-  if 'ipv4' in peer.loopback:
-    intf.lag.mlag.peer = str(netaddr.IPNetwork(peer.loopback.ipv4).ip)
-  else:
-    log.error(f'Node {peer.name} must have an IPv4 address on its loopback interface to support MLAG',
-        category=log.IncorrectValue,
-        module='lag')
-  _mac = netaddr.EUI(topology.get('defaults.lag.mlag.macbase'))       # Generate unique virtual MAC per MLAG group
-  _mac._set_value(_mac.value + intf.get('lag.mlag.group',0) % 65536 ) # ...based on lag.mlag.group
-  intf.lag.mlag.mac = str(_mac)
+  features = devices.get_device_features(node,topology.defaults)
+  _mlag_peer = features.get('lag.mlag.peer',{})
+  if 'ip' in _mlag_peer:
+    if 'loopback' in _mlag_peer.ip:
+      _ip = peer.get(_mlag_peer.ip,None)
+      if _ip:
+        intf.lag.mlag.peer = str(netaddr.IPNetwork(_ip).ip)
+      else:
+        log.error(f'Node {peer.name} must have {_mlag_peer.ip} defined to support MLAG',
+          category=log.IncorrectValue,
+          module='lag')
+    else:
+      _net = netaddr.IPNetwork(_mlag_peer.ip)
+      _id = 0 if node.id < peer.id else 1
+      intf.lag.mlag.peer = str(_net[_id])
+      intf.lag.mlag.self = f"{_net[1-_id]}/{_net.prefixlen}"                # including /prefix
+
+  if 'mac' in _mlag_peer:
+    _mac = netaddr.EUI(_mlag_peer.mac)                                      # Generate unique virtual MAC per MLAG group
+    _mac._set_value(_mac.value + intf.get('lag.mlag.peergroup',0) % 65536 ) # ...based on lag.mlag.peergroup
+    intf.lag.mlag.mac = str(_mac)
+  
+  for v in ['vlan','ifindex']:
+    if v in _mlag_peer:
+      intf.lag.mlag[v] = _mlag_peer[v]
 
 class LAG(_Module):
 
