@@ -1,3 +1,37 @@
+{# Provision mlag peerlink, EOS supports at most 1 peerlink #}
+{% for intf in interfaces if intf.type == 'mlag_peer' %}
+
+vlan {{ intf.lag.mlag.vlan }}
+ name "MLAG-local-interface-no-STP"
+ trunk group m1peer
+!
+no spanning-tree vlan-id {{ intf.lag.mlag.vlan }}
+
+interface port-channel {{ intf.lag.mlag.ifindex }}
+ description "MLAG peerlink(s) {{ intf.name }}"
+ switchport mode trunk
+ switchport trunk group m1peer
+!
+
+interface vlan {{ intf.lag.mlag.vlan }}
+ ip address {{ intf.lag.mlag.self }}
+ no autostate
+!
+
+mlag
+ domain-id mlag{{ intf.lag.mlag.peergroup }}
+ local-interface vlan {{ intf.lag.mlag.vlan }}
+ peer-address {{ intf.lag.mlag.peer }}
+ peer-link port-channel {{ intf.lag.mlag.ifindex }}
+ no shutdown
+!
+{%   for ch in interfaces if ch.lag._parentindex|default(False) == intf.linkindex %}
+interface {{ ch.ifname }}
+ channel-group {{ intf.lag.mlag.ifindex }} mode active
+{%   endfor %}
+{% endfor %}
+
+
 {% for intf in interfaces if intf.type == 'lag' %}
 {%   for ch in interfaces if ch.lag._parentindex|default(False) == intf.linkindex %}
 !
