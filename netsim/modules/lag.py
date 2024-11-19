@@ -167,9 +167,9 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
         if 'ifindex' not in i.lag:                # Unless asked for something else...
           if i.node in ifindex_map:               # apply consistent numbering on 1-side
             _i = ifindex_map[i.node] + 1
-            ifindex_map[i.node] = _i
           else:
-            ifindex_map[i.node] = _i = 1
+            _i = 1
+          ifindex_map[i.node] = _i
           i.lag.ifindex = _i
 
   l.lag.pop("members",None)                       # Remove explicit list of members
