@@ -1,4 +1,5 @@
 {# Provision internal Virtual Line Trunking (VLT) domain #}
+! OS10 internally uses port-channel 1000 and VLAN 4094 for VLT
 {% for intf in interfaces if intf.type == 'mlag_peer' %}
 vlt-domain {{ intf.lag.mlag.peergroup }}
  backup destination {{ intf.lag.mlag.peer }}
@@ -11,17 +12,21 @@ vlt-domain {{ intf.lag.mlag.peergroup }}
 {% for intf in interfaces if intf.type == 'lag' %}
 interface {{ intf.ifname }}
 {%  if 'mlag' in intf.lag %}
-  vlt-port-channel {{ intf.lag.ifindex }}
+ description "{{ intf.name }} in vlt-port-channel {{ intf.lag.ifindex }}"
+ vlt-port-channel {{ intf.lag.ifindex }}
+{% else %}
+ description "{{ intf.name }}"
 {%  endif %}
-{%  for ch in interfaces if ch.lag._parentindex|default(False) == intf.linkindex %}
 !
+{%  for ch in interfaces if ch.lag._parentindex|default(False) == intf.linkindex %}
 {%   set _lag_mode = 
       'on' if intf.lag.lacp|default('') == 'off' else
       'active' if intf.lag.lacp_mode|default('') == 'active' else 
       'passive' %}
 interface {{ ch.ifname }}
-  channel-group {{ intf.lag.ifindex }} mode {{ _lag_mode }}
-  lacp rate {{ 'fast' if intf.lag.lacp|default('fast') == 'fast' else 'normal' }}
+ description "{{ ch.name }} in channel-group {{ intf.lag.ifindex }}"
+ channel-group {{ intf.lag.ifindex }} mode {{ _lag_mode }}
+ lacp rate {{ 'fast' if intf.lag.lacp|default('fast') == 'fast' else 'normal' }}
 !
 {%  endfor %}
 {% endfor %}

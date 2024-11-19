@@ -2,18 +2,19 @@
 {% for intf in interfaces if intf.type == 'mlag_peer' %}
 
 vlan {{ intf.lag.mlag.vlan }}
- name "MLAG-local-interface-no-STP"
+ name "MLAG-peerlink"
  trunk group m1peer
 !
 no spanning-tree vlan-id {{ intf.lag.mlag.vlan }}
 
 interface port-channel {{ intf.lag.mlag.ifindex }}
- description "MLAG peerlink(s) {{ intf.name }}"
+ description MLAG peerlink(s) {{ intf.name }}
  switchport mode trunk
  switchport trunk group m1peer
 !
 
 interface vlan {{ intf.lag.mlag.vlan }}
+ description MLAG peerlink local-interface
  ip address {{ intf.lag.mlag.self }}
  no autostate
 !
@@ -27,12 +28,21 @@ mlag
 !
 {%   for ch in interfaces if ch.lag._parentindex|default(False) == intf.linkindex %}
 interface {{ ch.ifname }}
+ description {{ ch.name }} (peerlink in channel-group {{intf.lag.mlag.ifindex }})
  channel-group {{ intf.lag.mlag.ifindex }} mode active
 {%   endfor %}
 {% endfor %}
 
 
 {% for intf in interfaces if intf.type == 'lag' %}
+interface {{ intf.ifname }}
+{%  if 'mlag' in intf.lag %}
+ description {{ intf.name }} (part of mlag {{ intf.lag.ifindex }})
+ mlag {{ intf.lag.ifindex }}
+{% else %}
+ description {{ intf.name }}
+{%  endif %}
+!
 {%   for ch in interfaces if ch.lag._parentindex|default(False) == intf.linkindex %}
 !
 {%     set _lag_mode = 
@@ -40,9 +50,10 @@ interface {{ ch.ifname }}
          'active' if intf.lag.lacp_mode|default('') == 'active' else 
          'passive' %}
 interface {{ ch.ifname }}
-  channel-group {{ intf.lag.ifindex }} mode {{ _lag_mode }}
+ description {{ ch.name }} in channel-group {{ intf.lag.ifindex }}
+ channel-group {{ intf.lag.ifindex }} mode {{ _lag_mode }}
 {%     if intf.lag.lacp|default('') == 'fast' %}
-  lacp timer fast
+ lacp timer fast
 {%     endif %}
 {%   endfor %}
 {% endfor %}
