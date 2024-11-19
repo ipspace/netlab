@@ -88,14 +88,14 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
   """ 
   determine_mlag_sides - figure out which node forms the "1" side of an 1:M MLAG group, and the device type of its M-side peer
   """
-  def determine_mlag_sides(member: Box, oneSide: typing.Optional[str]) -> typing.Tuple[str,typing.Optional[str]]:
+  def determine_mlag_sides(member: Box, oneSide: typing.Optional[str]) -> typing.Tuple[typing.Optional[str],typing.Optional[str]]:
     first_pair = [ i.node for i in l.interfaces ]
     maybe_1_side = [ i.node for i in member.interfaces if i.node in first_pair ]
     if oneSide is None:
       if len(maybe_1_side)==1:                    # Is it clear now which node is on the '1' side?
         oneSide = maybe_1_side[0]
       elif len(maybe_1_side)==2:                  # e.g. case of multi-link m-lag [ h1-s1, h1-s1, h1-s2, h1-s2 ]
-        return ("?",None)                         # Need to see more links before knowing which side is which
+        return (None,None)                        # Need to see more links before knowing which side is which
     if oneSide in maybe_1_side:
       mSide = [ i.node for i in member.interfaces if i.node!=oneSide ]
       mlag_node = topology.nodes[ mSide[0] ]
