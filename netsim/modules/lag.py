@@ -41,9 +41,9 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
       l2_ifdata[a] = l[a]
 
   """
-  check_lag_support - check if the given node supports lag and has the module enabled
+  check_lag_config - check if the given node supports lag and has the module enabled, verify ifindex
   """
-  def check_lag_support(node: str, linkname: str) -> bool:
+  def check_lag_config(node: str, linkname: str) -> bool:
     _n = topology.nodes[node]
     features = devices.get_device_features(_n,topology.defaults)
     if 'lag' not in features:
@@ -113,10 +113,11 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
     member = links.adjust_link_object(member,f'{l._linkname}.lag[{idx+1}]',topology.nodes)
 
     if 'lag' in member:                           # Catch potential sources for inconsistency
-      log.error(f'LAG attributes must be configured on the link, not member interface {member._linkname}: {member.lag}',
-        category=log.IncorrectAttr,
-        module='lag')
-      return
+      if 'ifindex' not in member.lag:             # ...but allow for custom bond numbering
+        log.error(f'LAG attributes must be configured on the link, not member interface {member._linkname}: {member.lag}',
+          category=log.IncorrectAttr,
+          module='lag')
+        return
 
     if len(member.interfaces)!=2:                 # Check that there are exactly 2 nodes involved
       log.error(f'Link {member._linkname} in LAG {l.lag.ifindex} must have exactly 2 nodes',
@@ -155,12 +156,21 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
   # Post processing - at this point we finally know which is the 1-side node for M-LAG
   #
   if is_mlag or l.type=='mlag_peer':              # For MLAG links or internal MLAG link between switches
+    ifindex_map = {}
     for i in l.interfaces:
       if i.node!=mlag_1_side:
         if not check_mlag_support(i.node,l._linkname,mlag_device):
           return
         if is_mlag:
           i.lag.mlag = True                       # Put 'mlag' flag on M-side (only)
+      else:
+        if 'ifindex' not in i.lag:                # Apply consistent numbering on 1-side
+          if i.node in ifindex_map:
+            _i = ifindex_map[i.node] + 1
+            ifindex_map[i.node] = _i
+          else:
+            ifindex_map[i.node] = _i = 1
+          i.lag.ifindex = _i
 
   l.lag.pop("members",None)                       # Remove explicit list of members
 
