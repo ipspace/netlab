@@ -156,7 +156,7 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
   # Post processing - at this point we finally know which is the 1-side node for M-LAG
   #
   if is_mlag or l.type=='mlag_peer':              # For MLAG links or internal MLAG link between switches
-    ifindex_map = {}
+    ifindex_map : dict[str, int] = {}             # Keep track of 1-side lag.ifindex allocation
     for i in l.interfaces:
       if i.node!=mlag_1_side:
         if not check_mlag_support(i.node,l._linkname,mlag_device):
@@ -164,8 +164,8 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
         if is_mlag:
           i.lag.mlag = True                       # Put 'mlag' flag on M-side (only)
       else:
-        if 'ifindex' not in i.lag:                # Apply consistent numbering on 1-side
-          if i.node in ifindex_map:
+        if 'ifindex' not in i.lag:                # Unless asked for something else...
+          if i.node in ifindex_map:               # apply consistent numbering on 1-side
             _i = ifindex_map[i.node] + 1
             ifindex_map[i.node] = _i
           else:
