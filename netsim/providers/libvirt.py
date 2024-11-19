@@ -256,7 +256,7 @@ def create_vagrant_batches(topology: Box) -> None:
 class Libvirt(_Provider):
 
   """
-  post_transform hook: mark multi-provider links as LAN links
+  pre_transform hook: mark multi-provider links as LAN links
   """
   def pre_transform(self, topology: Box) -> None:
     if not 'links' in topology:
@@ -272,15 +272,24 @@ class Libvirt(_Provider):
 
     _Provider.pre_transform(self,topology)
 
+    """
+    is_multi_provider_link - Check whether a link has nodes from different providers
+    """
+    def is_multi_provider_link(l: Box) -> bool:
+      provider = l.get('libvirt.provider',{})
+      return len(provider)>1
+
     p2p_bridge = topology.defaults.get('providers.libvirt.p2p_bridge',False)
     for l in topology.links:
       if l.get('libvirt.uplink',None):                           # Set 'public' attribute if the link has an uplink
         if not 'public' in l.libvirt:                            # ... but no 'public' libvirt attr
           l.libvirt.public = 'bridge'                            # ... default mode is bridge (MACVTAP)
 
-      must_be_lan = l.get('libvirt.provider',None) and 'vlan' not in l.type
+      must_be_lan = is_multi_provider_link(l) and 'vlan' not in l.type
       must_be_lan = must_be_lan or (p2p_bridge and l.get('type','p2p') == 'p2p')
       if must_be_lan:
+        if log.debug_active('libvirt'):
+          print(f'libvirt pre_transform: Changing multi-provider link to "lan" {l}')
         l.type = 'lan'
         if not 'bridge' in l:
           l.bridge = "%s_%d" % (topology.name[0:10],l.linkindex)
