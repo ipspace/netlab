@@ -324,7 +324,6 @@ def mark_providers(topology: Box) -> None:
   for n in topology.nodes.values():                 # Set 'provider' attribute on all nodes
     if 'provider' in n:
       continue
-
     n.provider = topology.provider
 
   for l in topology.links:                          # Set 'providers' attribute on all links
@@ -341,6 +340,7 @@ def select_topology(topology: Box, provider: str) -> Box:
   topology = get_box(topology)                      # Create a copy of the topology
   for n in list(topology.nodes.keys()):             # Remove all nodes not belonging to the current provider
     if topology.nodes[n].provider != provider:
+      print(f"select_topology->mark {n.name} as 'unmanaged'")
       topology.nodes[n].unmanaged = True
 #      topology.nodes.pop(n,None)
 

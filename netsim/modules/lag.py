@@ -89,16 +89,18 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
   determine_mlag_sides - figure out which node forms the "1" side of an 1:M MLAG group, and the device type of its M-side peer
   """
   def determine_mlag_sides(member: Box, oneSide: typing.Optional[str]) -> typing.Tuple[str,typing.Optional[str]]:
-    _first_pair = [ i.node for i in l.interfaces ]
-    mlag_1_side = [ i.node for i in member.interfaces if i.node in _first_pair ]
-    if len(mlag_1_side)>=1:
-      if oneSide is None:
-        oneSide = mlag_1_side[0]
-      if oneSide==mlag_1_side[0]:
-        _mSide = [ i for i in member.interfaces if i.node!=oneSide ]
-        l.interfaces = l.interfaces + [ i for i in _mSide if i.node not in _first_pair ]
-        mlag_device = topology.nodes[ _mSide[0].node ].device
-        return (mlag_1_side[0],mlag_device)
+    first_pair = [ i.node for i in l.interfaces ]
+    maybe_1_side = [ i.node for i in member.interfaces if i.node in first_pair ]
+    if oneSide is None:
+      if len(maybe_1_side)==1:                    # Is it clear now which node is on the '1' side?
+        oneSide = maybe_1_side[0]
+      elif len(maybe_1_side)==2:                  # e.g. case of multi-link m-lag [ h1-s1, h1-s1, h1-s2, h1-s2 ]
+        return ("?",None)                         # Need to see more links before knowing which side is which
+    if oneSide in maybe_1_side:
+      mSide = [ i.node for i in member.interfaces if i.node!=oneSide ]
+      mlag_node = topology.nodes[ mSide[0] ]
+      l.interfaces = l.interfaces + [ data.get_box({ 'node': m }) for m in mSide if m not in first_pair ]
+      return (oneSide,mlag_node.device)
 
     log.error(f'Links in MLAG {l.lag.ifindex} must connect exactly 1 node to M other nodes ({l.lag.members})',
       category=log.IncorrectValue,
@@ -133,7 +135,7 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
       print(f'LAG create_lag_member_links -> adding link {member}')
     topology.links.append(member)
     if not l.interfaces:                          # Copy interfaces from first member link
-      l.interfaces = member.interfaces + []       # Deep copy, starting with 2 nodes from first member
+      l.interfaces = [ data.get_box({ 'node': i.node }) for i in member.interfaces ] # no attributes(!)
       if l.type=='mlag_peer':
         _n = l.interfaces[0].node
         mlag_device = topology.nodes[_n].device   # Set MLAG device type for peer link
