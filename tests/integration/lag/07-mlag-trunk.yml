@@ -10,23 +10,33 @@ groups:
     module: [ lag, vlan ]
   hosts:
     members: [ h1, h2 ]
-    module: [ lag ]     # Host side must support lag to present single MAC on both interfaces
-    device: frr         # linux does not support 'lag' module yet
+    module: [ lag, vlan ] # Host side must support lag to present single MAC on both interfaces
+    device: frr           # linux does not support 'lag' module yet
 
 vlans:
   red:
 
 links:
 - lag:
-   members: [ s1-s2 ]
+   members:
+   - s1:
+      ifindex: 4
+     s2:
+      ifindex: 4
    mlag.peergroup: 1
   # On OS10 in case of mlag, vlan.trunk is implied for all vlans - other platforms?
 - lag:
-   members: [ h1-s1, h1-s1, h1-s2, h1-s2 ]
+   members:
+   - h1:
+     s1:
+      ifindex: 5
+   - h1:
+     s2:
+      ifindex: 5
    mlag: True
-  vlan.access: red
+  vlan.trunk: [red]
 - lag:
-   members: [ h2-s1, h2-s1, h2-s2, h2-s2 ]
+   members: [ h2-s1, h2-s2 ]
    mlag: True
   vlan.access: red
 
@@ -40,4 +50,4 @@ validate:
   ping_gw:
     description: Pinging gateway from H1
     nodes: [ h1 ]
-    plugin: ping(nodes.s1.interfaces[8].ipv4,af='ipv4')
+    plugin: ping(nodes.s1.interfaces[7].ipv4,af='ipv4')
