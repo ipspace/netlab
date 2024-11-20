@@ -329,7 +329,7 @@ def mark_providers(topology: Box) -> None:
 
     n.provider = topology.provider
 
-  for l in topology.links:                          # Set 'providers' attribute on all links
+  for l in topology.links:                          # Set 'provider' attribute on all links
     for intf in l.interfaces:
       node = topology.nodes[intf.node]
       l.provider[node.provider] = True

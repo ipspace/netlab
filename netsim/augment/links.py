@@ -868,6 +868,8 @@ def set_link_type_role(link: Box, pools: Box, nodes: Box, defaults: Box) -> None
 def set_link_bridge_name(link: Box, defaults: Box) -> None:
   if link.type in ['p2p','loopback','vlan_member']:                   # No need for bridge names on P2P links, loopbacks and virtual links
     return
+  # elif link.get('node_count',0)<=2:                                   # No need for bridge names on links with 2 or less nodes
+  #  return
   if not 'bridge' in link:
     link['bridge'] = "%s_%d" % (defaults.name[0:10],link.linkindex)   # max 15 chars on Linux
   elif len(link['bridge']) > 15:
