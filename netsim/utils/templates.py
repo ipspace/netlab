@@ -18,6 +18,16 @@ def add_ansible_filters(ENV: Environment) -> None:
     ENV.filters[k] = v
 
 """
+DebugLoader: Custom loader that prints out the Jinja2 files being rendered
+"""
+class DebugLoader(FileSystemLoader):
+  def get_source(
+        self, environment: "Environment", template: str
+    ) -> typing.Tuple[str, str, typing.Callable[[], bool]]:
+    print(f"Loading Jinja2 template:{template}")
+    return super().get_source(environment,template)
+
+"""
 Render a Jinja2 template
 
 Template parameters:
@@ -49,9 +59,11 @@ def render_template(
 
   if extra_path is not None:
     template_path = extra_path + template_path
+  _loader = FileSystemLoader
   if debug_active('template'):
     print(f"TEMPLATE PATH for {j2_file or 'text'}: {template_path}")
-  ENV = Environment(loader=FileSystemLoader(template_path), \
+    _loader = DebugLoader
+  ENV = Environment(loader=_loader(template_path), \
           trim_blocks=True,lstrip_blocks=True, \
           undefined=make_logging_undefined(base=StrictUndefined))
   add_ansible_filters(ENV)

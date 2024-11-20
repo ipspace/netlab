@@ -234,19 +234,21 @@ class _Provider(Callback):
   def pre_transform(self,topology : Box) -> None:
     if not 'links' in topology:
       return
-
+    p_name = topology.provider                              # Primary provider
     for l in topology.links:
+      providers = {}                                        # Set of providers found on this link
       for intf in l.interfaces:
         node = topology.nodes[intf.node]
         if not 'provider' in node:
+          providers[ p_name ] = True
           continue
-
-        p_name = topology.provider                          # Get primary and secondary provider
-        s_name = node.provider                              # ... to make the rest of the code more readable
-
-        l[p_name].provider[s_name] = True                   # Collect secondary link provider(s)
-        if 'uplink' in l[p_name]:                           # ... and copy primary uplink to secondary uplink
-          l[s_name].uplink = l[p_name].uplink
+        providers[ node.provider ] = True
+      if len(providers)>1:
+        for p in providers:
+          if p!=p_name:
+            l[p_name].provider[p] = True                    # Get primary and secondary provider(s)
+            if 'uplink' in l[p_name]:                       # ... and copy primary uplink to secondary uplink
+              l[p].uplink = l[p_name].uplink
 
   """
   Generic provider pre-output transform: remove loopback links
