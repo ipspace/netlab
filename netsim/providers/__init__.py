@@ -330,6 +330,8 @@ def mark_providers(topology: Box) -> None:
   for l in topology.links:                          # Set 'providers' attribute on all links
     for intf in l.interfaces:
       node = topology.nodes[intf.node]
+      if node == {}:                                # take into account unmanaged nodes
+        continue
       l.provider[node.provider] = True
 
 """
