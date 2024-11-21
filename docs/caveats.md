@@ -194,7 +194,7 @@ _netlab_ uses the VLAN-aware bridge paradigm to configure VLANs on Cumulus Linux
 * The _netlab_-generated Cumulus Linux VLAN configuration cannot use routed native VLAN; *ifupdown2* enslaves physical ports to the bridge and cannot configure IP addresses on physical ports.
 * FRRouting version bundled with Cumulus Linux 4.4 cannot run OSPFv3 in VRFs and fails to advertise local IPv6 prefixes in other areas.
 
-See also [other FRRouting caveats](caveats-frr).
+See also [other FRRouting caveats](caveats-frr), including the global default MTU setting for all providers
 
 ### Running Cumulus Linux in Containerlab
 
@@ -203,7 +203,7 @@ See also [other FRRouting caveats](caveats-frr).
 * *netlab* uses Cumulus VX containers created by Michael Kashin and downloaded from his Docker Hub account. If Nvidia decides to release an official container image, change the container name with **defaults.devices.cumulus.clab.image**[^DD] parameter (or by editing the `topology-defaults.yml` file included with *netlab*).
 
 (caveats-cumulus-nvue)=
-## Cumulus 5.0 with NVUE
+## Cumulus 5.x with NVUE
 
 You could configure Cumulus Linux 5.0 with configuration templates developed for Cumulus Linux 4.0 (use device type **cumulus** and specify desired device image), or with NVUE.
 
@@ -222,6 +222,8 @@ Alternatively, you could add the following lines to your `~/.topology-defaults.y
 devices.cumulus.libvirt.image: CumulusCommunity/cumulus-vx:5.2.0
 devices.cumulus.libvirt.memory: 2048
 ```
+
+Like regular Cumulus, see also [other FRRouting caveats](caveats-frr), including the global default MTU setting for all providers
 
 (caveats-os10)=
 ## Dell OS10
@@ -272,6 +274,7 @@ We're not testing Fortinet implementation as part of the regular integration tes
 * FRR 9.0 and later creates malformed IS-IS LSPs; the bug has been fixed in release 10.0.1 ([details](https://github.com/FRRouting/frr/issues/14514)). You cannot build an IS-IS network using Arista EOS and FRR if you're running an affected version of FRR.
 * FRR configures BFD as part of OSPFv2/OSPFv3 configuration.
 * STP is *disabled* on Linux bridges used to implement VLANs on this platform, so FRR devices cannot be used in topologies that include L2 loops. Cumulus (with FRR inside) may work better in that case
+* Netlab defines a default MTU of 1500 across all providers, for consistency with other platforms. This is needed for things like OSPF adjacencies.
 
 (caveats-junos)=
 ## Common Junos caveats
