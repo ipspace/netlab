@@ -15,7 +15,7 @@ from ..data.types import must_be_string,must_be_list,must_be_dict,must_be_id
 from . import devices,addressing
 
 VIRTUAL_INTERFACE_TYPES: typing.Final[typing.List[str]] = [
-  'loopback', 'tunnel', 'lag', 'mlag_peer' ]
+  'loopback', 'tunnel', 'lag' ]
 
 def adjust_interface_list(iflist: list, link: Box, nodes: Box) -> list:
   link_intf = []
@@ -266,8 +266,6 @@ def create_regular_interface(node: Box, ifdata: Box, defaults: Box) -> None:
     ifdata[provider] = pdata
 
 def create_virtual_interface(node: Box, ifdata: Box, defaults: Box) -> None:
-  if log.debug_active('links'):     # pragma: no cover (debugging)
-    print(f'create_virtual_interface {node.name} type={ifdata.type}: {ifdata}')
   devtype = ifdata.get('type','loopback')         # Get virtual interface type, default to loopback interface
   ifindex_offset = (
     devices.get_device_attribute(node,f'{devtype}_offset',defaults) or
@@ -868,7 +866,7 @@ def set_link_type_role(link: Box, pools: Box, nodes: Box, defaults: Box) -> None
   return
 
 def set_link_bridge_name(link: Box, defaults: Box) -> None:
-  if link.type in ['p2p','loopback','vlan_member','mlag_peer']:                 # No need for bridge names on P2P links, loopbacks and virtual links
+  if link.type in ['p2p','loopback','vlan_member']:                   # No need for bridge names on P2P links, loopbacks and virtual links
     return
   if not 'bridge' in link:
     link['bridge'] = "%s_%d" % (defaults.name[0:10],link.linkindex)   # max 15 chars on Linux
