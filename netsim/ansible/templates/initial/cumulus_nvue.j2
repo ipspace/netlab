@@ -1,5 +1,6 @@
 {% macro decl_interface(i) %}
       {{ i.ifname }}:
+        type: {{ 'svi' if i.type=='svi' else 'bond' if i.type=='lag' else 'swp' }}
         link:
 {%  if i.mtu is defined %}
           mtu: {{ i.mtu }}
@@ -31,7 +32,11 @@
 {%    else %}
           ipv6:
             enable: off
-{%    endif %}
+{%    endif %}            
+{%  elif i.type=='lag' %}
+        bridge:
+          domain:
+            br_default: {}
 {%  endif %}
 {% endmacro %}
 
@@ -60,7 +65,6 @@
             enable: off
 {% endif %}
         type: loopback
-{% for l in interfaces|default([]) if l.type in ['lan','p2p','stub','svi'] %}
+{% for l in interfaces|default([]) if l.type in ['lan','p2p','stub','svi','lag'] %}
 {{      decl_interface(l) }}
-        type: {{ 'svi' if l.type=='svi' else 'swp' }}
 {% endfor %}
