@@ -25,7 +25,7 @@ def populate_lag_id_set(topology: Box) -> None:
 create_lag_member_links -- iterate over topology.links and expand any that have lag.members defined
 """
 def create_lag_member_links(l: Box, topology: Box) -> None:
-
+  is_peerlink = l.get('lag.mlag.peergroup',None) is not None              # Check for peerlink
   is_mlag = l.get('lag.mlag',False) is True                               # Check for mlag bool flag
   if is_mlag:
     if len(l.lag.members)<2:                                              # In case of MLAG, check there are at least 2 members
@@ -126,7 +126,7 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
       return
 
     for i in member.interfaces:                   # Check that they all support LAG
-      if not check_lag_support(i.node,member._linkname):
+      if not check_lag_config(i.node,member._linkname):
         return
 
     member = l2_ifdata + member                   # Copy L2 data into member link
@@ -137,7 +137,7 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
     topology.links.append(member)
     if not l.interfaces:                          # Copy interfaces from first member link
       l.interfaces = [ data.get_box({ 'node': i.node }) for i in member.interfaces ] # no attributes(!)
-      if l.type=='mlag_peer':
+      if is_peerlink:
         _n = l.interfaces[0].node
         mlag_device = topology.nodes[_n].device   # Set MLAG device type for peer link
     elif is_mlag:                                 # Figure out which node is on the "1" side starting at 2nd member
@@ -155,7 +155,7 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
   #
   # Post processing - at this point we finally know which is the 1-side node for M-LAG
   #
-  if is_mlag or l.type=='mlag_peer':              # For MLAG links or internal MLAG link between switches
+  if is_mlag or is_peerlink:                      # For MLAG links or internal MLAG link between switches
     ifindex_map : dict[str, int] = {}             # Keep track of 1-side lag.ifindex allocation
     for i in l.interfaces:
       if i.node!=mlag_1_side:
@@ -186,8 +186,8 @@ def process_lag_links(topology: Box) -> None:
     elif not _types.must_be_list(parent=l.lag,key='members',path=l._linkname,module='lag'):
       continue
 
-    if l.get('lag.mlag.peergroup',None):          # Mark internal MLAG links as a different type
-      l.type = 'mlag_peer'
+    if l.get('lag.mlag.peergroup',None):          # Turn internal MLAG links into p2p links
+      l.type = 'p2p'
       l.prefix = False                            # L2-only
     else:
       l.type = 'lag'
@@ -199,7 +199,7 @@ def process_lag_links(topology: Box) -> None:
 #
 # populate_mlag_peer - Lookup the IPv4 loopback address for the mlag peer, and derive a virtual MAC to use
 #
-def populate_mlag_peer(intf: Box, topology: Box) -> None:
+def populate_mlag_peer(node: Box, intf: Box, topology: Box) -> None:
   _n = intf.neighbors[0].node
   peer = topology.nodes[_n]
   features = devices.get_device_features(node,topology.defaults)
@@ -247,8 +247,10 @@ class LAG(_Module):
   def node_post_transform(self, node: Box, topology: Box) -> None:
     features = devices.get_device_features(node,topology.defaults)
     for i in node.interfaces:
-      if i.type=='mlag_peer':               # Fill in peer loopback IP and vMAC for MLAG peer links
-        populate_mlag_peer(i,topology)
+      if 'lag' not in i:
+        continue
+      if i.get('lag.mlag.peergroup',None):  # Fill in peer loopback IP and vMAC for MLAG peer links
+        populate_mlag_peer(node,i,topology)
       elif i.type=='lag':
         i.lag = node.get('lag',{}) + i.lag  # Merge node level settings with interface overrides
         lacp_mode = i.get('lag.lacp_mode')  # Inheritance copying is done elsewhere
