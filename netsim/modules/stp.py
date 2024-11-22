@@ -34,7 +34,12 @@ class STP(_Module):
     for intf in node.get('interfaces',[]):
       if 'stp' not in intf:
         continue
-      if 'enable' in intf.stp and not features.get('stp.enable_per_port',False):
+      if 'ipv4' in intf or 'ipv6' in intf:
+        log.error(
+          f'node {node.name}: Cannot apply STP to L3 interface ({intf.ifname})',
+          log.IncorrectAttr,
+          'stp')
+      elif 'enable' in intf.stp and not features.get('stp.enable_per_port',False):
         log.error(
           f'node {node.name} (device {node.device}) does not support enabling/disabling STP only on a specific port ({intf.ifname})',
           log.IncorrectValue,
