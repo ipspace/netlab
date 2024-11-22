@@ -1,3 +1,44 @@
+{% macro decl_interface(i) %}
+      {{ i.ifname }}:
+        type: {{ 'svi' if i.type=='svi' else 'bond' if i.type=='lag' else 'swp' }}
+        link:
+{%  if i.mtu is defined %}
+          mtu: {{ i.mtu }}
+{%  endif %}
+          state:
+            up: {}
+{%  if i.name is defined %}
+        description: "{{ i.name }}{{ " ["+i.role+"]" if i.role is defined else "" }}"
+{%  elif i.type|default("") == "stub" %}
+        description: Stub interface
+{%  endif %}
+{%  if i.ipv4 is defined or i.ipv6 is defined %}
+        ip:
+          address:
+{%    if i.ipv4 is defined %}
+{%      if i.ipv4 == True %}
+            {{ loopback.ipv4 }}: {}
+{%      else %}
+            {{ i.ipv4 }}: {}
+{%      endif %}
+{%    endif %}
+{%    if i.vrf is defined %}
+          vrf: {{ i.vrf }}
+{%    endif %}
+{%    if i.ipv6 is defined %}
+{%      if i.ipv6 is string %}
+            {{ i.ipv6 }}: {}
+{%      endif %}
+{%    else %}
+          ipv6:
+            enable: off
+{%    endif %}            
+{%  elif i.type=='lag' %}
+        bridge:
+          domain:
+            br_default: {}
+{%  endif %}
+{% endmacro %}
 
 - set:
     system:
@@ -19,40 +60,11 @@
 {% endif %}
 {% if 'ipv6' in loopback %}
             {{ loopback.ipv6 }}: {}
+{% else %}
+          ipv6:
+            enable: off
 {% endif %}
         type: loopback
-{% for l in interfaces|default([]) if l.type in ['lan','p2p','stub','svi'] %}
-      {{ l.ifname }}:
-        link:
-{%  if l.mtu is defined %}
-          mtu: {{ l.mtu }}
-{%  endif %}
-          state:
-            up: {}
-        type: {{ 'svi' if l.type=='svi' else 'swp' }}
-{%   if l.name is defined %}
-        description: "{{ l.name }}{{ " ["+l.role+"]" if l.role is defined else "" }}"
-{%   elif l.type|default("") == "stub" %}
-        description:  Stub interface
-{%   endif %}
-{%   if (l.ipv4 is defined and l.ipv4) or l.ipv6 is string %}
-        ip:
-          address:
-{%     if l.ipv4 is defined %}
-{%      if l.ipv4 == True %}
-            {{ loopback.ipv4 }}: {}
-{%       else %}
-            {{ l.ipv4 }}: {}
-{%       endif %}
-{%     endif %}
-{%     if l.vrf is defined %}
-          vrf: {{ l.vrf }}
-{%     endif %}
-{%     if l.ipv6 is defined %}
-{%       if l.ipv6 == True %}
-{%       else %}
-            {{ l.ipv6 }}: {}
-{%       endif %}
-{%     endif %}
-{%   endif %}
+{% for l in interfaces|default([]) if l.type in ['lan','p2p','stub','svi','lag'] %}
+{{      decl_interface(l) }}
 {% endfor %}

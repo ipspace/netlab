@@ -1,7 +1,9 @@
+- set_fact:
+    nvue_config_file: "/tmp/nvue_config_{{ netsim_action }}.yaml"
 - name: "copy the cumulus nvue YAML {{ netsim_action }} config file to switch (generated from {{ config_template }})"
   template:
     src: "{{ config_template }}"
-    dest: /tmp/nvue_config.yaml
+    dest: "{{ nvue_config_file }}"
     mode: 0644
 
 - block:
@@ -11,10 +13,10 @@
 
   - name: "Wait for nvued to start"
     service_facts:
-    register: svc
-    until: svc.ansible_facts.services['nvued.service'].state == 'running'
+    until: services['nvued.service'].state == 'running'
     retries: 15
     delay: 5
+    no_log: True
 
   when: nvue_service_running is not defined
 
@@ -22,8 +24,8 @@
     nvue_service_running: 1 
 
 - name: "execute on cumulus: 'nv config patch' for {{ netsim_action }} config"
-  command: nv config patch /tmp/nvue_config.yaml
+  command: nv config patch {{ nvue_config_file }}
 
-- name: "execute on cumulus: 'nv config apply' for {{ netsim_action }} config"
+- name: "execute on cumulus: 'nv config apply -y' for {{ netsim_action }} config"
   command: nv config apply -y
   tags: [ print_action, always ]

@@ -9,7 +9,8 @@ LAG is currently supported on these platforms:
 | Operating system      | LACP | Static | Passive<br>LACP |
 | --------------------- |:--:|:--:|:--:|
 | Arista EOS [❗](caveats-eos) | ✅ | ✅ | ✅ |
-| Cumulus Linux         | ✅ | ✅ | ❌  |
+| Cumulus Linux 4.x     | ✅ | ✅ | ❌  |
+| Cumulus 5.x (NVUE)    | ✅ | ✅ | ❌  |
 | FRR                   | ✅ | ✅ | ❌  |
 
 ## Parameters
