@@ -341,7 +341,7 @@ def loopback_interface(n: Box, pools: Box, topology: Box) -> None:
   n.loopback.type = 'loopback'
   n.loopback.neighbors = []
   n.loopback.virtual_interface = True
-  lbname = devices.get_loopback_name(n,topology)
+  lbname = devices.get_loopback_name(n,topology.defaults)
   if lbname:
     n.loopback.ifname = lbname
     n.loopback.ifindex = 0

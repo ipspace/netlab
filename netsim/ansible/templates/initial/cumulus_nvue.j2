@@ -2,9 +2,9 @@
       {{ i.ifname }}:
         type: {{ 'svi' if i.type=='svi' else 'bond' if i.type=='lag' else 'swp' }}
         link:
-{%  if i.mtu is defined %}
+{%    if i.mtu is defined %}
           mtu: {{ i.mtu }}
-{%  endif %}
+{%    endif %}
           state:
             up: {}
 {%  if i.name is defined %}
@@ -14,6 +14,9 @@
 {%  endif %}
 {%  if i.ipv4 is defined or i.ipv6 is defined %}
         ip:
+{%    if i.vrf is defined %}
+          vrf: {{ i.vrf }}
+{%    endif %}
           address:
 {%    if i.ipv4 is defined %}
 {%      if i.ipv4 == True %}
@@ -22,12 +25,18 @@
             {{ i.ipv4 }}: {}
 {%      endif %}
 {%    endif %}
-{%    if i.vrf is defined %}
-          vrf: {{ i.vrf }}
-{%    endif %}
 {%    if i.ipv6 is defined %}
-{%      if i.ipv6 is string %}
+{%      if i.ipv6 is string and i.ipv6|ipv6 %}
             {{ i.ipv6 }}: {}
+          ipv6:
+            forward: on
+{%        if 'ipv6' not in i.dhcp.client|default({}) %}
+          neighbor-discovery:
+            enable: on
+            router-advertisement:
+              enable: off # Major bug in NVUE - any non-"on" value will *enable* (no suppress) RA...
+              interval: 5000
+{%        endif %}
 {%      endif %}
 {%    else %}
           ipv6:
@@ -50,21 +59,29 @@
           address:
             dhcp: {}
         type: eth
+{# Put all loopback IPs on the 'lo' interface #}
+{% set loopbacks = netlab_interfaces|selectattr('type','eq','loopback')|list %}
+{% set lo_ipv4s = loopbacks|selectattr('ipv4','defined')|map(attribute='ipv4')|list %}
+{% set lo_ipv6s = loopbacks|selectattr('ipv6','defined')|map(attribute='ipv6')|list %}
       lo:
         ip:
           address:
-{% if 'ipv4' in loopback %}
-            {{ loopback.ipv4 }}: {}
+{% if lo_ipv4s %}
+{%   for ip in lo_ipv4s %}
+            {{ ip }}: {}
+{%   endfor %}
 {% else %}
             127.0.0.1: {}
 {% endif %}
-{% if 'ipv6' in loopback %}
-            {{ loopback.ipv6 }}: {}
+{% if lo_ipv6s %}
+{%   for ip in lo_ipv6s %}
+            {{ ip }}: {}
+{%   endfor %}
 {% else %}
           ipv6:
             enable: off
 {% endif %}
         type: loopback
-{% for l in interfaces|default([]) if l.type in ['lan','p2p','stub','svi','lag'] %}
+{% for l in interfaces|default([]) if l.type!='loopback' %}
 {{      decl_interface(l) }}
 {% endfor %}

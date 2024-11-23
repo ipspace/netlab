@@ -288,9 +288,9 @@ def create_virtual_interface(node: Box, ifdata: Box, defaults: Box) -> None:
   # ifindex. For example, loopback interfaces have ifindex starting with 10001, but
   # the interface names start with Loopback1
   #
-  ifname_format  = devices.get_device_attribute(node,f'{devtype}_interface_name',defaults)
-  if ifname_format:
-    ifdata.ifname = strings.eval_format(ifname_format,ifdata + { 'ifindex': ifdata.ifindex - devtype_offset })
+  ifname = devices.get_device_name(node,devtype,defaults,ifdata + { 'ifindex': ifdata.ifindex - devtype_offset })
+  if ifname:
+    ifdata.ifname = ifname
     return
 
   # We could not find the relevant interface name template. Report an error
@@ -811,7 +811,7 @@ def set_link_loopback_type(link: Box, nodes: Box, defaults: Box) -> None:
 
   # If we don't know how to create loopbacks on this device, it makes no sense to proceed
   #
-  lb_name = devices.get_device_attribute(ndata,'loopback_interface_name',defaults)
+  lb_name = devices.get_loopback_name(ndata,defaults)
   if not lb_name:
     return
 

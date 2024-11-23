@@ -96,7 +96,7 @@ def assign_vni(toponode: Box, obj_path: str, topology: Box) -> None:
 def node_set_vtep(node: Box, topology: Box) -> bool:
   # default vtep interface & interface name
   vtep_interface = node.loopback
-  loopback_name = devices.get_loopback_name(node,topology)
+  loopback_name = devices.get_loopback_name(node,topology.defaults)
   if not loopback_name:
     log.fatal("Can't find the loopback name of VXLAN-capable device {node.device}",module="vxlan",header=True)
 

@@ -63,12 +63,25 @@ def get_device_features(node: Box, defaults: Box) -> Box:
 """
 Get device loopback name (built-in loopback if ifindex == 0 else an additional loopback)
 """
-def get_loopback_name(node: Box, topology: Box, ifindex: int = 0) -> typing.Optional[str]:
-  lbname = get_device_attribute(node,'loopback_interface_name',topology.defaults)
+def get_loopback_name(node: Box, defaults: Box, ifindex: int = 0) -> typing.Optional[str]:
+  return get_device_name(node,'loopback',defaults,{'ifindex':ifindex})
+
+"""
+get_device_name - get platform specific formatted device name for the given type and ifindex
+"""
+def get_device_name(node: Box, type: str, defaults: Box, ifdata: Box) -> typing.Optional[str]:
+  # First try updated attribute name
+  features = get_device_features(node,defaults)
+  full_type = "initial.loopback" if type=="loopback" else type
+  lbname = features.get(f'{full_type}.interface_name',None)
   if not lbname:
-    return None
+    if log.debug_active('deprecated'):
+      log.info(f"Deprecated: device {node.device} does not provide '{full_type}.interface_name'")
+    lbname = get_device_attribute(node,f'{type}_interface_name',defaults)
+    if not lbname:
+      return None
   
-  return strings.eval_format(lbname,{ 'ifindex': ifindex })
+  return strings.eval_format(lbname,ifdata)
 
 """
 Get all device data for current provider

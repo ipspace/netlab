@@ -305,9 +305,9 @@ def fix_vrf_unnumbered(node: Box, vrfname: str, lbdata: Box) -> None:
     intf._parent_ipv4 = lbdata.ipv4                             # ... IPv4 unnumbereds
 
 def vrf_loopbacks(node : Box, topology: Box) -> None:
-  loopback_name = devices.get_device_attribute(node,'loopback_interface_name',topology.defaults)
+  loopback_name = devices.get_loopback_name(node,topology.defaults)
 
-  if not loopback_name:                                                        # pragma: no cover -- hope we got device settings right ;)
+  if not loopback_name:                                               # pragma: no cover -- hope we got device settings right ;)
     log.print_verbose(f'Device {node.device} used by {node.name} does not support VRF loopback interfaces - skipping assignment.')
     return
 
