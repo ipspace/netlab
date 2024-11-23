@@ -67,7 +67,7 @@ def get_loopback_name(node: Box, defaults: Box, ifindex: int = 0) -> typing.Opti
   return get_device_name(node,'loopback',defaults,Box({'ifindex':ifindex}))
 
 """
-get_device_name - get platform specific formatted device name for the given type and ifindex
+get_device_name - get platform specific formatted device name for the given type and (other) ifdata
 """
 def get_device_name(node: Box, type: str, defaults: Box, ifdata: Box) -> typing.Optional[str]:
   # First try updated attribute name

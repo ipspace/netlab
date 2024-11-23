@@ -204,7 +204,7 @@ The following interface parameters are configured on supported network operating
 | Cisco IOS XRv         | ✅  | ✅ [❗](caveats-iosxr) | ✅ |  ❌  |
 | Cisco Nexus OS        | ✅  | ✅  | ✅  | ✅  |
 | Cumulus Linux         | ✅  | ✅  | ✅  | ✅  |
-| Cumulus Linux 5.0 (NVUE) | ✅ | ✅ |  ❌ |  ❌  |
+| Cumulus Linux 5.0 (NVUE) | ✅ | ❌ | ✅  | ✅  |
 | Dell OS10             | ✅  |  ❌  | ✅  | ✅  |
 | Fortinet FortiOS      | ✅  | ✅  |  ❌  |  ❌  |
 | FRR                   | ✅  | ✅  | ✅  | ✅  |
@@ -311,11 +311,12 @@ These devices support additional control-plane protocols or BGP address families
 (platform-layer-2-support)=
 The layer-2 control plane [configuration modules](module-reference.md) are supported on these devices[^NSM]:
 
-| Operating system      | [Spanning<br>Tree Protocol](module/stp.md) | [Link Aggregation<br>Groups](module/lag.md) |
-| --------------------- |:--:|:--:|
-| Arista EOS            | ✅ | ✅ |
-| Cumulus Linux         | ✅ | ✅ |
-| FRR                   | ✅ | ✅ |
+| Operating system          | [Spanning<br>Tree Protocol](module/stp.md) | [Link Aggregation<br>Groups](module/lag.md) |
+| ------------------------- |:--:|:--:|
+| Arista EOS                | ✅ | ✅ |
+| Cumulus Linux             | ✅ | ✅ |
+| Cumulus Linux 5.0 (NVUE)  | ✅ | ✅ |
+| FRR                       | ✅ | ✅ |
 
 (platform-dataplane-support)=
 The data plane [configuration modules](module-reference.md) are supported on these devices[^NSM]:
@@ -329,7 +330,7 @@ The data plane [configuration modules](module-reference.md) are supported on the
 | Cisco IOSv/IOSvL2     | ✅ | ✅ |  ❌ | ✅ |  ❌ |  ❌ |
 | Cisco Nexus OS        | ✅ | ✅ | ✅ |  ❌ |  ❌ |  ❌ | 
 | Cumulus Linux         | ✅ | ✅ | ✅ |  ❌ |  ❌ |  ❌ |
-| Cumulus Linux 5.0 (NVUE) | ❌ |[❗](module-vrf-platform-support)| ❌ | ❌ | ❌ | ❌ |
+| Cumulus Linux 5.0 (NVUE) | ✅ |[❗](module-vrf-platform-support)| ❌ | ❌ | ❌ | ❌ |
 | Dell OS10             | ✅ | ✅ | ✅ |  ❌ |  ❌ |  ❌ | 
 | FRR                   | ✅ | ✅ | ✅ | ✅ | ✅ |  ❌ | 
 | Juniper vMX           | ✅ | ✅ |  ❌ | ✅ | ✅ |  ❌ | 
