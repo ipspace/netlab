@@ -223,6 +223,8 @@ devices.cumulus.libvirt.image: CumulusCommunity/cumulus-vx:5.2.0
 devices.cumulus.libvirt.memory: 2048
 ```
 
+Note that Netlab configures the default MTU for all providers as *1500*, to align with other vendor implementation defaults and enable things like OSPF peering to work correctly out-of-the-box
+
 (caveats-os10)=
 ## Dell OS10
 
