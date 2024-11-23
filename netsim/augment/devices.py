@@ -64,7 +64,7 @@ def get_device_features(node: Box, defaults: Box) -> Box:
 Get device loopback name (built-in loopback if ifindex == 0 else an additional loopback)
 """
 def get_loopback_name(node: Box, defaults: Box, ifindex: int = 0) -> typing.Optional[str]:
-  return get_device_name(node,'loopback',defaults,{'ifindex':ifindex})
+  return get_device_name(node,'loopback',defaults,Box({'ifindex':ifindex}))
 
 """
 get_device_name - get platform specific formatted device name for the given type and ifindex
