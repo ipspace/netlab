@@ -25,7 +25,7 @@
 | Cisco IOS XRv  [❗](caveats-iosxr)        | iosxr              |
 | Cisco Nexus 9300v [❗](caveats-nxos)      | nxos               |
 | Cumulus Linux 4.x/5.x [❗](caveats-cumulus) | cumulus            |
-| Cumulus Linux 5.0 (NVUE) [❗](caveats-cumulus-nvue)                            | cumulus_nvue           |
+| Cumulus Linux 5.x (NVUE) [❗](caveats-cumulus-nvue)                            | cumulus_nvue           |
 | Dell OS10 [❗](caveats-os10)              | dellos10           |
 | Fortinet FortiOS [❗](caveats-fortios)    | fortios            |
 | FRRouting (FRR) [❗](caveats-frr)         | frr                |
@@ -83,7 +83,7 @@ You cannot use all supported network devices with all virtualization providers. 
 | Cisco IOS XRv      | [✅](build-iosxr) |  ❌  | ✅  |
 | Cisco Nexus 9300v  | [✅](build-nxos) | ✅  |  ✅[❗](clab-vrnetlab)  |
 | Cumulus Linux      | ✅  | ✅  | ✅[❗](caveats-cumulus) |
-| Cumulus Linux 5.0 (NVUE) | ✅ | ✅ | ✅[❗](caveats-cumulus) |
+| Cumulus Linux 5.x (NVUE) | ✅ | ✅ | ✅[❗](caveats-cumulus) |
 | Dell OS10          | [✅](build-dellos10)  |  ❌  | ✅  |
 | Fortinet FortiOS   | ✅  |  ❌  |  ❌  |
 | FRR | ✅[❗](caveats-frr) | ✅[❗](caveats-frr) | ✅ |
@@ -117,7 +117,7 @@ Configuration files for Virtualbox and KVM/libvirt environments specify the numb
 | Cisco IOS XRv              | iosxr              |    2 |    8192 | e1000                     |
 | Cisco Nexus 9300v          | nxos               |    2 |   6144 [❗](caveats-nxos)| e1000 |
 | Cumulus Linux              | cumulus            |    2 |   1024 | virtio |
-| Cumulus Linux 5.0 (NVUE)   | cumulus_nvue       |    2 |   1024 | virtio |
+| Cumulus Linux 5.x (NVUE)   | cumulus_nvue       |    2 |   1024 | virtio |
 | Dell OS10                  | dellos10           |    2 |   2048 | e1000                      |
 | Fortinet FortiOS           | fortios            |    1 |   1024 | virtio |
 | FRR                        | frr                |    1 |   1024 | virtio |
@@ -177,7 +177,7 @@ The following system-wide features are configured on supported network operating
 | Cisco IOS XRv            | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Cisco Nexus OS           | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Cumulus Linux            | ✅  | ✅ [^HIF]  | ✅  | ✅  | ✅  |
-| Cumulus Linux 5.0 (NVUE) | ✅  | ✅  | ✅  | ✅  | ✅  |
+| Cumulus Linux 5.x (NVUE) | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Dell OS10                | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Fortinet FortiOS         | ✅  |  ❌  | ✅  | ✅  | ✅  |
 | FRR                      | ✅  | ✅ [^HIF]  |  ❌  | ✅  | ✅  |
@@ -204,7 +204,7 @@ The following interface parameters are configured on supported network operating
 | Cisco IOS XRv         | ✅  | ✅ [❗](caveats-iosxr) | ✅ |  ❌  |
 | Cisco Nexus OS        | ✅  | ✅  | ✅  | ✅  |
 | Cumulus Linux         | ✅  | ✅  | ✅  | ✅  |
-| Cumulus Linux 5.0 (NVUE) | ✅ | ❌ | ✅  | ✅  |
+| Cumulus Linux 5.x (NVUE) | ✅ | ❌ | ✅  | ✅  |
 | Dell OS10             | ✅  |  ❌  | ✅  | ✅  |
 | Fortinet FortiOS      | ✅  | ✅  |  ❌  |  ❌  |
 | FRR                   | ✅  | ✅  | ✅  | ✅  |
@@ -230,7 +230,7 @@ The following interface addresses are supported on various platforms:
 | Cisco IOS XRv         | ✅  | ✅  | ✅  |
 | Cisco Nexus OS        | ✅  | ✅  | ✅  |
 | Cumulus Linux         | ✅  | ✅  | ✅  |
-| Cumulus Linux 5.0 (NVUE) | ✅ | ✅ | ✅ |
+| Cumulus Linux 5.x (NVUE) | ✅ | ✅ | ✅ |
 | Dell OS10             | ✅  | ✅  |  ❌  |
 | Fortinet FortiOS      | ✅  | ✅  |  ❌  |
 | FRR                   | ✅  | ✅  | ✅  |
@@ -264,7 +264,7 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 | Cisco IOS XRv         | ✅   |  ✅  |   ❌  |  ✅  |   ❌  |
 | Cisco Nexus OS        | ✅   |  ✅  |  ✅  |  ✅  |   ❌  |
 | Cumulus Linux         | ✅   |   ❌  |   ❌  |  ✅  |  ✅  |
-| Cumulus Linux 5.0 (NVUE) | ✅ |  ❌  |   ❌   | ✅ [❗](caveats-cumulus-nvue)  |  ❌  |
+| Cumulus Linux 5.x (NVUE) | ✅ |  ❌  |   ❌   | ✅ [❗](caveats-cumulus-nvue)  |  ❌  |
 | Dell OS10             | ✅ [❗](caveats-os10) |   ❌   |   ❌   | ✅  |  ❌  |
 | Fortinet FortiOS      | ✅ [❗](caveats-fortios) |   ❌   |   ❌   |   ❌   |  ❌  |
 | FRR                   | ✅   |  ✅   |   ❌  | ✅  |  ✅  |
@@ -315,7 +315,7 @@ The layer-2 control plane [configuration modules](module-reference.md) are suppo
 | ------------------------- |:--:|:--:|
 | Arista EOS                | ✅ | ✅ |
 | Cumulus Linux             | ✅ | ✅ |
-| Cumulus Linux 5.0 (NVUE)  | ✅ | ✅ |
+| Cumulus Linux 5.x (NVUE)  | ✅ | ✅ |
 | FRR                       | ✅ | ✅ |
 
 (platform-dataplane-support)=
@@ -330,7 +330,7 @@ The data plane [configuration modules](module-reference.md) are supported on the
 | Cisco IOSv/IOSvL2     | ✅ | ✅ |  ❌ | ✅ |  ❌ |  ❌ |
 | Cisco Nexus OS        | ✅ | ✅ | ✅ |  ❌ |  ❌ |  ❌ | 
 | Cumulus Linux         | ✅ | ✅ | ✅ |  ❌ |  ❌ |  ❌ |
-| Cumulus Linux 5.0 (NVUE) | ✅ |[❗](module-vrf-platform-support)| ❌ | ❌ | ❌ | ❌ |
+| Cumulus Linux 5.x (NVUE) | ✅ |[❗](module-vrf-platform-support)| ❌ | ❌ | ❌ | ❌ |
 | Dell OS10             | ✅ | ✅ | ✅ |  ❌ |  ❌ |  ❌ | 
 | FRR                   | ✅ | ✅ | ✅ | ✅ | ✅ |  ❌ | 
 | Juniper vMX           | ✅ | ✅ |  ❌ | ✅ | ✅ |  ❌ | 
@@ -376,7 +376,7 @@ Core *netlab* functionality and all multi-protocol routing protocol configuratio
 | Cisco IOS XE[^18v]    |          ✅          |   ✅    |    ✅     |         ✅          |        ✅         |    ❌    |
 | Cisco Nexus OS        |          ✅          |   ❌    |    ✅     |         ✅          |        ✅         |    ❌    |
 | Cumulus Linux         |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
-| Cumulus Linux 5.0 (NVUE)        |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
+| Cumulus Linux 5.x (NVUE)        |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
 | Dell OS10             |          ✅          |   ✅    |    ❌     |         ❌          |        ✅         |    ❌    |
 | Fortinet FortiOS      |          ✅          |   ❌    |    ❌     |         ❌          |        ❌         |    ❌    |
 | FRR                   |          ✅          |   ✅    |    ✅     |         ❌          |        ✅         |    ❌    |
