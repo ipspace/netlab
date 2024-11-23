@@ -2,9 +2,9 @@
       {{ i.ifname }}:
         type: {{ 'svi' if i.type=='svi' else 'bond' if i.type=='lag' else 'swp' }}
         link:
-{%    if i.mtu is defined %}
+{%  if i.mtu is defined %}
           mtu: {{ i.mtu }}
-{%    endif %}
+{%  endif %}
           state:
             up: {}
 {%  if i.name is defined %}
@@ -59,29 +59,49 @@
           address:
             dhcp: {}
         type: eth
-{# Put all loopback IPs on the 'lo' interface #}
-{% set loopbacks = netlab_interfaces|selectattr('type','eq','loopback')|list %}
-{% set lo_ipv4s = loopbacks|selectattr('ipv4','defined')|map(attribute='ipv4')|list %}
-{% set lo_ipv6s = loopbacks|selectattr('ipv6','defined')|map(attribute='ipv6')|list %}
-      lo:
-        ip:
-          address:
-{% if lo_ipv4s %}
-{%   for ip in lo_ipv4s %}
-            {{ ip }}: {}
-{%   endfor %}
-{% else %}
-            127.0.0.1: {}
-{% endif %}
-{% if lo_ipv6s %}
-{%   for ip in lo_ipv6s %}
-            {{ ip }}: {}
-{%   endfor %}
-{% else %}
-          ipv6:
-            enable: off
-{% endif %}
-        type: loopback
 {% for l in interfaces|default([]) if l.type!='loopback' %}
 {{      decl_interface(l) }}
+{% endfor %}
+
+{% for lb in netlab_interfaces if lb.type=='loopback' %}
+- set:
+{%   if lb.vrf is not defined %}
+    interface:
+      lo:
+        type: loopback
+{%     if lb.mtu is defined %}
+        link:
+          mtu: {{ lb.mtu }}
+{%     endif %}
+        ip:
+          address:
+{%     if 'ipv4' in lb %}
+            {{ lb.ipv4 }}: {}
+{%     else %}
+            127.0.0.1/8: {}
+{%     endif %}
+{%     if 'ipv6' in lb %}
+            {{ lb.ipv6 }}: {}
+{%     else %}
+          ipv6:
+            enable: off
+{%     endif %}
+{%   else %}
+    vrf:
+      {{ lb.vrf }}:
+        loopback:
+          ip:
+            address:
+{%     if 'ipv4' in lb %}
+              {{ lb.ipv4 }}: {}
+{%     else %}
+              127.0.0.1/8: {}
+{%     endif %}
+{%     if 'ipv6' in lb %}
+              {{ lb.ipv6 }}: {}
+{%     else %}
+            ipv6:
+              enable: off
+{%     endif %}
+{%   endif %}
 {% endfor %}
