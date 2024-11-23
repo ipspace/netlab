@@ -76,7 +76,8 @@ def get_device_name(node: Box, type: str, defaults: Box, ifdata: Box) -> typing.
   lbname = features.get(f'{full_type}.interface_name',None)
   if not lbname:
     if log.debug_active('deprecated'):
-      log.info(f"Deprecated: device {node.device} does not provide '{full_type}.interface_name'")
+      log.error(f"Deprecated - device {node.device} does not provide '{full_type}.interface_name' in features",
+                module="initial",category=Warning)
     lbname = get_device_attribute(node,f'{type}_interface_name',defaults)
     if not lbname:
       return None
