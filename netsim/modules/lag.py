@@ -279,7 +279,6 @@ def process_lag_links(topology: Box) -> None:
 # populate_mlag_peer - Lookup the IPv4 loopback address for the mlag peer, and derive a virtual MAC to use
 #
 def populate_mlag_peer(node: Box, intf: Box, topology: Box) -> None:
-  print(f"populate_mlag_peer({node})")
   _n = intf.neighbors[0].node
   peer = topology.nodes[_n]
   features = devices.get_device_features(node,topology.defaults)
