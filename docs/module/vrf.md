@@ -21,8 +21,8 @@ VRFs are supported on these platforms:
 | Cisco IOS             | ✅  | ✅  | ✅  |
 | Cisco IOS XE[^18v]    | ✅  | ✅  | ✅  |
 | Cisco Nexus OS        | ✅  | ✅  | ✅  |
-| Cumulus Linux         | ✅  | ✅  | ✅  |
-| Cumulus NVUE          | ✅  |  ❌  |  ❌  |
+| Cumulus Linux 4.x     | ✅  | ✅  | ✅  |
+| Cumulus 5.x (NVUE)    | ✅  |  ❌  |  ✅  |
 | Dell OS10             | ✅  | ✅  | ✅  |
 | FRR [❗](caveats-frr) | ✅  | ✅  | ✅  |
 | Junos[^Junos]         | ✅  | ✅  | ✅  |
@@ -45,7 +45,8 @@ These platforms support routing protocols in VRFs:
 | Cisco IOS/IOSvL2      | ✅ [❗](caveats-iosv) | ✅  | ✅  | ✅  | ✅  |
 | Cisco IOS XE[^18v]    | ✅ [❗](caveats-csr) | ✅  | ✅  | ✅  | ✅  |
 | Cisco Nexus OS        | ✅  |  ❌  | ✅  |
-| Cumulus Linux         | ✅  |  ❌  | ✅  | ✅  | ✅  |
+| Cumulus Linux 4.x     | ✅  |  ❌  | ✅  | ✅  | ✅  |
+| Cumulus 5.x (NVUE)    | ✅  |  ❌  | ❌  | ❌  | ❌  |
 | Dell OS10             | ✅  |  ❌  | ✅  |
 | FRR [❗](caveats-frr) | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Junos[^Junos]         | ✅  | ✅  | ✅  |
