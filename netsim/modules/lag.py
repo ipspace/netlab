@@ -26,8 +26,8 @@ create_lag_member_links -- iterate over topology.links and expand any that have 
 """
 def create_lag_member_links(l: Box, topology: Box) -> None:
   lag_members = l.lag.members
-  l.lag.pop("members",None)                      # Remove explicit list of members
-  l2_ifdata = { 'type': "p2p", 'prefix': False } # Construct an L2 member link
+  l.lag.pop("members",None)                                    # Remove explicit list of members
+  l2_ifdata = data.get_box({ 'type': "p2p", 'prefix': False }) # Construct an L2 member link
   for a in list(topology.defaults.lag.attributes.lag_l2_ifattr):
     if a in l:
       l2_ifdata[a] = l[a]
@@ -35,12 +35,18 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
   for idx,member in enumerate(lag_members):
     member = links.adjust_link_object(member,f'{l._linkname}.lag[{idx+1}]',topology.nodes)
 
-    if len(member.interfaces)!=2:                # Check that there are exactly 2 nodes involved
+    if 'lag' in member:                                        # Catch potential sources for inconsistency
+      log.error(f'LAG attributes must be configured on the link, not member interface {member._linkname}: {member.lag}',
+        category=log.IncorrectAttr,
+        module='lag')
+      return
+
+    if len(member.interfaces)!=2:                              # Check that there are exactly 2 nodes involved
       log.error(f'Link {member._linkname} in LAG {l.lag.ifindex} must have exactly 2 nodes',
       category=log.IncorrectAttr,
       module='lag')
       return
-    else:                                        # Check that they all support LAG
+    else:                                                      # Check that they all support LAG
       for i in member.interfaces:
         _n = topology.nodes[i.node]
         features = devices.get_device_features(_n,topology.defaults)
@@ -55,16 +61,16 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
             module='lag')
           return
 
-    member = l2_ifdata + member                  # Copy L2 data into member link
+    member = l2_ifdata + member                                # Copy L2 data into member link
     member.linkindex = len(topology.links)+1
-    member.lag._parentindex = l.linkindex        # Keep track of parent
+    member.lag._parentindex = l.linkindex                      # Keep track of parent
     if log.debug_active('lag'):
       print(f'LAG create_lag_member_links -> adding link {member}')
     topology.links.append(member)
-    if not l.interfaces:                         # Copy interfaces from first member link
-      l.interfaces = member.interfaces + []      # Deep copy, assumes all links have same 2 nodes
+    if not l.interfaces:                                       # Copy interfaces from first member link
+      l.interfaces = member.interfaces + []                    # Deep copy, assumes all links have same 2 nodes
     else:
-      base = { n.node for n in l.interfaces }    # List the (2) nodes from the first link
+      base = { n.node for n in l.interfaces }                  # List the (2) nodes from the first link
       others = { n.node for n in member.interfaces if n.node not in base }
       if others:
         log.error(f'All LAG link members must connect the same pair of nodes({base}), found {others}',
@@ -107,10 +113,10 @@ class LAG(_Module):
   def node_post_transform(self, node: Box, topology: Box) -> None:
     features = devices.get_device_features(node,topology.defaults)
     for i in node.interfaces:
-      if 'lag' not in i:
+      if i.type!='lag':
         continue
 
-      i.lag = node.get('lag',{}) + i.lag
+      i.lag = node.get('lag',{}) + i.lag  # Merge node level lag attributes
       lacp_mode = i.get('lag.lacp_mode')  # Inheritance copying is done elsewhere
       if lacp_mode=='passive' and not features.lag.get('passive',False):
         log.error(f'Node {node.name} does not support passive LACP configured on interface {i.ifname}',
