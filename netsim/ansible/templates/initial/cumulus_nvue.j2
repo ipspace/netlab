@@ -14,6 +14,9 @@
 {%  endif %}
 {%  if i.ipv4 is defined or i.ipv6 is defined %}
         ip:
+{%    if i.vrf is defined %}
+          vrf: {{ i.vrf }}
+{%    endif %}
           address:
 {%    if i.ipv4 is defined %}
 {%      if i.ipv4 == True %}
@@ -22,12 +25,18 @@
             {{ i.ipv4 }}: {}
 {%      endif %}
 {%    endif %}
-{%    if i.vrf is defined %}
-          vrf: {{ i.vrf }}
-{%    endif %}
 {%    if i.ipv6 is defined %}
-{%      if i.ipv6 is string %}
+{%      if i.ipv6 is string and i.ipv6|ipv6 %}
             {{ i.ipv6 }}: {}
+          ipv6:
+            forward: on
+{%        if 'ipv6' not in i.dhcp.client|default({}) %}
+          neighbor-discovery:
+            enable: on
+            router-advertisement:
+              enable: off # Major bug in NVUE - any non-"on" value will *enable* (no suppress) RA...
+              interval: 5000
+{%        endif %}
 {%      endif %}
 {%    else %}
           ipv6:
@@ -50,21 +59,46 @@
           address:
             dhcp: {}
         type: eth
+{% for l in interfaces|default([]) if l.type!='loopback' %}
+{{      decl_interface(l) }}
+{% endfor %}
+
+{% for lb in netlab_interfaces if lb.type=='loopback' %}
+- set:
+{%   if lb.vrf is not defined %}
+    interface:
       lo:
+        type: loopback
+{%     if lb.mtu is defined %}
+        link:
+          mtu: {{ lb.mtu }}
+{%     endif %}
         ip:
           address:
-{% if 'ipv4' in loopback %}
-            {{ loopback.ipv4 }}: {}
-{% else %}
-            127.0.0.1: {}
-{% endif %}
-{% if 'ipv6' in loopback %}
-            {{ loopback.ipv6 }}: {}
-{% else %}
+{%     if 'ipv4' in lb %}
+            {{ lb.ipv4 }}: {}
+{%     else %}
+            127.0.0.1/8: {}
+{%     endif %}
+{%     if 'ipv6' in lb %}
+            {{ lb.ipv6 }}: {}
+{%     else %}
           ipv6:
             enable: off
-{% endif %}
-        type: loopback
-{% for l in interfaces|default([]) if l.type in ['lan','p2p','stub','svi','lag'] %}
-{{      decl_interface(l) }}
+{%     endif %}
+{%   else %}
+    vrf:
+      {{ lb.vrf }}:
+        loopback:
+          ip:
+            address:
+{%     if 'ipv4' in lb %}
+              {{ lb.ipv4 }}: {}
+{%     else %}
+              127.0.0.1/8: {}
+{%     endif %}
+{%     if 'ipv6' in lb %}
+              {{ lb.ipv6 }}: {}
+{%     endif %}
+{%   endif %}
 {% endfor %}
