@@ -28,7 +28,7 @@ Defining layer-3 attributes (or even some layer-2 attributes like MTU or bandwid
 ```
 vlans:
   red:
-    mode: bridge
+    mode: irb
     links:
     - r1:
       c1:
