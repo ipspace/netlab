@@ -527,6 +527,16 @@ class VRF(_Module):
       
       return
 
+    # If VPN address families are used, check that the node supports vrf.bgp feature
+    if node.get('af.vpnv4',False) or node.get('af.vpnv6',False):
+      if not features.get('vrf.bgp',False):
+         log.error(
+          f"Topology uses VPN address families but node '{node.name}'({node.device}) does not support 'vrf.bgp'",
+          category=AttributeError,
+          module='vrf',
+          hint='vrf.bgp')
+         return
+
     node.vrfs = node.vrfs or {}     # ... otherwise make sure the 'vrfs' dictionary is not empty
     vrfidx = 100
 
