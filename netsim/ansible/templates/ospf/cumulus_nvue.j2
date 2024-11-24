@@ -2,41 +2,51 @@
     router:
       ospf:
         enable: on
+
+{% macro vrf_ospf(vrfname,vrf) %}
+{%   set _ospf = vrf.ospf %}
+{%   set _intfs = _ospf.interfaces|default([]) %}
+{%   if _intfs!=[] %}
+- set:
     vrf:
-      default:
+      {{ vrfname }}:
         router:
           ospf:
             enable: on
-{% if ospf.reference_bandwidth is defined %}
-            reference-bandwidth: {{ ospf.reference_bandwidth }}
-{% endif %}
-{% if 'router_id' in ospf %}
-            router-id: {{ ospf.router_id }}
-{% endif %}
-{% set node_area = ospf.area|default('0.0.0.0') %}
-            area:
-{% for o_area in interfaces|json_query('[*].ospf.area')|union([node_area])|unique %}
-              '{{ o_area }}':
-                network:
-{%   if o_area == node_area and 'ipv4' in loopback %}
-                  {{ loopback.ipv4 }}: {}
-{%   endif %}
-{%   for l in interfaces if 'ipv4' in l and l.ipv4 is string and l.ospf.area|default('') == o_area %}
-                  {{ l.ipv4 }}: {}
-{%   endfor %}
-{% endfor %}
-{% for l in interfaces|default([]) if 'ospf' in l %}
-{%   if loop.first %}
+            redistribute:
+              connected:
+                enable: on
+{%     if _ospf.reference_bandwidth is defined %}
+            reference-bandwidth: {{ _ospf.reference_bandwidth }}
+{%     endif %}
+{%     if 'router_id' in _ospf %}
+            router-id: {{ _ospf.router_id }}
+{%     endif %}
+
+{%     for l in _intfs %}
+{%       if loop.first %}
     interface:
-{%   endif %}
+{%       endif %}
       {{ l.ifname }}:
         router:
           ospf:
-{%   if l.ospf.cost is defined %}
+            area: {{ l.ospf.area|default(ospf.area) }}
+{%       if l.ospf.cost is defined %}
             cost: {{ l.ospf.cost }}
-{%   endif %}
+{%       endif %}
             network-type: {{ l.ospf.network_type|default('broadcast') }}
-{%   if l.ospf.passive | default(False) %}
+{%       if l.ospf.passive | default(False) %}
             passive: on
-{%   endif %}
-{% endfor %}
+{%       endif %}
+{%     endfor %}
+
+{%   else %}
+# No OSPF interfaces in VRF {{ vrfname }}
+{%   endif %} 
+{% endmacro %}
+
+{% if ospf is defined %}
+{% set _lo = (loopback + { 'ospf': { 'area': ospf.area|default('0.0.0.0') } }) if 'ipv4' in loopback else {} %}
+{% set _ospf_intfs = [_lo] + interfaces|default([])|selectattr('ospf','defined')|list %}
+{{ vrf_ospf("default", { 'ospf': ospf + { 'interfaces': _ospf_intfs } } ) }}
+{% endif %}
