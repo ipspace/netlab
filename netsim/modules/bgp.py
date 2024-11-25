@@ -277,10 +277,10 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
 #      print(f'EBGP node {node.name} neighbor {ngb_name} lla {ipv6_lla} v6num {ipv6_num} v4unnum {ipv4_unnum} rfc8950 {unnumbered}')
       if ipv4_unnum and (ipv6_lla or ipv6_num):
         rfc8950 = True                                                # Unnumbered IPv4 over IPv6 ==> IPv6 nexthops + RFC 8950 IPv4 AF
-        if ipv6_num:
-          extra_data.ipv4 = True                                      # Do activate the IPv4 AF (over IPv6)
+        if not l.get('_parent_ipv4',None):                            # If the user did not explicitly ask for ipv4 unnumbered
+          extra_data.ipv4 = True                                      # Activate the IPv4 AF (over IPv6)
           ngb_ifdata.pop('ipv4',None)                                 # ...but remove the IPv4 session
-          l.pop('ipv4',None)                                          # ...and the unnumbered IPv4 address from the interface
+          l.pop('ipv4',None)                                          # ...remove the unnumbered IPv4 address from the interface
 
 #      print(f'... unnumbered {unnumbered}')
       if ipv6_lla or rfc8950:
