@@ -275,7 +275,7 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
       rfc8950  = l.get('unnumbered',None) is True and ngb_ifdata.get('unnumbered',None) is True
       ipv4_unnum = l.get('ipv4',None) is True and ngb_ifdata.get('ipv4',None) is True
 #      print(f'EBGP node {node.name} neighbor {ngb_name} lla {ipv6_lla} v6num {ipv6_num} v4unnum {ipv4_unnum} rfc8950 {unnumbered}')
-      if ipv4_unnum:
+      if ipv4_unnum and (ipv6_lla or ipv6_num):
         rfc8950 = True                                                # Unnumbered IPv4 over IPv6 ==> IPv6 nexthops + RFC 8950 IPv4 AF
         if ipv6_num:
           extra_data.ipv4 = True                                      # Do activate the IPv4 AF (over IPv6)
