@@ -94,6 +94,7 @@ bgp_neighbor: Create BGP neighbor data structure
 * n - neighbor node data
 * intf - neighbor interface data (could be addressing prefix or whatever is in the interface neighbor list)
 * ctype - session type (ibgp or ebgp)
+* sessions - map of session types to create per address family
 * extra_data - anything else we might want to pass to the neighbor data structure
 """
 def bgp_neighbor(n: Box, intf: Box, ctype: str, sessions: Box, extra_data: typing.Optional[dict] = None) -> typing.Optional[Box]:
@@ -111,6 +112,8 @@ def bgp_neighbor(n: Box, intf: Box, ctype: str, sessions: Box, extra_data: typin
         elif isinstance(intf[af],bool):
           if intf[af] is True:
             ngb[af] = True
+          else:
+            intf.pop(af,None)
         else:
           ngb[af] = str(netaddr.IPNetwork(intf[af]).ip)
 
@@ -278,6 +281,7 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
       if ipv4_unnum:
         rfc8950 = True                                                # Unnumbered IPv4 over IPv6 ==> IPv6 nexthops + RFC 8950 IPv4 AF
         if ipv6_num:
+          extra_data.ipv4 = True
           ngb_ifdata.ipv4 = False                                     # Remove the IPv4 session, activate IPv4 over IPv6 session
 
 #      print(f'... unnumbered {unnumbered}')
@@ -341,8 +345,6 @@ def activate_bgp_default_af(node: Box, activate: Box, topology: Box) -> None:
     for af in ('ipv4','ipv6'):
       if af in ngb:
         ngb.activate[af] = node.bgp.get(af) and af in activate and ngb.type in activate[af]
-        if ngb[af] is False:
-          ngb.pop(af,None)                # Cleanup False values
 
 """
 Build BGP route reflector clusters
