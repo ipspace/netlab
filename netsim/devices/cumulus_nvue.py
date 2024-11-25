@@ -37,6 +37,16 @@ def nvue_check_stp_features(node: Box, topology: Box) -> None:
       more_data=err_data,
       node=node)
 
+"""
+Checks for vrf.bgp usage which is not yet implemented
+"""
+def nvue_check_vrf_bgp(node: Box) -> None:
+  if node.get('af.vpnv4',False) or node.get('af.vpnv6',False):
+    log.error(f"Topology uses vrf BGP features which Cumulus NVUE node '{node.name}' does not support yet",
+      category=AttributeError,
+      module='vrf',
+      hint='vrf.bgp')
+
 class Cumulus_Nvue(_Quirks):
 
   @classmethod
@@ -49,3 +59,6 @@ class Cumulus_Nvue(_Quirks):
     # NVUE specific quirks
     if 'stp' in mods:
       nvue_check_stp_features(node,topology)
+    
+    if 'vrf' in mods:
+      nvue_check_vrf_bgp(node)
