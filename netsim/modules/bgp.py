@@ -109,7 +109,10 @@ def bgp_neighbor(n: Box, intf: Box, ctype: str, sessions: Box, extra_data: typin
         if "unnumbered" in ngb and ngb.unnumbered == True:
           ngb[af] = True
         elif isinstance(intf[af],bool):
-          ngb[af] = intf[af]
+          if intf[af] is True:
+            ngb[af] = True
+          else:
+            intf.pop(af,None)                     # Remove flag when value is 'False'
         else:
           ngb[af] = str(netaddr.IPNetwork(intf[af]).ip)
 
@@ -275,10 +278,9 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
       ipv4_unnum = l.get('ipv4',None) is True and ngb_ifdata.get('ipv4',None) is True
 #      print(f'EBGP node {node.name} neighbor {ngb_name} lla {ipv6_lla} v6num {ipv6_num} v4unnum {ipv4_unnum} rfc8950 {unnumbered}')
       if ipv4_unnum:
-        if not ipv6_num:
-          rfc8950 = True                                              # Unnumbered IPv4 w/o IPv6 ==> IPv6 LLA + RFC 8950 IPv4 AF
-        else:
-          sessions.pop('ipv4',None)                                   # Unnumbered IPv4 with IPv6 ==> remove IPv4 session
+        rfc8950 = True                                                # Unnumbered IPv4 over IPv6 ==> IPv6 nexthops + RFC 8950 IPv4 AF
+        if ipv6_num:
+          ngb_ifdata.ipv4 = False                                     # Remove the IPv4 session, activate IPv4 over IPv6 session
 
 #      print(f'... unnumbered {unnumbered}')
       if ipv6_lla or rfc8950:
