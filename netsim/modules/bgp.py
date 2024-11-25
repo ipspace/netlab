@@ -111,8 +111,6 @@ def bgp_neighbor(n: Box, intf: Box, ctype: str, sessions: Box, extra_data: typin
         elif isinstance(intf[af],bool):
           if intf[af] is True:
             ngb[af] = True
-          else:
-            intf.pop(af,None)                     # Remove flag when value is 'False'
         else:
           ngb[af] = str(netaddr.IPNetwork(intf[af]).ip)
 
@@ -343,6 +341,8 @@ def activate_bgp_default_af(node: Box, activate: Box, topology: Box) -> None:
     for af in ('ipv4','ipv6'):
       if af in ngb:
         ngb.activate[af] = node.bgp.get(af) and af in activate and ngb.type in activate[af]
+        if ngb[af] is False:
+          ngb.pop(af,None)                # Cleanup False values
 
 """
 Build BGP route reflector clusters
