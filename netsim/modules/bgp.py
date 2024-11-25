@@ -274,8 +274,11 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
       rfc8950  = l.get('unnumbered',None) is True and ngb_ifdata.get('unnumbered',None) is True
       ipv4_unnum = l.get('ipv4',None) is True and ngb_ifdata.get('ipv4',None) is True
 #      print(f'EBGP node {node.name} neighbor {ngb_name} lla {ipv6_lla} v6num {ipv6_num} v4unnum {ipv4_unnum} rfc8950 {unnumbered}')
-      if ipv4_unnum and not ipv6_num:                                 # Unnumbered IPv4 w/o IPv6 ==> IPv6 LLA + RFC 8950 IPv4 AF
-        rfc8950 = True
+      if ipv4_unnum:
+        if not ipv6_num:
+          rfc8950 = True                                              # Unnumbered IPv4 w/o IPv6 ==> IPv6 LLA + RFC 8950 IPv4 AF
+        else:
+          sessions.pop('ipv4',None)                                   # Unnumbered IPv4 with IPv6 ==> remove IPv4 session
 
 #      print(f'... unnumbered {unnumbered}')
       if ipv6_lla or rfc8950:
