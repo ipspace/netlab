@@ -4,6 +4,7 @@ FRR OSPFv2 validation routines
 
 from box import Box
 import typing
+import re
 from netsim.data import global_vars
 
 def exec_ping(
@@ -27,6 +28,23 @@ def exec_ping(
   cmd += ' || true'
   return cmd
 
+'''
+Extract the IP address the device tried to ping from the
+result message and add it to the hostname if it differs from
+the hostname used in validation request
+'''
+def extract_host(hostname: str, result: str) -> str:
+  result_hdr = result.split(':')[0]                       # Get the initial 'PING X (A.B.C:D):' part
+  if ':' not in result or hostname not in result_hdr:     # The hostname should be part of it, otherwise give up
+    return hostname
+  
+  result_hdr = result_hdr.split(hostname)[1]              # Now get the part after the hostname
+  if ')' not in result_hdr:                               # The hostname must have been an IP address
+    return hostname                                       # ... or we would get an IP address in brackets
+  
+  M = re.search('\\([0-9a-fA-F:.]+\\)',result_hdr)
+  return hostname + ' ' + M.group(0) if M else hostname
+
 def valid_ping(
       host: str,
       src: typing.Optional[str] = None,
@@ -36,7 +54,7 @@ def valid_ping(
       expect: typing.Optional[str] = None) -> str:
   _result = global_vars.get_result_dict('_result')
 
-  host = host.split('/')[0]
+  host = extract_host(host.split('/')[0],_result.stdout)
   msg = f'Ping to {af + " " if af else ""}{host}'
   if src:
     msg += f' from {src}'
