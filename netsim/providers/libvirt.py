@@ -257,8 +257,9 @@ def create_vagrant_batches(topology: Box) -> None:
   batch_size = libvirt_defaults.batch_size
   start_cmd  = libvirt_defaults.start
   libvirt_defaults.start = []
-  node_list = [ n_name for n_name in topology.nodes.keys() 
-                  if devices.get_provider(topology.nodes[n_name],topology.defaults) == 'libvirt' ]
+  node_list = [ n_name for (n_name,n_data) in topology.nodes.items()
+                  if devices.get_provider(n_data,topology.defaults) == 'libvirt'
+                     and not n_data.get('unmanaged',False) ]
 
   while True:
     libvirt_defaults.start.append(start_cmd + " " + " ".join(node_list[:batch_size]))     # Add up to batch_size nodes to the start command
