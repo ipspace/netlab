@@ -19,7 +19,7 @@ def exec_ping(
   cmd = f'ping -c {count} -W 1 -A'
   if af == 'ipv6':
     cmd += ' -6'
-  else:
+  elif af == 'ipv4':
     cmd += ' -4'
   if pkt_len:
     cmd += f' -s {pkt_len}'
