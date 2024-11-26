@@ -1181,5 +1181,5 @@ def cleanup(topology: Box) -> None:
   if not 'links' in topology:
     return
 
-  for link in topology.links:
-    link.pop('_linkname',None)
+#  for link in topology.links:
+#    link.pop('_linkname',None)
