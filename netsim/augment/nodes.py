@@ -162,10 +162,12 @@ def find_node_device(n: Box, topology: Box) -> bool:
     n.device = topology.defaults.device
 
   if not n.device:
+    u_node = n.get('unmanaged',False)
     log.error(
-      f'No device type specified for node {n.name} and there is no default device type',
+      f'No device type specified for {"unmanaged " if u_node else ""}node {n.name} and there is no default device type',
       log.MissingValue,
-      'nodes')
+      'nodes',
+      hint='unmanaged_device' if u_node else None)
     return False
 
   try:

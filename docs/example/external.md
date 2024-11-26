@@ -1,3 +1,4 @@
+(external-connectivity)=
 # External Connectivity
 
 _netlab_ contains several mechanisms that allow you to manage physical labs, add physical devices to virtual labs, connect to the outside world from virtual lab devices, or use network management software packaged as containers or virtual machines with your virtual labs.
@@ -117,6 +118,11 @@ links:
     ipv4: 10.42.0.1/24
   libvirt.public: True
 ```
+
+```{tip}
+You still have to specify the device type (either in the node or as the [default device type](default-device-type)) for unmanaged nodes. _netlab_ uses the device type to determine which features a node supports. If you want to use an unsupported unmanaged device, set **‌device** to **‌none**.
+```
+
 
 ## Managing Physical Devices
 
