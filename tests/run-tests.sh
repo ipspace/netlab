@@ -12,7 +12,7 @@ PYTHONPATH="../" python3 -m pytest -vvv
 #
 rm -fr *files
 set -e
-cd ..; python3 -m mypy --no-incremental -p netsim
+cd ..; python3 -m mypy -p netsim
 for file in netsim/extra/*/plugin.py; do
   python3 -m mypy $file
 done
