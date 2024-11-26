@@ -34,6 +34,7 @@ class ProviderConfiguration(_TopologyOutput):
     p_module = providers.get_provider_module(topology,topology.provider)
     providers.mark_providers(topology)
     p_module.call('pre_output_transform',topology)
+    log.exit_on_error()
     write_provider_file(providers.select_topology(topology,topology.provider),topology.provider,filename)
 
     for subprovider in topology[topology.provider].providers.keys():  # Iterate over subproviders

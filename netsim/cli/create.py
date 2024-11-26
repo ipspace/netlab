@@ -91,6 +91,7 @@ def run(cli_args: typing.List[str],
     output_module = _TopologyOutput.load(output_format,topology.defaults.outputs[output_format.split(':')[0]])
     if output_module:
       output_module.write(topology)
+      log.exit_on_error()
     else:
       log.error('Unknown output format %s' % output_format,log.IncorrectValue,'create')
 

@@ -187,6 +187,21 @@ def get_linux_bridge_name(virsh_bridge: str) -> typing.Optional[str]:
 
   return None
 
+def check_uplink_name(link: Box) -> None:
+  ifname = link.get('libvirt.uplink','eth0')
+  if is_dry_run():
+    print(f"DRY RUN: Assuming interface {ifname} exists")
+    return
+  
+  if not external_commands.run_command(['ip','link','show',ifname],ignore_errors=True,check_result=True):
+    log.error(
+      f'Uplink interface {ifname} used by {link._linkname} does not exist',
+      category=log.IncorrectValue,
+      more_hints=[
+        'Change the uplink interface name with libvirt.uplink link parameter',
+        'Use "ip link show" command to display valid interface names'],
+      module='libvirt')
+
 """
 pad_node_interfaces: Insert bogus interfaces in the node interface list to cope with the
 required ifindex values.
@@ -295,14 +310,15 @@ class Libvirt(_Provider):
   def pre_output_transform(self, topology: Box) -> None:
     _Provider.pre_output_transform(self,topology)
     for link in topology.links:                                     # Adjust links to deal with subprovider gotchas
+      if 'uplink' in link.libvirt or 'public' in link.libvirt:      # Is this an uplink?
+        check_uplink_name(link)                                     # ... check it has a valid interface name
+        link.pop('bridge',None)                                     # ... remove bridge name (there's no bridge)
+
       if link.type != 'lan':                                        # Multi-provider links are always LAN links
         continue
 
       if len(link.provider) <= 1:                                   # Skip single-provider links
         continue
-
-      if 'uplink' in link.libvirt or 'public' in link.libvirt:      # Is this an uplink?
-        link.pop('bridge',None)                                     # ... remove bridge name (there's no bridge)
 
       if 'clab' in link.provider:                                   # Find links with clab subprovider
         link.node_count = 999                                       # ... and fake link count to force clab to use a bridge
