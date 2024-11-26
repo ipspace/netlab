@@ -37,6 +37,18 @@ def nvue_check_stp_features(node: Box, topology: Box) -> None:
       more_data=err_data,
       node=node)
 
+"""
+Checks for vrf route leaking usage which is not yet implemented
+"""
+def nvue_check_vrf_route_leaking(node: Box) -> None:
+  for vname,vdata in node.get("vrfs",{}).items():
+    if len(vdata.get('export',[]))>1 or len(vdata.get('import',[]))>1:
+      log.error(f"Topology uses vrf route leaking which Netlab does not implement (yet) for Cumulus NVUE node '{node.name}'",
+        category=log.FatalError,
+        module='vrf',
+        hint='route leaking')
+      return
+
 class Cumulus_Nvue(_Quirks):
 
   @classmethod
@@ -49,3 +61,6 @@ class Cumulus_Nvue(_Quirks):
     # NVUE specific quirks
     if 'stp' in mods:
       nvue_check_stp_features(node,topology)
+    
+    if 'vrf' in mods:
+      nvue_check_vrf_route_leaking(node)
