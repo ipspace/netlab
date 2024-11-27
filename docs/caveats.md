@@ -196,34 +196,31 @@ _netlab_ uses the VLAN-aware bridge paradigm to configure VLANs on Cumulus Linux
 
 See also [other FRRouting caveats](caveats-frr).
 
+(caveats-cumulus-clab)=
 ### Running Cumulus Linux in Containerlab
 
+* *netlab* uses Cumulus VX 4.4 containers created by Michael Kashin and downloaded from his Docker Hub account. These containers are not tested as they cause occasional system crashes.
 * *containerlab* could run Cumulus Linux as a [container or as a micro-VM with *firecracker*](https://containerlab.dev/manual/kinds/cvx/). The default used by *netlab* is to run Cumulus Linux as a container. Add the **clab.runtime** parameter to node data to change that.
 * Cumulus Linux running as a container might report errors related to the DHCP client during initial configuration. In this case,  you might have to disable **apparmor** for the DHCP client. The hammer-of-Thor command to fix this problem is `sudo systemctl disable apparmor` followed by a reboot; your sysadmin friends probably have a better suggestion.
-* *netlab* uses Cumulus VX containers created by Michael Kashin and downloaded from his Docker Hub account. If Nvidia decides to release an official container image, change the container name with **defaults.devices.cumulus.clab.image**[^DD] parameter (or by editing the `topology-defaults.yml` file included with *netlab*).
 
 (caveats-cumulus-nvue)=
-## Cumulus 5.0 with NVUE
+## Cumulus 5.x with NVUE
 
-You could configure Cumulus Linux 5.0 with configuration templates developed for Cumulus Linux 4.0 (use device type **cumulus** and specify desired device image), or with NVUE.
+You could configure Cumulus Linux 5.x with configuration templates developed for Cumulus Linux 4.4 (use device type **cumulus** and specify desired device image), or with NVUE.
 
 NVUE has several shortcomings that prevent *netlab* from configuring basic designs like IBGP on top of IGP. Don't be surprised if the labs that work with **cumulus** device don't work with **cumulus_nvue** device, and please create a GitHub issue whenever you find a glitch. We'd love to know (at least) what doesn't work as expected.
 
-To run Cumulus Linux 5.x with **cumulus** device type, add the following lines to your lab topology[^DD]:
+To run Cumulus Linux 5.x with **cumulus** device type, set the following default values in [lab topology](defaults-topology) or one of the [defaults files](defaults-user-file):
 
 ```
 defaults.devices.cumulus.libvirt.image: CumulusCommunity/cumulus-vx:5.2.0
 defaults.devices.cumulus.libvirt.memory: 2048
 ```
 
-Alternatively, you could add the following lines to your `~/.topology-defaults.yml` file:
+Other caveats:
 
-```
-devices.cumulus.libvirt.image: CumulusCommunity/cumulus-vx:5.2.0
-devices.cumulus.libvirt.memory: 2048
-```
-
-Note that Netlab configures the default MTU for all providers as *1500*, to align with other vendor implementation defaults and enable things like OSPF peering to work correctly out-of-the-box
+* The default MTU value is 1500 to match the implementation defaults from other vendors and enable things like seamless OSPF peering.
+* *netlab* uses Cumulus VX 5.3 containers created by Michael Kashin and downloaded from his Docker Hub account. These containers are severely out-of-date, are not tested in our integration tests, and might not work as expected.
 
 (caveats-os10)=
 ## Dell OS10
