@@ -272,9 +272,9 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
       #
       ipv6_lla = l.get('ipv6',None) is True and ngb_ifdata.get('ipv6',None) is True
       ipv6_num = isinstance(l.get('ipv6',None),str) and isinstance(ngb_ifdata.get('ipv6',None),str)
-      rfc8950  = l.get('unnumbered',None) is True and ngb_ifdata.get('unnumbered',None) is True
+      rfc8950  = l.get('unnumbered',None) is True and ngb_ifdata.get('ipv6',None) is True
       ipv4_unnum = l.get('ipv4',None) is True and ngb_ifdata.get('ipv4',None) is True
-#      print(f'EBGP node {node.name} neighbor {ngb_name} lla {ipv6_lla} v6num {ipv6_num} v4unnum {ipv4_unnum} rfc8950 {unnumbered}')
+      # print(f'EBGP node {node.name} neighbor {ngb_name} lla {ipv6_lla} v6num {ipv6_num} v4unnum {ipv4_unnum} rfc8950 {rfc8950} - {l}')
       if ipv4_unnum and ipv6_lla:
           rfc8950 = True                                                # Unnumbered IPv4 over IPv6 ==> IPv6 nexthops + RFC 8950 IPv4 AF
           if not l.get('_parent_ipv4',None):                            # If the user did not explicitly ask for ipv4 unnumbered
@@ -288,10 +288,6 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
           category=log.IncorrectValue,
           module='bgp')
         continue
-
-      if rfc8950 and l.get('ipv6',None) is None:                        # 'unnumbered' implies ipv6_lla
-        l.ipv6 = True                                                   # For platforms that need to explicitly enable ipv6
-        ipv6_lla = True
 
 #      print(f'... unnumbered {unnumbered}')
       if ipv6_lla:
