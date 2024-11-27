@@ -282,12 +282,16 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
             ngb_ifdata.pop('ipv4',None)                                 # ...but remove the IPv4 session
             l.pop('ipv4',None)                                          # ...remove the unnumbered IPv4 address from the interface
 
-      if ipv6_num and (rfc8950 or ipv4_unnum):                          # Check if user is asking to do RFC8950 over numbered IPv6
+      if ipv6_num and rfc8950:                                          # Check if user is asking to do RFC8950 over numbered IPv6
         log.error(
           text=f'RFC8950 style IPv6 nexthops for IPv4 AF are only supported over IPv6 LLA, not numbered IPv6 {l.ipv6} (interface {l.name}) on {node.name}',
           category=log.IncorrectValue,
           module='bgp')
         continue
+
+      if rfc8950 and l.get('ipv6',None) is None:                        # 'unnumbered' implies ipv6_lla
+        l.ipv6 = True                                                   # For platforms that need to explicitly enable ipv6
+        ipv6_lla = True
 
 #      print(f'... unnumbered {unnumbered}')
       if ipv6_lla:
