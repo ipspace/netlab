@@ -275,33 +275,38 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
       rfc8950  = l.get('unnumbered',None) is True and ngb_ifdata.get('unnumbered',None) is True
       ipv4_unnum = l.get('ipv4',None) is True and ngb_ifdata.get('ipv4',None) is True
 #      print(f'EBGP node {node.name} neighbor {ngb_name} lla {ipv6_lla} v6num {ipv6_num} v4unnum {ipv4_unnum} rfc8950 {unnumbered}')
-      if ipv4_unnum and (ipv6_lla or ipv6_num):
-        rfc8950 = True                                                # Unnumbered IPv4 over IPv6 ==> IPv6 nexthops + RFC 8950 IPv4 AF
-        if not l.get('_parent_ipv4',None):                            # If the user did not explicitly ask for ipv4 unnumbered
-          extra_data.ipv4 = True                                      # Activate the IPv4 AF (over IPv6)
-          ngb_ifdata.pop('ipv4',None)                                 # ...but remove the IPv4 session
-          l.pop('ipv4',None)                                          # ...remove the unnumbered IPv4 address from the interface
+      if ipv4_unnum and ipv6_lla:
+          rfc8950 = True                                                # Unnumbered IPv4 over IPv6 ==> IPv6 nexthops + RFC 8950 IPv4 AF
+          if not l.get('_parent_ipv4',None):                            # If the user did not explicitly ask for ipv4 unnumbered
+            extra_data.ipv4 = True                                      # Activate the IPv4 AF (over IPv6 LLA)
+            ngb_ifdata.pop('ipv4',None)                                 # ...but remove the IPv4 session
+            l.pop('ipv4',None)                                          # ...remove the unnumbered IPv4 address from the interface
+
+      if ipv6_num and (rfc8950 or ipv4_unnum):                          # Check if user is asking to do RFC8950 over numbered IPv6
+        log.error(
+          text=f'RFC8950 style IPv6 nexthops for IPv4 AF are only supported over IPv6 LLA, not numbered IPv6 {l.ipv6} (interface {l.name}) on {node.name}',
+          category=log.IncorrectValue,
+          module='bgp')
+        continue
 
 #      print(f'... unnumbered {unnumbered}')
-      if ipv6_lla or rfc8950:
-        extra_data.local_if = l.ifname                                # Set local_if to indicate IPv6 LLA EBGP session
-        if not features.bgp.ipv6_lla:                                 # IPv6_LLA feature flag has to be set even for IPv4 unnumbered EBGP
+      if ipv6_lla:
+        if not features.bgp.ipv6_lla:                                   # IPv6_LLA feature flag has to be set even for IPv4 unnumbered EBGP
           log.error(
             text=f'{node.name} (device {node.device}) does not support EBGP sessions over auto-generated IPv6 LLA (interface {l.name})',
             category=log.IncorrectValue,
             module='bgp')
           continue
+        extra_data.local_if = l.ifname                                  # Set local_if to indicate IPv6 LLA EBGP session
 
-      if rfc8950:
-        extra_data.ipv4_rfc8950 = True                                # Set unnumbered indicate RFC 8950 IPv4 AF
-        if not 'ipv6' in l:                                           # ... and enable IPv6 on the interface in case a device needs an
-          l.ipv6 = True                                               # ... explicit configuration of IPv6 LLA
-        if not features.bgp.rfc8950:
-          log.error(
-            text=f'{node.name} (device {node.device}) does not support IPv4 RFC 8950-style AF over IPv6 LLA EBGP sessions (interface {l.name})',
-            category=log.IncorrectValue,
-            module='bgp')
-          continue
+        if rfc8950:                                                     # RFC8950 is only supported over IPv6 LLA
+          if not features.bgp.rfc8950:
+            log.error(
+              text=f'{node.name} (device {node.device}) does not support IPv4 RFC 8950-style AF over IPv6 LLA EBGP sessions (interface {l.name})',
+              category=log.IncorrectValue,
+              module='bgp')
+            continue
+          extra_data.ipv4_rfc8950 = True                                # Set unnumbered indicate RFC 8950 IPv4 AF
 
       for k in ('local_as','replace_global_as'):      # Special handling for local-as attributes
         extra_data.pop(k,None)                        # These attributes are copied from local data, not neighbor data ==> remove neighbor data

@@ -308,7 +308,7 @@ See the [Simple BGP](bgp_example/simple.md) and [EBGP Data Center Fabric](bgp_ex
 
 Unnumbered EBGP sessions are supported on a few platforms. *netlab* creates an IPv6 LLA EBGP session when the **unnumbered** link- or interface attribute is set, or when **ipv6** interface address or link prefix is set to *True* (IPv6 LLA).
 
-*netlab* can use an IPv6 EBGP session (either regular or LLA) to transport IPv4 address family with IPv6 next hops (RFC 8950) -- the functionality commonly used to implement *unnumbered EBGP sessions*. *netlab* will enable IPv4 AF over an IPv6 EBGP session when the **unnumbered** link- or interface attribute is set, or when **ipv4** interface address or link prefix is set to *True*.
+*netlab* can use an IPv6 LLA EBGP session to transport IPv4 address family with IPv6 next hops (RFC 8950) -- the functionality commonly used to implement *unnumbered EBGP sessions*. *netlab* will enable IPv4 AF over an IPv6 LLA EBGP session when the **unnumbered** link- or interface attribute is set, or when **ipv4** interface address or link prefix is set to *True*. Note that RFC8950 over numbered IPv6 EBGP sessions is not supported (i.e. cannot be configured on most devices)
 
 ## IPv6 Support
 
