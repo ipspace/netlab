@@ -64,3 +64,10 @@ class Cumulus_Nvue(_Quirks):
     
     if 'vrf' in mods:
       nvue_check_vrf_route_leaking(node)
+
+    if devices.get_provider(node,topology) == 'clab':
+      log.error(
+        f"Cumulus VX 5.x container used for node {node.name} is not supported and might not work correctly",
+        category=Warning,
+        module='cumulus_nvue',
+        more_hints=[ "See https://netlab.tools/caveats/#caveats-cumulus-nvue for more details "])
