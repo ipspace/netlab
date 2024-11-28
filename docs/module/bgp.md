@@ -315,7 +315,7 @@ Use the **netlab show module --module bgp --feature ipv6_lla** command to displa
 (bgp-ebgp-rfc8950)=
 **EBGP Sessions on Unnumbered IPv4 Links**
 
-*netlab* can use an IPv6 EBGP sessions to transport IPv4 address family with IPv6 next hops (RFC 8950) -- the functionality commonly used to implement *interface EBGP sessions*. *netlab* will enable IPv4 AF over IPv6 LLA EBGP session when the **unnumbered** link- or interface attribute is set, or when **ipv4** interface address or link prefix is set to *True*.
+*netlab* can use IPv6 EBGP sessions to transport IPv4 address family with IPv6 next hops (RFC 8950) -- the functionality commonly used to implement *interface EBGP sessions*. *netlab* will enable IPv4 AF over IPv6 LLA EBGP sessions when the **unnumbered** link- or interface attribute is set, or when **ipv4** interface address or link prefix is set to *True*.
 
 Use the **netlab show module --module bgp --feature ipv6_lla** command to display devices on which you can use the IPv4 address family on IPv6 LLA EBGP sessions and the **netlab show module --module bgp --feature rfc8950** command to display devices on which you can use the IPv4 address family on regular IPv6 EBGP sessions.
 
