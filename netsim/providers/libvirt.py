@@ -311,7 +311,8 @@ class Libvirt(_Provider):
   def pre_output_transform(self, topology: Box) -> None:
     _Provider.pre_output_transform(self,topology)
     for link in topology.links:                                     # Adjust links to deal with subprovider gotchas
-      if 'uplink' in link.libvirt or 'public' in link.libvirt:      # Is this an uplink?
+      lv_data = link.get('libvirt',{})                              # Get libvirt-related link data
+      if 'uplink' in lv_data or 'public' in lv_data:                # Is this an uplink?
         check_uplink_name(link)                                     # ... check it has a valid interface name
         link.pop('bridge',None)                                     # ... remove bridge name (there's no bridge)
 
