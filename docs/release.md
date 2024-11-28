@@ -139,7 +139,7 @@ This release contains only [bug fixes](bug-fixes-1.7.2) and [documentation fixes
 **[Release 1.6.3](release-1.6.3) (2023-10-06)**
 
 * [EBGP multihop sessions](plugins/ebgp.multihop.md)
-* [ebgp.utils plugin](plugins/ebgp.utils.md) supports TCP-AO, configurable BGP timers, and Generic TTL Security Mechanism (TTL session protection)
+* [ebgp.utils plugin](plugin-bgp-session) supports TCP-AO, configurable BGP timers, and Generic TTL Security Mechanism (TTL session protection)
 * [OSPF reports](module/ospf.md)
 * Shorter version of [BGP neighbor report](module/bgp.md)
 * [BFD on Cumulus Linux](bfd-platform)
