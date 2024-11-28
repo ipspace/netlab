@@ -4,9 +4,9 @@
 This configuration module configures the BGP routing process and BGP neighbors on most [supported platforms](platform-routing-support). The configuration module sets up BGP sessions according to these simple design rules:
 
 * EBGP sessions are established between directly connected IP addresses on every link where the connected routers belong to different autonomous systems. Parallel sessions are established for all address families (IPv4, IPv6) configured on the link.
-* IBGP sessions are established between loopback interfaces of routers in the same autonomous system or with external interfaces of routing daemons. Parallel sessions are established for all address families configured on the loopback interfaces.
+* When two routers belong to the same autonomous system, netlab creates IBGP sessions between their loopback interfaces or with the first external interface if a router (or a routing daemon) does not have a loopback interface. Parallel sessions are established for all address families configured on the loopback interfaces.
 * IGBP sessions could form a full mesh (when no router reflectors are configured in the autonomous system) or a hubs-and-spokes topology with a single route reflector cluster and a full mesh of IBGP sessions between route reflectors.
-* Sessions (IBGP or EBGP) between directly connected IP addresses are established whenever the real AS or the local AS of the devices differ, allowing you to build scenarios like IBGP-over-EBGP (EVPN design) or IBGP mesh across multiple autonomous systems (ISP migration scenario).
+* Sessions (IBGP or EBGP) between directly connected IP addresses are established whenever the devices' real AS or local AS differ. This allows you to build scenarios like IBGP-over-EBGP (EVPN design) or IBGP mesh across multiple autonomous systems (ISP migration scenario).
 
 More interesting BGP topologies can be created with [custom plugins](../plugins.md).
 
@@ -160,23 +160,23 @@ Additional per-node BGP configuration parameters include:
 
 * **bgp.advertise_loopback** -- when set to `False`, the IP prefixes configured on loopback interfaces are not advertised in BGP. See also [*Advanced Global Configuration Parameters*](#advanced-global-configuration-parameters).
 * **bgp.community** -- override global BGP community propagation defaults for this node. See *[](bgp-community-propagation)* for more details.
-* **bgp.import** -- [import (redistribute) IPv4 and IPv6 routes](routing_import) into global BGP instance. Turned off by default.
+* **bgp.import** -- [import (redistribute) IPv4 and IPv6 routes](routing_import) into global BGP instance (default: **false**)
 * **bgp.local_as** -- the autonomous system used on all EBGP sessions.
-* **bgp.next_hop_self** -- use *next-hop-self* on IBGP sessions. This parameter can also be specified as a global value; the system default is **true**.
+* **bgp.next_hop_self** -- Use *next-hop-self* on IBGP sessions. This parameter can also be specified as a global value; the system default is **true**.
 * **bgp.originate** -- a list of additional prefixes to advertise. The advertised prefixes are supported with a static route pointing to *Null0*.
-* **bgp.router_id** -- set static router ID. The default **router_id** is taken from the IPv4 address of the loopback interface or the **router_id** address pool if the device has no loopback interface or there's no usable IPv4 address on the loopback interface.
+* **bgp.router_id** -- Set a static router ID. The default **router_id** is taken from the IPv4 address of the loopback interface or the **router_id** address pool if the device does not have a loopback interface or there is no usable IPv4 address on the loopback interface.
 
 (bgp-advanced-node)=
 Finally, the BGP configuration module supports these advanced node parameters that you probably shouldn't touch without an excellent reason:
 
 * **bgp.rr_cluster_id** -- set static route reflector cluster-ID. The default value is the lowest router ID of all route reflectors within the autonomous system.
-* **bgp.replace_global_as** (default: True) -- the default implementation of **neighbor local-as** command replaces the real autonomous system (**bgp.as**) with the *local* autonomous system. Set this parameter to *false* to disable that functionality and include both autonomous systems in the AS path[^RAS_P].
-* **bgp.sessions** (node or global parameter) -- specifies which transport sessions (IPv4 and/or IPv6) should be created for each BGP session type (IBGP, EBGP, or IBGP created through *local-as*)[^SESS_DM]. See *[bgp-sessions](https://github.com/ipspace/netlab/blob/dev/tests/topology/input/bgp-sessions.yml)* test case for an example.
+* **bgp.replace_global_as** (default: True) -- the default implementation of **neighbor local-as** command replaces the real autonomous system (**bgp.as**) with the *local* autonomous system. Set this parameter to *false* to turn off that functionality and include both autonomous systems in the AS path[^RAS_P].
+* **bgp.sessions** (node or global parameter) -- specifies which transport sessions (IPv4, IPv6) should be created for each BGP session type (IBGP, EBGP, or IBGP created through *local-as*)[^SESS_DM]. See *[bgp-sessions](https://github.com/ipspace/netlab/blob/dev/tests/topology/input/bgp-sessions.yml)* test case for an example.
 * **bgp.activate** (node or global parameter) -- specifies which default address families (IPv4 AF on IPv4 session, IPv6 on IPv6 session) should be created for each BGP session type (IBGP, EBGP, or IBGP created through *local-as*)[^ACT_CFG]. See *[EVPN IBGP-over-EBGP](https://github.com/ipspace/netlab/blob/dev/tests/integration/evpn/12-vxlan-ibgp-ebgp.yml)* test case for an example.
 
 [^SESS_DM]: This parameter influences the data structures built during the data transformation phase and is thus available on all platforms supporting the BGP configuration module.
 
-[^ACT_CFG]: This parameter has to be supported by the device configuration templates and might not be available on all platforms.
+[^ACT_CFG]: The device configuration templates must support this parameter. It may not be available on all platforms.
 
 [^RAS_P]: This functionality might not be configurable on all platforms. For example, Arista EOS supports only the **neighbor local-as no-prepend replace-as** command.
 
@@ -243,7 +243,7 @@ links:
   pe2:
 ```
 
-* You can change the default prefix advertisement rules with the  **defaults.bgp.advertise_roles** list. The system default value of that variable is **[ stub ]**. For example, use the following setting to advertise LAN (multi-access) and stub prefixes.
+* You can change the default prefix advertisement rules with the  **defaults.bgp.advertise_roles** list. The system default value of that variable is **[ stub ]**. For example, advertise LAN (multi-access) and stub prefixes using the following setting.
 
 ```
 defaults:
@@ -252,14 +252,14 @@ defaults:
 ```
 
 ```{tip}
-An IP prefix assigned to a link with the **‌role** set to **‌stub** will not be advertised in BGP if there's more than one router or daemon attached to the link. The BGP module checks only the membership in the **‌defaults.bgp.advertise_roles** list for all other values of the **‌role** attribute.
+An IP prefix assigned to a link with the **‌role** set to **‌stub** will not be advertised in BGP if there's more than one router or daemon attached to that link. The BGP module checks only the membership in the **‌defaults.bgp.advertise_roles** list for all other values of the **‌role** attribute.
 ```
 
 ### Using bgp.originate Node Attribute
 
 If you set **bgp.originate** parameter on a node, _netlab_ adds a static route for the prefix pointing to *Null0* and configures the BGP prefix.
 
-For example, PE1 advertises `172.16.0.0/19' in the following topology. Please note that while the prefix is advertised via BGP, it has no reachable IP addresses (the BGP prefix is based on a discard-everything static route).
+For example, PE1 advertises `172.16.0.0/19' in the following topology. Please note that while the prefix is advertised via BGP, it does not have reachable IP addresses (the BGP prefix is based on a discard-everything static route).
 
 ```
 nodes:
@@ -291,38 +291,47 @@ The BGP transformation module builds a list of BGP neighbors for every node. Tha
 See the [IBGP Data Center Fabric](bgp_example/ibgp.md) example for more details.
 
 ```{tip}
-_netlab_ generates a warning for routers that have IBGP sessions without an underlying IGP. To turn off that warning (for example, when using IBGP-over-EBGP EVPN design), set **defaults.bgp.warnings.missing_igp** to _False_. To disable IBGP sessions in scenarios that reuse the same BGP AS number on multiple sites, change the **‌[bgp.sessions](bgp-advanced-node)** parameter.
+_netlab_ generates a warning for routers that have IBGP sessions without an underlying IGP. To turn off that warning (for example, when using IBGP-over-EBGP EVPN design), set **defaults.bgp.warnings.missing_igp** to _False_. To avoid IBGP sessions in scenarios that reuse the same BGP AS number on multiple sites, change the **‌[bgp.sessions](bgp-advanced-node)** parameter or use the [](plugin-bgp-domain).
 ```
 
 (bgp-ebgp-sessions)=
 **EBGP sessions**
+
 * Whenever multiple nodes connected to the same link use different AS numbers, you'll get a full mesh of EBGP sessions between them[^EB_D].
 * Global (**bgp.as**) and local (**bgp.local_as**) autonomous systems are considered when deciding to create a session between two adjacent nodes, allowing you to create EBGP sessions between nodes belonging to the same AS or IBGP sessions between nodes belonging to different AS.
 * Parallel EBGP sessions are established for all IP address families configured on the link[^BSESS]. See also [IPv6 support](#ipv6-support).
 
 [^EB_D]: Unless you disabled EBGP sessions with the **bgp.sessions** parameter ([more details](bgp-advanced-node))
 
-See the [Simple BGP](bgp_example/simple.md) and [EBGP Data Center Fabric](bgp_example/ebgp.md) examples for more details.
+For more details, see the [Simple BGP](bgp_example/simple.md) and [EBGP Data Center Fabric](bgp_example/ebgp.md) examples.
 
-### Notes on Unnumbered EBGP Sessions
+(bgp-ebgp-lla)=
+**IPv6 LLA Sessions**
 
-Unnumbered EBGP sessions are supported on a few platforms. *netlab* creates an IPv6 LLA EBGP session when the **unnumbered** link- or interface attribute is set, or when **ipv6** interface address or link prefix is set to *True* (IPv6 LLA).
+*netlab* creates an IPv6 LLA EBGP session (interface EBGP session) when the **unnumbered** link- or interface attribute is set, or when **ipv6** interface address or link prefix is set to *True* (indicating LLA-only IPv6 interface).
 
-*netlab* can use an IPv6 LLA EBGP session to transport IPv4 address family with IPv6 next hops (RFC 8950) -- the functionality commonly used to implement *unnumbered EBGP sessions*. *netlab* will enable IPv4 AF over IPv6 LLA EBGP session when the **unnumbered** link- or interface attribute is set, or when **ipv4** interface address or link prefix is set to *True*.
+Use the **netlab show module --module bgp --feature ipv6_lla** command to display devices on which you can use this feature.
+
+(bgp-ebgp-rfc8950)=
+**EBGP Sessions on Unnumbered IPv4 Links**
+
+*netlab* can use an IPv6 EBGP sessions to transport IPv4 address family with IPv6 next hops (RFC 8950) -- the functionality commonly used to implement *interface EBGP sessions*. *netlab* will enable IPv4 AF over IPv6 LLA EBGP session when the **unnumbered** link- or interface attribute is set, or when **ipv4** interface address or link prefix is set to *True*.
+
+Use the **netlab show module --module bgp --feature ipv6_lla** command to display devices on which you can use the IPv4 address family on IPv6 LLA EBGP sessions and the **netlab show module --module bgp --feature rfc8950** command to display devices on which you can use the IPv4 address family on regular IPv6 EBGP sessions.
 
 ## IPv6 Support
 
 All BGP configuration templates include IPv4 and IPv6 address family configuration. Both address families are treated identically, allowing you to build IPv4-only, IPv6-only, or dual-stack networks:
 
-* An address family (IPv4 or IPv6) is enabled within the BGP routing process when the device has at least one interface with an address from that address family.
+* _netlab_ configures an address family (IPv4 or IPv6) in the BGP routing process when the device has at least one interface with an address from that address family.
 * BGP configuration uses separate BGP sessions for IPv4 and IPv6 address families[^BSESS]. Create [custom configuration templates](../custom-config-templates.md) to enable IPv6 AF over IPv4 BGP sessions or IPv4 AF over IPv6 BGP sessions.
 * Whenever an IBGP neighbor has an IPv4 or IPv6 address on its loopback interface, an IBGP session is configured between the IPv4 or IPv6 addresses, and the IPv4 or IPv6 address family is enabled for that session.
 * An EBGP IPv4 or IPv6 session is configured whenever a directly connected router in another AS has an IPv4 or IPv6 address on the directly connected link.
 
 No additional checks are performed regarding the viability of IPv4 or IPv6 BGP sessions. For example:
 
-* You could configure IPv6 addresses on loopback interfaces but not P2P links. The IPv6 IBGP sessions will be configured but won't work because the transport network does not support IPv6.
-* You could configure IPv4 and IPv6 addresses throughout the network but use OSPFv2 as the routing protocol. EBGP IPv6 sessions will work, but IBGP IPv6 sessions won't.
+* You could configure IPv6 addresses on loopback interfaces but not P2P links. The IPv6 IBGP sessions would be configured but would not because the transport network would not support IPv6.
+* You could configure IPv4 and IPv6 addresses throughout the network but use OSPFv2 as the routing protocol. EBGP IPv6 sessions would work, but IBGP IPv6 sessions would not.
 * You could configure addresses on individual nodes connected to an inter-AS link. If you configure IPv6 addresses on some nodes but not others, the system might configure useless EBGP sessions.
 
 ## Interaction with IGP
@@ -334,7 +343,7 @@ The BGP transformation module can set link *role* on links used for EBGP session
 (bgp-community-propagation)=
 ## BGP Communities Propagation
 
-The propagation of BGP communities over IBGP and EBGP sessions is controlled with global- or node-level **bgp.community** attribute.
+The propagation of BGP communities over IBGP and EBGP sessions is controlled by the global or node-level **bgp.community** attribute.
 
 The value of **bgp.community** attribute could be:
 
@@ -353,7 +362,7 @@ nodes:
 nodes:
   r1:
     bgp:
-      community: [ standard, extended]
+      community: [ standard, extended ]
 ```
 
 * A dictionary with two keys: **ibgp** and **ebgp**. The value of each key could be a string or a list (see above). The following example sets a network-wide default -- send standard and extended communities to the IBGP neighbors and standard communities to EBGP neighbors (this is the global default set in the built-in **topology-defaults.yml** file).
@@ -361,8 +370,8 @@ nodes:
 ```
 bgp:
   community: 
-    ibgp: [standard, extended]
-    ebgp: [standard]
+    ibgp: [ standard, extended ]
+    ebgp: [ standard ]
 ```
 
 * To override global defaults and stop community propagation, use an empty list as the **bgp.community** value. In the following example, R1 will not send any BGP communities to its BGP peers.
@@ -391,7 +400,10 @@ Only some devices support **large** and **2octet** keywords. Use **[netlab show 
 .. toctree::
    :maxdepth: 1
 
-   ../plugins/ebgp.utils.md
+   ../plugins/bgp.domain.md
+   ../plugins/bgp.originate.md
+   ../plugins/bgp.policy.md
+   ../plugins/bgp.session.md
    ../plugins/ebgp.multihop.md
 ```
 

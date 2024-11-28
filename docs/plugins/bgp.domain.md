@@ -1,3 +1,4 @@
+(plugin-bgp-domain)=
 # BGP Domains Plugin
 
 The **bgp.domain** plugin allows you to create multiple independent copies of the same autonomous system, for example, when testing MPLS/VPN topologies in which all customer sites use the same AS number.

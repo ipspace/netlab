@@ -106,9 +106,7 @@ def bgp_neighbor(n: Box, intf: Box, ctype: str, sessions: Box, extra_data: typin
     if ctype in sessions[af]:
       if af in intf:
         af_count = af_count + 1
-        if "unnumbered" in ngb and ngb.unnumbered == True:
-          ngb[af] = True
-        elif isinstance(intf[af],bool):
+        if isinstance(intf[af],bool):
           ngb[af] = intf[af]
         else:
           ngb[af] = str(netaddr.IPNetwork(intf[af]).ip)
@@ -221,7 +219,7 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
     node_as =  node.bgp.get("as")                                     # Get our real AS number and the AS number of the peering session
     node_local_as = l.get('bgp.local_as',None) or node.get('bgp.local_as',None) or node_as
 
-    af_list = [ af for af in ('ipv4','ipv6','unnumbered') if af in l ]
+    af_list = [ af for af in ('ipv4','ipv6') if af in l ]             # Get interface address families
     if not af_list:                                                   # This interface has no usable address
       continue
 
@@ -240,7 +238,7 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
         continue
 
     for ngb_ifdata in l.get("neighbors",[]):
-      af_list = [ af for af in ('ipv4','ipv6','unnumbered') if af in ngb_ifdata ]
+      af_list = [ af for af in ('ipv4','ipv6') if af in ngb_ifdata ]  # Get neighbor interface AF
       if not af_list:                                                 # Neighbor has no usable address
         continue
       #
@@ -269,31 +267,52 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
 
       # Figure out whether both neighbors have IPv6 LLA and/or unnumbered IPv4 interfaces
       #
-      ipv6_lla = l.get('ipv6',None) is True and ngb_ifdata.get('ipv6',None) is True
-      ipv6_num = isinstance(l.get('ipv6',None),str) and isinstance(ngb_ifdata.get('ipv6',None),str)
-      rfc8950  = l.get('unnumbered',None) is True and ngb_ifdata.get('unnumbered',None) is True
-      ipv4_unnum = l.get('ipv4',None) is True and ngb_ifdata.get('ipv4',None) is True
-#      print(f'EBGP node {node.name} neighbor {ngb_name} lla {ipv6_lla} v6num {ipv6_num} v4unnum {ipv4_unnum} rfc8950 {unnumbered}')
-      if ipv4_unnum and not ipv6_num:                                 # Unnumbered IPv4 w/o IPv6 ==> IPv6 LLA + RFC 8950 IPv4 AF
-        rfc8950 = True
+      ipv4_addr = l.get('ipv4',None)
+      ipv6_addr = l.get('ipv6',None)
+      ipv6_lla = ipv6_addr is True and ngb_ifdata.get('ipv6',None) is True
+      ipv6_num = isinstance(ipv6_addr,str) and isinstance(ngb_ifdata.get('ipv6',None),str)
+      ipv4_unnum = ipv4_addr is True and ngb_ifdata.get('ipv4',None) is True
+      rfc8950 = ipv4_unnum and ipv6_num                               # RFC 8950 IPv4 next hops over non-LLA EBGP
 
-#      print(f'... unnumbered {unnumbered}')
-      if ipv6_lla or rfc8950:
-        extra_data.local_if = l.ifname                                # Set local_if to indicate IPv6 LLA EBGP session
-        if not features.bgp.ipv6_lla:                                 # IPv6_LLA feature flag has to be set even for IPv4 unnumbered EBGP
+      # Sanity checks: both ends have to be numbered or unnumbered
+      #
+      if ipv4_addr is True and not ipv4_unnum:
+        log.error(
+          f'Cannot create an EBGP session between IPv4 unnumbered interface on {node.name}' + \
+          f' and regular IPv4 interface on {ngb_name}',
+          category=log.IncorrectValue,
+          module='bgp')
+        continue
+
+      if ipv6_addr is True and not ipv6_lla:
+        log.error(
+          f'Cannot create an EBGP session between IPv6 LLA-only interface on {node.name}' + \
+          f' and numbered IPv6 interface on {ngb_name}',
+          category=log.IncorrectValue,
+          module='bgp')
+        continue
+
+      if ipv4_unnum and not ipv6_num:                 # Unnumbered IPv4 without numbered IPv6
+        ipv6_lla = True                               # ... requires IPv6 LLA session
+        if not 'ipv6' in l:                           # ... and IPv6 enabled on the interface
+          l.ipv6 = True
+
+      if ipv6_lla:                                    # IPv6 LLA session...
+        extra_data.local_if = l.ifname                # ... needs local interface name for config templates
+        if ipv4_unnum:                                # And if we have unnumbered IPv4 interface
+          extra_data.ipv4_rfc8950 = True              # ... we also need RFC 8950 IPv4 AF
+        if not features.bgp.ipv6_lla:                 # Finally, check the IPv6_LLA feature flag
           log.error(
             text=f'{node.name} (device {node.device}) does not support EBGP sessions over auto-generated IPv6 LLA (interface {l.name})',
             category=log.IncorrectValue,
             module='bgp')
           continue
 
-      if rfc8950:
-        extra_data.ipv4_rfc8950 = True                                # Set unnumbered indicate RFC 8950 IPv4 AF
-        if not 'ipv6' in l:                                           # ... and enable IPv6 on the interface in case a device needs an
-          l.ipv6 = True                                               # ... explicit configuration of IPv6 LLA
-        if not features.bgp.rfc8950:
+      if rfc8950:                                     # Do we have RFC 8950 IPv4 AF over numbered IPv6 session?
+        extra_data.ipv4_rfc8950 = True                # Signal the need for RFC 8950 IPv4 AF
+        if not features.bgp.rfc8950:                  # ... and check the feature flag
           log.error(
-            text=f'{node.name} (device {node.device}) does not support IPv4 RFC 8950-style AF over IPv6 LLA EBGP sessions (interface {l.name})',
+            text=f'{node.name} (device {node.device}) does not support IPv4 RFC 8950-style AF over regular IPv6 EBGP sessions (interface {l.name})',
             category=log.IncorrectValue,
             module='bgp')
           continue
