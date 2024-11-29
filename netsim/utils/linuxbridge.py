@@ -2,7 +2,10 @@ from . import log
 from ..cli import external_commands
 
 """
-configure_bridge_forwarding - Enables LLDP, LACP and 802.1X forwarding on the given Linux bridge
+configure_bridge_forwarding - Enables LLDP (and some other L2 protocols) forwarding on the given Linux bridge
+
+Note that STP or LACP forwarding cannot be enabled this way (in regular Linux kernels).
+See https://interestingtraffic.nl/2017/11/21/an-oddly-specific-post-about-group_fwd_mask/ for details
 """
 def configure_bridge_forwarding(brname: str) -> bool:
   status = external_commands.run_command(
@@ -11,5 +14,5 @@ def configure_bridge_forwarding(brname: str) -> bool:
       return_stdout=True)
   if status is False:
     return False
-  log.print_verbose( f"Enable LLDP,LACP,802.1X forwarding on Linux bridge '{brname}': {status}" )
+  log.print_verbose( f"Enable LLDP forwarding on Linux bridge '{brname}': {status}" )
   return True
