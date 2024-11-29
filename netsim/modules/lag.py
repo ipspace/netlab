@@ -175,21 +175,11 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
   # Post processing - at this point we finally know which is the 1-side node for M-LAG
   #
   if is_mlag:                                     # For MLAG links
-    ifindex_map : dict[str, int] = {}             # Keep track of 1-side lag.ifindex allocation
     for i in l.interfaces:
       if i.node!=mlag_1_side:
         if not check_mlag_support(i.node,l._linkname,mlag_device):
           return
-        if is_mlag:
-          i.lag.mlag = True                       # Put 'mlag' flag on M-side (only)
-      else:
-        if 'ifindex' not in i.lag:                # Unless asked for something else...
-          if i.node in ifindex_map:               # apply consistent numbering on 1-side
-            _i = ifindex_map[i.node] + 1
-          else:
-            _i = 1
-          ifindex_map[i.node] = _i
-          i.lag.ifindex = _i
+        i.lag.mlag = True                       # Put 'mlag' flag on M-side (only)
 
 """
 create_peer_links -- creates and configures physical link(s) for given peer link
@@ -328,6 +318,7 @@ class LAG(_Module):
   """
   def node_post_transform(self, node: Box, topology: Box) -> None:
     features = devices.get_device_features(node,topology.defaults)
+    lag_ifindex = 1
     for i in node.interfaces:
       if i.get('lag.mlag.peergroup',None):  # Fill in peer loopback IP and vMAC for MLAG peer links
         populate_mlag_peer(node,i,topology)
@@ -339,3 +330,8 @@ class LAG(_Module):
             category=log.IncorrectAttr,
             module='lag',
             hint='lag')
+
+        if not i.get('lag.mlag',False):     # For regular lags or the 1-side of MLAGs
+          if 'ifindex' not in i.lag:        # Unless the user chose otherwise
+            i.lag.ifindex = lag_ifindex     # Assign sequential lag.ifindex
+            lag_ifindex = lag_ifindex + 1
