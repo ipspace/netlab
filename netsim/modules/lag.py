@@ -179,7 +179,16 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
       if i.node!=mlag_1_side:
         if not check_mlag_support(i.node,l._linkname,mlag_device):
           return
-        i.lag.mlag = True                       # Put 'mlag' flag on M-side (only)
+        i.lag.mlag = True                         # Put 'mlag' flag on M-side (only)
+      else:
+        if 'ifindex' not in i.lag:                # else assign lag.ifindex if not provided
+          _n = topology.nodes[i.node]
+          if '_lag_ifindex' in _n:
+            lag_ifindex = _n._lag_ifindex
+          else:
+            lag_ifindex = 1                       # Start at 1
+          _n._lag_ifindex = lag_ifindex + 1
+          i.lag.ifindex = lag_ifindex             # In time to derive interface name from it
 
 """
 create_peer_links -- creates and configures physical link(s) for given peer link
@@ -330,8 +339,3 @@ class LAG(_Module):
             category=log.IncorrectAttr,
             module='lag',
             hint='lag')
-
-        if not i.get('lag.mlag',False):     # For regular lags or the 1-side of MLAGs
-          if 'ifindex' not in i.lag:        # Unless the user chose otherwise
-            i.lag.ifindex = lag_ifindex     # Assign sequential lag.ifindex
-            lag_ifindex = lag_ifindex + 1
