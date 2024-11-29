@@ -187,7 +187,7 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
             lag_ifindex = _n._lag_ifindex
           else:
             lag_ifindex = 1                       # Start at 1
-          _n._lag_ifindex = lag_ifindex + 1
+          _n._lag_ifindex = lag_ifindex + 1       # Track next ifindex to assign, per node
           i.lag.ifindex = lag_ifindex             # In time to derive interface name from it
 
 """
@@ -327,7 +327,6 @@ class LAG(_Module):
   """
   def node_post_transform(self, node: Box, topology: Box) -> None:
     features = devices.get_device_features(node,topology.defaults)
-    lag_ifindex = 1
     for i in node.interfaces:
       if i.get('lag.mlag.peergroup',None):  # Fill in peer loopback IP and vMAC for MLAG peer links
         populate_mlag_peer(node,i,topology)
@@ -339,3 +338,5 @@ class LAG(_Module):
             category=log.IncorrectAttr,
             module='lag',
             hint='lag')
+
+    node.pop('_lag_ifindex',None)           # Cleanup
