@@ -175,21 +175,20 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
   # Post processing - at this point we finally know which is the 1-side node for M-LAG
   #
   if is_mlag:                                     # For MLAG links
-    ifindex_map : dict[str, int] = {}             # Keep track of 1-side lag.ifindex allocation
     for i in l.interfaces:
       if i.node!=mlag_1_side:
         if not check_mlag_support(i.node,l._linkname,mlag_device):
           return
-        if is_mlag:
-          i.lag.mlag = True                       # Put 'mlag' flag on M-side (only)
+        i.lag.mlag = True                         # Put 'mlag' flag on M-side (only)
       else:
-        if 'ifindex' not in i.lag:                # Unless asked for something else...
-          if i.node in ifindex_map:               # apply consistent numbering on 1-side
-            _i = ifindex_map[i.node] + 1
+        if 'ifindex' not in i.lag:                # else assign lag.ifindex if not provided
+          _n = topology.nodes[i.node]
+          if '_lag_ifindex' in _n:
+            lag_ifindex = _n._lag_ifindex
           else:
-            _i = 1
-          ifindex_map[i.node] = _i
-          i.lag.ifindex = _i
+            lag_ifindex = 1                       # Start at 1
+          _n._lag_ifindex = lag_ifindex + 1       # Track next ifindex to assign, per node
+          i.lag.ifindex = lag_ifindex             # In time to derive interface name from it
 
 """
 create_peer_links -- creates and configures physical link(s) for given peer link
@@ -339,3 +338,5 @@ class LAG(_Module):
             category=log.IncorrectAttr,
             module='lag',
             hint='lag')
+
+    node.pop('_lag_ifindex',None)           # Cleanup
