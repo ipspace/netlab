@@ -20,7 +20,7 @@ router bgp {{ bgp.as }}
     Create neighbors
 #}
 {% for af in ['ipv4','ipv6'] %}
-{%   for n in bgp.neighbors if n[af] is defined %}
+{%   for n in bgp.neighbors if n[af] is defined and (n[af] is string or n.local_if is defined) %}
 {%     set peer = n[af] if n[af] is string else n.local_if|default('?') %}
   neighbor {{ peer }}{{ ' interface' if peer!=n[af] else '' }} remote-as {{ n.as }}
   neighbor {{ peer }} description {{ n.name }}
@@ -29,6 +29,9 @@ router bgp {{ bgp.as }}
 {%     endif %}
 {%     if n.local_as is defined %}
   neighbor {{ peer }} local-as {{ n.local_as }} {{ 'no-prepend replace-as' if n.replace_global_as|default(True) else '' }}
+{%     endif %}
+{%     if af == 'ipv6' and n[af] is string and n.ipv4_rfc8950|default(False) %}
+  neighbor {{ peer }} capability extended-nexthop
 {%     endif %}
 !
 {%   endfor %}
@@ -53,22 +56,29 @@ router bgp {{ bgp.as }}
   network {{ pfx|ipaddr('0') }}
 {%   endfor %}
 !
-{%   for n in bgp.neighbors if n[af] is defined and n.activate[af] is defined and n.activate[af] %}
-{%     set peer = n[af] if n[af] is string else n.local_if %}
+{%   for n in bgp.neighbors
+       if n[af] is defined 
+         and (n.activate[af] is defined and n.activate[af]) %}
+{%     set peer = n[af] if n[af] is string 
+                  else n.local_if if n.local_if is defined
+                  else n.ipv6 if af == 'ipv4' and n.ipv4_rfc8950 
+                  else False %}
+{%     if peer %}
   neighbor {{ peer }} activate
-{%     if 'ibgp' in n.type %}
-{%       if bgp.next_hop_self is defined and bgp.next_hop_self %}
+{%       if 'ibgp' in n.type %}
+{%         if bgp.next_hop_self is defined and bgp.next_hop_self %}
   neighbor {{ peer }} next-hop-self
-{%       endif %}
-{%       if bgp.rr|default('') and not n.rr|default('') %}
+{%         endif %}
+{%         if bgp.rr|default('') and not n.rr|default('') %}
   neighbor {{ peer }} route-reflector-client
+{%         endif %}
 {%       endif %}
-{%     endif %}
-{%     if n.type in bgp.community|default({}) %}
+{%       if n.type in bgp.community|default({}) %}
   no neighbor {{ peer }} send-community all
-{%       for c_type in bgp.community[n.type] %}
+{%         for c_type in bgp.community[n.type] %}
   neighbor {{ peer }} send-community {{ c_type }}
-{%       endfor %}
+{%         endfor %}
+{%       endif %}
 {%     endif %}
 !
 {%   endfor %}

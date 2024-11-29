@@ -31,7 +31,7 @@ _netlab_ BGP configuration module supports these features:
 * Direct (single-hop) EBGP sessions
 * IBGP sessions between loopback interfaces
 * EBGP sessions between auto-generated IPv6 link-local addresses
-* RFC8950-style IPv4 address family on EBGP IPv6 LLA sessions
+* RFC8950-style IPv4 address family on EBGP IPv6 LLA sessions and regular IPv6 BGP sessions
 * BGP route reflectors
 * Next-hop-self control on IBGP sessions
 * BGP community propagation
@@ -58,21 +58,23 @@ _netlab_ supports most BGP features on [all platforms supporting BGP configurati
 
 The following features are only supported on a subset of platforms:
 
-| Operating system      | IPv6 LLA<br />EBGP sessions | Unnumbered IPv4<br />EBGP sessions[^INTv4] | Configurable<br>default AF |
-| --------------------- | :-: | :-: | :-: |
-| Arista EOS            |  ✅ |  ✅ |  ✅ |
-| Aruba AOS-CX          |  ❌  |  ❌  |  ✅ |
-| BIRD                  |  ❌  |  ❌  |  ✅ |
-| Cisco IOS/IOS XE[^18v]|  ❌  |  ❌  |  ✅ |
-| Cisco IOS XRv         |  ❌  |  ❌  |  ✅ |
-| Cumulus Linux 4.x     |  ✅ |  ✅ |  ✅ |
-| Cumulus Linux 5.x     |  ✅ |  ✅ |  ✅ |
-| Dell OS10             |  ✅ |  ✅ |  ✅ |
-| FRR                   |  ✅ |  ✅ |  ✅ |
-| Nokia SR Linux        |  ✅ |  ❌  |  ✅ |
-| Nokia SR OS           |  ❌  |  ❌  |  ✅ |
-| Sonic                 |  ✅ |  ✅ |  ✅ |
-| VyOS                  |  ✅ |  ✅ |  ✅ |
+| Operating system      | IPv6 LLA<br />EBGP<br />sessions | Unnumbered<br />IPv4 EBGP<br />sessions[^INTv4] | RFC 8950<br>IPv4<br />next hops[^RFC8950] | Configurable<br>default AF |
+| --------------------- | :-: | :-: | :-: | :-: |
+| Arista EOS            |  ✅ |  ✅ |  ❌  |  ✅ |
+| Aruba AOS-CX          |  ❌  |  ❌  |  ❌  |  ✅ |
+| BIRD                  |  ❌  |  ❌  |  ❌  |  ✅ |
+| Cisco IOS/IOS XE[^18v]|  ❌  |  ❌  |  ❌  |  ✅ |
+| Cisco IOS XRv         |  ❌  |  ❌  |  ❌  |  ✅ |
+| Cumulus Linux 4.x     |  ✅ |  ✅ |  ✅ |  ✅ |
+| Cumulus Linux 5.x     |  ✅ |  ✅ |  ❌  |  ✅ |
+| Dell OS10             |  ✅ |  ✅ |  ❌  |  ✅ |
+| FRR                   |  ✅ |  ✅ |  ✅ |  ✅ |
+| Nokia SR Linux        |  ✅ |  ✅ |  ❌  |  ✅ |
+| Nokia SR OS           |  ❌  |  ❌  |  ❌  |  ✅ |
+| Sonic                 |  ✅ |  ✅ |  ❌  |  ✅ |
+| VyOS                  |  ✅ |  ✅ |  ❌  |  ✅ |
+
+[^RFC8950]: IPv6 next hops for IPv4 prefixes advertised over a regular (non-LLA) IPv6 EBGP session. The use of RFC 8950-style next hops over IPv6 LLA session used to implement interface EBGP sessions is documented in the *Unnumbered IPv4 EBGP sessions* column.
 
 | Operating system      | EBGP<br>local AS | IBGP<br>local AS | Route<br>import | VRF route<br>import |
 | --------------------- | :-: | :-: | :-: | :-: |
