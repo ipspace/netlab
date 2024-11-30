@@ -49,14 +49,26 @@ def nvue_check_vrf_route_leaking(node: Box) -> None:
         hint='route leaking')
       return
 
+"""
+Checks for OSPFv3 which is not supported by NVUE configuration command
+"""
+def nvue_check_ospfv3(node: Box) -> None:
+  if node.get('ospf.af.ipv6',False):
+    log.error(f"Node '{node.name}' uses OSPFv3 which cannot be configured through Cumulus NVUE; use a regular 'cumulus' node instead",
+      category=log.FatalError,
+      module='ospf',
+      hint='ospfv3')
+
 class Cumulus_Nvue(_Quirks):
 
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
     # Cumulus.device_quirks(node,topology)
     mods = node.get('module',[])
-    if 'ospf' in mods and 'vrfs' in node:
-      check_ospf_vrf_default(node)
+    if 'ospf' in mods:
+      if 'vrfs' in node:
+        check_ospf_vrf_default(node)
+      nvue_check_ospfv3(node)
 
     # NVUE specific quirks
     if 'stp' in mods:
