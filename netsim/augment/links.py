@@ -326,7 +326,7 @@ def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> Box:
       if not sys_mtu:                           # .. does the device support system MTU?
         ifdata.mtu = node.mtu                   # .... no, copy node MTU to interface MTU
 
-  if ifdata.get('type',None)=='loopback':
+  if ifdata.get('type',None) == 'loopback':
     ifdata.pop('mtu',None)                      # Remove MTU from loopback interfaces
 
   node.interfaces.append(ifdata)
