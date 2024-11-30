@@ -1,0 +1,383 @@
+[WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [rtr]
+ok: [h1]
+ok: [h2]
+ok: [h3]
+ok: [h4]
+
+TASK [Find device readiness script] ********************************************
+ok: [rtr]
+ok: [h1]
+ok: [h2]
+ok: [h3]
+ok: [h4]
+
+TASK [Wait for device to become ready] *****************************************
+skipping: [rtr]
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for rtr, h1, h2, h3, h4
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [rtr]
+ok: [h1]
+ok: [h2]
+ok: [h3]
+ok: [h4]
+
+TASK [Find configuration template for initial] *********************************
+ok: [rtr]
+ok: [h1]
+ok: [h2]
+ok: [h3]
+ok: [h4]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [rtr] => 
+  msg: |-
+    initial configuration for rtr
+    =========================================
+  
+    - set:
+        system:
+          hostname: rtr
+        interface:
+          eth0:
+            ip:
+              vrf: mgmt
+              address:
+                dhcp: {}
+            type: eth
+          swp1:
+            type: swp
+            link:
+              mtu: 1500
+              state:
+                up: {}
+            description: "rtr -> h1 [stub]"
+            ip:
+              vrf: red
+              address:
+                2001:db8:2::5/64: {}
+              ipv6:
+                forward: on
+              neighbor-discovery:
+                enable: on
+                router-advertisement:
+                  enable: on
+                  interval: 5000
+  
+  
+          swp2:
+            type: swp
+            link:
+              mtu: 1500
+              state:
+                up: {}
+            description: "rtr -> h3 [stub]"
+            ip:
+              vrf: red
+              address:
+                2001:db8:2:1::5/64: {}
+              ipv6:
+                forward: on
+              neighbor-discovery:
+                enable: on
+                router-advertisement:
+                  enable: on
+                  interval: 5000
+  
+  
+          swp3:
+            type: swp
+            link:
+              mtu: 1500
+              state:
+                up: {}
+            description: "rtr -> h2 [stub]"
+            ip:
+              vrf: blue
+              address:
+                2001:db8:2:2::5/64: {}
+              ipv6:
+                forward: on
+              neighbor-discovery:
+                enable: on
+                router-advertisement:
+                  enable: on
+                  interval: 5000
+  
+  
+          swp4:
+            type: swp
+            link:
+              mtu: 1500
+              state:
+                up: {}
+            description: "rtr -> h4 [stub]"
+            ip:
+              vrf: blue
+              address:
+                2001:db8:2:3::5/64: {}
+              ipv6:
+                forward: on
+              neighbor-discovery:
+                enable: on
+                router-advertisement:
+                  enable: on
+                  interval: 5000
+  
+  
+  
+    - set:
+        interface:
+          lo:
+            type: loopback
+            ip:
+              address:
+                127.0.0.1/8: {}
+                2001:db8:1:5::1/64: {}
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:2::1/64 dev eth1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:2::1/64 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:2:2::2/64 dev eth1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:2:2::2/64 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
+ok: [h3] => 
+  msg: |-
+    initial configuration for h3
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:2:1::3/64 dev eth1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:2:1::3/64 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
+ok: [h4] => 
+  msg: |-
+    initial configuration for h4
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:2:3::4/64 dev eth1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:2:3::4/64 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [rtr]
+ok: [h1]
+ok: [h2]
+ok: [h3]
+ok: [h4]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for rtr
+included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for h1, h2, h3, h4
+
+TASK [set_fact] ****************************************************************
+ok: [rtr]
+
+TASK [copy the cumulus nvue YAML initial config file to switch (generated from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus_nvue.j2)] ***
+changed: [rtr]
+
+TASK [Wait for nvued to start] *************************************************
+ok: [rtr]
+
+TASK [set_fact] ****************************************************************
+ok: [rtr]
+
+TASK [execute on cumulus: 'nv config patch' for initial config] ****************
+changed: [rtr]
+
+TASK [execute on cumulus: 'nv config apply -y' for initial config] *************
+fatal: [rtr]: FAILED! => changed=true 
+  cmd:
+  - nv
+  - config
+  - apply
+  - -y
+  delta: '0:00:00.760224'
+  end: '2024-11-30 09:19:03.584315'
+  msg: non-zero return code
+  rc: 1
+  start: '2024-11-30 09:19:02.824091'
+  stderr: |-
+    Invalid config [rev_id: 10]
+      VRF configuration missing (vrf.red) for interface.swp1.ip.vrf.red
+      VRF configuration missing (vrf.red) for interface.swp2.ip.vrf.red
+      VRF configuration missing (vrf.blue) for interface.swp3.ip.vrf.blue
+      VRF configuration missing (vrf.blue) for interface.swp4.ip.vrf.blue
+  stderr_lines: <omitted>
+  stdout: "verifying\e[1000D\e[J"
+  stdout_lines: <omitted>
+
+TASK [set_fact] ****************************************************************
+ok: [h1]
+ok: [h2]
+ok: [h3]
+ok: [h4]
+
+TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+changed: [h1 -> localhost]
+changed: [h3 -> localhost]
+changed: [h2 -> localhost]
+changed: [h4 -> localhost]
+
+TASK [Initial container configuration via /tmp/config-MwgnTzaI-h1.sh] **********
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+changed: [h3 -> localhost]
+changed: [h4 -> localhost]
+
+TASK [file] ********************************************************************
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+changed: [h3 -> localhost]
+changed: [h4 -> localhost]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+h1                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h3                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h4                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+rtr                        : ok=13   changed=2    unreachable=0    failed=1    skipped=1    rescued=0    ignored=0   
+
+Fatal error in netlab: Executing Ansible playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible failed
+Error executing ansible-playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible:
+  Command '['ansible-playbook', '/home/pipi/net101/tools/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.
