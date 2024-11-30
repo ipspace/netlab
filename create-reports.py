@@ -247,7 +247,7 @@ def create_recursive_html(
       template: str = 'results',
       recursive: bool = True) -> None:
   for item,i_data in results.items():
-    if '_' in item:
+    if item.startswith('_'):
       continue
     if not '_path' in i_data:
       continue
