@@ -12,16 +12,20 @@
 {%   endif %}
               {{ af }}-unicast:
                 enable: on
-                network:
-{%   if loopback[af] is defined and bgp.advertise_loopback %}
-                  {{ loopback[af]|ipaddr(0) }}: {}
-{%   endif %}
+{%   set _loopback = [ loopback[af] ] if loopback[af] is defined and bgp.advertise_loopback else [] %}
+{%   set data = namespace(networks=_loopback) %}
 {%   for l in interfaces|default([]) if l.bgp.advertise|default("") and l[af] is defined and not 'vrf' in l %}
-                  {{ l[af]|ipaddr(0) }}: {}
+{%     set data.networks = data.networks + [ l[af] ] %}
 {%   endfor %}
 {%   for pfx in bgp.originate|default([]) if af == 'ipv4' %}
-                  {{ pfx|ipaddr('0') }}: {}
+{%     set data.networks = data.networks + [ pfx ] %}
 {%   endfor %}
+{%   if data.networks!=[] %}
+                network:
+{%     for pfx in data.networks %}
+                  {{ pfx|ipaddr('0') }}: {}
+{%     endfor %}
+{%   endif %}
 {% endfor %}
             autonomous-system: {{ bgp.as }}
             neighbor:
