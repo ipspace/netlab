@@ -14,9 +14,6 @@
 {%  endif %}
 {%  if i.ipv4 is defined or i.ipv6 is defined %}
         ip:
-{%    if i.vrf is defined %}
-          vrf: {{ i.vrf }}
-{%    endif %}
           address:
 {%    if i.ipv4 is defined %}
 {%      if i.ipv4 == True %}
@@ -63,38 +60,22 @@
 {{      decl_interface(l) }}
 {% endfor %}
 
-{% for lb in netlab_interfaces if lb.type=='loopback' %}
+{% for lb in netlab_interfaces if lb.type=='loopback' and lb.vrf is not defined %}
 - set:
-{%   if lb.vrf is not defined %}
     interface:
       lo:
         type: loopback
         ip:
           address:
-{%     if 'ipv4' in lb %}
+{%   if 'ipv4' in lb %}
             {{ lb.ipv4 }}: {}
-{%     else %}
+{%   else %}
             127.0.0.1/8: {}
-{%     endif %}
-{%     if 'ipv6' in lb %}
+{%   endif %}
+{%   if 'ipv6' in lb %}
             {{ lb.ipv6 }}: {}
-{%     else %}
+{%   else %}
           ipv6:
             enable: off
-{%     endif %}
-{%   else %}
-    vrf:
-      {{ lb.vrf }}:
-        loopback:
-          ip:
-            address:
-{%     if 'ipv4' in lb %}
-              {{ lb.ipv4 }}: {}
-{%     else %}
-              127.0.0.1/8: {}
-{%     endif %}
-{%     if 'ipv6' in lb %}
-              {{ lb.ipv6 }}: {}
-{%     endif %}
 {%   endif %}
 {% endfor %}
