@@ -13,8 +13,8 @@ TASK [Find device readiness script] ********************************************
 ok: [rtr]
 ok: [h1]
 ok: [h2]
-ok: [h3]
 ok: [h4]
+ok: [h3]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [rtr]
@@ -64,7 +64,6 @@ ok: [rtr] =>
                 up: {}
             description: "rtr -> h1 [stub]"
             ip:
-              vrf: red
               address:
                 2001:db8:2::5/64: {}
               ipv6:
@@ -84,7 +83,6 @@ ok: [rtr] =>
                 up: {}
             description: "rtr -> h3 [stub]"
             ip:
-              vrf: red
               address:
                 2001:db8:2:1::5/64: {}
               ipv6:
@@ -104,7 +102,6 @@ ok: [rtr] =>
                 up: {}
             description: "rtr -> h2 [stub]"
             ip:
-              vrf: blue
               address:
                 2001:db8:2:2::5/64: {}
               ipv6:
@@ -124,7 +121,6 @@ ok: [rtr] =>
                 up: {}
             description: "rtr -> h4 [stub]"
             ip:
-              vrf: blue
               address:
                 2001:db8:2:3::5/64: {}
               ipv6:
@@ -321,26 +317,7 @@ TASK [execute on cumulus: 'nv config patch' for initial config] ****************
 changed: [rtr]
 
 TASK [execute on cumulus: 'nv config apply -y' for initial config] *************
-fatal: [rtr]: FAILED! => changed=true 
-  cmd:
-  - nv
-  - config
-  - apply
-  - -y
-  delta: '0:00:01.011434'
-  end: '2024-11-30 17:55:09.487845'
-  msg: non-zero return code
-  rc: 1
-  start: '2024-11-30 17:55:08.476411'
-  stderr: |-
-    Invalid config [rev_id: 10]
-      VRF configuration missing (vrf.red) for interface.swp1.ip.vrf.red
-      VRF configuration missing (vrf.red) for interface.swp2.ip.vrf.red
-      VRF configuration missing (vrf.blue) for interface.swp3.ip.vrf.blue
-      VRF configuration missing (vrf.blue) for interface.swp4.ip.vrf.blue
-  stderr_lines: <omitted>
-  stdout: "verifying\e[1000D\e[J"
-  stdout_lines: <omitted>
+changed: [rtr]
 
 TASK [set_fact] ****************************************************************
 ok: [h1]
@@ -349,12 +326,12 @@ ok: [h3]
 ok: [h4]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
-changed: [h3 -> localhost]
 changed: [h2 -> localhost]
+changed: [h3 -> localhost]
+changed: [h1 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-hNYayqok-h1.sh] **********
+TASK [Initial container configuration via /tmp/config-uOyCrWrO-h1.sh] **********
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
@@ -368,6 +345,77 @@ changed: [h2 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [rtr]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for rtr => (item=vrf)
+
+TASK [Figure out whether to deploy the module vrf on current device] ***********
+ok: [rtr]
+
+TASK [Find configuration template for vrf] *************************************
+ok: [rtr]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [rtr] => 
+  msg: |-
+    vrf configuration for rtr
+    =========================================
+  
+    - set:
+        vrf:
+          blue:
+            table: auto
+          red:
+            table: auto
+  
+  
+    - set:
+        interface:
+          swp1:
+            ip:
+              vrf: red
+    - set:
+        interface:
+          swp2:
+            ip:
+              vrf: red
+    - set:
+        interface:
+          swp3:
+            ip:
+              vrf: blue
+    - set:
+        interface:
+          swp4:
+            ip:
+              vrf: blue
+
+TASK [Find configuration deployment deploy_script for vrf] *********************
+ok: [rtr]
+
+TASK [Deploy vrf configuration] ************************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for rtr
+
+TASK [set_fact] ****************************************************************
+ok: [rtr]
+
+TASK [copy the cumulus nvue YAML vrf config file to switch (generated from /home/pipi/net101/tools/netsim/ansible/templates/vrf/cumulus_nvue.j2)] ***
+changed: [rtr]
+
+TASK [Wait for nvued to start] *************************************************
+skipping: [rtr]
+
+TASK [set_fact] ****************************************************************
+ok: [rtr]
+
+TASK [execute on cumulus: 'nv config patch' for vrf config] ********************
+changed: [rtr]
+
+TASK [execute on cumulus: 'nv config apply -y' for vrf config] *****************
+changed: [rtr]
+
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
@@ -376,8 +424,14 @@ h1                         : ok=12   changed=3    unreachable=0    failed=0    s
 h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 h3                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 h4                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-rtr                        : ok=13   changed=2    unreachable=0    failed=1    skipped=1    rescued=0    ignored=0   
+rtr                        : ok=26   changed=6    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
 
-Fatal error in netlab: Executing Ansible playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible failed
-Error executing ansible-playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible:
-  Command '['ansible-playbook', '/home/pipi/net101/tools/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.
+
+
+The lab tests the basic VRF lite functionality in an IPv6-only environment.
+The device under test has two VRFs with two interfaces in each VRF.
+
+* h1 and h2 should be able to ping each other
+* h3 and h4 should be able to ping each other
+* h1 should not be able to reach h3
+
