@@ -6,6 +6,13 @@
       default:
         router:
           bgp:
+{% if bgp.rr|default(False) %}
+            route-reflection:
+              enable: on
+{%   if bgp.rr_cluster_id is defined %}
+              cluster-id: {{ bgp.rr_cluster_id }}
+{%   endif %}
+{% endif %}
 {% for af in ['ipv4','ipv6'] if bgp[af] is defined %}
 {%   if loop.first %}
             address-family:
@@ -46,6 +53,9 @@
 {%   endif %}
 {%   for af in ('ipv4','ipv6') if af in n and n[af] is string %}
               {{ n[af] }}:
+{%     if n._source_ifname is defined %}
+                update-source: {{ n._source_ifname }}
+{%     endif %}
                 remote-as: {{ 'internal' if n.as==bgp.as else n.as }}
                 address-family:
 {#     NVUE cannot turn off default IPv4 activation, so we have to implement a fix for IPv6 #}
