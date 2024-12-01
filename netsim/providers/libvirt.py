@@ -351,7 +351,7 @@ class Libvirt(_Provider):
         if len(link.interfaces) == 2 and link.type == 'p2p':
           intf.libvirt.type = "tunnel"                              # ... found a true libvirt-only P2P link, set type to tunnel
 
-        if intf.libvirt.get('type') != 'tunnel':                    # The current link is not a tunnel link, move on
+        if intf.get('libvirt.type') != 'tunnel':                    # The current link is not a tunnel link, move on
           continue
 
         link.pop("bridge",None)                                     # And now the real work starts. Pop the bridge attribute first
