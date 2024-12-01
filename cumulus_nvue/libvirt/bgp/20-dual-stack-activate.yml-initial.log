@@ -322,16 +322,16 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
 ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
@@ -568,8 +568,8 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [dut]
@@ -583,113 +583,38 @@ ok: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [x2]
-fatal: [dut]: FAILED! => 
+ok: [dut] => 
   msg: |-
-    An unhandled exception occurred while running the lookup plugin 'template'. Error was a <class 'ansible.errors.AnsibleError'>, original message: Unexpected templating type error occurred on (- set:
+    ospf configuration for dut
+    =========================================
+    - set:
         router:
           ospf:
             enable: on
   
-    {% macro vrf_ospf(vrfname,vrf) %}
-    {%   set _ospf = vrf.ospf %}
-    {%   set _intfs = _ospf.interfaces|default([]) %}
-    {%   if _intfs!=[] %}
+  
     - set:
         vrf:
-          {{ vrfname }}:
+          default:
             router:
               ospf:
                 enable: on
                 redistribute:
                   connected:
                     enable: on
-    {%     if _ospf.reference_bandwidth is defined %}
-                reference-bandwidth: {{ _ospf.reference_bandwidth }}
-    {%     endif %}
-    {%     if 'router_id' in _ospf %}
-                router-id: {{ _ospf.router_id }}
-    {%     endif %}
+                router-id: 10.0.0.1
   
-    {%     for l in _intfs %}
-    {%       if loop.first %}
         interface:
-    {%       endif %}
-          {{ l.ifname }}:
+          lo:
             router:
               ospf:
-                area: {{ l.ospf.area|default(ospf.area) }}
-    {%       if l.ospf.cost is defined %}
-                cost: {{ l.ospf.cost }}
-    {%       endif %}
-                network-type: {{ l.ospf.network_type|default('broadcast') }}
-    {%       if l.ospf.passive | default(False) %}
-                passive: on
-    {%       endif %}
-    {%     endfor %}
-  
-    {%   else %}
-    # No OSPF interfaces in VRF {{ vrfname }}
-    {%   endif %}
-    {% endmacro %}
-  
-    {% if ospf is defined %}
-    {% set _lo = (loopback + { 'ospf': { 'area': ospf.area|default('0.0.0.0') } }) if 'ipv4' in loopback else {} %}
-    {% set _ospf_intfs = [_lo] + interfaces|default([])|selectattr('ospf','defined')|list %}
-    {{ vrf_ospf("default", { 'ospf': ospf + { 'interfaces': _ospf_intfs } } ) }}
-    {% endif %}
-    ): unsupported operand type(s) for +: 'dict' and 'dict'. unsupported operand type(s) for +: 'dict' and 'dict'. Unexpected templating type error occurred on (- set:
-        router:
-          ospf:
-            enable: on
-  
-    {% macro vrf_ospf(vrfname,vrf) %}
-    {%   set _ospf = vrf.ospf %}
-    {%   set _intfs = _ospf.interfaces|default([]) %}
-    {%   if _intfs!=[] %}
-    - set:
-        vrf:
-          {{ vrfname }}:
+                area: 0.0.0.0
+                network-type: broadcast
+          swp1:
             router:
               ospf:
-                enable: on
-                redistribute:
-                  connected:
-                    enable: on
-    {%     if _ospf.reference_bandwidth is defined %}
-                reference-bandwidth: {{ _ospf.reference_bandwidth }}
-    {%     endif %}
-    {%     if 'router_id' in _ospf %}
-                router-id: {{ _ospf.router_id }}
-    {%     endif %}
-  
-    {%     for l in _intfs %}
-    {%       if loop.first %}
-        interface:
-    {%       endif %}
-          {{ l.ifname }}:
-            router:
-              ospf:
-                area: {{ l.ospf.area|default(ospf.area) }}
-    {%       if l.ospf.cost is defined %}
-                cost: {{ l.ospf.cost }}
-    {%       endif %}
-                network-type: {{ l.ospf.network_type|default('broadcast') }}
-    {%       if l.ospf.passive | default(False) %}
-                passive: on
-    {%       endif %}
-    {%     endfor %}
-  
-    {%   else %}
-    # No OSPF interfaces in VRF {{ vrfname }}
-    {%   endif %}
-    {% endmacro %}
-  
-    {% if ospf is defined %}
-    {% set _lo = (loopback + { 'ospf': { 'area': ospf.area|default('0.0.0.0') } }) if 'ipv4' in loopback else {} %}
-    {% set _ospf_intfs = [_lo] + interfaces|default([])|selectattr('ospf','defined')|list %}
-    {{ vrf_ospf("default", { 'ospf': ospf + { 'interfaces': _ospf_intfs } } ) }}
-    {% endif %}
-    ): unsupported operand type(s) for +: 'dict' and 'dict'. unsupported operand type(s) for +: 'dict' and 'dict'
+                area: 0.0.0.0
+                network-type: point-to-point
 ok: [x1] => 
   msg: |-
     ospf configuration for x1
@@ -742,11 +667,31 @@ ok: [x1] =>
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 skipping: [x2]
+ok: [dut]
 ok: [x1]
 
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [x2]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1
+
+TASK [set_fact] ****************************************************************
+ok: [dut]
+
+TASK [copy the cumulus nvue YAML ospf config file to switch (generated from /home/pipi/net101/tools/netsim/ansible/templates/ospf/cumulus_nvue.j2)] ***
+changed: [dut]
+
+TASK [Wait for nvued to start] *************************************************
+skipping: [dut]
+
+TASK [set_fact] ****************************************************************
+ok: [dut]
+
+TASK [execute on cumulus: 'nv config patch' for ospf config] *******************
+changed: [dut]
+
+TASK [execute on cumulus: 'nv config apply -y' for ospf config] ****************
+changed: [dut]
 
 TASK [template] ****************************************************************
 changed: [x1]
@@ -764,10 +709,12 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=29   changed=6    unreachable=0    failed=1    skipped=2    rescued=0    ignored=0   
+dut                        : ok=37   changed=9    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
 x1                         : ok=32   changed=7    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
 x2                         : ok=24   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
 
-Fatal error in netlab: Executing Ansible playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible failed
-Error executing ansible-playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible:
-  Command '['ansible-playbook', '/home/pipi/net101/tools/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.
+
+
+Use this topology to test the selective activation of IPv4 and IPv6 address
+families on IPv4 and IPv6 IBGP and EBGP sessions.
+

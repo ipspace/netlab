@@ -331,113 +331,45 @@ ok: [x1]
 ok: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-fatal: [dut]: FAILED! => 
+ok: [dut] => 
   msg: |-
-    An unhandled exception occurred while running the lookup plugin 'template'. Error was a <class 'ansible.errors.AnsibleError'>, original message: Unexpected templating type error occurred on (- set:
+    ospf configuration for dut
+    =========================================
+    - set:
         router:
           ospf:
             enable: on
   
-    {% macro vrf_ospf(vrfname,vrf) %}
-    {%   set _ospf = vrf.ospf %}
-    {%   set _intfs = _ospf.interfaces|default([]) %}
-    {%   if _intfs!=[] %}
+  
     - set:
         vrf:
-          {{ vrfname }}:
+          default:
             router:
               ospf:
                 enable: on
                 redistribute:
                   connected:
                     enable: on
-    {%     if _ospf.reference_bandwidth is defined %}
-                reference-bandwidth: {{ _ospf.reference_bandwidth }}
-    {%     endif %}
-    {%     if 'router_id' in _ospf %}
-                router-id: {{ _ospf.router_id }}
-    {%     endif %}
+                router-id: 10.0.0.1
   
-    {%     for l in _intfs %}
-    {%       if loop.first %}
         interface:
-    {%       endif %}
-          {{ l.ifname }}:
+          lo:
             router:
               ospf:
-                area: {{ l.ospf.area|default(ospf.area) }}
-    {%       if l.ospf.cost is defined %}
-                cost: {{ l.ospf.cost }}
-    {%       endif %}
-                network-type: {{ l.ospf.network_type|default('broadcast') }}
-    {%       if l.ospf.passive | default(False) %}
-                passive: on
-    {%       endif %}
-    {%     endfor %}
-  
-    {%   else %}
-    # No OSPF interfaces in VRF {{ vrfname }}
-    {%   endif %}
-    {% endmacro %}
-  
-    {% if ospf is defined %}
-    {% set _lo = (loopback + { 'ospf': { 'area': ospf.area|default('0.0.0.0') } }) if 'ipv4' in loopback else {} %}
-    {% set _ospf_intfs = [_lo] + interfaces|default([])|selectattr('ospf','defined')|list %}
-    {{ vrf_ospf("default", { 'ospf': ospf + { 'interfaces': _ospf_intfs } } ) }}
-    {% endif %}
-    ): unsupported operand type(s) for +: 'dict' and 'dict'. unsupported operand type(s) for +: 'dict' and 'dict'. Unexpected templating type error occurred on (- set:
-        router:
-          ospf:
-            enable: on
-  
-    {% macro vrf_ospf(vrfname,vrf) %}
-    {%   set _ospf = vrf.ospf %}
-    {%   set _intfs = _ospf.interfaces|default([]) %}
-    {%   if _intfs!=[] %}
-    - set:
-        vrf:
-          {{ vrfname }}:
+                area: 0.0.0.0
+                network-type: broadcast
+          swp1:
             router:
               ospf:
-                enable: on
-                redistribute:
-                  connected:
-                    enable: on
-    {%     if _ospf.reference_bandwidth is defined %}
-                reference-bandwidth: {{ _ospf.reference_bandwidth }}
-    {%     endif %}
-    {%     if 'router_id' in _ospf %}
-                router-id: {{ _ospf.router_id }}
-    {%     endif %}
-  
-    {%     for l in _intfs %}
-    {%       if loop.first %}
-        interface:
-    {%       endif %}
-          {{ l.ifname }}:
+                area: 0.0.0.0
+                cost: 17
+                network-type: point-to-point
+          swp2:
             router:
               ospf:
-                area: {{ l.ospf.area|default(ospf.area) }}
-    {%       if l.ospf.cost is defined %}
-                cost: {{ l.ospf.cost }}
-    {%       endif %}
-                network-type: {{ l.ospf.network_type|default('broadcast') }}
-    {%       if l.ospf.passive | default(False) %}
-                passive: on
-    {%       endif %}
-    {%     endfor %}
-  
-    {%   else %}
-    # No OSPF interfaces in VRF {{ vrfname }}
-    {%   endif %}
-    {% endmacro %}
-  
-    {% if ospf is defined %}
-    {% set _lo = (loopback + { 'ospf': { 'area': ospf.area|default('0.0.0.0') } }) if 'ipv4' in loopback else {} %}
-    {% set _ospf_intfs = [_lo] + interfaces|default([])|selectattr('ospf','defined')|list %}
-    {{ vrf_ospf("default", { 'ospf': ospf + { 'interfaces': _ospf_intfs } } ) }}
-    {% endif %}
-    ): unsupported operand type(s) for +: 'dict' and 'dict'. unsupported operand type(s) for +: 'dict' and 'dict'
+                area: 0.0.0.0
+                cost: 10
+                network-type: point-to-point
 ok: [x1] => 
   msg: |-
     ospf configuration for x1
@@ -498,11 +430,31 @@ ok: [x2] =>
     do write
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
-ok: [x2]
+ok: [dut]
 ok: [x1]
+ok: [x2]
 
 TASK [Deploy ospf configuration] ***********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2
+
+TASK [set_fact] ****************************************************************
+ok: [dut]
+
+TASK [copy the cumulus nvue YAML ospf config file to switch (generated from /home/pipi/net101/tools/netsim/ansible/templates/ospf/cumulus_nvue.j2)] ***
+changed: [dut]
+
+TASK [Wait for nvued to start] *************************************************
+skipping: [dut]
+
+TASK [set_fact] ****************************************************************
+ok: [dut]
+
+TASK [execute on cumulus: 'nv config patch' for ospf config] *******************
+changed: [dut]
+
+TASK [execute on cumulus: 'nv config apply -y' for ospf config] ****************
+changed: [dut]
 
 TASK [template] ****************************************************************
 changed: [x1]
@@ -524,10 +476,12 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=18   changed=3    unreachable=0    failed=1    skipped=1    rescued=0    ignored=0   
+dut                        : ok=26   changed=6    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
 x1                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 x2                         : ok=22   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 
-Fatal error in netlab: Executing Ansible playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible failed
-Error executing ansible-playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible:
-  Command '['ansible-playbook', '/home/pipi/net101/tools/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.
+
+
+This lab tests whether the OSPF costs are correctly applied
+to physical and loopback interfaces.
+
