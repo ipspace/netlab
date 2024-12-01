@@ -1,4 +1,31 @@
 #
-# Fetch FRR configuration
+# Fetch FRRouting configuration files
 #
-- include_tasks: cumulus.yml
+- name: Save FRR running configuration to frr.conf
+  command: vtysh -c 'write'
+  become: true
+- name: Collect FRR configuration
+  command: cat /etc/frr/frr.conf
+  become: true
+  register: config
+- name: Save FRR configuration to {{ ofile }}
+  vars:
+    ofile: "{{ config_dir }}/{{ inventory_hostname }}.cfg"
+  copy:
+    content: |
+      {{ config.stdout }}
+    dest: "{{ ofile }}"
+  delegate_to: localhost
+
+- name: Collect FRR daemons configuration
+  command: cat /etc/frr/daemons
+  become: true
+  register: config
+- name: Save FRR daemons to {{ ofile }}
+  vars:
+    ofile: "{{ config_dir }}/{{ inventory_hostname }}-daemons"
+  copy:
+    content: |
+      {{ config.stdout }}
+    dest: "{{ ofile }}"
+  delegate_to: localhost

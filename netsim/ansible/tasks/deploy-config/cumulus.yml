@@ -1,20 +1,42 @@
-- name: copy cumulus config to /tmp/config.sh
-  template:
-    src: "{{ config_template }}"
-    dest: /tmp/config.sh
-    mode: "0755"
-
-- name: set_fact deployed_config
+- name: Render device configuration from {{ config_template }}
   set_fact: deployed_config={{ lookup('template',config_template) }}
 
-- name: "run /tmp/config.sh to deploy {{netsim_action}} config from {{ config_template }}"
-  command: bash /tmp/config.sh
-  become: true
-  when: not ansible_check_mode and ("#!/bin/bash" in deployed_config)
-  tags: [ print_action, always ]
+- name: Create local temporary file
+  local_action:
+    module: tempfile
+    state: file
+    suffix: temp
+    prefix: ansible.{{ inventory_hostname }}.
+  register: tempfile_1
 
-- name: "run vtysh to import {{netsim_action}} config from {{ config_template }}"
-  command: vtysh -f /tmp/config.sh
-  become: true
-  when: not ansible_check_mode and not ("#!/bin/bash" in deployed_config)
+- name: Create {{ netsim_action }} config script in local temporary file
+  local_action:
+    module: copy
+    content: |
+      {% if "#!/bin/bash" in deployed_config %}
+      {{   deployed_config }}
+      {% else %}
+      #!/bin/bash
+      set -e
+      {%   set cfgname = '/tmp-config' + netsim_action + '.cfg' %}
+      cat <<DEPLOYED_CONFIG >{{ cfgname }}
+      {{   deployed_config }}
+      DEPLOYED_CONFIG
+      vtysh -f {{ cfgname }}
+      {% endif %}
+    dest: "{{ tempfile_1.path }}"
+    mode: "0755"
+
+- name: Execute local config script on Cumulus node
+  script: "{{ tempfile_1.path }}"
+  args:
+    executable: sudo
   tags: [ print_action, always ]
+  when: not ansible_check_mode
+
+- name: Remove temporary file {{ tempfile_1.path }}
+  local_action:
+    module: file
+    path: "{{ tempfile_1.path }}"
+    state: absent
+  when: tempfile_1.path is defined

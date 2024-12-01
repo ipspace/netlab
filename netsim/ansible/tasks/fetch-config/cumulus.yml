@@ -2,11 +2,9 @@
 # Fetch Cumulus VX configuration files
 #
 - name: Save FRR running configuration to frr.conf
-  command: vtysh -c 'write'
-  become: true
+  raw: sudo vtysh -c 'write'
 - name: Collect FRR configuration
-  command: cat /etc/frr/frr.conf
-  become: true
+  raw: sudo cat /etc/frr/frr.conf
   register: config
 - name: Save FRR configuration to {{ ofile }}
   vars:
@@ -18,8 +16,7 @@
   delegate_to: localhost
 
 - name: Collect FRR daemons configuration
-  command: cat /etc/frr/daemons
-  become: true
+  raw: sudo cat /etc/frr/daemons
   register: config
 - name: Save FRR daemons to {{ ofile }}
   vars:
@@ -30,17 +27,14 @@
     dest: "{{ ofile }}"
   delegate_to: localhost
 
-- block:
-  - name: Collect ifupdown2 configuration
-    command: ifquery -a
-    register: ifquery
-    become: true
-  - name: Save ifupdown configuration to {{ ofile }}
-    vars:
-      ofile: "{{ config_dir }}/{{ inventory_hostname }}-interfaces"
-    copy:
-      content: |
-        {{ ifquery.stdout }}
-      dest: "{{ ofile }}"
-    delegate_to: localhost
-  when: "'cumulus' in netlab_device_type"
+- name: Collect ifupdown2 configuration
+  raw: sudo ifquery -a
+  register: ifquery
+- name: Save ifupdown configuration to {{ ofile }}
+  vars:
+    ofile: "{{ config_dir }}/{{ inventory_hostname }}-interfaces"
+  copy:
+    content: |
+      {{ ifquery.stdout }}
+    dest: "{{ ofile }}"
+  delegate_to: localhost
