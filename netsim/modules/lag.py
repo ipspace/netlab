@@ -110,28 +110,24 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
   """ 
   determine_mlag_sides - figure out which node forms the "1" side of an 1:M MLAG group, and the device type of its M-side peer
   """
-  def determine_mlag_sides(member: Box, oneSide: typing.Optional[str]) -> typing.Tuple[typing.Optional[str],typing.Optional[str]]:
+  def determine_mlag_sides(member: Box, oneSide: typing.Optional[str]) -> typing.Optional[str]:
     first_pair = [ i.node for i in l.interfaces ]
     maybe_1_side = [ i.node for i in member.interfaces if i.node in first_pair ]
     if oneSide is None:
       if len(maybe_1_side)==1:                    # Is it clear now which node is on the '1' side?
         oneSide = maybe_1_side[0]
       elif len(maybe_1_side)==2:                  # e.g. case of multi-link m-lag [ h1-s1, h1-s1, h1-s2, h1-s2 ]
-        return (None,None)                        # Need to see more links before knowing which side is which
+        return None                               # Need to see more links before knowing which side is which
     if oneSide in maybe_1_side:
-      mSide = [ i.node for i in member.interfaces if i.node!=oneSide ]
-      mlag_node = topology.nodes[ mSide[0] ]
-      l.interfaces = l.interfaces + [ data.get_box({ 'node': m }) for m in mSide if m not in first_pair ]
-      return (oneSide,mlag_node.device)
+      mSide = [ i for i in member.interfaces if i.node!=oneSide ]
+      mlag_node = topology.nodes[ mSide[0].node ]
+      l.interfaces = l.interfaces + [ data.get_box(m) for m in mSide if m.node not in first_pair ]
+      return oneSide
 
-    log.error(f'Links in MLAG {l.lag.ifindex} must connect exactly 1 node to M other nodes ({l.lag.members})',
-      category=log.IncorrectValue,
-      module='lag')
-    return ("<error>",None)
+    return None                                   # M:M MLAG
 
   l2_ifdata = create_l2_link_base(l,topology)
   mlag_1_side = None                              # Node on the '1' side of MLAG link
-  mlag_device = None                              # Device type of the 'M' side
   first_pair = []                                 # Pair of nodes on first link
   for idx,member in enumerate(l.lag.members):
     member = links.adjust_link_object(member,f'{l._linkname}.lag[{idx+1}]',topology.nodes)
@@ -158,26 +154,32 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
     member = l2_ifdata + member                   # Copy L2 data into member link
     member.linkindex = len(topology.links)+1
     member.lag._parentindex = l.linkindex         # Keep track of parent
+    if idx==0:                                    # Copy interfaces from first member link
+      l.interfaces = [ data.get_box(i) for i in member.interfaces ] # deep copy
+      first_pair = [ i.node for i in l.interfaces ]
+    elif is_mlag:                                 # Figure out which node is on the "1" side starting at 2nd member
+      mlag_1_side = determine_mlag_sides(member,mlag_1_side)
+    elif not check_same_pair(first_pair,member):  # Regular LAG: check that it's between the same nodes
+      return
+
+    member.interfaces = [ { 'node': i.node } for i in member.interfaces ]  # Keep only nodes, remove attributes
+
     if log.debug_active('lag'):
       print(f'LAG create_lag_member_links -> adding link {member}')
     topology.links.append(member)
-    if idx==0:                                    # Copy interfaces from first member link
-      l.interfaces = [ data.get_box({ 'node': i.node }) for i in member.interfaces ] # no attributes(!)
-      first_pair = [ i.node for i in l.interfaces ]
-    elif is_mlag:                                 # Figure out which node is on the "1" side starting at 2nd member
-      mlag_1_side, mlag_device = determine_mlag_sides(member,mlag_1_side)
-      if mlag_1_side=="<error>":
-        return
-    elif not check_same_pair(first_pair,member):  # Regular LAG: check that it's between the same nodes
-      return
 
   #
   # Post processing - at this point we finally know which is the 1-side node for M-LAG
   #
   if is_mlag:                                     # For MLAG links
+    if mlag_1_side is None:                       # For M:N MLAGs, add missing interfaces
+     for m in l.lag.members:
+       _nodes = { i.node for i in l.interfaces }
+       l.interfaces = l.interfaces + [ data.get_box(v) for k,v in m.items() if v.node not in _nodes ]
+
     for i in l.interfaces:
       if i.node!=mlag_1_side:
-        if not check_mlag_support(i.node,l._linkname,mlag_device):
+        if not check_mlag_support(i.node,l._linkname):
           return
         i.lag.mlag = True                         # Put 'mlag' flag on M-side (only)
       else:
