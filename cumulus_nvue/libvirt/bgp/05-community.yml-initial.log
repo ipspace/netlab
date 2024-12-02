@@ -396,8 +396,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for
 
 TASK [template] ****************************************************************
 changed: [x1]
-changed: [r2]
 changed: [rc]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
@@ -405,8 +405,8 @@ ok: [rc]
 ok: [x1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x1]
 changed: [r2]
+changed: [x1]
 changed: [rc]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -451,6 +451,9 @@ ok: [dut] =>
           default:
             router:
               bgp:
+                route-reflection:
+                  enable: on
+                  cluster-id: 10.0.0.1
                 address-family:
                   ipv4-unicast:
                     enable: on
@@ -459,7 +462,8 @@ ok: [dut] =>
                 autonomous-system: 65000
                 neighbor:
                   10.0.0.10:
-                    remote-as: 65000
+                    update-source: lo
+                    remote-as: internal
                     address-family:
                       ipv4-unicast:
                         enable: on
@@ -469,7 +473,8 @@ ok: [dut] =>
                           regular: on
                           extended: on
                   10.0.0.2:
-                    remote-as: 65000
+                    update-source: lo
+                    remote-as: internal
                     address-family:
                       ipv4-unicast:
                         enable: on
@@ -626,28 +631,12 @@ TASK [execute on cumulus: 'nv config patch' for bgp config] ********************
 changed: [dut]
 
 TASK [execute on cumulus: 'nv config apply -y' for bgp config] *****************
-fatal: [dut]: FAILED! => changed=true 
-  cmd:
-  - nv
-  - config
-  - apply
-  - -y
-  delta: '0:00:00.206894'
-  end: '2024-12-01 07:58:04.068770'
-  msg: non-zero return code
-  rc: 1
-  start: '2024-12-01 07:58:03.861876'
-  stderr: |-
-    Invalid config [rev_id: 11]
-      Config invalid at vrf.default.router.bgp.neighbor.10.0.0.2.address-family.ipv4-unicast.route-reflector-client: If the `route-reflector-client` is enabled, the neighbor remote-as must be internal
-  stderr_lines: <omitted>
-  stdout: ''
-  stdout_lines: <omitted>
+changed: [dut]
 
 TASK [template] ****************************************************************
 changed: [x1]
-changed: [rc]
 changed: [r2]
+changed: [rc]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
@@ -660,22 +649,56 @@ skipping: [rc]
 skipping: [x1]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+changed: [rc]
 changed: [r2]
 changed: [x1]
-changed: [rc]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [dut]
 ok: [r2]
 ok: [rc]
 ok: [x1]
 
 TASK [Find configuration template for ospf] ************************************
+ok: [dut]
 skipping: [x1]
 ok: [r2]
 ok: [rc]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [x1]
+ok: [dut] => 
+  msg: |-
+    ospf configuration for dut
+    =========================================
+    - set:
+        router:
+          ospf:
+            enable: on
+  
+  
+    - set:
+        vrf:
+          default:
+            router:
+              ospf:
+                enable: on
+                redistribute:
+                  connected:
+                    enable: on
+                router-id: 10.0.0.1
+  
+        interface:
+          lo:
+            router:
+              ospf:
+                area: 0.0.0.0
+                network-type: broadcast
+          swp1:
+            router:
+              ospf:
+                area: 0.0.0.0
+                network-type: point-to-point
 ok: [r2] => 
   msg: |-
     ospf configuration for r2
@@ -740,12 +763,32 @@ ok: [rc] =>
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 skipping: [x1]
+ok: [dut]
 ok: [r2]
 ok: [rc]
 
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [x1]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r2, rc
+
+TASK [set_fact] ****************************************************************
+ok: [dut]
+
+TASK [copy the cumulus nvue YAML ospf config file to switch (generated from /home/pipi/net101/tools/netsim/ansible/templates/ospf/cumulus_nvue.j2)] ***
+changed: [dut]
+
+TASK [Wait for nvued to start] *************************************************
+skipping: [dut]
+
+TASK [set_fact] ****************************************************************
+ok: [dut]
+
+TASK [execute on cumulus: 'nv config patch' for ospf config] *******************
+changed: [dut]
+
+TASK [execute on cumulus: 'nv config apply -y' for ospf config] ****************
+changed: [dut]
 
 TASK [template] ****************************************************************
 changed: [rc]
@@ -802,11 +845,18 @@ TASK [run vtysh to import frr-community config from /home/pipi/net101/tools/test
 changed: [rc]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=26   changed=5    unreachable=0    failed=1    skipped=2    rescued=0    ignored=0   
+dut                        : ok=37   changed=9    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
 r2                         : ok=32   changed=7    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
 rc                         : ok=39   changed=8    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
 x1                         : ok=24   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
 
-Fatal error in netlab: Executing Ansible playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible failed
-Error executing ansible-playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible:
-  Command '['ansible-playbook', '/home/pipi/net101/tools/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.
+
+
+Use this topology to test the BGP community propagation. The device under test
+is a BGP route reflector that should propagate standard and extended
+communities to IBGP neighbors but only extended communities to EBGP neighbors
+(the default setting).
+
+Three BGP communities are attached to the prefix advertised by RC: a standard
+one, an extended one, and a long one (standard communitiy using 4-octet AS)
+
