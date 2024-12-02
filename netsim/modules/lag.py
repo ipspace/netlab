@@ -77,16 +77,11 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
   """
   check_mlag_support - check if the given node supports mlag and has the same device type
   """
-  def check_mlag_support(node: str, linkname: str, mlag_device: typing.Optional[str]) -> bool:
+  def check_mlag_support(node: str, linkname: str) -> bool:
     _n = topology.nodes[node]
     features = devices.get_device_features(_n,topology.defaults)
     if not features.lag.get('mlag',False):
       log.error(f'Node {_n.name} ({_n.device}) does not support MLAG, cannot be on M-side of LAG {linkname}',
-        category=log.IncorrectValue,
-        module='lag')
-      return False
-    elif _n.device != mlag_device:
-      log.error(f'Node {_n.name} on MLAG {linkname} has a different device type ({_n.device}) than another M-side node ({mlag_device})',
         category=log.IncorrectValue,
         module='lag')
       return False
