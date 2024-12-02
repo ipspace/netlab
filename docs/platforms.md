@@ -375,7 +375,7 @@ Core *netlab* functionality and all multi-protocol routing protocol configuratio
 | Cisco IOSv/IOSvL2     |          ✅          |   ✅    |    ✅     |         ✅          |        ✅         |    ❌    |
 | Cisco IOS XE[^18v]    |          ✅          |   ✅    |    ✅     |         ✅          |        ✅         |    ❌    |
 | Cisco Nexus OS        |          ✅          |   ❌    |    ✅     |         ✅          |        ✅         |    ❌    |
-| Cumulus Linux         |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
+| Cumulus Linux         |          ✅          |   ✅    |    ✅     |         ❌          |        ✅         |    ❌    |
 | Cumulus Linux 5.x (NVUE)        |          ✅          |   ❌    |    ✅     |         ❌          |        ✅         |    ❌    |
 | Dell OS10             |          ✅          |   ✅    |    ❌     |         ❌          |        ✅         |    ❌    |
 | Fortinet FortiOS      |          ✅          |   ❌    |    ❌     |         ❌          |        ❌         |    ❌    |
