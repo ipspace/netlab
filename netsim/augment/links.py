@@ -317,7 +317,7 @@ def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> Box:
     if af in ifdata and not ifdata[af]:
       del ifdata[af]
 
-  if 'mtu' in node:                             # Is node-level MTU defined (node setting, lab default or device default)
+  if node.get('mtu',None):                      # Is node-level MTU defined (node setting, lab default or device default)
     sys_mtu = devices.get_device_features(node,defaults).initial.get('system_mtu',False)
     if 'mtu' in ifdata:                         # Is MTU defined on the interface?
       if sys_mtu and node.mtu == ifdata.mtu:    # .. is it equal to node MTU?
