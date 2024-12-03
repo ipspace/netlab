@@ -10,6 +10,8 @@ message: |
 
 provider: libvirt
 
+module: [ ospf ]       # Use OSPF to distribute loopback routes
+
 groups:
   _auto_create: True
 
@@ -25,7 +27,25 @@ groups:
 links: 
 - libvirt_a-libvirt_b  # libvirt-libvirt: p2p tunnel
 - clab_a-clab_b        # clab-clab: veth pair
-- libvirt_a-clab_a     # libvirt-clab p2p: macvlan to tap interface  ## FAILS ##
-- libvirt_a:           # 3-node LAN: Linux bridge created by libvirt, external to clab in this case
+- libvirt_a-clab_a     # libvirt-clab p2p: macvlan to tap interface, bridge deleted after Vagrant creates it
+- libvirt_b:           # 3-node LAN: Linux bridge created by libvirt, external to clab in this case
   clab_a:
   clab_b:
+
+validate:
+ ping_libv_libv:
+    description: IPv4 ping libvirt_a => libvirt_b on loopback, depends on OSPF
+    wait: 20
+    wait_msg: Wait for IPv4 interfaces to become operational
+    nodes: [ libvirt_a ]
+    plugin: ping('libvirt_b')
+
+ ping_clab_clab:
+    description: IPv4 ping clab_a => clab_b on loopback, depends on OSPF
+    nodes: [ clab_a ]
+    plugin: ping('clab_b')
+
+ ping_libv_clab:
+    description: IPv4 ping libvirt_a => clab_a on loopback, depends on OSPF
+    nodes: [ libvirt_a ]
+    plugin: ping('clab_a')
