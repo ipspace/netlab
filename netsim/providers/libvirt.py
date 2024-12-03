@@ -357,20 +357,16 @@ class Libvirt(_Provider):
         # if len(link.provider) > 1:                                  # Skip multi-provider links
         #  continue
 
+        if node.provider=='libvirt':
+          intf.libvirt.ifname = libvirt_ifname(node.id,intf)
+
         if len(link.interfaces) == 2: # and link.type == 'p2p':     # Also 'lag' type links, and really any type with 2 nodes
           if len(link.provider) == 1:
             intf.libvirt.type = "tunnel"                            # ... found a true libvirt-only P2P link, set type to tunnel
-            intf.libvirt.ifname = libvirt_ifname(node.id,intf)
           else:                                                     # else found a multi-provider P2P link
             if node.provider=='libvirt':
-              intf.libvirt.ifname = libvirt_ifname(node.id,intf)
+              link.clab.uplink = intf.libvirt.ifname                # Connect Clab directly to the vif created by Libvirt (using Macvlan)
               link.libvirt.delete_bridge = True                     # Delete the bridge after Vagrant creates it
-            else:
-              _other = [ i.node for i in link.interfaces if i.node!=node.name ]
-              _node = topology.nodes[ _other[0] ]
-              link.clab.uplink = libvirt_ifname(_node.id,intf)      # Tell clab to attach as macvlan uplink to libvirt.ifname
-        elif node.provider=='libvirt':
-          intf.libvirt.ifname = libvirt_ifname(node.id,intf)
 
         if intf.get('libvirt.type') != 'tunnel':                    # The current link is not a tunnel link, move on
           continue
