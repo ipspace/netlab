@@ -1,0 +1,31 @@
+---
+message: |
+  This scenario tests all possible multi-provider link scenarios. There are 4 main cases:
+  1. Libvirt-libvirt => P2P UDP tunnel
+  2. Clab-clab => P2P veth pair
+  3. Libvirt-Clab => (NEW) tap interface connected to macvlan device from Clab
+  4. 3 nodes or more => Linux bridge (slight variation in who creates it: all Clab->Clab, else Libvirt)
+
+  The reason for introducing a new multi-provider interconnect construct, is that a Linux bridge (as currently used) blocks STP and LACP
+
+provider: libvirt
+
+groups:
+  _auto_create: True
+
+  libvirt:
+    members: [libvirt_a,libvirt_b]
+    device: cumulus_nvue
+
+  clab:
+    members: [clab_a,clab_b]
+    device: frr
+    provider: clab
+
+links: 
+- libvirt_a-libvirt_b  # libvirt-libvirt: p2p tunnel
+- clab_a-clab_b        # clab-clab: veth pair
+- libvirt_a-clab_a     # libvirt-clab p2p: macvlan to tap interface  ## FAILS ##
+- libvirt_a:           # 3-node LAN: Linux bridge created by libvirt, external to clab in this case
+  clab_a:
+  clab_b:
