@@ -311,6 +311,9 @@ class Libvirt(_Provider):
   def pre_output_transform(self, topology: Box) -> None:
     _Provider.pre_output_transform(self,topology)
 
+    """
+    libvirt_ifname - define an interface name to use, must be <16 characters long
+    """
     def libvirt_ifname(node_id: int, intf:Box) -> str:
       _vifprefix = topology.defaults.get('providers.libvirt.vifprefix',"")
       return f"{_vifprefix}{'_' if _vifprefix else ''}n{node_id}_{intf.ifindex}"
@@ -355,7 +358,6 @@ class Libvirt(_Provider):
         #  continue
 
         if len(link.interfaces) == 2: # and link.type == 'p2p':     # Also 'lag' type links, and really any type with 2 nodes
-          print(f"JvB: P2P link provider(s)={link.provider}")
           if len(link.provider) == 1:
             intf.libvirt.type = "tunnel"                            # ... found a true libvirt-only P2P link, set type to tunnel
             intf.libvirt.ifname = libvirt_ifname(node.id,intf)
