@@ -354,7 +354,7 @@ class Libvirt(_Provider):
           # intf.libvirt.ifname = libvirt_ifname(node.name,intf)
           # continue                                                # ... and move on -- links with libvirt attributes
                                                                     # ... are not tunnels
-        # if len(link.provider) > 1:                                  # Skip multi-provider links
+        # if len(link.provider) > 1:                                # Skip multi-provider links
         #  continue
 
         if node.provider=='libvirt':
@@ -363,29 +363,26 @@ class Libvirt(_Provider):
         if len(link.interfaces) == 2: # and link.type == 'p2p':     # Also 'lag' type links, and really any type with 2 nodes
           if len(link.provider) == 1:
             intf.libvirt.type = "tunnel"                            # ... found a true libvirt-only P2P link, set type to tunnel
+            link.pop("bridge",None)                                 # And now the real work starts. Pop the bridge attribute first
+
+            remote_if_list = [ rif for rif in link.interfaces if rif.node != node.name or rif.ifindex != intf.ifindex ]
+            if len(remote_if_list) != 1:                            # There should be only one remote interface attached to this link
+              log.fatal(
+                f'Cannot find remote interface for P2P link\n... node {node.name}\n... intf {intf}\n... link {link}\n... iflist {remote_if_list}')
+              return
+
+            remote_if = remote_if_list[0]                           # Get remote interface
+            intf.remote_ifindex = remote_if.ifindex                 # ... and copy its ifindex
+            intf.remote_id = topology.nodes[remote_if.node].id      # ... and node ID
+            if not intf.remote_id:
+              log.fatal(
+                f'Cannot find remote node ID on a P2P link\n... node {node.name}\n... intf {intf}\n... link {link}')
+              return
           else:                                                     # else found a multi-provider P2P link
             if node.provider=='libvirt':
               link.clab.uplink = intf.libvirt.ifname                # Connect Clab directly to the vif created by Libvirt (using Macvlan)
               link.libvirt.delete_bridge = True                     # Delete the bridge after Vagrant creates it
-
-        if intf.get('libvirt.type') != 'tunnel':                    # The current link is not a tunnel link, move on
-          continue
-
-        link.pop("bridge",None)                                     # And now the real work starts. Pop the bridge attribute first
-
-        remote_if_list = [ rif for rif in link.interfaces if rif.node != node.name or rif.ifindex != intf.ifindex ]
-        if len(remote_if_list) != 1:                                # There should be only one remote interface attached to this link
-          log.fatal(
-            f'Cannot find remote interface for P2P link\n... node {node.name}\n... intf {intf}\n... link {link}\n... iflist {remote_if_list}')
-          return
-
-        remote_if = remote_if_list[0]                               # Get remote interface
-        intf.remote_ifindex = remote_if.ifindex                     # ... and copy its ifindex
-        intf.remote_id = topology.nodes[remote_if.node].id          # ... and node ID
-        if not intf.remote_id:
-          log.fatal(
-            f'Cannot find remote node ID on a P2P link\n... node {node.name}\n... intf {intf}\n... link {link}')
-          return
+        
 
   def pre_start_lab(self, topology: Box) -> None:
     log.print_verbose('pre-start hook for libvirt')
