@@ -20,6 +20,10 @@
 
 The system defaults are specified in the global **topology-defaults.yml** file (shipped with the *netlab* package). These defaults are imported into the lab topology under the **defaults** top-level attribute. They could be overwritten with the **defaults** element within the lab topology or from user- or system defaults files.
 
+```{warning}
+Unlike lab topology attributes and values, the default values are not checked/validated. Changing them might crash _netlab_ or cause errors in device configuration templates.
+```
+
 (defaults-topology)=
 ### Changing Defaults in Lab Topology
 
