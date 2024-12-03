@@ -324,9 +324,12 @@ class LAG(_Module):
   """
   def node_post_transform(self, node: Box, topology: Box) -> None:
     features = devices.get_device_features(node,topology.defaults)
+    has_peerlink = False
+    uses_mlag = False
     for i in node.interfaces:
       if i.get('lag.mlag.peergroup',None):  # Fill in peer loopback IP and vMAC for MLAG peer links
         populate_mlag_peer(node,i,topology)
+        has_peerlink = True
       elif i.type=='lag':
         i.lag = node.get('lag',{}) + i.lag  # Merge node level settings with interface overrides
         lacp_mode = i.get('lag.lacp_mode')  # Inheritance copying is done elsewhere
@@ -334,6 +337,14 @@ class LAG(_Module):
           log.error(f'Node {node.name} does not support passive LACP configured on interface {i.ifname}',
             category=log.IncorrectAttr,
             module='lag',
-            hint='lag')
+            hint='passive LACP')
+        if i.lag.get('mlag',False) is True:
+          uses_mlag = True
+    
+    if uses_mlag and not has_peerlink:
+      log.error(f'Node {node.name} uses MLAG but has no peerlink (lag with lag.mlag.peergroup) configured',
+        category=log.IncorrectAttr,
+        module='lag',
+        hint='mlag peerlink')
 
     node.pop('_lag_ifindex',None)           # Cleanup
