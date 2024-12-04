@@ -1,3 +1,10 @@
+{% macro advertise_communities(comms) %}
+                    community-advertise:
+{%   for c in ['standard', 'extended', 'large'] %}
+                      {{ c.replace("standard","regular") }}: {{ 'on' if c in comms else 'off' }}
+{%   endfor %}
+{% endmacro %}
+
 - set:
     router:
       bgp:
@@ -53,6 +60,7 @@
 {%   endif %}
 {%   for af in ('ipv4','ipv6') if af in n and n[af] is string %}
               {{ n[af] }}:
+                description: "{{ n.name }}"
 {%     if n._source_ifname is defined %}
                 update-source: {{ n._source_ifname }}
 {%     endif %}
@@ -65,24 +73,16 @@
 {%     endif %}
                   {{ af }}-unicast:
                     enable: {{ 'on' if n.activate[af]|default(False) else 'off' }}
-{%     if n.type == 'ibgp' %}
+{%     if 'ibgp' in n.type %}
+{%       if bgp.next_hop_self|default(False) %}
                     nexthop-setting: self
+{%       endif %}
 {%       if bgp.rr|default('') and not n.rr|default('') %}
                     route-reflector-client: on
 {%       endif %}
-{%       if bgp.community.ibgp|default([]) %}
-                    community-advertise:
-{%         for ibgp_community in bgp.community.ibgp %}
-                      {{ ibgp_community.replace("standard","regular") }}: on
-{%         endfor %}
-{%       endif %}
-{%     else %}
-{%       if bgp.community.ebgp|default([]) %}
-                    community-advertise:
-{%         for ebgp_community in bgp.community.ebgp %}
-                      {{ ebgp_community.replace("standard","regular") }}: on
-{%         endfor %}
-{%       endif %}
+{%     endif %}
+{%     if n.type in bgp.community|default({}) %}
+{{       advertise_communities( bgp.community[n.type] ) }}
 {%     endif %}
 {%   endfor %}
 {% endfor %}
