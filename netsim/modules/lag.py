@@ -87,8 +87,6 @@ def normalized_members(l: Box, topology: Box) -> list:
     for i in member.interfaces:                   # Check that they all support LAG, and lag.ifindex is not reserved
       if not check_lag_config(i.node,member._linkname,topology):
         return []
-      if not verify_lag_ifindex(i.node,member._linkname,topology):
-        return []
     members.append(member)
   return members
 
@@ -121,12 +119,15 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
   """
   verify_lag_ifindex - check that selected lag.ifindex does not overlap with any reserved values
   """
-  def verify_lag_ifindex(node: str, linkname: str, topology: Box) -> bool:
-    _n = topology.nodes[node]
+  def verify_lag_ifindex(intf: Box) -> bool:
+    lag_ifindex = intf.get('lag.ifindex',None)
+    if lag_ifindex is None:
+      return True
+    _n = topology.nodes[intf.node]
     features = devices.get_device_features(_n,topology.defaults)
     if 'reserved_ifindex_range' in features.lag:                             # Exclude any reserved port channel IDs
-      if l.lag.get('ifindex',0) in features.lag.reserved_ifindex_range:
-        log.error(f'Selected lag.ifindex({l.lag.ifindex}) for {linkname} overlaps with device specific reserved range ' +
+      if lag_ifindex in features.lag.reserved_ifindex_range:
+        log.error(f'Selected lag.ifindex({lag_ifindex}) for {l._linkname} overlaps with device specific reserved range ' +
                   f'{features.lag.reserved_ifindex_range} for node {_n.name} ({_n.device})',
           category=log.IncorrectValue,
           module='lag')
@@ -139,10 +140,10 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
                  2. A 1:2 node mlag (3 nodes total)
                  3. A 2:2 node dual mlag (4 nodes total)
 
-                 Returns nodes set, bool is_mlag, string one_side
+                 Returns nodes set, bool is_mlag, bool dual_mlag, string one_side
   """
-  def analyze_lag(members: list) -> tuple[set,bool,str]:
-    node_count: dict[str,int] = {}                   # Count how many times nodes are used
+  def analyze_lag(members: list) -> tuple[set,bool,bool,str]:
+    node_count: dict[str,int] = {}                         # Count how many times nodes are used
     for m in members:
       for i in m.interfaces:
        if i.node in node_count:
@@ -150,25 +151,47 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
        else:
          node_count[ i.node ] = 1
  
-    if len(node_count)==2:                           # Regular LAG between 2 nodes
-      return (node_count.keys(),False,None)
-    elif len(node_count)==3:                         # 1:2 MLAG or weird MLAG triangle
+    if len(node_count)==2:                                 # Regular LAG between 2 nodes
+      return (node_count.keys(),False,False,None)
+    elif len(node_count)==3:                               # 1:2 MLAG or weird MLAG triangle
       for node_name,count in node_count.items():
         if count==len(members):
-          return (node_count.keys(),True,node_name)  # Found the 1-side node
-    elif len(node_count)==4:                         # 2:2 dual MLAG
-      return (node_count.keys(),True,"")
+          return (node_count.keys(),True,False,node_name)  # Found the 1-side node
+    elif len(node_count)==4:                               # 2:2 dual MLAG
+      return (node_count.keys(),True,True,"")
 
     log.error(f'Unsupported configuration of {len(node_count)} nodes on LAG {l.lag.ifindex}, must consist of ' +
                'either 2, 3 or 4 different nodes connected as 1:1, 1:2 or 2:2',
               category=log.IncorrectValue,
               module='lag')
-    return ({},False,"")
+    return ({},False,False,"")
+
+  """
+  split_dual_mlag_link - Split dual-mlag pairs into 2 lag link groups
+  """
+  def split_dual_mlag_link() -> None:
+
+    def no_peer(i: Box) -> Box:
+      i.pop('_peer',None)                                  # Remove internal _peer attribute
+      return i    
+        
+    split_copy = data.get_box(l)                           # Make a copy
+    split_copy.linkindex = len(topology.links)+1           # Update its link index
+    split_copy._linkname = split_copy._linkname + "-2"     # Assign unique name
+    split_copy.lag.pop('members',None)                     # Clean up members
+    first_pair = ( l.interfaces[0].node, l.interfaces[0]._peer )
+    split_copy.interfaces = [ no_peer(i) for i in l.interfaces if i.node in first_pair ]
+    topology.links[l.linkindex-1].interfaces = [ no_peer(i) for i in l.interfaces if i.node not in first_pair ]
+
+    if log.debug_active('lag'):
+      print(f'LAG split_dual_mlag_links -> adding split link {split_copy}')
+      print(f'LAG split_dual_mlag_links -> remaining link {topology.links[l.linkindex-1]}')
+    topology.links.append(split_copy)
 
   members = normalized_members(l,topology)        # Build list of normalized member links
   if not members:
     return
-  nodes, is_mlag, one_side = analyze_lag(members)
+  nodes, is_mlag, dual_mlag, one_side = analyze_lag(members)
   if not nodes:                                   # Check for errors
     return
 
@@ -177,8 +200,12 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
   for node in nodes:
     ifatts = data.get_box({ 'node': node, 'lag': {} })
     for m in members:                             # Collect attributes from member links
-      if { 'node': node } in m.interfaces:        # ...in which <node> is involved
-         ifatts = ifatts + { k:v for k,v in m.items() if k not in skip_atts }
+      if node in [ i.node for i in m.interfaces ]:# ...in which <node> is involved
+        ifatts = ifatts + { k:v for k,v in m.items() if k not in skip_atts }
+        if dual_mlag:
+          ifatts._peer = [ i.node for i in m.interfaces if i.node!=node ][0]
+    if not verify_lag_ifindex(ifatts):
+      return
     if node==one_side:
       if 'ifindex' not in ifatts.lag:             # assign lag.ifindex if not provided
         _n = topology.nodes[node]
@@ -197,9 +224,14 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
       print(f'LAG create_lag_member_links for node {node} -> collected ifatts {ifatts}')
     l.interfaces.append( ifatts )
 
+  if dual_mlag:                                   # In case of dual mlag, split lag interface
+    split_dual_mlag_link()                        # ..each side may have different attributes
+
   l2_ifdata = create_l2_link_base(l,topology)
+  keep_attr = list(topology.defaults.lag.attributes.lag_member_ifattr)
   for member in members:
     member = l2_ifdata + member                   # Copy L2 data into member link
+    member = data.get_box({ k:v for k,v in member.items() if k in keep_attr }) # Filter out things not needed
     member.linkindex = len(topology.links)+1
     member.lag._parentindex = l.linkindex         # Keep track of parent
     if log.debug_active('lag'):
