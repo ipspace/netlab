@@ -69,6 +69,12 @@ links:
 ## Multi-chassis Link Aggregation (MLAG)
 
 For platforms that support it, link level redundancy can be provided by creating multiple links to different switches. The switches have an internal *peer link* to synchronize state related to the link aggregation, allowing them to present a single consistent network interface to the connected system.
+![image](https://github.com/user-attachments/assets/9c683f6e-0203-42e5-b5d6-91a2dfe711f8)
+
+The above diagram illustrates the 3 supported topologies:
+* 1:1 lag between 2 nodes
+* 1:2 mlag between 1 node and a pair of 2 nodes interconnected through one or more peerlinks (3 nodes in total)
+* 2:2 dual mlag between 2 pairs of nodes (4 nodes in total)
 
 MLAG related parameters:
 * **lag.mlag**: Boolean flag set on *lag* links that form a 1:M multi-chassis lag
