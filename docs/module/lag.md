@@ -88,13 +88,13 @@ groups:
   device: dellos10
  hosts:
   members: [h1,h2]
-  device: frr        # 'linux' does not support the lag module yet
+  device: frr          # 'linux' does not support the lag module yet
 
 links:
 - lag:
    members: [h1-s1,h1-s2]
 - lag:
-   members: [h1-s1,h1-s2]
+   members: [h2-s1,h2-s2]
 
 # Inter-switch peer link(s) for MLAG sync
 - lag:
