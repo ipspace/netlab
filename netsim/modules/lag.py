@@ -62,6 +62,37 @@ def check_same_pair(first_pair: list[str], member: Box) -> bool:
   return True
 
 """
+normalized_members - builds a normalized list of lag member links, checking various conditions
+"""
+def normalized_members(l: Box, topology: Box) -> list:
+  members = []                                    # Build normalized list of members
+  for idx,member in enumerate(l.lag.members):
+    member = links.adjust_link_object(member,f'{l._linkname}.lag[{idx+1}]',topology.nodes)
+    if 'lag' in member:                           # Catch potential sources for inconsistency
+      if 'ifindex' not in member.lag:             # ...but allow for custom bond numbering
+        log.error(f'LAG attributes must be configured on the link, not member interface {member._linkname}: {member.lag}',
+                  category=log.IncorrectAttr,
+                  module='lag')
+        return []
+    if len(member.interfaces)!=2:                 # Check that there are exactly 2 nodes involved
+      log.error(f'Link {member._linkname} in LAG {l.lag.ifindex} must have exactly 2 nodes',
+                category=log.IncorrectValue,
+                module='lag')
+      return []
+    if member.interfaces[0].node==member.interfaces[1].node:
+      log.error(f'Link {member._linkname} in LAG {l.lag.ifindex} must have exactly 2 different nodes',
+                category=log.IncorrectValue,
+                module='lag')
+      return []
+    for i in member.interfaces:                   # Check that they all support LAG, and lag.ifindex is not reserved
+      if not check_lag_config(i.node,member._linkname,topology):
+        return []
+      if not verify_lag_ifindex(i.node,member._linkname,topology):
+        return []
+    members.append(member)
+  return members
+
+"""
 create_lag_member_links -- expand lag.members for link l and create physical p2p links
 """
 def create_lag_member_links(l: Box, topology: Box) -> None:
@@ -102,90 +133,78 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
         return False
     return True
 
-  """ 
-  determine_mlag_sides - figure out which node forms the "1" side of an 1:M MLAG group, and the device type of its M-side peer
   """
-  def determine_mlag_sides(member: Box, oneSide: typing.Optional[str]) -> typing.Optional[str]:
-    first_pair = [ i.node for i in l.interfaces ]
-    maybe_1_side = [ i.node for i in member.interfaces if i.node in first_pair ]
-    if oneSide is None:
-      if len(maybe_1_side)==1:                    # Is it clear now which node is on the '1' side?
-        oneSide = maybe_1_side[0]
-      elif len(maybe_1_side)==2:                  # e.g. case of multi-link m-lag [ h1-s1, h1-s1, h1-s2, h1-s2 ]
-        return None                               # Need to see more links before knowing which side is which
-    if oneSide in maybe_1_side:
-      mSide = [ i for i in member.interfaces if i.node!=oneSide ]
-      mlag_node = topology.nodes[ mSide[0].node ]
-      l.interfaces = l.interfaces + [ data.get_box(m) for m in mSide if m.node not in first_pair ]
-      return oneSide
+  analyze_lag - figure out which type of LAG we're dealing with:
+                 1. A 2-node regular lag
+                 2. A 1:2 node mlag (3 nodes total)
+                 3. A 2:2 node dual mlag (4 nodes total)
 
-    return None                                   # M:M MLAG
+                 Returns nodes set, bool is_mlag, string one_side
+  """
+  def analyze_lag(members: list) -> tuple[set,bool,str]:
+    node_count: dict[str,int] = {}                   # Count how many times nodes are used
+    for m in members:
+      for i in m.interfaces:
+       if i.node in node_count:
+         node_count[ i.node ] = node_count[ i.node ] + 1
+       else:
+         node_count[ i.node ] = 1
+ 
+    if len(node_count)==2:                           # Regular LAG between 2 nodes
+      return (node_count.keys(),False,None)
+    elif len(node_count)==3:                         # 1:2 MLAG or weird MLAG triangle
+      for node_name,count in node_count.items():
+        if count==len(members):
+          return (node_count.keys(),True,node_name)  # Found the 1-side node
+    elif len(node_count)==4:                         # 2:2 dual MLAG
+      return (node_count.keys(),True,"")
+
+    log.error(f'Unsupported configuration of {len(node_count)} nodes on LAG {l.lag.ifindex}, must consist of ' +
+               'either 2, 3 or 4 different nodes connected as 1:1, 1:2 or 2:2',
+              category=log.IncorrectValue,
+              module='lag')
+    return ({},False,"")
+
+  members = normalized_members(l,topology)        # Build list of normalized member links
+  if not members:
+    return
+  nodes, is_mlag, one_side = analyze_lag(members)
+  if not nodes:                                   # Check for errors
+    return
+
+  l.interfaces = []                               # Build interface list for lag link
+  skip_atts = list(topology.defaults.lag.attributes.lag_no_propagate)
+  for node in nodes:
+    ifatts = data.get_box({ 'node': node, 'lag': {} })
+    for m in members:                             # Collect attributes from member links
+      if { 'node': node } in m.interfaces:        # ...in which <node> is involved
+         ifatts = ifatts + { k:v for k,v in m.items() if k not in skip_atts }
+    if node==one_side:
+      if 'ifindex' not in ifatts.lag:             # assign lag.ifindex if not provided
+        _n = topology.nodes[node]
+        if '_lag_ifindex' in _n:
+          lag_ifindex = _n._lag_ifindex
+        else:
+          lag_ifindex = 1                         # Start at 1
+        _n._lag_ifindex = lag_ifindex + 1         # Track next ifindex to assign, per node
+        ifatts.lag.ifindex = lag_ifindex          # In time to derive interface name from it
+    elif is_mlag:
+      if not check_mlag_support(node,l._linkname):
+        return
+      ifatts.lag.mlag = True
+
+    if log.debug_active('lag'):
+      print(f'LAG create_lag_member_links for node {node} -> collected ifatts {ifatts}')
+    l.interfaces.append( ifatts )
 
   l2_ifdata = create_l2_link_base(l,topology)
-  mlag_1_side = None                              # Node on the '1' side of MLAG link
-  first_pair = []                                 # Pair of nodes on first link
-  for idx,member in enumerate(l.lag.members):
-    member = links.adjust_link_object(member,f'{l._linkname}.lag[{idx+1}]',topology.nodes)
-
-    if 'lag' in member:                           # Catch potential sources for inconsistency
-      if 'ifindex' not in member.lag:             # ...but allow for custom bond numbering
-        log.error(f'LAG attributes must be configured on the link, not member interface {member._linkname}: {member.lag}',
-          category=log.IncorrectAttr,
-          module='lag')
-        return
-
-    if len(member.interfaces)!=2:                 # Check that there are exactly 2 nodes involved
-      log.error(f'Link {member._linkname} in LAG {l.lag.ifindex} must have exactly 2 nodes',
-        category=log.IncorrectValue,
-        module='lag')
-      return
-
-    for i in member.interfaces:                   # Check that they all support LAG, and lag.ifindex is not reserved
-      if not check_lag_config(i.node,member._linkname,topology):
-        return
-      if not verify_lag_ifindex(i.node,member._linkname,topology):
-        return
-
+  for member in members:
     member = l2_ifdata + member                   # Copy L2 data into member link
     member.linkindex = len(topology.links)+1
     member.lag._parentindex = l.linkindex         # Keep track of parent
-    if idx==0:                                    # Copy interfaces from first member link
-      l.interfaces = [ data.get_box(i) for i in member.interfaces ] # deep copy
-      first_pair = [ i.node for i in l.interfaces ]
-    elif is_mlag:                                 # Figure out which node is on the "1" side starting at 2nd member
-      mlag_1_side = determine_mlag_sides(member,mlag_1_side)
-    elif not check_same_pair(first_pair,member):  # Regular LAG: check that it's between the same nodes
-      return
-
-    member.interfaces = [ { 'node': i.node } for i in member.interfaces ]  # Keep only nodes, remove attributes
-
     if log.debug_active('lag'):
       print(f'LAG create_lag_member_links -> adding link {member}')
     topology.links.append(member)
-
-  #
-  # Post processing - at this point we finally know which is the 1-side node for M-LAG
-  #
-  if is_mlag:                                     # For MLAG links
-    if mlag_1_side is None:                       # For M:N MLAGs, add missing interfaces
-     for m in l.lag.members:
-       _nodes = { i.node for i in l.interfaces }
-       l.interfaces = l.interfaces + [ data.get_box(v) for k,v in m.items() if v.node not in _nodes ]
-
-    for i in l.interfaces:
-      if i.node!=mlag_1_side:
-        if not check_mlag_support(i.node,l._linkname):
-          return
-        i.lag.mlag = True                         # Put 'mlag' flag on M-side (only)
-      else:
-        if 'ifindex' not in i.lag:                # else assign lag.ifindex if not provided
-          _n = topology.nodes[i.node]
-          if '_lag_ifindex' in _n:
-            lag_ifindex = _n._lag_ifindex
-          else:
-            lag_ifindex = 1                       # Start at 1
-          _n._lag_ifindex = lag_ifindex + 1       # Track next ifindex to assign, per node
-          i.lag.ifindex = lag_ifindex             # In time to derive interface name from it
 
 """
 create_peer_links -- creates and configures physical link(s) for given peer link
