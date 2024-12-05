@@ -168,9 +168,9 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
     return (False,False,"<error>")
 
   """
-  split_dual_mlag_link - Split dual-mlag pairs into 2 lag link groups
+  split_dual_mlag_link - Split dual-mlag pairs into 2 lag link groups, returns the new link
   """
-  def split_dual_mlag_link() -> None:
+  def split_dual_mlag_link() -> Box:
 
     def no_peer(i: Box) -> Box:
       i.pop('_peer',None)                                  # Remove internal _peer attribute
@@ -188,6 +188,7 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
       print(f'LAG split_dual_mlag_links -> adding split link {split_copy}')
       print(f'LAG split_dual_mlag_links -> remaining link {topology.links[l.linkindex-1]}')
     topology.links.append(split_copy)
+    return split_copy
 
   members = normalized_members(l,topology)        # Build list of normalized member links
   if not members:
@@ -226,8 +227,8 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
       print(f'LAG create_lag_member_links for node {node} -> collected ifatts {ifatts}')
     l.interfaces.append( ifatts )
 
-  if dual_mlag:                                   # In case of dual mlag, split lag interface
-    split_dual_mlag_link()                        # ..each side may have different attributes
+  split_link = split_dual_mlag_link() if dual_mlag else None
+  split_nodes = [ i.node for i in split_link.interfaces ] if split_link else []
 
   l2_ifdata = create_l2_link_base(l,topology)
   keep_attr = list(topology.defaults.lag.attributes.lag_member_ifattr)
@@ -235,7 +236,8 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
     member = l2_ifdata + member                   # Copy L2 data into member link
     member = data.get_box({ k:v for k,v in member.items() if k in keep_attr }) # Filter out things not needed
     member.linkindex = len(topology.links)+1
-    member.lag._parentindex = l.linkindex         # Keep track of parent
+    parent = split_link if member.interfaces[0].node in split_nodes else l
+    member.lag._parentindex = parent.linkindex    # Keep track of parent
     if log.debug_active('lag'):
       print(f'LAG create_lag_member_links -> adding link {member}')
     topology.links.append(member)
