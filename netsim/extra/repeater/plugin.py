@@ -17,9 +17,10 @@ def clone_interfaces(link_data: Box, nodename: str, clones: list[str]) -> list[B
   ifs = []
   if nodename in [ i.node for i in link_data.interfaces ]:
      link_data.pop('_linkname',None)
+     atts = [ i for i in link_data.interfaces if i.node==nodename ][0]      # Copy any interface atts
      for c,clone in enumerate(clones):
        l = data.get_box(link_data)
-       l.interfaces = [ { 'node': clone } ] + [ update_ifindex(i,c) for i in link_data.interfaces if i.node!=nodename ]
+       l.interfaces = [ atts+{ 'node': clone } ] + [ update_ifindex(i,c) for i in link_data.interfaces if i.node!=nodename ]
        ifs.append(l)
   return ifs
 
@@ -50,7 +51,7 @@ def repeat_node(node: Box, topology: Box) -> None:
     clone.name = strings.eval_format(topology.defaults.repeater.node_name_pattern, node + { 'id': c } )
     clone.interfaces = []                                                   # Start clean, remove reference to original node
     if 'id' in node:
-      clone.id = node.id + c                                                # Update any explicit node ID sequentially
+      clone.id = node.id + c - 1                                            # Update any explicit node ID sequentially
     topology.nodes += { clone.name: clone }
     clones.append( clone.name )
 
