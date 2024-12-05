@@ -4,8 +4,7 @@ from netsim import api,data
 from netsim.utils import log,strings
 from netsim.augment import links
 
-def clone_interfaces( link_data: Box, nodename: str, clones: list ) -> list:
-
+def clone_interfaces(link_data: Box, nodename: str, clones: list[str]) -> list[Box]:
   """
   update_ifindex - update any custom ifindex on the given interface
   """
@@ -53,7 +52,9 @@ def repeat_node( node: Box, topology: Box ) -> None:
     clones.append( clone.name )
 
   for link in list(topology.get('links',[])):
-    link_data = links.adjust_link_object(link,f'repeater{c}',topology.nodes)        
+    link_data = links.adjust_link_object(link,f'repeater{c}',topology.nodes)
+    if link_data is None:
+      continue
     if 'lag' in link_data:
       log.error("LAG links not yet supported by repeater plugin, ignoring...",
                 category=Warning, module='repeater')
