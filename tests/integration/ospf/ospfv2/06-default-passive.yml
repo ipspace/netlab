@@ -1,0 +1,84 @@
+---
+message: |
+  This lab tests whether OSPF interfaces can be configured as 'passive' by default, enabling only 1 VLAN in a trunk to setup an OSPF adjacency.
+  Without this, OSPF would create adjacencies on all VLANs and the route table ends up with duplicate routes via nexthops that are different VLANs 
+  on the same physical node
+
+  Using FRR
+  1. Deploy lab without OSPF passive: netlab up integration/ospf/ospfv2/06-default-passive.yml -d frr -v -p clab -s ospf.passive=False
+  2. netlab exec dut vtysh -c 'show ip ospf neigh'
+  3. netlab validate -> should fail
+  4. Teardown lab: netlab down --cleanup
+  5. Bring up with OSPF passive: netlab up integration/ospf/ospfv2/06-default-passive.yml -d frr -v -p clab
+  6. netlab validate -> now succeeds
+
+module: [ ospf, vlan ]
+
+ospf.passive: True # Configure OSPF interfaces as passive by default
+
+vlans:
+ active:
+  prefix.ipv4: 10.42.1.0/24
+  ospf.passive: False
+  ospf.cost: 100
+ passive1:
+ passive2:
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1, x2 ]
+
+nodes:
+  dut:
+  x1:
+  x2:
+
+links:
+- dut:
+  x1:
+  ospf.cost: 10
+  mtu: 1500
+  vlan.trunk: [active,passive1,passive2]
+
+- dut:
+  x2:
+  mtu: 1500
+  vlan.access: active
+
+- x1:
+  x2:
+  ospf.cost: 100
+  ospf.passive: False
+  mtu: 1500
+
+- dut:
+  prefix.ipv4: 10.42.2.0/24
+  ospf.cost: 25
+  mtu: 1500
+
+validate:
+  adj_x1:
+    description: Is DUT a neigbor of X1?
+    wait: 30
+    wait_msg: Waiting for OSPF adjacency process to complete
+    pass: OK, X1 has DUT as a neighbor
+    nodes: [ x1 ]
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id,count=1)
+  wait:
+    description: Wait extra 15 seconds just to be on the safe side ;)
+    wait: 15
+  adj_x2:
+    description: Is DUT a neigbor of X2?
+    nodes: [ x2 ]
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id,present=True,count=1)
+    pass: OK, X2 can see DUT as a neighbor
+  c_p1:
+    description: Check cost of IPv4 prefix on access VLAN interface on DUT
+    nodes: [ x1 ]
+    plugin: ospf_prefix('10.42.1.0/24',cost=100)
+  c_x2:
+    description: Check cost of IPv4 prefix on stub interface on DUT
+    nodes: [ x1 ]
+    plugin: ospf_prefix('10.42.2.0/24',cost=125)

@@ -10,14 +10,14 @@ from netsim.utils import log
 from .. import _common
 from . import OSPF_PREFIX_NAMES
 
-def show_ospf_neighbor(id: str, present: bool = True, vrf: str = 'default') -> str:
+def show_ospf_neighbor(id: str, present: bool = True, vrf: str = 'default', count: int = 0) -> str:
   try:
     netaddr.IPAddress(id)
   except:
     raise Exception(f'OSPF router ID {id} is not a valid IP address')
   return f'ip ospf ' + (f'vrf {vrf} ' if vrf != 'default' else '') + f'neighbor {id} json'
 
-def valid_ospf_neighbor(id: str, present: bool = True, vrf: str = 'default') -> bool:
+def valid_ospf_neighbor(id: str, present: bool = True, vrf: str = 'default', count: int = 0) -> bool:
   _result = global_vars.get_result_dict('_result')
 
   if vrf in _result:
@@ -27,7 +27,10 @@ def valid_ospf_neighbor(id: str, present: bool = True, vrf: str = 'default') -> 
     if not present:
       return True
     raise Exception(f'There is no OSPF neighbor {id}')
-  
+
+  if count and len(_result[id])!=count:
+    raise Exception(f'Expecting {count} adjacencies for {id}, but found {len(_result[id])}')
+
   n_state = _result[id][0]
   if not present:
     raise Exception(f'Unexpected neighbor {id} in state {n_state.nbrState}')
