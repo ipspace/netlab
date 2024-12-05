@@ -1,6 +1,16 @@
+    $frr_script = <<-SCRIPT
+echo vagrant:{{ n.ansible_ssh_pass }} | chpasswd
+sed -i -e "s#PasswordAuthentication no#PasswordAuthentication yes#" /etc/ssh/sshd_config
+service sshd restart
+    SCRIPT
+
     {{ name }}.vm.synced_folder ".", "/vagrant", id: "vagrant-root", disabled: true
 
     {{ name }}.vm.provider :libvirt do |domain|
       domain.cpus = 1
       domain.memory = 1024
     end
+
+    # Run debian-specific provisioning script
+    #
+    {{ name }}.vm.provision :shell , :inline => $frr_script
