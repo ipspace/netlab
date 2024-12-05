@@ -80,8 +80,9 @@ normalized_members - builds a normalized list of lag member links, checking vari
 """
 def normalized_members(l: Box, topology: Box, peerlink: bool = False) -> list:
   members = []                                      # Build normalized list of members
+  _name = "peerlink" if peerlink else "lag"
   for idx,member in enumerate(l.lag.members):
-    member = links.adjust_link_object(member,f'{l._linkname}.{'peerlink' if peerlink else 'lag'}[{idx+1}]',topology.nodes)
+    member = links.adjust_link_object(member,f'{l._linkname}.{_name}[{idx+1}]',topology.nodes)
     if 'lag' in member:                             # Catch potential sources for inconsistency
       if peerlink or ('ifindex' not in member.lag): # ...but allow for custom bond numbering
         log.error(f'LAG attributes must be configured on the link, not member interface {member._linkname}: {member.lag}',
