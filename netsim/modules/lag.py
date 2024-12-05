@@ -227,8 +227,8 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
       print(f'LAG create_lag_member_links for node {node} -> collected ifatts {ifatts}')
     l.interfaces.append( ifatts )
 
-  split_link = split_dual_mlag_link() if dual_mlag else None
-  split_nodes = [ i.node for i in split_link.interfaces ] if split_link else []
+  _sl = split_dual_mlag_link() if dual_mlag else None
+  split_nodes = [ i.node for i in _sl.interfaces ] if _sl else []
 
   l2_ifdata = create_l2_link_base(l,topology)
   keep_attr = list(topology.defaults.lag.attributes.lag_member_ifattr)
@@ -236,7 +236,7 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
     member = l2_ifdata + member                   # Copy L2 data into member link
     member = data.get_box({ k:v for k,v in member.items() if k in keep_attr }) # Filter out things not needed
     member.linkindex = len(topology.links)+1
-    parent = split_link if member.interfaces[0].node in split_nodes else l
+    parent = _sl if _sl and member.interfaces[0].node in split_nodes else l
     member.lag._parentindex = parent.linkindex    # Keep track of parent
     if log.debug_active('lag'):
       print(f'LAG create_lag_member_links -> adding link {member}')
