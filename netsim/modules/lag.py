@@ -78,17 +78,17 @@ def check_mlag_support(node: str, linkname: str, topology: Box) -> bool:
 """
 normalized_members - builds a normalized list of lag member links, checking various conditions
 """
-def normalized_members(l: Box, topology: Box, allow_key: typing.Optional[str] = 'ifindex') -> list:
-  members = []                                    # Build normalized list of members
+def normalized_members(l: Box, topology: Box, peerlink: bool = False) -> list:
+  members = []                                      # Build normalized list of members
   for idx,member in enumerate(l.lag.members):
-    member = links.adjust_link_object(member,f'{l._linkname}.lag[{idx+1}]',topology.nodes)
-    if 'lag' in member:                           # Catch potential sources for inconsistency
-      if allow_key not in member.lag:             # ...but allow for custom bond numbering
+    member = links.adjust_link_object(member,f'{l._linkname}.{'peerlink' if peerlink else 'lag'}[{idx+1}]',topology.nodes)
+    if 'lag' in member:                             # Catch potential sources for inconsistency
+      if peerlink or ('ifindex' not in member.lag): # ...but allow for custom bond numbering
         log.error(f'LAG attributes must be configured on the link, not member interface {member._linkname}: {member.lag}',
                   category=log.IncorrectAttr,
                   module='lag')
         return []
-    if len(member.interfaces)!=2:                 # Check that there are exactly 2 nodes involved
+    if len(member.interfaces)!=2:                   # Check that there are exactly 2 nodes involved
       log.error(f'Link {member._linkname} in LAG {l.lag.ifindex} must have exactly 2 nodes',
                 category=log.IncorrectValue,
                 module='lag')
@@ -98,7 +98,7 @@ def normalized_members(l: Box, topology: Box, allow_key: typing.Optional[str] = 
                 category=log.IncorrectValue,
                 module='lag')
       return []
-    for i in member.interfaces:                   # Check that they all support LAG
+    for i in member.interfaces:                     # Check that they all support LAG
       if not check_lag_config(i.node,member._linkname,topology):
         return []
     members.append(member)
@@ -257,7 +257,7 @@ def create_peer_links(l: Box, topology: Box) -> bool:
       return False
     return True
 
-  members = normalized_members(l,topology,allow_key=None)
+  members = normalized_members(l,topology,peerlink=True)
   l2_ifdata = create_l2_link_base(l,topology)
 
   for idx,member in enumerate(members):
