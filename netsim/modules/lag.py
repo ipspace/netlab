@@ -9,6 +9,9 @@ from ..utils import log
 from ..augment import devices, links
 
 ID_SET = 'lag_id'
+PEERLINK_ID_SET = 'peerlink_id'
+
+PEERLINK_ID_ATT = 'lag.mlag.peergroup'
 
 """
 populate_lag_id_set -- Collect any user defined lag.ifindex values globally and initialize ID generator
@@ -20,6 +23,16 @@ def populate_lag_id_set(topology: Box) -> None:
                 if isinstance(l.get('lag.ifindex',None),int) }
   _dataplane.extend_id_set(ID_SET,LAG_IDS)
   _dataplane.set_id_counter(ID_SET,topology.defaults.lag.start_lag_id,100)
+
+"""
+populate_peerlink_id_set -- Collect any user defined lag.mlag.peergroup values globally and initialize ID generator
+"""
+def populate_peerlink_id_set(topology: Box) -> None:
+  _dataplane.create_id_set(PEERLINK_ID_SET)
+  PEERLINK_IDS = { l[PEERLINK_ID_ATT] for l in topology.links
+                   if isinstance(l.get(PEERLINK_ID_ATT,None),int) }
+  _dataplane.extend_id_set(PEERLINK_ID_SET,PEERLINK_IDS)
+  _dataplane.set_id_counter(PEERLINK_ID_SET,1,256)
 
 """
 create_l2_link_base - Create a L2 P2P link as base for member links
@@ -94,14 +107,14 @@ def normalized_members(l: Box, topology: Box) -> list:
 create_lag_member_links -- expand lag.members for link l and create physical p2p links
 """
 def create_lag_member_links(l: Box, topology: Box) -> None:
-  is_mlag = l.get('lag.mlag',False) is True                               # Check for mlag bool flag
-  if is_mlag:
-    if len(l.lag.members)<2:                                              # In case of MLAG, check there are at least 2 members
-      log.error(f'MLAG {l._linkname} must have at least 2 member links',
-        category=log.IncorrectAttr,
-        module='lag')
-      return
-    l.pop('lag.mlag',None)                                                # Remove from link, put it on M-side interfaces only
+  # is_mlag = l.get('lag.mlag',False) is True                               # Check for mlag bool flag
+  # if is_mlag:
+  #   if len(l.lag.members)<2:                                              # In case of MLAG, check there are at least 2 members
+  #     log.error(f'MLAG {l._linkname} must have at least 2 member links',
+  #       category=log.IncorrectAttr,
+  #       module='lag')
+  #     return
+  #   l.pop('lag.mlag',None)                                                # Remove from link, put it on M-side interfaces only
 
   """
   check_mlag_support - check if the given node supports mlag and has the same device type
@@ -316,7 +329,7 @@ def process_lag_links(topology: Box) -> None:
     elif not _types.must_be_list(parent=l.lag,key='members',path=l._linkname,module='lag'):
       continue
 
-    if l.get('lag.mlag.peergroup',None):          # Turn internal MLAG links into p2p links
+    if l.get(PEERLINK_ID_ATT,None):               # Turn internal MLAG links into p2p links
       l.type = 'p2p'
       l.prefix = False                            # L2-only
       if not create_peer_links(l,topology):       # Check for errors
@@ -332,6 +345,10 @@ def process_lag_links(topology: Box) -> None:
 # populate_mlag_peer - Lookup the IPv4 loopback address for the mlag peer, and derive a virtual MAC to use
 #
 def populate_mlag_peer(node: Box, intf: Box, topology: Box) -> None:
+
+  if intf.get(PEERLINK_ID_ATT,0) is True:
+    intf[PEERLINK_ID_ATT] = _dataplane.get_next_id(PEERLINK_ID_SET)         # Auto-assign unique peerlink id
+
   _n = intf.neighbors[0].node
   peer = topology.nodes[_n]
   features = devices.get_device_features(node,topology.defaults)
@@ -353,7 +370,7 @@ def populate_mlag_peer(node: Box, intf: Box, topology: Box) -> None:
 
   if 'mac' in _mlag_peer:
     _mac = netaddr.EUI(_mlag_peer.mac)                                      # Generate unique virtual MAC per MLAG group
-    _mac._set_value(_mac.value + intf.get('lag.mlag.peergroup',0) % 65536 ) # ...based on lag.mlag.peergroup
+    _mac._set_value(_mac.value + intf.get(PEERLINK_ID_ATT,0) % 65536 )      # ...based on lag.mlag.peergroup
     intf.lag.mlag.mac = str(_mac)
 
   for v in ['vlan','ifindex']:
@@ -371,6 +388,7 @@ class LAG(_Module):
     if log.debug_active('lag'):
       print(f'LAG module_pre_transform')
     populate_lag_id_set(topology)
+    populate_peerlink_id_set(topology)
 
     process_lag_links(topology)             # Expand lag.members into additional p2p links
 
@@ -385,7 +403,7 @@ class LAG(_Module):
     has_peerlink = False
     uses_mlag = False
     for i in node.interfaces:
-      if i.get('lag.mlag.peergroup',None):  # Fill in peer loopback IP and vMAC for MLAG peer links
+      if i.get(PEERLINK_ID_ATT,None):       # Fill in peer loopback IP and vMAC for MLAG peer links
         populate_mlag_peer(node,i,topology)
         has_peerlink = True
       elif i.type=='lag':
@@ -400,7 +418,7 @@ class LAG(_Module):
           uses_mlag = True
     
     if uses_mlag and not has_peerlink:
-      log.error(f'Node {node.name} uses MLAG but has no peerlink (lag with lag.mlag.peergroup) configured',
+      log.error(f'Node {node.name} uses MLAG but has no peerlink (lag with {PEERLINK_ID_ATT}) configured',
         category=log.IncorrectAttr,
         module='lag',
         hint='mlag peerlink')
