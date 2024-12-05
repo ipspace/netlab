@@ -38,6 +38,10 @@ show_dispatch: dict = {
     'exec':  _mod_support.show,
     'parse': _mod_support.parse
   },
+  'module': {
+    'exec':  _modules.show,
+    'parse': _modules.parse
+  },
   'modules': {
     'exec':  _modules.show,
     'parse': _modules.parse
