@@ -140,10 +140,9 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
                  2. A 1:2 node mlag (3 nodes total)
                  3. A 2:2 node dual mlag (4 nodes total)
 
-                 Returns nodes set, bool is_mlag, bool dual_mlag, string one_side
+                 Returns updated node_count set, bool is_mlag, bool dual_mlag, string one_side
   """
-  def analyze_lag(members: list) -> tuple[set,bool,bool,str]:
-    node_count: dict[str,int] = {}                         # Count how many times nodes are used
+  def analyze_lag(members: list, node_count: dict) -> tuple[bool,bool,str]:
     for m in members:
       for i in m.interfaces:
        if i.node in node_count:
@@ -152,19 +151,19 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
          node_count[ i.node ] = 1
  
     if len(node_count)==2:                                 # Regular LAG between 2 nodes
-      return (node_count.keys(),False,False,None)
+      return (False,False,"")
     elif len(node_count)==3:                               # 1:2 MLAG or weird MLAG triangle
       for node_name,count in node_count.items():
         if count==len(members):
-          return (node_count.keys(),True,False,node_name)  # Found the 1-side node
+          return (True,False,node_name)  # Found the 1-side node
     elif len(node_count)==4:                               # 2:2 dual MLAG
-      return (node_count.keys(),True,True,"")
+      return (True,True,"")
 
     log.error(f'Unsupported configuration of {len(node_count)} nodes on LAG {l.lag.ifindex}, must consist of ' +
                'either 2, 3 or 4 different nodes connected as 1:1, 1:2 or 2:2',
               category=log.IncorrectValue,
               module='lag')
-    return ({},False,False,"")
+    return (False,False,"<error>")
 
   """
   split_dual_mlag_link - Split dual-mlag pairs into 2 lag link groups
@@ -191,13 +190,14 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
   members = normalized_members(l,topology)        # Build list of normalized member links
   if not members:
     return
-  nodes, is_mlag, dual_mlag, one_side = analyze_lag(members)
-  if not nodes:                                   # Check for errors
+  node_count: dict[str,int] = {}                  # Count how many times nodes are used
+  is_mlag, dual_mlag, one_side = analyze_lag(members,node_count)
+  if one_side=="<error>":                         # Check for errors
     return
 
   l.interfaces = []                               # Build interface list for lag link
   skip_atts = list(topology.defaults.lag.attributes.lag_no_propagate)
-  for node in nodes:
+  for node in node_count:
     ifatts = data.get_box({ 'node': node, 'lag': {} })
     for m in members:                             # Collect attributes from member links
       if node in [ i.node for i in m.interfaces ]:# ...in which <node> is involved
@@ -241,7 +241,7 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
 """
 create_peer_links -- creates and configures physical link(s) for given peer link
 """
-def create_peer_links(l: Box, topology: Box) -> None:
+def create_peer_links(l: Box, topology: Box) -> bool:
   """
   check_mlag_peerlink_support - check if the given node supports mlag peerlinks and has the same device type
   """
@@ -266,17 +266,17 @@ def create_peer_links(l: Box, topology: Box) -> None:
       log.error(f'LAG attributes must be configured on the link, not peerlink interface {member._linkname}: {member.lag}',
         category=log.IncorrectAttr,
         module='lag')
-      return
+      return False
 
     if len(member.interfaces)!=2:                 # Check that there are exactly 2 nodes involved
       log.error(f'Peerlink {member._linkname} must have exactly 2 nodes',
         category=log.IncorrectValue,
         module='lag')
-      return
+      return False
 
     for i in member.interfaces:                   # Check that they all support MLAG peerlinks
       if not check_mlag_peerlink_support(i.node,member._linkname):
-        return
+        return False
 
     member = l2_ifdata + member                   # Copy L2 data into member link
     if idx==0:                                    # For the first member, use the existing link
@@ -287,18 +287,21 @@ def create_peer_links(l: Box, topology: Box) -> None:
         log.error(f'Nodes {first_pair} on MLAG peerlink {member._linkname} have different device types ({_devs})',
           category=log.IncorrectValue,
           module='lag')
-        return
+        return False
       if log.debug_active('lag'):
         print(f'LAG create_peer_links -> updated first link {l} from {member} -> {topology.links[l.linkindex-1]}')
     else:
       if not check_same_pair(first_pair,member):  # Check that any additional links connect the same nodes
-        return
+        return False
       member.linkindex = len(topology.links)+1
       member.lag._parentindex = l.linkindex       # Keep track of parent
       if log.debug_active('lag'):
         print(f'LAG create_peer_links -> adding link {member}')
       topology.links.append(member)
 
+"""
+process_lag_links - process all links with 'lag' attribute. Return true if any peerlinks are used
+"""
 def process_lag_links(topology: Box) -> None:
   for l in list(topology.links):                   # Make a copy of the list, gets modified
     if 'lag' not in l:
@@ -364,8 +367,7 @@ class LAG(_Module):
       print(f'LAG module_pre_transform')
     populate_lag_id_set(topology)
 
-    # Expand lag.members into additional p2p links
-    process_lag_links(topology)
+    process_lag_links(topology)             # Expand lag.members into additional p2p links
 
   """
   After attribute propagation and consolidation, verify that requested features are supported.
