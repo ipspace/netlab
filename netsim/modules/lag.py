@@ -298,6 +298,8 @@ def create_peer_links(l: Box, topology: Box) -> bool:
       if log.debug_active('lag'):
         print(f'LAG create_peer_links -> adding link {member}')
       topology.links.append(member)
+  
+  return True
 
 """
 process_lag_links - process all links with 'lag' attribute. Return true if any peerlinks are used
@@ -317,7 +319,8 @@ def process_lag_links(topology: Box) -> None:
     if l.get('lag.mlag.peergroup',None):          # Turn internal MLAG links into p2p links
       l.type = 'p2p'
       l.prefix = False                            # L2-only
-      create_peer_links(l,topology)
+      if not create_peer_links(l,topology):       # Check for errors
+        return
     else:
       l.type = 'lag'
       if 'ifindex' not in l.lag:                  # Use user provided lag.ifindex, if any
