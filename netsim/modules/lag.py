@@ -198,7 +198,7 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
   l.interfaces = []                               # Build interface list for lag link
   skip_atts = list(topology.defaults.lag.attributes.lag_no_propagate)
   for node in node_count:
-    ifatts = data.get_box({ 'node': node, 'lag': {} })
+    ifatts = data.get_box({ 'node': node })
     for m in members:                             # Collect attributes from member links
       if node in [ i.node for i in m.interfaces ]:# ...in which <node> is involved
         ifatts = ifatts + { k:v for k,v in m.items() if k not in skip_atts }
@@ -207,7 +207,7 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
     if not verify_lag_ifindex(ifatts):
       return
     if node==one_side:
-      if 'ifindex' not in ifatts.lag:             # assign lag.ifindex if not provided
+      if 'ifindex' not in ifatts.get('lag',{}):   # assign lag.ifindex if not provided
         _n = topology.nodes[node]
         if '_lag_ifindex' in _n:
           lag_ifindex = _n._lag_ifindex
