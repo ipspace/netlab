@@ -30,7 +30,7 @@ populate_peerlink_id_set -- Collect any user defined lag.mlag.peergroup values g
 def populate_peerlink_id_set(topology: Box) -> None:
   _dataplane.create_id_set(PEERLINK_ID_SET)
   PEERLINK_IDS = { l[PEERLINK_ID_ATT] for l in topology.links
-                   if isinstance(l.get(PEERLINK_ID_ATT,None),int) }
+                   if not isinstance(l.get(PEERLINK_ID_ATT,False),bool) }
   _dataplane.extend_id_set(PEERLINK_ID_SET,PEERLINK_IDS)
   _dataplane.set_id_counter(PEERLINK_ID_SET,1,256)
 
@@ -329,14 +329,17 @@ def process_lag_links(topology: Box) -> None:
     elif not _types.must_be_list(parent=l.lag,key='members',path=l._linkname,module='lag'):
       continue
 
-    if l.get(PEERLINK_ID_ATT,None):               # Turn internal MLAG links into p2p links
+    peerlink_id = l.get(PEERLINK_ID_ATT,None)      # Turn internal MLAG links into p2p links
+    if peerlink_id:
+      if peerlink_id is True:                      # Auto-assign peerlink ID if requested
+        l[PEERLINK_ID_ATT] = _dataplane.get_next_id(PEERLINK_ID_SET)
       l.type = 'p2p'
-      l.prefix = False                            # L2-only
-      if not create_peer_links(l,topology):       # Check for errors
+      l.prefix = False                             # L2-only
+      if not create_peer_links(l,topology):        # Check for errors
         return
     else:
       l.type = 'lag'
-      if 'ifindex' not in l.lag:                  # Use user provided lag.ifindex, if any
+      if 'ifindex' not in l.lag:                   # Use user provided lag.ifindex, if any
         l.lag.ifindex = _dataplane.get_next_id(ID_SET)
       create_lag_member_links(l,topology)
     topology.links[l.linkindex-1].lag.pop("members",None)
@@ -345,10 +348,6 @@ def process_lag_links(topology: Box) -> None:
 # populate_mlag_peer - Lookup the IPv4 loopback address for the mlag peer, and derive a virtual MAC to use
 #
 def populate_mlag_peer(node: Box, intf: Box, topology: Box) -> None:
-
-  if intf.get(PEERLINK_ID_ATT,0) is True:
-    intf[PEERLINK_ID_ATT] = _dataplane.get_next_id(PEERLINK_ID_SET)         # Auto-assign unique peerlink id
-
   _n = intf.neighbors[0].node
   peer = topology.nodes[_n]
   features = devices.get_device_features(node,topology.defaults)
