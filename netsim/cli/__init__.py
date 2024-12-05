@@ -21,6 +21,7 @@ from ..data import global_vars
 
 DRY_RUN: bool = False
 NETLAB_SCRIPT: str = ''
+NETLAB_COMMAND: str = ''
 
 def parser_add_debug(parser: argparse.ArgumentParser) -> None:
   parser.add_argument('--debug', dest='debug', action='store',nargs='*',
@@ -282,9 +283,9 @@ error_and_exit -- display an error message nicer than log.fatal and exit
 """
 
 def error_and_exit(errmsg: str,**kwargs: typing.Any) -> typing.NoReturn:
-  global NETLAB_SCRIPT
+  global NETLAB_COMMAND
   if 'module' not in kwargs:
-    kwargs['module'] = NETLAB_SCRIPT
+    kwargs['module'] = NETLAB_COMMAND
   if 'category' not in kwargs:
     kwargs['category'] = log.FatalError
 
@@ -314,7 +315,7 @@ quick_commands = {
 }
 
 def lab_commands(script: str) -> None:
-  global NETLAB_SCRIPT
+  global NETLAB_SCRIPT,NETLAB_COMMAND
   NETLAB_SCRIPT = script
 
   if len(sys.argv) < 2:
@@ -336,6 +337,7 @@ def lab_commands(script: str) -> None:
     quick_commands[cmd](sys.argv[arg_start:])
     return
 
+  NETLAB_COMMAND = cmd
   mod_path = os.path.dirname(__file__) + f"/{cmd}.py"
   if not os.path.isfile(mod_path):
     print("Unknown netlab command '%s'\nUse 'netlab usage' to get the list of valid commands" % cmd)
