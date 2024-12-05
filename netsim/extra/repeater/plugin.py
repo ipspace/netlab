@@ -8,9 +8,10 @@ def clone_interfaces(link_data: Box, nodename: str, clones: list[str]) -> list[B
   """
   update_ifindex - update any custom ifindex on the given interface
   """
-  def update_ifindex(intf:Box,c:int) -> Box:
+  def update_ifindex(intf:Box, c:int) -> Box:
     ifindex = intf.get('ifindex',None)
     if ifindex is not None:
+      intf = data.get_box(intf)                                             # Need to make a fresh copy
       intf.ifindex = ifindex + c + 1
     return intf
   
@@ -39,15 +40,18 @@ def update_vlan_access_links(topology: Box, nodename: str, clones: list) -> None
         ifs = clone_interfaces(link_data,nodename,clones)
         vdata.links += ifs
 
-def repeat_node( node: Box, topology: Box ) -> None:
+"""
+repeat_node - Clones a given node N times, creating additional links and/or interfaces for the new nodes
+"""
+def repeat_node(node: Box, topology: Box) -> None:
   count = node.pop('repeat',None)
   clones = []
-  for c in range(2,count+2):      # Existing node is '1'
+  for c in range(2,count+2):                                                # Existing node is '1'
     clone = data.get_box(node)
     clone.name = strings.eval_format(topology.defaults.repeater.node_name_pattern, node + { 'id': c } )
-    clone.interfaces = []         # Start clean, remove reference to original node
+    clone.interfaces = []                                                   # Start clean, remove reference to original node
     if 'id' in node:
-      clone.id = node.id + c      # Update any explicit node ID sequentially
+      clone.id = node.id + c                                                # Update any explicit node ID sequentially
     topology.nodes += { clone.name: clone }
     clones.append( clone.name )
 
