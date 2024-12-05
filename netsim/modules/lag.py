@@ -359,6 +359,8 @@ def populate_mlag_peer(node: Box, intf: Box, topology: Box) -> None:
   for v in ['vlan','ifindex']:
     if v in _mlag_peer:
       intf.lag.mlag[v] = _mlag_peer[v]
+  
+  intf.pop('vlan',None)                                                     # Remove any VLANs provisioned on peerlinks
 
 class LAG(_Module):
 
