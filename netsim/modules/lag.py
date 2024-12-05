@@ -248,7 +248,7 @@ def create_peer_links(l: Box, topology: Box) -> bool:
   """
   check_same_pair - Verifies that the given member connects the same pair of nodes as the first
   """
-  first_pair = []
+  first_pair : list[str] = []
   def check_same_pair(member: Box) -> bool:
     others = { n.node for n in member.interfaces if n.node not in first_pair }
     if others:
