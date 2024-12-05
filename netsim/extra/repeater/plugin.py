@@ -1,6 +1,5 @@
-import typing
 from box import Box
-from netsim import api,data
+from netsim import data
 from netsim.utils import log,strings
 from netsim.augment import links
 
@@ -74,6 +73,9 @@ def repeat_node(node: Box, topology: Box) -> None:
   if 'vlans' in topology:
     update_vlan_access_links(topology,node.name,clones)
 
+"""
+topology_expand - Main plugin function, expands the topology with cloned nodes and interfaces
+"""
 def topology_expand(topology: Box) -> None:
   for node in list(topology.nodes.values()):
     if 'repeat' in node:
