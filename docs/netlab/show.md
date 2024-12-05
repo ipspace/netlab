@@ -324,6 +324,7 @@ The **netlab show modules** command displays available configuration modules and
 
 ```text
 usage: netlab show modules [-h] [--system] [--format {table,text,yaml}] [-m MODULE]
+                           [--feature FEATURE]
 
 Display supported configuration modules
 
@@ -332,8 +333,8 @@ options:
   --system              Display system information (without user defaults)
   --format {table,text,yaml}
                         Output format (table, text, yaml)
-  -m MODULE, --module MODULE
-                        Display information for a single module
+  -m, --module MODULE   Display information for a single module
+  --feature FEATURE     Display information for a single feature of the selected module
 ```
 
 **Examples:** 
@@ -478,6 +479,42 @@ vptx: {}
 vyos:
   asymmetrical_irb: true
   irb: true
+```
+
+* Display devices supporting EVPN asymmetrical IRB:
+
+```text
+$ netlab show modules -m evpn --feature asymmetrical_irb
+Devices supported by the evpn module and their support for the asymmetrical_irb feature
+
+┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┓
+┃ device   ┃ asymmetrical_irb ┃
+┡━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━┩
+│ arubacx  │        x         │
+├──────────┼──────────────────┤
+│ cumulus  │        x         │
+├──────────┼──────────────────┤
+│ dellos10 │        x         │
+├──────────┼──────────────────┤
+│ eos      │        x         │
+├──────────┼──────────────────┤
+│ frr      │        x         │
+├──────────┼──────────────────┤
+│ nxos     │                  │
+├──────────┼──────────────────┤
+│ srlinux  │        x         │
+├──────────┼──────────────────┤
+│ sros     │        x         │
+├──────────┼──────────────────┤
+│ vyos     │        x         │
+└──────────┴──────────────────┘
+
+Notes:
+* All devices listed in the table support evpn configuration module.
+* Some devices might not support any module-specific additional feature
+
+Feature legend:
+* asymmetrical_irb: Support asymmetrical IRB (routing on ingress, bridging on egress)
 ```
 
 * When using the `initial` pseudo-module, the command displays device support for various initial configuration features:

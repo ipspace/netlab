@@ -8,11 +8,17 @@ from box import Box
 
 from ...utils import strings
 from ... import data
+from .. import error_and_exit
 from . import show_common_parser,parser_add_module,DEVICES_TO_SKIP,get_modlist
 
 def parse() -> argparse.ArgumentParser:
   parser = show_common_parser('modules','supported configuration modules')
   parser_add_module(parser)
+  parser.add_argument(
+    '--feature',
+    dest='feature',
+    action='store',
+    help='Display information for a single feature of the selected module')
   return parser
 
 def get_feature_list(features: Box,prefix: str = '') -> list:
@@ -79,10 +85,27 @@ def show(settings: Box, args: argparse.Namespace) -> None:
     mod_list = get_modlist(settings,args)
 
   result = data.get_empty_box()
+
+  if args.feature:
+    if not args.module:
+      error_and_exit('The --feature parameter is only valid with the --module parameter')
+    if args.feature not in settings[args.module].features:
+      error_and_exit(
+        f'Module {args.module} does not have feature {args.feature}',
+        more_hints=f'Use "netlab show defaults {args.module}.features" to display valid device features')
+
+    # Remove all other features from the module feature list to display just the selected feature
+    #
+    f = settings[args.module].features[args.feature]
+    settings[args.module].features = { args.feature: f }
+
   if args.format == 'table':
     if args.module:
       if settings[args.module].features:
-        print(f"Devices and features supported by {args.module} module")
+        if args.feature:
+          print(f"Devices supported by the {args.module} module and their support for the {args.feature} feature")
+        else:
+          print(f"Devices and features supported by {args.module} module")
       else:
         print(f"Devices supported by {args.module} module")
       print("")
@@ -109,6 +132,14 @@ def show(settings: Box, args: argparse.Namespace) -> None:
       if args.module and settings[args.module].features:
         for d in dev_list:
           result[d] = settings.devices[d].features[m]
+
+          # Remove all non-relevant features from device results
+          #
+          if args.feature:
+            if args.feature in result[d]:
+              result[d] = { args.feature: result[d][args.feature] }
+            else:
+              result[d] = {}
       else:
         result[m] = settings[m].dev_list
 
