@@ -144,6 +144,7 @@ OSPF routing daemons support these interface-level features:
 
 * **ospf.reference_bandwidth** sets the OSPF auto-cost reference bandwidth (in Mbps) for all devices in the network.
 * **ospf.bfd.strict** enables RFC9355 BFD Strict-Mode (default: False)
+* **ospf.passive** sets the global default for passive interfaces (default: False)
 
 ## Node Parameters
 
@@ -155,6 +156,7 @@ OSPF routing daemons support these interface-level features:
 * **ospf.bfd** -- enable BFD for OSPF (default: False)
 * **ospf.import** -- [import (redistribute) routes](routing_import) into the global OSPF instance. By default, no routes are redistributed into the global OSPF instance.
 * **ospf.router_id** -- set [static router ID](routing_router_id).
+* **ospf.passive** -- node-level default for passive interfaces (default: False)
 
 You can specify most node parameters as global values (top-level topology elements) or within individual nodes (see [example](#example) for details).
 
