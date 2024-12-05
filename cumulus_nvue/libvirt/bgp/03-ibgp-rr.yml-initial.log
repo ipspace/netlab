@@ -37,8 +37,8 @@ TASK [Find configuration template for initial] *********************************
 ok: [dut]
 ok: [r1]
 ok: [r2]
-ok: [x1]
 ok: [rr2]
+ok: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -457,8 +457,8 @@ TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [dut]
 ok: [r1]
 ok: [r2]
-ok: [rr2]
 ok: [x1]
+ok: [rr2]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for dut
@@ -497,8 +497,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for
 TASK [template] ****************************************************************
 changed: [r2]
 changed: [r1]
-changed: [rr2]
 changed: [x1]
+changed: [rr2]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -507,10 +507,10 @@ ok: [rr2]
 ok: [x1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [rr2]
-changed: [r1]
 changed: [r2]
+changed: [rr2]
 changed: [x1]
+changed: [r1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r1]
@@ -550,6 +550,7 @@ ok: [dut] =>
   msg: |-
     bgp configuration for dut
     =========================================
+  
     - set:
         router:
           bgp:
@@ -569,6 +570,7 @@ ok: [dut] =>
                 autonomous-system: 65000
                 neighbor:
                   10.0.0.2:
+                    description: "rr2"
                     update-source: lo
                     remote-as: internal
                     address-family:
@@ -578,7 +580,10 @@ ok: [dut] =>
                         community-advertise:
                           regular: on
                           extended: on
+                          large: off
+  
                   10.0.0.10:
+                    description: "r1"
                     update-source: lo
                     remote-as: internal
                     address-family:
@@ -589,7 +594,10 @@ ok: [dut] =>
                         community-advertise:
                           regular: on
                           extended: on
+                          large: off
+  
                   10.0.0.3:
+                    description: "r2"
                     update-source: lo
                     remote-as: internal
                     address-family:
@@ -600,13 +608,19 @@ ok: [dut] =>
                         community-advertise:
                           regular: on
                           extended: on
+                          large: off
+  
                   172.16.3.4:
+                    description: "x1"
                     remote-as: 65101
                     address-family:
                       ipv4-unicast:
                         enable: on
                         community-advertise:
                           regular: on
+                          extended: off
+                          large: off
+  
                 router-id: 10.0.0.1
 ok: [r1] => 
   msg: |-
@@ -708,6 +722,41 @@ ok: [r2] =>
     !
     !
     do write
+ok: [x1] => 
+  msg: |-
+    bgp configuration for x1
+    =========================================
+    !
+    router bgp 65101
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 172.42.42.1
+    !
+      neighbor 172.16.3.1 remote-as 65000
+      neighbor 172.16.3.1 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 172.42.42.0/24
+    !
+    !
+    !
+      neighbor 172.16.3.1 activate
+      no neighbor 172.16.3.1 send-community all
+      neighbor 172.16.3.1 send-community standard
+      neighbor 172.16.3.1 send-community large
+    !
+    !
+    !
+    do write
 ok: [rr2] => 
   msg: |-
     bgp configuration for rr2
@@ -771,41 +820,6 @@ ok: [rr2] =>
     !
     !
     do write
-ok: [x1] => 
-  msg: |-
-    bgp configuration for x1
-    =========================================
-    !
-    router bgp 65101
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 172.42.42.1
-    !
-      neighbor 172.16.3.1 remote-as 65000
-      neighbor 172.16.3.1 description dut
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-      network 172.42.42.0/24
-    !
-    !
-    !
-      neighbor 172.16.3.1 activate
-      no neighbor 172.16.3.1 send-community all
-      neighbor 172.16.3.1 send-community standard
-      neighbor 172.16.3.1 send-community large
-    !
-    !
-    !
-    do write
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [dut]
@@ -855,10 +869,10 @@ skipping: [rr2]
 skipping: [x1]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [r1]
-changed: [rr2]
 changed: [r2]
+changed: [r1]
 changed: [x1]
+changed: [rr2]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [dut]
@@ -869,8 +883,8 @@ ok: [x1]
 
 TASK [Find configuration template for ospf] ************************************
 ok: [dut]
-skipping: [x1]
 ok: [r1]
+skipping: [x1]
 ok: [r2]
 ok: [rr2]
 
@@ -1034,9 +1048,9 @@ TASK [execute on cumulus: 'nv config apply -y' for ospf config] ****************
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [rr2]
-changed: [r2]
 changed: [r1]
+changed: [r2]
+changed: [rr2]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
