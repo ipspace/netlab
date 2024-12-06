@@ -68,7 +68,7 @@ def repeat_node(node: Box, topology: Box) -> None:
 
   if 'groups' in topology:
     for group in topology.groups.values():
-      if node.name in group.members:
+      if isinstance(group,Box) and node.name in group.get('members',[]):   # Groups can include 'bool flags too
         group.members.extend( clones )
 
   if 'vlans' in topology:
