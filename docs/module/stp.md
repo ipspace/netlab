@@ -30,6 +30,7 @@ MSTP/RSTP ports fall back to regular STP upon receiving a plain STP BPDU.
 ## Global Parameters
 
 * **stp.protocol** (one of stp, mstp, rstp or pvrst) -- Global STP flavor to run on supporting nodes, default **stp**
+* **stp.host_edge_port** (bool) -- Configure ports with only hosts connected as 'edge' port_type on platforms that support it, default **True**
 
 ## Global, Node, Link, Interface, and VLAN Parameters
 
@@ -42,8 +43,9 @@ You can set the **‌stp.enable** parameter in the **‌vlans** dictionary to en
 ## Node Parameters (global or per VLAN)
 
 * **stp.priority** (int 0..61440 in increments of 1024) -- STP priority for root election, by default, all nodes have equal priority 32656.  In case of equal priority, the bridge with the lowest MAC address becomes root; note that MAC addresses are assigned randomly in Netlab
+* **stp.port_type** (one of 'normal','edge','network') -- STP port type for all interfaces connected to this link
 
 ## Interface Parameters
 
 * **stp.port_priority** (int 0..15) -- STP port priority for selecting between multiple ports; ports are blocked based on priority (lower value = higher priority). The priority is sent over the wire (4 bits) as the most significant part of the port ID; it is used by the node *receiving* it (!) to decide which port(s) to unblock. Note that on many platforms, the value that ends up in the configuration is a multiple (x16) of this attribute
-
+* **stp.port_type** (one of 'normal','edge','network') -- STP port type for this interface, default 'normal'

@@ -4,14 +4,16 @@
 requires: [ vlan ]  # Perhaps not on all platforms
 transform_after: [ vlan ]
 config_after: [ vlan ]
-# no_propagate: [ protocol ]
+no_propagate: [ host_edge_port ]
 
-enable: True        # By default, enable STP everywhere (on all bridges created by Netlab) when this module is used
-protocol: "stp"     # Default to basic 802.1D STP protocol, users may explicitly enable fancier newer flavors
+enable: True           # By default, enable STP on all devices where this module is activated
+protocol: "stp"        # Default to basic 802.1D STP protocol, users may explicitly enable fancier newer flavors
+host_edge_port: True   # Whether to auto-configure port_type as 'edge' for ports with only hosts connected, default True
 
 attributes:
   global:
     enable: bool
+    host_edge_port: bool
     protocol: { type: str, valid_values: [ stp, rstp, mstp, pvrst ] }
     # mstp = IEEE 802.1s, pvrst = Per-VLAN Rapid Spanning Tree (802.1w)
   node:
@@ -23,11 +25,13 @@ attributes:
   link:
     enable:
       copy: global
+    port_type: { type: str, valid_values: [ normal, edge, network ] } # Apply this port_type to all connected interfaces
 
   intf_to_neighbor: False # By default, do not include STP attributes in neighbors
   interface:
     enable: bool
-    port_priority: { type: int, min_value: 0, max_value: 15 }  # 4-bit value, default '8' if not set
+    port_priority: { type: int, min_value: 0, max_value: 15 }         # 4-bit value, default '8' if not set
+    port_type: { type: str, valid_values: [ normal, edge, network ] }
 
 _top:               # Modification of global defaults
   attributes:
