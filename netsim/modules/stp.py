@@ -65,7 +65,7 @@ class STP(_Module):
             f'node {node.name} (device {node.device}) does not support configuration of STP port_type on ({intf.ifname})',
             log.IncorrectValue,
             'stp')
-      if set_host_edge_port:
+      if set_host_edge_port and not intf.get('stp.port_type',None):
         configure_host_edge_port(intf,topology)
       
     # Check if per-VLAN priority is being used
