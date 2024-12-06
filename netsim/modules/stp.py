@@ -55,12 +55,12 @@ class STP(_Module):
             f'node {node.name}: Cannot apply STP to L3 interface ({intf.ifname})',
             log.IncorrectAttr,
             'stp')
-        elif 'enable' in intf.stp and not features.get('stp.enable_per_port',False):
+        if 'enable' in intf.stp and not features.get('stp.enable_per_port',False):
           log.error(
             f'node {node.name} (device {node.device}) does not support enabling/disabling STP only on a specific port ({intf.ifname})',
             log.IncorrectValue,
             'stp')
-        elif 'port_type' in intf.stp and not features.get('stp.port_type',False):
+        if 'port_type' in intf.stp and not features.get('stp.port_type',False):
           log.error(
             f'node {node.name} (device {node.device}) does not support configuration of STP port_type on ({intf.ifname})',
             log.IncorrectValue,
