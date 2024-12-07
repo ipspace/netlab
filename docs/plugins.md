@@ -14,6 +14,7 @@
    plugins/check.config.md
    plugins/fabric.md
    plugins/multilab.md
+   plugins/node.clone.md
    plugins/vrrp.version.md
 ```
 
