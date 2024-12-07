@@ -58,11 +58,11 @@ def clone_node(node: Box, topology: Box) -> None:
   name_format = topology.defaults.clone.node_name_pattern
 
   orig_name = node.name
-  node.name = strings.eval_format(name_format, node + { 'id': 1 } )          # Rename first node as clone_01
+  node.name = strings.eval_format(name_format, node + { 'id': _p.start } )  # Rename first node as clone_01
   topology.nodes += { node.name: node }
 
   clones = [ node.name ]
-  for c in range(_p.start+1,_p.start+_p.count+2,_p.step):                   # Existing node is '1'
+  for c in range(_p.start+_p.step,_p.start+_p.count*_p.step,_p.step):       # Existing node is '1'
     clone = data.get_box(node)
     clone.name = strings.eval_format(name_format, node + { 'id': c, 'name': orig_name } )
     clone.interfaces = []                                                   # Start clean, remove reference to original node
