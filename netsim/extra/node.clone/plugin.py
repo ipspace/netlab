@@ -58,13 +58,13 @@ def clone_node(node: Box, topology: Box) -> None:
   name_format = topology.defaults.clone.node_name_pattern
 
   orig_name = node.name
-  new_name = strings.eval_format(name_format, node + { 'id': 1 } )          # Rename first node as clone_01
-  topology.nodes += { new_name: node }
+  node.name = strings.eval_format(name_format, node + { 'id': 1 } )          # Rename first node as clone_01
+  topology.nodes += { node.name: node }
 
   clones = [ node.name ]
   for c in range(_p.start+1,_p.start+_p.count+2,_p.step):                   # Existing node is '1'
     clone = data.get_box(node)
-    clone.name = strings.eval_format(name_format, node + { 'id': c } )
+    clone.name = strings.eval_format(name_format, node + { 'id': c, 'name': orig_name } )
     clone.interfaces = []                                                   # Start clean, remove reference to original node
     if 'id' in node:
       clone.id = node.id + c - 1                                            # Update any explicit node ID sequentially
@@ -98,7 +98,6 @@ def clone_node(node: Box, topology: Box) -> None:
   if 'vrfs' in topology:
     update_links(topology.vrfs,orig_name,clones,topology)
 
-  node.name = new_name
   topology.nodes.pop(orig_name,None)                                        # Finally
 
 """
