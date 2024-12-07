@@ -29,11 +29,10 @@ The plugin adds the following node attributes:
 
 ### Caveats
 
-The plugin does not yet support:
+The plugin does not support:
 * *lag* module links
 * link groups
-* VRF links
-* components
+* cloning of components (nodes composed of multiple nodes)
 
 ## Examples
 

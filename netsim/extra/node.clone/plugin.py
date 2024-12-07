@@ -19,8 +19,11 @@ def clone_interfaces(link_data: Box, nodename: str, clones: list[str]) -> list[B
       ifs.append(l)
   return ifs
 
-def update_vlan_access_links(topology: Box, nodename: str, clones: list) -> None:
-  for vname,vdata in topology.vlans.items():                                # Iterate over global VLANs
+"""
+update_links - updates 'links' lists in VLAN and VRF objects
+"""
+def update_links(topo_items: Box, nodename: str, clones: list, topology: Box) -> None:
+  for vname,vdata in topo_items.items():                                    # Iterate over global VLANs or VRFs
     if not isinstance(vdata,Box):                                           # VLAN not yet a dictionary?
       continue                                                              # ... no problem, skip it
     if not 'links' in vdata:                                                # No VLAN links?
@@ -44,6 +47,11 @@ def clone_node(node: Box, topology: Box) -> None:
   _p = { 'start': 1, 'step': 1 } + node.pop('clone',{})                      # Define cloning parameters
   if 'count' not in _p:
     log.error("Node {node.name} missing required attribute clone.count",     # Not validated by Netlab yet
+              category=AttributeError, module='node.clone')
+    return
+
+  if 'include' in node:                                                      # Check for components
+    log.error("Cannot clone component {node.name}, only elementary nodes",
               category=AttributeError, module='node.clone')
     return
 
@@ -85,8 +93,11 @@ def clone_node(node: Box, topology: Box) -> None:
         gdata.members.extend( clones )
 
   if 'vlans' in topology:
-    update_vlan_access_links(topology,orig_name,clones)  
-  
+    update_links(topology.vlans,orig_name,clones,topology)
+
+  if 'vrfs' in topology:
+    update_links(topology.vrfs,orig_name,clones,topology)
+
   topology.nodes.pop(orig_name,None)                                        # Finally
 
 """
