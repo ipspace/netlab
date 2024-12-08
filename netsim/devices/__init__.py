@@ -153,7 +153,7 @@ def report_quirk(text: str, node: Box, quirk: str, **kwargs: typing.Any) -> None
     q_state = topology.get(q_path,True)
     if not q_state:
       return
-  
+
   # Add the 'this is how you disable this quirk' hint
   #
   q_hint = f'Set {q_path} to False to disable this check'
