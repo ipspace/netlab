@@ -64,9 +64,20 @@ if systemctl is-active --quiet lldpd.service; then
 else
   if "$NEED_APT_UPDATE"; then
     apt-get update -qq
+    NEED_APT_UPDATE=
   fi
   apt-get install -qq lldpd
 fi
+
+{% if 'lag' in module|default([]) %}
+#
+# Install ethtool for lag support
+#
+if "$NEED_APT_UPDATE"; then
+    apt-get update -qq
+fi
+apt-get install -qq ethtool
+{% endif %}
 
 cat <<CONFIG >/etc/lldpd.d/system.conf
 configure lldp tx-interval 30

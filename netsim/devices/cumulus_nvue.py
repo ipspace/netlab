@@ -73,7 +73,7 @@ class Cumulus_Nvue(_Quirks):
     # NVUE specific quirks
     if 'stp' in mods:
       nvue_check_stp_features(node,topology)
-    
+
     if 'vrf' in mods:
       nvue_check_vrf_route_leaking(node)
 
