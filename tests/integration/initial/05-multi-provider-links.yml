@@ -1,0 +1,64 @@
+---
+message: |
+  This scenario tests all possible multi-provider link scenarios. There are 4 main cases:
+  1. Libvirt-libvirt => P2P UDP tunnel
+  2. Clab-clab => P2P veth pair
+  3. Libvirt-Clab => (NEW) tap interface connected to macvlan device from Clab
+  4. 3 nodes or more => Linux bridge (slight variation in who creates it: all Clab->Clab, else Libvirt)
+
+  The reason for introducing a new multi-provider interconnect construct, is that a Linux bridge (as currently used) blocks STP and LACP
+
+provider: libvirt
+
+module: [ ospf ]       # Use OSPF to distribute loopback routes
+
+groups:
+  _auto_create: True
+
+  libvirt:
+    members: [libvirt-a,libvirt-b]
+    device: cumulus
+
+  clab:
+    members: [clab-a,clab-b]
+    device: frr
+    provider: clab
+
+links: 
+- libvirt-a:
+  libvirt-b:           # libvirt-libvirt: p2p tunnel
+- clab-a:
+  clab-b:              # clab-clab: veth pair
+- libvirt-a:
+  clab-a:              # libvirt-clab p2p: macvlan to tap interface, bridge deleted after Vagrant creates it
+- libvirt-b:           # 3-node LAN: Linux bridge created by libvirt, external to clab in this case
+  clab-a:
+  clab-b:
+
+validate:
+ ospf_adj:
+    description: Check OSPF adjacencies
+    wait_msg: Waiting for OSPF adjacency process to complete
+    wait: 30
+    nodes: [ clab-a, clab-b ]
+    plugin: ospf_neighbor(nodes['libvirt-b'].ospf.router_id)
+
+ ping_libv_libv:
+    description: IPv4 ping libvirt-a => libvirt-b on loopback, depends on OSPF
+    nodes: [ libvirt-a ]
+    plugin: ping('libvirt-b')
+
+ ping_clab_clab:
+    description: IPv4 ping clab-a => clab-b on loopback, depends on OSPF
+    nodes: [ clab-a ]
+    plugin: ping('clab-b')
+
+ ping_libv_clab:
+    description: IPv4 ping libvirt-a => clab-a on loopback, depends on OSPF
+    nodes: [ libvirt-a ]
+    plugin: ping('clab-a')
+
+ ping_clab_lan_bridge:
+    description: IPv4 ping clab-a/b => libvirt-b on loopback, depends on OSPF
+    nodes: [ clab-a, clab-b ]
+    plugin: ping('libvirt-b')
