@@ -106,7 +106,7 @@ def normalized_members(l: Box, topology: Box, peerlink: bool = False) -> list:
 """
 verify_lag_ifindex - check that selected lag.ifindex does not overlap with any reserved values
 """
-def verify_lag_ifindex(intf: Box, topology: Box) -> bool:
+def verify_lag_ifindex(intf: Box, linkname: str, topology: Box) -> bool:
   lag_ifindex = intf.get('lag.ifindex',None)
   if lag_ifindex is None:
     return True
@@ -114,7 +114,7 @@ def verify_lag_ifindex(intf: Box, topology: Box) -> bool:
   features = devices.get_device_features(_n,topology.defaults)
   if 'reserved_ifindex_range' in features.lag:                            # Exclude any reserved port channel IDs
     if lag_ifindex in features.lag.reserved_ifindex_range:
-      log.error(f'Selected lag.ifindex({lag_ifindex}) for {l._linkname} overlaps with device specific reserved range ' +
+      log.error(f'Selected lag.ifindex({lag_ifindex}) for {linkname} overlaps with device specific reserved range ' +
                 f'{features.lag.reserved_ifindex_range} for node {_n.name} ({_n.device})',
         category=log.IncorrectValue,
         module='lag')
@@ -195,7 +195,7 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
         ifatts = ifatts + { k:v for k,v in m.items() if k not in skip_atts }
         if dual_mlag:
           ifatts._peer = [ i.node for i in m.interfaces if i.node!=node ][0]
-    if not verify_lag_ifindex(ifatts,topology):
+    if not verify_lag_ifindex(ifatts,l._linkname,topology):
       return
     if node==one_side:
       if not check_lag_config(node,l._linkname,topology):
@@ -269,7 +269,7 @@ def create_peer_links(l: Box, topology: Box) -> bool:
         return False
       for node in first_pair:
         if not check_mlag_support(node,l._linkname,topology):
-          return
+          return False
       if log.debug_active('lag'):
         print(f'LAG create_peer_links -> updated first link {l} from {member} -> {topology.links[l.linkindex-1]}')
     else:
