@@ -1,6 +1,25 @@
 echo -n 'Starting initial config ' && date
 
+# Set persistent hostname
+hostnamectl set-hostname {{ inventory_hostname }}
+
+# Update APT and install netplan
+apt-get update -qq
+apt-get install -qq nplan
+
 # (Overwrite resolved config to remove DNS stuff)
+cat <<SCRIPT >/etc/netplan/01-netcfg.yaml
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    eth0:
+      dhcp4: true
+      dhcp6: false
+      optional: true
+SCRIPT
+netplan apply
+
 # cat <<SCRIPT > /etc/systemd/resolved.conf 
 # [Resolve]
 # DNS=
@@ -11,13 +30,6 @@ echo -n 'Starting initial config ' && date
 # DNSStubListener=yes
 # SCRIPT
 # systemctl restart systemd-resolved
-
-# Set persistent hostname
-hostnamectl set-hostname {{ inventory_hostname }}
-
-# Update APT and install netplan
-apt-get update -qq
-apt-get install -qq nplan
 
 {% if netlab_net_tools|default(False) %}
 #
@@ -72,7 +84,7 @@ net.ipv6.conf.{{ l.ifname }}.disable_ipv6=0
 SCRIPT
 sysctl -p /etc/sysctl.d/10-netsim.conf
 
-# Loopback addressing, JvB commented out
+# Loopback addressing
 {% if loopback.ipv4 is defined or loopback.ipv6 is defined %}
 cat <<SCRIPT > /etc/netplan/02-loopback.yaml
 network:
