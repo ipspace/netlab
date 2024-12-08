@@ -1,3 +1,5 @@
+{% from "lag/linux.j2" import create_bond_dev with context %}
+
 ### One-Shot configuration (non-Ubuntu VM or container)
 #
 # Disable IPv4 and IPv6 forwarding
@@ -24,9 +26,12 @@ ip -6 addr add {{ loopback.ipv6 }} dev lo
 {%   endif %}
 {% endif %}
 #
-# Interface addressing
+# Interface addressing, create any bond devices
 #
 {% for l in interfaces|default([]) %}
+{%   if l.type=='lag' %}
+{{     create_bond_dev(l) }}
+{%   endif %}
 ip link set dev {{ l.ifname }} up
 {% if l.ipv4 is defined %}
 set +e
@@ -41,7 +46,7 @@ ip -6 addr del {{ l.ipv6 }} dev {{ l.ifname }} 2>/dev/null
 set -e
 ip -6 addr add {{ l.ipv6 }} dev {{ l.ifname }}
 {% endif %}
-{% if l.mtu is defined %}
+{% if l.mtu is defined and l.type!='lag' %}
 ip link set {{ l.ifname }} mtu {{ l.mtu }}
 {% endif %}
 {% endfor %}
