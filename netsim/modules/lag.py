@@ -95,13 +95,10 @@ def normalized_members(l: Box, topology: Box, peerlink: bool = False) -> list:
                 module='lag')
       return []
     if member.interfaces[0].node==member.interfaces[1].node:
-      log.error(f'Link {member._linkname} in LAG {l.lag.ifindex} must have exactly 2 different nodes',
+      log.error(f'Link {member._linkname} in LAG {l.lag.ifindex} cannot connect a node to itself',
                 category=log.IncorrectValue,
                 module='lag')
       return []
-    for i in member.interfaces:                     # Check that they all support LAG
-      if not check_lag_config(i.node,member._linkname,topology):
-        return []
     members.append(member)
   return members
 
@@ -210,6 +207,8 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
     if not verify_lag_ifindex(ifatts):
       return
     if node==one_side:
+      if not check_lag_config(node,l._linkname,topology):
+        return
       if 'ifindex' not in ifatts.get('lag',{}):   # assign lag.ifindex if not provided
         _n = topology.nodes[node]
         if '_lag_ifindex' in _n:
@@ -219,6 +218,9 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
         _n._lag_ifindex = lag_ifindex + 1         # Track next ifindex to assign, per node
         ifatts.lag.ifindex = lag_ifindex          # In time to derive interface name from it
     elif is_mlag:
+      lag_mode = l.get('lag.mode',topology.get('lag.mode',"802.3ad"))
+      if lag_mode == "active-backup":             # Exception: active-backup lag to 2 nodes
+        continue                                  # Skip adding the lag interface on M-side
       if not check_mlag_support(node,l._linkname,topology):
         return
       ifatts.lag._mlag = True                     # Set internal flag
