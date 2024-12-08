@@ -103,7 +103,9 @@ def ssh_connect(
   if data.netlab_ssh_args:
     c_args.extend(data.netlab_ssh_args.split(' '))
 
-  if data.ansible_ssh_pass:
+  if data.ansible_ssh_private_key_file:
+    c_args.extend(['-i', strings.eval_format(data.ansible_ssh_private_key_file,{'name': data.host})])
+  elif data.ansible_ssh_pass:
     c_args = ['sshpass','-p',data.ansible_ssh_pass ] + c_args
 
   if data.ansible_port:
