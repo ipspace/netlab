@@ -4,16 +4,16 @@
 requires: [ vlan ]  # Perhaps not on all platforms
 transform_after: [ vlan ]
 config_after: [ vlan ]
-no_propagate: [ host_edge_port ]
+no_propagate: [ stub_port_type ]
 
 enable: True           # By default, enable STP on all devices where this module is activated
 protocol: "stp"        # Default to basic 802.1D STP protocol, users may explicitly enable fancier newer flavors
-host_edge_port: True   # Whether to auto-configure port_type as 'edge' for ports with only hosts connected, default True
+stub_port_type: "edge" # Port type to configure on ports with only hosts connected, default 'edge'
 
 attributes:
   global:
     enable: bool
-    host_edge_port: bool
+    stub_port_type: { type: str, valid_values: [ 'normal', 'edge', 'network', 'auto', 'none' ] }
     protocol: { type: str, valid_values: [ stp, rstp, mstp, pvrst ] }
     # mstp = IEEE 802.1s, pvrst = Per-VLAN Rapid Spanning Tree (802.1w)
   node:
@@ -25,13 +25,13 @@ attributes:
   link:
     enable:
       copy: global
-    port_type: { type: str, valid_values: [ normal, edge, network ] } # Apply this port_type to all connected interfaces
+    port_type: { type: str, valid_values: [ normal, edge, network, auto ] } # Apply this port_type to all connected interfaces
 
   intf_to_neighbor: False # By default, do not include STP attributes in neighbors
   interface:
     enable: bool
     port_priority: { type: int, min_value: 0, max_value: 15 }         # 4-bit value, default '8' if not set
-    port_type: { type: str, valid_values: [ normal, edge, network ] }
+    port_type: { type: str, valid_values: [ normal, edge, network, auto ] }
 
 _top:               # Modification of global defaults
   attributes:
