@@ -18,10 +18,10 @@ from ..data import global_vars,append_to_list
 
 forwarded_port_name = { 'ssh': 'ansible_port', }
 
-def copy_provider_inventory(host: Box, p_data: Box) -> None:
+def copy_provider_inventory(host: Box, p_data: Box, node: Box) -> None:
   if 'inventory' in p_data:
     for k,v in p_data.inventory.items():
-      host[k] = v
+      host[k] = strings.eval_format(v,node)
 
   if 'inventory_port_map' in p_data and 'forwarded' in p_data:
     for k,v in p_data.inventory_port_map.items():
@@ -42,7 +42,7 @@ def provider_inventory_settings(host: Box, node: Box, topology: Box) -> None:
   node_provider = devices.get_provider(node,topology)
   p_data = defaults.providers[node_provider]
   if p_data:
-    copy_provider_inventory(host,p_data)
+    copy_provider_inventory(host,p_data,node)
 
   if 'provider' in node:                                              # Is the node using a secondary provider?
     copy_device_provider_group_vars(host,node,topology)
