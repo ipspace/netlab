@@ -43,7 +43,8 @@ def adjust_inventory_host(
   host = get_empty_box()
 
   translate = translate or topo_to_host
-  ignore = ignore or topo_to_host_skip
+  if ignore is None:
+    ignore = topo_to_host_skip
 
   if group_vars:
     add_group_vars(host,node,defaults)
@@ -63,3 +64,12 @@ def adjust_inventory_host(
   provider_inventory_settings(host,defaults)
   return host
 
+def create_adjusted_topology(topology: Box, ignore: typing.Optional[list] = ['name']) -> Box:
+  topo_copy = topology.copy()
+  for node in list(topo_copy.nodes.keys()):
+    topo_copy.nodes[node] = adjust_inventory_host(
+                              node=topo_copy.nodes[node],
+                              defaults=topology.defaults,
+                              ignore=ignore,
+                              group_vars=True)
+  return topo_copy

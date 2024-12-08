@@ -51,12 +51,8 @@ def run(cli_args: typing.List[str]) -> None:
   if args.node:
     topology = _nodeset.get_nodeset(topology,_nodeset.parse_nodeset(args.node,topology))
 
-  for n in list(topology.nodes.keys()):                     # Add group variables to topology nodes
-    topology.nodes[n] = outputs_common.adjust_inventory_host(
-                          node=topology.nodes[n],
-                          ignore=[ 'no-fields' ],
-                          defaults=topology.defaults,
-                          group_vars=True)
+  # Add group variables to topology nodes
+  topology = outputs_common.create_adjusted_topology(topology,ignore=[])
 
   report_module.write(topology)
   if args.output:

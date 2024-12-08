@@ -8,9 +8,8 @@ import sys
 from box import Box
 from pathlib import Path
 
-from . import _TopologyOutput,check_writeable
+from . import _TopologyOutput,check_writeable,common as outputs_common
 from ..tools import _ToolOutput
-from .common import adjust_inventory_host
 from ..utils import templates,strings,log
 from ..utils import files as _files
 
@@ -76,12 +75,6 @@ class ToolConfigs(_TopologyOutput):
       log.error('Tools output module does not accept extra parameters')
 
     check_writeable('tools')
-    topo_copy = topology.copy()
-    for node in list(topo_copy.nodes.keys()):
-      topo_copy.nodes[node] = adjust_inventory_host(
-                                node=topo_copy.nodes[node],
-                                defaults=topology.defaults,
-                                ignore=[ 'name' ],
-                                group_vars=True)
+    topo_copy = outputs_common.create_adjusted_topology(topology, ignore=['name'])
     for tool in topo_copy.tools.keys():
       create_tool_config(tool,topo_copy)
