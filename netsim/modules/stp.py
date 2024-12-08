@@ -9,9 +9,9 @@ from ..utils import log
 from . import _Module
 
 """
-configure_host_edge_port - for a L2 interface where all devices connected are hosts, sets the stp.port_type as 'edge'
+configure_stub_port_type - for a L2 interface where all devices connected are hosts, sets the stp.port_type as <stub_port_type>
 """
-def configure_host_edge_port(intf: Box, topology: Box) -> None:
+def configure_stub_port_type(intf: Box, stub_port_type: str, topology: Box) -> None:
   if not (intf.get('neighbors',[]) or intf.get('_vlan_saved_neighbors',[])): # Skip interfaces with no neighbors
     return
   if 'ipv4' in intf or 'ipv6' in intf:                                       # Skip IP interfaces
@@ -22,7 +22,7 @@ def configure_host_edge_port(intf: Box, topology: Box) -> None:
     neighbor = topology.nodes[n.node]
     if neighbor.get('role',None) != 'host':
       return
-  intf.stp.port_type = 'edge'                                                # All neighbors are hosts
+  intf.stp.port_type = stub_port_type                                        # All neighbors are hosts
 
 class STP(_Module):
 
@@ -47,7 +47,7 @@ class STP(_Module):
             log.IncorrectValue,
             'stp')
 
-    set_host_edge_port = topology.get('stp.host_edge_port',True) and features.get('stp.port_type',False)
+    stub_port_type = topology.get('stp.stub_port_type','edge') if features.get('stp.port_type',False) else 'none'
     for intf in node.get('interfaces',[]):
       if 'stp' in intf:
         if 'ipv4' in intf or 'ipv6' in intf:
@@ -65,8 +65,8 @@ class STP(_Module):
             f'node {node.name} (device {node.device}) does not support configuration of STP port_type on ({intf.ifname})',
             log.IncorrectValue,
             'stp')
-      if set_host_edge_port and not intf.get('stp.port_type',None):
-        configure_host_edge_port(intf,topology)
+      if stub_port_type != 'none' and not intf.get('stp.port_type',None):
+        configure_stub_port_type(intf,stub_port_type,topology)
       
     # Check if per-VLAN priority is being used
     for vname,vdata in node.get('vlans',{}).items():
