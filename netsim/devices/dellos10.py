@@ -36,7 +36,7 @@ def check_anycast_gateways(node: Box) -> None:
   for intf in node.get('interfaces',[]):
     if intf.type != 'svi' and intf.get('gateway.anycast',None):
       err_data.append(f'Interface {intf.ifname}')
-
+  
   if err_data:
     report_quirk(
       f'Dell OS10 (node {node.name}) does not support anycast on non-SVI interfaces',
@@ -51,7 +51,7 @@ class OS10(_Quirks):
     check_vlan_ospf(node,node.interfaces,'default')
     for vname,vdata in node.get('vrfs',{}).items():
       check_vlan_ospf(node,vdata.get('ospf.interfaces',[]),vname)
-
+    
     if 'gateway' in node.get('module',[]) and 'anycast' in node.get('gateway',{}):
       check_anycast_gateways(node)
 
