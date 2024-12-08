@@ -84,7 +84,8 @@ def normalized_members(l: Box, topology: Box, peerlink: bool = False) -> list:
   for idx,member in enumerate(l.lag.members):
     member = links.adjust_link_object(member,f'{l._linkname}.{_name}[{idx+1}]',topology.nodes)
     if 'lag' in member:                             # Catch potential sources for inconsistency
-      if peerlink or ('ifindex' not in member.lag): # ...but allow for custom bond numbering
+      lag_atts = len(member.lag) - (1 if 'ifindex' in member.lag else 0)
+      if peerlink or (lag_atts>0):                  # ...but allow for custom bond numbering
         log.error(f'LAG attributes must be configured on the link, not member interface {member._linkname}: {member.lag}',
                   category=log.IncorrectAttr,
                   module='lag')
@@ -103,35 +104,48 @@ def normalized_members(l: Box, topology: Box, peerlink: bool = False) -> list:
   return members
 
 """
+verify_lag_ifindex - check that selected lag.ifindex does not overlap with any reserved values
+"""
+def verify_lag_ifindex(intf: Box, topology: Box) -> bool:
+  lag_ifindex = intf.get('lag.ifindex',None)
+  if lag_ifindex is None:
+    return True
+  _n = topology.nodes[intf.node]
+  features = devices.get_device_features(_n,topology.defaults)
+  if 'reserved_ifindex_range' in features.lag:                            # Exclude any reserved port channel IDs
+    if lag_ifindex in features.lag.reserved_ifindex_range:
+      log.error(f'Selected lag.ifindex({lag_ifindex}) for {l._linkname} overlaps with device specific reserved range ' +
+                f'{features.lag.reserved_ifindex_range} for node {_n.name} ({_n.device})',
+        category=log.IncorrectValue,
+        module='lag')
+      return False
+  return True
+
+"""
+split_dual_mlag_link - Split dual-mlag pairs into 2 lag link groups, returns the new link
+"""
+def split_dual_mlag_link(link: Box, topology: Box) -> Box:
+  def no_peer(i: Box) -> Box:
+    i.pop('_peer',None)                                  # Remove internal _peer attribute
+    return i    
+      
+  split_copy = data.get_box(link)                        # Make a copy
+  split_copy.linkindex = len(topology.links)+1           # Update its link index
+  split_copy._linkname = split_copy._linkname + "-2"     # Assign unique name
+  split_copy.lag.pop('members',None)                     # Clean up members
+  first_pair = ( link.interfaces[0].node, link.interfaces[0]._peer )
+  split_copy.interfaces = [ no_peer(i) for i in link.interfaces if i.node in first_pair ]
+  topology.links[link.linkindex-1].interfaces = [ no_peer(i) for i in link.interfaces if i.node not in first_pair ]
+  if log.debug_active('lag'):
+    print(f'LAG split_dual_mlag_links -> adding split link {split_copy}')
+    print(f'LAG split_dual_mlag_links -> remaining link {topology.links[link.linkindex-1]}')
+  topology.links.append(split_copy)
+  return split_copy
+
+"""
 create_lag_member_links -- expand lag.members for link l and create physical p2p links
 """
 def create_lag_member_links(l: Box, topology: Box) -> None:
-  # is_mlag = l.get('lag.mlag',False) is True                               # Check for mlag bool flag
-  # if is_mlag:
-  #   if len(l.lag.members)<2:                                              # In case of MLAG, check there are at least 2 members
-  #     log.error(f'MLAG {l._linkname} must have at least 2 member links',
-  #       category=log.IncorrectAttr,
-  #       module='lag')
-  #     return
-  #   l.pop('lag.mlag',None)                                                # Remove from link, put it on M-side interfaces only
-
-  """
-  verify_lag_ifindex - check that selected lag.ifindex does not overlap with any reserved values
-  """
-  def verify_lag_ifindex(intf: Box) -> bool:
-    lag_ifindex = intf.get('lag.ifindex',None)
-    if lag_ifindex is None:
-      return True
-    _n = topology.nodes[intf.node]
-    features = devices.get_device_features(_n,topology.defaults)
-    if 'reserved_ifindex_range' in features.lag:                            # Exclude any reserved port channel IDs
-      if lag_ifindex in features.lag.reserved_ifindex_range:
-        log.error(f'Selected lag.ifindex({lag_ifindex}) for {l._linkname} overlaps with device specific reserved range ' +
-                  f'{features.lag.reserved_ifindex_range} for node {_n.name} ({_n.device})',
-          category=log.IncorrectValue,
-          module='lag')
-        return False
-    return True
 
   """
   analyze_lag - figure out which type of LAG we're dealing with:
@@ -164,29 +178,6 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
               module='lag')
     return (False,False,"<error>")
 
-  """
-  split_dual_mlag_link - Split dual-mlag pairs into 2 lag link groups, returns the new link
-  """
-  def split_dual_mlag_link() -> Box:
-
-    def no_peer(i: Box) -> Box:
-      i.pop('_peer',None)                                  # Remove internal _peer attribute
-      return i    
-        
-    split_copy = data.get_box(l)                           # Make a copy
-    split_copy.linkindex = len(topology.links)+1           # Update its link index
-    split_copy._linkname = split_copy._linkname + "-2"     # Assign unique name
-    split_copy.lag.pop('members',None)                     # Clean up members
-    first_pair = ( l.interfaces[0].node, l.interfaces[0]._peer )
-    split_copy.interfaces = [ no_peer(i) for i in l.interfaces if i.node in first_pair ]
-    topology.links[l.linkindex-1].interfaces = [ no_peer(i) for i in l.interfaces if i.node not in first_pair ]
-
-    if log.debug_active('lag'):
-      print(f'LAG split_dual_mlag_links -> adding split link {split_copy}')
-      print(f'LAG split_dual_mlag_links -> remaining link {topology.links[l.linkindex-1]}')
-    topology.links.append(split_copy)
-    return split_copy
-
   members = normalized_members(l,topology)        # Build list of normalized member links
   if not members:
     return
@@ -204,7 +195,7 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
         ifatts = ifatts + { k:v for k,v in m.items() if k not in skip_atts }
         if dual_mlag:
           ifatts._peer = [ i.node for i in m.interfaces if i.node!=node ][0]
-    if not verify_lag_ifindex(ifatts):
+    if not verify_lag_ifindex(ifatts,topology):
       return
     if node==one_side:
       if not check_lag_config(node,l._linkname,topology):
@@ -229,7 +220,7 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
       print(f'LAG create_lag_member_links for node {node} -> collected ifatts {ifatts}')
     l.interfaces.append( ifatts )
 
-  _sl = split_dual_mlag_link() if dual_mlag else None
+  _sl = split_dual_mlag_link(l,topology) if dual_mlag else None
   split_nodes = [ i.node for i in _sl.interfaces ] if _sl else []
 
   l2_ifdata = create_l2_link_base(l,topology)
@@ -276,6 +267,9 @@ def create_peer_links(l: Box, topology: Box) -> bool:
           category=log.IncorrectValue,
           module='lag')
         return False
+      for node in first_pair:
+        if not check_mlag_support(node,l._linkname,topology):
+          return
       if log.debug_active('lag'):
         print(f'LAG create_peer_links -> updated first link {l} from {member} -> {topology.links[l.linkindex-1]}')
     else:
@@ -386,15 +380,13 @@ class LAG(_Module):
         if lacp_mode=='passive' and not features.lag.get('passive',False):
           log.error(f'Node {node.name} does not support passive LACP configured on interface {i.ifname}',
             category=log.IncorrectAttr,
-            module='lag',
-            hint='passive LACP')
+            module='lag')
         if i.lag.get('mlag',False) is True:
           uses_mlag = True
     
     if uses_mlag and not has_peerlink:
       log.error(f'Node {node.name} uses MLAG but has no peerlink (lag with {PEERLINK_ID_ATT}) configured',
         category=log.IncorrectAttr,
-        module='lag',
-        hint='mlag peerlink')
+        module='lag')
 
     node.pop('_lag_ifindex',None)           # Cleanup
