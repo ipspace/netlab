@@ -9,6 +9,14 @@ NSO is a tool for multi vendor network automation. See https://cisco-tailf.gitbo
 tools:
   nso:
 ```
+* You need to extract the docker image and load and tag it in docker, when you use a new version you must also update the docker tag. See the commands below.
+
+```
+sh nso-6.4-freetrial.container-image-prod.linux.x86_64.signed.bin
+docker load -i nso-6.4.container-image-prod.linux.x86_64.tar.gz
+docker tag cisco-nso-prod:6.4 cisco-nso-prod
+```
+
 * The URL used to connect to NSO is printed during **netlab up** process. 
 * You can connect to the cli with the **netlab connect nso** command. You can edit the NSO configs this way and access the cisco NSO cli with the following command ncs_cli -C -u admin. Config changes need NSO reloaded with the ncs --reload command.
 * You need to download the docker container and any NEDs from https://software.cisco.com/download/home/286331591/type. You can also use NEDs from 3rd parties or make your own. The download is a 90 Day trial you can also provide your own docker image or add a license following the cisco documentation.
