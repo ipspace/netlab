@@ -69,10 +69,15 @@ links:
 ## Multi-chassis Link Aggregation (MLAG)
 
 For platforms that support it, link level redundancy can be provided by creating multiple links to different switches. The switches have an internal *peer link* to synchronize state related to the link aggregation, allowing them to present a single consistent network interface to the connected system.
+![image](lag-topologies.png)
+
+The above diagram illustrates the 3 supported topologies:
+* 1:1 lag between 2 nodes
+* 1:2 mlag between 1 node and a pair of 2 nodes interconnected through one or more peerlinks (3 nodes in total)
+* 2:2 dual mlag between 2 pairs of nodes (4 nodes in total)
 
 MLAG related parameters:
-* **lag.mlag**: Boolean flag set on *lag* links that form a 1:M multi-chassis lag
-* **lag.mlag.peergroup**: Used on peerlink to configure the group ID for the set - typically pair - of switches providing the MLAG
+* **lag.mlag.peerlink**: Used on peerlink to configure a unique ID for the pair of switches providing the MLAG. Can be set to *True* for auto-id generation, or an integer (that must be globally unique)
 
 A simple example:
 ```
@@ -83,17 +88,15 @@ groups:
   device: dellos10
  hosts:
   members: [h1,h2]
-  device: frr        # 'linux' does not support the lag module yet
+  device: frr          # 'linux' does not support the lag module yet
 
 links:
 - lag:
    members: [h1-s1,h1-s2]
-   mlag: True
 - lag:
-   members: [h1-s1,h1-s2]
-   mlag: True
+   members: [h2-s1,h2-s2]
 
 # Inter-switch peer link(s) for MLAG sync
 - lag:
-   members: [s1-s2]  # Note that multiple physical links are allowed here
-   mlag.peergroup: 1 # (also) used to derive a unique MAC address for this group of MLAG peers
+   members: [s1-s2]    # Note that multiple physical links are allowed here
+   mlag.peerlink: True # (also) used to derive a unique MAC address for this group of MLAG peers
