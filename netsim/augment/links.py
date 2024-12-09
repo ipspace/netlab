@@ -486,6 +486,8 @@ def get_prefix_IPAM_policy(link: Box, pfx: typing.Union[netaddr.IPNetwork,bool],
       subtract_reserved_ip = min(subtract_reserved_ip,gwid-1)
 
     pfx_size = pfx_size + subtract_reserved_ip
+  elif pfx_size == 2 and len(link.interfaces) == 2:
+    return 'p2p'
 
   max_id = max([ ndict[intf.node].id for intf in link.interfaces if intf.node in ndict ])
   if pfx_size == 1:                                                   # Do we have a single node attached to a /32 link?
