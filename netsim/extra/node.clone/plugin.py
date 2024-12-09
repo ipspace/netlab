@@ -25,9 +25,9 @@ process_links - iterate over the 'links' attribute for the given item and clone 
 """
 def process_links(item: Box, linkprefix: str, nodename: str, clones: list, topology: Box) -> None:
   for cnt,l in enumerate(list(item.links)):
-    link_data = links.adjust_link_object(                                   # Create link data from link definition
+    link_data = links.adjust_link_object(                                    # Create link data from link definition
                  l=l,
-                 linkname=f'{linkprefix}.links[{cnt+1}]',
+                 linkname=f'{linkprefix}links[{cnt+1}]',
                  nodes=topology.nodes)
     if link_data is None:
       continue
@@ -47,7 +47,7 @@ update_links - updates 'links' lists in VLAN and VRF objects
 def update_links(topo_items: str, nodename: str, clones: list, topology: Box) -> None:
   for vname,vdata in topology[topo_items].items():                           # Iterate over global VLANs or VRFs
     if isinstance(vdata,Box) and 'links' in vdata:
-      process_links(vdata,f'{topo_items}.{vname}',nodename,clones,topology)
+      process_links(vdata,f'{topo_items}.{vname}.',nodename,clones,topology)
 
 """
 clone_node - Clones a given node N times, creating additional links and/or interfaces for the new nodes
@@ -69,18 +69,18 @@ def clone_node(node: Box, topology: Box) -> None:
   for c in range(_p.start,_p.start+_p.count*_p.step,_p.step):
     clone = data.get_box(node)
     clone.name = strings.eval_format(name_format, node + { 'id': c } )
-    clone.interfaces = []                                                   # Start clean, remove reference to original node
+    clone.interfaces = []                                                    # Start clean, remove reference to original node
     if 'id' in node:
-      clone.id = node.id + c - 1                                            # Update any explicit node ID sequentially
+      clone.id = node.id + c - 1                                             # Update any explicit node ID sequentially
     topology.nodes[ clone.name ] = clone
     clones.append( clone.name )
 
   if 'links' in topology:
-    process_links(topology,'links',node.name,clones,topology)
+    process_links(topology,"",node.name,clones,topology)
 
   if 'groups' in topology:
     for groupname,gdata in topology.groups.items():
-      if groupname[0]=='_':                                                 # Skip flags and other special items
+      if groupname[0]=='_':                                                  # Skip flags and other special items
         continue
       if node.name in gdata.get('members',[]):
         gdata.members.remove( node.name )
@@ -92,7 +92,7 @@ def clone_node(node: Box, topology: Box) -> None:
   if 'vrfs' in topology:
     update_links('vrfs',node.name,clones,topology)
 
-  topology.nodes.pop(node.name,None)                                        # Finally
+  topology.nodes.pop(node.name,None)                                         # Finally
 
 """
 topology_expand - Main plugin function, expands the topology with cloned nodes and interfaces
