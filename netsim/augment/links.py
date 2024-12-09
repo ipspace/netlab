@@ -784,6 +784,11 @@ def create_node_interfaces(link: Box, addr_pools: Box, ndict: Box, defaults: Box
     print(f'... link data: {link}')
     print(f'... interface data: {interfaces}\n')
 
+  # link_to_neighbor returns True iff a given module's attributes should be included with each neighbor
+  def link_to_neighbor(m:str) -> bool:
+    has_if_atts = defaults[m].attributes.get('interface',None) is not None
+    return defaults[m].attributes.get('link_to_neighbor',has_if_atts)
+
   # Second phase: build neighbor list from list of newly-created interfaces
   for node_if in interfaces:
     ifdata = node_if['data']                                      # Get a pointer to interface data
@@ -797,8 +802,7 @@ def create_node_interfaces(link: Box, addr_pools: Box, ndict: Box, defaults: Box
       #
       # Find relevant modules that have interface attributes
       mods_with_attr = set([ m for m in ndict[remote_node].get('module',[])
-                              if defaults[m].attributes.get('interface',None) or
-                                 defaults[m].attributes.get('link_to_neighbor',None) ])
+                              if link_to_neighbor(m) ])
       #
       # Merge neighbor module data + AF with baseline neighbor data
       ngh_data = interface_data(
