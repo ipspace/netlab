@@ -1,0 +1,46 @@
+---
+message: |
+  The device under test are two pairs of switches, interconnected through dual-sided MLAG links
+  The hosts should be able to ping each other and their gateway
+
+groups:
+  _auto_create: True
+  switches:
+    members: [ a1, a2, b1, b2 ]
+    module: [ lag, vlan ]
+    device: eos
+  hosts:
+    members: [ h1, h2 ]
+    device: linux
+
+vlans:
+  red:
+   links: [a1-h1, b2-h2]
+
+links:
+- lag:
+   members: [ a1-a2 ]
+   mlag.peergroup: 1
+- lag:
+   members: [ b1-b2 ]
+   mlag.peergroup: 2
+- lag:
+   # mlag: True
+   members:
+   - a1:
+     b1:
+   - a2:
+     b2:
+  vlan.trunk: [red]
+
+validate:
+  ping:
+    description: Pinging H2 from H1
+    nodes: [ h1 ]
+    wait_msg: Waiting for STP to enable the ports
+    wait: 45
+    plugin: ping('h2')
+  ping_gw:
+    description: Pinging gateway from H1
+    nodes: [ h1 ]
+    plugin: ping(nodes.b1.interfaces[4].ipv4,af='ipv4')
