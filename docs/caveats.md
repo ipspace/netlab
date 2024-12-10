@@ -282,7 +282,7 @@ We're not testing Fortinet implementation as part of the regular integration tes
 * Junos configuration template configures BFD timers within routing protocol configuration, not on individual interfaces
 
 (caveats-linux)=
-## lag module caveats
+## Generic Linux lag module caveats
 * The lag module requires the `ip` command to be available on the Linux host
 
 (caveats-vptx)=
