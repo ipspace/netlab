@@ -19,8 +19,8 @@ The plugin is invoked early in the _netlab_ topology transformation process and 
 
 ### Supported attributes
 
-The naming of cloned nodes can be controlled through global **clone.node_name_pattern**, default "{name[:13]}_{id:02d}".
-It is recommended to ensure this generates valid identifiers (of max length 16)
+The naming of cloned nodes can be controlled through global **clone.node_name_pattern**, default "{name[:13]}-{id:02d}".
+When customizing, it is recommended to ensure this generates valid DNS hostnames (of max length 16)
 
 The plugin adds the following node attributes:
 * **clone.count** is a required int (>0) that defines the number of clones to create
@@ -30,7 +30,6 @@ The plugin adds the following node attributes:
 ### Caveats
 
 The plugin does not support:
-* *lag* module links
 * link groups
 * cloning of components (nodes composed of multiple nodes)
 

@@ -1,0 +1,43 @@
+#
+# Tests various lag related cases
+#
+---
+plugin: [ node.clone ]
+
+module: [lag,vlan]
+
+vlans:
+ red:
+
+groups:
+ _auto_create: True
+ routers:
+  members: [r1,r2]         # Devices that supports (m)lag
+  device: eos
+  module: [vlan,lag]
+
+nodes:
+ h:                        # Short name, regular test
+  device: frr
+  clone.count: 2
+
+links:
+- lag:
+   members: [r1-r2]
+   mlag.peergroup: True
+- lag:
+   members: [ r1-h, r1-h ]
+   ifindex: 8              # Custom lag.ifindex, gets incremented for each clone
+  pool: l2only
+- lag:
+   members: 
+   - r2:
+      ifindex: 6           # Custom ifindex on interface, gets incremented for each clone
+     h:
+   - r2:
+      ifindex: 7
+     h:
+  pool: l2only
+- lag:
+   members: [ h-r1, h-r2 ] # mlag
+  vlan.access: red

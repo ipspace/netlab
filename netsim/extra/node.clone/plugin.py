@@ -3,6 +3,9 @@ from netsim import data
 from netsim.utils import log,strings
 from netsim.augment import links
 
+"""
+clone_link - makes a copy of the given link for each clone, updating its node
+"""
 def clone_link(link_data: Box, nodename: str, clones: list[str]) -> list[Box]:
   cloned_links = []
   if nodename in [ i.node for i in link_data.get('interfaces',[]) ]:
@@ -13,33 +16,60 @@ def clone_link(link_data: Box, nodename: str, clones: list[str]) -> list[Box]:
         intf_clone = data.get_box(intf)
         if intf.node == nodename:
           intf_clone.node = clone
-        elif 'ifindex' in intf:
+        elif 'ifindex' in intf:                 # Update port on the peer side, if any
           intf_clone.ifindex = intf.ifindex + c
         l.interfaces.append(intf_clone)
       cloned_links.append(l)
   return cloned_links
 
 """
+clone_lag - special routine to handle cloning of lag links
+"""
+def clone_lag(cnt: int, link_data: Box, nodename: str, clones: list[str], topology: Box) -> list[Box]:
+  lag_members = link_data.get('lag.members')
+  cloned_members = process_links(lag_members,f"lag[{cnt+1}].m",nodename,clones,topology)
+  if not cloned_members:                                                      # If no lag members involve <nodename>
+    return []                                                                 # .. exit
+
+  cloned_lag_links = []
+  for c,clone in enumerate(clones):
+    l = data.get_box(link_data)                                               # Clone the lag link
+    if l.get('lag.ifindex',0):
+      l.lag.ifindex = l.lag.ifindex + c                                       # Update its ifindex, if any
+    l.lag.members = []
+    for clonelist in cloned_members:
+      for intf in clonelist[c].interfaces:                                    # Update ifindex on interfaces
+        if 'ifindex' in intf:
+          intf.ifindex += c
+      l.lag.members.append( clonelist[c] )
+    cloned_lag_links.append(l)
+  return cloned_lag_links
+
+"""
 process_links - iterate over the 'links' attribute for the given item and clone any instances that involve node <nodename>
                 <item> can be the global topology or a VLAN or VRF object with 'links'
+
+                Returns a list of a list of cloned links
 """
-def process_links(item: Box, linkprefix: str, nodename: str, clones: list, topology: Box) -> None:
-  for cnt,l in enumerate(list(item.links)):
+def process_links(linkitems: list, linkprefix: str, nodename: str, clones: list, topology: Box) -> list[list[Box]]:
+  result: list[list[Box]] = []
+  for cnt,l in enumerate(list(linkitems)):
     link_data = links.adjust_link_object(                                    # Create link data from link definition
                  l=l,
                  linkname=f'{linkprefix}links[{cnt+1}]',
                  nodes=topology.nodes)
     if link_data is None:
       continue
-    elif 'lag' in link_data:
-      log.error(f"LAG links not yet supported by node.clone plugin, not cloning any members containing {nodename}",
-                category=Warning, module='node.clone')
-      continue
+    elif link_data.get('lag.members',None):
+      cloned_links = clone_lag(cnt,link_data,nodename,clones,topology)
+    else:
+      cloned_links = clone_link(link_data,nodename,clones)
 
-    cloned_links = clone_link(link_data,nodename,clones)
     if cloned_links:
-      item.links.remove(l)
-      item.links += cloned_links
+      linkitems.remove(l)
+      linkitems += cloned_links
+      result.append(cloned_links)
+  return result
 
 """
 update_links - updates 'links' lists in VLAN and VRF objects
@@ -47,7 +77,7 @@ update_links - updates 'links' lists in VLAN and VRF objects
 def update_links(topo_items: str, nodename: str, clones: list, topology: Box) -> None:
   for vname,vdata in topology[topo_items].items():                           # Iterate over global VLANs or VRFs
     if isinstance(vdata,Box) and 'links' in vdata:
-      process_links(vdata,f'{topo_items}.{vname}.',nodename,clones,topology)
+      process_links(vdata.links,f'{topo_items}.{vname}.',nodename,clones,topology)
 
 """
 clone_node - Clones a given node N times, creating additional links and/or interfaces for the new nodes
@@ -76,7 +106,7 @@ def clone_node(node: Box, topology: Box) -> None:
     clones.append( clone.name )
 
   if 'links' in topology:
-    process_links(topology,"",node.name,clones,topology)
+    process_links(topology.links,"",node.name,clones,topology)
 
   if 'groups' in topology:
     for groupname,gdata in topology.groups.items():
