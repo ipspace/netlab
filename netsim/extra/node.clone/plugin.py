@@ -40,7 +40,7 @@ def clone_lag(cnt: int, link_data: Box, nodename: str, clones: list[str], topolo
     for clonelist in cloned_members:
       for intf in clonelist[c].interfaces:                                    # Update ifindex on interfaces
         if 'ifindex' in intf:
-          intf.ifindex += c
+          intf.ifindex += c                                                   # May generate overlapping values
       l.lag.members.append( clonelist[c] )
     cloned_lag_links.append(l)
   return cloned_lag_links
@@ -99,6 +99,12 @@ def clone_node(node: Box, topology: Box) -> None:
   for c in range(_p.start,_p.start+_p.count*_p.step,_p.step):
     clone = data.get_box(node)
     clone.name = strings.eval_format(name_format, node + { 'id': c } )
+
+    if clone.name in topology.nodes:                                         # Check for overlapping names
+      log.error("Generated clone name '{clone.name}' conflicts with an existing node",
+                category=AttributeError, module='node.clone')
+      return
+
     clone.interfaces = []                                                    # Start clean, remove reference to original node
     if 'id' in node:
       clone.id = node.id + c - 1                                             # Update any explicit node ID sequentially

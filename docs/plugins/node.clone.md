@@ -33,6 +33,10 @@ The plugin does not support:
 * link groups
 * cloning of components (nodes composed of multiple nodes)
 
+When custom **ifindex** or **lag.ifindex** values are specified, the plugin automatically increments the value for each clone. This may generate overlapping/conflicting values, which will typically show up as duplicate interface names. It is the user's responsibility to ensure that custom values don't overlap.
+
+Avoid the use of static IPv4/v6 attributes for clones, they are not checked nor automatically updated, and will likely lead to duplicate IP addresses.
+
 ## Examples
 
 (host-cluster)=
