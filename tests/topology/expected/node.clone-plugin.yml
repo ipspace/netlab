@@ -6,6 +6,14 @@ groups:
     - host_w_long_n-01
     - host_w_long_n-02
     - host_w_long_n-03
+  lag-routers:
+    device: eos
+    members:
+    - r1
+    - r2
+    module:
+    - vlan
+    - lag
 input:
 - topology/input/node.clone-plugin.yml
 - package:topology-defaults.yml
@@ -14,7 +22,22 @@ lag:
   lacp_mode: active
   mode: 802.3ad
 links:
-- _linkname: links[1]
+- _linkname: links[1].peerlink[1]
+  interfaces:
+  - ifindex: 1
+    ifname: Ethernet1
+    node: r1
+  - ifindex: 1
+    ifname: Ethernet1
+    node: r2
+  lag:
+    mlag:
+      peergroup: 1
+  linkindex: 1
+  node_count: 2
+  prefix: false
+  type: p2p
+- _linkname: links[2]
   interfaces:
   - ifindex: 16
     ifname: eth16
@@ -25,12 +48,12 @@ links:
     ipv4: 10.1.0.1/30
     mtu: 1600
     node: h-03
-  linkindex: 1
+  linkindex: 2
   node_count: 2
   prefix:
     ipv4: 10.1.0.0/30
   type: p2p
-- _linkname: links[2]
+- _linkname: links[3]
   interfaces:
   - ifindex: 17
     ifname: eth17
@@ -41,91 +64,13 @@ links:
     ipv4: 10.1.0.5/30
     mtu: 1600
     node: h-07
-  linkindex: 2
+  linkindex: 3
   node_count: 2
   prefix:
     ipv4: 10.1.0.4/30
   type: p2p
-- _linkname: links[3]
-  bridge: input_3
-  interfaces:
-  - ifindex: 30000
-    ifname: bond5
-    ipv4: 10.1.0.9/30
-    node: r
-  - ifindex: 30000
-    ifname: bond5
-    ipv4: 10.1.0.10/30
-    node: h-03
-  lag:
-    ifindex: 5
-  linkindex: 3
-  node_count: 2
-  prefix:
-    ipv4: 10.1.0.8/30
-  type: lag
 - _linkname: links[4]
   bridge: input_4
-  interfaces:
-  - ifindex: 30001
-    ifname: bond6
-    ipv4: 10.1.0.13/30
-    node: r
-  - ifindex: 30000
-    ifname: bond6
-    ipv4: 10.1.0.14/30
-    node: h-07
-  lag:
-    ifindex: 6
-  linkindex: 4
-  node_count: 2
-  prefix:
-    ipv4: 10.1.0.12/30
-  type: lag
-- _linkname: links[5]
-  bridge: input_5
-  interfaces:
-  - ifindex: 30002
-    ifname: bond7
-    ipv4: 10.1.0.17/30
-    lag:
-      ifindex: 7
-    node: r
-  - ifindex: 30001
-    ifname: bond6
-    ipv4: 10.1.0.18/30
-    lag:
-      ifindex: 6
-    node: h-03
-  lag: {}
-  linkindex: 5
-  node_count: 2
-  prefix:
-    ipv4: 10.1.0.16/30
-  type: lag
-- _linkname: links[6]
-  bridge: input_6
-  interfaces:
-  - ifindex: 30003
-    ifname: bond8
-    ipv4: 10.1.0.21/30
-    lag:
-      ifindex: 8
-    node: r
-  - ifindex: 30001
-    ifname: bond7
-    ipv4: 10.1.0.22/30
-    lag:
-      ifindex: 7
-    node: h-07
-  lag: {}
-  linkindex: 6
-  node_count: 2
-  prefix:
-    ipv4: 10.1.0.20/30
-  type: lag
-- _linkname: links[7]
-  bridge: input_7
   gateway:
     ipv4: 172.16.1.1/24
   interfaces:
@@ -137,14 +82,14 @@ links:
     ifname: eth1
     ipv4: 172.16.1.10/24
     node: host_w_long_n-01
-  linkindex: 7
+  linkindex: 4
   node_count: 2
   prefix:
     ipv4: 172.16.1.0/24
   role: stub
   type: lan
-- _linkname: links[8]
-  bridge: input_8
+- _linkname: links[5]
+  bridge: input_5
   gateway:
     ipv4: 172.16.2.1/24
   interfaces:
@@ -156,14 +101,14 @@ links:
     ifname: eth1
     ipv4: 172.16.2.11/24
     node: host_w_long_n-02
-  linkindex: 8
+  linkindex: 5
   node_count: 2
   prefix:
     ipv4: 172.16.2.0/24
   role: stub
   type: lan
-- _linkname: links[9]
-  bridge: input_9
+- _linkname: links[6]
+  bridge: input_6
   gateway:
     ipv4: 172.16.3.1/24
   interfaces:
@@ -175,142 +120,338 @@ links:
     ifname: eth1
     ipv4: 172.16.3.12/24
     node: host_w_long_n-03
-  linkindex: 9
+  linkindex: 6
   node_count: 2
   prefix:
     ipv4: 172.16.3.0/24
   role: stub
   type: lan
-- _linkname: links[3].lag[1]
+- _linkname: links[7]
+  bridge: input_7
   interfaces:
-  - ifindex: 4
-    ifname: eth4
-    node: r
-  - ifindex: 2
-    ifname: eth2
-    node: h-03
+  - ifindex: 30000
+    ifname: port-channel8
+    node: r1
+  - ifindex: 30000
+    ifname: bond8
+    node: laghost-01
   lag:
-    _parentindex: 3
+    ifindex: 8
+  linkindex: 7
+  node_count: 2
+  pool: l2only
+  type: lag
+- _linkname: links[8]
+  bridge: input_8
+  interfaces:
+  - ifindex: 30001
+    ifname: port-channel9
+    node: r1
+  - ifindex: 30000
+    ifname: bond9
+    node: laghost-02
+  lag:
+    ifindex: 9
+  linkindex: 8
+  node_count: 2
+  pool: l2only
+  type: lag
+- _linkname: links[9]
+  bridge: input_9
+  interfaces:
+  - ifindex: 30000
+    ifname: port-channel1
+    lag:
+      ifindex: 1
+    node: r2
+  - ifindex: 30001
+    ifname: bond9
+    lag:
+      ifindex: 9
+    node: laghost-01
+  lag: {}
+  linkindex: 9
+  node_count: 2
+  pool: l2only
+  type: lag
+- _linkname: links[10]
+  bridge: input_10
+  interfaces:
+  - ifindex: 30001
+    ifname: port-channel2
+    lag:
+      ifindex: 2
+    node: r2
+  - ifindex: 30001
+    ifname: bond10
+    lag:
+      ifindex: 10
+    node: laghost-02
+  lag: {}
   linkindex: 10
   node_count: 2
-  prefix: false
-  type: p2p
-- _linkname: links[3].lag[2]
+  pool: l2only
+  type: lag
+- _linkname: links[11]
+  bridge: input_11
   interfaces:
-  - ifindex: 5
-    ifname: eth5
-    node: r
-  - ifindex: 3
-    ifname: eth3
-    node: h-03
+  - ifindex: 30002
+    ifname: bond10
+    ipv4: 172.16.0.6/24
+    lag:
+      ifindex: 10
+    node: laghost-01
+  - _vlan_mode: irb
+    ifindex: 30002
+    ifname: port-channel10
+    ipv4: 172.16.0.2/24
+    lag:
+      _mlag: true
+    node: r1
+    vlan:
+      access: red
+  - _vlan_mode: irb
+    ifindex: 30002
+    ifname: port-channel10
+    ipv4: 172.16.0.3/24
+    lag:
+      _mlag: true
+    node: r2
+    vlan:
+      access: red
   lag:
-    _parentindex: 3
+    ifindex: 10
   linkindex: 11
-  node_count: 2
-  prefix: false
-  type: p2p
-- _linkname: links[4].lag[1]
+  node_count: 3
+  prefix:
+    allocation: id_based
+    ipv4: 172.16.0.0/24
+  type: lag
+  vlan:
+    access: red
+- _linkname: links[12]
+  bridge: input_12
   interfaces:
-  - ifindex: 6
-    ifname: eth6
-    node: r
-  - ifindex: 2
-    ifname: eth2
-    node: h-07
+  - ifindex: 30002
+    ifname: bond11
+    ipv4: 172.16.0.7/24
+    lag:
+      ifindex: 11
+    node: laghost-02
+  - _vlan_mode: irb
+    ifindex: 30003
+    ifname: port-channel11
+    ipv4: 172.16.0.2/24
+    lag:
+      _mlag: true
+    node: r1
+    vlan:
+      access: red
+  - _vlan_mode: irb
+    ifindex: 30003
+    ifname: port-channel11
+    ipv4: 172.16.0.3/24
+    lag:
+      _mlag: true
+    node: r2
+    vlan:
+      access: red
   lag:
-    _parentindex: 4
+    ifindex: 11
   linkindex: 12
-  node_count: 2
-  prefix: false
-  type: p2p
-- _linkname: links[4].lag[2]
+  node_count: 3
+  prefix:
+    allocation: id_based
+    ipv4: 172.16.0.0/24
+  type: lag
+  vlan:
+    access: red
+- _linkname: links[7].lag[1]
   interfaces:
-  - ifindex: 7
-    ifname: eth7
-    node: r
-  - ifindex: 3
-    ifname: eth3
-    node: h-07
+  - ifindex: 2
+    ifname: Ethernet2
+    node: r1
+  - ifindex: 1
+    ifname: eth1
+    node: laghost-01
   lag:
-    _parentindex: 4
+    _parentindex: 7
   linkindex: 13
   node_count: 2
   prefix: false
   type: p2p
-- _linkname: links[5].lag[1]
+- _linkname: links[7].lag[2]
   interfaces:
-  - ifindex: 20
-    ifname: eth20
-    node: r
-  - ifindex: 4
-    ifname: eth4
-    node: h-03
+  - ifindex: 3
+    ifname: Ethernet3
+    node: r1
+  - ifindex: 2
+    ifname: eth2
+    node: laghost-01
   lag:
-    _parentindex: 5
+    _parentindex: 7
   linkindex: 14
   node_count: 2
   prefix: false
   type: p2p
-- _linkname: links[5].lag[2]
+- _linkname: links[8].lag[1]
   interfaces:
-  - ifindex: 21
-    ifname: eth21
-    node: r
-  - ifindex: 5
-    ifname: eth5
-    node: h-03
+  - ifindex: 4
+    ifname: Ethernet4
+    node: r1
+  - ifindex: 1
+    ifname: eth1
+    node: laghost-02
   lag:
-    _parentindex: 5
+    _parentindex: 8
   linkindex: 15
   node_count: 2
   prefix: false
   type: p2p
-- _linkname: links[6].lag[1]
+- _linkname: links[8].lag[2]
   interfaces:
-  - ifindex: 22
-    ifname: eth22
-    node: r
-  - ifindex: 4
-    ifname: eth4
-    node: h-07
+  - ifindex: 5
+    ifname: Ethernet5
+    node: r1
+  - ifindex: 2
+    ifname: eth2
+    node: laghost-02
   lag:
-    _parentindex: 6
+    _parentindex: 8
   linkindex: 16
   node_count: 2
   prefix: false
   type: p2p
-- _linkname: links[6].lag[2]
+- _linkname: links[9].lag[1]
   interfaces:
-  - ifindex: 23
-    ifname: eth23
-    node: r
-  - ifindex: 5
-    ifname: eth5
-    node: h-07
+  - ifindex: 6
+    ifname: Ethernet6
+    node: r2
+  - ifindex: 3
+    ifname: eth3
+    node: laghost-01
   lag:
-    _parentindex: 6
+    _parentindex: 9
   linkindex: 17
   node_count: 2
   prefix: false
   type: p2p
+- _linkname: links[9].lag[2]
+  interfaces:
+  - ifindex: 7
+    ifname: Ethernet7
+    node: r2
+  - ifindex: 4
+    ifname: eth4
+    node: laghost-01
+  lag:
+    _parentindex: 9
+  linkindex: 18
+  node_count: 2
+  prefix: false
+  type: p2p
+- _linkname: links[10].lag[1]
+  interfaces:
+  - ifindex: 8
+    ifname: Ethernet8
+    node: r2
+  - ifindex: 3
+    ifname: eth3
+    node: laghost-02
+  lag:
+    _parentindex: 10
+  linkindex: 19
+  node_count: 2
+  prefix: false
+  type: p2p
+- _linkname: links[10].lag[2]
+  interfaces:
+  - ifindex: 9
+    ifname: Ethernet9
+    node: r2
+  - ifindex: 4
+    ifname: eth4
+    node: laghost-02
+  lag:
+    _parentindex: 10
+  linkindex: 20
+  node_count: 2
+  prefix: false
+  type: p2p
+- _linkname: links[11].lag[1]
+  interfaces:
+  - ifindex: 5
+    ifname: eth5
+    node: laghost-01
+  - ifindex: 6
+    ifname: Ethernet6
+    node: r1
+  lag:
+    _parentindex: 11
+  linkindex: 21
+  node_count: 2
+  prefix: false
+  type: p2p
+- _linkname: links[11].lag[2]
+  interfaces:
+  - ifindex: 6
+    ifname: eth6
+    node: laghost-01
+  - ifindex: 2
+    ifname: Ethernet2
+    node: r2
+  lag:
+    _parentindex: 11
+  linkindex: 22
+  node_count: 2
+  prefix: false
+  type: p2p
+- _linkname: links[12].lag[1]
+  interfaces:
+  - ifindex: 5
+    ifname: eth5
+    node: laghost-02
+  - ifindex: 7
+    ifname: Ethernet7
+    node: r1
+  lag:
+    _parentindex: 12
+  linkindex: 23
+  node_count: 2
+  prefix: false
+  type: p2p
+- _linkname: links[12].lag[2]
+  interfaces:
+  - ifindex: 6
+    ifname: eth6
+    node: laghost-02
+  - ifindex: 3
+    ifname: Ethernet3
+    node: r2
+  lag:
+    _parentindex: 12
+  linkindex: 24
+  node_count: 2
+  prefix: false
+  type: p2p
 - _linkname: vlans.red.links[1]
-  bridge: input_18
+  bridge: input_25
   interfaces:
   - _vlan_mode: irb
-    ifindex: 8
-    ifname: eth8
+    ifindex: 4
+    ifname: eth4
     ipv4: 172.16.0.1/24
     node: r
     vlan:
       access: red
   - _vlan_mode: irb
-    ifindex: 6
-    ifname: eth6
-    ipv4: 172.16.0.2/24
+    ifindex: 2
+    ifname: eth2
+    ipv4: 172.16.0.4/24
     node: h-03
     vlan:
       access: red
-  linkindex: 18
+  linkindex: 25
   node_count: 2
   prefix:
     allocation: id_based
@@ -319,23 +460,23 @@ links:
   vlan:
     access: red
 - _linkname: vlans.red.links[2]
-  bridge: input_19
+  bridge: input_26
   interfaces:
   - _vlan_mode: irb
-    ifindex: 9
-    ifname: eth9
+    ifindex: 5
+    ifname: eth5
     ipv4: 172.16.0.1/24
     node: r
     vlan:
       access: red
   - _vlan_mode: irb
-    ifindex: 6
-    ifname: eth6
-    ipv4: 172.16.0.3/24
+    ifindex: 2
+    ifname: eth2
+    ipv4: 172.16.0.5/24
     node: h-07
     vlan:
       access: red
-  linkindex: 19
+  linkindex: 26
   node_count: 2
   prefix:
     allocation: id_based
@@ -345,34 +486,34 @@ links:
     access: red
 - _linkname: vrfs.red.links[1]
   interfaces:
-  - ifindex: 10
-    ifname: eth10
-    ipv4: 10.1.0.26/30
+  - ifindex: 6
+    ifname: eth6
+    ipv4: 10.1.0.10/30
     node: r
-  - ifindex: 7
-    ifname: eth7
-    ipv4: 10.1.0.25/30
+  - ifindex: 3
+    ifname: eth3
+    ipv4: 10.1.0.9/30
     node: h-03
-  linkindex: 20
+  linkindex: 27
   node_count: 2
   prefix:
-    ipv4: 10.1.0.24/30
+    ipv4: 10.1.0.8/30
   type: p2p
   vrf: red
 - _linkname: vrfs.red.links[2]
   interfaces:
-  - ifindex: 11
-    ifname: eth11
-    ipv4: 10.1.0.30/30
-    node: r
   - ifindex: 7
     ifname: eth7
-    ipv4: 10.1.0.29/30
+    ipv4: 10.1.0.14/30
+    node: r
+  - ifindex: 3
+    ifname: eth3
+    ipv4: 10.1.0.13/30
     node: h-07
-  linkindex: 21
+  linkindex: 28
   node_count: 2
   prefix:
-    ipv4: 10.1.0.28/30
+    ipv4: 10.1.0.12/30
   type: p2p
   vrf: red
 module:
@@ -387,12 +528,12 @@ nodes:
       vpnv4: true
     box: debian/bookworm64
     device: frr
-    id: 2
+    id: 4
     interfaces:
     - ifindex: 1
       ifname: eth1
       ipv4: 10.1.0.1/30
-      linkindex: 1
+      linkindex: 2
       mtu: 1600
       name: h-03 -> r
       neighbors:
@@ -400,115 +541,55 @@ nodes:
         ipv4: 10.1.0.2/30
         node: r
       type: p2p
-    - ifindex: 30000
-      ifname: bond5
-      ipv4: 10.1.0.10/30
-      lag:
-        ifindex: 5
-        lacp: fast
-        lacp_mode: active
-        mode: 802.3ad
-      linkindex: 3
-      name: h-03 -> r
-      neighbors:
-      - ifname: bond5
-        ipv4: 10.1.0.9/30
-        node: r
-      type: lag
-      virtual_interface: true
-    - ifindex: 30001
-      ifname: bond6
-      ipv4: 10.1.0.18/30
-      lag:
-        ifindex: 6
-        lacp: fast
-        lacp_mode: active
-        mode: 802.3ad
-      linkindex: 5
-      name: h-03 -> r
-      neighbors:
-      - ifname: bond7
-        ipv4: 10.1.0.17/30
-        node: r
-      type: lag
-      virtual_interface: true
-    - ifindex: 2
+    - bridge: input_25
+      ifindex: 2
       ifname: eth2
-      lag:
-        _parentindex: 3
-      linkindex: 10
-      name: h-03 -> r
-      neighbors:
-      - ifname: eth4
-        node: r
-      type: p2p
-    - ifindex: 3
-      ifname: eth3
-      lag:
-        _parentindex: 3
-      linkindex: 11
-      name: h-03 -> r
-      neighbors:
-      - ifname: eth5
-        node: r
-      type: p2p
-    - ifindex: 4
-      ifname: eth4
-      lag:
-        _parentindex: 5
-      linkindex: 14
-      name: h-03 -> r
-      neighbors:
-      - ifname: eth20
-        node: r
-      type: p2p
-    - ifindex: 5
-      ifname: eth5
-      lag:
-        _parentindex: 5
-      linkindex: 15
-      name: h-03 -> r
-      neighbors:
-      - ifname: eth21
-        node: r
-      type: p2p
-    - bridge: input_18
-      ifindex: 6
-      ifname: eth6
-      linkindex: 18
+      linkindex: 25
       name: '[Access VLAN red] h-03 -> r'
       neighbors:
-      - ifname: eth8
+      - ifname: eth4
         ipv4: 172.16.0.1/24
         node: r
       type: lan
       vlan:
         access: red
         access_id: 1000
-    - ifindex: 7
-      ifname: eth7
-      ipv4: 10.1.0.25/30
-      linkindex: 20
+    - ifindex: 3
+      ifname: eth3
+      ipv4: 10.1.0.9/30
+      linkindex: 27
       name: h-03 -> r
       neighbors:
-      - ifname: eth10
-        ipv4: 10.1.0.26/30
+      - ifname: eth6
+        ipv4: 10.1.0.10/30
         node: r
         vrf: red
       type: p2p
       vrf: red
     - bridge_group: 1
-      ifindex: 8
+      ifindex: 4
       ifname: vlan1000
-      ipv4: 172.16.0.2/24
-      name: VLAN red (1000) -> [r,h-07]
+      ipv4: 172.16.0.4/24
+      name: VLAN red (1000) -> [r,h-07,laghost-01,r2,r1,laghost-02]
       neighbors:
       - ifname: vlan1000
         ipv4: 172.16.0.1/24
         node: r
       - ifname: vlan1000
-        ipv4: 172.16.0.3/24
+        ipv4: 172.16.0.5/24
         node: h-07
+      - ifname: bond10
+        ipv4: 172.16.0.6/24
+        node: laghost-01
+      - ifname: Vlan1000
+        ipv4: 172.16.0.3/24
+        node: r2
+      - ifname: Vlan1000
+        ipv4: 172.16.0.2/24
+        node: r1
+      - ifname: bond11
+        ipv4: 172.16.0.7/24
+        node: laghost-02
       type: svi
       virtual_interface: true
       vlan:
@@ -521,14 +602,14 @@ nodes:
     loopback:
       ifindex: 0
       ifname: lo
-      ipv4: 10.0.0.2/32
+      ipv4: 10.0.0.4/32
       neighbors: []
       type: loopback
       virtual_interface: true
     mgmt:
       ifname: eth0
-      ipv4: 192.168.121.102
-      mac: 08:4f:a9:00:00:02
+      ipv4: 192.168.121.104
+      mac: 08:4f:a9:00:00:04
     module:
     - lag
     - vlan
@@ -563,12 +644,12 @@ nodes:
       vpnv4: true
     box: debian/bookworm64
     device: frr
-    id: 3
+    id: 5
     interfaces:
     - ifindex: 1
       ifname: eth1
       ipv4: 10.1.0.5/30
-      linkindex: 2
+      linkindex: 3
       mtu: 1600
       name: h-07 -> r
       neighbors:
@@ -576,115 +657,55 @@ nodes:
         ipv4: 10.1.0.6/30
         node: r
       type: p2p
-    - ifindex: 30000
-      ifname: bond6
-      ipv4: 10.1.0.14/30
-      lag:
-        ifindex: 6
-        lacp: fast
-        lacp_mode: active
-        mode: 802.3ad
-      linkindex: 4
-      name: h-07 -> r
-      neighbors:
-      - ifname: bond6
-        ipv4: 10.1.0.13/30
-        node: r
-      type: lag
-      virtual_interface: true
-    - ifindex: 30001
-      ifname: bond7
-      ipv4: 10.1.0.22/30
-      lag:
-        ifindex: 7
-        lacp: fast
-        lacp_mode: active
-        mode: 802.3ad
-      linkindex: 6
-      name: h-07 -> r
-      neighbors:
-      - ifname: bond8
-        ipv4: 10.1.0.21/30
-        node: r
-      type: lag
-      virtual_interface: true
-    - ifindex: 2
+    - bridge: input_26
+      ifindex: 2
       ifname: eth2
-      lag:
-        _parentindex: 4
-      linkindex: 12
-      name: h-07 -> r
-      neighbors:
-      - ifname: eth6
-        node: r
-      type: p2p
-    - ifindex: 3
-      ifname: eth3
-      lag:
-        _parentindex: 4
-      linkindex: 13
-      name: h-07 -> r
-      neighbors:
-      - ifname: eth7
-        node: r
-      type: p2p
-    - ifindex: 4
-      ifname: eth4
-      lag:
-        _parentindex: 6
-      linkindex: 16
-      name: h-07 -> r
-      neighbors:
-      - ifname: eth22
-        node: r
-      type: p2p
-    - ifindex: 5
-      ifname: eth5
-      lag:
-        _parentindex: 6
-      linkindex: 17
-      name: h-07 -> r
-      neighbors:
-      - ifname: eth23
-        node: r
-      type: p2p
-    - bridge: input_19
-      ifindex: 6
-      ifname: eth6
-      linkindex: 19
+      linkindex: 26
       name: '[Access VLAN red] h-07 -> r'
       neighbors:
-      - ifname: eth9
+      - ifname: eth5
         ipv4: 172.16.0.1/24
         node: r
       type: lan
       vlan:
         access: red
         access_id: 1000
-    - ifindex: 7
-      ifname: eth7
-      ipv4: 10.1.0.29/30
-      linkindex: 21
+    - ifindex: 3
+      ifname: eth3
+      ipv4: 10.1.0.13/30
+      linkindex: 28
       name: h-07 -> r
       neighbors:
-      - ifname: eth11
-        ipv4: 10.1.0.30/30
+      - ifname: eth7
+        ipv4: 10.1.0.14/30
         node: r
         vrf: red
       type: p2p
       vrf: red
     - bridge_group: 1
-      ifindex: 8
+      ifindex: 4
       ifname: vlan1000
-      ipv4: 172.16.0.3/24
-      name: VLAN red (1000) -> [h-03,r]
+      ipv4: 172.16.0.5/24
+      name: VLAN red (1000) -> [h-03,r,laghost-01,r2,r1,laghost-02]
       neighbors:
       - ifname: vlan1000
-        ipv4: 172.16.0.2/24
+        ipv4: 172.16.0.4/24
         node: h-03
       - ifname: vlan1000
         ipv4: 172.16.0.1/24
         node: r
+      - ifname: bond10
+        ipv4: 172.16.0.6/24
+        node: laghost-01
+      - ifname: Vlan1000
+        ipv4: 172.16.0.3/24
+        node: r2
+      - ifname: Vlan1000
+        ipv4: 172.16.0.2/24
+        node: r1
+      - ifname: bond11
+        ipv4: 172.16.0.7/24
+        node: laghost-02
       type: svi
       virtual_interface: true
       vlan:
@@ -697,14 +718,14 @@ nodes:
     loopback:
       ifindex: 0
       ifname: lo
-      ipv4: 10.0.0.3/32
+      ipv4: 10.0.0.5/32
       neighbors: []
       type: loopback
       virtual_interface: true
     mgmt:
       ifname: eth0
-      ipv4: 192.168.121.103
-      mac: 08:4f:a9:00:00:03
+      ipv4: 192.168.121.105
+      mac: 08:4f:a9:00:00:05
     module:
     - lag
     - vlan
@@ -740,13 +761,13 @@ nodes:
     device: linux
     id: 10
     interfaces:
-    - bridge: input_7
+    - bridge: input_4
       gateway:
         ipv4: 172.16.1.1/24
       ifindex: 1
       ifname: eth1
       ipv4: 172.16.1.10/24
-      linkindex: 7
+      linkindex: 4
       name: host_w_long_n-01 -> r
       neighbors:
       - ifname: eth1
@@ -767,13 +788,13 @@ nodes:
     device: linux
     id: 11
     interfaces:
-    - bridge: input_8
+    - bridge: input_5
       gateway:
         ipv4: 172.16.2.1/24
       ifindex: 1
       ifname: eth1
       ipv4: 172.16.2.11/24
-      linkindex: 8
+      linkindex: 5
       name: host_w_long_n-02 -> r
       neighbors:
       - ifname: eth2
@@ -794,13 +815,13 @@ nodes:
     device: linux
     id: 12
     interfaces:
-    - bridge: input_9
+    - bridge: input_6
       gateway:
         ipv4: 172.16.3.1/24
       ifindex: 1
       ifname: eth1
       ipv4: 172.16.3.12/24
-      linkindex: 9
+      linkindex: 6
       name: host_w_long_n-03 -> r
       neighbors:
       - ifname: eth3
@@ -814,6 +835,298 @@ nodes:
       mac: 08:4f:a9:00:00:0c
     name: host_w_long_n-03
     role: host
+  laghost-01:
+    af:
+      ipv4: true
+    box: debian/bookworm64
+    device: frr
+    id: 6
+    interfaces:
+    - ifindex: 30000
+      ifname: bond8
+      lag:
+        ifindex: 8
+        lacp: fast
+        lacp_mode: active
+        mode: 802.3ad
+      linkindex: 7
+      name: laghost-01 -> r1
+      neighbors:
+      - ifname: port-channel8
+        node: r1
+      pool: l2only
+      type: lag
+      virtual_interface: true
+    - ifindex: 30001
+      ifname: bond9
+      lag:
+        ifindex: 9
+        lacp: fast
+        lacp_mode: active
+        mode: 802.3ad
+      linkindex: 9
+      name: laghost-01 -> r2
+      neighbors:
+      - ifname: port-channel1
+        node: r2
+      pool: l2only
+      type: lag
+      virtual_interface: true
+    - ifindex: 30002
+      ifname: bond10
+      ipv4: 172.16.0.6/24
+      lag:
+        ifindex: 10
+        lacp: fast
+        lacp_mode: active
+        mode: 802.3ad
+      linkindex: 11
+      name: laghost-01 -> [h-03,r,h-07,r2,r1,laghost-02]
+      neighbors:
+      - ifname: vlan1000
+        ipv4: 172.16.0.4/24
+        node: h-03
+      - ifname: vlan1000
+        ipv4: 172.16.0.1/24
+        node: r
+      - ifname: vlan1000
+        ipv4: 172.16.0.5/24
+        node: h-07
+      - ifname: Vlan1000
+        ipv4: 172.16.0.3/24
+        node: r2
+      - ifname: Vlan1000
+        ipv4: 172.16.0.2/24
+        node: r1
+      - ifname: bond11
+        ipv4: 172.16.0.7/24
+        node: laghost-02
+      type: lag
+      virtual_interface: true
+    - ifindex: 1
+      ifname: eth1
+      lag:
+        _parentindex: 7
+      linkindex: 13
+      name: laghost-01 -> r1
+      neighbors:
+      - ifname: Ethernet2
+        node: r1
+      type: p2p
+    - ifindex: 2
+      ifname: eth2
+      lag:
+        _parentindex: 7
+      linkindex: 14
+      name: laghost-01 -> r1
+      neighbors:
+      - ifname: Ethernet3
+        node: r1
+      type: p2p
+    - ifindex: 3
+      ifname: eth3
+      lag:
+        _parentindex: 9
+      linkindex: 17
+      name: laghost-01 -> r2
+      neighbors:
+      - ifname: Ethernet6
+        node: r2
+      type: p2p
+    - ifindex: 4
+      ifname: eth4
+      lag:
+        _parentindex: 9
+      linkindex: 18
+      name: laghost-01 -> r2
+      neighbors:
+      - ifname: Ethernet7
+        node: r2
+      type: p2p
+    - ifindex: 5
+      ifname: eth5
+      lag:
+        _parentindex: 11
+      linkindex: 21
+      name: laghost-01 -> r1
+      neighbors:
+      - ifname: Ethernet6
+        node: r1
+      type: p2p
+    - ifindex: 6
+      ifname: eth6
+      lag:
+        _parentindex: 11
+      linkindex: 22
+      name: laghost-01 -> r2
+      neighbors:
+      - ifname: Ethernet2
+        node: r2
+      type: p2p
+    lag:
+      lacp: fast
+      lacp_mode: active
+      mode: 802.3ad
+    loopback:
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.6/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.106
+      mac: 08:4f:a9:00:00:06
+    module:
+    - lag
+    name: laghost-01
+  laghost-02:
+    af:
+      ipv4: true
+    box: debian/bookworm64
+    device: frr
+    id: 7
+    interfaces:
+    - ifindex: 30000
+      ifname: bond9
+      lag:
+        ifindex: 9
+        lacp: fast
+        lacp_mode: active
+        mode: 802.3ad
+      linkindex: 8
+      name: laghost-02 -> r1
+      neighbors:
+      - ifname: port-channel9
+        node: r1
+      pool: l2only
+      type: lag
+      virtual_interface: true
+    - ifindex: 30001
+      ifname: bond10
+      lag:
+        ifindex: 10
+        lacp: fast
+        lacp_mode: active
+        mode: 802.3ad
+      linkindex: 10
+      name: laghost-02 -> r2
+      neighbors:
+      - ifname: port-channel2
+        node: r2
+      pool: l2only
+      type: lag
+      virtual_interface: true
+    - ifindex: 30002
+      ifname: bond11
+      ipv4: 172.16.0.7/24
+      lag:
+        ifindex: 11
+        lacp: fast
+        lacp_mode: active
+        mode: 802.3ad
+      linkindex: 12
+      name: laghost-02 -> [h-03,r,h-07,laghost-01,r2,r1]
+      neighbors:
+      - ifname: vlan1000
+        ipv4: 172.16.0.4/24
+        node: h-03
+      - ifname: vlan1000
+        ipv4: 172.16.0.1/24
+        node: r
+      - ifname: vlan1000
+        ipv4: 172.16.0.5/24
+        node: h-07
+      - ifname: bond10
+        ipv4: 172.16.0.6/24
+        node: laghost-01
+      - ifname: Vlan1000
+        ipv4: 172.16.0.3/24
+        node: r2
+      - ifname: Vlan1000
+        ipv4: 172.16.0.2/24
+        node: r1
+      type: lag
+      virtual_interface: true
+    - ifindex: 1
+      ifname: eth1
+      lag:
+        _parentindex: 8
+      linkindex: 15
+      name: laghost-02 -> r1
+      neighbors:
+      - ifname: Ethernet4
+        node: r1
+      type: p2p
+    - ifindex: 2
+      ifname: eth2
+      lag:
+        _parentindex: 8
+      linkindex: 16
+      name: laghost-02 -> r1
+      neighbors:
+      - ifname: Ethernet5
+        node: r1
+      type: p2p
+    - ifindex: 3
+      ifname: eth3
+      lag:
+        _parentindex: 10
+      linkindex: 19
+      name: laghost-02 -> r2
+      neighbors:
+      - ifname: Ethernet8
+        node: r2
+      type: p2p
+    - ifindex: 4
+      ifname: eth4
+      lag:
+        _parentindex: 10
+      linkindex: 20
+      name: laghost-02 -> r2
+      neighbors:
+      - ifname: Ethernet9
+        node: r2
+      type: p2p
+    - ifindex: 5
+      ifname: eth5
+      lag:
+        _parentindex: 12
+      linkindex: 23
+      name: laghost-02 -> r1
+      neighbors:
+      - ifname: Ethernet7
+        node: r1
+      type: p2p
+    - ifindex: 6
+      ifname: eth6
+      lag:
+        _parentindex: 12
+      linkindex: 24
+      name: laghost-02 -> r2
+      neighbors:
+      - ifname: Ethernet3
+        node: r2
+      type: p2p
+    lag:
+      lacp: fast
+      lacp_mode: active
+      mode: 802.3ad
+    loopback:
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.7/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.107
+      mac: 08:4f:a9:00:00:07
+    module:
+    - lag
+    name: laghost-02
   r:
     _set_ifindex: true
     af:
@@ -823,11 +1136,11 @@ nodes:
     device: frr
     id: 1
     interfaces:
-    - bridge: input_7
+    - bridge: input_4
       ifindex: 1
       ifname: eth1
       ipv4: 172.16.1.1/24
-      linkindex: 7
+      linkindex: 4
       name: r -> host_w_long_n-01
       neighbors:
       - ifname: eth1
@@ -835,11 +1148,11 @@ nodes:
         node: host_w_long_n-01
       role: stub
       type: lan
-    - bridge: input_8
+    - bridge: input_5
       ifindex: 2
       ifname: eth2
       ipv4: 172.16.2.1/24
-      linkindex: 8
+      linkindex: 5
       name: r -> host_w_long_n-02
       neighbors:
       - ifname: eth1
@@ -847,11 +1160,11 @@ nodes:
         node: host_w_long_n-02
       role: stub
       type: lan
-    - bridge: input_9
+    - bridge: input_6
       ifindex: 3
       ifname: eth3
       ipv4: 172.16.3.1/24
-      linkindex: 9
+      linkindex: 6
       name: r -> host_w_long_n-03
       neighbors:
       - ifname: eth1
@@ -859,113 +1172,113 @@ nodes:
         node: host_w_long_n-03
       role: stub
       type: lan
-    - ifindex: 4
+    - bridge: input_25
+      ifindex: 4
       ifname: eth4
-      lag:
-        _parentindex: 3
-      linkindex: 10
-      name: r -> h-03
-      neighbors:
-      - ifname: eth2
-        node: h-03
-      type: p2p
-    - ifindex: 5
-      ifname: eth5
-      lag:
-        _parentindex: 3
-      linkindex: 11
-      name: r -> h-03
-      neighbors:
-      - ifname: eth3
-        node: h-03
-      type: p2p
-    - ifindex: 6
-      ifname: eth6
-      lag:
-        _parentindex: 4
-      linkindex: 12
-      name: r -> h-07
-      neighbors:
-      - ifname: eth2
-        node: h-07
-      type: p2p
-    - ifindex: 7
-      ifname: eth7
-      lag:
-        _parentindex: 4
-      linkindex: 13
-      name: r -> h-07
-      neighbors:
-      - ifname: eth3
-        node: h-07
-      type: p2p
-    - bridge: input_18
-      ifindex: 8
-      ifname: eth8
-      linkindex: 18
+      linkindex: 25
       name: '[Access VLAN red] r -> h-03'
       neighbors:
-      - ifname: eth6
-        ipv4: 172.16.0.2/24
+      - ifname: eth2
+        ipv4: 172.16.0.4/24
         node: h-03
       type: lan
       vlan:
         access: red
         access_id: 1000
-    - bridge: input_19
-      ifindex: 9
-      ifname: eth9
-      linkindex: 19
+    - bridge: input_26
+      ifindex: 5
+      ifname: eth5
+      linkindex: 26
       name: '[Access VLAN red] r -> h-07'
       neighbors:
-      - ifname: eth6
-        ipv4: 172.16.0.3/24
+      - ifname: eth2
+        ipv4: 172.16.0.5/24
         node: h-07
       type: lan
       vlan:
         access: red
         access_id: 1000
-    - ifindex: 10
-      ifname: eth10
-      ipv4: 10.1.0.26/30
-      linkindex: 20
+    - ifindex: 6
+      ifname: eth6
+      ipv4: 10.1.0.10/30
+      linkindex: 27
       name: r -> h-03
       neighbors:
-      - ifname: eth7
-        ipv4: 10.1.0.25/30
+      - ifname: eth3
+        ipv4: 10.1.0.9/30
         node: h-03
         vrf: red
       type: p2p
       vrf: red
-    - ifindex: 11
-      ifname: eth11
-      ipv4: 10.1.0.30/30
-      linkindex: 21
+    - ifindex: 7
+      ifname: eth7
+      ipv4: 10.1.0.14/30
+      linkindex: 28
       name: r -> h-07
       neighbors:
-      - ifname: eth7
-        ipv4: 10.1.0.29/30
+      - ifname: eth3
+        ipv4: 10.1.0.13/30
         node: h-07
         vrf: red
       type: p2p
       vrf: red
     - bridge_group: 1
-      ifindex: 12
+      ifindex: 8
       ifname: vlan1000
       ipv4: 172.16.0.1/24
-      name: VLAN red (1000) -> [h-03,h-07]
+      name: VLAN red (1000) -> [h-03,h-07,laghost-01,r2,r1,laghost-02]
       neighbors:
       - ifname: vlan1000
-        ipv4: 172.16.0.2/24
+        ipv4: 172.16.0.4/24
         node: h-03
       - ifname: vlan1000
-        ipv4: 172.16.0.3/24
+        ipv4: 172.16.0.5/24
         node: h-07
+      - ifname: bond10
+        ipv4: 172.16.0.6/24
+        node: laghost-01
+      - ifname: Vlan1000
+        ipv4: 172.16.0.3/24
+        node: r2
+      - ifname: Vlan1000
+        ipv4: 172.16.0.2/24
+        node: r1
+      - ifname: bond11
+        ipv4: 172.16.0.7/24
+        node: laghost-02
       type: svi
       virtual_interface: true
       vlan:
         mode: irb
         name: red
+    - ifindex: 9
+      ifname: eth9
+      linkindex: 0
+      neighbors: []
+      remote_id: 1
+      remote_ifindex: 666
+      type: p2p
+    - ifindex: 10
+      ifname: eth10
+      linkindex: 0
+      neighbors: []
+      remote_id: 1
+      remote_ifindex: 666
+      type: p2p
+    - ifindex: 11
+      ifname: eth11
+      linkindex: 0
+      neighbors: []
+      remote_id: 1
+      remote_ifindex: 666
+      type: p2p
+    - ifindex: 12
+      ifname: eth12
+      linkindex: 0
+      neighbors: []
+      remote_id: 1
+      remote_ifindex: 666
+      type: p2p
     - ifindex: 13
       ifname: eth13
       linkindex: 0
@@ -990,7 +1303,7 @@ nodes:
     - ifindex: 16
       ifname: eth16
       ipv4: 10.1.0.2/30
-      linkindex: 1
+      linkindex: 2
       name: r -> h-03
       neighbors:
       - ifname: eth1
@@ -1000,137 +1313,15 @@ nodes:
     - ifindex: 17
       ifname: eth17
       ipv4: 10.1.0.6/30
-      linkindex: 2
+      linkindex: 3
       name: r -> h-07
       neighbors:
       - ifname: eth1
         ipv4: 10.1.0.5/30
         node: h-07
       type: p2p
-    - ifindex: 18
-      ifname: eth18
-      linkindex: 0
-      neighbors: []
-      remote_id: 1
-      remote_ifindex: 666
-      type: p2p
-    - ifindex: 19
-      ifname: eth19
-      linkindex: 0
-      neighbors: []
-      remote_id: 1
-      remote_ifindex: 666
-      type: p2p
-    - ifindex: 20
-      ifname: eth20
-      lag:
-        _parentindex: 5
-      linkindex: 14
-      name: r -> h-03
-      neighbors:
-      - ifname: eth4
-        node: h-03
-      type: p2p
-    - ifindex: 21
-      ifname: eth21
-      lag:
-        _parentindex: 5
-      linkindex: 15
-      name: r -> h-03
-      neighbors:
-      - ifname: eth5
-        node: h-03
-      type: p2p
-    - ifindex: 22
-      ifname: eth22
-      lag:
-        _parentindex: 6
-      linkindex: 16
-      name: r -> h-07
-      neighbors:
-      - ifname: eth4
-        node: h-07
-      type: p2p
-    - ifindex: 23
-      ifname: eth23
-      lag:
-        _parentindex: 6
-      linkindex: 17
-      name: r -> h-07
-      neighbors:
-      - ifname: eth5
-        node: h-07
-      type: p2p
-    - ifindex: 30000
-      ifname: bond5
-      ipv4: 10.1.0.9/30
-      lag:
-        ifindex: 5
-        lacp: fast
-        lacp_mode: active
-        mode: 802.3ad
-      linkindex: 3
-      name: r -> h-03
-      neighbors:
-      - ifname: bond5
-        ipv4: 10.1.0.10/30
-        node: h-03
-      type: lag
-      virtual_interface: true
-    - ifindex: 30001
-      ifname: bond6
-      ipv4: 10.1.0.13/30
-      lag:
-        ifindex: 6
-        lacp: fast
-        lacp_mode: active
-        mode: 802.3ad
-      linkindex: 4
-      name: r -> h-07
-      neighbors:
-      - ifname: bond6
-        ipv4: 10.1.0.14/30
-        node: h-07
-      type: lag
-      virtual_interface: true
-    - ifindex: 30002
-      ifname: bond7
-      ipv4: 10.1.0.17/30
-      lag:
-        ifindex: 7
-        lacp: fast
-        lacp_mode: active
-        mode: 802.3ad
-      linkindex: 5
-      name: r -> h-03
-      neighbors:
-      - ifname: bond6
-        ipv4: 10.1.0.18/30
-        node: h-03
-      type: lag
-      virtual_interface: true
-    - ifindex: 30003
-      ifname: bond8
-      ipv4: 10.1.0.21/30
-      lag:
-        ifindex: 8
-        lacp: fast
-        lacp_mode: active
-        mode: 802.3ad
-      linkindex: 6
-      name: r -> h-07
-      neighbors:
-      - ifname: bond7
-        ipv4: 10.1.0.22/30
-        node: h-07
-      type: lag
-      virtual_interface: true
-    lag:
-      lacp: fast
-      lacp_mode: active
-      mode: 802.3ad
     libvirt:
-      nic_adapter_count: 24
+      nic_adapter_count: 18
     loopback:
       ifindex: 0
       ifname: lo
@@ -1143,7 +1334,6 @@ nodes:
       ipv4: 192.168.121.101
       mac: 08:4f:a9:00:00:01
     module:
-    - lag
     - vlan
     - vrf
     name: r
@@ -1170,6 +1360,444 @@ nodes:
         - '65000:1'
         rd: '65000:1'
         vrfidx: 100
+  r1:
+    af:
+      ipv4: true
+    box: arista/veos
+    device: eos
+    id: 2
+    interfaces:
+    - ifindex: 1
+      ifname: Ethernet1
+      lag:
+        mlag:
+          ifindex: 4094
+          peer: 169.254.127.0
+          peergroup: 1
+          self: 169.254.127.1/31
+          vlan: 4094
+      linkindex: 1
+      name: r1 -> r2
+      neighbors:
+      - ifname: Ethernet1
+        node: r2
+      type: p2p
+    - ifindex: 30000
+      ifname: port-channel8
+      lag:
+        ifindex: 8
+        lacp: fast
+        lacp_mode: active
+        mode: 802.3ad
+      linkindex: 7
+      name: r1 -> laghost-01
+      neighbors:
+      - ifname: bond8
+        node: laghost-01
+      pool: l2only
+      type: lag
+      virtual_interface: true
+    - ifindex: 30001
+      ifname: port-channel9
+      lag:
+        ifindex: 9
+        lacp: fast
+        lacp_mode: active
+        mode: 802.3ad
+      linkindex: 8
+      name: r1 -> laghost-02
+      neighbors:
+      - ifname: bond9
+        node: laghost-02
+      pool: l2only
+      type: lag
+      virtual_interface: true
+    - ifindex: 30002
+      ifname: port-channel10
+      lag:
+        _mlag: true
+        ifindex: 10
+        lacp: fast
+        lacp_mode: active
+        mode: 802.3ad
+      linkindex: 11
+      name: '[Access VLAN red] r1 -> [laghost-01,r2]'
+      neighbors:
+      - ifname: bond10
+        ipv4: 172.16.0.6/24
+        node: laghost-01
+      - ifname: port-channel10
+        ipv4: 172.16.0.3/24
+        node: r2
+      type: lag
+      virtual_interface: true
+      vlan:
+        access: red
+        access_id: 1000
+    - ifindex: 30003
+      ifname: port-channel11
+      lag:
+        _mlag: true
+        ifindex: 11
+        lacp: fast
+        lacp_mode: active
+        mode: 802.3ad
+      linkindex: 12
+      name: '[Access VLAN red] r1 -> [laghost-02,r2]'
+      neighbors:
+      - ifname: bond11
+        ipv4: 172.16.0.7/24
+        node: laghost-02
+      - ifname: port-channel11
+        ipv4: 172.16.0.3/24
+        node: r2
+      type: lag
+      virtual_interface: true
+      vlan:
+        access: red
+        access_id: 1000
+    - ifindex: 2
+      ifname: Ethernet2
+      lag:
+        _parentindex: 7
+      linkindex: 13
+      name: r1 -> laghost-01
+      neighbors:
+      - ifname: eth1
+        node: laghost-01
+      type: p2p
+    - ifindex: 3
+      ifname: Ethernet3
+      lag:
+        _parentindex: 7
+      linkindex: 14
+      name: r1 -> laghost-01
+      neighbors:
+      - ifname: eth2
+        node: laghost-01
+      type: p2p
+    - ifindex: 4
+      ifname: Ethernet4
+      lag:
+        _parentindex: 8
+      linkindex: 15
+      name: r1 -> laghost-02
+      neighbors:
+      - ifname: eth1
+        node: laghost-02
+      type: p2p
+    - ifindex: 5
+      ifname: Ethernet5
+      lag:
+        _parentindex: 8
+      linkindex: 16
+      name: r1 -> laghost-02
+      neighbors:
+      - ifname: eth2
+        node: laghost-02
+      type: p2p
+    - ifindex: 6
+      ifname: Ethernet6
+      lag:
+        _parentindex: 11
+      linkindex: 21
+      name: r1 -> laghost-01
+      neighbors:
+      - ifname: eth5
+        node: laghost-01
+      type: p2p
+    - ifindex: 7
+      ifname: Ethernet7
+      lag:
+        _parentindex: 12
+      linkindex: 23
+      name: r1 -> laghost-02
+      neighbors:
+      - ifname: eth5
+        node: laghost-02
+      type: p2p
+    - bridge_group: 1
+      ifindex: 8
+      ifname: Vlan1000
+      ipv4: 172.16.0.2/24
+      name: VLAN red (1000) -> [h-03,r,h-07,laghost-01,r2,laghost-02]
+      neighbors:
+      - ifname: vlan1000
+        ipv4: 172.16.0.4/24
+        node: h-03
+      - ifname: vlan1000
+        ipv4: 172.16.0.1/24
+        node: r
+      - ifname: vlan1000
+        ipv4: 172.16.0.5/24
+        node: h-07
+      - ifname: bond10
+        ipv4: 172.16.0.6/24
+        node: laghost-01
+      - ifname: Vlan1000
+        ipv4: 172.16.0.3/24
+        node: r2
+      - ifname: bond11
+        ipv4: 172.16.0.7/24
+        node: laghost-02
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: irb
+        name: red
+    lag:
+      lacp: fast
+      lacp_mode: active
+      mode: 802.3ad
+    loopback:
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.2/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.102
+      mac: 08:4f:a9:00:00:02
+    module:
+    - lag
+    - vlan
+    name: r1
+    vlan:
+      max_bridge_group: 1
+    vlans:
+      red:
+        bridge_group: 1
+        id: 1000
+        mode: irb
+        prefix:
+          allocation: id_based
+          ipv4: 172.16.0.0/24
+  r2:
+    _set_ifindex: true
+    af:
+      ipv4: true
+    box: arista/veos
+    device: eos
+    id: 3
+    interfaces:
+    - ifindex: 1
+      ifname: Ethernet1
+      lag:
+        mlag:
+          ifindex: 4094
+          peer: 169.254.127.1
+          peergroup: 1
+          self: 169.254.127.0/31
+          vlan: 4094
+      linkindex: 1
+      name: r2 -> r1
+      neighbors:
+      - ifname: Ethernet1
+        node: r1
+      type: p2p
+    - ifindex: 2
+      ifname: Ethernet2
+      lag:
+        _parentindex: 11
+      linkindex: 22
+      name: r2 -> laghost-01
+      neighbors:
+      - ifname: eth6
+        node: laghost-01
+      type: p2p
+    - ifindex: 3
+      ifname: Ethernet3
+      lag:
+        _parentindex: 12
+      linkindex: 24
+      name: r2 -> laghost-02
+      neighbors:
+      - ifname: eth6
+        node: laghost-02
+      type: p2p
+    - bridge_group: 1
+      ifindex: 4
+      ifname: Vlan1000
+      ipv4: 172.16.0.3/24
+      name: VLAN red (1000) -> [h-03,r,h-07,laghost-01,r1,laghost-02]
+      neighbors:
+      - ifname: vlan1000
+        ipv4: 172.16.0.4/24
+        node: h-03
+      - ifname: vlan1000
+        ipv4: 172.16.0.1/24
+        node: r
+      - ifname: vlan1000
+        ipv4: 172.16.0.5/24
+        node: h-07
+      - ifname: bond10
+        ipv4: 172.16.0.6/24
+        node: laghost-01
+      - ifname: Vlan1000
+        ipv4: 172.16.0.2/24
+        node: r1
+      - ifname: bond11
+        ipv4: 172.16.0.7/24
+        node: laghost-02
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: irb
+        name: red
+    - ifindex: 5
+      ifname: Ethernet5
+      linkindex: 0
+      neighbors: []
+      remote_id: 3
+      remote_ifindex: 666
+      type: p2p
+    - ifindex: 6
+      ifname: Ethernet6
+      lag:
+        _parentindex: 9
+      linkindex: 17
+      name: r2 -> laghost-01
+      neighbors:
+      - ifname: eth3
+        node: laghost-01
+      type: p2p
+    - ifindex: 7
+      ifname: Ethernet7
+      lag:
+        _parentindex: 9
+      linkindex: 18
+      name: r2 -> laghost-01
+      neighbors:
+      - ifname: eth4
+        node: laghost-01
+      type: p2p
+    - ifindex: 8
+      ifname: Ethernet8
+      lag:
+        _parentindex: 10
+      linkindex: 19
+      name: r2 -> laghost-02
+      neighbors:
+      - ifname: eth3
+        node: laghost-02
+      type: p2p
+    - ifindex: 9
+      ifname: Ethernet9
+      lag:
+        _parentindex: 10
+      linkindex: 20
+      name: r2 -> laghost-02
+      neighbors:
+      - ifname: eth4
+        node: laghost-02
+      type: p2p
+    - ifindex: 30000
+      ifname: port-channel1
+      lag:
+        ifindex: 1
+        lacp: fast
+        lacp_mode: active
+        mode: 802.3ad
+      linkindex: 9
+      name: r2 -> laghost-01
+      neighbors:
+      - ifname: bond9
+        node: laghost-01
+      pool: l2only
+      type: lag
+      virtual_interface: true
+    - ifindex: 30001
+      ifname: port-channel2
+      lag:
+        ifindex: 2
+        lacp: fast
+        lacp_mode: active
+        mode: 802.3ad
+      linkindex: 10
+      name: r2 -> laghost-02
+      neighbors:
+      - ifname: bond10
+        node: laghost-02
+      pool: l2only
+      type: lag
+      virtual_interface: true
+    - ifindex: 30002
+      ifname: port-channel10
+      lag:
+        _mlag: true
+        ifindex: 10
+        lacp: fast
+        lacp_mode: active
+        mode: 802.3ad
+      linkindex: 11
+      name: '[Access VLAN red] r2 -> [laghost-01,r1]'
+      neighbors:
+      - ifname: bond10
+        ipv4: 172.16.0.6/24
+        node: laghost-01
+      - ifname: port-channel10
+        ipv4: 172.16.0.2/24
+        node: r1
+      type: lag
+      virtual_interface: true
+      vlan:
+        access: red
+        access_id: 1000
+    - ifindex: 30003
+      ifname: port-channel11
+      lag:
+        _mlag: true
+        ifindex: 11
+        lacp: fast
+        lacp_mode: active
+        mode: 802.3ad
+      linkindex: 12
+      name: '[Access VLAN red] r2 -> [laghost-02,r1]'
+      neighbors:
+      - ifname: bond11
+        ipv4: 172.16.0.7/24
+        node: laghost-02
+      - ifname: port-channel11
+        ipv4: 172.16.0.2/24
+        node: r1
+      type: lag
+      virtual_interface: true
+      vlan:
+        access: red
+        access_id: 1000
+    lag:
+      lacp: fast
+      lacp_mode: active
+      mode: 802.3ad
+    libvirt:
+      nic_adapter_count: 10
+    loopback:
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.3/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: Management1
+      ipv4: 192.168.121.103
+      mac: 08:4f:a9:00:00:03
+    module:
+    - lag
+    - vlan
+    name: r2
+    vlan:
+      max_bridge_group: 1
+    vlans:
+      red:
+        bridge_group: 1
+        id: 1000
+        mode: irb
+        prefix:
+          allocation: id_based
+          ipv4: 172.16.0.0/24
 plugin:
 - node.clone
 provider: libvirt
@@ -1179,14 +1807,26 @@ vlans:
     id: 1000
     neighbors:
     - ifname: vlan1000
-      ipv4: 172.16.0.2/24
+      ipv4: 172.16.0.4/24
       node: h-03
     - ifname: vlan1000
       ipv4: 172.16.0.1/24
       node: r
     - ifname: vlan1000
-      ipv4: 172.16.0.3/24
+      ipv4: 172.16.0.5/24
       node: h-07
+    - ifname: bond10
+      ipv4: 172.16.0.6/24
+      node: laghost-01
+    - ifname: Vlan1000
+      ipv4: 172.16.0.3/24
+      node: r2
+    - ifname: Vlan1000
+      ipv4: 172.16.0.2/24
+      node: r1
+    - ifname: bond11
+      ipv4: 172.16.0.7/24
+      node: laghost-02
     prefix:
       allocation: id_based
       ipv4: 172.16.0.0/24

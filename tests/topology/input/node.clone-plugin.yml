@@ -13,12 +13,19 @@ vrfs:
 
 groups:
  _auto_create: True   # Test presence of bool flag
+ 
  hosts:
   members: [h,host_w_long_name]  # Gets updated with cloned nodes
+
+ lag-routers:
+  members: [r1,r2]    # Devices that supports (m)lag
+  device: eos
+  module: [vlan,lag]
 
 nodes:
  r:
   device: frr
+  module: [vlan,vrf]
 
  h:                   # Short name, regular test
   device: frr
@@ -32,6 +39,11 @@ nodes:
   clone.count: 3      # Create 3 hosts
   id: 10              # Starting at ID 10
 
+ laghost:             # Host for lag tests
+  device: frr
+  module: [lag]
+  clone.count: 2
+
 links:
 - r-host_w_long_name  # Plugin supports different styles of specifying links, all normalized
 - r:
@@ -39,14 +51,23 @@ links:
   h:
     mtu: 1600         # Interface atts get copied too
 
+# lag test cases
 - lag:
-   members: [ r-h, r-h ]
-   ifindex: 5           # Custom lag.ifindex, gets incremented for each clone
+   members: [r1-r2]
+   mlag.peergroup: True
+- lag:
+   members: [ r1-laghost, r1-laghost ]
+   ifindex: 8         # Custom lag.ifindex, gets incremented for each clone
+  pool: l2only
 - lag:
    members: 
-   - r:
-       ifindex: 20   # Custom ifindex on interface, gets incremented for each clone
-     h:
-   - r:
-       ifindex: 21
-     h:
+   - r2:
+      ifindex: 6      # Custom ifindex on interface, gets incremented for each clone
+     laghost:
+   - r2:
+      ifindex: 7
+     laghost:
+  pool: l2only
+- lag:
+   members: [ laghost-r1, laghost-r2 ] # mlag
+  vlan.access: red
