@@ -104,17 +104,37 @@ def normalized_members(l: Box, topology: Box, peerlink: bool = False) -> list:
   return members
 
 """
-verify_lag_ifindex - check that selected lag.ifindex does not overlap with any reserved values
+set_lag_ifindex - Assign lag.ifindex, check for overlap with any reserved values
 """
-def verify_lag_ifindex(intf: Box, linkname: str, topology: Box) -> bool:
-  lag_ifindex = intf.get('lag.ifindex',None)
-  if lag_ifindex is None:
-    return True
+def set_lag_ifindex(laglink: Box, intf: Box, is_mside: bool, topology: Box) -> bool:
+  intf_lag_ifindex = intf.get('lag.ifindex',None)              # Use user provided lag.ifindex, if any
+  link_lag_ifindex = laglink.get('lag.ifindex',None)
   _n = topology.nodes[intf.node]
+  next_ifindex = _n.get('_lag_ifindex',None)
+  if intf_lag_ifindex is None:
+    if link_lag_ifindex is None:
+      if is_mside:                                             # For M: side we need matching lag.ifindex
+        if next_ifindex is None:                               # Do we have a local preference?
+          next_ifindex = _dataplane.get_next_id(ID_SET)        # No -> allocate globally
+        laglink.lag.ifindex = link_lag_ifindex = next_ifindex  # Put on the link for the other M side to match
+      else:
+        if next_ifindex is None:
+          next_ifindex = topology.defaults.lag.start_lag_id    # Start at start_lag_id (default 1)
+        link_lag_ifindex = next_ifindex
+        intf.lag.ifindex = link_lag_ifindex                    # Put it on the interface for bond naming
+    elif next_ifindex and next_ifindex>link_lag_ifindex:
+      link_lag_ifindex = next_ifindex                          # Cannot accept link level lag.ifindex
+      if is_mside:
+        laglink.lag.ifindex = next_ifindex                     # Override the unacceptable link value
+    _n._lag_ifindex = link_lag_ifindex + 1                     # Track next ifindex to assign, per node
+    intf_lag_ifindex = link_lag_ifindex
+  elif link_lag_ifindex is None:
+    laglink.lag.ifindex = link_lag_ifindex = intf_lag_ifindex
+
   features = devices.get_device_features(_n,topology.defaults)
-  if 'reserved_ifindex_range' in features.lag:                            # Exclude any reserved port channel IDs
-    if lag_ifindex in features.lag.reserved_ifindex_range:
-      log.error(f'Selected lag.ifindex({lag_ifindex}) for {linkname} overlaps with device specific reserved range ' +
+  if 'reserved_ifindex_range' in features.lag:                 # Exclude any reserved port channel IDs
+    if intf_lag_ifindex in features.lag.reserved_ifindex_range:
+      log.error(f'Selected lag.ifindex({intf_lag_ifindex}) on {laglink._linkname} overlaps with device specific reserved range ' +
                 f'{features.lag.reserved_ifindex_range} for node {_n.name} ({_n.device})',
         category=log.IncorrectValue,
         module='lag')
@@ -195,19 +215,12 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
         ifatts = ifatts + { k:v for k,v in m.items() if k not in skip_atts }
         if dual_mlag:
           ifatts._peer = [ i.node for i in m.interfaces if i.node!=node ][0]
-    if not verify_lag_ifindex(ifatts,l._linkname,topology):
+    is_mside = is_mlag and node!=one_side         # Set flag if this node is the M: side
+    if not set_lag_ifindex(l,ifatts,is_mside,topology):
       return
     if node==one_side:
       if not check_lag_config(node,l._linkname,topology):
         return
-      if 'ifindex' not in ifatts.get('lag',{}):   # assign lag.ifindex if not provided
-        _n = topology.nodes[node]
-        if '_lag_ifindex' in _n:
-          lag_ifindex = _n._lag_ifindex
-        else:
-          lag_ifindex = 1                         # Start at 1
-        _n._lag_ifindex = lag_ifindex + 1         # Track next ifindex to assign, per node
-        ifatts.lag.ifindex = lag_ifindex          # In time to derive interface name from it
     elif is_mlag:
       lag_mode = l.get('lag.mode',topology.get('lag.mode',"802.3ad"))
       if lag_mode == "active-backup":             # Exception: active-backup lag to 2 nodes
@@ -284,7 +297,7 @@ def create_peer_links(l: Box, topology: Box) -> bool:
   return True
 
 """
-process_lag_links - process all links with 'lag' attribute. Return true if any peerlinks are used
+process_lag_links - process all links with 'lag' attribute
 """
 def process_lag_links(topology: Box) -> None:
   for l in list(topology.links):                   # Make a copy of the list, gets modified
@@ -308,8 +321,6 @@ def process_lag_links(topology: Box) -> None:
         return
     else:
       l.type = 'lag'
-      if 'ifindex' not in l.lag:                   # Use user provided lag.ifindex, if any
-        l.lag.ifindex = _dataplane.get_next_id(ID_SET)
       create_lag_member_links(l,topology)
     topology.links[l.linkindex-1].lag.pop("members",None)
 
