@@ -224,10 +224,12 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
     elif is_mlag:
       lag_mode = l.get('lag.mode',topology.get('lag.mode',"802.3ad"))
       if lag_mode == "active-backup":             # Exception: active-backup lag to 2 nodes
-        continue                                  # Skip adding the lag interface on M-side
-      if not check_mlag_support(node,l._linkname,topology):
-        return
-      ifatts.lag._mlag = True                     # Set internal flag
+        ifatts.pop('lag',None)                    # Remove the lag interface on M-side
+        ifatts.type = 'lan'                       # Convert into regular LAN interface
+      else:
+        if not check_mlag_support(node,l._linkname,topology):
+          return
+        ifatts.lag._mlag = True                   # Set internal flag
 
     if log.debug_active('lag'):
       print(f'LAG create_lag_member_links for node {node} -> collected ifatts {ifatts}')
