@@ -1,4 +1,5 @@
----
+# yamllint disable rule:line-length
+# yamllint disable rule:trailing-spaces
 message: |
   The devices under test have multiple links between them which form a loop unless STP blocks all but one
 
@@ -29,7 +30,7 @@ message: |
   Et1              designated forwarding 20000     128.1    P2p Edge                      
   Et2              alternate  discarding 20000     128.2    P2p            <-- selected to discard due to priority Et3 received from s2
   Et3              root       forwarding 20000     128.3    P2p                           
-  
+
   user@host:~/Projects/netlab/tests/integration/stp$ docker exec -it clab-stp-s2 Cli -c "show spanning-tree"
   MST0
   Spanning tree enabled protocol rstp
@@ -49,24 +50,24 @@ message: |
 
 # Dell OS10 can't run STP on virtual networks -> use custom template
 defaults.devices.dellos10:
- features.vlan.svi_interface_name: vlan{vlan}
+  features.vlan.svi_interface_name: vlan{vlan}
 
 # Per-VLAN port priority requires PVRST
 stp.protocol: pvrst
 
 groups:
-  _auto_create: True
+  _auto_create: true
   switches:
-    members: [ s1, s2 ]
-    module: [ vlan, stp ]
+    members: [s1, s2]
+    module: [vlan, stp]
   hosts:
-    members: [ h1, h2 ]
+    members: [h1, h2]
     device: linux
     provider: clab
 
 nodes:
- s2:
-  stp.priority: 4096  # High STP bridge priority (low value) -> becomes root
+  s2:
+    stp.priority: 4096 # High STP bridge priority (low value) -> becomes root
 
 vlans:
   red:
@@ -77,23 +78,23 @@ vlans:
     # Dual access link between s1/s2
     - s1:
       s2:
-       stp.port_priority: 2  # Backup link (lower priority)
+        stp.port_priority: 2 # Backup link (lower priority)
     - s1:
       s2:
-       stp.port_priority: 1  # Sent to S1 which should cause it to select this link as root port
+        stp.port_priority: 1 # Sent to S1 which should cause it to select this link as root port
 
 links:
 - s1:
   s2:
-   vlan.trunk:
-    red:
-     stp.port_priority: 3    # Test port priority on trunk vlan
+    vlan.trunk:
+      red:
+        stp.port_priority: 3 # Test port priority on trunk vlan
   vlan.trunk: [red]
 
 validate:
   ping:
     description: Pinging H2 from H1
-    nodes: [ h1 ]
+    nodes: [h1]
     wait_msg: Waiting for STP to enable the ports
     wait: 45
     plugin: ping('h2')
