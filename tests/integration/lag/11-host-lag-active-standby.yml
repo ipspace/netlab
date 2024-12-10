@@ -3,7 +3,7 @@ message: |
   The device under test is a pair of switches with a pair of links connected to 2 Linux hosts.
   The Linux hosts are using active-standby lags, which don't require any special support from the switches
   
-  The hosts should be able to ping each other and their gateway
+  The hosts should be able to ping each other
 
 lag.mode: active-backup
 
@@ -19,8 +19,13 @@ groups:
 
 vlans:
   red:
+    mode: bridge
+    # links: [h1-s1,h2-s2] # Case with bond should be the same as without
 
 links:
+- s1:
+  s2:
+  vlan.trunk: [red]
 - lag:
    members: [ h1-s1, h1-s2 ]
   vlan.access: red
@@ -34,9 +39,4 @@ validate:
     nodes: [ h1 ]
     wait_msg: Waiting for STP to enable the ports
     wait: 45
-    plugin: ping(nodes.h2.interfaces[0].ipv4,af='ipv4')
-  ping_gw:
-    description: Pinging gateway from H1
-    nodes: [ h1 ]
-    plugin: ping(nodes.s1.interfaces[5].ipv4,af='ipv4')
-
+    plugin: ping('h2',af='ipv4')
