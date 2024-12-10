@@ -1,0 +1,52 @@
+---
+plugin: [ node.clone ]
+
+module: [lag,vlan,vrf]
+
+vlans:
+ red:
+  links: [r-h]  # VLAN links get updated
+
+vrfs:
+ red:
+  links: [r-h]  # VRF links get updated
+
+groups:
+ _auto_create: True   # Test presence of bool flag
+ hosts:
+  members: [h,host_w_long_name]  # Gets updated with cloned nodes
+
+nodes:
+ r:
+  device: frr
+
+ h:                   # Short name, regular test
+  device: frr
+  clone:
+   count: 2
+   start: 3           # Create h-03 and h-07
+   step: 4
+
+ host_w_long_name:    # Test that node names get shortened to at most 16 chars
+  device: linux
+  clone.count: 3      # Create 3 hosts
+  id: 10              # Starting at ID 10
+
+links:
+- r-host_w_long_name  # Plugin supports different styles of specifying links, all normalized
+- r:
+    ifindex: 16       # Custom port on router -> gets incremented
+  h:
+    mtu: 1600         # Interface atts get copied too
+
+- lag:
+   members: [ r-h, r-h ]
+   ifindex: 5           # Custom lag.ifindex, gets incremented for each clone
+- lag:
+   members: 
+   - r:
+       ifindex: 20   # Custom ifindex on interface, gets incremented for each clone
+     h:
+   - r:
+       ifindex: 21
+     h:
