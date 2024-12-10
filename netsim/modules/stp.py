@@ -16,7 +16,6 @@ def supports_stp(intf: Box) -> bool:
     return False
   if 'virtual_interface' in intf:                                            # Skip virtual interfaces
     return False
-  print(f"intf {intf} supports STP")
   return True
 
 """
@@ -55,7 +54,7 @@ class STP(_Module):
             log.IncorrectValue,
             'stp')
 
-    stub_port_type = topology.get('stp.stub_port_type','edge') if features.get('stp.port_type',False) else 'none'
+    stub_port_type = topology.get('stp.stub_port_type','none')
     for intf in node.get('interfaces',[]):
       if 'stp' in intf:
         if 'ipv4' in intf or 'ipv6' in intf:
@@ -73,8 +72,9 @@ class STP(_Module):
             f'node {node.name} (device {node.device}) does not support configuration of STP port_type on ({intf.ifname})',
             log.IncorrectValue,
             'stp')
+      if not features.get('stp.port_type',False):                   # If the device doesn't support it, move on
+        continue
       stp_port_type = intf.get('stp.port_type',None)
-      print(stp_port_type)
       if stp_port_type is None and supports_stp(intf):
         if stub_port_type != 'none':
           if configure_stub_port_type(intf,stub_port_type,topology):
@@ -88,7 +88,7 @@ class STP(_Module):
               continue
         stp_port_type = node.get('stp.port_type',None)              # Apply node level setting to ports that support it
         if stp_port_type is not None:
-          intf.stp.port_type = stp_port_type                   # Conditional copy
+          intf.stp.port_type = stp_port_type                        # Conditional copy
       
     # Check if per-VLAN priority is being used
     for vname,vdata in node.get('vlans',{}).items():
