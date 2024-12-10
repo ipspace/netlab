@@ -14,6 +14,7 @@ LAG is currently supported on these platforms:
 | Cumulus 5.x (NVUE)    | ✅ | ✅ | ❌  | ❌ |
 | Dell OS10             | ✅ | ✅ | ✅ | ✅ |
 | FRR                   | ✅ | ✅ | ❌  | ❌ |
+| Generic Linux hosts [❗](caveats-linux)  | ✅ | ✅ | ❌  | ❌ |
 
 ## Parameters
 
@@ -32,7 +33,7 @@ The following parameters can be set on individual links:
 
 * **lag.members**: Mandatory list of links that form the LAG. It uses the [same format as the topology **links** list](link-formats).
 * **lag.ifindex**: Optional parameter that controls the naming of the LAG (bonding, port-channel) interface.
-* **lag.mlag**: Optional Boolean or dict with peer link parameters; see [below](mlag)
+* **lag.mlag**: Optional dict with peer link parameters; see [below](mlag)
 
 This configuration module creates a virtual link with the link type set to **lag** between the **lag.members** and appends the links described in the **lag.members** list to the topology **links** list.
 
