@@ -16,21 +16,21 @@ def supports_stp(intf: Box) -> bool:
     return False
   if 'virtual_interface' in intf:                                            # Skip virtual interfaces
     return False
+  print(f"intf {intf} supports STP")
   return True
 
 """
 configure_stub_port_type - for a L2 interface where all devices connected are hosts, sets the stp.port_type as <stub_port_type>
 """
-def configure_stub_port_type(intf: Box, stub_port_type: str, topology: Box) -> None:
+def configure_stub_port_type(intf: Box, stub_port_type: str, topology: Box) -> bool:
   if not (intf.get('neighbors',[]) or intf.get('_vlan_saved_neighbors',[])): # Skip interfaces with no neighbors
-    return
-  if not supports_stp(intf):
-    return
+    return False
   for n in intf.get('neighbors',intf.get('_vlan_saved_neighbors')):
     neighbor = topology.nodes[n.node]
     if neighbor.get('role',None) != 'host':
-      return
+      return False
   intf.stp.port_type = stub_port_type                                        # All neighbors are hosts
+  return True
 
 class STP(_Module):
 
@@ -74,11 +74,21 @@ class STP(_Module):
             log.IncorrectValue,
             'stp')
       stp_port_type = intf.get('stp.port_type',None)
-      if stub_port_type != 'none' and not stp_port_type:
-        configure_stub_port_type(intf,stub_port_type,topology)
-      elif not stp_port_type and node.get('stp.port_type',None):    # Apply node level setting to ports that support it
-        if supports_stp(intf):
-          intf.stp.port_type = node.stp.port_type                   # Conditional copy
+      print(stp_port_type)
+      if stp_port_type is None and supports_stp(intf):
+        if stub_port_type != 'none':
+          if configure_stub_port_type(intf,stub_port_type,topology):
+            continue
+        if 'vlan' in intf:
+          if 'access' in intf.vlan:
+            vlan = node.get(f'vlans.{intf.vlan.access}')
+            stp_port_type = vlan.get('stp.port_type',None)
+            if stp_port_type is not None:
+              intf.stp.port_type = stp_port_type
+              continue
+        stp_port_type = node.get('stp.port_type',None)              # Apply node level setting to ports that support it
+        if stp_port_type is not None:
+          intf.stp.port_type = stp_port_type                   # Conditional copy
       
     # Check if per-VLAN priority is being used
     for vname,vdata in node.get('vlans',{}).items():
