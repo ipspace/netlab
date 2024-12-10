@@ -1,7 +1,7 @@
 {#
   Bridge-based private network
 #}
-{% set ifname = defaults.providers.libvirt.vifprefix + "_" + name + "_" + l.ifindex|string %}
+{% set ifname = l.libvirt.ifname %}
 {% set pubnet = l.libvirt.public|default('') if 'libvirt' in l else '' %}
 {% if pubnet %}
     {{ name }}.vm.network :public_network,
@@ -11,7 +11,6 @@
 {%   endif %}
 {% else %}
     {{ name }}.vm.network :private_network,
-
                   :libvirt__network_name => "{{ l.bridge }}",
                   :libvirt__forward_mode => "veryisolated",
                   :libvirt__dhcp_enabled => false,
@@ -21,6 +20,8 @@
 {% endif -%}
 {% if ifname|length < 16 %}
                   :libvirt__iface_name => "{{ ifname }}",
+{% else %}
+# l.libvirt.ifname too long: {{ ifname }}
 {% endif %}
                   :autostart => true,
                   :auto_config => false
