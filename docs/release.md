@@ -1,6 +1,10 @@
 Release Notes
 =============
 
+**Release 1.9.2-post1 (2024-12-10)**
+
+This release [fixes an annoying bug](bug-fixes-1.9.2-post1) affecting users of Ansible 11.x.
+
 **[Release 1.9.2](release-1.9.2) (2024-11-03)**
 
 * [](module-stp)
