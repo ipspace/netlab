@@ -187,6 +187,7 @@ ansible-galaxy collection install git+https://github.com/jmussmann/ansible_colle
 ## Cumulus Linux
 
 * The Cumulus VX 4.4.0 Vagrant box for VirtualBox is broken. *netlab* is using Cumulus VX 4.3.0 with *virtualbox* virtualization provider.
+* The Cumulus VX 4.x uses Python version 3.7, which recent versions of Ansible refuse to work with. The permanent fix is coming in release 1.9.3. Until then, use the **frrouting** device or [Cumulus VX 5.x image](caveats-cumulus-5x).
 
 _netlab_ uses the VLAN-aware bridge paradigm to configure VLANs on Cumulus Linux. That decision results in the following restrictions:
 
@@ -210,10 +211,11 @@ You could configure Cumulus Linux 5.x with configuration templates developed for
 
 NVUE has several shortcomings that prevent *netlab* from configuring basic designs like IBGP on top of IGP. Don't be surprised if the labs that work with **cumulus** device don't work with **cumulus_nvue** device, and please create a GitHub issue whenever you find a glitch. We'd love to know (at least) what doesn't work as expected.
 
+(caveats-cumulus-5x)=
 To run Cumulus Linux 5.x with **cumulus** device type, set the following default values in [lab topology](defaults-topology) or one of the [defaults files](defaults-user-file):
 
 ```
-defaults.devices.cumulus.libvirt.image: CumulusCommunity/cumulus-vx:5.2.0
+defaults.devices.cumulus.libvirt.image: CumulusCommunity/cumulus-vx:5.10.0
 defaults.devices.cumulus.libvirt.memory: 2048
 ```
 
