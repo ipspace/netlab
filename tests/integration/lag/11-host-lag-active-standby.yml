@@ -1,34 +1,46 @@
 message: |
   The device under test is a pair of switches with a pair of links connected to 2 Linux hosts.
-  The Linux hosts are using active-standby lags, which don't require any special support from the switches
+  The Linux hosts are using active-standby bonding, which doesn't require any special support from the switches
+  (and technically isn't "link aggregation")  
 
-  The hosts should be able to ping each other and their gateway
+  The hosts should be able to ping each other
 
-plugin: [bonding]
+plugin: [ bonding ]     # To be created
+
+bonding.mode: active-backup
 
 groups:
   _auto_create: true
   switches:
-    members: [s1, s2]
+    members: [ s1, s2 ]
     module: [vlan]      # No 'lag' module support enabled
   hosts:
-    members: [h1, h2]
+    members: [ h1, h2 ]
     device: linux
 
 vlans:
   red:
     mode: bridge
-    # links: [h1-s1,h2-s2] # Case with bond should be the same as without
 
 links:
 - s1:
   s2:
   vlan.trunk: [red]
-- lag:
-    members: [h1-s1, h1-s2]
+- h1:
+    bonding.ifindex: 1
+  s1:
   vlan.access: red
-- lag:
-    members: [h2-s1, h2-s2]
+- h1:
+    bonding.ifindex: 1
+  s2:
+  vlan.access: red
+- h2:
+    bonding.ifindex: 1
+  s1:
+  vlan.access: red
+- h2:
+    bonding.ifindex: 1
+  s2:
   vlan.access: red
 
 validate:
