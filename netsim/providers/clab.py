@@ -21,35 +21,6 @@ def list_bridges( topology: Box ) -> typing.Set[str]:
 def use_ovs_bridge( topology: Box ) -> bool:
     return topology.defaults.providers.clab.bridge_type == "ovs-bridge"
 
-def create_linux_bridge( brname: str ) -> bool:
-  if external_commands.run_command(
-       ['brctl','show',brname],check_result=True,ignore_errors=True) and not is_dry_run():
-    log.print_verbose(f'Linux bridge {brname} already exists, skipping')
-    return True
-
-  status = external_commands.run_command(
-      ['sudo','ip','link','add','name',brname,'type','bridge'],check_result=True,return_stdout=True)
-  if status is False:
-    return False
-  log.print_verbose( f"Created Linux bridge '{brname}': {status}" )
-
-  status = external_commands.run_command(
-      ['sudo','ip','link','set','dev',brname,'up'],check_result=True,return_stdout=True)
-  if status is False:
-    return False
-  log.print_verbose( f"Enable Linux bridge '{brname}': {status}" )
-
-  status = linuxbridge.configure_bridge_forwarding(brname)
-  return status
-
-def destroy_linux_bridge( brname: str ) -> bool:
-  status = external_commands.run_command(
-      ['sudo','ip','link','del','dev',brname],check_result=True,return_stdout=True)
-  if status is False:
-    return False
-  log.print_verbose( f"Delete Linux bridge '{brname}': {status}" )
-  return True
-
 def create_ovs_bridge( brname: str ) -> bool:
   status = external_commands.run_command(
       ['sudo','ovs-vsctl','add-br',brname],check_result=True,return_stdout=True)
@@ -178,7 +149,7 @@ class Containerlab(_Provider):
       if use_ovs_bridge(topology):
         create_ovs_bridge(brname)
       else:
-        create_linux_bridge(brname)
+        linuxbridge.create_linux_bridge(brname)
     load_kmods(topology)
 
   def post_stop_lab(self, topology: Box) -> None:
@@ -187,7 +158,7 @@ class Containerlab(_Provider):
       if use_ovs_bridge(topology):
         destroy_ovs_bridge(brname)
       else:
-        destroy_linux_bridge(brname)
+        linuxbridge.destroy_linux_bridge(brname)
 
   def get_lab_status(self) -> Box:
     try:
