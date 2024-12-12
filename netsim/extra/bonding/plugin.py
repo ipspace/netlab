@@ -48,7 +48,7 @@ def post_transform(topology: Box) -> None:
         if not bond_ifindex:
           continue
 
-        if 'virtual_interface' in intf or len(intf.get('neighbors',[])!=1:
+        if 'virtual_interface' in intf or len(intf.get('neighbors',[]))!=1:
           log.error( f"{intf.name}: 'bonding.ifindex' can only be applied to interfaces on physical p2p links",
                      category=log.IncorrectAttr,module=_config_name)
           continue
