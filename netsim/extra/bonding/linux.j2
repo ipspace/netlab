@@ -3,12 +3,13 @@
 
 set -e
 
-{% for intf in interfaces|default([]) if intf.type=='bond' %}
-{%   set mode = intf.bonding.mode|default('active-backup') %}
-{{   create_bond_dev(intf|combine( {'type':'lag','lag': { 'mode': mode, 'lacp': 'off' } }) ) }}
+{% for intf in interfaces|default([]) if intf.bonding.mode is defined %}
+{{   create_bond_dev(intf,{ 'mode': intf.bonding.mode, 'lacp': 'off' } ) }}
 ip link set dev {{ intf.ifname }} down
-{%   for member in intf.members %}
+{%   for member in intf.bonding.members %}
+ip link set dev {{ member }} down
 ip link set dev {{ member }} master {{ intf.ifname }}
+ip link set dev {{ member }} up
 {%   endfor %}
 ip link set dev {{ intf.ifname }} up
 {% endfor %}
