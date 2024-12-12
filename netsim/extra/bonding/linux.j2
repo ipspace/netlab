@@ -1,0 +1,14 @@
+{% from "templates/lag/linux.j2" import create_bond_dev with context %}
+#!/bin/bash
+
+set -e
+
+{% for intf in interfaces|default([]) if intf.type=='bond' %}
+{%   set mode = intf.bonding.mode|default('active-backup') %}
+{{   create_bond_dev(intf|combine( {'type':'lag','lag': { 'mode': mode, 'lacp': 'off' } }) ) }}
+ip link set dev {{ intf.ifname }} down
+{%   for member in intf.members %}
+ip link set dev {{ member }} master {{ intf.ifname }}
+{%   endfor %}
+ip link set dev {{ intf.ifname }} up
+{% endfor %}
