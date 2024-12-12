@@ -1,0 +1,24 @@
+{% set _packages = netlab_linux_packages|default({}) %}
+{% for pkg,cmd in _packages.items() %}
+{%   if loop.first %}
+APT_INSTALL=
+{%   endif %}
+#
+if which {{ cmd }}; then
+  echo "Package {{ pkg }} already installed"
+else
+  APT_INSTALL="$APT_INSTALL {{ pkg }}"
+fi
+{%  if loop.last %}
+#
+# APT_INSTALL always starts with a blank, so we can't just check if it's empty
+# The following hack turns a string that contains only whitespaces into
+# an empty string and removes leading whitespaces
+#
+APT_INSTALL=`echo $APT_INSTALL`
+if [[ -n "$APT_INSTALL" ]]; then
+  echo "Installing packages $APT_INSTALL"
+  apt-get update -qq && apt-get install -qq $APT_INSTALL
+fi
+{%  endif %}
+{% endfor %}
