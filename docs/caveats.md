@@ -262,7 +262,7 @@ We're not testing Fortinet implementation as part of the regular integration tes
 ## FRRouting
 
 * Many FRR configuration templates are not idempotent -- you cannot run **netlab initial** multiple times. Non-idempotent templates include VLAN and VRF configurations.
-* VM version of FRR is an Ubuntu VM. The FRR package is downloaded and installed during the initial configuration process.
+* The VM version of FRR is a Debian VM. The FRR package is downloaded and installed during **vagrant up** processing in the libvirt environment and during the initial configuration process (**netlab initial**) in the VirtualBox environment. To postpone the FRR installation to the initial configuration process, set the node variable **netlab_quick_start** to `true`.
 * You can change the FRR default profile with the **netlab_frr_defaults** node parameter (`traditional` or `datacenter`, default is `datacenter`).
 * **netlab collect** downloads FRR configuration but not Linux interface configuration.
 * FRR containers need host kernel modules (drivers) to implement the data-plane functionality of *vrf*, *mpls*, and *vxlan* netlab modules. The kernel modules are automatically loaded (when available) during the **netlab up** processing.
