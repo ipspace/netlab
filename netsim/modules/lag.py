@@ -209,7 +209,7 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
   l.interfaces = []                               # Build interface list for lag link
   skip_atts = list(topology.defaults.lag.attributes.lag_no_propagate)
   for node in node_count:
-    ifatts = data.get_box({ 'node': node })
+    ifatts = data.get_box({ 'node': node, 'type': 'lag' })
     for m in members:                             # Collect attributes from member links
       if node in [ i.node for i in m.interfaces ]:# ...in which <node> is involved
         ifatts = ifatts + { k:v for k,v in m.items() if k not in skip_atts }
@@ -240,7 +240,7 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
     member = data.get_box({ k:v for k,v in member.items() if k in keep_attr }) # Filter out things not needed
     member.linkindex = len(topology.links)+1
     parent = _sl if _sl and member.interfaces[0].node in split_nodes else l
-    member.lag._parentindex = parent.linkindex    # Keep track of parent
+    member.lag._parentindex = parent.linkindex    # Keep track of parent, updated to lag.ifindex below
     if log.debug_active('lag'):
       print(f'LAG create_lag_member_links -> adding link {member}')
     topology.links.append(member)
@@ -317,7 +317,7 @@ def process_lag_links(topology: Box) -> None:
       if not create_peer_links(l,topology):        # Check for errors
         return
     else:
-      l.type = 'lag'
+      l.type = 'lag_temp'                          # Temporary virtual link, removed in module_post_link_transform
       create_lag_member_links(l,topology)
     topology.links[l.linkindex-1].lag.pop("members",None)
 
@@ -380,6 +380,12 @@ class LAG(_Module):
     process_lag_links(topology)             # Expand lag.members into additional p2p links
 
   """
+  Cleanup temporary 'lag_temp' links
+  """
+  def module_post_link_transform(self, topology: Box) -> None:
+    topology.links = [ link for link in topology.links if link.type != 'lag_temp' ]
+
+  """
   After attribute propagation and consolidation, verify that requested features are supported.
   Populate MLAG peer IP and virtual MAC
 
@@ -390,7 +396,7 @@ class LAG(_Module):
     has_peerlink = False
     uses_mlag = False
     for i in node.interfaces:
-      if i.get(PEERLINK_ID_ATT,None):       # Fill in peer loopback IP and vMAC for MLAG peer links
+      if i.get(PEERLINK_ID_ATT,None):          # Fill in peer loopback IP and vMAC for MLAG peer links
         populate_mlag_peer(node,i,topology)
         has_peerlink = True
       elif i.type=='lag':
@@ -404,6 +410,11 @@ class LAG(_Module):
             module='lag')
           if i.lag.mode!='802.3ad':
             i.lag.lacp = 'off'              # Disable LACP for other modes
+
+        linkindex = i.pop('linkindex',None)    # Remove linkindex (not sure why it's still in there?)
+        for m in node.interfaces:              # Update members to point to lag.ifindex, replacing linkindex
+          if m.get('lag._parentindex',None)==linkindex:
+            m.lag._parentindex = i.lag.ifindex # Make _parentindex point to lag.ifindex instead
 
         lacp_mode = i.get('lag.lacp_mode')
         if lacp_mode=='passive' and not features.lag.get('passive',False):
