@@ -286,7 +286,7 @@ def create_peer_links(l: Box, topology: Box) -> bool:
       if not check_same_pair(member):             # Check that any additional links connect the same nodes
         return False
       member.linkindex = len(topology.links)+1
-      member.lag._parentindex = l.linkindex       # Keep track of parent
+      member.lag._peerlink = l.linkindex          # Keep track of parent
       if log.debug_active('lag'):
         print(f'LAG create_peer_links -> adding link {member}')
       topology.links.append(member)
