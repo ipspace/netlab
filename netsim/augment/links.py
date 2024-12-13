@@ -1168,7 +1168,7 @@ def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools:
       continue
 
     set_link_bridge_name(link,defaults)
-    link_default_pools = ['p2p','lan'] if link.type=='p2p' else ['lan']
+    link_default_pools = ['p2p','lan'] if link.type in ['p2p','virtual_lag'] else ['lan']
     assign_link_prefix(link,link_default_pools,pools,nodes,link._linkname)
     copy_link_gateway(link,nodes)
     assign_interface_addresses(link,pools,nodes,defaults)
