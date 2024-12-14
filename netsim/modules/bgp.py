@@ -467,7 +467,7 @@ def bgp_set_advertise(node: Box, topology: Box) -> None:
         continue
 
     role = l.get("role",None)               # Get interface/link role
-    if l.get("type",None) in stub_roles or role in stub_roles:
+    if l.get("_type",None) in stub_roles or role in stub_roles:
       # We have a potential stub link according to advertised_roles, but we still have to check for true stub
       #
       if role != "stub":
@@ -476,7 +476,7 @@ def bgp_set_advertise(node: Box, topology: Box) -> None:
         l.bgp.advertise = _routing.is_true_stub(l,topology)
       continue                              # And move on
 
-    if l.get('type',None) == 'loopback' and node.bgp.advertise_loopback:
+    if l.get('_type',None) == 'loopback' and node.bgp.advertise_loopback:
       l.bgp.advertise = True                # ... also advertise loopback prefixes if bgp.advertise_loopback is set
 
 """
