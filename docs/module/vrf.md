@@ -33,7 +33,7 @@ VRFs are supported on these platforms:
 
 [^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL) and IOL Layer-2 image
 
-[^Junos]: Includes vMX, vSRX, vPTX and vJunos-switch
+[^Junos]: Includes vMX, vSRX, vPTX, vJunos-switch, and vJunos-router
 
 (module-vrf-platform-routing-support)=
 These platforms support routing protocols in VRFs:

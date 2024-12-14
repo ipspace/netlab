@@ -70,7 +70,7 @@ The plugin implements generic BGP session features for the following platforms:
 
 [^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
 
-[^Junos]: Includes vMX, vSRX, vPTX and vJunos-switch
+[^Junos]: Includes vMX, vSRX, vPTX, vJunos-switch, and vJunos-router
 
 **Notes:**
 * Arista EOS supports TCP-AO only when running as a virtual machine
