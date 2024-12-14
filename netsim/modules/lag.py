@@ -160,7 +160,6 @@ def split_dual_mlag_link(link: Box, topology: Box) -> None:
     if 'lag' in l:
       nodes = [ i.node for i in l.interfaces ]
       if first_pair[0] in nodes and first_pair[1] in nodes:
-        print(f"Update _parentindex={split_copy.linkindex}")
         l.lag._parentindex = split_copy.linkindex
 
   if log.debug_active('lag'):
@@ -232,16 +231,23 @@ def create_lag_interfaces(l: Box, topology: Box) -> None:
   if one_side=="<error>":                         # Check for errors
     return
 
-  l.interfaces = []                               # Build interface list for lag link
   members = l.pop('lag.members',[])               # Remove lag.members
   skip_atts = list(topology.defaults.lag.attributes.lag_no_propagate)
+  copy_link_to_intf = list(topology.defaults.lag.attributes.copy_link_to_intf)
+  link_atts = { k:v for k,v in l.items() if k in copy_link_to_intf }
+  l.interfaces = []                               # Build interface list for lag link
   for node in node_count:
-    ifatts = data.get_box({ 'node': node, 'type': 'lag' })
+    ifatts = data.get_box({ 'node': node, 'type': 'lag', 'lag': {} })
     for m in members:                             # Collect attributes from member links
       if node in [ i.node for i in m.interfaces ]:# ...in which <node> is involved
         ifatts = ifatts + { k:v for k,v in m.items() if k not in skip_atts }
         if dual_mlag:
           ifatts._peer = [ i.node for i in m.interfaces if i.node!=node ][0]
+    if 'vlan' in l:                               # If there is a vlan, ignore any L3 config
+      ifatts.ipv4 = False
+      ifatts.ipv6 = False
+    else:
+      ifatts = link_atts + ifatts                 # else include gateway or prefix settings (done elsewhere?)
     is_mside = is_mlag and node!=one_side         # Set flag if this node is the M: side
     if not set_lag_ifindex(l,ifatts,is_mside,topology):
       return
@@ -254,10 +260,10 @@ def create_lag_interfaces(l: Box, topology: Box) -> None:
       ifatts.lag._mlag = True                     # Set internal flag
 
     if log.debug_active('lag'):
-      print(f'LAG create_lag_member_links for node {node} -> collected ifatts {ifatts}')
+      print(f'LAG create_lag_interfaces for node {node} -> adding interface {ifatts}')
     l.interfaces.append( ifatts )
 
-  if dual_mlag:
+  if dual_mlag:                                   # After creating interfaces, check if we need to split them
     split_dual_mlag_link(l,topology)
 
 """
@@ -306,7 +312,7 @@ def create_peer_links(l: Box, topology: Box) -> None:
         print(f'LAG create_peer_links -> adding link {member}')
       topology.links.append(member)
 
-  l.pop("lag.members",None)                       # Cleanup, TODO may need to modify topology.links instead
+  topology.links[l.linkindex-1].pop("lag.members",None)  # Cleanup
 
 """
 process_lag_link - process link with 'lag' attribute to create links for lag.members
