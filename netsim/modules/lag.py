@@ -330,8 +330,7 @@ def process_lag_link(link: Box, topology: Box) -> None:
       link[PEERLINK_ID_ATT] = _dataplane.get_next_id(PEERLINK_ID_SET)
     link.type = 'p2p'
     link.prefix = False                          # L2-only
-    if not create_peer_links(link,topology):     # Check for errors
-      return
+    create_peer_links(link,topology)
   else:
     link.type = 'virtual_lag'                    # Temporary virtual link, removed in module_post_link_transform
     create_lag_member_links(link,topology)
