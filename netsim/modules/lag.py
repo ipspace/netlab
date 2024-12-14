@@ -209,7 +209,7 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
   l.interfaces = []                               # Build interface list for lag link
   skip_atts = list(topology.defaults.lag.attributes.lag_no_propagate)
   for node in node_count:
-    ifatts = data.get_box({ 'node': node })
+    ifatts = data.get_box({ 'node': node, '_type': 'lag' })
     for m in members:                             # Collect attributes from member links
       if node in [ i.node for i in m.interfaces ]:# ...in which <node> is involved
         ifatts = ifatts + { k:v for k,v in m.items() if k not in skip_atts }
@@ -385,7 +385,7 @@ class LAG(_Module):
       if i.get(PEERLINK_ID_ATT,None):       # Fill in peer loopback IP and vMAC for MLAG peer links
         populate_mlag_peer(node,i,topology)
         has_peerlink = True
-      elif i.type=='lag':
+      elif i._type=='lag':
         i.lag = node.get('lag',{}) + i.lag  # Merge node level settings with interface overrides
         lacp_mode = i.get('lag.lacp_mode')  # Inheritance copying is done elsewhere
         if lacp_mode=='passive' and not features.lag.get('passive',False):

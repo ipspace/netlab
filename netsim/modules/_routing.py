@@ -151,11 +151,11 @@ def passive(
     return
 
   role = intf.get('role',"")
-  if role in ["passive","external"] or intf.type == 'stub': # Passive/external role or stub link ==> must be passive
+  if role in ["passive","external"] or intf._type == 'stub': # Passive/external role or stub link ==> must be passive
     intf[proto].passive = True
     return
 
-  if role != "stub":                                        # Not a stub role ==> not passive
+  if role != "stub":                                         # Not a stub role ==> not passive
     intf[proto].passive = False
     return
 

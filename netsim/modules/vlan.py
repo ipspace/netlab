@@ -800,7 +800,7 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
       continue                                                              # ... good, move on
 
     routed_intf = get_vlan_interface_mode(ifdata) == 'route'                # Identify routed VLAN interfaces
-    vlan_subif  = routed_intf and ifdata.get('type','') == 'vlan_member'    # ... and VLAN-based subinterfaces
+    vlan_subif  = routed_intf and ifdata.get('_type','') == 'vlan_member'   # ... and VLAN-based subinterfaces
 
     vlan_data = create_node_vlan(node,access_vlan,topology)
     if vlan_data is None:                                                   # pragma: no-cover
@@ -856,7 +856,7 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
                               ifname=ifdata.ifname)
       vlan_ifdata.name = f'VLAN {access_vlan} ({vlan_data.id})'
       vlan_ifdata.virtual_interface = True                                  # Mark interface as virtual
-      vlan_ifdata.type = "svi"
+      vlan_ifdata._type = "svi"
       vlan_ifdata.neighbors = []                                            # No neighbors so far
                                                                             # Overwrite interface settings with VLAN settings
       vlan_ifdata = vlan_ifdata + {
@@ -976,12 +976,12 @@ def rename_vlan_subinterfaces(node: Box, topology: Box) -> None:
   features = devices.get_device_features(node,topology.defaults)
   if 'switch' in features.vlan.model:                             # No need for VLAN subinterfaces, remove non-routed vlan_member interfaces
     node.interfaces = [ intf for intf in node.interfaces \
-                          if intf.type != 'vlan_member' or intf.vlan.get('mode','') == 'route' ]
+                        if intf._type != 'vlan_member' or intf.vlan.get('mode','') == 'route' ]
     subif_name = features.vlan.routed_subif_name                  # Just in case: try to get interface name pattern for routed subinterface
 
   has_vlan_loopbacks = False
   for intf in node.interfaces:                                    # Now loop over remaining vlan_member interfaces
-    if intf.type != 'vlan_member':
+    if intf._type != 'vlan_member':
       continue
 
     if not 'router' in features.vlan.model and not 'l3-switch' in features.vlan.model:
@@ -1086,7 +1086,7 @@ def check_mixed_trunks(node: Box, topology: Box) -> None:
 
   err_ifmap = {}
   for intf in node.interfaces:
-    if not intf.get('parent_ifindex') or intf.type != 'vlan_member':  # Skip everything that is not a VLAN subinterface
+    if not intf.get('parent_ifindex') or intf._type != 'vlan_member':  # Skip everything that is not a VLAN subinterface
       continue
 
     parent_intf_list = [ x for x in node.interfaces if x.ifindex == intf.parent_ifindex ]

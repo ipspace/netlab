@@ -266,7 +266,7 @@ def create_regular_interface(node: Box, ifdata: Box, defaults: Box) -> None:
     ifdata[provider] = pdata
 
 def create_virtual_interface(node: Box, ifdata: Box, defaults: Box) -> None:
-  devtype = ifdata.get('type','loopback')         # Get virtual interface type, default to loopback interface
+  devtype = ifdata.get('_type','loopback')        # Get virtual interface type, default to loopback interface
   ifindex_offset = (
     devices.get_device_attribute(node,f'{devtype}_offset',defaults) or
     1 if devtype == 'loopback' else 0)            # Loopback interfaces have to start with 1 to prevent overlap with built-in loopback
@@ -308,7 +308,7 @@ def create_virtual_interface(node: Box, ifdata: Box, defaults: Box) -> None:
       module='links')
 
 def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> Box:
-  if ifdata.get('type',None) in VIRTUAL_INTERFACE_TYPES:
+  if ifdata.get('_type',None) in VIRTUAL_INTERFACE_TYPES:
     create_virtual_interface(node,ifdata,defaults)
   else:
     create_regular_interface(node,ifdata,defaults)
@@ -326,7 +326,7 @@ def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> Box:
       if not sys_mtu:                           # .. does the device support system MTU?
         ifdata.mtu = node.mtu                   # .... no, copy node MTU to interface MTU
 
-  if ifdata.get('type',None) == 'loopback':
+  if ifdata.get('_type',None) == 'loopback':
     ifdata.pop('mtu',None)                      # Remove MTU from loopback interfaces
 
   node.interfaces.append(ifdata)

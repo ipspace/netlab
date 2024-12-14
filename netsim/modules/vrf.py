@@ -374,7 +374,7 @@ get_vrf_loopback: Given a node and a VRF name, get a loopback interface from tha
 """
 def get_vrf_loopback(node: Box, vrf: str) -> typing.Optional[Box]:
   for intf in node.interfaces:                    # Loop over all interfaces
-    if intf.type != 'loopback':                   # Not a loopback interface? Move on...
+    if intf._type != 'loopback':                  # Not a loopback interface? Move on...
       continue
     if intf.get('vrf',None) != vrf:               # Not in the correct VRF? Move on
       continue
