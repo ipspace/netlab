@@ -518,7 +518,7 @@ def get_vlan_interface_mode(intf: Box) -> typing.Optional[str]:
   if not vlan:
     return None
 
-  raise log.ErrorAbort('get_vlan_interface_mode called on an interface witout _vlan_mode')
+  raise log.ErrorAbort(f'get_vlan_interface_mode called on an interface without _vlan_mode: {intf}')
 
 """
 set_link_vlan_prefix: copy link attributes from VLAN for access/native VLAN links
@@ -788,8 +788,7 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
   # VLAN attributes not copied into VLAN interface: we take the global defaults and remove
   # mode attribute from that list as it's needed to set interface VLAN mode
   #
-  svi_skipattr = [ k for k in list(topology.defaults.vlan.attributes.vlan_no_propagate or []) if k != "mode" ] + \
-                  list(topology.defaults.vlan.attributes.vlan_svi_no_propagate)
+  svi_skipattr = [ k for k in list(topology.defaults.vlan.attributes.vlan_no_propagate or []) if k != "mode" ]
 
   iflist_len = len(node.interfaces)
   for ifidx in range(0,iflist_len):
@@ -1304,13 +1303,16 @@ class VLAN(_Module):
 
     validate_vlan_attributes(node,topology)
 
+  def module_pre_link_transform(self, topology: Box) -> None:
+    create_loopback_vlan_links(topology)
+
   #
   # JvB: Needed to delay this processing with the introduction of the 'lag' module:
   #
   # * lag module cannot create link.interfaces of type 'lag' until after attribute validation -> done in module_pre_link_transform
   # * this method processes link.interfaces -> must come after module_pre_link_transform, and cannot be in link_pre_transform
   #
-  def _link_pre_link_transform(self, link: Box, topology: Box) -> None:
+  def link_pre_link_transform(self, link: Box, topology: Box) -> None:
     if link.get('type','') == 'vlan_member':                                      # Skip VLAN member links, we've been there...
       return
 
@@ -1345,13 +1347,13 @@ class VLAN(_Module):
     svi_skipattr = list(topology.defaults.vlan.attributes.vlan_no_propagate) or [] # VLAN attributes not copied into link data
     link_vlan = get_link_access_vlan(v_attr)
     routed_vlan = False
-    if not link_vlan is None:
+    if link_vlan is not None:
       set_access_vlan_interface_mode(link,link_vlan,topology)
       routed_vlan = routed_access_vlan(link,topology,link_vlan)
       vlan_data = topology.get(f'vlans.{link_vlan}',None)                         # Get global VLAN data
       if isinstance(vlan_data,Box):
         vlan_data = data.get_box({ k:v for (k,v) in vlan_data.items() \
-                                if k not in svi_skipattr })                       # Remove VLAN-specific data
+                                   if k not in svi_skipattr })                    # Remove VLAN-specific data
         fix_vlan_mode_attribute(vlan_data)                                        # ... and turn mode into vlan.mode
         for (k,v) in vlan_data.items():                                           # Now add the rest to link data
           if not k in link:                                                       # ... have to do the deep merge manually as
@@ -1367,42 +1369,22 @@ class VLAN(_Module):
     else:
       set_link_vlan_prefix(link,v_attr,topology)
 
-    # Disable IP addressing on access VLAN ports on bridged VLANs
+    # Disable IP addressing on access VLAN ports on bridged VLANs, copy IP attributes otherwise
     if link_vlan:                                                                 # Are we dealing with an access VLAN?
       for intf in link.interfaces:                                                # Iterate over all interfaces attached to the link
+        check_link_interface_attributes(link,intf,topology)                       # Check for non-vlan attributes that would get ignored
         intf_node = topology.nodes[intf.node]
         if 'vlan' in intf_node.get('module',[]):                                  # ... is the node a VLAN-aware node?
           if get_vlan_interface_mode(intf) == 'bridge':                           # ... that is in bridge mode on the current access VLAN?
             intf.ipv4 = False                                                     # ... if so, disable addressing on this interface
             intf.ipv6 = False
-
-  def module_pre_link_transform(self, topology: Box) -> None:
-    create_loopback_vlan_links(topology)
-
-  """
-  We have to copy a few attributes from node VLAN data into access link interface data, for example
-  the node IPv4/IPv6 address (to support static addressing) and "gateway" attribute to enable
-  selective VLAN gateway module activation
-
-  This operation needs to be done when the link data structures have already been transformed into
-  the canonical "interfaces" list format, so we cannot do it any sooner than this point.
-
-  We also have to check that the interfaces in bridge/irb mode do not have any non-VLAN parameters
-  as those parameters would get ignored.
-  """
-  def link_pre_link_transform(self, link: Box, topology: Box) -> None:
-    self._link_pre_link_transform(link,topology)                                  # JvB: TODO - merge these 2 functions
-    for intf in link.interfaces:
-      vname = intf.get('vlan.access',None)
-      if not vname:
-        continue
-      check_link_interface_attributes(link,intf,topology)
-      if vname not in topology.nodes[intf.node].get('vlans',{}):
-        continue
-      vdata = topology.nodes[intf.node].vlans[vname]
-      for attr in topology.defaults.vlan.attributes.copy_vlan_to_intf:
-        if attr in vdata:
-          intf[attr] = vdata[attr]
+          else:
+            if link_vlan not in intf_node.get('vlans',{}):
+              continue
+            vdata = intf_node.vlans[link_vlan]
+            for attr in topology.defaults.vlan.attributes.copy_vlan_to_intf:      # else copy IP attributes
+              if attr in vdata:
+                intf[attr] = vdata[attr]
 
   """
   We're almost done, but there's still some hard work to do:
