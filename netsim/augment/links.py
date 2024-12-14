@@ -776,9 +776,9 @@ def create_node_interfaces(link: Box, addr_pools: Box, ndict: Box, defaults: Box
     set_interface_name(ifdata,link,intf_cnt)
     set_parent_interface(ifdata,ndict[node])
     ifdata.pop('node',None)                                       # Remove the node name (not needed within the node)
+    if 'type' in ifdata:
+      ifdata._type = ifdata.pop('type',None)                      # rename 'type' (from link) to '_type'
     node_intf = add_node_interface(ndict[node],ifdata,defaults)   # Attach new interface to its node
-    if 'type' in node_intf:
-      node_intf._type = node_intf.pop('type',None)                # rename 'type' (from link) to '_type'
     value.ifindex = node_intf.ifindex                             # Save ifindex and ifname in link interface data
     value.ifname  = node_intf.ifname                              # ... needed for things like Graph output module that works with links
     interfaces.append({ 'node': node, 'data': node_intf })        # Save newly-created interface for the next step
