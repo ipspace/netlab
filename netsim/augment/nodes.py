@@ -444,8 +444,6 @@ def check_unique_ifnames(n: Box) -> None:
     else:
       ifnames[intf.ifname] = intf
 
-    intf.type = intf.pop('_type',None)    # Rename '_type' attribute for backwards compatibility
-
 '''
 Final cleanup of node data
 '''
@@ -461,6 +459,12 @@ def cleanup(topology: Box) -> None:
     if 'config' in n:
       n.config = [ cfg for cfg in n.config if cfg in plugin_config ] + \
                  [ cfg for cfg in n.config if cfg not in plugin_config ]
+
+    data.cleanup_interface_type(n)
+    if 'vrfs' in n:
+      for vname,vdata in n.vrfs.items():
+        if vdata.get('ospf.interfaces',[]):
+          data.cleanup_interface_type(vdata.ospf)
 
   topology.pop('_plugin_config',None)
 

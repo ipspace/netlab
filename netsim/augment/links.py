@@ -209,7 +209,7 @@ def get_unique_ifindex(
 
   idx_list = [                                    # Build a list of already-used ifindex values
     intf.ifindex for intf in node.interfaces 
-      if iftype == intf._type or (iftype is None and intf._type not in VIRTUAL_INTERFACE_TYPES) ]
+      if iftype == intf.get('_type',None) or (iftype is None and intf.get('_type',None) not in VIRTUAL_INTERFACE_TYPES) ]
   ifindex = start
   while ifindex < stop:                           # Iterate through ifindex values
     if ifindex not in idx_list:                   # ... returning the first one that is not used
@@ -776,9 +776,9 @@ def create_node_interfaces(link: Box, addr_pools: Box, ndict: Box, defaults: Box
     set_interface_name(ifdata,link,intf_cnt)
     set_parent_interface(ifdata,ndict[node])
     ifdata.pop('node',None)                                       # Remove the node name (not needed within the node)
-    if 'type' in ifdata:
-      ifdata._type = ifdata.pop('type',None)                      # rename 'type' to '_type'
     node_intf = add_node_interface(ndict[node],ifdata,defaults)   # Attach new interface to its node
+    if 'type' in node_intf:
+      node_intf._type = node_intf.pop('type',None)                # rename 'type' (from link) to '_type'
     value.ifindex = node_intf.ifindex                             # Save ifindex and ifname in link interface data
     value.ifname  = node_intf.ifname                              # ... needed for things like Graph output module that works with links
     interfaces.append({ 'node': node, 'data': node_intf })        # Save newly-created interface for the next step
@@ -1185,8 +1185,6 @@ def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools:
   return link_list
 
 def cleanup(topology: Box) -> None:
-  if not 'links' in topology:
-    return
-
-#  for link in topology.links:
-#    link.pop('_linkname',None)
+  for link in topology.get('links',[]):
+    #    link.pop('_linkname',None)
+    data.cleanup_interface_type(link)

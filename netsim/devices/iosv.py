@@ -14,7 +14,7 @@ def check_vrrp_bvi(node: Box, topology: Box) -> None:
     if intf.get('gateway.protocol',None) != 'vrrp':                     # No VRRP, move on
       continue
 
-    if intf.get('_type',None) != 'svi':                                  # Not a BVI interface, move on
+    if intf.get('type',None) != 'svi':                                  # Not a BVI interface, move on
       continue
 
     log.error(

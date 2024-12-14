@@ -181,3 +181,11 @@ def kw_list_transform(lookup_table: typing.Union[dict,Box], kw_list: list) -> li
         xf_list.append(lookup_kw)
 
   return xf_list
+
+"""
+cleanup_interface_type - rename '_type' back to 'type' for all interfaces in the given obj
+"""
+def cleanup_interface_type(obj: Box) -> None:
+  for intf in obj.get('interfaces',[]):
+    if '_type' in intf:
+      intf.type = intf.pop('_type',None)
