@@ -1384,7 +1384,10 @@ class VLAN(_Module):
             vdata = intf_node.vlans[link_vlan]
             for attr in topology.defaults.vlan.attributes.copy_vlan_to_intf:      # else copy IP attributes
               if attr in vdata:
-                intf[attr] = vdata[attr]
+                if not attr in intf:                                              # ... have to do the deep merge manually as
+                  intf[attr] = vdata[attr]                                        # ... we cannot just replace interface data structure
+                elif isinstance(vdata[attr],Box) and isinstance(intf[attr],Box):
+                  intf[attr] = vdata[attr] + intf[attr]                           # Sample case: gateway attribute (only one right now)
 
   """
   We're almost done, but there's still some hard work to do:
