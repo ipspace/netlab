@@ -51,7 +51,7 @@ set -e
 curl -fsSL https://apt.releases.hashicorp.com/gpg | $SUDO gpg --dearmor -o /etc/apt/trusted.gpg.d/hashicorp-security.gpg
 $SUDO sh -c 'echo "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" > /etc/apt/sources.list.d/vagrant.list'
 $SUDO apt-get update
-$SUDO apt-get install -y $FLAG_QUIET ruby-dev ruby-libvirt vagrant=2.4.0-1
+$SUDO apt-get install -y --allow-downgrades $FLAG_QUIET ruby-dev ruby-libvirt vagrant=2.4.0-1
 vagrant plugin install vagrant-libvirt --plugin-version=0.12.2
 echo ".. vagrant installed"
 echo
