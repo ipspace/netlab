@@ -209,7 +209,7 @@ def get_unique_ifindex(
 
   idx_list = [                                    # Build a list of already-used ifindex values
     intf.ifindex for intf in node.interfaces 
-      if iftype == intf.get('_type',None) or (iftype is None and intf.get('_type',None) not in VIRTUAL_INTERFACE_TYPES) ]
+      if iftype == intf._type or (iftype is None and intf._type not in VIRTUAL_INTERFACE_TYPES) ]
   ifindex = start
   while ifindex < stop:                           # Iterate through ifindex values
     if ifindex not in idx_list:                   # ... returning the first one that is not used
