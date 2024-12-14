@@ -44,7 +44,7 @@ The following table describes per-platform support of individual IS-IS features:
 
 [^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
 
-[^Junos]: Includes vMX, vSRX, vPTX and vJunos-switch
+[^Junos]: Includes vMX, vSRX, vPTX, vJunos-switch, and vJunos-router
 
 **Notes:**
 * On Arista EOS, IPv6 is enabled on all interfaces as soon as one has an IPv6 address. Arista EOS implementation of IS-IS refuses to work on interfaces with missing address families.

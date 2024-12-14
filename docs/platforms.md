@@ -34,6 +34,7 @@
 | Juniper vPTX (vJunos EVO) [❗](caveats-vptx) | vptx               |
 | Juniper vSRX 3.0 [❗](caveats-vsrx)       | vsrx               |
 | vJunos-switch [❗](caveats-vjunos-switch) | vjunos-switch |
+| vJunos-router [❗](caveats-vjunos-router) | vjunos-router |
 | Mikrotik RouterOS 6 (CHR) [❗](caveats-routeros6) | routeros           |
 | Mikrotik RouterOS 7 (CHR) [❗](caveats-routeros7) | routeros7           |
 | Nokia SR Linux [❗](caveats-srlinux)      | srlinux |
@@ -92,7 +93,7 @@ You cannot use all supported network devices with all virtualization providers. 
 | Juniper vPTX       | [✅](build-vptx)  |  ❌  | ✅[❗](clab-vrnetlab)  |
 | Juniper vSRX 3.0   | [✅](build-vsrx)  | ✅  | ✅[❗](caveats-vsrx)  |
 | vJunos-switch       |  ❌  |  ❌  | ✅[❗](clab-vrnetlab) |
-| Mikrotik RouterOS 6 | ✅  |  ❌  |  ❌  |
+| vJunos-router       |  ❌  |  ❌  | ✅[❗](clab-vrnetlab) | | Mikrotik RouterOS 6 | ✅  |  ❌  |  ❌  |
 | Mikrotik RouterOS 7 | [✅](build-chr7)  |  ❌  |  ❌  |
 | Nokia SR Linux      |  ❌  |  ❌  | ✅  |
 | Nokia SR OS         |  ❌  |  ❌  | ✅  |
@@ -161,7 +162,7 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 
 [^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL) and IOL Layer-2 image
 
-[^Junos]: Includes vMX, vSRX, vPTX and vJunos-switch
+[^Junos]: Includes vMX, vSRX, vPTX, vJunos-switch, and vJunos-router
 
 ## Initial Device Configurations
 
@@ -337,6 +338,7 @@ The data plane [configuration modules](module-reference.md) are supported on the
 | Juniper vPTX          | ✅ | ✅ |  ❌ | ✅ | ✅ |  ❌ | 
 | Juniper vSRX 3.0      | ❌  | ✅ |  ❌ |  ❌ |  ❌ |  ❌ |
 | vJunos-switch         | ✅ | ✅ |  ❌ |  ❌ |  ❌ |  ❌ |
+| vJunos-router         | ❌  | ✅ |  ❌ |  ❌ |  ❌ |  ❌ |
 | Mikrotik RouterOS 6   | ✅ | ✅ |  ❌ | ✅ |  ❌ |  ❌ |
 | Mikrotik RouterOS 7   | ✅ | ✅ |  ❌ | ✅ |  ❌ |  ❌ |
 | Nokia SR Linux        | ✅ | ❌  |  ❌ |  ❌ | ✅ |  ❌ |
