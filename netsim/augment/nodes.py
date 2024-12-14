@@ -463,8 +463,9 @@ def cleanup(topology: Box) -> None:
     data.cleanup_interface_type(n)
     if 'vrfs' in n:
       for vname,vdata in n.vrfs.items():
-        if vdata.get('ospf.interfaces',[]):
-          data.cleanup_interface_type(vdata.ospf)
+        for igp in ['ospf','isis']:
+          if vdata.get(f'{igp}.interfaces',[]):
+            data.cleanup_interface_type(vdata[igp])
 
   topology.pop('_plugin_config',None)
 
