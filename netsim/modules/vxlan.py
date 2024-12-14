@@ -102,7 +102,7 @@ def node_set_vtep(node: Box, topology: Box) -> bool:
 
   # Search for additional loopback interfaces with vxlan.vtep' flag, and use the first one
   for intf in node.interfaces:
-    if intf.get('type', '') == 'loopback' and 'vxlan' in intf and intf.vxlan.get('vtep', False):
+    if intf.get('_type', '') == 'loopback' and 'vxlan' in intf and intf.vxlan.get('vtep', False):
       vtep_interface = intf
       loopback_name = intf.ifname
       break

@@ -444,6 +444,8 @@ def check_unique_ifnames(n: Box) -> None:
     else:
       ifnames[intf.ifname] = intf
 
+    intf.type = intf.pop('_type',None)    # Rename '_type' attribute for backwards compatibility
+
 '''
 Final cleanup of node data
 '''

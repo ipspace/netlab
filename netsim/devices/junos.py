@@ -61,7 +61,7 @@ def check_multiple_loopbacks(node: Box, topology: Box) -> None:
     vrf_count['default'] = 1
 
   for intf in node.interfaces:
-    if intf.get('type','') != 'loopback':
+    if intf.get('_type','') != 'loopback':
       continue
 
     vrf = intf.get('vrf','default')

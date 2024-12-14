@@ -68,7 +68,7 @@ def check_dhcp_clients(node: Box, topology: Box) -> None:
 
 def check_l3_lag(node: Box, topology: Box) -> None:
   for intf in node.interfaces:
-    if intf.type != 'lag':
+    if intf._type != 'lag':
       continue
     if intf.get('ipv4',False) is not False or intf.get('ipv6',False) is not False:
       log.error(

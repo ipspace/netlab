@@ -1131,7 +1131,7 @@ def check_mixed_native_trunk(node: Box, topology: Box) -> None:
       f'Device type {node.device} (node {node.name}) cannot have a routed native VLAN with a bridged trunk',
       category=log.IncorrectValue,
       module='vlan',
-      more_data=f'Found on interface {intf.ifname} ({intf.name})')
+      more_data=f'Found on interface {intf.ifname} ({intf.name}) ({intf})')
 
 """
 fix_vlan_gateways -- set VLAN-wide gateway IP

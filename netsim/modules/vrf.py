@@ -323,7 +323,7 @@ def vrf_loopbacks(node : Box, topology: Box) -> None:
     # Note: set interface ifindex to v.vrfidx if you want to have VRF-numbered loopbacks
     #
     ifdata = data.get_box({                                           # Create interface data structure
-      'type': "loopback",
+      '_type': "loopback",
       'name': f'VRF Loopback {vrfname}',
       'neighbors': [],
       'vrf': vrfname,})

@@ -209,7 +209,7 @@ def get_unique_ifindex(
 
   idx_list = [                                    # Build a list of already-used ifindex values
     intf.ifindex for intf in node.interfaces 
-      if iftype == intf.type or (iftype is None and intf.type not in VIRTUAL_INTERFACE_TYPES) ]
+      if iftype == intf._type or (iftype is None and intf._type not in VIRTUAL_INTERFACE_TYPES) ]
   ifindex = start
   while ifindex < stop:                           # Iterate through ifindex values
     if ifindex not in idx_list:                   # ... returning the first one that is not used
@@ -776,6 +776,8 @@ def create_node_interfaces(link: Box, addr_pools: Box, ndict: Box, defaults: Box
     set_interface_name(ifdata,link,intf_cnt)
     set_parent_interface(ifdata,ndict[node])
     ifdata.pop('node',None)                                       # Remove the node name (not needed within the node)
+    if 'type' in ifdata:
+      ifdata._type = ifdata.pop('type',None)                      # rename 'type' to '_type'
     node_intf = add_node_interface(ndict[node],ifdata,defaults)   # Attach new interface to its node
     value.ifindex = node_intf.ifindex                             # Save ifindex and ifname in link interface data
     value.ifname  = node_intf.ifname                              # ... needed for things like Graph output module that works with links

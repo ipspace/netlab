@@ -11,7 +11,7 @@ def check_vlan_ospf(node: Box, iflist: BoxList, vname: str) -> None:
   name = node.name
   err_data = []
   for intf in iflist:
-    if 'ospf' not in intf or intf.type != 'svi':
+    if 'ospf' not in intf or intf._type != 'svi':
       continue
     err_data.append(f'Interface {intf.ifname} VRF {vname}')
 
@@ -34,7 +34,7 @@ Note: Anycast also requires VLT configuration on the switch, which Netlab curren
 def check_anycast_gateways(node: Box) -> None:
   err_data = []
   for intf in node.get('interfaces',[]):
-    if intf.type != 'svi' and intf.get('gateway.anycast',None):
+    if intf._type != 'svi' and intf.get('gateway.anycast',None):
       err_data.append(f'Interface {intf.ifname}')
   
   if err_data:
