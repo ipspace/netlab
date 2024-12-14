@@ -6,52 +6,125 @@ lag:
   lacp_mode: active
 links:
 - _linkname: links[1].lag[1]
+  gateway:
+    ipv4: 172.16.0.1/24
   interfaces:
-  - ifindex: 1
+  - _vlan_mode: irb
+    ifindex: 1
     ifname: eth1
+    ipv4: 172.16.0.1/24
     node: r1
+    vlan:
+      access: v1
   - ifindex: 1
     ifname: eth1
-    node: r2
+    ipv4: 172.16.0.2/24
+    node: h1
   lag:
     _parentindex: 1
   linkindex: 2
   node_count: 2
-  prefix: false
+  prefix:
+    allocation: id_based
+    ipv4: 172.16.0.0/24
   type: p2p
 - _linkname: links[1].lag[2]
+  gateway:
+    ipv4: 172.16.0.1/24
   interfaces:
-  - ifindex: 2
+  - _vlan_mode: irb
+    ifindex: 2
     ifname: eth2
+    ipv4: 172.16.0.1/24
     node: r1
+    vlan:
+      access: v1
   - ifindex: 2
     ifname: eth2
-    node: r2
+    ipv4: 172.16.0.2/24
+    node: h1
   lag:
     _parentindex: 1
   linkindex: 3
   node_count: 2
-  prefix: false
-  type: p2p
-- _linkname: links[1].lag[3]
-  interfaces:
-  - ifindex: 3
-    ifname: eth3
-    node: r2
-  - ifindex: 3
-    ifname: eth3
-    node: r1
-  lag:
-    _parentindex: 1
-  linkindex: 4
-  node_count: 2
-  prefix: false
+  prefix:
+    allocation: id_based
+    ipv4: 172.16.0.0/24
   type: p2p
 module:
 - lag
 - vlan
 name: input
 nodes:
+  h1:
+    _lag_ifindex: 2
+    af:
+      ipv4: true
+    box: quay.io/frrouting/frr:10.0.1
+    clab:
+      binds:
+      - clab_files/h1/daemons:/etc/frr/daemons
+      - clab_files/h1/hosts:/etc/hosts
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts
+      kind: linux
+    device: frr
+    hostname: clab-input-h1
+    id: 2
+    interfaces:
+    - gateway:
+        ipv4: 10.1.0.1/30
+      ifindex: 30000
+      ifname: bond1
+      ipv4: 10.1.0.2/30
+      lag:
+        ifindex: 1
+      linkindex: 1
+      mtu: 1500
+      name: h1 -> r1
+      neighbors:
+      - ifname: bond1
+        ipv4: 10.1.0.1/30
+        node: r1
+      role: stub
+      type: lag
+      virtual_interface: true
+    - gateway:
+        ipv4: 172.16.0.1/24
+      ifindex: 1
+      ifname: eth1
+      ipv4: 172.16.0.2/24
+      linkindex: 2
+      mtu: 1500
+      name: h1 -> [r1]
+      neighbors:
+      - ifname: vlan1000
+        ipv4: 172.16.0.1/24
+        node: r1
+      role: stub
+      type: p2p
+    - gateway:
+        ipv4: 172.16.0.1/24
+      ifindex: 2
+      ifname: eth2
+      ipv4: 172.16.0.2/24
+      linkindex: 3
+      mtu: 1500
+      name: h1 -> [r1]
+      neighbors:
+      - ifname: vlan1000
+        ipv4: 172.16.0.1/24
+        node: r1
+      role: stub
+      type: p2p
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.102
+      mac: 08:4f:a9:00:00:02
+    mtu: 1500
+    name: h1
+    role: host
   r1:
     af:
       ipv4: true
@@ -70,6 +143,7 @@ nodes:
     interfaces:
     - ifindex: 30000
       ifname: bond1
+      ipv4: 10.1.0.1/30
       lag:
         ifindex: 1
         lacp: 'off'
@@ -80,10 +154,12 @@ nodes:
         mode: 802.3ad
 >>>>>>> ada79b0d6 (* Remove 'lag' as a link.type, but leave it as an interface.type)
       mtu: 1500
-      name: r1 -> r2
+      name: r1 -> h1
       neighbors:
       - ifname: bond1
-        node: r2
+        ipv4: 10.1.0.2/30
+        node: h1
+      role: stub
       type: lag
       virtual_interface: true
     - ifindex: 1
@@ -92,33 +168,45 @@ nodes:
         _parentindex: 1
       linkindex: 2
       mtu: 1500
-      name: r1 -> r2
+      name: '[Access VLAN v1] r1 -> h1'
       neighbors:
       - ifname: eth1
-        node: r2
+        ipv4: 172.16.0.2/24
+        node: h1
       type: p2p
+      vlan:
+        access: v1
+        access_id: 1000
     - ifindex: 2
       ifname: eth2
       lag:
         _parentindex: 1
       linkindex: 3
       mtu: 1500
-      name: r1 -> r2
+      name: '[Access VLAN v1] r1 -> h1'
       neighbors:
       - ifname: eth2
-        node: r2
+        ipv4: 172.16.0.2/24
+        node: h1
       type: p2p
-    - ifindex: 3
-      ifname: eth3
-      lag:
-        _parentindex: 1
-      linkindex: 4
-      mtu: 1500
-      name: r1 -> r2
+      vlan:
+        access: v1
+        access_id: 1000
+    - bridge_group: 1
+      ifindex: 3
+      ifname: vlan1000
+      ipv4: 172.16.0.1/24
+      name: VLAN v1 (1000) -> [h1]
       neighbors:
-      - ifname: eth3
-        node: r2
-      type: p2p
+      - ifname: eth1
+        ipv4: 172.16.0.2/24
+        node: h1
+      role: stub
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: irb
+        name: v1
     lag:
       lacp: fast
       lacp_mode: active
@@ -138,6 +226,7 @@ nodes:
     - vlan
     mtu: 1500
     name: r1
+<<<<<<< HEAD
   r2:
     af:
       ipv4: true
@@ -224,10 +313,30 @@ nodes:
     - vlan
     mtu: 1500
     name: r2
+=======
+    vlan:
+      max_bridge_group: 1
+    vlans:
+      v1:
+        bridge_group: 1
+        id: 1000
+        mode: irb
+        prefix:
+          allocation: id_based
+          ipv4: 172.16.0.0/24
+>>>>>>> b2de7636b (Correct ip indexes, restore test results)
 provider: clab
 vlans:
   v1:
+    host_count: 1
     id: 1000
+    neighbors:
+    - ifname: eth1
+      ipv4: 172.16.0.2/24
+      node: h1
+    - ifname: vlan1000
+      ipv4: 172.16.0.1/24
+      node: r1
     prefix:
       allocation: id_based
       ipv4: 172.16.0.0/24

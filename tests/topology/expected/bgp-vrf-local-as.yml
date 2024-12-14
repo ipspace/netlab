@@ -25,6 +25,7 @@ links:
   interfaces:
   - ifindex: 1
     ifname: Ethernet1
+    ipv4: 10.1.0.1/30
     node: r1
     vlan:
       trunk:
@@ -32,6 +33,7 @@ links:
         red: {}
   - ifindex: 1
     ifname: Ethernet1
+    ipv4: 10.1.0.2/30
     node: r2
     vlan:
       trunk:
@@ -39,7 +41,8 @@ links:
         red: {}
   linkindex: 1
   node_count: 2
-  prefix: {}
+  prefix:
+    ipv4: 10.1.0.0/30
   role: external
   type: p2p
   vlan:
@@ -50,6 +53,7 @@ links:
   interfaces:
   - ifindex: 2
     ifname: Ethernet2
+    ipv4: 10.1.0.5/30
     node: r2
     vlan:
       trunk:
@@ -57,6 +61,7 @@ links:
         red: {}
   - ifindex: 1
     ifname: Ethernet1
+    ipv4: 10.1.0.6/30
     node: r3
     vlan:
       trunk:
@@ -64,7 +69,8 @@ links:
         red: {}
   linkindex: 2
   node_count: 2
-  prefix: {}
+  prefix:
+    ipv4: 10.1.0.4/30
   role: external
   type: p2p
   vlan:
@@ -78,7 +84,7 @@ links:
       local_as: 65001
     ifindex: 3
     ifname: Ethernet3
-    ipv4: 10.1.0.1/30
+    ipv4: 10.1.0.9/30
     node: r2
     vlan:
       access: vrf-leak
@@ -89,7 +95,7 @@ links:
       local_as: 65002
     ifindex: 4
     ifname: Ethernet4
-    ipv4: 10.1.0.2/30
+    ipv4: 10.1.0.10/30
     node: r2
     vlan:
       access: vrf-leak
@@ -98,7 +104,7 @@ links:
   linkindex: 3
   node_count: 2
   prefix:
-    ipv4: 10.1.0.0/30
+    ipv4: 10.1.0.8/30
   type: p2p
   vlan:
     mode: route
@@ -133,7 +139,14 @@ nodes:
         - large
         - extended
       ipv4: true
-      neighbors: []
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65000
+        ifindex: 1
+        ipv4: 10.1.0.2
+        name: r2
+        type: ebgp
       next_hop_self: true
       router_id: 10.0.0.1
     box: arista/veos
@@ -142,10 +155,12 @@ nodes:
     interfaces:
     - ifindex: 1
       ifname: Ethernet1
+      ipv4: 10.1.0.1/30
       linkindex: 1
       name: r1 -> r2
       neighbors:
       - ifname: Ethernet1
+        ipv4: 10.1.0.2/30
         node: r2
       role: external
       subif_index: 2
@@ -153,16 +168,15 @@ nodes:
     - bridge_group: 1
       ifindex: 2
       ifname: Ethernet1.1
-      ipv4: 10.1.0.5/30
+      ipv4: 172.16.3.1/24
       name: r1 -> r2
       neighbors:
       - ifname: Ethernet1.1
-        ipv4: 10.1.0.6/30
+        ipv4: 172.16.3.2/24
         node: r2
         vrf: blue
       parent_ifindex: 1
       parent_ifname: Ethernet1
-      role: external
       type: vlan_member
       virtual_interface: true
       vlan:
@@ -174,16 +188,15 @@ nodes:
     - bridge_group: 2
       ifindex: 3
       ifname: Ethernet1.2
-      ipv4: 10.1.0.9/30
+      ipv4: 172.16.4.1/24
       name: r1 -> r2
       neighbors:
       - ifname: Ethernet1.2
-        ipv4: 10.1.0.10/30
+        ipv4: 172.16.4.2/24
         node: r2
         vrf: red
       parent_ifindex: 1
       parent_ifname: Ethernet1
-      role: external
       type: vlan_member
       virtual_interface: true
       vlan:
@@ -240,7 +253,7 @@ nodes:
           neighbors:
           - as: 65000
             ifindex: 2
-            ipv4: 10.1.0.6
+            ipv4: 172.16.3.2
             name: r2
             type: ebgp
         export:
@@ -260,7 +273,7 @@ nodes:
           neighbors:
           - as: 65000
             ifindex: 3
-            ipv4: 10.1.0.10
+            ipv4: 172.16.4.2
             name: r2
             type: ebgp
         export:
@@ -295,7 +308,21 @@ nodes:
         - large
         - extended
       ipv4: true
-      neighbors: []
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65100
+        ifindex: 1
+        ipv4: 10.1.0.1
+        name: r1
+        type: ebgp
+      - activate:
+          ipv4: true
+        as: 65101
+        ifindex: 2
+        ipv4: 10.1.0.6
+        name: r3
+        type: ebgp
       next_hop_self: true
       router_id: 10.0.0.2
     box: arista/veos
@@ -304,20 +331,24 @@ nodes:
     interfaces:
     - ifindex: 1
       ifname: Ethernet1
+      ipv4: 10.1.0.2/30
       linkindex: 1
       name: r2 -> r1
       neighbors:
       - ifname: Ethernet1
+        ipv4: 10.1.0.1/30
         node: r1
       role: external
       subif_index: 2
       type: p2p
     - ifindex: 2
       ifname: Ethernet2
+      ipv4: 10.1.0.5/30
       linkindex: 2
       name: r2 -> r3
       neighbors:
       - ifname: Ethernet1
+        ipv4: 10.1.0.6/30
         node: r3
       role: external
       subif_index: 2
@@ -327,14 +358,14 @@ nodes:
       bridge_group: 1
       ifindex: 3
       ifname: Ethernet3
-      ipv4: 10.1.0.1/30
+      ipv4: 10.1.0.9/30
       linkindex: 3
       name: r2 -> r2
       neighbors:
       - bgp:
           local_as: 65002
         ifname: Ethernet4
-        ipv4: 10.1.0.2/30
+        ipv4: 10.1.0.10/30
         node: r2
         vrf: blue
       type: p2p
@@ -346,14 +377,14 @@ nodes:
       bridge_group: 1
       ifindex: 4
       ifname: Ethernet4
-      ipv4: 10.1.0.2/30
+      ipv4: 10.1.0.10/30
       linkindex: 3
       name: r2 -> r2
       neighbors:
       - bgp:
           local_as: 65001
         ifname: Ethernet3
-        ipv4: 10.1.0.1/30
+        ipv4: 10.1.0.9/30
         node: r2
         vrf: red
       type: p2p
@@ -363,16 +394,15 @@ nodes:
     - bridge_group: 2
       ifindex: 5
       ifname: Ethernet1.1
-      ipv4: 10.1.0.6/30
+      ipv4: 172.16.3.2/24
       name: r2 -> r1
       neighbors:
       - ifname: Ethernet1.1
-        ipv4: 10.1.0.5/30
+        ipv4: 172.16.3.1/24
         node: r1
         vrf: blue
       parent_ifindex: 1
       parent_ifname: Ethernet1
-      role: external
       type: vlan_member
       virtual_interface: true
       vlan:
@@ -384,16 +414,15 @@ nodes:
     - bridge_group: 3
       ifindex: 6
       ifname: Ethernet1.2
-      ipv4: 10.1.0.10/30
+      ipv4: 172.16.4.2/24
       name: r2 -> r1
       neighbors:
       - ifname: Ethernet1.2
-        ipv4: 10.1.0.9/30
+        ipv4: 172.16.4.1/24
         node: r1
         vrf: red
       parent_ifindex: 1
       parent_ifname: Ethernet1
-      role: external
       type: vlan_member
       virtual_interface: true
       vlan:
@@ -405,16 +434,15 @@ nodes:
     - bridge_group: 2
       ifindex: 7
       ifname: Ethernet2.1
-      ipv4: 10.1.0.13/30
+      ipv4: 172.16.5.2/24
       name: r2 -> r3
       neighbors:
       - ifname: Ethernet1.1
-        ipv4: 10.1.0.14/30
+        ipv4: 172.16.5.3/24
         node: r3
         vrf: blue
       parent_ifindex: 2
       parent_ifname: Ethernet2
-      role: external
       type: vlan_member
       virtual_interface: true
       vlan:
@@ -426,16 +454,15 @@ nodes:
     - bridge_group: 3
       ifindex: 8
       ifname: Ethernet2.2
-      ipv4: 10.1.0.17/30
+      ipv4: 172.16.6.2/24
       name: r2 -> r3
       neighbors:
       - ifname: Ethernet1.2
-        ipv4: 10.1.0.18/30
+        ipv4: 172.16.6.3/24
         node: r3
         vrf: red
       parent_ifindex: 2
       parent_ifname: Ethernet2
-      role: external
       type: vlan_member
       virtual_interface: true
       vlan:
@@ -499,18 +526,18 @@ nodes:
           neighbors:
           - as: 65001
             ifindex: 4
-            ipv4: 10.1.0.1
+            ipv4: 10.1.0.9
             local_as: 65002
             name: r2
             type: ebgp
           - as: 65100
             ifindex: 5
-            ipv4: 10.1.0.5
+            ipv4: 172.16.3.1
             name: r1
             type: ebgp
           - as: 65101
             ifindex: 7
-            ipv4: 10.1.0.14
+            ipv4: 172.16.5.3
             name: r3
             type: ebgp
           router_id: 172.32.0.2
@@ -531,18 +558,18 @@ nodes:
           neighbors:
           - as: 65002
             ifindex: 3
-            ipv4: 10.1.0.2
+            ipv4: 10.1.0.10
             local_as: 65001
             name: r2
             type: ebgp
           - as: 65100
             ifindex: 6
-            ipv4: 10.1.0.9
+            ipv4: 172.16.4.1
             name: r1
             type: ebgp
           - as: 65101
             ifindex: 8
-            ipv4: 10.1.0.18
+            ipv4: 172.16.6.3
             name: r3
             type: ebgp
           router_id: 172.31.0.1
@@ -578,7 +605,14 @@ nodes:
         - large
         - extended
       ipv4: true
-      neighbors: []
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65000
+        ifindex: 1
+        ipv4: 10.1.0.5
+        name: r2
+        type: ebgp
       next_hop_self: true
       router_id: 10.0.0.3
     box: arista/veos
@@ -587,10 +621,12 @@ nodes:
     interfaces:
     - ifindex: 1
       ifname: Ethernet1
+      ipv4: 10.1.0.6/30
       linkindex: 2
       name: r3 -> r2
       neighbors:
       - ifname: Ethernet2
+        ipv4: 10.1.0.5/30
         node: r2
       role: external
       subif_index: 2
@@ -598,16 +634,15 @@ nodes:
     - bridge_group: 1
       ifindex: 2
       ifname: Ethernet1.1
-      ipv4: 10.1.0.14/30
+      ipv4: 172.16.5.3/24
       name: r3 -> r2
       neighbors:
       - ifname: Ethernet2.1
-        ipv4: 10.1.0.13/30
+        ipv4: 172.16.5.2/24
         node: r2
         vrf: blue
       parent_ifindex: 1
       parent_ifname: Ethernet1
-      role: external
       type: vlan_member
       virtual_interface: true
       vlan:
@@ -619,16 +654,15 @@ nodes:
     - bridge_group: 2
       ifindex: 3
       ifname: Ethernet1.2
-      ipv4: 10.1.0.18/30
+      ipv4: 172.16.6.3/24
       name: r3 -> r2
       neighbors:
       - ifname: Ethernet2.2
-        ipv4: 10.1.0.17/30
+        ipv4: 172.16.6.2/24
         node: r2
         vrf: red
       parent_ifindex: 1
       parent_ifname: Ethernet1
-      role: external
       type: vlan_member
       virtual_interface: true
       vlan:
@@ -685,7 +719,7 @@ nodes:
           neighbors:
           - as: 65000
             ifindex: 2
-            ipv4: 10.1.0.13
+            ipv4: 172.16.5.2
             name: r2
             type: ebgp
         export:
@@ -705,7 +739,7 @@ nodes:
           neighbors:
           - as: 65000
             ifindex: 3
-            ipv4: 10.1.0.17
+            ipv4: 172.16.6.2
             name: r2
             type: ebgp
         export:
