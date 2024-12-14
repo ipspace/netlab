@@ -828,7 +828,7 @@ def set_link_loopback_type(link: Box, nodes: Box, defaults: Box) -> None:
   if make_loopback or isinstance(make_loopback,Box):
     link.type = 'loopback'
 
-def set_link_type_role(link: Box, pools: Box, nodes: Box, defaults: Box) -> None:
+def set_link_type_role(link: Box, pools: Box, nodes: Box, defaults: Box) -> int:
   node_cnt = len(link.interfaces)   # Set the number of attached nodes (used in many places further on)
   link['node_count'] = node_cnt
 
@@ -861,14 +861,14 @@ def set_link_type_role(link: Box, pools: Box, nodes: Box, defaults: Box) -> None
     link.host_count = link.get('host_count',0) + 1
 
   if 'type' in link:                # Link type already set, nothing to do
-    return
+    return router_count
 
   link.type = 'lan' if node_cnt > 2 else 'p2p' if node_cnt == 2 else 'stub'     # Set link type based on number of attached nodes
 
   if link.get('host_count',0) > 0:
     link.type = 'lan'
 
-  return
+  return router_count
 
 def set_link_bridge_name(link: Box, defaults: Box) -> None:
   if link.type in ['p2p','loopback','vlan_member']:                   # No need for bridge names on P2P links, loopbacks and virtual links
@@ -1162,12 +1162,13 @@ def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools:
     return None
 
   for link in link_list:
-    set_link_type_role(link=link,pools=pools,nodes=nodes,defaults=defaults)
+    router_count = set_link_type_role(link=link,pools=pools,nodes=nodes,defaults=defaults)
     if not check_link_type(data=link):
       continue
 
     set_link_bridge_name(link,defaults)
-    link_default_pools = ['p2p','lan'] if link.type in ['p2p','lag'] else ['lan']
+    two_routers = router_count==2 and not 'host_count' in link # Does link have exactly 2 routers and no hosts?
+    link_default_pools = ['p2p','lan'] if two_routers and not 'gateway' in link else ['lan']
     assign_link_prefix(link,link_default_pools,pools,nodes,link._linkname)
     copy_link_gateway(link,nodes)
     assign_interface_addresses(link,pools,nodes,defaults)
