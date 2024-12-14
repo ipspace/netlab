@@ -1304,7 +1304,13 @@ class VLAN(_Module):
 
     validate_vlan_attributes(node,topology)
 
-  def link_pre_transform(self, link: Box, topology: Box) -> None:
+  #
+  # JvB: Needed to delay this processing with the introduction of the 'lag' module:
+  #
+  # * lag module cannot create link.interfaces of type 'lag' until after attribute validation -> done in module_pre_link_transform
+  # * this method processes link.interfaces -> must come after module_pre_link_transform, and cannot be in link_pre_transform
+  #
+  def _link_pre_link_transform(self, link: Box, topology: Box) -> None:
     if link.get('type','') == 'vlan_member':                                      # Skip VLAN member links, we've been there...
       return
 
@@ -1385,6 +1391,7 @@ class VLAN(_Module):
   as those parameters would get ignored.
   """
   def link_pre_link_transform(self, link: Box, topology: Box) -> None:
+    self._link_pre_link_transform(link,topology)                                  # JvB: TODO - merge these 2 functions
     for intf in link.interfaces:
       vname = intf.get('vlan.access',None)
       if not vname:
