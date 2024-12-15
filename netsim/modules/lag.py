@@ -262,7 +262,7 @@ def create_lag_interfaces(l: Box, topology: Box) -> None:
       ifatts.lag._mlag = True                     # Set internal flag
 
     if log.debug_active('lag'):
-      print(f'LAG create_lag_interfaces for node {node} -> adding interface {ifatts}')
+      print(f'LAG create_lag_interfaces for node {node} -> adding interface {ifatts} skip={skip_atts}')
     l.interfaces.append( ifatts )
 
   if dual_mlag:                                   # After creating interfaces, check if we need to split them
@@ -446,17 +446,17 @@ class LAG(_Module):
         has_peerlink = True
       elif i.type=='lag':
         node_atts = { k:v for k,v in node.get('lag',{}).items() if k!='mlag'}
-        i.lag = node_atts + i.lag           # Merge node level settings with interface overrides
-        # i.pop('mtu',None)                 # Next PR: Remove any MTU settings - inherited from members
+        i.lag = node_atts + i.lag              # Merge node level settings with interface overrides
+        i.pop('mtu',None)                      # Remove any MTU settings - inherited from members
 
         if 'mode' in i.lag:
           log.error(f'lag.mode {i.lag.mode} used by node {node.name} is deprecated, use only 802.3ad',
             category=Warning,
             module='lag')
           if i.lag.mode!='802.3ad':
-            i.lag.lacp = 'off'              # Disable LACP for other modes
+            i.lag.lacp = 'off'                 # Disable LACP for other modes
 
-        linkindex = i.pop('linkindex',None)    # Remove linkindex (not sure why it's still in there?)
+        linkindex = i.pop('linkindex',None)    # Remove linkindex (copied from link that no longer exists)
         for m in node.interfaces:              # Update members to point to lag.ifindex, replacing linkindex
           if m.get('lag._parentindex',None)==linkindex:
             m.lag._parentindex = i.lag.ifindex # Make _parentindex point to lag.ifindex instead
