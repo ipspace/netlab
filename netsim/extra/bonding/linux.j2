@@ -3,8 +3,16 @@
 
 set -e
 
-{% for intf in interfaces|default([]) if intf.bonding.mode is defined %}
-{{   create_bond_dev(intf,{ 'mode': intf.bonding.mode, 'lacp': 'off', 'primary': intf.bonding.primary|default("") } ) }}
+# Check if the 'ip' command is available, if not install it
+if ! command -v ip 2>&1 >/dev/null
+then
+  echo "Trying to install the 'ip' command..."
+  apt-get -qq update
+  apt-get -qq install iproute2 -y
+fi
+
+{# Bonding device is created by 'initial' module #}
+{% for intf in interfaces|default([]) if intf.bonding.members is defined %}
 ip link set dev {{ intf.ifname }} down
 {%   for member in intf.bonding.members %}
 ip link set dev {{ member }} down
