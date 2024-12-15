@@ -61,6 +61,9 @@ def post_transform(topology: Box) -> None:
             if att in intf:
               bonds[node.name][bond_ifindex][att] = intf.pop(att,None)
 
+        if intf.get('bonding.primary',False):
+          bonds[node.name][bond_ifindex]['primary'] = intf.ifname
+
         intf.neighbors = [ { 'ifname': i.ifname, 'node': i.node } for i in link.interfaces if i.node!=node.name ]
         intf.type = 'p2p'
         intf.prefix = False                            # L2 p2p interface
