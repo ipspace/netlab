@@ -240,10 +240,12 @@ def create_lag_interfaces(l: Box, topology: Box) -> None:
   for node in node_count:
     ifatts = data.get_box({ 'node': node, '_type': 'lag', 'lag': {} })  # use '_type', not 'type' (!)
     for m in members:                             # Collect attributes from member links
-      if node in [ i.node for i in m.interfaces ]:# ...in which <node> is involved
-        ifatts = ifatts + { k:v for k,v in m.items() if k not in skip_atts }
-        if dual_mlag:
-          ifatts._peer = [ i.node for i in m.interfaces if i.node!=node ][0]
+      node_ifs = [ i for i in m.interfaces if i.node==node ]
+      if not node_ifs:                            # ...in which <node> is involved
+        continue
+      ifatts = ifatts + { k:v for k,v in m.items() if k not in skip_atts } + node_ifs[0]
+      if dual_mlag:
+        ifatts._peer = [ i.node for i in m.interfaces if i.node!=node ][0]
     if not 'vlan' in ifatts:                      # VLAN on interface overrides link IP settings
       ifatts = link_atts + ifatts                 # include vlan, gateway or prefix settings from link
 
