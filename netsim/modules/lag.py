@@ -39,7 +39,7 @@ create_l2_link_base - Create a L2 P2P link as base for member links
 """
 def create_l2_link_base(l: Box, topology: Box) -> Box:
   l2_linkdata = data.get_box({ 'type': "p2p", 'prefix': False, 'lag': {} }) # Construct an L2 member link
-  for a in list(topology.defaults.lag.attributes.lag_l2_ifattr):
+  for a in list(topology.defaults.lag.attributes.lag_l2_linkattr):
     if a in l:
       l2_linkdata[a] = l[a]
   return l2_linkdata
