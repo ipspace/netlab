@@ -180,8 +180,7 @@ def create_lag_member_links(l: Box, topology: Box) -> bool:
   keep_attr = list(topology.defaults.lag.attributes.lag_member_linkattr)
   keep_if = ['node','ifindex']                             # Keep only 'node' and optional 'ifindex'
   for member in members:
-    member = l2_linkdata + member                          # Copy L2 data into member link
-    member = data.get_box({ k:v for k,v in member.items() if k in keep_attr }) # Filter out things not needed
+    member = l2_linkdata + { k:v for k,v in member.items() if k in keep_attr }
     member.linkindex = len(topology.links)+1
     member.interfaces = [ { k:v for k,v in i.items() if k in keep_if } for i in member.interfaces ]
     member.lag._parentindex = l.linkindex                  # Keep track of parent, updated to lag.ifindex below
