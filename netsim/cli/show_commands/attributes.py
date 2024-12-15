@@ -47,7 +47,7 @@ def get_attribute_subset(settings: Box, args: argparse.Namespace) -> Box:
   if not args.match in show.attributes:
     log.fatal(f"Unknown attribute type {args.match} -- use less-specific show command to display valid attribute types")
 
-  if args.match == 'interface' and not args.module:      # Add propagatable global link attributes to interface attributes
+  if args.match == 'interface':      # Add propagatable global link attributes to interface attributes
     link_propagate =  { 
       k:v for k,v in show.attributes['link'].items() 
         if not k in link_no_propagate }
