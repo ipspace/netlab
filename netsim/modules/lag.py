@@ -259,7 +259,7 @@ def create_lag_interfaces(l: Box, topology: Box) -> None:
       ifatts.lag._mlag = True                     # Set internal flag
 
     if log.debug_active('lag'):
-      print(f'LAG create_lag_interfaces for node {node} -> adding interface {ifatts}')
+      print(f'LAG create_lag_interfaces for node {node} -> adding interface {ifatts} skip={skip_atts}')
     l.interfaces.append( ifatts )
 
   if dual_mlag:                                   # After creating interfaces, check if we need to split them
@@ -432,7 +432,8 @@ class LAG(_Module):
         has_peerlink = True
       elif i.get('type',None)=='lag':
         i.lag = node.get('lag',{}) + i.lag     # Merge node level settings with interface overrides
-        linkindex = i.pop('linkindex',None)    # Remove linkindex (not sure why it's still in there?)
+        i.pop('mtu',None)                      # Remove any MTU settings - inherited from members
+        linkindex = i.pop('linkindex',None)    # Remove linkindex (copied by create_node_interfaces)
         for m in node.interfaces:              # Update members to point to lag.ifindex, replacing linkindex
           if m.get('lag._parentindex',None)==linkindex:
             m.lag._parentindex = i.lag.ifindex # Make _parentindex point to lag.ifindex instead
