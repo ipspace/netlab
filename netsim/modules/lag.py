@@ -427,7 +427,7 @@ class LAG(_Module):
       if i.get(PEERLINK_ID_ATT,None):          # Fill in peer loopback IP and vMAC for MLAG peer links
         populate_mlag_peer(node,i,topology)
         has_peerlink = True
-      elif i.get('_type',None)=='lag':
+      elif i.get('type',None)=='lag':
         i.lag = node.get('lag',{}) + i.lag     # Merge node level settings with interface overrides
         linkindex = i.pop('linkindex',None)    # Remove linkindex (not sure why it's still in there?)
         for m in node.interfaces:              # Update members to point to lag.ifindex, replacing linkindex
