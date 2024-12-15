@@ -21,6 +21,8 @@ def add_bond_interfaces(node: Box, bonds: dict[int,Box]) -> None:
       'ifindex': 50000 + c,
       'virtual_interface': True
     }
+    if 'primary' in bond:
+      bond_if['bonding']['primary'] = bond['primary']
     for af in ['ipv4','ipv6']:
       if af in bond:
         bond_if[af] = bond[af]     # Take the first one, if any
