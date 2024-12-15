@@ -326,9 +326,9 @@ def process_lag_link(link: Box, topology: Box) -> bool:
     log.error(f'must define "lag.members" on LAG link {link._linkname}',
       category=log.IncorrectAttr,
       module='lag')
-    return
+    return False
   elif not _types.must_be_list(parent=link.lag,key='members',path=link._linkname,module='lag'):
-    return
+    return False
 
   peerlink_id = link.get(PEERLINK_ID_ATT,None)   # Turn internal MLAG links into p2p links
   if peerlink_id:
