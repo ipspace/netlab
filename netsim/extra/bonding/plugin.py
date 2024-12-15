@@ -12,8 +12,13 @@ add_bond_interfaces - append interface data to node.interfaces for bonding templ
 def add_bond_interfaces(node: Box, bonds: dict[int,Box]) -> None:
   for c,(ifindex,bond) in enumerate(bonds.items()):
     ifname = f'bond{ifindex}'  # XXX hardcoded, could make this a device template attribute
+
+    #
+    # TODO: Could make sure the layout is exactly like the 'lag' module needs it, to reuse provisioning logic
+    # That means converting 'bonding.ifindex' to 'lag._parentindex' too!
+    #
     bond_if = {
-      'type': 'lag',  # TODO "bond"?
+      'type': 'bond',
       'ifname': ifname,
       'name': f'bond {ifindex}',
       'bonding': { 'ifindex': ifindex, 'members': bond['members'], 'mode': bond.mode },
@@ -34,6 +39,7 @@ post_transform hook
 Apply plugin config to nodes with interfaces marked with 'bonding.ifindex', for devices that support this plugin
 '''
 def post_transform(topology: Box) -> None:
+# def post_link_transform(topology: Box) -> None: # Use 'pre_node_transform' such that only 1 IP address gets assigned, nothing to move?
   global _config_name
   bond_mode = topology.get('bonding.mode','active-backup')
   bonds : Box = data.get_empty_box()                   # Map of bonds per node, indexed by bonding.ifindex
@@ -71,14 +77,14 @@ def post_transform(topology: Box) -> None:
         intf.prefix = False                            # L2 p2p interface
         intf.pop('name',None)
 
-  for node in topology.nodes.values():
-    if node.name in bonds:
-      for bond in bonds[node.name].values():
-        for i in bond.interfaces:
-          if i.node in bonds:
-            for i2,b2 in bonds[i.node].items():
-              if i.ifname in b2['members']:
-                i.ifname = f'bond{i2}'                 # Correct neighbor name
+  for node in topology.nodes.values():                 # For each node
+    if node.name in bonds:                             # ...that has 1 or more bonds
+      for bond in bonds[node.name].values():           # ...for each bond
+        for i in bond.interfaces:                      # ...for each interface of that bond
+          if i.node in bonds:                          # ...check if the node also has bonds
+            for i2,b2 in bonds[i.node].items():        # If so, for each such bond
+              if i.ifname in b2['members']:            # if the interface connecting to <node> is a member
+                i.ifname = f'bond{i2}'                 # Set correct neighbor device name to bond
                 continue
       add_bond_interfaces(node,bonds[node.name])
       api.node_config(node,_config_name)               # Remember that we have to do extra configuration

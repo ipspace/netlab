@@ -1,16 +1,16 @@
-{% macro create_bond_dev(l,params={}) %}
-{%   if l.type=='lag' %}
-{%     set _m = l.lag.mode|default(params.mode|default("802.3ad")) %}
+{% macro create_bond_dev(l) %}
+{%   if l.type in ['lag','bond'] %}
+{%     set _m = l.lag.mode|default(l.bonding.mode|default("802.3ad")) %}
 {%     if _m=="802.3ad" %}
-{%       set _lacp = l.lag.lacp|default(params.lacp|default('fast')) %}
+{%       set _lacp = l.lag.lacp|default('fast') %}
 {%       set lacp_act = 'off' if _lacp=='off' else 'on' %}
 {%       set lacp_rate = (' lacp_rate ' + _lacp) if _lacp!='off' else '' %}
 {%       set _m = _m + lacp_rate %}
 {%       if node_provider == 'clab' %}
 {%         set _m = _m + " lacp_active " + lacp_act %}
 {%       endif %}
-{%     elif params.primary|default("") %}
-{%       set _m = _m + " primary " + params.primary %}
+{%     elif l.bonding.primary is defined %}
+{%       set _m = _m + " primary " + l.bonding.primary %}
 {%     endif %}
 {%     if _m in ["802.3ad","balance-xor","balance-alb","balance-tlb"] %}
 {%       set _m = _m + " xmit_hash_policy encap3+4" %}
@@ -24,7 +24,7 @@ modprobe bonding miimon=100 mode=802.3ad lacp_rate=fast
 fi
 {%     endif %}
 if [ ! -e /sys/class/net/{{l.ifname}} ]; then
-ip link add dev {{l.ifname}} type bond mode {{_m}}
+ip link add dev {{l.ifname}} type bond mode {{ _m }}
 fi
 {%   endif %}
 {% endmacro -%}
@@ -32,13 +32,8 @@ fi
 #
 set -e # Exit immediately when any command fails
 #
-# Create bonds for LAGs, if any. Requires kernel bonding module loaded
+# Bond devices are created by 'initial' module - add members
 #
-{% for l in interfaces if 'lag' in l %}
-{{ create_bond_dev(l,lag) }}
-ip link set dev {{ l.ifname }} down
-{% endfor -%}
-
 {% for l in interfaces if 'lag' in l and l.type != 'lag' %}
 {%   if l.type=='p2p' %}
 {%     if node_provider != 'clab' %}
