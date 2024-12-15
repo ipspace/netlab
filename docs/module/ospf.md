@@ -106,7 +106,7 @@ OSPF is also supported on these [routing daemons](platform-daemons):
 | ------------------------ |:--:|:--:|:--:|:--:|:--:|
 | BIRD                     | ✅ | ❌  | ✅ | ❌  | ❌  |
 
-(ospf-interface)=
+(ospf-interface-support)=
 The following table documents the interface-level OSPF features:
 
 | Operating system         | Cost  | Network<br />type | Unnumbered<br />IPv4 interfaces | Passive<br />interfaces |
@@ -167,7 +167,7 @@ You can specify most node parameters as global values (top-level topology elemen
 
 ## VRF Parameters
 
-* You can specify the default area for a VRF OSPF instance with VRF-level **ospf.area** parameter
+* You can use most OSPF node parameters (for example, **area**, **digest**, **password**, or **timers**) in VRF definitions to change the VRF OSPF instance configuration.
 * By default, _netlab_ redistributes BGP- and connected routes into VRF OSPF instances on all network devices. You can change that on devices supporting configurable route import with the **[ospf.import](routing_import)** VRF parameter.
 * You can change the [router ID](routing_router_id) of a VRF OSPF instance with **ospf.router_id** parameter. Use this parameter when building back-to-back links between VRFs on the same node.
 * Set **ospf.active** to *True* to force a VRF to use OSPF even when no routers are attached to the VRF interfaces.
