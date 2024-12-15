@@ -799,8 +799,9 @@ def create_node_interfaces(link: Box, addr_pools: Box, ndict: Box, defaults: Box
       #
       # Find relevant modules that have interface attributes
       mods_with_attr = set([ m for m in ndict[remote_node].get('module',[])
-                              if defaults[m].attributes.get('interface',None) or
-                                 defaults[m].attributes.get('link_to_neighbor',None) ])
+                              if (defaults[m].attributes.get('interface',None) or
+                                  defaults[m].attributes.get('link_to_neighbor',None)) and
+                                  defaults[m].attributes.get('intf_to_neighbor',True) ])
       #
       # Merge neighbor module data + AF with baseline neighbor data
       ngh_data = interface_data(
