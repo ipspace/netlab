@@ -38,11 +38,11 @@ def populate_peerlink_id_set(topology: Box) -> None:
 create_l2_link_base - Create a L2 P2P link as base for member links
 """
 def create_l2_link_base(l: Box, topology: Box) -> Box:
-  l2_ifdata = data.get_box({ 'type': "p2p", 'prefix': False, 'lag': {} }) # Construct an L2 member link
+  l2_linkdata = data.get_box({ 'type': "p2p", 'prefix': False, 'lag': {} }) # Construct an L2 member link
   for a in list(topology.defaults.lag.attributes.lag_l2_ifattr):
     if a in l:
-      l2_ifdata[a] = l[a]
-  return l2_ifdata
+      l2_linkdata[a] = l[a]
+  return l2_linkdata
 
 """
 check_lag_config - check if the given node supports lag and has the module enabled
@@ -170,22 +170,23 @@ def split_dual_mlag_link(link: Box, topology: Box) -> None:
 """
 create_lag_member_links -- expand lag.members for link l and create physical p2p links
 """
-def create_lag_member_links(l: Box, topology: Box) -> None:
+def create_lag_member_links(l: Box, topology: Box) -> bool:
   members = normalized_members(l,topology)                 # Build list of normalized member links
   if not members:
-    return
+    return False
   l.lag.members = members                                  # Update for create_lag_interfaces
 
-  l2_ifdata = create_l2_link_base(l,topology)
-  keep_attr = list(topology.defaults.lag.attributes.lag_member_ifattr)
+  l2_linkdata = create_l2_link_base(l,topology)
+  keep_attr = list(topology.defaults.lag.attributes.lag_member_linkattr)
   for member in members:
-    member = l2_ifdata + member                            # Copy L2 data into member link
+    member = l2_linkdata + member                          # Copy L2 data into member link
     member = data.get_box({ k:v for k,v in member.items() if k in keep_attr }) # Filter out things not needed
     member.linkindex = len(topology.links)+1
     member.lag._parentindex = l.linkindex                  # Keep track of parent, updated to lag.ifindex below
     if log.debug_active('lag'):
       print(f'LAG create_lag_member_links -> adding link {member}')
     topology.links.append(member)
+  return True
 
 """
 create_lag_interfaces -- create interfaces of type "lag" for each link of type virtual_lag
@@ -237,7 +238,7 @@ def create_lag_interfaces(l: Box, topology: Box) -> None:
   link_atts = { k:v for k,v in l.items() if k in copy_link_to_intf }
   l.interfaces = []                               # Build interface list for lag link
   for node in node_count:
-    ifatts = data.get_box({ 'node': node, 'type': 'lag', 'lag': {} })
+    ifatts = data.get_box({ 'node': node, '_type': 'lag', 'lag': {} })  # use '_type', not 'type' (!)
     for m in members:                             # Collect attributes from member links
       if node in [ i.node for i in m.interfaces ]:# ...in which <node> is involved
         ifatts = ifatts + { k:v for k,v in m.items() if k not in skip_atts }
@@ -283,10 +284,10 @@ def create_peer_links(l: Box, topology: Box) -> None:
     return True
 
   members = normalized_members(l,topology,peerlink=True)
-  l2_ifdata = create_l2_link_base(l,topology)
+  l2_linkdata = create_l2_link_base(l,topology)
 
   for idx,member in enumerate(members):
-    member = l2_ifdata + member                   # Copy L2 data into member link
+    member = l2_linkdata + member                 # Copy L2 data into member link
     if idx==0:                                    # For the first member, use the existing link
       topology.links[l.linkindex-1] = l + member  # Update topology (l is a copy)
       first_pair = [ i.node for i in member.interfaces ]
@@ -314,8 +315,9 @@ def create_peer_links(l: Box, topology: Box) -> None:
 
 """
 process_lag_link - process link with 'lag' attribute to create links for lag.members
+                   Returns True iff a virtual_lag was created
 """
-def process_lag_link(link: Box, topology: Box) -> None:
+def process_lag_link(link: Box, topology: Box) -> bool:
   if not 'members' in link.lag:
     log.error(f'must define "lag.members" on LAG link {link._linkname}',
       category=log.IncorrectAttr,
@@ -331,9 +333,10 @@ def process_lag_link(link: Box, topology: Box) -> None:
     link.type = 'p2p'
     link.prefix = False                          # L2-only
     create_peer_links(link,topology)
+    return False
   else:
     link.type = 'virtual_lag'                    # Temporary virtual link, removed in module_post_link_transform
-    create_lag_member_links(link,topology)
+    return create_lag_member_links(link,topology)
 
 #
 # populate_mlag_peer - Lookup the IPv4 loopback address for the mlag peer, and derive a virtual MAC to use
@@ -383,7 +386,10 @@ def populate_mlag_peer(node: Box, intf: Box, topology: Box) -> None:
 class LAG(_Module):
 
   """
-  module_pre_transform -- Analyze any user provided lag.ifindex values and peerlink ids, convert lag.members to links
+  module_pre_transform -- Analyze any user provided lag.ifindex values and peerlink ids, 
+                          convert lag.members to links and create 'lag' type interfaces
+
+  Note: link.interfaces must be populated before vlan.link_pre_transform is called
   """
   def module_pre_transform(self, topology: Box) -> None:
     if log.debug_active('lag'):
@@ -397,19 +403,21 @@ class LAG(_Module):
 
     for link in list(topology.links):                                   # Make a copy, may get modified
       if 'lag' in link:
-        process_lag_link(link,topology)
+        if process_lag_link(link,topology):
+          create_lag_interfaces(link,topology)                          # Create lag interfaces
 
   """
-  module_pre_link_transform - Create 'lag' type interfaces for every temporary 'virtual_lag' link
+  link_pre_link_transform - rename interface '_type' to 'type' (after validation)
 
-  This has to be done after interface attribute validation, and before vlan link_pre_link_transform is called
+  The interface 'type' attribute is added internally, and cannot be defined in the data model.
+  It should have been called '_type' to begin with, but that ship has sailed a while ago. This module
+  implements a workaround by calling it '_type' during validation (allowing it to be skipped), and then
+  renaming it to 'type' here
   """
-  def module_pre_link_transform(self, topology: Box) -> None:
-    if log.debug_active('lag'):
-      print(f'LAG module_pre_link_transform: Create "lag" interfaces for every "virtual_lag"')
-    for link in list(topology.links):                                   # Make a copy, links may get added
-      if link.get('type',None)=='virtual_lag':
-        create_lag_interfaces(link,topology)                            # Create lag interfaces
+  def link_pre_link_transform(self, link: Box, topology: Box) -> None:
+    for intf in link.interfaces:
+      if intf.get('_type',None)=='lag':
+        intf.type = intf.pop('_type')
 
   """
   module_post_link_transform - remove temporary 'virtual_lag' links
