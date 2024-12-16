@@ -31,7 +31,7 @@ MSTP/RSTP ports fall back to regular STP upon receiving a plain STP BPDU.
 ## Global Parameters
 
 * **stp.protocol** (one of stp, mstp, rstp or pvrst) -- Global STP flavor to run on supporting nodes, default **stp**
-* **stp.stub_port_type** (one of 'normal','edge','network','auto' or 'none') -- Port type to configure on ports with only hosts connected, default **'edge'**
+* **stp.stub_port_type** (one of 'normal','edge','network','auto' or 'none') -- Port type to configure on ports with only hosts connected, default **'none'**
 
 ## Global, Node, Link, Interface, and VLAN Parameters
 
