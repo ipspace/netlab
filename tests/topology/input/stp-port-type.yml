@@ -7,6 +7,8 @@ message: |
   * h3 and h4 should be able to ping each other
   * h1 should not be able to reach h3
 
+defaults.device: eos
+
 stp:
   enable: True
   stub_port_type: edge           # auto-configure host ports as 'edge'
@@ -38,16 +40,31 @@ nodes:
     stp.port_type: edge   # Test: node-level stp port_type
 
 links:
-- s1:
+- name: port_type network configured on link
+  s1:
   s2:
   vlan.trunk: [red,blue]
   stp.port_type: network
 
-- s1-s3  # IP interface, module should not apply STP port_type setting here
+- name: no port_type on IP interface
+  s1:
+  s3: # IP interface, module should not apply STP port_type setting here
 
-- s2:
+- name: Inherit node port_type on L2 interface
+  s1:
   s3:
-  vlan.access: green # Should both get 'normal' stp.port_type, on vlan
+  prefix: False
+
+- name: port_type normal configured on access vlan
+  s2:
+  s3:
+  vlan.access: green # Should both get 'normal' stp.port_type, on vlan interface
+
+- name: port_type on l2 interface override node
+  s1:
+  s3:
+    stp.port_type: auto
+  prefix: False
 
 validate:
   ping_red:
