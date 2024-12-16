@@ -1,0 +1,23 @@
+{% from "templates/lag/linux.j2" import create_bond_dev with context %}
+#!/bin/bash
+
+set -e
+
+# Check if the 'ip' command is available, if not install it
+if ! command -v ip 2>&1 >/dev/null
+then
+  echo "Trying to install the 'ip' and 'ethtool' commands..."
+  apt-get -qq update
+  apt-get -qq install ethtool iproute2
+fi
+
+{# Bonding device is created by 'initial' module #}
+{% for intf in interfaces|default([]) if intf.bonding.members is defined %}
+ip link set dev {{ intf.ifname }} down
+{%   for member in intf.bonding.members %}
+ip link set dev {{ member }} down
+ip link set dev {{ member }} master {{ intf.ifname }}
+ip link set dev {{ member }} up
+{%   endfor %}
+ip link set dev {{ intf.ifname }} up
+{% endfor %}
