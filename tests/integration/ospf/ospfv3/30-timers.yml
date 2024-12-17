@@ -1,0 +1,43 @@
+---
+message: |
+  This lab tests the OSPFv3 interface timers. The device under test must establish
+  an OSPFv3 adjacency with the probe having custom OSPF hello/dead timers.
+
+  The test assumes the device under test supports OSPFv3 in VRFs.
+
+vrfs:
+  customer:
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1, x2 ]
+    module: [ ospf ]
+
+nodes:
+  dut:
+    module: [ ospf, vrf ]
+  x1:
+  x2:
+
+links:
+- dut:
+  x1:
+  ospf.timers:
+    hello: 2
+    dead: 5
+- dut:
+    vrf: customer
+  x2:
+  ospf.timers:
+    hello: 1
+    dead: 3
+
+validate:
+  adj:
+    description: Check OSPFv3 adjacencies
+    wait_msg: Waiting for OSPFv3 adjacency process to complete
+    wait: 15
+    nodes: [ x1, x2 ]
+    plugin: ospf6_neighbor(nodes.dut.ospf.router_id)
