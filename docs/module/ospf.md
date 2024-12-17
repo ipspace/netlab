@@ -107,7 +107,7 @@ OSPF is also supported on these [routing daemons](platform-daemons):
 | BIRD                     | ✅ | ❌  | ✅ | ❌  | ❌  |
 
 (ospf-interface-support)=
-The following table documents the interface-level OSPF features:
+The following table documents the common interface-level OSPF features:
 
 | Operating system         | Cost  | Network<br />type | Unnumbered<br />IPv4 interfaces | Passive<br />interfaces |
 | ------------------------ |:--:|:--:|:--:|:--:|
@@ -141,6 +141,14 @@ OSPF routing daemons support these interface-level features:
 
 **Notes:**
 * Routing daemons usually have a single interface. Running OSPF on them seems frivolous unless you need OSPF to get paths toward remote endpoints of IBGP sessions.
+
+(ospf-interface-optional-support)=
+These devices also support optional OSPF interface attributes:
+
+| Operating system         | Interface<br>timers | Router<br />priority | Cleartext<br>password | MD5<br>digest |
+| ------------------------ |:--:|:--:|:--:|:--:|
+| Arista EOS               | ✅ | ❌  | ❌  | ❌  |
+| FRR                      | ✅ | ❌  | ❌  | ❌  |
 
 ## Global Parameters
 
