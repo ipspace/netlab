@@ -532,10 +532,24 @@ def cleanup(topology: Box) -> None:
 Return a copy of the topology (leaving original topology unchanged) with unmanaged devices removed
 '''
 def ghost_buster(topology: Box) -> Box:
-  log.print_verbose('Removing unmanaged devices from topology')
+  log.print_verbose('Removing unmanaged and "none" devices from topology')
   # Create a copy of topology
   topo_copy = data.get_box(topology)
   
-  # Remove all nodes with "unmanaged" flag set
-  topo_copy.nodes = { k:v for k,v in topo_copy.nodes.items() if not v.get('unmanaged',False) }  
+  def is_ghost(node: Box) -> bool:
+    return node.get("unmanaged",False) or node.device=='none'
+
+  # Remove unmanaged and/or 'none' type nodes from links
+  for link in topo_copy.get('links',[]):
+    count = len(link.interfaces)
+    link.interfaces = [ i for i in link.interfaces if not is_ghost(topo_copy.nodes[i.node]) ]
+    new_count = len(link.interfaces)
+    if new_count < count:
+      link.node_count -= (count-new_count)
+      if link.node_count==1:
+        link.type = 'dummy'
+        link.bridge = f'ghost_{link.linkindex}'
+
+  # Remove all nodes with "unmanaged" flag set or 'none' device
+  topo_copy.nodes = { k:v for k,v in topo_copy.nodes.items() if not is_ghost(v) }
   return topo_copy
