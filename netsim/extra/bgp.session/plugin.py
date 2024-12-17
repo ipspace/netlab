@@ -1,6 +1,6 @@
 import typing
 from box import Box
-from netsim.utils import log,bgp as _bgp
+from netsim.utils import log,routing as _bgp
 from netsim import api,data
 from netsim.augment import devices
 
