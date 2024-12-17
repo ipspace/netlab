@@ -118,3 +118,4 @@ class OSPF(_Module):
     _routing.igp_post_transform(node,topology,proto='ospf',vrf_aware=True,propagate=propagate_node_attributes)
     _routing.check_vrf_protocol_support(node,'ospf','ipv4','ospfv2',topology)
     _routing.check_vrf_protocol_support(node,'ospf','ipv6','ospfv3',topology)
+    _routing.check_intf_support(node,'ospf',topology)

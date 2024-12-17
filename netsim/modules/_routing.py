@@ -12,7 +12,7 @@ from box import Box
 import typing
 import netaddr
 
-from ..utils import log
+from ..utils import log, routing as _rp_utils
 from ..augment import addressing,devices
 from .routing import import_routing_policy,check_routing_policy
 from .. import data
@@ -360,6 +360,38 @@ def check_vrf_protocol_support(
 
     if af:
       v_data[proto].af[af] = True                 # Add the AF to VRF routing protocol data
+
+"""
+check_intf_support -- check device support for optional interface parameters
+"""
+def check_intf_support(node: Box, proto: str, topology: Box) -> bool:
+  attr = topology.defaults[proto].attributes.get('intf_optional',None)
+  if attr is None:                                # This RP has no optional interface attributes
+    return True
+
+  features = devices.get_device_features(node,topology.defaults)[proto]
+  err_list = data.get_empty_box()
+
+  # Iterate over interfaces using the specified IGP
+  #
+  for intf in _rp_utils.igp_interfaces(node,proto):
+    for kw in intf.get(proto,{}).keys():          # Iterate over interface protocol parameters
+      if kw not in attr:                          # Not an optional attribute, move on
+        continue
+      if kw not in features:                      # Optional attribute, but not supported => add error info
+        data.append_to_list(err_list,kw,f'interface {intf.ifname} ({intf.name})')
+
+  if not err_list:                                # No errors found, we're done
+    return True
+
+  for kw in err_list.keys():                      # Iterate over collected error data
+    log.error(                                    # ... and report every unsupported attribute
+      f'Device {node.device} (node {node.name}) does not support {proto} interface parameter {kw}',
+      category=log.IncorrectAttr,
+      module=proto,
+      more_data=err_list[kw])                     # ... together with the list of interfaces where it was found
+
+  return False
 
 """
 get_remote_cp_endpoint: find the remote control-plane endpoint
