@@ -37,7 +37,7 @@ def valid_ospf_neighbor(
       present: bool = True,
       vrf: str = 'default',*,
       proto: str='ospf',
-      proto_name: str = 'OSPF') -> bool:
+      proto_name: str = 'OSPFv2') -> bool:
   _result = global_vars.get_result_dict('_result')
   ngb_list = get_ospf_neighbor_data(_result,id=id,proto=proto,vrf=vrf)
 
@@ -48,17 +48,17 @@ def valid_ospf_neighbor(
 
   n_state = ngb_list[0]
   if not present:
-    raise Exception(f'Unexpected neighbor {id} in state {n_state.adjacencyState}')
+    raise Exception(f'Unexpected {proto_name} neighbor {id} in state {n_state.adjacencyState}')
 
   _common.report_state(
-    exit_msg=f'Neighbor {id} is in state {n_state.adjacencyState}',
+    exit_msg=f'{proto_name} neighbor {id} is in state {n_state.adjacencyState}',
     OK=n_state.adjacencyState.startswith('full'))
 
 def show_ospf6_neighbor(id: str, present: bool = True, vrf: str = 'default') -> str:
   try:
     netaddr.IPAddress(id)
   except:
-    raise Exception(f'OSPF router ID {id} is not a valid IP address')
+    raise Exception(f'OSPFv3 router ID {id} is not a valid IP address')
   return f'ipv6 ospf neighbor {id} vrf default | json'
 
 def valid_ospf6_neighbor(id: str, present: bool = True,vrf: str = 'default') -> bool:
