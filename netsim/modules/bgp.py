@@ -103,7 +103,7 @@ def bgp_neighbor(n: Box, intf: Box, ctype: str, sessions: Box, extra_data: typin
   ngb["type"] = ctype
   af_count = 0
   for af in ["ipv4","ipv6"]:
-    if ctype in sessions[af]:
+    if ctype in sessions.get(af,[]):
       if af in intf:
         af_count = af_count + 1
         if isinstance(intf[af],bool):
