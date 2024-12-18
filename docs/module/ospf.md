@@ -148,6 +148,10 @@ These devices also support optional OSPF interface attributes:
 | Operating system         | Interface<br>timers | Router<br />priority | Cleartext<br>password | MD5<br>digest |
 | ------------------------ |:--:|:--:|:--:|:--:|
 | Arista EOS               | ✅ | ❌  | ❌  | ❌  |
+| Cisco IOSv/IOSvL2        | ✅ | ❌  | ❌  | ❌  |
+| Cisco IOS XE[^18v]       | ✅ | ❌  | ❌  | ❌  |
+| Cisco Nexus OS           | ✅ | ❌  | ❌  | ❌  |
+| Cumulus Linux            | ✅ | ❌  | ❌  | ❌  |
 | FRR                      | ✅ | ❌  | ❌  | ❌  |
 
 ## Global Parameters
