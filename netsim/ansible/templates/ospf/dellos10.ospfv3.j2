@@ -1,3 +1,5 @@
+{% from "dellos10.macro.j2" import configure_ospf_interface %}
+
 router ospfv3 {{ pid }}
  router-id {{ ospf.router_id }}
 {% if ospf.reference_bandwidth is defined %}
@@ -12,26 +14,5 @@ interface loopback0
 {% endif %}
 !
 {% for l in interfaces|default([]) if 'ospf' in l and 'ipv6' in l %}
-interface {{ l.ifname }}
-! {{ l.name|default("") }}
- ipv6 ospf {{ pid }} area {{ l.ospf.area }}
-{%   if l.ospf.network_type|default("") in ["broadcast","point-to-point"] %}
- ipv6 ospf network {{ l.ospf.network_type }}
-{%   endif %}
-{%   if l.ospf.cost is defined %}
- ipv6 ospf cost {{ l.ospf.cost }}
-{%   endif %}
-{%   if l.ospf.bfd|default(False) %}
- ipv6 ospf bfd all-neighbors
-{%   endif %}
-{%   if l.ospf.passive|default(False) %}
- ipv6 ospf passive
-{%   endif %}
-{%   if l.ospf.timers.hello is defined %}
- ipv6 ospf hello-interval {{ l.ospf.timers.hello }}
-{%   endif %}
-{%   if l.ospf.timers.dead is defined %}
- ipv6 ospf dead-interval {{ l.ospf.timers.dead }}
-{%   endif %}
-!
+{{   configure_ospf_interface(l,pid,af='ipv6') }}
 {% endfor %}
