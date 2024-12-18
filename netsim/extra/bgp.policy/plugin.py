@@ -1,6 +1,6 @@
 import typing
 from box import Box
-from netsim.utils import bgp as _bgp, log
+from netsim.utils import log, routing as _bgp
 from netsim import api,data
 from netsim.data import types
 from netsim.modules.routing import import_routing_policy,check_routing_policy

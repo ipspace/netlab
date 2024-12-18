@@ -42,6 +42,26 @@ def intf_neighbors(node: Box, vrf: bool = True, select: list = ['ibgp','ebgp']) 
           yield (intf,ngb)
 
 '''
+igp_interfaces: iterate over IGP interfaces (global and VRF)
+'''
+def igp_interfaces(node: Box, proto: str, vrf: bool = True) -> typing.Generator:
+  for intf in node.interfaces:
+    if proto not in intf:
+      continue
+    yield(intf)
+
+  if not vrf:
+    return
+  
+  for vname,vdata in node.get('vrfs',{}).items():
+    if proto not in vdata or 'interfaces' not in vdata[proto]:
+      continue
+    for intf in vdata[proto].interfaces:
+      if not 'proto' in intf:
+        continue
+      yield(intf)
+
+'''
 check_device_attribute_support -- using device BGP features, check whether the
 device supports the attribute applied to a BGP neighbor
 '''

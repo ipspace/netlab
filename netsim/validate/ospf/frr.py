@@ -26,13 +26,13 @@ def valid_ospf_neighbor(id: str, present: bool = True, vrf: str = 'default') -> 
   if not id in _result:
     if not present:
       return True
-    raise Exception(f'There is no OSPF neighbor {id}')
+    raise Exception(f'There is no OSPFv2 neighbor {id}')
   
   n_state = _result[id][0]
   if not present:
-    raise Exception(f'Unexpected neighbor {id} in state {n_state.nbrState}')
+    raise Exception(f'Unexpected OSPFv2 neighbor {id} in state {n_state.nbrState}')
 
-  exit_msg = f'Neighbor {id} is in state {n_state.nbrState}'
+  exit_msg = f'OSPFv2 neighbor {id} is in state {n_state.nbrState}'
   if not n_state.nbrState.startswith('Full'):
     raise Exception(exit_msg)
   else:
@@ -54,13 +54,13 @@ def valid_ospf6_neighbor(id: str, present: bool = True) -> bool:
   if n_state is None:
     if not present:
       return True
-    raise Exception(f'There is no OSPF neighbor {id}')
+    raise Exception(f'There is no OSPFv3 neighbor {id}')
   else:  
     if not present:
-      raise Exception(f'Unexpected neighbor {id} in state {n_state.neighborState}')
+      raise Exception(f'Unexpected OSPFv3 neighbor {id} in state {n_state.neighborState}')
 
   if n_state.neighborState != 'Full':
-    raise Exception(f'Neighbor {id} is in state {n_state.neighborState}')
+    raise Exception(f'OSPFv3 neighbor {id} is in state {n_state.neighborState}')
 
   return True
 

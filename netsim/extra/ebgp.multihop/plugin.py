@@ -1,7 +1,7 @@
 from box import Box
 import netaddr
 
-from netsim.utils import log,bgp as _bgp
+from netsim.utils import log,routing as _bgp
 from netsim.modules import vrf
 from netsim import api,data
 from netsim.augment import devices

@@ -22,6 +22,8 @@ Supported OSPF features:
 * Multi-area deployment
 * Per-link cost and asymmetric costs
 * OSPF network type
+* Interface timers (hello and dead interval)
+* OSPF authentication
 * Reference bandwidth
 * Unnumbered point-to-point interfaces
 * [Passive interfaces](routing_passive)
@@ -104,8 +106,8 @@ OSPF is also supported on these [routing daemons](platform-daemons):
 | ------------------------ |:--:|:--:|:--:|:--:|:--:|
 | BIRD                     | ✅ | ❌  | ✅ | ❌  | ❌  |
 
-(ospf-interface)=
-The following table documents the interface-level OSPF features:
+(ospf-interface-support)=
+The following table documents the common interface-level OSPF features:
 
 | Operating system         | Cost  | Network<br />type | Unnumbered<br />IPv4 interfaces | Passive<br />interfaces |
 | ------------------------ |:--:|:--:|:--:|:--:|
@@ -140,6 +142,18 @@ OSPF routing daemons support these interface-level features:
 **Notes:**
 * Routing daemons usually have a single interface. Running OSPF on them seems frivolous unless you need OSPF to get paths toward remote endpoints of IBGP sessions.
 
+(ospf-interface-optional-support)=
+These devices also support optional OSPF interface attributes:
+
+| Operating system         | Interface<br>timers | Router<br />priority | Cleartext<br>password | MD5<br>digest |
+| ------------------------ |:--:|:--:|:--:|:--:|
+| Arista EOS               | ✅ | ❌  | ❌  | ❌  |
+| Cisco IOSv/IOSvL2        | ✅ | ❌  | ❌  | ❌  |
+| Cisco IOS XE[^18v]       | ✅ | ❌  | ❌  | ❌  |
+| Cisco Nexus OS           | ✅ | ❌  | ❌  | ❌  |
+| Cumulus Linux            | ✅ | ❌  | ❌  | ❌  |
+| FRR                      | ✅ | ❌  | ❌  | ❌  |
+
 ## Global Parameters
 
 * **ospf.reference_bandwidth** sets the OSPF auto-cost reference bandwidth (in Mbps) for all devices in the network.
@@ -151,18 +165,21 @@ OSPF routing daemons support these interface-level features:
 * **ospf.process** -- process ID (default: 1)
 * **ospf.af** -- [OSPF address families](routing_af), usually set by the data transformation code. Configures OSPFv2 when **ospf.af.ipv4** is set to `True` and OSPFv3 (on devices that support OSPFv3) when **ospf.af.ipv6** is set to `True`. 
 * **ospf.area** -- default OSPF area (default: 0.0.0.0). Used on links without explicit OSPF area and the loopback interface.
-* **ospf.default** -- External default route origination ([more details](ospf-default))
-* **ospf.reference_bandwidth** -- per-node OSPF auto-cost reference bandwidth (in Mbps).
 * **ospf.bfd** -- enable BFD for OSPF (default: False)
+* **ospf.default** -- External default route origination ([more details](ospf-default))
+* **ospf.digest** -- default OSPFv2 digest authentication parameters. Applies to all interfaces without an explicit **ospf.digest** setting.
 * **ospf.import** -- [import (redistribute) routes](routing_import) into the global OSPF instance. By default, no routes are redistributed into the global OSPF instance.
+* **ospf.password** -- default OSPFv2 cleartext authentication password. Applies to all interfaces without an explicit **ospf.password** setting.
+* **ospf.reference_bandwidth** – per-node OSPF auto-cost reference bandwidth (in Mbps).
 * **ospf.router_id** -- set [static router ID](routing_router_id).
 * **ospf.passive** -- node-level default for passive interfaces (default: False)
+* **ospf.timers** -- default OSPF interface timers. You can override the node values on individual interfaces.
 
 You can specify most node parameters as global values (top-level topology elements) or within individual nodes (see [example](#example) for details).
 
 ## VRF Parameters
 
-* You can specify the default area for a VRF OSPF instance with VRF-level **ospf.area** parameter
+* You can use most OSPF node parameters (for example, **area**, **digest**, **password**, or **timers**) in VRF definitions to change the VRF OSPF instance configuration.
 * By default, _netlab_ redistributes BGP- and connected routes into VRF OSPF instances on all network devices. You can change that on devices supporting configurable route import with the **[ospf.import](routing_import)** VRF parameter.
 * You can change the [router ID](routing_router_id) of a VRF OSPF instance with **ospf.router_id** parameter. Use this parameter when building back-to-back links between VRFs on the same node.
 * Set **ospf.active** to *True* to force a VRF to use OSPF even when no routers are attached to the VRF interfaces.
@@ -171,13 +188,18 @@ You can specify most node parameters as global values (top-level topology elemen
 
 ## Link Parameters
 
-* **ospf.cost** -- OSPF cost
 * **ospf.area** -- OSPF area. Use on ABRs; node-level OSPF area is recommended for intra-area routers.
-* **ospf.network_type** -- Set OSPF network type. Allowed values are **point-to-point**, **point-to-multipoint**, **broadcast** and **non-broadcast**[^NS]. See also [Default Link Parameters](#default-link-parameters)
 * **ospf.bfd** -- turn BFD for OSPF on or off on an individual link or interface (boolean value, overrides node **ospf.bfd** setting)
+* **ospf.cost** -- OSPF cost
+* **ospf.digest** -- A dictionary defining the OSPFv2 message digest (MD5 or SHA) authentication.
+* **ospf.network_type** -- Set OSPF network type. Allowed values are **point-to-point**, **point-to-multipoint**, **broadcast** and **non-broadcast**[^NS]. See also [Default Link Parameters](#default-link-parameters)
 * **ospf.passive** -- explicitly enable or disable [passive interfaces](routing_passive)
+* **ospf.password** -- OSPFv2 cleartext interface authentication password
+* **ospf.timers** -- set OSPF interface timers. A dictionary containing **dead** and **hello** values (from 1 to 8192 seconds)[^TNVC]. Setting **dead** timer to one enables a sub-second hello timer on platforms supporting it.
 
 [^NS]: Some OSPF network types (non-broadcast or point-to-multipoint) are not supported by all platforms.
+
+[^TNVC]: The values of **hello** and **dead** timer are not checked. It is possible to configure a **hello** timer that is larger than the corresponding **dead** timer, resulting in potential network device configuration errors.
 
 **Note:** The same parameters can be specified for individual link nodes.
 
@@ -203,6 +225,13 @@ When the **ospf.passive** attribute is not specified on a link or an interface, 
 
 * The BGP module could set the link role. Links with devices from different AS numbers attached to them get a role specified in **defaults.bgp.ebgp_role** parameter. The system default value of that parameter is **external**, excluding inter-AS links from the OSPF process.
 * Management interfaces are never added to the OSPF process. They are not in the set of device links and, thus, not considered in the OSPF configuration template.
+
+(ospf-interface)=
+## Interface Parameters
+
+Most OSPF interface parameters can be specified on the link and are copied into interface data and configured on lab devices; these parameters can only be set on individual interfaces:
+
+* **ospf.priority** -- OSPF router priority
 
 (ospf-default)=
 ## Specifying External Default Route
