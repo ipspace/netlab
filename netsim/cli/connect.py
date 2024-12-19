@@ -241,9 +241,13 @@ def run(cli_args: typing.List[str]) -> None:
   topology = load_snapshot(args)
   host = args.host
 
-  if host in topology.nodes:
-    connect_to_node(node=host,args=args,rest=rest,topology=topology,log_level=log_level)
-  elif host in topology.tools:
-    connect_to_tool(host,rest,topology,log_level)
-  else:
-    log.fatal(f'Unknown host or external tool {host}')
+  try:
+    if host in topology.nodes:
+      connect_to_node(node=host,args=args,rest=rest,topology=topology,log_level=log_level)
+    elif host in topology.tools:
+      connect_to_tool(host,rest,topology,log_level)
+    else:
+      log.fatal(f'Unknown host or external tool {host}')
+  except KeyboardInterrupt:
+    print("")
+    log.fatal('User interrupted the session')
