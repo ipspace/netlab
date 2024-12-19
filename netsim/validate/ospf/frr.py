@@ -38,7 +38,7 @@ def valid_ospf_neighbor(id: str, present: bool = True, vrf: str = 'default') -> 
   else:
     raise log.Result(exit_msg)
 
-def show_ospf6_neighbor(id: str, present: bool = True) -> str:
+def show_ospf6_neighbor(id: str, **kwargs: typing.Any) -> str:
   return f'ipv6 ospf6 neighbor {id} json'
 
 def valid_ospf6_neighbor(id: str, present: bool = True) -> bool:
