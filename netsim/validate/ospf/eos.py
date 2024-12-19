@@ -30,7 +30,7 @@ def show_ospf_neighbor(id: str, present: bool = True, vrf: str = 'default') -> s
     netaddr.IPAddress(id)
   except:
     raise Exception(f'OSPF router ID {id} is not a valid IP address')
-  return f'ip ospf neighbor {id} vrf default | json'
+  return f'ip ospf neighbor {id} vrf {vrf} | json'
 
 def valid_ospf_neighbor(
       id: str,
@@ -54,12 +54,12 @@ def valid_ospf_neighbor(
     exit_msg=f'{proto_name} neighbor {id} is in state {n_state.adjacencyState}',
     OK=n_state.adjacencyState.startswith('full'))
 
-def show_ospf6_neighbor(id: str, present: bool = True, vrf: str = 'default') -> str:
+def show_ospf6_neighbor(id: str, present: bool = True, vrf: str = 'default', **kwargs: typing.Any) -> str:
   try:
     netaddr.IPAddress(id)
   except:
     raise Exception(f'OSPFv3 router ID {id} is not a valid IP address')
-  return f'ipv6 ospf neighbor {id} vrf default | json'
+  return f'ipv6 ospf neighbor {id} vrf {vrf} | json'
 
 def valid_ospf6_neighbor(id: str, present: bool = True,vrf: str = 'default') -> bool:
   return valid_ospf_neighbor(id,present=present,vrf=vrf,proto='ospf3',proto_name='OSPFv3')
