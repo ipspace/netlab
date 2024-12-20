@@ -602,8 +602,8 @@ def bgp_transform_community_list(node: Box, topology: Box) -> None:
           module='bgp',
           more_hints=[ f"Valid values are {','.join(kw_xform.keys())}" ])
     
-  if 'ibgp_localas' not in clist:
-    clist.ibgp_localas = clist.ibgp
+  if 'localas_ibgp' not in clist:
+    clist.localas_ibgp = clist.ibgp
 
   for s_type in list(clist.keys()):
     clist[s_type] = data.kw_list_transform(kw_xform,clist[s_type])
