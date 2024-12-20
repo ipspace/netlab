@@ -80,10 +80,10 @@ The data transformation has three major steps:
 * Execute **pre_link_transform** plugin hooks (`netsim.augment.plugin.execute`)
 * Execute **pre_link_transform** module hooks (`netsim.modules.pre_link_transform`)
 * Check [link attributes](../links.md#link-attributes) (`netsim.augment.links.check_link_attributes`)
-* Set [link type](../links.md#link-types) based on the number of devices connected to the link (`netsim.augment.links.get_link_type`)
+* Set [link type](links-types) based on the number of devices connected to the link (`netsim.augment.links.get_link_type`)
 * [Augment link](../links.md#augmenting-link-data) and [node interface data](../links.md#augmenting-node-data) (`netsim.augment.links.augment_p2p_link` and `netsim.augment.links.augment_lan_link`):
 
-  * If the link does not have a **prefix** attribute, get link prefix from the [corresponding address pool](../links.md#selecting-custom-address-pools)
+  * If the link does not have a **prefix** attribute, get link prefix from the [corresponding address pool](links-custom-pools)
   * Set node interface IP addresses to first and second subnet IP address for numbered P2P links.
   * Calculate node interface IP addresses from node ID and link prefix for all other links unless the on-link node data contains [static IP addresses](../links.md#static-interface-addressing).
   * Copy link-level configuration module data into node interface data (example: OSPF area)

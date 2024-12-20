@@ -26,19 +26,16 @@ vrf_loopback:
   prefix: 32
 ```
 
-* **loopback** pool generates IP address for loopback interfaces
-* **lan** pool is used to assign prefixes to stub links[^STUB] and multi-access links[^LAN].
-* **p2p** pool is used to assign prefixes to point-to-point links[^P2P]
-* **mgmt** pool contains management network addresses. It's the only pool that uses **mac** addresses at the moment. Changing its definition is probably a bad idea.
+* **loopback** pool generates IP addresses for loopback interfaces
+* **stub** pool (when defined) is used to assign prefixes to stub links[^STUB]
+* **p2p** pool is used to assign prefixes to point-to-point links between routers.
+* **lan** pool is used to assign prefixes to all other links, including links with hosts and multi-access links ([more details](links-default-pools)).
+* **mgmt** pool contains management network addresses. It's the only pool that uses **mac** addresses. Changing its definition is probably a bad idea.
 * **l2only** pool contains no addresses. You can use it on layer-2-only links -- add **pool: l2only** attribute to the link.
 * **router_id** address pool is used to allocate BGP and OSPFv3 router IDs in IPv6-only networks.
 * **vrf_loopback** address pool is used for optional VRF loopback interfaces.
 
-[^STUB]: Links with a single non-host node attached to them or links that have **type: stub** attribute.
-
-[^LAN]: Links with more than two non-host nodes attached to them or links that have **type: lan** attribute.
-
-[^P2P]: Links with exactly two non-host nodes and no hosts attached to them
+[^STUB]: Links with a single router and no hosts attached to them.
 
 (addressing-loopback)=
 ### Loopback Addresses
@@ -54,7 +51,7 @@ links:
 - r1-r3-r4
 - r3:
   r4:
-  type: lan
+  pool: lan
 ```
 
 One of the first things *netlab* topology transformation code does is assign node identifiers to lab devices:
@@ -142,9 +139,9 @@ nodes:
 
 ### Stub Links
 
-Stub links[^STUB] get their IP prefixes from the **lan** address pool[^POOL]. To get an IP address for a node on a stub link, *netlab* combines link prefix with node ID (see also: [lan links](addressing-tutorial-lan-links)).
+As the topology does not define the **stub** pool, stub links[^STUB] get their IP prefixes from the **lan** address pool[^POOL]. To get an IP address for a node on a stub link, *netlab* combines the link prefix with the node ID (see also: [lan links](addressing-tutorial-lan-links)).
 
-[^POOL]: You can also specify the pool to use with **pool** link attribute; we'll cover that a bit later.
+[^POOL]: You can also specify the pool to use with the **pool** link attribute; we'll cover that later.
 
 Imagine the simplest possible lab topology: one device and one link:
 
@@ -216,7 +213,7 @@ You could argue that a network device should always have a .1 IP address on a st
 
 ### Loopback Links
 
-[Loopback links](links-loopback) are a special case of stub links, and use the same address allocation mechanisms. They are configured as loopback interfaces not as physical interfaces and thus don't consume VM/container resources.
+[Loopback links](links-loopback) are a special case of stub links and use the same address allocation mechanisms. They are configured as loopback interfaces, not as physical interfaces, and thus don't consume VM/container resources.
 
 The only difference between loopback- and stub links is the support for host prefixes -- you can configure a /32 IPv4 or a /128 IPv6 prefix on a loopback link, for example:
 
