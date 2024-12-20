@@ -77,7 +77,7 @@ A dictionary describing an individual link contains *node names* and *additional
 * **pool** -- addressing pool used to assign a prefix to this link. The **pool** attribute is ignored on links with a **prefix** attribute.
 * **prefix** -- [prefix (or a set of prefixes)](links-static-addressing) used on the link. Setting **prefix** to *false* will give you a link without any IP configuration[^NOIP]
 * **role** -- The link *role* influences the behavior of several configuration modules. Typical link roles include *stub*, *passive*, and *external*. Please read [](module/routing.md) for more details.
-* **type** -- [link type](#link-types) (lan, p2p, stub, loopback, tunnel)
+* **type** -- [link type](links-types) (lan, p2p, stub, loopback, tunnel)
 
 [^CIN]: Disabled links are removed from lab topology, which might cause changes in interface names.
 
@@ -115,20 +115,29 @@ links:
   bandwidth: 100000
 ```
 
+(links-types)=
 ## Link Types
 
 Lab topology could contain *lan*, *p2p*, *stub*, *loopback*, *lag*, and *tunnel* links. The link type could be specified with the **type** attribute; when that attribute is missing, the link type is selected based on the number of devices connected to the link:
 
 * Single node connected to a link ⇒ *stub* or *loopback* (see below)
-* Two nodes connected to a link ⇒ *p2p*
-* More than two nodes connected to a link, or a [link with a host attached](#hosts-and-default-gateways) ⇒ *lan*
+* Two routers using the default virtualization provider connected to a link ⇒ *p2p*
+* All other scenarios (more than two nodes connected to a link, [hosts attached to a link](#hosts-and-default-gateways), or links with nodes using [non-default virtualization provider](labs-multi-provider)) ⇒ *lan*
 
-The link type influences the [address prefix pool](addressing.md) used to assign IPv4 and IPv6 prefixes to the link and the node addressing:
+The only reason to change the link types for a regular link is to force a Linux bridge to be used between two *libvirt* nodes to enable [packet capture](libvirt-capture). You do have to set the link **type** attribute to create [additional loopbacks](links-loopback) and [tunnels](links-tunnel).
 
-* Prefixes assigned to point-to-point links are taken from *p2p* pool. The node with the smaller node name gets the lower (.1) address; the other node gets the higher (.2) address. The default addressing setup uses /30 IPv4 prefixes and /64 IPv6 prefixes.
-* Prefixes assigned to other links are taken from the *lan* pool unless you specify the **pool** link attribute. The host portion of the IP address on large-enough prefixes is the [node ID](nodes.md#augmenting-node-data). When faced with a non-VLAN prefix that would not accommodate the highest ID of a node connected to the link, *netlab* uses [sequential IP address allocation](addressing-tutorial-lan-links).
+(links-default-pools)=
+## Default Link Prefix Allocation
 
-The default link types usually work well, and you should use the **pool** attribute to specify the address pool instead of changing the link **type**. You might have to change link **type** in advanced scenarios; for example, you must set link **type** to **lan** to use Linux bridges instead of UDP tunnels in [libvirt](labs/libvirt.md) environment.
+The number of nodes attached to a link that does not have a [**pool** parameter](links-custom-pools) influences the [address prefix pool](addressing.md) used to assign IPv4 and IPv6 prefixes to the link and the node addressing:
+
+* Prefixes assigned to point-to-point link between two routers are taken from *p2p* pool. The first node specified on the link gets the lower address (.1); the other gets the higher one (.2). The default addressing setup uses /30 IPv4 prefixes and /64 IPv6 prefixes.
+* Prefixes assigned to stub links (links with a single router and no hosts) get a prefix from the *stub* pool when your lab topology includes its definition.
+* In all other cases, _netlab_ assigns link prefixes from the *lan* pool. The host portion of the IP address on large-enough prefixes is the [node ID](nodes.md#augmenting-node-data). When faced with a non-VLAN prefix that would not accommodate the highest ID of a node connected to the link, *netlab* uses [sequential IP address allocation](addressing-tutorial-lan-links).
+
+```{warning}
+Starting with _netlab_ release 1.9.3, you can no longer use the link **type** to influence the pool selection. Use the **pool** attribute to specify the address pool.
+```
 
 (links-loopback)=
 ### Loopback Links
@@ -236,7 +245,7 @@ links:
 (links-static-addressing)=
 ## Static Link Addressing
 
-You can use the **prefix** attribute to specify the IPv4 and IPv6 prefix to be used on the link. When the **prefix** attribute is not specified, the link prefix is taken from the corresponding address pool ([see above](#link-types)).
+You can use the **prefix** attribute to specify the IPv4 and IPv6 prefix to be used on the link. When the **prefix** attribute is not specified, the link prefix is taken from the corresponding address pool ([see above](links-default-pools)).
 
 The **prefix** attribute could be an IPv4 CIDR prefix or a dictionary with **ipv4**, **ipv6**, and **[allocation](addr-allocation)** elements.
 
@@ -307,7 +316,7 @@ These interface addresses are assigned to the three nodes during the topology tr
 (links-custom-pools)=
 ## Selecting Custom Address Pools
 
-The address pool used to generate IPv4 and IPv6 prefixes for a link is selected based on link type ([see above](#link-types), also *[Address Pool Overview](addressing.md)*).
+The default address pool used to generate IPv4 and IPv6 prefixes for a link is selected based on the number of nodes attached to the link ([see above](links-default-pools), also *[Address Pool Overview](addressing.md)*).
 
 Use the **pool** attribute to specify a custom address pool for a link. For example, the following topology uses an unnumbered (core) link between **r1** and **r2**:
 

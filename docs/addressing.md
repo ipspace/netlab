@@ -11,13 +11,13 @@ You can assign a static prefix to a link with a **prefix** link attribute and a 
 
 * **mgmt** pool: Management IPv4 and MAC addresses. IPv6 addresses are assigned if specified, but not used at the moment.
 * **loopback** pool: Loopback IPv4 and IPv6 addresses.
-* **lan** pool: IPv4 and IPv6 addresses used all links apart from P2P links (links with more or less than two nodes attached to them), or links with **type** set to *lan*.
-* **p2p** pool: IPv4 and IPv6 addresses used on point-to-point links
+* **lan** pool: IPv4 and IPv6 addresses used for all links apart from P2P or stub links ([more details](links-default-pools)).
+* **p2p** pool: IPv4 and IPv6 addresses used on point-to-point links between two routers.
 * **router_id** pool is used to allocate BGP router IDs in IPv6-only networks.
 * **l2only** pool has no IPv4 or IPv6 addresses. You can use it to create L2-only links. See [layer-2-only pools](#layer-2-only-pools) and *[Using l2only Address Pool](example/addressing-tutorial.md#layer-2-only-links-using-l2only-address-pool)* for details.
 * **vrf_loopback** pool: IPv4 and IPv6 prefixes used on optional VRF loopback interfaces.
 
-You can specify additional address pools, and [use them with the **pool** link attribute](links.md#selecting-custom-address-pools).
+You can specify additional address pools, and [use them with the **pool** link attribute](links-custom-pools).
 
 Default IPv4 address pools are defined in system settings:
 

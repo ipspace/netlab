@@ -810,6 +810,13 @@ def create_node_interfaces(link: Box, addr_pools: Box, ndict: Box, defaults: Box
                    ifdata=ngh_data)
       ifdata.neighbors.append(ngh_data)
 
+"""
+set_link_loopback_type: when requested, convert stub links to extra loopbacks
+
+This function is called for links that have a single node attached to them. If the device
+supports extra loopbacks, and if the 'stub_loopback' parameter is set in the device
+or system defailts, the link type is set to loopback.
+"""
 def set_link_loopback_type(link: Box, nodes: Box, defaults: Box) -> None:
   node = link.interfaces[0].node
   ndata = nodes[node]
@@ -829,12 +836,19 @@ def set_link_loopback_type(link: Box, nodes: Box, defaults: Box) -> None:
   if make_loopback or isinstance(make_loopback,Box):
     link.type = 'loopback'
 
-def set_link_type_role(link: Box, pools: Box, nodes: Box, defaults: Box) -> None:
-  node_cnt = len(link.interfaces)   # Set the number of attached nodes (used in many places further on)
+"""
+Count the number of nodes and hosts on the link. Can be called multiple times
+as it checks whether it already did the job before starting the counting process
+"""
+def count_link_nodes(link: Box, nodes: Box) -> None:
+  if 'node_count' in link:                    # Already did a count, we're good  
+    return
+
+  node_cnt = len(link.interfaces)             # Set the number of attached nodes
   link['node_count'] = node_cnt
 
-  host_count = 0                    # Count the number of hosts attached to the link
-  router_count = 0                  # ... and the number of routers
+  host_count = 0
+  router_count = 0
   for ifdata in link.interfaces:
     ndata = nodes[ifdata.node]
     if ndata.get('role','') == 'host':        # If a device has the 'host' role, it's obviously a host
@@ -847,29 +861,42 @@ def set_link_type_role(link: Box, pools: Box, nodes: Box, defaults: Box) -> None
   if host_count > 0:                          # Remember that we have hosts on the link (so we'll set the default GW)
     link.host_count = host_count
 
-  if node_cnt == 1:                           # A link with a single node attached to it. Could model it as a loopback
+  if router_count > 0:                        # Remember that we have routers (so we won't get stub networks)
+    link.router_count = router_count
+
+"""
+Get the default link type based on number of nodes. Also used for default pool selection
+"""
+def get_default_link_type(link: Box) -> str:
+  if link.node_count > 2:
+    return 'lan'
+  
+  if link.get('host_count',0):
+    return 'lan'
+  
+  return 'p2p' if link.node_count == 2 else 'stub'
+
+def set_link_type_role(link: Box, pools: Box, nodes: Box, defaults: Box) -> None:
+  count_link_nodes(link,nodes)
+
+  if link.node_count == 1:                    # A link with a single node attached to it. Could model it as a loopback
     set_link_loopback_type(link,nodes,defaults)
 
   # Set the link role to stub if the link has no role, has a single router,
   # is not a VLAN link, and is not a loopback link
   if not 'role' in link and \
-     router_count <= 1 and \
+     link.get('router_count',0) <= 1 and \
      link.get('type','') != 'loopback' and \
      'vlan_name' not in link:
     link.role = 'stub'
 
+  link.pop('router_count')                    # Temporarily remove the router count
+
   if link.get('dhcp.subnet.ipv4',None):
     link.host_count = link.get('host_count',0) + 1
 
-  if 'type' in link:                # Link type already set, nothing to do
-    return
-
-  link.type = 'lan' if node_cnt > 2 else 'p2p' if node_cnt == 2 else 'stub'     # Set link type based on number of attached nodes
-
-  if link.get('host_count',0) > 0:
-    link.type = 'lan'
-
-  return
+  if 'type' not in link:                      # Link type already set, nothing to do
+    link.type = get_default_link_type(link)   # Set the link type based on number of attached nodes
 
 def set_link_bridge_name(link: Box, defaults: Box) -> None:
   if link.type in ['p2p','loopback','vlan_member']:                   # No need for bridge names on P2P links, loopbacks and virtual links
@@ -1168,7 +1195,9 @@ def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools:
       continue
 
     set_link_bridge_name(link,defaults)
-    link_default_pools = ['p2p','lan'] if link.type in ['p2p','lag'] else ['lan']
+    link_default_pools = [ get_default_link_type(link) ]
+    if 'lan' not in link_default_pools:
+      link_default_pools.append('lan')
     assign_link_prefix(link,link_default_pools,pools,nodes,link._linkname)
     copy_link_gateway(link,nodes)
     assign_interface_addresses(link,pools,nodes,defaults)

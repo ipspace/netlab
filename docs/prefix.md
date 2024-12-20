@@ -1,7 +1,7 @@
 (named-prefixes)=
 # Named IP Prefixes
 
-In most lab topologies, you probably don't care about the exact IP addresses and subnets. Defining IPv4 and IPv6 prefixes in [addressing pools](address pools) is good enough.
+In most lab topologies, you probably don't care about the exact IP addresses and subnets. Defining IPv4 and IPv6 prefixes in [addressing pools](address-pools) is good enough.
 
 However, to tighten control over IP address allocation, you can use the **prefix** attribute on links or VLANS or the **ipv4**/**ipv6** attributes on node interfaces.
 
