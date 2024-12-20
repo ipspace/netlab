@@ -10,7 +10,7 @@ import netaddr
 from box import Box,BoxList
 
 from . import _Module,_routing,_dataplane,get_effective_module_attribute
-from ..utils import log
+from ..utils import log,strings
 from .. import data
 from ..data import global_vars,get_box
 from ..data.types import must_be_list
@@ -320,20 +320,26 @@ import_dispatch: typing.Dict[str,dict] = {
 Import or merge global routing policies into node routing policies
 """
 def process_routing_data(node: Box,o_type: str, topology: Box, dispatch: dict, always_check: bool = True) -> None:
-  if o_type not in dispatch:                         # pragma: no cover
-    log.fatal(f'Invalid routing object {o_type} passed to process_routing_data')
 
-  node_pdata = node.get(f'routing.{o_type}',None)
-  if not isinstance(node_pdata,dict):
-    return
-
-  for p_name in list(node_pdata.keys()):
+  def call_dispatch(p_name: typing.Union[str,int]) -> None:
     o_import = dispatch[o_type]['import'](p_name,o_type,node,topology)
     if o_import is not None or always_check:
       if 'check' in dispatch[o_type]:
         dispatch[o_type]['check'](p_name,o_type,node,topology)
     if 'related' in dispatch[o_type]:
       dispatch[o_type]['related'](p_name,o_type,node,topology)
+
+  if o_type not in dispatch:                         # pragma: no cover
+    log.fatal(f'Invalid routing object {o_type} passed to process_routing_data')
+
+  node_pdata = node.get(f'routing.{o_type}',None)
+
+  if isinstance(node_pdata,dict):
+    for p_name in list(node_pdata.keys()):
+      call_dispatch(p_name)
+  elif isinstance(node_pdata,list):
+    for idx in range(len(node_pdata)):
+      call_dispatch(idx)
 
 """
 Dispatch table for data normalization
@@ -535,6 +541,135 @@ def expand_community_list(p_name: str,o_name: str,node: Box,topology: Box) -> ty
   return None                                               # Message to caller: no need to do additional checks
 
 """
+Extract just the AF information (host or prefix) from a data object
+
+Returns a box with ipv4 and/or ipv6 components, either as prefixes (default)
+or host addresses (when keep_prefix = false)
+"""
+def extract_af_info(addr: Box, keep_prefix: bool = True) -> Box:
+  result = data.get_empty_box()
+  for af in log.AF_LIST:                      # Iterate over address families
+    if af not in addr:                        # AF not present, move on
+      continue
+    if isinstance(addr[af],bool):
+      result[af] = addr[af]
+    elif keep_prefix:                         # Do we need a prefix?
+      net = netaddr.IPNetwork(addr[af])       # Use IPNetwork to extract network and prefix
+      result[af] = str(net.network) + '/' + str(net.prefixlen)
+    else:                                     # We need just the host part
+      result[af] = addr[af].split('/')[0]     # ... and it's simpler to use a split ;)
+
+  return result
+
+"""
+Get a string identifier for a static route
+
+* Ideally, we'd have IPv4 and/or IPv6 prefixes
+* Failing that, we could identify a static route based on its node, prefix, pool or include attributes
+* Last resort: maybe we have at least the nexthop info
+* Return 'null' if everything else fails :(
+"""
+def get_static_route_id(sr_data: Box) -> str:
+  af_data = [ sr_data[af] for af in log.AF_LIST if af in sr_data ]
+  if not af_data:
+    af_data = [ f'{kw}: {sr_data[kw]}' for kw in ['node','prefix','pool','include'] if kw in sr_data ]
+  if not af_data and 'nexthop' in sr_data:
+    af_data = [ 'nexthop: '+str(sr_data.nexthop)]
+  return ','.join(af_data) or 'null'
+
+"""
+Import global static routes into node data
+"""
+def import_static_routes(idx: int,o_name: str,node: Box,topology: Box) -> typing.Optional[list]:
+  sr_data = node.routing[o_name][idx]
+  if 'include' in sr_data:
+    if sr_data.include not in topology.get('routing.static',{}):
+      log.error(
+        f'Node {node.name} is referencing an unknown global static route "{sr_data.include}"',
+        category=log.MissingValue,
+        module='routing')
+      return None
+    node.routing[o_name][idx] = topology.routing.static[sr_data.include] + node.routing[o_name][idx]
+
+  return node.routing[o_name][idx]
+
+def resolve_static_nexthop(sr_data: Box, node: Box, topology: Box) -> Box:
+  nh = data.get_empty_box()
+  for intf in node.interfaces:
+    for ngb in intf.neighbors:
+      if ngb.node != sr_data.nexthop.node:
+        continue
+      ngb_addr = extract_af_info(ngb,keep_prefix=False)
+      for af in ['ipv4','ipv6']:
+        if af not in ngb_addr:
+          continue
+        if isinstance(ngb_addr[af],bool):
+          log.error(
+            f'netlab does not support static routes to unnumbered interfaces',
+            more_hints=f'node {node.name}, {get_static_route_id(sr_data)}, nexthop node {sr_data.nexthop.node}',
+            category=log.MissingValue,
+            module='routing')
+          continue
+
+        data.append_to_list(nh,af,ngb_addr[af])
+  
+  if not nh:
+    nh = extract_af_info(
+           _routing.get_remote_cp_endpoint(topology.nodes[sr_data.nexthop.node]),
+           keep_prefix=False)
+
+  return nh
+
+def check_static_routes(idx: int,o_name: str,node: Box,topology: Box) -> None:
+  sr_data = node.routing[o_name][idx]
+
+  if 'pool' in sr_data:
+    sr_data = sr_data + extract_af_info(topology.addressing[sr_data.pool])
+  elif 'prefix' in sr_data:
+    sr_data = sr_data + extract_af_info(addressing.evaluate_named_prefix(topology,sr_data.prefix))
+  elif 'node' in sr_data:
+    sr_data = sr_data + extract_af_info(_routing.get_remote_cp_endpoint(topology.nodes[sr_data.node]))
+
+  if idx == 0:
+    check_routing_object(get_static_route_id(sr_data),o_name,node,topology)
+
+  if 'ipv4' not in sr_data and 'ipv6' not in sr_data:
+    log.error(
+      f'Static route "{get_static_route_id(sr_data)}" in node {node.name} has no usable IPv4 or IPv6 prefix',
+      category=log.MissingValue,
+      module='routing')
+    return
+
+  if sr_data.get('nexthop.node',None):
+    sr_data.nexthop = resolve_static_nexthop(sr_data,node,topology) + sr_data.nexthop
+
+  for af in ['ipv4','ipv6']:
+    if af not in sr_data:
+      continue
+    
+    if af not in sr_data.nexthop:
+      log.error(
+        f'A static route for {sr_data[af]} on node {node.name} has no {af} next hop',
+        more_data=str(sr_data),
+        category=log.MissingValue,
+        module='routing')
+      return
+
+  for af in ['ipv4','ipv6']:
+    if af in sr_data and af in sr_data.nexthop:
+      if not isinstance(sr_data.nexthop[af],list):
+        continue
+
+      nh_list = sr_data.nexthop[af]
+      sr_data.nexthop[af] = nh_list[0]
+      for nh_addr in nh_list[1:]:
+        node.routing[o_name].append({
+          af: sr_data[af],
+          'nexthop': { af: nh_addr }})
+
+  node.routing[o_name][idx] = sr_data
+
+"""
 Dispatch table for post-transform processing. Currently used only to
 expand the prefixes/pools in prefix list.
 """
@@ -547,6 +682,10 @@ transform_dispatch: typing.Dict[str,dict] = {
   },
   'community': {
     'import': expand_community_list
+  },
+  'static': {
+    'import': import_static_routes,
+    'check': check_static_routes
   }
 }
 
