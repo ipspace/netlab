@@ -297,6 +297,53 @@ def import_routing_policy(pname: str,o_name: str,node: Box,topology: Box) -> typ
   return p_import
 
 """
+include_global_static_routes: Include global static routes into node static routes
+"""
+def include_global_static_routes(o_data: BoxList,o_type: str,node: Box,topology: Box) -> typing.Optional[BoxList]:
+  if not isinstance(o_data,list):
+    return None
+
+  include_limit = 20
+  sr_name = f'Static route list in node {node.name}'
+
+  while True:
+    include_rq = False
+    for idx in range(len(o_data)):
+      sr_data = o_data[idx]
+      if 'include' not in sr_data:
+        continue
+
+      if sr_data.include not in topology.get('routing.static',{}):
+        log.error(
+          f'{sr_name} is trying to include non-existent global static route list {sr_data.include}',
+          category=log.MissingValue,
+          module='routing')
+        sr_data.remove = True
+        continue
+
+      include_rq = True
+      inc_data = topology.routing.static[sr_data.include]
+      for sr_entry in inc_data:        
+        if 'nexthop' in sr_data:
+          sr_entry = sr_entry + { 'nexthop': sr_data.nexthop }
+        o_data.append(sr_entry)
+
+      sr_data.remove = True
+
+    if not include_rq:
+      return o_data
+
+    o_data = BoxList([ sr_data for sr_data in o_data if not sr_data.get('remove',False) ])
+    include_limit -= 1
+    if not include_limit:
+      log.error(
+        f'{sr_name} has exceeded the include depth limit',
+        more_hints='You might have a loop of "include" requests',
+        category=log.IncorrectValue,
+        module='routing')
+      return o_data
+
+"""
 Dispatch table for global-to-node object import
 """
 import_dispatch: typing.Dict[str,dict] = {
@@ -312,7 +359,10 @@ import_dispatch: typing.Dict[str,dict] = {
     'check'  : check_routing_object },
   'community': {
     'import' : import_routing_object,
-    'check'  : check_routing_object }
+    'check'  : check_routing_object },
+  'static': {
+    'start'  : include_global_static_routes
+  }
 
 }
 
@@ -322,7 +372,10 @@ Import or merge global routing policies into node routing policies
 def process_routing_data(node: Box,o_type: str, topology: Box, dispatch: dict, always_check: bool = True) -> None:
 
   def call_dispatch(p_name: typing.Union[str,int]) -> None:
-    o_import = dispatch[o_type]['import'](p_name,o_type,node,topology)
+    if 'import' in dispatch[o_type]:
+      o_import = dispatch[o_type]['import'](p_name,o_type,node,topology)
+    else:
+      o_import = None
     if o_import is not None or always_check:
       if 'check' in dispatch[o_type]:
         dispatch[o_type]['check'](p_name,o_type,node,topology)
@@ -333,6 +386,14 @@ def process_routing_data(node: Box,o_type: str, topology: Box, dispatch: dict, a
     log.fatal(f'Invalid routing object {o_type} passed to process_routing_data')
 
   node_pdata = node.get(f'routing.{o_type}',None)
+  if node_pdata is None:
+    return
+
+  if 'start' in dispatch[o_type]:
+    result = dispatch[o_type]['start'](node_pdata,o_type,node,topology)
+    if result is not None:
+      node.routing[o_type] = result
+      node_pdata = result
 
   if isinstance(node_pdata,dict):
     for p_name in list(node_pdata.keys()):
@@ -340,6 +401,9 @@ def process_routing_data(node: Box,o_type: str, topology: Box, dispatch: dict, a
   elif isinstance(node_pdata,list):
     for idx in range(len(node_pdata)):
       call_dispatch(idx)
+
+  if 'cleanup' in dispatch[o_type]:
+    result = dispatch[o_type]['cleanup'](node_pdata,o_type,node,topology)
 
 """
 Dispatch table for data normalization
@@ -360,21 +424,28 @@ normalize_dispatch: typing.Dict[str,dict] = {
   'community':
     { 'namespace': 'routing.community',
       'object'   : 'BGP community filter',
-      'callback' : normalize_aspath_entry }
+      'callback' : normalize_aspath_entry },
 }
 
 """
 normalize_routing_data: execute the normalization functions for all routing objects
 """
-def normalize_routing_data(r_object: Box, topo_object: bool = False) -> None:
+def normalize_routing_data(r_object: Box, topo_object: bool = False, o_name: str = 'topology') -> None:
   global normalize_dispatch
 
   for dp in normalize_dispatch.values():
-    normalize_routing_objects(
-      o_dict=r_object.get(dp['namespace'],None),
-      o_type=dp['object'],
-      normalize_callback=dp['callback'],
-      topo_object=topo_object)
+    if 'transform' in dp:
+      if dp['namespace'] in r_object:
+        xform = r_object[dp['namespace']]
+        xform = dp['transform'](xform,o_type=dp['object'],topo_object=topo_object,o_name=o_name)
+        if xform is not None:
+          r_object[dp['namespace']] = xform
+    elif 'callback' in dp:
+      normalize_routing_objects(
+        o_dict=r_object.get(dp['namespace'],None),
+        o_type=dp['object'],
+        normalize_callback=dp['callback'],
+        topo_object=topo_object)
 
 """
 expand_prefix_entry: Transform 'pool' and 'prefix' keywords into 'ipv4' and 'ipv6'
@@ -572,26 +643,78 @@ Get a string identifier for a static route
 def get_static_route_id(sr_data: Box) -> str:
   af_data = [ sr_data[af] for af in log.AF_LIST if af in sr_data ]
   if not af_data:
-    af_data = [ f'{kw}: {sr_data[kw]}' for kw in ['node','prefix','pool','include'] if kw in sr_data ]
+    af_data = [ f'{kw}: {sr_data[kw]}' for kw in ['node','prefix','pool'] if kw in sr_data ]
   if not af_data and 'nexthop' in sr_data:
     af_data = [ 'nexthop: '+str(sr_data.nexthop)]
   return ','.join(af_data) or 'null'
 
 """
-Import global static routes into node data
+process_static_routes: Import global static routes into node static routes
+"""
+def process_static_route_includes(
+      o_data: typing.Union[Box,BoxList],
+      o_type: str,
+      topo_object: Box,
+      o_name: str) -> typing.Union[Box,BoxList]:
+  if isinstance(o_data,Box):
+    for kw in list(o_data.keys()):
+      if isinstance(o_data[kw],BoxList):
+        o_data[kw] = process_static_route_includes(o_data[kw],o_type,topo_object,o_name)
+      else:
+        o_data[kw] = process_static_route_includes(BoxList([o_data[kw]]),o_type,topo_object,o_name)
+    return o_data
+  if not isinstance(o_data,list):
+    return o_data
+
+  include_limit = 20
+  topology = global_vars.get_topology()
+  if topology is None:
+    return o_data
+  sr_name = 'A global static route list' if topo_object else f'Static route list in node {o_name}'
+
+  while True:
+    include_rq = False
+    for idx in range(len(o_data)):
+      sr_data = o_data[idx]
+      if 'include' not in sr_data:
+        continue
+
+      if sr_data.include not in topology.get('routing.static',{}):
+        log.error(
+          f'{sr_name} is trying to include non-existent global static route list {sr_data.include}',
+          category=log.MissingValue,
+          module='routing')
+        sr_data.remove = True
+        continue
+
+      include_rq = True
+      inc_data = topology.routing.static[sr_data.include]
+      for sr_entry in inc_data:        
+        if 'nexthop' in sr_data:
+          sr_entry = sr_entry + { 'nexthop': sr_data.nexthop }
+        o_data.append(sr_entry)
+
+      sr_data.remove = True
+
+    if not include_rq:
+      return o_data
+
+    o_data = BoxList([ sr_data for sr_data in o_data if not sr_data.get('remove',False) ])
+    include_limit -= 1
+    if not include_limit:
+      log.error(
+        f'{sr_name} has exceeded the include depth limit',
+        more_hints='You might have a loop of "include" requests',
+        category=log.IncorrectValue,
+        module='routing')
+      return o_data
+
+"""
+Static route import has been done during the normalization phase,
+but we still need a fake function for the import/check loop to work
 """
 def import_static_routes(idx: int,o_name: str,node: Box,topology: Box) -> typing.Optional[list]:
-  sr_data = node.routing[o_name][idx]
-  if 'include' in sr_data:
-    if sr_data.include not in topology.get('routing.static',{}):
-      log.error(
-        f'Node {node.name} is referencing an unknown global static route "{sr_data.include}"',
-        category=log.MissingValue,
-        module='routing')
-      return None
-    node.routing[o_name][idx] = topology.routing.static[sr_data.include] + node.routing[o_name][idx]
-
-  return node.routing[o_name][idx]
+  return None
 
 def resolve_static_nexthop(sr_data: Box, node: Box, topology: Box) -> Box:
   nh = data.get_empty_box()
@@ -640,7 +763,14 @@ def check_static_routes(idx: int,o_name: str,node: Box,topology: Box) -> None:
       module='routing')
     return
 
-  if sr_data.get('nexthop.node',None):
+  if 'nexthop' not in sr_data:
+    log.error(
+      f'Static route "{get_static_route_id(sr_data)}" in node {node.name} has no next hop information',
+      category=log.MissingValue,
+      module='routing')
+    return
+
+  if sr_data.nexthop.get('node',None):
     sr_data.nexthop = resolve_static_nexthop(sr_data,node,topology) + sr_data.nexthop
 
   for af in ['ipv4','ipv6']:
@@ -669,6 +799,9 @@ def check_static_routes(idx: int,o_name: str,node: Box,topology: Box) -> None:
 
   node.routing[o_name][idx] = sr_data
 
+def cleanup_static_routes(o_data: BoxList,o_type: str,node: Box,topology: Box) -> None:
+  return
+
 """
 Dispatch table for post-transform processing. Currently used only to
 expand the prefixes/pools in prefix list.
@@ -684,8 +817,10 @@ transform_dispatch: typing.Dict[str,dict] = {
     'import': expand_community_list
   },
   'static': {
-    'import': import_static_routes,
-    'check': check_static_routes
+    'start'  : process_static_route_includes,
+    'import' : import_static_routes,
+    'check'  : check_static_routes,
+    'cleanup': cleanup_static_routes
   }
 }
 
@@ -693,10 +828,10 @@ class Routing(_Module):
 
   def module_pre_default(self, topology: Box) -> None:
     topology.prefix = topology.defaults.prefix + topology.prefix
-    normalize_routing_data(topology,topo_object=True)
+    normalize_routing_data(topology,topo_object=True,o_name='topology')
 
   def node_pre_default(self, node: Box, topology: Box) -> None:
-    normalize_routing_data(node)
+    normalize_routing_data(node,o_name=node.name)
 
   def node_pre_transform(self, node: Box, topology: Box) -> None:
     global import_dispatch
