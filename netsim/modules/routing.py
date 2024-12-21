@@ -723,20 +723,24 @@ def resolve_static_nexthop(sr_data: Box, node: Box, topology: Box) -> Box:
       if ngb.node != sr_data.nexthop.node:
         continue
       ngb_addr = extract_af_info(ngb,keep_prefix=False)
-      for af in ['ipv4','ipv6']:
+      nh_data = data.get_empty_box()
+      for af in log.AF_LIST:
         if af not in ngb_addr:
           continue
-        if isinstance(ngb_addr[af],bool):
-          log.error(
-            f'netlab does not support static routes to unnumbered interfaces',
-            more_hints=f'node {node.name}, {get_static_route_id(sr_data)}, nexthop node {sr_data.nexthop.node}',
-            category=log.MissingValue,
-            module='routing')
-          continue
+        if isinstance(ngb_addr[af],str):
+          nh_data[af] = ngb_addr[af]
+          nh_data.intf = intf.ifname
 
-        data.append_to_list(nh,af,ngb_addr[af])
+      if nh_data:
+        data.append_to_list(nh,'nhlist',nh_data)
   
-  if not nh:
+  if nh:
+    for af in log.AF_LIST:
+      if af not in nh:
+        af_nh = [ nh_entry[af] for nh_entry in nh.nhlist if af in nh_entry ]
+        if af_nh:
+          nh[af] = af_nh[0]
+  else:
     nh = extract_af_info(
            _routing.get_remote_cp_endpoint(topology.nodes[sr_data.nexthop.node]),
            keep_prefix=False)
@@ -785,22 +789,21 @@ def check_static_routes(idx: int,o_name: str,node: Box,topology: Box) -> None:
         module='routing')
       return
 
-  for af in ['ipv4','ipv6']:
-    if af in sr_data and af in sr_data.nexthop:
-      if not isinstance(sr_data.nexthop[af],list):
+  if 'nhlist' in sr_data.nexthop:
+    sr_data.remove = True
+    for af in log.AF_LIST:
+      if af not in sr_data:
         continue
-
-      nh_list = sr_data.nexthop[af]
-      sr_data.nexthop[af] = nh_list[0]
-      for nh_addr in nh_list[1:]:
+      for nh_entry in sr_data.nexthop.nhlist:
         node.routing[o_name].append({
           af: sr_data[af],
-          'nexthop': { af: nh_addr }})
+          'nexthop': nh_entry
+        })
 
   node.routing[o_name][idx] = sr_data
 
 def cleanup_static_routes(o_data: BoxList,o_type: str,node: Box,topology: Box) -> None:
-  return
+  node.routing[o_type] = [ sr_entry for sr_entry in node.routing[o_type] if 'remove' not in sr_entry ]
 
 """
 Dispatch table for post-transform processing. Currently used only to
