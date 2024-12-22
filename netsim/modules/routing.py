@@ -716,14 +716,34 @@ but we still need a fake function for the import/check loop to work
 def import_static_routes(idx: int,o_name: str,node: Box,topology: Box) -> typing.Optional[list]:
   return None
 
-def resolve_static_nexthop(sr_data: Box, node: Box, topology: Box) -> Box:
+"""
+When a static route uses a node as a next hop, we have to resolve
+that into IPv4/IPv6 addresses. This function returns a list of
+next hops (IPv4/IPv6/intf) for directly-connected nodes or control-plane
+endpoint information for remote next hops.
+
+Please note that the next-hop list is returned as the 'nhlist' attribute
+of the 'nexthop' data structure.
+"""
+def resolve_node_nexthop(sr_data: Box, node: Box, topology: Box) -> Box:
   nh = data.get_empty_box()
+  nh_vrf = sr_data.nexthop.vrf if 'vrf' in sr_data.nexthop else sr_data.get('vrf',None)
+
+  node_found = False
   for intf in node.interfaces:
     for ngb in intf.neighbors:
       if ngb.node != sr_data.nexthop.node:
         continue
+
+      node_found = True
+      if intf.get('vrf',None) != nh_vrf:
+        continue
+
       ngb_addr = extract_af_info(ngb,keep_prefix=False)
       nh_data = data.get_empty_box()
+      if 'vrf' in sr_data.nexthop:
+        nh_data.vrf = sr_data.nexthop.vrf
+
       for af in log.AF_LIST:
         if af not in ngb_addr:
           continue
@@ -741,11 +761,61 @@ def resolve_static_nexthop(sr_data: Box, node: Box, topology: Box) -> Box:
         if af_nh:
           nh[af] = af_nh[0]
   else:
+    if node_found:
+      log.error(
+        f'Next hop {sr_data.nexthop.node} for static route "{get_static_route_id(sr_data)}"'+ \
+        f' is connected to node {node.name} but not in VRF {nh_vrf or "default"}',
+        category=log.IncorrectValue,
+        module='routing')
+
     nh = extract_af_info(
            _routing.get_remote_cp_endpoint(topology.nodes[sr_data.nexthop.node]),
            keep_prefix=False)
 
   return nh
+
+"""
+Check whether a VRF static route is valid and supported by the device on which it's used
+"""
+def check_VRF_static_route(sr_data: Box, node: Box, topology: Box) -> bool:
+  d_features = devices.get_device_features(node,topology.defaults)
+  sr_features = d_features.get('routing.static')
+  if not isinstance(sr_features,dict):
+    sr_features = data.get_empty_box()
+
+  if 'vrf' in sr_data:
+    if sr_data.vrf not in node.get('vrfs',{}):
+      log.error(
+        f'Static route "{get_static_route_id(sr_data)}" in node {node.name}' + \
+        f' refers to VRF {sr_data.vrf} which is not defined',
+        category=log.IncorrectValue,
+        module='routing')
+      return False
+
+    if not sr_features.get('vrf',False):
+      log.error(
+        f'Device {node.device} (node {node.name}) does not support VRF static routes',
+        category=log.IncorrectValue,
+        module='routing')
+      return False
+    
+  if 'vrf' in sr_data.nexthop:
+    if not sr_features.get('inter_vrf',False):
+      log.error(
+        f'Device {node.device} (node {node.name}) does not support inter-VRF static routes',
+        category=log.IncorrectValue,
+        module='routing')
+      return False
+    
+    if sr_data.nexthop.vrf and sr_data.nexthop.vrf not in node.get('vrfs',{}):
+      log.error(
+        f'Next hop of a static route "{get_static_route_id(sr_data)}" in node {node.name}' + \
+        f' refers to VRF {sr_data.nexthop.vrf} which is not defined',
+        category=log.IncorrectValue,
+        module='routing')
+      return False
+    
+  return True
 
 def check_static_routes(idx: int,o_name: str,node: Box,topology: Box) -> None:
   sr_data = node.routing[o_name][idx]
@@ -774,8 +844,12 @@ def check_static_routes(idx: int,o_name: str,node: Box,topology: Box) -> None:
       module='routing')
     return
 
+  if 'vrf' in sr_data or 'vrf' in sr_data.nexthop:
+    if not check_VRF_static_route(sr_data,node,topology):
+      return
+
   if sr_data.nexthop.get('node',None):
-    sr_data.nexthop = resolve_static_nexthop(sr_data,node,topology) + sr_data.nexthop
+    sr_data.nexthop = resolve_node_nexthop(sr_data,node,topology) + sr_data.nexthop
 
   for af in ['ipv4','ipv6']:
     if af not in sr_data:
@@ -795,10 +869,11 @@ def check_static_routes(idx: int,o_name: str,node: Box,topology: Box) -> None:
       if af not in sr_data:
         continue
       for nh_entry in sr_data.nexthop.nhlist:
-        node.routing[o_name].append({
-          af: sr_data[af],
-          'nexthop': nh_entry
-        })
+        sr_entry = { af: sr_data[af], 'nexthop': nh_entry }
+        if 'vrf' in sr_data:
+          sr_entry['vrf'] = sr_data.vrf
+
+        node.routing[o_name].append(sr_entry)
 
   node.routing[o_name][idx] = sr_data
 

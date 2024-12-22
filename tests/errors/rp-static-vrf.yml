@@ -1,0 +1,48 @@
+---
+provider: clab
+defaults.device: none
+
+module: [ routing, vrf ]
+
+vrfs:
+  red:
+    links: [ r1-r2 ]
+  blue:
+    links: [ r2-r3 ]
+
+nodes:
+  r1:
+    _features.routing.static: True
+    routing.static:
+    - ipv4: 0.0.0.0/0
+      nexthop.node: r2
+      vrf: red
+    - ipv4: 10.0.0.0/8
+      nexthop.node: r2
+      vrf: blue
+    - ipv4: 192.168.0.0/16
+      nexthop:
+        node: r2
+        vrf: red
+  r2:
+    routing.static:
+    - ipv4: 0.0.0.0/0
+      nexthop.node: r1
+      vrf: blue
+    - ipv4: 10.0.0.0/8
+      vrf: blue
+      nexthop:
+        node: r3
+        vrf:
+    - ipv4: 172.16.0.0/16
+      vrf: missing
+      nexthop.ipv4: 10.0.0.1
+    - ipv4: 172.17.0.0/16
+      nexthop:
+        ipv4: 10.0.0.2
+        vrf: missing
+  r3:
+
+links:
+- r1:
+  r2:
