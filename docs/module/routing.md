@@ -7,7 +7,7 @@ This configuration module implements generic routing features:
 * [Prefix filters (prefix-lists)](generic-routing-prefixes)
 * [BGP AS-path filters](generic-routing-aspath)
 * [BGP community filters](generic-routing-community)
-* Static routes (TBD)
+* [Static routes](generic-routing-static)
 
 ```eval_rst
 .. contents:: Table of Contents
@@ -343,7 +343,7 @@ routing.community:
 Filters encoded in YAML tend to be verbose, and we tried to do as much as we could to reduce BGP community filter verbosity:
 
 * You can skip the **action** and **sequence** attributes.
-* Each entry in a BGP community filter could be a simple string or a list of BGP communities to match. Such entries are converted into dictionaries with the **list** or **regexp** element set to the entry's value. _netlab_ automatically figures out whether a value is a list of communities or a regular expression.
+* Each entry in a BGP community filter could be a simple string or a list of BGP communities to match. Such entries are converted into dictionaries with the **list** or **regexp** element set to the entry's value. _netlab_ automatically determines whether a value is a list of communities or a regular expression.
 * A list of BGP communities in the **list** element is converted into a string of BGP communities separated by a blank
 * A BGP community filter could be a single string. That string is first converted into a list and subsequently into a list containing a single dictionary.
 * _netlab_ automatically generates an *expanded* community list if at least one entry contains a regular expression, and a *standard* community list if all entries contain community values or lists of them.
@@ -360,7 +360,7 @@ routing.community:
     path: [ 65000:100, 65001:100 ]
   - action: permit
     path: [ 65000:103, 65001:103 ]
-  cl5:                                      # A mix standard and extended conditions ==> extended
+  cl5:                                      # A mix of standard and extended conditions ==> extended
   - action: deny
     path: [ 65000:100, 65001:100 ]          # first entry is a list of communities
   - '_6510.:307_'                           # the second entry is a regexp
@@ -415,6 +415,134 @@ community:
       sequence: 20
 ```
 
+(generic-routing-static)=
+## Static Routes
+
+Static routes are defined as lists of prefix/next-hop pairs in the **routing.static** node attribute. Each static route entry must specify a prefix and a next hop.
+
+The static route prefix can be defined with any one of these attributes:
+
+* **ipv4** -- an IPv4 prefix
+* **ipv6** -- an IPv6 prefix
+* **pool** -- [address pool](address-pools) prefix
+* **prefix** -- a [named prefix](named-prefixes)
+* **node** -- a prefix of the specified node's control-plane endpoint (loopback interface or first data-plane interface)
+
+```{tip}
+You can combine **‌ipv4** and **‌ipv6** prefixes in the same static route entry. All other attributes are exclusive and can specify both IPv4 and IPv6 prefixes.
+```
+
+A static route entry's **nexthop** attribute specifies the next hop used to reach the specified prefixes. The next hop can be defined with any one of these attributes:
+
+* **ipv4** -- an IPv4 next hop (an address, not a prefix)
+* **ipv6** -- an IPv6 next hop (an address, not a prefix)
+* **node** -- The next hop is the specified node. The node name will be resolved into a list of directly connected next-hops or the control-plane endpoint of a distant node (allowing you to specify recursive static routes).
+
+```{tip}
+* Static route entries with an **‌ipv4** prefix must have an **‌ipv4** next hop (and likewise for **‌ipv6**). _netlab_ does not support IPv6 next hops for IPv4 routes.
+* _netlab_ will configure several static routes with different next hops if your topology has multiple direct links between the source and the next-hop node.
+* Static routes cannot point to unnumbered IPv4 interfaces or LLA-only IPv6 interfaces.
+```
+
+For example, the following lab topology generates two static routes on node C for the loopback address of node X, pointing to the directly connected IP addresses of node P:
+
+```
+nodes:
+  c:
+    module: [ routing ]
+    routing.static:
+    - node: x
+      nexthop.node: p
+  p:
+    module: [ ospf ]
+  x:
+    module: [ ospf ]
+
+links: [ c-p, c-p, p-x ]
+```
+
+After adding the static route for the loopback address of node X, we can add a static default route using that loopback address as the next hop:
+
+```
+nodes:
+  c:
+    module: [ routing ]
+    routing.static:
+    - node: x
+      nexthop.node: p
+    - ipv4: 0.0.0.0/0
+      nexthop.node: x
+  p:
+    module: [ ospf ]
+  x:
+    module: [ ospf ]
+
+links: [ c-p, c-p, p-x ]
+```
+
+### VRF Static Routes
+
+You can specify the **vrf** attribute in a static route entry to create a VRF static route. The lack of a **vrf** attribute indicates a static route in the global routing table (sometimes called *default VRF*).
+
+You can also specify the **vrf** attribute in the next-hop definition to create an inter-VRF static route. Use the **nexthop.vrf** attribute with no value (`null`) to create a VRF static route with a next hop in the global routing table.
+
+### Platform Support
+
+_netlab_ supports static routes on these platforms:
+
+| Operating system    | Global<br>static routes | VRF static<br>routes | Inter-VRF<br>static routes |
+|---------------------|:--:|:--:|:--:|
+| None                | ✅ | ✅ | ❌  |
+
+### Global Static Routes
+
+You can define global static routes in the **routing.static** topology attribute. The definition of global static routes is a dictionary of static route lists, allowing you to include a subset of global static routes into individual nodes.
+
+To include a global static route list into the node static routes, use the **include** attribute in a node static route entry. For example, you could use the following definitions to include the default routes pointing to node X into node C:
+
+```
+routing.static:
+  default:
+  - ipv4: 0.0.0.0/0
+    ipv6: ::/0
+    nexthop.node: x
+
+module: [ ospf ]
+
+nodes:
+  c:
+    module: [ routing,ospf ]
+    routing.static:
+    - include: default
+  p:
+  x:
+
+links: [ c-p, p-x ]
+```
+
+You can override the next hop of the included static routes with the **nexthop** attribute specified in the **include** entry. For example, you can change the next hop of the default route on the C router to point to the upstream P router:
+
+```
+routing.static:
+  default:
+  - ipv4: 0.0.0.0/0
+    ipv6: ::/0
+    nexthop.node: x
+
+module: [ ospf ]
+
+nodes:
+  c:
+    module: [ routing ]
+    routing.static:
+    - include: default
+      nexthop.node: p
+  p:
+  x:
+
+links: [ c-p, p-x ]
+```
+
 ## Advanced Topics
 
 (routing-object-import)=
@@ -422,9 +550,9 @@ community:
 
 A routing object (routing policy, prefix filter, BGP AS-path filter, or BGP community filter) will not be configured on a network device if it's not defined within the node **routing._object_** dictionary.
 
-That's usually not a problem as the users of routing policies (for example, the [**bgp.policy** plugin](plugin-bgp-policy)) copy global routing policies and all filters used by those routing policies into node data whenever the lab topology references a global routing policy, or when a local routing policy references a global filter. However, you might need a placeholder routing object that is later used in a custom template. To force a global routing object to be copied and configured on a node, mention its name in the corresponding node **routing** dictionary within giving it a value.
+That's usually not a problem as the users of routing policies (for example, the [**bgp.policy** plugin](plugin-bgp-policy)) copy global routing policies and all filters used by those routing policies into node data whenever the lab topology references a global routing policy, or when a local routing policy references a global filter. However, you might need a placeholder routing object that is later used in a custom template. To force a global routing object to be copied and configured on a node, mention its name in the corresponding node **routing** dictionary without giving it a value.
 
-For example, if you want to have *route map* P1 defined on node R1 even though it's not used by any _netlab_ configuration construct, use the following code snippet:
+For example, use the following code snippet if you want to have *route map* P1 defined on node R1 even though no _netlab_ configuration construct uses it:
 
 ```
 routing.policy:
@@ -503,4 +631,3 @@ p1:
 - sequence: 20
   set.med: 200
 ```
-
