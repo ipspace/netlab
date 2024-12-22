@@ -10,7 +10,7 @@ import netaddr
 from box import Box,BoxList
 
 from . import _Module,_routing,_dataplane,get_effective_module_attribute
-from ..utils import log
+from ..utils import log,strings
 from .. import data
 from ..data import global_vars,get_box
 from ..data.types import must_be_list
@@ -297,6 +297,53 @@ def import_routing_policy(pname: str,o_name: str,node: Box,topology: Box) -> typ
   return p_import
 
 """
+include_global_static_routes: Include global static routes into node static routes
+"""
+def include_global_static_routes(o_data: BoxList,o_type: str,node: Box,topology: Box) -> typing.Optional[BoxList]:
+  if not isinstance(o_data,list):
+    return None
+
+  include_limit = 20
+  sr_name = f'Static route list in node {node.name}'
+
+  while True:
+    include_rq = False
+    for idx in range(len(o_data)):
+      sr_data = o_data[idx]
+      if 'include' not in sr_data:
+        continue
+
+      if sr_data.include not in topology.get('routing.static',{}):
+        log.error(
+          f'{sr_name} is trying to include non-existent global static route list {sr_data.include}',
+          category=log.MissingValue,
+          module='routing')
+        sr_data.remove = True
+        continue
+
+      include_rq = True
+      inc_data = topology.routing.static[sr_data.include]
+      for sr_entry in inc_data:        
+        if 'nexthop' in sr_data:
+          sr_entry = sr_entry + { 'nexthop': sr_data.nexthop }
+        o_data.append(sr_entry)
+
+      sr_data.remove = True
+
+    if not include_rq:
+      return o_data
+
+    o_data = BoxList([ sr_data for sr_data in o_data if not sr_data.get('remove',False) ])
+    include_limit -= 1
+    if not include_limit:
+      log.error(
+        f'{sr_name} has exceeded the include depth limit',
+        more_hints='You might have a loop of "include" requests',
+        category=log.IncorrectValue,
+        module='routing')
+      return o_data
+
+"""
 Dispatch table for global-to-node object import
 """
 import_dispatch: typing.Dict[str,dict] = {
@@ -312,7 +359,10 @@ import_dispatch: typing.Dict[str,dict] = {
     'check'  : check_routing_object },
   'community': {
     'import' : import_routing_object,
-    'check'  : check_routing_object }
+    'check'  : check_routing_object },
+  'static': {
+    'start'  : include_global_static_routes
+  }
 
 }
 
@@ -320,20 +370,40 @@ import_dispatch: typing.Dict[str,dict] = {
 Import or merge global routing policies into node routing policies
 """
 def process_routing_data(node: Box,o_type: str, topology: Box, dispatch: dict, always_check: bool = True) -> None:
-  if o_type not in dispatch:                         # pragma: no cover
-    log.fatal(f'Invalid routing object {o_type} passed to process_routing_data')
 
-  node_pdata = node.get(f'routing.{o_type}',None)
-  if not isinstance(node_pdata,dict):
-    return
-
-  for p_name in list(node_pdata.keys()):
-    o_import = dispatch[o_type]['import'](p_name,o_type,node,topology)
+  def call_dispatch(p_name: typing.Union[str,int]) -> None:
+    if 'import' in dispatch[o_type]:
+      o_import = dispatch[o_type]['import'](p_name,o_type,node,topology)
+    else:
+      o_import = None
     if o_import is not None or always_check:
       if 'check' in dispatch[o_type]:
         dispatch[o_type]['check'](p_name,o_type,node,topology)
     if 'related' in dispatch[o_type]:
       dispatch[o_type]['related'](p_name,o_type,node,topology)
+
+  if o_type not in dispatch:                         # pragma: no cover
+    log.fatal(f'Invalid routing object {o_type} passed to process_routing_data')
+
+  node_pdata = node.get(f'routing.{o_type}',None)
+  if node_pdata is None:
+    return
+
+  if 'start' in dispatch[o_type]:
+    result = dispatch[o_type]['start'](node_pdata,o_type,node,topology)
+    if result is not None:
+      node.routing[o_type] = result
+      node_pdata = result
+
+  if isinstance(node_pdata,dict):
+    for p_name in list(node_pdata.keys()):
+      call_dispatch(p_name)
+  elif isinstance(node_pdata,list):
+    for idx in range(len(node_pdata)):
+      call_dispatch(idx)
+
+  if 'cleanup' in dispatch[o_type]:
+    result = dispatch[o_type]['cleanup'](node_pdata,o_type,node,topology)
 
 """
 Dispatch table for data normalization
@@ -354,21 +424,28 @@ normalize_dispatch: typing.Dict[str,dict] = {
   'community':
     { 'namespace': 'routing.community',
       'object'   : 'BGP community filter',
-      'callback' : normalize_aspath_entry }
+      'callback' : normalize_aspath_entry },
 }
 
 """
 normalize_routing_data: execute the normalization functions for all routing objects
 """
-def normalize_routing_data(r_object: Box, topo_object: bool = False) -> None:
+def normalize_routing_data(r_object: Box, topo_object: bool = False, o_name: str = 'topology') -> None:
   global normalize_dispatch
 
   for dp in normalize_dispatch.values():
-    normalize_routing_objects(
-      o_dict=r_object.get(dp['namespace'],None),
-      o_type=dp['object'],
-      normalize_callback=dp['callback'],
-      topo_object=topo_object)
+    if 'transform' in dp:
+      if dp['namespace'] in r_object:
+        xform = r_object[dp['namespace']]
+        xform = dp['transform'](xform,o_type=dp['object'],topo_object=topo_object,o_name=o_name)
+        if xform is not None:
+          r_object[dp['namespace']] = xform
+    elif 'callback' in dp:
+      normalize_routing_objects(
+        o_dict=r_object.get(dp['namespace'],None),
+        o_type=dp['object'],
+        normalize_callback=dp['callback'],
+        topo_object=topo_object)
 
 """
 expand_prefix_entry: Transform 'pool' and 'prefix' keywords into 'ipv4' and 'ipv6'
@@ -535,6 +612,275 @@ def expand_community_list(p_name: str,o_name: str,node: Box,topology: Box) -> ty
   return None                                               # Message to caller: no need to do additional checks
 
 """
+Extract just the AF information (host or prefix) from a data object
+
+Returns a box with ipv4 and/or ipv6 components, either as prefixes (default)
+or host addresses (when keep_prefix = false)
+"""
+def extract_af_info(addr: Box, keep_prefix: bool = True) -> Box:
+  result = data.get_empty_box()
+  for af in log.AF_LIST:                      # Iterate over address families
+    if af not in addr:                        # AF not present, move on
+      continue
+    if isinstance(addr[af],bool):
+      result[af] = addr[af]
+    elif keep_prefix:                         # Do we need a prefix?
+      net = netaddr.IPNetwork(addr[af])       # Use IPNetwork to extract network and prefix
+      result[af] = str(net.network) + '/' + str(net.prefixlen)
+    else:                                     # We need just the host part
+      result[af] = addr[af].split('/')[0]     # ... and it's simpler to use a split ;)
+
+  return result
+
+"""
+Get a string identifier for a static route
+
+* Ideally, we'd have IPv4 and/or IPv6 prefixes
+* Failing that, we could identify a static route based on its node, prefix, pool or include attributes
+* Last resort: maybe we have at least the nexthop info
+* Return 'null' if everything else fails :(
+"""
+def get_static_route_id(sr_data: Box) -> str:
+  af_data = [ sr_data[af] for af in log.AF_LIST if af in sr_data ]
+  if not af_data:
+    af_data = [ f'{kw}: {sr_data[kw]}' for kw in ['node','prefix','pool'] if kw in sr_data ]
+  if not af_data and 'nexthop' in sr_data:
+    af_data = [ 'nexthop: '+str(sr_data.nexthop)]
+  return ','.join(af_data) or 'null'
+
+"""
+process_static_routes: Import global static routes into node static routes
+"""
+def process_static_route_includes(
+      o_data: typing.Union[Box,BoxList],
+      o_type: str,
+      topo_object: Box,
+      o_name: str) -> typing.Union[Box,BoxList]:
+  if isinstance(o_data,Box):
+    for kw in list(o_data.keys()):
+      if isinstance(o_data[kw],BoxList):
+        o_data[kw] = process_static_route_includes(o_data[kw],o_type,topo_object,o_name)
+      else:
+        o_data[kw] = process_static_route_includes(BoxList([o_data[kw]]),o_type,topo_object,o_name)
+    return o_data
+  if not isinstance(o_data,list):
+    return o_data
+
+  include_limit = 20
+  topology = global_vars.get_topology()
+  if topology is None:
+    return o_data
+  sr_name = 'A global static route list' if topo_object else f'Static route list in node {o_name}'
+
+  while True:
+    include_rq = False
+    for idx in range(len(o_data)):
+      sr_data = o_data[idx]
+      if 'include' not in sr_data:
+        continue
+
+      if sr_data.include not in topology.get('routing.static',{}):
+        log.error(
+          f'{sr_name} is trying to include non-existent global static route list {sr_data.include}',
+          category=log.MissingValue,
+          module='routing')
+        sr_data.remove = True
+        continue
+
+      include_rq = True
+      inc_data = topology.routing.static[sr_data.include]
+      for sr_entry in inc_data:        
+        if 'nexthop' in sr_data:
+          sr_entry = sr_entry + { 'nexthop': sr_data.nexthop }
+        o_data.append(sr_entry)
+
+      sr_data.remove = True
+
+    if not include_rq:
+      return o_data
+
+    o_data = BoxList([ sr_data for sr_data in o_data if not sr_data.get('remove',False) ])
+    include_limit -= 1
+    if not include_limit:
+      log.error(
+        f'{sr_name} has exceeded the include depth limit',
+        more_hints='You might have a loop of "include" requests',
+        category=log.IncorrectValue,
+        module='routing')
+      return o_data
+
+"""
+Static route import has been done during the normalization phase,
+but we still need a fake function for the import/check loop to work
+"""
+def import_static_routes(idx: int,o_name: str,node: Box,topology: Box) -> typing.Optional[list]:
+  return None
+
+"""
+When a static route uses a node as a next hop, we have to resolve
+that into IPv4/IPv6 addresses. This function returns a list of
+next hops (IPv4/IPv6/intf) for directly-connected nodes or control-plane
+endpoint information for remote next hops.
+
+Please note that the next-hop list is returned as the 'nhlist' attribute
+of the 'nexthop' data structure.
+"""
+def resolve_node_nexthop(sr_data: Box, node: Box, topology: Box) -> Box:
+  nh = data.get_empty_box()
+  nh_vrf = sr_data.nexthop.vrf if 'vrf' in sr_data.nexthop else sr_data.get('vrf',None)
+
+  node_found = False
+  for intf in node.interfaces:
+    for ngb in intf.neighbors:
+      if ngb.node != sr_data.nexthop.node:
+        continue
+
+      node_found = True
+      if intf.get('vrf',None) != nh_vrf:
+        continue
+
+      ngb_addr = extract_af_info(ngb,keep_prefix=False)
+      nh_data = data.get_empty_box()
+      if 'vrf' in sr_data.nexthop:
+        nh_data.vrf = sr_data.nexthop.vrf
+
+      for af in log.AF_LIST:
+        if af not in ngb_addr:
+          continue
+        if isinstance(ngb_addr[af],str):
+          nh_data[af] = ngb_addr[af]
+          nh_data.intf = intf.ifname
+
+      if nh_data:
+        data.append_to_list(nh,'nhlist',nh_data)
+  
+  if nh:
+    for af in log.AF_LIST:
+      if af not in nh:
+        af_nh = [ nh_entry[af] for nh_entry in nh.nhlist if af in nh_entry ]
+        if af_nh:
+          nh[af] = af_nh[0]
+  else:
+    if node_found:
+      log.error(
+        f'Next hop {sr_data.nexthop.node} for static route "{get_static_route_id(sr_data)}"'+ \
+        f' is connected to node {node.name} but not in VRF {nh_vrf or "default"}',
+        category=log.IncorrectValue,
+        module='routing')
+
+    nh = extract_af_info(
+           _routing.get_remote_cp_endpoint(topology.nodes[sr_data.nexthop.node]),
+           keep_prefix=False)
+
+  return nh
+
+"""
+Check whether a VRF static route is valid and supported by the device on which it's used
+"""
+def check_VRF_static_route(sr_data: Box, node: Box, topology: Box) -> bool:
+  d_features = devices.get_device_features(node,topology.defaults)
+  sr_features = d_features.get('routing.static')
+  if not isinstance(sr_features,dict):
+    sr_features = data.get_empty_box()
+
+  if 'vrf' in sr_data:
+    if sr_data.vrf not in node.get('vrfs',{}):
+      log.error(
+        f'Static route "{get_static_route_id(sr_data)}" in node {node.name}' + \
+        f' refers to VRF {sr_data.vrf} which is not defined',
+        category=log.IncorrectValue,
+        module='routing')
+      return False
+
+    if not sr_features.get('vrf',False):
+      log.error(
+        f'Device {node.device} (node {node.name}) does not support VRF static routes',
+        category=log.IncorrectValue,
+        module='routing')
+      return False
+    
+  if 'vrf' in sr_data.nexthop:
+    if not sr_features.get('inter_vrf',False):
+      log.error(
+        f'Device {node.device} (node {node.name}) does not support inter-VRF static routes',
+        category=log.IncorrectValue,
+        module='routing')
+      return False
+    
+    if sr_data.nexthop.vrf and sr_data.nexthop.vrf not in node.get('vrfs',{}):
+      log.error(
+        f'Next hop of a static route "{get_static_route_id(sr_data)}" in node {node.name}' + \
+        f' refers to VRF {sr_data.nexthop.vrf} which is not defined',
+        category=log.IncorrectValue,
+        module='routing')
+      return False
+    
+  return True
+
+def check_static_routes(idx: int,o_name: str,node: Box,topology: Box) -> None:
+  sr_data = node.routing[o_name][idx]
+
+  if 'pool' in sr_data:
+    sr_data = sr_data + extract_af_info(topology.addressing[sr_data.pool])
+  elif 'prefix' in sr_data:
+    sr_data = sr_data + extract_af_info(addressing.evaluate_named_prefix(topology,sr_data.prefix))
+  elif 'node' in sr_data:
+    sr_data = sr_data + extract_af_info(_routing.get_remote_cp_endpoint(topology.nodes[sr_data.node]))
+
+  if idx == 0:
+    check_routing_object(get_static_route_id(sr_data),o_name,node,topology)
+
+  if 'ipv4' not in sr_data and 'ipv6' not in sr_data:
+    log.error(
+      f'Static route "{get_static_route_id(sr_data)}" in node {node.name} has no usable IPv4 or IPv6 prefix',
+      category=log.MissingValue,
+      module='routing')
+    return
+
+  if 'nexthop' not in sr_data:
+    log.error(
+      f'Static route "{get_static_route_id(sr_data)}" in node {node.name} has no next hop information',
+      category=log.MissingValue,
+      module='routing')
+    return
+
+  if 'vrf' in sr_data or 'vrf' in sr_data.nexthop:
+    if not check_VRF_static_route(sr_data,node,topology):
+      return
+
+  if sr_data.nexthop.get('node',None):
+    sr_data.nexthop = resolve_node_nexthop(sr_data,node,topology) + sr_data.nexthop
+
+  for af in ['ipv4','ipv6']:
+    if af not in sr_data:
+      continue
+    
+    if af not in sr_data.nexthop:
+      log.error(
+        f'A static route for {sr_data[af]} on node {node.name} has no {af} next hop',
+        more_data=str(sr_data),
+        category=log.MissingValue,
+        module='routing')
+      return
+
+  if 'nhlist' in sr_data.nexthop:
+    sr_data.remove = True
+    for af in log.AF_LIST:
+      if af not in sr_data:
+        continue
+      for nh_entry in sr_data.nexthop.nhlist:
+        sr_entry = { af: sr_data[af], 'nexthop': nh_entry }
+        if 'vrf' in sr_data:
+          sr_entry['vrf'] = sr_data.vrf
+
+        node.routing[o_name].append(sr_entry)
+
+  node.routing[o_name][idx] = sr_data
+
+def cleanup_static_routes(o_data: BoxList,o_type: str,node: Box,topology: Box) -> None:
+  node.routing[o_type] = [ sr_entry for sr_entry in node.routing[o_type] if 'remove' not in sr_entry ]
+
+"""
 Dispatch table for post-transform processing. Currently used only to
 expand the prefixes/pools in prefix list.
 """
@@ -547,6 +893,12 @@ transform_dispatch: typing.Dict[str,dict] = {
   },
   'community': {
     'import': expand_community_list
+  },
+  'static': {
+    'start'  : process_static_route_includes,
+    'import' : import_static_routes,
+    'check'  : check_static_routes,
+    'cleanup': cleanup_static_routes
   }
 }
 
@@ -554,10 +906,10 @@ class Routing(_Module):
 
   def module_pre_default(self, topology: Box) -> None:
     topology.prefix = topology.defaults.prefix + topology.prefix
-    normalize_routing_data(topology,topo_object=True)
+    normalize_routing_data(topology,topo_object=True,o_name='topology')
 
   def node_pre_default(self, node: Box, topology: Box) -> None:
-    normalize_routing_data(node)
+    normalize_routing_data(node,o_name=node.name)
 
   def node_pre_transform(self, node: Box, topology: Box) -> None:
     global import_dispatch

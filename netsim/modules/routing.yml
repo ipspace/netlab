@@ -6,6 +6,7 @@ no_propagate:
   prefix:
   aspath:
   community:
+  routes:
 
 attributes:
   global:
@@ -37,6 +38,14 @@ attributes:
         type: list
         make_list: True
         _subtype: community_entry
+    static:
+      type: dict
+      _keytype: id
+      _subtype:
+        type: list
+        make_list: True
+        _subtype: static_entry
+
   node:
     policy:
       merge: global
@@ -54,6 +63,9 @@ attributes:
       merge: global
       _subtype:
         _alt_types: [ NoneType ]
+    static:
+      type: list
+      _subtype: static_entry
 
   route_map:
     set: [ locpref, med, weight, prepend ]
@@ -161,6 +173,33 @@ _top:                               # Modification of global defaults
       regexp:
         type: str                   # Whereas regexp indicates we have to use extended ACL
         _valid_with: [ action, sequence ]
+
+    static_entry:
+      ipv4: { type: ipv4, use: prefix }
+      ipv6: { type: ipv6, use: prefix }
+      prefix:
+        type: named_pfx
+        _valid_with: [ nexthop, vrf ]
+      node:
+        type: node_id
+        _valid_with: [ nexthop, vrf ]
+      pool:
+        type: addr_pool
+        _valid_with: [ nexthop, vrf ]
+      vrf:
+        type: id
+      nexthop:
+        node:
+          type: node_id
+          _valid_with: [ none ]
+        ipv4: { type: ipv4, use: address }
+        ipv6: { type: ipv6, use: address }
+        vrf:
+          type: id
+          _alt_types: NoneType
+      include:
+        type: id
+        _valid_with: [ nexthop, vrf ]
 
 features:
   policy:

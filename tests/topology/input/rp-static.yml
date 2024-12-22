@@ -1,0 +1,58 @@
+---
+provider: clab
+defaults.device: none
+
+addressing.p2p.ipv6: 2001:db8:1::/48
+addressing.loopback.ipv6: 2001:db8::/48
+
+prefix:
+  p1:
+    ipv4: 10.42.0.0/16
+  p2:
+    ipv6: 2001:db8:cafe:1::/64
+
+module: [ vrf ]
+vrfs:
+  red:
+    links: [ c-p ]
+
+routing.static:
+  lan_pool:
+    pool: lan
+    nexthop.node: x
+
+nodes:
+  c:
+    module: [ routing, vrf ]
+    routing.static:
+    - ipv4: 0.0.0.0/0         # Expand into NH-list
+      nexthop.node: p
+    - pool: loopback          # Checking pool prefix and remote nexthop
+      nexthop.node: x
+    - node: x                 # Checking static route to node CP endpoint
+      nexthop.node: p
+    - prefix: p1              # Static route to a named prefix
+      nexthop.ipv4: 10.0.0.1
+    - prefix: p2              # Named prefix, remote CP endpoint
+      nexthop.node: x
+    - include: lan_pool       # Included static route
+      nexthop.ipv4: 10.0.0.42
+    - ipv4: 172.16.0.0/16     # Intra-VRF static route
+      vrf: red
+      nexthop.node: p
+    - ipv4: 172.17.0.0/16     # VRF-to-global static route
+      vrf: red
+      nexthop:
+        vrf:
+        node: p
+    - ipv4: 172.18.0.0/16     # Global-to_VRF static route
+      nexthop:
+        vrf: red
+        node: p
+  p:
+  x:
+
+links:
+- c-p
+- c-p
+- p-x
