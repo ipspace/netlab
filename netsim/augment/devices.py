@@ -50,15 +50,19 @@ def get_device_attribute(node: Box, attr: str, defaults: Box) -> typing.Optional
 Get device feature flags -- uses get_device_attribute but returns a Box to keep mypy happy
 """
 def get_device_features(node: Box, defaults: Box) -> Box:
+  n_features = node.get('_features',{})
+  if not isinstance(n_features,Box):
+    n_features = data.get_empty_box()
+
   features = get_device_attribute(node,'features',defaults)
   if not features:
-    return data.get_empty_box()
+    return n_features
 
   if not isinstance(features,Box):
     log.fatal('Device features for device type {node.device} should be a dictionary')
     return data.get_empty_box()
 
-  return features
+  return features + n_features
 
 """
 Get device loopback name (built-in loopback if ifindex == 0 else an additional loopback)
