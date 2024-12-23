@@ -22,22 +22,22 @@ This configuration module implements generic routing features:
 The following table describes high-level per-platform support of generic routing features:
 
 | Operating system      | Routing<br>policies | Prefix<br>filters| AS-path<br>filters | BGP<br>communities | Static<br>routes|
-| ------------------ | :-: | :-: | :-: |:-: | :-: |
-| Arista EOS          |  ✅  |  ✅  |  ✅  |  ✅  |
-| Aruba AOS-CX        |  ✅  |  ✅  |  ✅  |  ✅  |
-| Cisco IOSv/IOSvL2   |  ✅  |  ✅  |  ✅  |  ✅  |
-| Cisco IOS-XE[^18v]  |  ✅  |  ✅  |  ✅  |  ✅  |
-| Cumulus Linux       |  ✅  |  ✅  |  ✅  |  ✅  |
-| FRR                 |  ✅  |  ✅  |  ✅  |  ✅  |
-| Nokia SR Linux      |  ✅  |  ✅ [❗](caveats-srlinux) |
-| Nokia SR OS         |  ✅  |
-| VyOS                |  ✅  |  ✅  |  ✅  |  ✅  |
+| ------------------ |:--:|:--:|:--:|:--:|:--:|
+| Arista EOS         | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Aruba AOS-CX       | ✅ | ✅ | ✅ | ✅ |
+| Cisco IOS/XE[^18v] | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Cumulus Linux      | ✅ | ✅ | ✅ | ✅ | ✅ |
+| FRR                | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Linux              | ❌  | ❌  | ❌  | ❌  | ✅ |
+| Nokia SR Linux     |  ✅ |  ✅ [❗](caveats-srlinux) |
+| Nokia SR OS        |  ✅ |
+| VyOS               |  ✅ |  ✅ | ✅ |  ✅  |
 
 ```{tip}
 See [Routing Integration Tests Results](https://release.netlab.tools/_html/coverage.routing) for more details.
 ```
 
-[^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
+[^18v]: Includes Cisco IOSv, Cisco IOSvL2, Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
 
 (generic-routing-policies)=
 ## Routing Policies
@@ -101,8 +101,7 @@ You can use these routing policy **match** parameters on devices supported by th
 |---------------------|:--:|:--:|:--:|:--:|
 | Arista EOS          | ✅ | ❌  | ✅ | ✅ |
 | Aruba AOS-CX        | ✅ | ❌  | ✅ | ✅ |
-| Cisco IOSv/IOSvL2   | ✅ | ❌  | ✅ | ✅ |
-| Cisco IOS-XE[^18v]  | ✅ | ❌  | ✅ | ✅ |
+| Cisco IOS/XE[^18v]  | ✅ | ❌  | ✅ | ✅ |
 | Cumulus Linux       | ✅ | ❌  | ✅ | ✅ |
 | FRR                 | ✅ | ❌  | ✅ | ✅ |
 | Nokia SR Linux      | ✅ |
@@ -114,8 +113,7 @@ You can use these routing policy **set** parameters on devices supported by the 
 |---------------------|:--:|:--:|:--:|:--:| :--:|
 | Arista EOS          | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Aruba AOS-CX        | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Cisco IOSv/IOSvL2   | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Cisco IOS-XE[^18v]  | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Cisco IOS/XE[^18v]  | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Cumulus Linux       | ✅ | ✅ | ✅ | ✅ | ✅ |
 | FRR                 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Nokia SR Linux      | ❌  | ✅ | ✅ | ❌  | ❌  |
@@ -128,8 +126,7 @@ The **set.community** attribute can be used to set these BGP communities on supp
 |---------------------|:--:|:--:|:--:|:--:|:--:|
 | Arista EOS          | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Aruba AOS-CX        | ✅ | ❌  | ❌  | ✅ | ✅ |
-| Cisco IOSv/IOSvL2   | ✅ | ❌  | ❌  | ✅ | ❌  |
-| Cisco IOS-XE[^18v]  | ✅ | ❌  | ❌  | ✅ | ❌  |
+| Cisco IOS/XE[^18v]  | ✅ | ❌  | ❌  | ✅ | ❌  |
 | Cumulus Linux       | ✅ | ✅ | ✅ | ✅ | ❌  |
 | FRR                 | ✅ | ✅ | ✅ | ✅ | ❌  |
 | VyOS                | ✅ | ✅ | ✅ | ✅ | ❌  |
@@ -497,8 +494,7 @@ _netlab_ supports static routes on these platforms:
 | Cisco IOS/XE[^18v]  | ✅ | ✅ | ✅ |
 | Cumulus Linux 4.x   | ✅ | ✅ | ✅ |
 | FRR                 | ✅ | ✅ | ✅ |
-
-[^18v]: Includes Cisco IOSv, Cisco IOSvL2, Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
+| Linux               | ✅ |  ❌ |  ❌ |
 
 ### Global Static Routes
 

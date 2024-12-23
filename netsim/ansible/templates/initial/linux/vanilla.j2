@@ -46,24 +46,18 @@ ip link set {{ l.ifname }} mtu {{ l.mtu }}
 {% endif %}
 {% endfor %}
 #
-# Add routes to IPv4 address pools pointing to the first neighbor on the first link
+# Add routes to IPv4 address pools pointing to the first usable default gateway
 #
 # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
 #
-{% for ifdata in interfaces|default([]) if ifdata.gateway is defined %}
-{%   for name,pool in pools.items()|default({}) %}
-{%     for af,pfx in pool.items() if af == 'ipv4' %}
-# {{ name }} prefix: {{ pfx }} local subnet: {{ ifdata.gateway.ipv4|ipaddr('subnet') }}
-{%       if name not in ['mgmt','router_id'] and pfx is string and
-            pfx != ifdata.gateway.ipv4|ipaddr('subnet') %}
+{% for sr_entry in routing.static|default([]) if 'ipv4' in sr_entry %}
+echo "sr_entry: {{ sr_entry }}"
 set +e
-ip route del {{ pfx }} 2>/dev/null
+ip route del {{ sr_entry.ipv4 }} via {{ sr_entry.nexthop.ipv4 }} 2>/dev/null
 set -e
-ip route add {{ pfx }} via {{ ifdata.gateway.ipv4|ipaddr('address') }}
-{%       endif %}
-{%     endfor %}
-{%   endfor %}
-{% endfor  %}
+ip route add {{ sr_entry.ipv4 }} via {{ sr_entry.nexthop.ipv4 }}{{
+  ' dev '+sr_entry.nexthop.intf if 'intf' in sr_entry.nexthop else '' }}
+{% endfor %}
 #
 # Print the final routing table
 ip route
