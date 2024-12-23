@@ -9,37 +9,87 @@ groups:
   probes:
     device: linux
     provider: clab
-    members: [ x1, x2 ]
+    members: [ x1, x2, x3 ]
+
+prefix:
+  global:
+    ipv4: 172.16.40.0/24
+    ipv6: 3fff:cafe::/64
+  red:
+    ipv4: 172.16.41.0/24
+    ipv6: 3fff:cafe:0:1::/64
+  blue:
+    ipv4: 172.16.42.0/24
+    ipv6: 3fff:cafe:0:2::/64
 
 vrfs:
   red:
-    links: [ dut-x1 ]
   blue:
-    links: [ dut-x2 ]
 
 nodes:
   dut:
     module: [ routing, vrf ]
     routing.static:
-    - node: x1
+    - prefix: red
       vrf: blue
       nexthop:
         node: x1
         vrf: red
-    - node: x2
+    - prefix: blue
       vrf: red
       nexthop:
         node: x2
         vrf: blue
+    - prefix: blue
+      nexthop:
+        node: x2
+        vrf: blue
+    - prefix: global
+      vrf: blue
+      nexthop:
+        node: x3
+        vrf:
   x1:
   x2:
+  x3:
+
+links:
+- dut:
+    vrf: red
+  x1:
+- dut:
+    vrf: blue
+  x2:
+- dut:
+  x3:
+- x1:
+  prefix: red
+- x2:
+  prefix: blue
+- x3:
+  prefix: global
 
 validate:
-  ping_v4:
-    description: IPv4 ping X2 from X1
+  ra:
+    description: Check RA-generated default route
+    wait: 30
+    wait_msg: Waiting for RA message to generate the default route
+    nodes: [ x1, x2, x3 ]
+    plugin: default6()
+    stop_on_error: True
+  ping_x1_v4:
+    description: Inter-VRF IPv4 ping X1 from X2
     nodes: [ x2 ]
-    plugin: ping(nodes.x2.interfaces[0].ipv4,af='ipv4')
+    plugin: ping(nodes.x1.interfaces[-1].ipv4,src=nodes.x2.interfaces[-1].ipv4,af='ipv4',count=2)
+  ping_x1_v6:
+    description: Inter-VRF IPv6 ping X1 from X2
+    nodes: [ x2 ]
+    plugin: ping(nodes.x1.interfaces[-1].ipv6,src=nodes.x2.interfaces[-1].ipv6,af='ipv6',count=2)
+  ping_x3_v4:
+    description: VRF-to-global IPv4 ping X3 from X2
+    nodes: [ x2 ]
+    plugin: ping(nodes.x3.interfaces[-1].ipv4,src=nodes.x2.interfaces[-1].ipv4,af='ipv4',count=2)
   ping_v6:
-    description: IPv6 ping X2 from X1
+    description: VRF-to-global IPv6 ping X3 from X1
     nodes: [ x2 ]
-    plugin: ping(nodes.x2.interfaces[0].ipv6,af='ipv6')
+    plugin: ping(nodes.x3.interfaces[-1].ipv6,src=nodes.x2.interfaces[-1].ipv6,af='ipv6',count=2)

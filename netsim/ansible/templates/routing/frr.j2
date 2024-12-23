@@ -29,3 +29,33 @@ bgp community-list {{ c_value.type }} {{ c_name }} {{ c_line.action }} {{ c_line
 {%     endfor %}
 {%   endfor %}
 {% endif %}
+!
+{% if routing.static|default([]) %}
+!
+{% macro config_sr(sr_data,af) %}
+{%   set cmd_af = 'ip' if af == 'ipv4' else af %}
+{%   set e_vrf = ' nexthop-vrf '+(sr_data.nexthop.vrf or 'default') if 'vrf' in sr_data.nexthop else '' %}
+{{ cmd_af }} route {{ sr_data[af] }} {{ sr_data.nexthop[af] }} {{ sr_data.nexthop.intf|default('') }}{{ e_vrf }}
+{% endmacro -%}
+!
+! Global static routes
+!
+{%   for sr_data in routing.static if 'vrf' not in sr_data %}
+{%     for sr_af in ['ipv4','ipv6'] if sr_af in sr_data %}
+{{       config_sr(sr_data,sr_af) -}}
+{%     endfor %}
+{%   endfor %}
+{%   for r_vrf in routing.static|map(attribute='vrf',default=False)|unique if r_vrf %}
+{%     if loop.first %}
+!
+! VRF static routes
+{%     endif %}
+!
+vrf {{ r_vrf }}
+{%     for sr_data in routing.static if sr_data.vrf|default('') == r_vrf %}
+{%       for sr_af in ['ipv4','ipv6'] if sr_af in sr_data %}
+{{         config_sr(sr_data,sr_af) -}}
+{%       endfor %}
+{%     endfor %}
+{%   endfor %}
+{% endif %}
