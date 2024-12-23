@@ -12,9 +12,9 @@ LAG is currently supported on these platforms:
 | Aruba AOS-CX          | ✅ | ✅ | ✅ | ✅ |
 | Cumulus Linux 4.x     | ✅ | ✅ | ❌  | ❌ |
 | Cumulus 5.x (NVUE)    | ✅ | ✅ | ❌  | ❌ |
-| Dell OS10             | ✅ | ✅ | ✅ | ✅ |
+| Dell OS10             | ✅ | ✅ | ✅  | ✅ |
 | FRR                   | ✅ | ✅ | ❌  | ❌ |
-| Generic Linux hosts [❗](caveats-linux)  | ✅ | ✅ | ❌  | ❌ |
+| Generic Linux hosts   | ✅ | ✅ | ❌  | ❌ |
 
 ## Parameters
 
