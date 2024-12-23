@@ -1048,8 +1048,7 @@ def set_default_gateway(link: Box, nodes: Box) -> None:
     if nodes[ifdata.node].get('role','') == 'host':       # Set gateway only for hosts
       for interface in nodes[ifdata.node].interfaces:     # Find the corresponding host interface
         if link.linkindex == interface.linkindex:
-          if interface.ifindex == 1:                      # Set the default gateway only on the first host interface
-            interface.gateway = link.gateway
+          interface.gateway = link.gateway                # Copy link gateway to host interface
 
 """
 Set node.af flags to indicate that the node has IPv4 and/or IPv6 address family configured
