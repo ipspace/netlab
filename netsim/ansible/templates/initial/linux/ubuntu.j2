@@ -1,3 +1,5 @@
+{% from "lag/linux-clab.j2" import create_bond_dev with context %}
+
 # It seems on the Vagrant box for ubuntu 20.04, DNS Servers are hardcoded as 4.2.2.1 & Co.
 # This is annoying on a network with filtered DNS.
 # DNSMasq server used for giving out DHCP addresses on the management network is able to act as a DNS Server.
@@ -127,6 +129,11 @@ SCRIPT
 
 # Interface addressing
 {% for l in interfaces|default([]) if (l.ipv4 is defined or l.ipv6 is defined or l.dhcp is defined)%}
+
+{%   if l.type in ['lag','bond'] %}
+{{     create_bond_dev(l) }}
+{%   endif %}
+
 cat <<SCRIPT > /etc/netplan/03-eth-{{ l.ifname }}.yaml
 network:
   version: 2
