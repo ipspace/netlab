@@ -494,6 +494,8 @@ _netlab_ supports static routes on these platforms:
 |---------------------|:--:|:--:|:--:|
 | Arista EOS          | ✅ | ✅ | ✅ |
 | Cisco IOS/XE[^18v]  | ✅ | ✅ | ✅ |
+| Cumulus Linux 4.x   | ✅ | ✅ | ✅ |
+| FRR                 | ✅ | ✅ | ✅ |
 
 [^18v]: Includes Cisco IOSv, Cisco IOSvL2, Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
 
