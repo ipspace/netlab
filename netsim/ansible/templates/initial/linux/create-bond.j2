@@ -1,3 +1,7 @@
+#
+# This macro is used by the initial script to create bond devices
+# (which needs to be done early such that IP addresses can be assigned and/or VLAN interfaces created)
+#
 {% macro create_bond_dev(l,node_provider) %}
 {%   if l.type in ['lag','bond'] %}
 {%     set _m = l.lag.mode|default(l.bonding.mode|default("802.3ad")) %}
@@ -16,14 +20,14 @@
 {%       set _m = _m + " xmit_hash_policy encap3+4" %}
 {%     endif -%}
 
-{% if node_provider!='clab' %}
+{%     if node_provider!='clab' %}
 #
 # Make sure 'bonding' module is loaded
 #
 if [ ! -e /sys/module/bonding ]; then
 modprobe bonding miimon=100 mode=802.3ad lacp_rate=fast
 fi
-{% endif -%}
+{%     endif -%}
 
 if [ ! -e /sys/class/net/{{l.ifname}} ]; then
 ip link add dev {{l.ifname}} type bond mode {{ _m }}
