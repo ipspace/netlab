@@ -1200,14 +1200,9 @@ def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools:
       continue
 
     set_link_bridge_name(link,defaults)
-<<<<<<< HEAD
     link_default_pools = [ get_default_link_type(link) ]
     if 'lan' not in link_default_pools:
       link_default_pools.append('lan')
-=======
-    link_default_pools = ['p2p','lan'] if link.type=='p2p' or (
-                                          link.type=='lag' and not 'vlan' in link) else ['lan']
->>>>>>> 0858461f (Treat lag links with a VLAN as LAN, not p2p)
     assign_link_prefix(link,link_default_pools,pools,nodes,link._linkname)
     copy_link_gateway(link,nodes)
     assign_interface_addresses(link,pools,nodes,defaults)
