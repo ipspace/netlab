@@ -53,3 +53,15 @@ ip community-list {{ c_value.regexp }} {{ c_name }} {{ c_line.action }} {{ c_lin
 {%     endfor %}
 {%   endfor %}
 {% endif %}
+!
+! Static routes
+!
+{% for sr_data in routing.static|default([]) %}
+{%   for sr_af in ['ipv4','ipv6'] if sr_af in sr_data %}
+{%     set cmd_af = 'ip' if sr_af == 'ipv4' else sr_af %}
+{%     set cmd_vrf = 'vrf ' + sr_data.vrf + ' ' if 'vrf' in sr_data else '' %}
+{%     set cmd_evrf = 'egress-vrf '+(sr_data.nexthop.vrf or 'default')+ ' ' if 'vrf' in sr_data.nexthop else '' %}
+{%     set cmd_intf = sr_data.nexthop.intf + ' ' if 'intf' in sr_data.nexthop else '' %}
+{{ cmd_af }} route {{ cmd_vrf }}{{ sr_data[sr_af] }} {{ cmd_evrf }}{{ cmd_intf }}{{ sr_data.nexthop[sr_af] }}
+{%   endfor %}
+{% endfor %}

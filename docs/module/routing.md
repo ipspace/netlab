@@ -492,7 +492,10 @@ _netlab_ supports static routes on these platforms:
 
 | Operating system    | Global<br>static routes | VRF static<br>routes | Inter-VRF<br>static routes |
 |---------------------|:--:|:--:|:--:|
-| None                | ✅ | ✅ | ❌  |
+| Arista EOS          | ✅ | ✅ | ✅ |
+| Cisco IOS/XE[^18v]  | ✅ | ✅ | ✅ |
+
+[^18v]: Includes Cisco IOSv, Cisco IOSvL2, Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
 
 ### Global Static Routes
 
