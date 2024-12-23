@@ -3,16 +3,16 @@
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
 ok: [x1]
 ok: [x2]
 ok: [x3]
-ok: [dut]
 
 TASK [Find device readiness script] ********************************************
+ok: [dut]
 ok: [x1]
 ok: [x2]
 ok: [x3]
-ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [dut]
@@ -24,16 +24,16 @@ TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3
 
 TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [dut]
 ok: [x1]
 ok: [x2]
 ok: [x3]
-ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
+ok: [dut]
 ok: [x1]
 ok: [x2]
 ok: [x3]
-ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [x1] => 
@@ -262,98 +262,192 @@ ok: [dut] =>
   msg: |-
     initial configuration for dut
     =========================================
+    #!/bin/bash
+    #
+    set -e
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Build hosts file
+    #
+    echo "INIT: setting hostname"
     hostname dut
-    !
-    no ip domain lookup
-    !
-    lldp run
-    !
-    ip host dut-blue 172.16.1.1 2001:db8:2:1::1
-    ip host dut-red 172.16.0.1 2001:db8:2::1
-    ip host x1 172.16.0.2 172.16.41.2 2001:db8:2::2 3fff:cafe:0:1::2
-    ip host x2 172.16.1.3 172.16.42.3 2001:db8:2:1::3 3fff:cafe:0:2::3
-    ip host x3 172.16.2.4 172.16.40.4 2001:db8:2:2::4 3fff:cafe::4
-    !
-    ip routing
-    !
-    ipv6 unicast-routing
-    !
-    vrf definition blue
-     rd 65000:2
-     route-target import 65000:2
-     route-target export 65000:2
-    !
-     address-family ipv4
-     exit-address-family
-    !
-     address-family ipv6
-     exit-address-family
-    !
-    vrf definition red
-     rd 65000:1
-     route-target import 65000:1
-     route-target export 65000:1
-    !
-     address-family ipv4
-     exit-address-family
-    !
-     address-family ipv6
-     exit-address-family
-    !
+    #
+    #
+    # Build hosts file
+    #
+    #
+    cat <<SCRIPT >/tmp/hosts
+    #
+    # Created by netlab initial
+    #
+    10.0.0.1 dut
+    2001:db8:1:1::1 dut
+    172.16.0.1 swp1.red.dut
+    2001:db8:2::1 swp1.red.dut
+    172.16.1.1 swp2.blue.dut
+    2001:db8:2:1::1 swp2.blue.dut
+    172.16.2.1 swp3.dut
+    2001:db8:2:2::1 swp3.dut
+    172.16.0.2 x1 eth1.x1
+    2001:db8:2::2 x1 eth1.x1
+    172.16.41.2 x1 eth2.x1
+    3fff:cafe:0:1::2 x1 eth2.x1
+    172.16.1.3 x2 eth1.x2
+    2001:db8:2:1::3 x2 eth1.x2
+    172.16.42.3 x2 eth2.x2
+    3fff:cafe:0:2::3 x2 eth2.x2
+    172.16.2.4 x3 eth1.x3
+    2001:db8:2:2::4 x3 eth1.x3
+    172.16.40.4 x3 eth2.x3
+    3fff:cafe::4 x3 eth2.x3
+    SCRIPT
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
+    #
+    # Disable ZTP
+    #
+    ztp --disable
+    #
+    #
+    echo "INIT: creating loopback interface"
+    #
+    # Create loopback interface entry
+    #
+    cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
+    auto lo
+    iface lo inet loopback
+      address 10.0.0.1/32
+    iface lo inet6 loopback
+      address 2001:db8:1:1::1/64
   
+    CONFIG
+    #
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    echo "INIT: creating other interface"
+    cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
+    auto swp1
+  
+    iface swp1 inet static
+      mtu 1500
+      address 172.16.0.1/24
+  
+    iface swp1 inet6 static
+      mtu 1500
+      address 2001:db8:2::1/64
+    auto swp2
+  
+    iface swp2 inet static
+      mtu 1500
+      address 172.16.1.1/24
+  
+    iface swp2 inet6 static
+      mtu 1500
+      address 2001:db8:2:1::1/64
+    auto swp3
+  
+    iface swp3 inet static
+      mtu 1500
+      address 172.16.2.1/24
+  
+    iface swp3 inet6 static
+      mtu 1500
+      address 2001:db8:2:2::1/64
+    CONFIG
+    #
+    echo "INIT: executing ifreload"
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    # For whatever crazy reason, I had to enable IPv6 in containers
+    #
+    sysctl -qw net.ipv6.conf.swp1.disable_ipv6=0
+    sysctl -qw net.ipv6.conf.swp2.disable_ipv6=0
+    sysctl -qw net.ipv6.conf.swp3.disable_ipv6=0
+    #
+    # Enable FRR modules for ['vrf', 'routing']
+    #
+    #
+    # Enable FRR daemons
+    #
+    echo "bgpd=yes" >>/etc/frr/daemons
+  
+    systemctl enable frr.service
+    systemctl start frr.service
+    systemctl reload frr.service
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    ipv6 forwarding
     !
-    !
-    interface Loopback0
-     ip address 10.0.0.1 255.255.255.255
-     ipv6 address 2001:DB8:1:1::1/64
-    !
-    interface GigabitEthernet0/0
-     no lldp transmit
-     no lldp receive
-    !
-    interface GigabitEthernet0/1
-     no shutdown
-     vrf forwarding red
+    interface swp1
+    ! no shutdown
      description dut -> x1 [stub]
-     ip address 172.16.0.1 255.255.255.0
-     ipv6 address 2001:DB8:2::1/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
     !
-    interface GigabitEthernet0/2
-     no shutdown
-     vrf forwarding blue
+    interface swp2
+    ! no shutdown
      description dut -> x2 [stub]
-     ip address 172.16.1.1 255.255.255.0
-     ipv6 address 2001:DB8:2:1::1/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
     !
-    interface GigabitEthernet0/3
-     no shutdown
+    interface swp3
+    ! no shutdown
      description dut -> x3 [stub]
-     ip address 172.16.2.1 255.255.255.0
-     ipv6 address 2001:DB8:2:2::1/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
     !
-    !
-    line vty 0 4
-     exec-timeout 0 0
-    !
-    no banner exec
-    no banner login
-    no banner incoming
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    #
+    # Enable LLDP
+    #
+    echo "INIT: enabling LLDP"
+    cat <<CONFIG >/etc/lldpd.d/system.conf
+    configure lldp tx-interval 30
+    configure lldp tx-hold 3
+    configure system interface pattern *,!eth0,swp*
+    CONFIG
+    service lldpd restart
 
 TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [dut]
 ok: [x1]
 ok: [x2]
 ok: [x3]
-ok: [dut]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for x1, x2, x3
 
-TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
-[WARNING]: To ensure idempotency and correct diff the input configuration lines
-should be similar to how they appear if present in the running configuration on
-device including the indentation
+TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
+ok: [dut]
+
+TASK [Create local temporary file] *********************************************
+changed: [dut -> localhost]
+
+TASK [Create initial config script in local temporary file] ********************
+changed: [dut -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
+
+TASK [Remove temporary file /tmp/ansible.dut.vuvs63_utemp] *********************
+changed: [dut -> localhost]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -361,19 +455,19 @@ ok: [x2]
 ok: [x3]
 
 TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [x1 -> localhost]
-changed: [x3 -> localhost]
 changed: [x2 -> localhost]
+changed: [x3 -> localhost]
+changed: [x1 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-nruNuiGg-x1.sh] **********
-changed: [x1 -> localhost]
-changed: [x3 -> localhost]
+TASK [Initial container configuration via /tmp/config-DQmCgQTI-x1.sh] **********
 changed: [x2 -> localhost]
+changed: [x3 -> localhost]
+changed: [x1 -> localhost]
 
 TASK [file] ********************************************************************
 changed: [x1 -> localhost]
-changed: [x3 -> localhost]
 changed: [x2 -> localhost]
+changed: [x3 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -381,8 +475,79 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut => (item=routing)
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut => (item=vrf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut => (item=routing)
+
+TASK [Figure out whether to deploy the module vrf on current device] ***********
+ok: [dut]
+
+TASK [Find configuration template for vrf] *************************************
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => 
+  msg: |-
+    vrf configuration for dut
+    =========================================
+    #!/bin/bash
+    #
+    set -e # Exit immediately when any command fails
+    #
+    cat >/etc/network/interfaces.d/70-vrf.intf <<CONFIG
+    auto blue
+    iface blue
+        vrf-table 1011
+    #
+    auto red
+    iface red
+        vrf-table 1010
+    #
+    auto swp1
+    iface swp1
+        vrf red
+    #
+    auto swp2
+    iface swp2
+        vrf blue
+    #
+    CONFIG
+    ifreload -a
+    #
+    cat >/tmp/vrf_config <<CONFIG
+    vrf blue
+     exit-vrf
+    vrf red
+     exit-vrf
+    !
+    router bgp 65000
+    !
+    !
+    do write
+    !
+    CONFIG
+    vtysh -f /tmp/vrf_config
+    exit $?
+
+TASK [Find configuration deployment deploy_script for vrf] *********************
+ok: [dut]
+
+TASK [Deploy vrf configuration] ************************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
+
+TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/vrf/cumulus.j2] ***
+ok: [dut]
+
+TASK [Create local temporary file] *********************************************
+changed: [dut -> localhost]
+
+TASK [Create vrf config script in local temporary file] ************************
+changed: [dut -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
+changed: [dut]
+
+TASK [Remove temporary file /tmp/ansible.dut.kdfb6by6temp] *********************
+changed: [dut -> localhost]
 
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [dut]
@@ -397,55 +562,51 @@ ok: [dut] =>
     =========================================
     !
     !
-    ! AS-path access lists
     !
     !
-    ! Static routes
+    ! Global static routes
     !
-    ip route vrf blue 172.16.41.0 255.255.255.0 GigabitEthernet0/1 172.16.0.2
-    ipv6 route vrf blue 3fff:cafe:0:1::/64 GigabitEthernet0/1 2001:db8:2::2 nexthop-vrf red
-    ip route vrf red 172.16.42.0 255.255.255.0 GigabitEthernet0/2 172.16.1.3
-    ipv6 route vrf red 3fff:cafe:0:2::/64 GigabitEthernet0/2 2001:db8:2:1::3 nexthop-vrf blue
-    ip route 172.16.42.0 255.255.255.0 GigabitEthernet0/2 172.16.1.3
-    ipv6 route 3fff:cafe:0:2::/64 GigabitEthernet0/2 2001:db8:2:1::3 nexthop-vrf blue
-    ip route vrf blue 172.16.40.0 255.255.255.0 GigabitEthernet0/3 172.16.2.4
-    ipv6 route vrf blue 3fff:cafe::/64 GigabitEthernet0/3 2001:db8:2:2::4 nexthop-vrf default
+    ip route 172.16.42.0/24 172.16.1.3 swp2 nexthop-vrf blue
+    ipv6 route 3fff:cafe:0:2::/64 2001:db8:2:1::3 swp2 nexthop-vrf blue
+    !
+    ! VRF static routes
+    !
+    vrf blue
+    ip route 172.16.41.0/24 172.16.0.2 swp1 nexthop-vrf red
+    ipv6 route 3fff:cafe:0:1::/64 2001:db8:2::2 swp1 nexthop-vrf red
+    ip route 172.16.40.0/24 172.16.2.4 swp3 nexthop-vrf default
+    ipv6 route 3fff:cafe::/64 2001:db8:2:2::4 swp3 nexthop-vrf default
+    !
+    vrf red
+    ip route 172.16.42.0/24 172.16.1.3 swp2 nexthop-vrf blue
+    ipv6 route 3fff:cafe:0:2::/64 2001:db8:2:1::3 swp2 nexthop-vrf blue
 
 TASK [Find configuration deployment deploy_script for routing] *****************
 ok: [dut]
 
 TASK [Deploy routing configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
 
-TASK [ios_config: deploying routing from /home/pipi/net101/tools/netsim/ansible/templates/routing/ios.j2] ***
+TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/routing/cumulus.j2] ***
+ok: [dut]
+
+TASK [Create local temporary file] *********************************************
+changed: [dut -> localhost]
+
+TASK [Create routing config script in local temporary file] ********************
+changed: [dut -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
 
-TASK [Figure out whether to deploy the module vrf on current device] ***********
-ok: [dut]
-
-TASK [Find configuration template for vrf] *************************************
-ok: [dut]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [dut] => 
-  msg: |-
-    vrf configuration for dut
-    =========================================
-
-TASK [Find configuration deployment deploy_script for vrf] *********************
-ok: [dut]
-
-TASK [Deploy vrf configuration] ************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
-
-TASK [ios_config: deploying vrf from /home/pipi/net101/tools/netsim/ansible/templates/vrf/ios.j2] ***
-ok: [dut]
+TASK [Remove temporary file /tmp/ansible.dut.u8an4tbltemp] *********************
+changed: [dut -> localhost]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=24   changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+dut                        : ok=36   changed=12   unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 x1                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 x2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
 x3                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
