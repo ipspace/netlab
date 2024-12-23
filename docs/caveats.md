@@ -281,9 +281,8 @@ We're not testing Fortinet implementation as part of the regular integration tes
 * Junos cannot have more than one loopback interface per routing instance. Using **loopback** links on Junos devices will result in configuration errors.
 * Junos configuration template configures BFD timers within routing protocol configuration, not on individual interfaces
 
-(caveats-linux)=
-## Generic Linux lag module caveats
-* The lag module requires the `ip` command to be available on the Linux host
+## Linux caveats
+See [](generic-linux-devices)
 
 (caveats-vptx)=
 ## Juniper vPTX
