@@ -47,6 +47,7 @@ nodes:
 * Ansible automation of Aruba AOS-CX requires the installation of the [ArubaNetworks Ansible Collection](https://galaxy.ansible.com/arubanetworks/aoscx) with `ansible-galaxy collection install arubanetworks.aoscx`.
 * The limitations of the Aruba AOS-CX Simulator can be found [here](https://feature-navigator.arubanetworks.com/), selecting *CX Simulator* as platform.
 * It seems that the Aruba AOS-CX Simulator cannot generate ICMP Fragmentation-Needed messages.
+* Inter-VRF static routes are supported only for IPv4.
 
 ### VRF and L3VPN Caveats
 
