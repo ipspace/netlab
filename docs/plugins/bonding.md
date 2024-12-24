@@ -1,5 +1,5 @@
 (plugin-bonding)=
-# Host-side link bonding
+# Host-side Link Bonding
 
 Linux networking has long supported *bonding*, the ability to use multiple links simultaneously. Netlab supports bonding with LACP through the *lag* module,
 this plugin adds support for the other bonding modes (that don't require any special configuration on peers)
@@ -18,12 +18,12 @@ this plugin adds support for the other bonding modes (that don't require any spe
 
 ### Supported attributes
 
-The plugin adds the following attributes:
+The plugin adds the following attributes defined at global, node or interface level:
 * **bonding.mode** (string, one of active-backup, balance-tlb, or balance-alb) -- the bonding mode to use, default `active-backup`
 
 Additional interface level attributes:
 * **bonding.ifindex** (int,mandatory) -- the interface index for the bonding device; links with matching ifindex are bonded together
-* **bonding.primary** (bool) -- optional flag to mark this interface as primary, default *False*
+* **bonding.primary** (bool) -- optional flag to mark this interface as primary, default *False*. If none of the interfaces is marked as `primary`, the selection is left to the Linux default behavior
 
 ## Examples
 
