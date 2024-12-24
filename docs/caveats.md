@@ -68,10 +68,10 @@ nodes:
 ## BIRD Internet Routing Daemon
 
 * You must build the BIRD container image with the **netlab clab build bird** command.
-* BIRD is implemented as a pure control-plane daemon running on a Linux VM or as a container with a single external interface. You can set the node **role** to **router** to turn a BIRD instance into a more traditional networking device with a loopback interface.
-* _netlab_ installs BIRD software in a container image or a VM running Ubuntu 22.04. The current version of BIRD shipping with Ubuntu 22.04 is 2.0.8.
+* BIRD is implemented as a pure control-plane daemon running as a container with a single external interface. You can set the node **role** to **router** to turn a BIRD instance into a more traditional networking device with a loopback interface.
+* _netlab_ installs BIRD software in a container image or a VM running Ubuntu 24.04. The current version of BIRD shipping with Ubuntu 24.04 is 2.14.
 * BIRD supports a single router ID used for BGP and OSPF.
-* The VM or container running BIRD starts with static routes pointing to one of the adjacent routers (see [host routes on Linux](linux-routes)). After establishing routing adjacencies, BIRD copies BGP and OSPF into the kernel IP routing table.
+* The VM or container running BIRD in host mode starts with static routes pointing to one of the adjacent routers (see [host routes on Linux](linux-routes)). After establishing routing adjacencies, BIRD copies BGP and OSPF into the kernel IP routing table.
 
 ### OSPF Caveats
 
