@@ -6,6 +6,10 @@ __version__ = "1.9.3-dev1"
 
 abort = False
 
+if sys.version_info < (3,9,0):
+  print(f"FATAL ERROR: Netlab requires Python version 3.9 or newer - installed {sys.version}")
+  abort = True
+
 try:
   import box
 
