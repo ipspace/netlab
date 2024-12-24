@@ -324,7 +324,7 @@ Use the **netlab show module --module bgp --feature ipv6_lla** command to displa
 (bgp-ibgp-localas)=
 **IBGP Sessions Resulting from Matching bgp.local_as on an EBGP Session**
 
-When **bgp.local_as** is configured with the same value as the neighbor AS, the result is an IBGP session (between interfaces instead of loopbacks). Most platforms treat such `localas_ibgp` sessions no different from regular `ibgp` sessions, but there could be subtle differences.
+When **bgp.local_as** is configured with the same value as the neighbor AS, the result is an IBGP session. Most platforms treat such `localas_ibgp` sessions no different from regular `ibgp` sessions, but there could be subtle differences (and even bugs)
 
 ## IPv6 Support
 
