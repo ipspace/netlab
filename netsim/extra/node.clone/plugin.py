@@ -1,3 +1,5 @@
+import typing
+
 from box import Box
 from netsim import data
 from netsim.utils import log,strings
@@ -6,7 +8,7 @@ from netsim.augment import links
 """
 clone_link - makes a copy of the given link for each clone, updating its node
 """
-def clone_link(link_data: Box, nodename: str, clones: list[str]) -> list[Box]:
+def clone_link(link_data: Box, nodename: str, clones: typing.List[str]) -> typing.List[Box]:
   cloned_links = []
   if nodename in [ i.node for i in link_data.get('interfaces',[]) ]:
     for c,clone in enumerate(clones):
@@ -25,7 +27,13 @@ def clone_link(link_data: Box, nodename: str, clones: list[str]) -> list[Box]:
 """
 clone_lag - special routine to handle cloning of lag links
 """
-def clone_lag(cnt: int, link_data: Box, nodename: str, clones: list[str], topology: Box) -> list[Box]:
+def clone_lag(
+      cnt: int,
+      link_data: Box,
+      nodename: str,
+      clones: typing.List[str],
+      topology: Box) -> typing.List[Box]:
+
   lag_members = link_data.get('lag.members')
   cloned_members = process_links(lag_members,f"lag[{cnt+1}].m",nodename,clones,topology)
   if not cloned_members:                                                      # If no lag members involve <nodename>
@@ -51,8 +59,13 @@ process_links - iterate over the 'links' attribute for the given item and clone 
 
                 Returns a list of a list of cloned links
 """
-def process_links(linkitems: list, linkprefix: str, nodename: str, clones: list, topology: Box) -> list[list[Box]]:
-  result: list[list[Box]] = []
+def process_links(
+      linkitems: list,
+      linkprefix: str,
+      nodename: str, clones: list,
+      topology: Box) -> typing.List[typing.List[Box]]:
+
+  result: typing.List[typing.List[Box]] = []
   for cnt,l in enumerate(list(linkitems)):
     link_data = links.adjust_link_object(                                    # Create link data from link definition
                  l=l,
