@@ -160,7 +160,8 @@ def build_ibgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
           n_intf = get_remote_ibgp_endpoint(n)
           neighbor_data = bgp_neighbor(n,n_intf,'ibgp',sessions,get_neighbor_rr(n))
           if not neighbor_data is None:
-            neighbor_data._source_ifname = node.loopback.ifname
+            if 'loopback' in node:
+              neighbor_data._source_ifname = node.loopback.ifname
             node.bgp.neighbors.append(neighbor_data)
             has_ibgp = True
 
@@ -173,7 +174,8 @@ def build_ibgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
         n_intf = get_remote_ibgp_endpoint(n)
         neighbor_data = bgp_neighbor(n,n_intf,'ibgp',sessions,get_neighbor_rr(n))
         if not neighbor_data is None:
-          neighbor_data._source_ifname = node.loopback.ifname
+          if 'loopback' in node:
+            neighbor_data._source_ifname = node.loopback.ifname
           node.bgp.neighbors.append(neighbor_data)
           has_ibgp = True
 
