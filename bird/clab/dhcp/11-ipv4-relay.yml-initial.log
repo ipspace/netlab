@@ -1,0 +1,925 @@
+[WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [relay]
+ok: [c1]
+ok: [c2]
+ok: [c3]
+ok: [c4]
+ok: [s1]
+ok: [s2]
+
+TASK [Find device readiness script] ********************************************
+ok: [c1]
+ok: [relay]
+ok: [c2]
+ok: [c3]
+ok: [c4]
+ok: [s1]
+ok: [s2]
+
+TASK [Wait for device to become ready] *****************************************
+skipping: [relay]
+skipping: [c1]
+skipping: [c2]
+skipping: [c3]
+skipping: [c4]
+skipping: [s1]
+skipping: [s2]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for relay, c1, c2, c3, c4, s1, s2
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [relay]
+ok: [c1]
+ok: [c2]
+ok: [c3]
+ok: [c4]
+ok: [s1]
+ok: [s2]
+
+TASK [Find configuration template for initial] *********************************
+ok: [relay]
+ok: [c1]
+ok: [c2]
+ok: [c3]
+ok: [c4]
+ok: [s1]
+ok: [s2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [relay] => 
+  msg: |-
+    initial configuration for relay
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    # Loopback addressing
+    #
+    set +e
+    ip addr del 10.0.0.1/32 dev lo 2>/dev/null
+    set -e
+    ip addr add 10.0.0.1/32 dev lo
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.1/24 dev eth1
+    ip link set eth1 mtu 1500
+    ip link set dev eth2 up
+    set +e
+    ip addr del 172.16.1.1/24 dev eth2 2>/dev/null
+    set -e
+    ip addr add 172.16.1.1/24 dev eth2
+    ip link set eth2 mtu 1500
+    ip link set dev eth3 up
+    set +e
+    ip addr del 172.16.2.1/24 dev eth3 2>/dev/null
+    set -e
+    ip addr add 172.16.2.1/24 dev eth3
+    ip link set eth3 mtu 1500
+    ip link set dev eth4 up
+    set +e
+    ip addr del 172.16.3.1/24 dev eth4 2>/dev/null
+    set -e
+    ip addr add 172.16.3.1/24 dev eth4
+    ip link set eth4 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first usable default gateway
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    #
+    # Print the final routing table
+    ip route
+ok: [c1] => 
+  msg: |-
+    initial configuration for c1
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Build hosts file
+    #
+    echo "INIT: setting hostname"
+    hostname c1
+    #
+    #
+    #
+    echo "INIT: creating loopback interface"
+    #
+    # Create loopback interface entry
+    #
+    cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
+    auto lo
+    iface lo inet loopback
+      address 10.0.0.2/32
+  
+    CONFIG
+    #
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    echo "INIT: creating other interface"
+    cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
+    auto swp1
+  
+    iface swp1
+      mtu 1500
+    CONFIG
+    #
+    echo "INIT: executing ifreload"
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    # For whatever crazy reason, I had to enable IPv6 in containers
+    #
+    #
+    # Enable FRR modules for ['dhcp']
+    #
+    #
+    # Enable FRR daemons
+    #
+  
+    systemctl enable frr.service
+    systemctl start frr.service
+    systemctl reload frr.service
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    !
+    interface swp1
+    ! no shutdown
+     description c1 -> [c2,relay]
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    #
+    # Enable LLDP
+    #
+    echo "INIT: enabling LLDP"
+    cat <<CONFIG >/etc/lldpd.d/system.conf
+    configure lldp tx-interval 30
+    configure lldp tx-hold 3
+    configure system interface pattern *,!eth0,swp*
+    CONFIG
+    service lldpd restart
+ok: [s1] => 
+  msg: |-
+    initial configuration for s1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.2.6/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.2.6/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first usable default gateway
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    echo "sr_entry: {'ipv4': '172.16.0.0/16', 'nexthop': {'intf': 'eth1', 'ipv4': '172.16.2.1'}}"
+    set +e
+    ip route del 172.16.0.0/16 via 172.16.2.1 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.2.1 dev eth1
+    echo "sr_entry: {'ipv4': '10.0.0.0/24', 'nexthop': {'intf': 'eth1', 'ipv4': '172.16.2.1'}}"
+    set +e
+    ip route del 10.0.0.0/24 via 172.16.2.1 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.2.1 dev eth1
+    echo "sr_entry: {'ipv4': '10.1.0.0/16', 'nexthop': {'intf': 'eth1', 'ipv4': '172.16.2.1'}}"
+    set +e
+    ip route del 10.1.0.0/16 via 172.16.2.1 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.2.1 dev eth1
+    echo "sr_entry: {'ipv4': '10.2.0.0/24', 'nexthop': {'intf': 'eth1', 'ipv4': '172.16.2.1'}}"
+    set +e
+    ip route del 10.2.0.0/24 via 172.16.2.1 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.2.1 dev eth1
+    #
+    # Print the final routing table
+    ip route
+ok: [c2] => 
+  msg: |-
+    initial configuration for c2
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Build hosts file
+    #
+    echo "INIT: setting hostname"
+    hostname c2
+    #
+    #
+    #
+    echo "INIT: creating loopback interface"
+    #
+    # Create loopback interface entry
+    #
+    cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
+    auto lo
+    iface lo inet loopback
+      address 10.0.0.3/32
+  
+    CONFIG
+    #
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    echo "INIT: creating other interface"
+    cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
+    auto swp1
+  
+    iface swp1
+      mtu 1500
+    CONFIG
+    #
+    echo "INIT: executing ifreload"
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    # For whatever crazy reason, I had to enable IPv6 in containers
+    #
+    #
+    # Enable FRR modules for ['dhcp']
+    #
+    #
+    # Enable FRR daemons
+    #
+  
+    systemctl enable frr.service
+    systemctl start frr.service
+    systemctl reload frr.service
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    !
+    interface swp1
+    ! no shutdown
+     description c2 -> [c1,relay]
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    #
+    # Enable LLDP
+    #
+    echo "INIT: enabling LLDP"
+    cat <<CONFIG >/etc/lldpd.d/system.conf
+    configure lldp tx-interval 30
+    configure lldp tx-hold 3
+    configure system interface pattern *,!eth0,swp*
+    CONFIG
+    service lldpd restart
+ok: [c3] => 
+  msg: |-
+    initial configuration for c3
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Build hosts file
+    #
+    echo "INIT: setting hostname"
+    hostname c3
+    #
+    #
+    #
+    echo "INIT: creating loopback interface"
+    #
+    # Create loopback interface entry
+    #
+    cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
+    auto lo
+    iface lo inet loopback
+      address 10.0.0.4/32
+  
+    CONFIG
+    #
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    echo "INIT: creating other interface"
+    cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
+    auto swp1
+  
+    iface swp1
+      mtu 1500
+    CONFIG
+    #
+    echo "INIT: executing ifreload"
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    # For whatever crazy reason, I had to enable IPv6 in containers
+    #
+    #
+    # Enable FRR modules for ['dhcp']
+    #
+    #
+    # Enable FRR daemons
+    #
+  
+    systemctl enable frr.service
+    systemctl start frr.service
+    systemctl reload frr.service
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    !
+    interface swp1
+    ! no shutdown
+     description c3 -> [c4,relay]
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    #
+    # Enable LLDP
+    #
+    echo "INIT: enabling LLDP"
+    cat <<CONFIG >/etc/lldpd.d/system.conf
+    configure lldp tx-interval 30
+    configure lldp tx-hold 3
+    configure system interface pattern *,!eth0,swp*
+    CONFIG
+    service lldpd restart
+ok: [s2] => 
+  msg: |-
+    initial configuration for s2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.3.7/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.3.7/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add routes to IPv4 address pools pointing to the first usable default gateway
+    #
+    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
+    echo "sr_entry: {'ipv4': '172.16.0.0/16', 'nexthop': {'intf': 'eth1', 'ipv4': '172.16.3.1'}}"
+    set +e
+    ip route del 172.16.0.0/16 via 172.16.3.1 2>/dev/null
+    set -e
+    ip route add 172.16.0.0/16 via 172.16.3.1 dev eth1
+    echo "sr_entry: {'ipv4': '10.0.0.0/24', 'nexthop': {'intf': 'eth1', 'ipv4': '172.16.3.1'}}"
+    set +e
+    ip route del 10.0.0.0/24 via 172.16.3.1 2>/dev/null
+    set -e
+    ip route add 10.0.0.0/24 via 172.16.3.1 dev eth1
+    echo "sr_entry: {'ipv4': '10.1.0.0/16', 'nexthop': {'intf': 'eth1', 'ipv4': '172.16.3.1'}}"
+    set +e
+    ip route del 10.1.0.0/16 via 172.16.3.1 2>/dev/null
+    set -e
+    ip route add 10.1.0.0/16 via 172.16.3.1 dev eth1
+    echo "sr_entry: {'ipv4': '10.2.0.0/24', 'nexthop': {'intf': 'eth1', 'ipv4': '172.16.3.1'}}"
+    set +e
+    ip route del 10.2.0.0/24 via 172.16.3.1 2>/dev/null
+    set -e
+    ip route add 10.2.0.0/24 via 172.16.3.1 dev eth1
+    #
+    # Print the final routing table
+    ip route
+ok: [c4] => 
+  msg: |-
+    initial configuration for c4
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Build hosts file
+    #
+    echo "INIT: setting hostname"
+    hostname c4
+    #
+    #
+    #
+    echo "INIT: creating loopback interface"
+    #
+    # Create loopback interface entry
+    #
+    cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
+    auto lo
+    iface lo inet loopback
+      address 10.0.0.5/32
+  
+    CONFIG
+    #
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    echo "INIT: creating other interface"
+    cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
+    auto swp1
+  
+    iface swp1
+      mtu 1500
+    CONFIG
+    #
+    echo "INIT: executing ifreload"
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    # For whatever crazy reason, I had to enable IPv6 in containers
+    #
+    #
+    # Enable FRR modules for ['dhcp']
+    #
+    #
+    # Enable FRR daemons
+    #
+  
+    systemctl enable frr.service
+    systemctl start frr.service
+    systemctl reload frr.service
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    !
+    interface swp1
+    ! no shutdown
+     description c4 -> [c3,relay]
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    #
+    # Enable LLDP
+    #
+    echo "INIT: enabling LLDP"
+    cat <<CONFIG >/etc/lldpd.d/system.conf
+    configure lldp tx-interval 30
+    configure lldp tx-hold 3
+    configure system interface pattern *,!eth0,swp*
+    CONFIG
+    service lldpd restart
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [relay]
+ok: [c1]
+ok: [c2]
+ok: [c3]
+ok: [c4]
+ok: [s1]
+ok: [s2]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for relay, s1, s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for c1, c2, c3, c4
+
+TASK [set_fact] ****************************************************************
+ok: [relay]
+ok: [s1]
+ok: [s2]
+
+TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+changed: [s1 -> localhost]
+changed: [relay -> localhost]
+changed: [s2 -> localhost]
+
+TASK [Initial container configuration via /tmp/config-rbmohLSd-relay.sh] *******
+changed: [s1 -> localhost]
+changed: [relay -> localhost]
+changed: [s2 -> localhost]
+
+TASK [file] ********************************************************************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
+changed: [relay -> localhost]
+
+TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
+ok: [c1]
+ok: [c2]
+ok: [c3]
+ok: [c4]
+
+TASK [Create local temporary file] *********************************************
+changed: [c2 -> localhost]
+changed: [c3 -> localhost]
+changed: [c1 -> localhost]
+changed: [c4 -> localhost]
+
+TASK [Create initial config script in local temporary file] ********************
+changed: [c1 -> localhost]
+changed: [c2 -> localhost]
+changed: [c4 -> localhost]
+changed: [c3 -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
+changed: [c3]
+changed: [c4]
+changed: [c2]
+changed: [c1]
+
+TASK [Remove temporary file /tmp/ansible.c1.d2191634temp] **********************
+changed: [c1 -> localhost]
+changed: [c2 -> localhost]
+changed: [c4 -> localhost]
+changed: [c3 -> localhost]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [c1]
+ok: [c2]
+ok: [c3]
+ok: [c4]
+ok: [relay]
+ok: [s1]
+ok: [s2]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for c1, c2, c3, c4, relay, s1, s2 => (item=dhcp)
+
+TASK [Figure out whether to deploy the module dhcp on current device] **********
+ok: [c1]
+ok: [c2]
+ok: [c3]
+ok: [c4]
+ok: [relay]
+ok: [s1]
+ok: [s2]
+
+TASK [Find configuration template for dhcp] ************************************
+ok: [c1]
+ok: [c2]
+ok: [c3]
+skipping: [s1]
+skipping: [s2]
+ok: [relay]
+ok: [c4]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [s1]
+skipping: [s2]
+ok: [c1] => 
+  msg: |-
+    dhcp configuration for c1
+    =========================================
+    #!/bin/bash
+    #
+    # Disable IPv6 RA on DHCPv6 client interfaces
+    #
+    #
+    # Configure DHCP clients on interfaces
+    #
+    set -e
+    #
+    echo "DHCP: set IP addresses on interfaces"
+    cat >/etc/network/interfaces.d/12-dhcp.intf <<CONFIG
+    iface swp1 inet dhcp
+      mtu 1500
+    CONFIG
+    #
+    echo "DHCP: executing ifup"
+    nohup bash -c 'ifreload -a || ifreload -a' &
+ok: [c2] => 
+  msg: |-
+    dhcp configuration for c2
+    =========================================
+    #!/bin/bash
+    #
+    # Disable IPv6 RA on DHCPv6 client interfaces
+    #
+    #
+    # Configure DHCP clients on interfaces
+    #
+    set -e
+    #
+    echo "DHCP: set IP addresses on interfaces"
+    cat >/etc/network/interfaces.d/12-dhcp.intf <<CONFIG
+    iface swp1 inet dhcp
+      mtu 1500
+    CONFIG
+    #
+    echo "DHCP: executing ifup"
+    nohup bash -c 'ifreload -a || ifreload -a' &
+ok: [c3] => 
+  msg: |-
+    dhcp configuration for c3
+    =========================================
+    #!/bin/bash
+    #
+    # Disable IPv6 RA on DHCPv6 client interfaces
+    #
+    #
+    # Configure DHCP clients on interfaces
+    #
+    set -e
+    #
+    echo "DHCP: set IP addresses on interfaces"
+    cat >/etc/network/interfaces.d/12-dhcp.intf <<CONFIG
+    iface swp1 inet dhcp
+      mtu 1500
+    CONFIG
+    #
+    echo "DHCP: executing ifup"
+    nohup bash -c 'ifreload -a || ifreload -a' &
+ok: [c4] => 
+  msg: |-
+    dhcp configuration for c4
+    =========================================
+    #!/bin/bash
+    #
+    # Disable IPv6 RA on DHCPv6 client interfaces
+    #
+    #
+    # Configure DHCP clients on interfaces
+    #
+    set -e
+    #
+    echo "DHCP: set IP addresses on interfaces"
+    cat >/etc/network/interfaces.d/12-dhcp.intf <<CONFIG
+    iface swp1 inet dhcp
+      mtu 1500
+    CONFIG
+    #
+    echo "DHCP: executing ifup"
+    nohup bash -c 'ifreload -a || ifreload -a' &
+ok: [relay] => 
+  msg: |-
+    dhcp configuration for relay
+    =========================================
+    # This is a placeholder file. DHCP is configured during initial configuration
+    #
+    if [ `grep 'ID=ubuntu' /etc/os-release` ]; then
+      echo "DHCP is supported"
+    else
+      echo "netlab supports DHCP only on Ubuntu" >&2
+      exit 1
+    fi
+    #
+    # DHCPv4 information
+    # ==================
+    # Clients:  ['eth1', 'eth2'] (-id eth1 -id eth2)
+    # Upstream: ['eth3', 'eth4'] (-iu eth3 -iu eth4)
+    # Servers:  ['172.16.2.6', '172.16.3.7']
+    #
+    cat <<CONFIG >/etc/default/isc-dhcp-relay
+    #
+    # Created by netlab initial using linux-isc-dhcp-relay template
+    #
+    SERVERS="172.16.2.6 172.16.3.7"
+    INTERFACES=""
+    OPTIONS="-id eth1 -id eth2 -iu eth3 -iu eth4"
+    CONFIG
+    service isc-dhcp-relay restart
+
+TASK [Find configuration deployment deploy_script for dhcp] ********************
+ok: [c1]
+skipping: [s1]
+ok: [c2]
+skipping: [s2]
+ok: [c3]
+ok: [c4]
+ok: [relay]
+
+TASK [Deploy dhcp configuration] ***********************************************
+skipping: [s1]
+skipping: [s2]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for c1, c2, c3, c4
+included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/dhcp.yml for relay
+
+TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/dhcp/cumulus.j2] ***
+ok: [c1]
+ok: [c2]
+ok: [c3]
+ok: [c4]
+
+TASK [Create local temporary file] *********************************************
+changed: [c1 -> localhost]
+changed: [c2 -> localhost]
+changed: [c3 -> localhost]
+changed: [c4 -> localhost]
+
+TASK [Create dhcp config script in local temporary file] ***********************
+changed: [c2 -> localhost]
+changed: [c1 -> localhost]
+changed: [c3 -> localhost]
+changed: [c4 -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
+changed: [c1]
+changed: [c2]
+changed: [c3]
+changed: [c4]
+
+TASK [Remove temporary file /tmp/ansible.c1.5armkbx9temp] **********************
+changed: [c1 -> localhost]
+changed: [c2 -> localhost]
+changed: [c3 -> localhost]
+changed: [c4 -> localhost]
+
+TASK [Install dnsmasq] *********************************************************
+skipping: [relay]
+
+TASK [Install isc-dhcp-relay] **************************************************
+An exception occurred during task execution. To see the full traceback, use -vvv. The error was: KeyError: 'ansible_pkg_mgr'
+fatal: [relay]: FAILED! => changed=false 
+  msg: Could not detect a package manager. Try using the "use" option.
+
+PLAY [Deploy custom deployment templates] **************************************
+
+TASK [Run custom configuration deployment scripts] *****************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-custom-config.yml for c1, c2, c3, c4 => (item=bounce)
+
+TASK [Find configuration template] *********************************************
+ok: [c1]
+ok: [c2]
+ok: [c3]
+ok: [c4]
+
+TASK [fail] ********************************************************************
+skipping: [c1]
+skipping: [c2]
+skipping: [c3]
+skipping: [c4]
+
+TASK [Check is the configuration template is a file] ***************************
+ok: [c2 -> localhost]
+ok: [c1 -> localhost]
+ok: [c3 -> localhost]
+ok: [c4 -> localhost]
+
+TASK [fail] ********************************************************************
+skipping: [c1]
+skipping: [c2]
+skipping: [c3]
+skipping: [c4]
+
+TASK [Process template /home/pipi/net101/tools/tests/integration/dhcp/bounce.cumulus.j2 for c1] ***
+skipping: [c1]
+skipping: [c2]
+skipping: [c3]
+skipping: [c4]
+
+TASK [Find custom configuration deployment script] *****************************
+ok: [c1]
+ok: [c2]
+ok: [c3]
+ok: [c4]
+
+TASK [Run the configuration deployment script] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for c1, c2, c3, c4
+
+TASK [Render device configuration from /home/pipi/net101/tools/tests/integration/dhcp/bounce.cumulus.j2] ***
+ok: [c1]
+ok: [c2]
+ok: [c3]
+ok: [c4]
+
+TASK [Create local temporary file] *********************************************
+changed: [c1 -> localhost]
+changed: [c2 -> localhost]
+changed: [c3 -> localhost]
+changed: [c4 -> localhost]
+
+TASK [Create bounce config script in local temporary file] *********************
+changed: [c1 -> localhost]
+changed: [c2 -> localhost]
+changed: [c3 -> localhost]
+changed: [c4 -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
+changed: [c2]
+changed: [c3]
+changed: [c1]
+changed: [c4]
+
+TASK [Remove temporary file /tmp/ansible.c1.dg_c_r0ctemp] **********************
+changed: [c1 -> localhost]
+changed: [c2 -> localhost]
+changed: [c3 -> localhost]
+changed: [c4 -> localhost]
+
+PLAY RECAP *********************************************************************
+c1                         : ok=35   changed=12   unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+c2                         : ok=35   changed=12   unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+c3                         : ok=35   changed=12   unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+c4                         : ok=35   changed=12   unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+relay                      : ok=19   changed=3    unreachable=0    failed=1    skipped=2    rescued=0    ignored=0   
+s1                         : ok=15   changed=3    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
+s2                         : ok=15   changed=3    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
+
+Fatal error in netlab: Executing Ansible playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible failed
+Error executing ansible-playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible:
+  Command '['ansible-playbook', '/home/pipi/net101/tools/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.
