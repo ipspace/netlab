@@ -163,7 +163,8 @@ def run_single_test(
 
   os.environ['NETLAB_DEVICE'] = device
   os.environ['NETLAB_PROVIDER'] = provider
-  os.environ[f'NETLAB_DEVICES_{device}_PROVIDER'] = provider          # Force device-specific provider
+  if 'daemon' not in setup.devices[device][provider]:                 # Force device-specific provider
+    os.environ[f'NETLAB_DEVICES_{device}_PROVIDER'] = provider        # ... but not for daemons
   os.environ['NETLAB_GROUPS_ALL_VARS_NETLAB__SHOW__CONFIG'] = 'True'  # Enable configuration display
   for nl_param in setup.netlab.keys():
     ev = 'NETLAB_' + nl_param.upper()
