@@ -175,7 +175,7 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
 
                  Returns updated node_count set, bool is_mlag, bool dual_mlag, string one_side
   """
-  def analyze_lag(members: list, node_count: dict) -> tuple[bool,bool,str]:
+  def analyze_lag(members: list, node_count: dict) -> typing.Tuple[bool,bool,str]:
     for m in members:
       for i in m.interfaces:
        if i.node in node_count:
@@ -201,7 +201,7 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
   members = normalized_members(l,topology)        # Build list of normalized member links
   if not members:
     return
-  node_count: dict[str,int] = {}                  # Count how many times nodes are used
+  node_count: typing.Dict[str,int] = {}                  # Count how many times nodes are used
   is_mlag, dual_mlag, one_side = analyze_lag(members,node_count)
   if one_side=="<error>":                         # Check for errors
     return
@@ -256,7 +256,7 @@ def create_peer_links(l: Box, topology: Box) -> bool:
   """
   check_same_pair - Verifies that the given member connects the same pair of nodes as the first
   """
-  first_pair : list[str] = []
+  first_pair : typing.List[str] = []
   def check_same_pair(member: Box) -> bool:
     others = { n.node for n in member.interfaces if n.node not in first_pair }
     if others:
