@@ -202,13 +202,6 @@ def fix_vrf_loopbacks(ndata: Box, topology: Box) -> None:
       ngb._source_ifname = ndata.loopback.ifname
 
 '''
-fix_localas_ibgp_neighbors - remove 'multihop' from any localas_ibgp neighbors
-'''
-def fix_localas_ibgp_neighbors(ndata: Box, topology: Box) -> None:
-  for ngb in _bgp.neighbors(ndata,vrf=True,select=['localas_ibgp']):    # Iterate over all localas_ibgp neighbors
-    ngb.pop('multihop',None)                                            # Remove 'multihop' config if any
-
-'''
 post_transform processing:
 
 * Remove fake interfaces and links
@@ -219,7 +212,6 @@ def post_transform(topology: Box) -> None:
   global _config_name
   for ndata in topology.nodes.values():
     fix_vrf_loopbacks(ndata,topology)
-    fix_localas_ibgp_neighbors(ndata,topology)
     cleanup_interfaces(ndata,topology)
 
   topology.links = [ link for link in topology.links if not link.get('_bgp_session',None) ]
