@@ -51,7 +51,7 @@ groups:
   switches:
     members: [ s1, s2 ]
     module: [ vlan ]
-    
+
 links:
 - s1:
   s2:

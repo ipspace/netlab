@@ -72,7 +72,7 @@ def post_transform(topology: Box) -> None:
             bonds[node.name][bond_ifindex][att] = intf.pop(att,None)
       if intf.get('bonding.primary',False):
         bonds[node.name][bond_ifindex]['primary'] = intf.ifname
-      
+
       #
       # Clean up interface neighbors leaving only directly reachable peers (as opposed to - say - 
       # VLAN neighbors in the form of other hosts), moving the rest to bond[x].neighbors
