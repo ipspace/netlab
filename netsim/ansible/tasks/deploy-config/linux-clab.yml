@@ -1,13 +1,53 @@
-- template:
-    src: "{{ config_template }}"
-    dest: /tmp/{{inventory_hostname}}_config.sh
-  delegate_to: localhost # Run on controller, to avoid dependency on Python
+---
+- block:
+  - name: Define script filename and determine whether to execute in netns
+    set_fact:
+      container_script: /tmp/config-{{ inventory_hostname }}_{{ netsim_action }}.sh
+      use_netns: "{{ config_template.endswith('-clab.j2') }}"
 
-- name: Copy template file into running container
-  shell: docker cp /tmp/{{inventory_hostname}}_config.sh {{ ansible_host }}:/tmp/config.sh
-  delegate_to: localhost
+  - name: Create a temporary file for the rendered script
+    ansible.builtin.tempfile:
+      state: file
+      suffix: .sh
+      prefix: "{{ inventory_hostname }}_{{ netsim_action }}-"
+    register: tempfile
+    delegate_to: localhost
 
-- name: "Execute /tmp/config.sh to deploy {{ netsim_action }} config from {{ config_template }}"
-  delegate_to: "{{ inventory_hostname }}"
-  raw: "{{ docker_shell|default('sh') }} /tmp/config.sh"
+  - name: "Create container setup script from {{ config_template }}"
+    template:
+      src: "{{ config_template }}"
+      dest: "{{ tempfile.path }}"
+    delegate_to: localhost      # Run on controller, to avoid dependency on Python
+
+  #
+  # Option 1: Run inside the container, using whatever executables it provides
+  #
+  - block:
+    - name: "Copy script into running container at {{ container_script }}"
+      shell: docker cp {{ uniq_script }} {{ ansible_host }}:{{ container_script }}
+      delegate_to: localhost
+
+    - name: "Execute {{ container_script }} to deploy {{ netsim_action }} config based on {{ config_template }}"
+      delegate_to: "{{ inventory_hostname }}"
+      raw: "{{ docker_shell|default('sh') }} {{ container_script }}"
+
+    when: not use_netns
+
+  #
+  # Option 2: Run on the host, within the container netns
+  #
+  - name: "Container configuration for {{ netsim_action }} based on {{ config_template }} executed in netns"
+    when: use_netns
+    shell: |
+      set -e
+      ip netns exec {{ ansible_host }} bash {{ tempfile.path }}
+    become: true
+    delegate_to: localhost
+
+  - name: "Remove temporary file {{ tempfile.path }}"
+    file:
+      path: "{{ tempfile.path }}"
+      state: absent
+    delegate_to: localhost
+
   tags: [ print_action, always ]
