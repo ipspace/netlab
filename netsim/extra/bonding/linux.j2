@@ -1,5 +1,4 @@
-{% if node_provider=='clab' or netlab_linux_distro|default("") != "ubuntu" %}
-{%   from "templates/lag/linux.j2" import create_bond_dev with context %}
+{% if netlab_linux_distro|default("") != "ubuntu" %}
 #!/bin/bash
 
 set -e
@@ -12,14 +11,5 @@ then
   apt-get -qq install ethtool iproute2
 fi
 
-{# Bonding device is created by 'initial' module #}
-{%   for intf in interfaces|default([]) if intf.bonding.members is defined %}
-ip link set dev {{ intf.ifname }} down
-{%     for member in intf.bonding.members %}
-ip link set dev {{ member }} down
-ip link set dev {{ member }} master {{ intf.ifname }}
-ip link set dev {{ member }} up
-{%     endfor %}
-ip link set dev {{ intf.ifname }} up
-{%   endfor %}
+{% include "linux-clab.j2" %}
 {% endif %}
