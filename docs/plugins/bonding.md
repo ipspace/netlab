@@ -25,6 +25,11 @@ Additional interface level attributes:
 * **bonding.ifindex** (int,mandatory) -- the interface index for the bonding device; links with matching ifindex are bonded together
 * **bonding.primary** (bool) -- optional flag to mark this interface as primary, default *False*. If none of the interfaces are marked as `primary`, the selection is left to the Linux default behavior
 
+### Caveats
+
+The plugin uses the `ip` command to create bond devices and add member links; in case of Linux VMs that are not Ubuntu, the plugin attempts to install this command when not available.
+This installation uses `apt-get` which may not work on some Linux VMs
+
 ## Examples
 
 (active-backup-bonding)=
