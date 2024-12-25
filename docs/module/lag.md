@@ -67,6 +67,10 @@ links:
      ifindex: 50
 ```
 
+### Caveat: Multi-provider Labs
+
+There is a known issue with multi-provider labs, where 'lag' type links get converted into 'lan'; this breaks the lag module
+
 (mlag)=
 ## Multi-chassis Link Aggregation (MLAG)
 
