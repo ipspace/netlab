@@ -1,4 +1,5 @@
-{% from "templates/lag/linux.j2" import create_bond_dev with context %}
+{% if node_provider=='clab' or netlab_linux_distro|default("") != "ubuntu" %}
+{%   from "templates/lag/linux.j2" import create_bond_dev with context %}
 #!/bin/bash
 
 set -e
@@ -12,12 +13,13 @@ then
 fi
 
 {# Bonding device is created by 'initial' module #}
-{% for intf in interfaces|default([]) if intf.bonding.members is defined %}
+{%   for intf in interfaces|default([]) if intf.bonding.members is defined %}
 ip link set dev {{ intf.ifname }} down
-{%   for member in intf.bonding.members %}
+{%     for member in intf.bonding.members %}
 ip link set dev {{ member }} down
 ip link set dev {{ member }} master {{ intf.ifname }}
 ip link set dev {{ member }} up
-{%   endfor %}
+{%     endfor %}
 ip link set dev {{ intf.ifname }} up
-{% endfor %}
+{%   endfor %}
+{% endif %}

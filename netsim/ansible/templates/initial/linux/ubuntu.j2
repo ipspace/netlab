@@ -69,16 +69,6 @@ else
   apt-get install -qq lldpd
 fi
 
-{% if 'lag' in module|default([]) %}
-#
-# Install ethtool and iproute2(ip) for lag support
-#
-if "$NEED_APT_UPDATE"; then
-    apt-get update -qq
-fi
-apt-get install -qq ethtool iproute2
-{% endif %}
-
 cat <<CONFIG >/etc/lldpd.d/system.conf
 configure lldp tx-interval 30
 configure lldp tx-hold 3
@@ -161,6 +151,8 @@ network:
         mode: {{ _m }}
 {%     if _m=='802.3ad' %}
         lacp-rate: {{ l.lag.lacp|default('fast') }}
+{%     elif l.bonding.primary is defined %}
+        primary: {{ l.bonding.primary }}
 {%     endif %}
         mii-monitor-interval: 100
         transmit-hash-policy: encap3+4
