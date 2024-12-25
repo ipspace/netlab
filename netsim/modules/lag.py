@@ -384,12 +384,13 @@ class LAG(_Module):
         has_peerlink = True
       elif i.type=='lag':
         i.lag = node.get('lag',{}) + i.lag  # Merge node level settings with interface overrides
+        i.pop('mtu',None)                   # Remove any MTU settings - inherited from members
         lacp_mode = i.get('lag.lacp_mode')  # Inheritance copying is done elsewhere
         if lacp_mode=='passive' and not features.lag.get('passive',False):
           log.error(f'Node {node.name} does not support passive LACP configured on interface {i.ifname}',
             category=log.IncorrectAttr,
             module='lag')
-        if i.lag.get('mlag',False) is True:
+        if i.lag.get('_mlag',False) is True:
           uses_mlag = True
     
     if uses_mlag and not has_peerlink:
