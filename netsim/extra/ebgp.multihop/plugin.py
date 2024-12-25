@@ -116,19 +116,19 @@ augment_af_activation -- change the address families active on EBGP multihop ses
 '''
 def augment_af_activation(ndata: Box, topology: Box) -> None:
   af_set = ndata.get('bgp.multihop.activate',None) or topology.get('bgp.multihop.activate',None)
-  af_list = topology.defaults.bgp.attributes['global'].multihop.activate.ipv4.valid_values
+  af_list_base = topology.defaults.bgp.attributes['global'].multihop.activate
 
   if not af_set:
     return
 
   check_af_activation_support(ndata,topology)
-  for ngb in _bgp.neighbors(ndata,vrf=True,select=['ebgp']):
+  for ngb in _bgp.neighbors(ndata,vrf=True,select=['ebgp','localas_ibgp']):
     if not 'multihop' in ngb:                                     # Skip regular neighbors
       continue
     for af in ['ipv4','ipv6']:                                    # A neighbor could be an IPv4 or IPv6 neighbor
       if not af in ngb:                                           # Skip the irrelevant transport AF
         continue
-      for bgp_af in af_list:                                      # Iterate over all potential address famiilies
+      for bgp_af in af_list_base[af].valid_values:                # Iterate over all potential address famiilies
         chg = ngb.activate if bgp_af in ['ipv4','ipv6'] else ngb  # Find the object to change (neighbor or activate dictionary)
         if bgp_af in af_set[af]:                                  # Is the AF active on this transport EBGP multhop session?
           chg[bgp_af] = True                                      # Yes, turn it on
@@ -167,7 +167,7 @@ fix_vrf_loopbacks:
 '''
 def fix_vrf_loopbacks(ndata: Box, topology: Box) -> None:
   features = devices.get_device_features(ndata,topology.defaults)
-  for ngb in _bgp.neighbors(ndata,vrf=True,select=['ebgp']):    # Iterate over all EBGP neighbors
+  for ngb in _bgp.neighbors(ndata,vrf=True,select=['ebgp','localas_ibgp']):    # Iterate over all EBGP and localas_ibgp neighbors
     if not ngb.get('multihop',None):                            # Not a multihop session, move on
       continue
     if '_vrf' in ngb:                                           # Is the neighbor endpoint in a VRF?
