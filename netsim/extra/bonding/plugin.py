@@ -9,7 +9,7 @@ _config_name = 'bonding'
 '''
 add_bond_interfaces - append interface data to node.interfaces for bonding template to read and implement
 '''
-def add_bond_interfaces(node: Box, bonds: dict[int,Box], topology: Box) -> None:
+def add_bond_interfaces(node: Box, bonds: typing.Dict[int,Box], topology: Box) -> None:
   bond_interface_name = topology.defaults.bonding.bond_interface_name
   for c,(ifindex,bond) in enumerate(bonds.items()):
     ifname = strings.eval_format(bond_interface_name, { 'ifindex': ifindex })
