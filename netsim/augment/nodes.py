@@ -7,7 +7,7 @@ Create detailed node-level data structures from topology
 '''
 import typing
 
-from box import Box
+from box import Box, BoxList
 import netaddr
 
 from ..utils import log
@@ -410,6 +410,70 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
 
     augment_mgmt_if(n,defaults,topology.addressing.mgmt)
     providers.execute_node("augment_node_data",n,topology)
+
+'''
+Create the default static route list from pool prefixes
+'''
+def default_static_route_list(topology: Box) -> list:
+  sr_list = []
+
+  for ap_name,ap_data in topology.addressing.items():
+    if ap_name in ['mgmt','router_id']:
+      continue
+
+    sr_entry = { af:ap_data[af] for af in log.AF_LIST if af in ap_data and isinstance(ap_data[af],str) }
+    if sr_entry:
+      sr_list.append(data.get_box(sr_entry))
+
+  return sr_list
+
+'''
+Given the global list of static routes, create a host-specific list that
+contains the host default gateway
+'''
+def create_host_static_routes(sr_list: BoxList, intf: Box) -> list:
+  host_list = []
+
+  # Extract next hops from the gateway data structure
+  next_hop = { kw:value.split('/')[0] for (kw,value) in intf.gateway.items() if kw in log.AF_LIST }
+  next_hop['intf'] = intf.ifname
+
+  for sr_entry in sr_list:
+    host_list.append(sr_entry + { 'nexthop': next_hop })
+
+  return host_list
+
+'''
+For all hosts, create 'routing.static' table (unless it exists) that contains IPv4
+static routes to the first usable default gateway for all pool prefixes or for global
+static routes.
+'''
+def add_host_static_routes(topology: Box) -> None:
+  sr_list = topology.get('routing.static.host',None)
+
+  for n_name, n_data in topology.nodes.items():
+    if n_data.get('role',None) != 'host':         # Not a host, no need for static routes
+      continue
+
+    if n_data.get('routing.static',None):         # Host already has static routes, move on
+      continue
+
+    # Premature optimization: create the default static route list only when encountering the first host
+    if sr_list is None:
+      sr_list = default_static_route_list(topology)
+
+    for intf in n_data.interfaces:                # Iterate over host interfaces
+      if not intf.get('gateway.ipv4',None):       # Do we have an IPv4 gateway on the interface?
+        continue                                  # ... nope, move on
+
+      n_data.routing.static = create_host_static_routes(sr_list,intf)
+
+'''
+Final node transformation step, executed after the link transformation is done and the
+node interfaces have been created.
+'''
+def post_transform(topology: Box) -> None:
+  add_host_static_routes(topology)
 
 '''
 Cleanup daemon configuration file data -- remove all daemon config mappings that
