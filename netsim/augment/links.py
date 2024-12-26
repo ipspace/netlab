@@ -568,8 +568,13 @@ If the interface address is set, validate that it's a valid address (can't be in
 """
 def IPAM_unnumbered(link: Box, af: str, pfx: typing.Optional[bool], ndict: Box) -> None:
   for intf in link.interfaces:
-    if not af in intf:            # No static address, set it to link bool value or use loopback AF presence for old-style unnumbereds
-      intf[af] = pfx if isinstance(pfx,bool) else bool(ndict[intf.node].get(f'loopback.{af}',False))
+    if not af in intf:                            # No static address
+      if isinstance(pfx,bool):                    # Set it to link bool value if it exists
+        intf[af] = pfx
+      elif 'loopback' in ndict[intf.node]:        # Use loopback AF presence for old-style unnumbereds
+        intf[af] = bool(ndict[intf.node].get(f'loopback.{af}',False))
+      elif af == 'ipv6':                          # Else enable IPv6 LLA for hosts
+        intf[af] = True
     elif data.is_true_int(intf[af]):
       log.error(
         f'Node {intf.node} is using host index {intf[af]} for {af} on an unnumbered link',
@@ -626,6 +631,7 @@ def assign_interface_addresses(link: Box, addr_pools: Box, ndict: Box, defaults:
       IPAM_unnumbered(link,af,None,ndict)
 
     link.pop('prefix')
+    link.pop('unnumbered')
     return
 
   for af in ('ipv4','ipv6'):
@@ -961,10 +967,10 @@ def interface_feature_check(nodes: Box, defaults: Box) -> None:
         if isinstance(ifdata.ipv6,bool) and ifdata.ipv6 and \
             not features.initial.ipv6.lla:
           log.error(
-            f'Device {ndata.device} does not support LLA-only IPv6 interfaces used on\n'+
-            f'.. node {node} interface {ifdata.ifname} (link {ifdata.name})',
-            log.IncorrectValue,
-            'interfaces')
+            f'Device {ndata.device} does not support LLA-only IPv6 interfaces',
+            category=log.IncorrectValue,
+            more_hints=f'Used on interface {ifdata.ifname} (link {ifdata.name})',
+            module='interfaces')
 
 '''
 copy_link_gateway -- copy link gateway addresses to node-on-link (future interface) data
