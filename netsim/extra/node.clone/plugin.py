@@ -118,14 +118,11 @@ def clone_node(node: Box, topology: Box) -> None:
     clone = data.get_box(node)
     clone.name = strings.eval_format(name_format, node + { 'id': c } )
 
-    if clone.name in topology.nodes:                                         # Check for overlapping names
-      log.error("Generated clone name '{clone.name}' conflicts with an existing node",
-                category=AttributeError, module='node.clone')
-      return
-
     clone.interfaces = []                                                    # Start clean, remove reference to original node
     if 'id' in node:
       clone.id = node.id + c - 1                                             # Update any explicit node ID sequentially
+    if clone.name in topology.nodes:                                         # Check for existing nodes that may override
+      clone = clone + topology.nodes[ clone.name ]                           # ...and merge its settings
     topology.nodes[ clone.name ] = clone
     clones.append( clone.name )
 
