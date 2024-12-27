@@ -93,7 +93,7 @@ bgp_neighbor: Create BGP neighbor data structure
 
 * n - neighbor node data
 * intf - neighbor interface data (could be addressing prefix or whatever is in the interface neighbor list)
-* ctype - session type (ibgp or ebgp)
+* ctype - session type (ibgp or ebgp or localas_ibgp)
 * extra_data - anything else we might want to pass to the neighbor data structure
 """
 def bgp_neighbor(n: Box, intf: Box, ctype: str, sessions: Box, extra_data: typing.Optional[dict] = None) -> typing.Optional[Box]:
@@ -452,6 +452,8 @@ def build_bgp_sessions(node: Box, topology: Box) -> None:
   activate = node.bgp.get('activate') or data.get_box(BGP_DEFAULT_SESSIONS)
   if not validate_bgp_sessions(node,activate,'activate'):
     return
+  if 'ibgp' in activate and 'localas_ibgp' not in activate:                     # Make 'ibgp' imply 'localas_ibgp'
+    activate.append('localas_ibgp')
 
   activate_bgp_default_af(node,activate,topology)
 
@@ -604,8 +606,8 @@ def bgp_transform_community_list(node: Box, topology: Box) -> None:
           module='bgp',
           more_hints=[ f"Valid values are {','.join(kw_xform.keys())}" ])
     
-  if 'ibgp_localas' not in clist:
-    clist.ibgp_localas = clist.ibgp
+  if 'localas_ibgp' not in clist:
+    clist.localas_ibgp = clist.ibgp
 
   for s_type in list(clist.keys()):
     clist[s_type] = data.kw_list_transform(kw_xform,clist[s_type])

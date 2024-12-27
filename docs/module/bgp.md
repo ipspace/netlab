@@ -163,7 +163,7 @@ Additional per-node BGP configuration parameters include:
 * **bgp.advertise_loopback** -- when set to `False`, the IP prefixes configured on loopback interfaces are not advertised in BGP. See also [*Advanced Global Configuration Parameters*](#advanced-global-configuration-parameters).
 * **bgp.community** -- override global BGP community propagation defaults for this node. See *[](bgp-community-propagation)* for more details.
 * **bgp.import** -- [import (redistribute) IPv4 and IPv6 routes](routing_import) into global BGP instance (default: **false**)
-* **bgp.local_as** -- the autonomous system used on all EBGP sessions.
+* **bgp.local_as** -- the autonomous system used on all EBGP sessions. See *[](bgp-ibgp-localas)* on how this could result in **IBGP** sessions as well.
 * **bgp.next_hop_self** -- Use *next-hop-self* on IBGP sessions. This parameter can also be specified as a global value; the system default is **true**.
 * **bgp.originate** -- a list of additional prefixes to advertise. The advertised prefixes are supported with a static route pointing to *Null0*.
 * **bgp.router_id** -- Set a static router ID. The default **router_id** is taken from the IPv4 address of the loopback interface or the **router_id** address pool if the device does not have a loopback interface or there is no usable IPv4 address on the loopback interface.
@@ -297,7 +297,7 @@ _netlab_ generates a warning for routers that have IBGP sessions without an unde
 ```
 
 (bgp-ebgp-sessions)=
-**EBGP sessions**
+**EBGP Sessions**
 
 * Whenever multiple nodes connected to the same link use different AS numbers, you'll get a full mesh of EBGP sessions between them[^EB_D].
 * Global (**bgp.as**) and local (**bgp.local_as**) autonomous systems are considered when deciding to create a session between two adjacent nodes, allowing you to create EBGP sessions between nodes belonging to the same AS or IBGP sessions between nodes belonging to different AS.
@@ -320,6 +320,11 @@ Use the **netlab show module --module bgp --feature ipv6_lla** command to displa
 *netlab* can use IPv6 EBGP sessions to transport IPv4 address family with IPv6 next hops (RFC 8950) -- the functionality commonly used to implement *interface EBGP sessions*. *netlab* will enable IPv4 AF over IPv6 LLA EBGP sessions when the **unnumbered** link- or interface attribute is set, or when **ipv4** interface address or link prefix is set to *True*.
 
 Use the **netlab show module --module bgp --feature ipv6_lla** command to display devices on which you can use the IPv4 address family on IPv6 LLA EBGP sessions and the **netlab show module --module bgp --feature rfc8950** command to display devices on which you can use the IPv4 address family on regular IPv6 EBGP sessions.
+
+(bgp-ibgp-localas)=
+**IBGP Sessions Resulting from Matching bgp.local_as on an EBGP Session**
+
+When **bgp.local_as** is configured with the same value as the neighbor AS, the result is an IBGP session. Most platforms treat such `localas_ibgp` sessions no different from regular `ibgp` sessions, but there could be subtle differences (and even bugs)
 
 ## IPv6 Support
 
