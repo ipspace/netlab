@@ -26,7 +26,14 @@ interface {{ mgmt.ifname|default('mgmt') }}
 
 {% for l in interfaces|default([]) %}
 
-interface {{ l.ifname }}
+{#
+# Unfortunately we have to mix domains here.
+# If a LAG interface is defined as a simple LAG here on the initial module, it cannot be set as multi-chassis later on.
+#}
+{%   set mclag_intf = ' multi-chassis' if (l.type|default('') == 'lag' and '_mlag' in l.lag) else '' %}
+{%   set mclag_intf_static = ' static' if (l.type|default('') == 'lag' and '_mlag' in l.lag and l.lag.lacp|default('') == 'off') else '' %}
+
+interface {{ l.ifname }}{{ mclag_intf }}{{ mclag_intf_static }}
 {% if l.virtual_interface is not defined %}
     shutdown
 {# Set the maximun allowed L2 MTU here. Fine tuning of L3 MTU will be done with ip mtu on L3 interfaces only #}
