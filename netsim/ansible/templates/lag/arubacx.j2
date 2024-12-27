@@ -1,0 +1,65 @@
+{# Provision VSX peerlink #}
+{% for intf in interfaces if intf.lag.mlag.peergroup is defined %}
+
+interface lag {{ intf.lag.mlag.ifindex }}
+    no shutdown
+    no routing
+    vlan trunk native 1
+    vlan trunk allowed all
+    lacp mode active
+    description VSX ISL
+
+!
+{%   for ch in ([intf]+interfaces) if ch==intf or ch.lag._parentindex|default(False) == intf.linkindex %}
+interface {{ ch.ifname }}
+    no shutdown
+    description {{ ch.name }} (ISL in lag {{intf.lag.mlag.ifindex }})
+    lag {{ intf.lag.mlag.ifindex }}
+!
+{%   endfor %}
+
+!
+! VSX Config
+!
+vsx
+    system-mac {{ intf.lag.mlag.mac | hwaddr('linux') }}
+    inter-switch-link lag {{ intf.lag.mlag.ifindex }}
+    role {{ intf.lag.mlag._vsx_role }}
+!
+{% endfor %}
+
+{# LAG interfaces #}
+{% for intf in interfaces if intf.type == 'lag' %}
+{%   set _lacp = intf.lag.lacp|default(lag.lacp) %}
+{%   set mclag_intf = ' multi-chassis' if '_mlag' in intf.lag else '' %}
+{%   set mclag_intf_static = ' static' if ('_mlag' in intf.lag and _lacp == 'off') else '' %}
+interface {{ intf.ifname }}{{ mclag_intf }}{{ mclag_intf_static }}
+{%   if '_mlag' in intf.lag %}
+    description {{ intf.name }} (VSX LAG {{ intf.lag.ifindex }})
+{%   else %}
+    description {{ intf.name }}
+{%   endif %}
+{%  if _lacp=='off' %}
+    no lacp mode
+{%  endif %}
+{%   if intf.lag.lacp_mode|default('') == 'active' %}
+    lacp mode active
+{%   endif %}
+{%   if intf.lag.lacp_mode|default('') == 'passive' %}
+    lacp mode passive
+{%   endif %}
+{%     if _lacp in [ 'fast', 'slow' ] %}
+    lacp rate {{ _lacp }}
+{%     endif %}
+    no shutdown
+
+!
+{%   for ch in interfaces if ch.lag._parentindex|default(False) == intf.linkindex %}
+!
+interface {{ ch.ifname }}
+    description {{ ch.name }} in lag {{ intf.lag.ifindex }}
+    lag {{ intf.lag.ifindex }}
+!
+{%   endfor %}
+!
+{% endfor %}
