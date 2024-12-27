@@ -1,0 +1,47 @@
+!
+! stp config module
+!
+{% if not stp.enable|default(True) %}
+no spanning tree
+{% else %}
+{%  set proto_map = { 'stp': 'mstp', 'pvrst': 'rpvst', 'mstp': 'mstp' } %}
+{%  set mode = proto_map[stp.protocol] %}
+{# options are rapid-pvst or mstp (default if not set) - MSTP should be able to fallback to plain STP #}
+spanning-tree
+spanning-tree mode {{ mode }}
+{% endif %}
+
+{% if 'priority' in stp %}
+{# priority: Set the device priority multiplier. This value will be multiplied by 4096 #}
+spanning-tree priority {{ (stp.priority / 4096)|int }}
+{% endif %}
+
+{# Check for per-VLAN enable and priority; implies Rapid-PVST #}
+{% if vlans is defined and mode == 'rpvst' %}
+{# Define STP instance for each VLAN by default (no implicit definition) #}
+{%   for vname,vdata in vlans.items() %}
+spanning-tree vlan {{ vdata.id }}
+{%   endfor +%}
+!
+{%   for vname,vdata in vlans.items() if 'stp' in vdata %}
+{%    if not vdata.stp.enable|default(True) %}
+no spanning-tree vlan {{ vdata.id }}
+{%    elif 'priority' in vdata.stp %}
+spanning-tree vlan {{ vdata.id }} priority {{ (vdata.stp.priority / 4096)|int }}
+{%    endif %}
+{%   endfor +%}
+{% endif %}
+
+
+{% for ifdata in interfaces if 'stp' in ifdata %}
+{%   if ifdata.vlan.trunk_id is defined or ifdata.vlan.access_id is defined %}
+interface {{ ifdata.ifname }}
+{%    if not ifdata.stp.enable|default(True) %}
+    ! Disable STP on this interface, i.e. dont receive or send BPDUs
+    spanning-tree bpdu-filter
+{%    elif 'port_priority' in ifdata.stp %}
+{# port priority: in AOS-CX: port-priority  Set port priority multiplier. This value will be multiplied by 16 #}
+    spanning-tree port-priority {{ (ifdata.stp.port_priority / 4096)|int }}
+{%    endif %} 
+{%   endif %}
+{% endfor %}
