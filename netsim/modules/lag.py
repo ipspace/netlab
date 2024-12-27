@@ -214,7 +214,7 @@ def create_lag_interfaces(l: Box, topology: Box) -> None:
       return (False,False,"")
     elif len(node_count)==3:                               # 1:2 MLAG or weird MLAG triangle
       for node_name,count in node_count.items():
-        if count==len(l.lag.members):
+        if count==len(members):
           return (True,False,node_name)                    # Found the 1-side node
     elif len(node_count)==4:                               # 2:2 dual MLAG
       return (True,True,"")
@@ -478,4 +478,4 @@ class LAG(_Module):
         category=log.IncorrectAttr,
         module='lag')
 
-    node.pop('_lag_ifindex',None)           # Cleanup
+    node.pop('_lag_ifindex',None)              # Cleanup
