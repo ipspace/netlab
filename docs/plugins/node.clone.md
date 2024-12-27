@@ -43,7 +43,7 @@ Avoid the use of static IPv4/v6 attributes for clones, they are not checked nor 
 ### Connect Multiple Hosts to a ToR
 
 The following lab topology has a cluster of 10 hosts all connected to a Top-of-Rack switch in the same way.
-The clones will be called H-01, H-02, ...
+The clones will be called H_01, H_02, ...
 
 ```yaml
 plugin: [ node.clone ]
@@ -56,11 +56,8 @@ nodes:
     device: frr
     module: [ vlan ]
   H:
-    device: none
+    device: linux
     clone.count: 10
-
-  H-01:
-    device: linux    # Instantiate only the first node as a container, leave the rest virtual
     
 links:
 - ToR:
