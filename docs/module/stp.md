@@ -12,11 +12,13 @@ The following table describes per-platform support of individual STP features:
 | Operating system   | STP | MSTP | RSTP | Per-VLAN (R)STP | Enable per port
 | ------------------ |:---:|:---:|:---:|:---:|:---:|
 | Arista EOS[^EOS]   | ✅  | ✅  | ✅  | ✅ |  ✅ |
+| Aruba AOS-CX[^AOSCX] | ❗  | ✅  | ❌  | ✅ |  ✅ |
 | Cumulus Linux[^CL] | ✅  |  ❌  | ✅  | ❌   |  ✅ |
 | Dell OS10[^OS10]   | ✅  | ✅  | ✅  | ✅ |  ✅ |
 | FRR[^FRR]          | ✅  |  ❌  |  ❌  |  ✅ | ❌   |
 
 [^EOS]: MSTP is enabled by default
+[^AOSCX]: MSTP is enabled by default; STP is stated as not supported, but it is configured as MSTP (see tip below).
 [^CL]: STP is enabled by default
 [^OS10]: PVRST is enabled by default
 [^FRR]: STP is disabled by default
