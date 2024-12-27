@@ -547,8 +547,16 @@ def ghost_buster(topology: Box) -> Box:
     if new_count < count:
       link.node_count -= (count-new_count)
       if link.node_count==1:
-        link.type = 'dummy'
+        link.type = 'stub'
         links.set_link_bridge_name(link,topology.defaults)
+
+        node = topo_copy.nodes[ link.interfaces[0].node ]   # Update node interface too
+        for i in node.interfaces:
+          if i.linkindex == link.linkindex:
+            i.neighbors = []
+            i.type = 'stub'
+            i.bridge = link.bridge
+
       elif link.node_count==0:
         topo_copy.links.remove(link)
 
