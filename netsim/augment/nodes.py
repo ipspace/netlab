@@ -552,13 +552,13 @@ def ghost_buster(topology: Box) -> Box:
 
         node = topo_copy.nodes[ link.interfaces[0].node ]   # Update node interface too
         for i in node.interfaces:
-          if i.linkindex == link.linkindex:
-            i.neighbors = []
+          if i.linkindex==link.linkindex:
             i.type = 'stub'
-            i.bridge = link.bridge
+            i.bridge = link.bridge                          # Make sure a bridge gets created
+            # i.neighbors = []                              # Leave neighbors info in place
 
       elif link.node_count==0:
-        topo_copy.links.remove(link)
+        topo_copy.links.remove(link)                        # No nodes left -> remove link
 
   # Remove all nodes with "unmanaged" flag set or 'none' device
   topo_copy.nodes = { k:v for k,v in topo_copy.nodes.items() if not is_ghost(v) }
