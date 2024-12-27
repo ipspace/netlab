@@ -85,6 +85,9 @@ def cleanup_intf_protocol_parameters(node: Box,topology: Box) -> list:
       elif k in node.get('gateway'):                                  # Do we have node-level parameters for this protocol?
         intf.gateway[k] = node.gateway[k] + intf.gateway[k]           # ... copy them to all interfaces
 
+  if not active_proto:                                                # No gateways in use anywhere?
+    node.pop('gateway',None)                                          # Remove its configuration
+    node.module = [ m for m in node.module if m != 'gateway' ]        # and the module
   return active_proto
 
 '''
