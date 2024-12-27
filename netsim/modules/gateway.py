@@ -67,7 +67,7 @@ def cleanup_unicast_ip(node: Box) -> None:
 # parameters from interfaces and returns a list of active protocols so we know what to clean on the
 # node level.
 
-def cleanup_intf_protocol_parameters(node: Box,topology: Box) -> list:
+def cleanup_intf_protocol_parameters(node: Box, topology: Box) -> list:
   active_proto: list = []
 
   proto_list = topology.defaults.gateway.attributes.protocols         # List of known FHRP protocols
