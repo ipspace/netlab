@@ -85,9 +85,6 @@ def cleanup_intf_protocol_parameters(node: Box, topology: Box) -> list:
       elif k in node.get('gateway'):                                  # Do we have node-level parameters for this protocol?
         intf.gateway[k] = node.gateway[k] + intf.gateway[k]           # ... copy them to all interfaces
 
-  if not active_proto:                                                # No gateways in use anywhere?
-    node.pop('gateway',None)                                          # Remove its configuration
-    node.module = [ m for m in node.module if m != 'gateway' ]        # and the module
   return active_proto
 
 '''
@@ -258,7 +255,10 @@ class FHRP(_Module):
 
     cleanup_unicast_ip(node)
     active_proto = cleanup_intf_protocol_parameters(node,topology)    # Cleanup interface parameters and get a list of active protocols
-    if 'gateway' in node:
-      for k in list(node.gateway):                                    # Iterate over node-level gateway parameters
+    if active_proto:                                                  # Any gateway active?
+      for k in list(node.get('gateway',{})):                          # Iterate over node-level gateway parameters
         if not k in active_proto:                                     # Not a parameter for a FHRP active on this node?
           node.gateway.pop(k,None)                                    # ... zap it!
+    else:
+      node.pop('gateway',None)                                        # If not: Remove its configuration entirely
+      node.module = [ m for m in node.module if m != 'gateway' ]      # and the module
