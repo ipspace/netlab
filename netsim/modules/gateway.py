@@ -259,6 +259,7 @@ class FHRP(_Module):
       for k in list(node.get('gateway',{})):                          # Iterate over node-level gateway parameters
         if not k in active_proto:                                     # Not a parameter for a FHRP active on this node?
           node.gateway.pop(k,None)                                    # ... zap it!
-    else:
+
+    if not active_proto:
       node.pop('gateway',None)                                        # If not: Remove its configuration entirely
       node.module = [ m for m in node.module if m != 'gateway' ]      # and the module
