@@ -1,0 +1,67 @@
+---
+message: |
+  The devices under test form a server cluster connected to a pair of ToR switches.
+  Host facing ports are automatically configured as 'edge' ports, the inter-switch port is
+  manually configured as 'network'
+
+  * h1 and h2 should be able to ping each other
+  * h3 and h4 should be able to ping each other
+  * h1 should not be able to reach h3
+
+stp:
+  enable: True
+  stub_port_type: edge           # auto-configure host ports as 'edge'
+
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h1, h2, h3, h4 ]  # Devices with role: host
+    device: linux
+    provider: clab
+  switches:
+    members: [ s1, s2, s3 ]
+    module: [ vlan, stp ]
+
+vlans:
+  red:
+    mode: bridge
+    links: [ s1-h1, s2-h2 ]
+  blue:
+    mode: bridge
+    links: [ s1-h3 ]
+  green:
+    mode: bridge
+    stp.port_type: normal # Test: VLAN port_type
+    links: [ s2-h4 ]
+
+nodes:
+  s3:
+    stp.port_type: edge   # Test: node-level stp port_type
+
+links:
+- s1:
+  s2:
+  vlan.trunk: [ red, blue ]
+  stp.port_type: network
+
+- s1-s3  # IP interface, module should not apply STP port_type setting here
+
+- s2:
+  s3:
+  vlan.access: green # Should both get 'normal' stp.port_type, on the interface
+
+validate:
+  ping_red:
+    description: Ping-based reachability test in VLAN red
+    nodes: [ h1 ]
+    wait_msg: Waiting for STP to enable the ports
+    wait: 45
+    plugin: ping('h2')
+  ping_blue:
+    description: Ping-based reachability test in VLAN blue
+    nodes: [ h3 ]
+    plugin: ping('h4')
+  inter_vlan:
+    description: Ping-based reachability test between blue and red VLANs
+    nodes: [ h1 ]
+    plugin: ping('h3',expect='fail')
