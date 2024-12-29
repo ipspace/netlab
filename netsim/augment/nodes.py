@@ -421,9 +421,10 @@ def default_static_route_list(topology: Box) -> list:
     if ap_name in ['mgmt','router_id']:
       continue
 
-    sr_entry = { af:ap_data[af] for af in log.AF_LIST if af in ap_data and isinstance(ap_data[af],str) }
-    if sr_entry:
-      sr_list.append(data.get_box(sr_entry))
+    if not isinstance(ap_data.get('ipv4',False),str):
+      continue
+
+    sr_list.append(data.get_box({ 'ipv4': ap_data.ipv4 }))
 
   return sr_list
 
