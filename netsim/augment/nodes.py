@@ -437,6 +437,7 @@ def create_host_static_routes(sr_list: BoxList, intf: Box) -> list:
   # Extract next hops from the gateway data structure
   next_hop = { kw:value.split('/')[0] for (kw,value) in intf.gateway.items() if kw in log.AF_LIST }
   next_hop['intf'] = intf.ifname
+  next_hop['idx'] = 0
 
   for sr_entry in sr_list:
     host_list.append(sr_entry + { 'nexthop': next_hop })
