@@ -602,8 +602,8 @@ def node_config_templates(topology: Box) -> None:
 
     must_be_list(topology.groups[group_name],'config',f'groups.{group_name}')
     g_members = group_members(topology,group_name)          # Get node members of the group
-    if not g_members:
-      return
+    if not g_members and group_name != 'all':
+      continue
 
     for name,ndata in topology.nodes.items():               # Iterate over nodes
       if name in g_members or group_name == 'all':          # Match members or 'all' group
