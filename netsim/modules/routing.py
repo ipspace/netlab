@@ -777,12 +777,7 @@ def resolve_node_nexthop(sr_data: Box, node: Box, topology: Box) -> Box:
 """
 Check whether a VRF static route is valid and supported by the device on which it's used
 """
-def check_VRF_static_route(sr_data: Box, node: Box, topology: Box) -> bool:
-  d_features = devices.get_device_features(node,topology.defaults)
-  sr_features = d_features.get('routing.static')
-  if not isinstance(sr_features,dict):
-    sr_features = data.get_empty_box()
-
+def check_VRF_static_route(sr_data: Box, node: Box, sr_features: Box) -> bool:
   if 'vrf' in sr_data:
     if sr_data.vrf not in node.get('vrfs',{}):
       log.error(
@@ -819,6 +814,10 @@ def check_VRF_static_route(sr_data: Box, node: Box, topology: Box) -> bool:
 
 def check_static_routes(idx: int,o_name: str,node: Box,topology: Box) -> None:
   sr_data = node.routing[o_name][idx]
+  d_features = devices.get_device_features(node,topology.defaults)
+  sr_features = d_features.get('routing.static')
+  if not isinstance(sr_features,dict):
+    sr_features = data.get_empty_box()
 
   if 'pool' in sr_data:
     sr_data = sr_data + extract_af_info(topology.addressing[sr_data.pool])
@@ -845,7 +844,7 @@ def check_static_routes(idx: int,o_name: str,node: Box,topology: Box) -> None:
     return
 
   if 'vrf' in sr_data or 'vrf' in sr_data.nexthop:
-    if not check_VRF_static_route(sr_data,node,topology):
+    if not check_VRF_static_route(sr_data,node,sr_features):
       return
 
   if sr_data.nexthop.get('node',None):
@@ -868,12 +867,15 @@ def check_static_routes(idx: int,o_name: str,node: Box,topology: Box) -> None:
     for af in log.AF_LIST:
       if af not in sr_data:
         continue
-      for nh_entry in sr_data.nexthop.nhlist:
-        sr_entry = { af: sr_data[af], 'nexthop': nh_entry }
+      for (nh_idx,nh_entry) in enumerate(sr_data.nexthop.nhlist[:sr_features.get('max_nexthop',256)]):
+        sr_entry = data.get_box({ af: sr_data[af], 'nexthop': nh_entry })
+        sr_entry.nexthop.idx = nh_idx
         if 'vrf' in sr_data:
           sr_entry['vrf'] = sr_data.vrf
 
         node.routing[o_name].append(sr_entry)
+  else:
+    sr_data.nexthop.idx = 0
 
   node.routing[o_name][idx] = sr_data
 

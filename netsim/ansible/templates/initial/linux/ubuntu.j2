@@ -140,23 +140,25 @@ network:
 SCRIPT
 {% endfor %}
 
-# Add routes to IPv4 address pools pointing to the first neighbor on the first link
-{% for ifdata in interfaces|default([]) if ifdata.gateway is defined %}
-cat <<SCRIPT > /etc/netplan/04-routes-{{ ifdata.ifname }}.yaml
+{% if routing.static|default([]) %}
+# Add IPv4 static routes
+cat <<SCRIPT > /etc/netplan/04-routes.yaml
 network:
   version: 2
   renderer: networkd
   ethernets:
-    {{ ifdata.ifname }}:
+{%   for intf in routing.static|map(attribute='nexthop.intf',default='')|unique if intf %}
+    {{ intf }}:
       routes:
-{%   for name,pool in pools.items()|default({}) %}
-{%     for af,pfx in pool.items() if af == 'ipv4' and name != 'mgmt' and name != 'router_id' %}
-        - to: {{ pfx }}
-          via: {{ ifdata.gateway.ipv4|ipaddr('address') }}
+{%     for sr_entry in routing.static|default([]) if sr_entry.nexthop.intf|default('') == intf %}
+{%       for sr_af in ['ipv4','ipv6'] if sr_af in sr_entry %}
+      - to: {{ sr_entry[sr_af] }}
+        via: {{ sr_entry.nexthop[sr_af] }}
+{%       endfor %}
 {%     endfor %}
 {%   endfor %}
 SCRIPT
-{% endfor  %}
+{% endif %}
 
 echo -n 'Starting netplan generate ' && date
 netplan generate
