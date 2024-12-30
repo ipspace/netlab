@@ -66,6 +66,12 @@ def test_parse(args: typing.List[str], topology: Box) -> argparse.Namespace:
     dest='batch',
     action='store_true',
     help='Run in batch mode (save validate results into a file)')
+  parser.add_argument(
+    '--steps',
+    dest='steps',
+    action='store',
+    default='create,up,initial,validate',
+    help='List of steps to execute')
   parser_add_verbose(parser)
 
   return parser.parse_args(args)
@@ -198,6 +204,10 @@ def run_test(test: str, args: argparse.Namespace,first: bool) -> None:
     log_result(test,'create',False)
     return
 
+  if 'up' not in args.steps:
+    print('"up" is not in steps, not starting the lab')
+    return
+
   if execute(f"netlab up --snapshot --no-config",args,test=test,log="up",err="up").returncode == 0:
     print("up(ok)",end=" ",flush=True)
     log_result(test,'up',True)
@@ -207,6 +217,10 @@ def run_test(test: str, args: argparse.Namespace,first: bool) -> None:
     run_cleanup(args)
     return
 
+  if 'initial' not in args.steps:
+    print('"initial" not in steps, not configuring the lab')
+    return
+
   if execute(f"netlab initial",args,test=test,log="initial",err="initial").returncode == 0:
     print("config(ok)",end=" ",flush=True)
     log_result(test,'config',True)
@@ -214,6 +228,10 @@ def run_test(test: str, args: argparse.Namespace,first: bool) -> None:
     print_fail("config")
     log_result(test,'config',False)
     run_cleanup(args)
+    return
+
+  if 'validate' not in args.steps:
+    print('"validate" not in steps, skipping validation')
     return
 
   valid_cmd = "netlab validate --skip-missing"
@@ -250,6 +268,7 @@ def main() -> None:
   args = test_parse(sys.argv[1:],topology)
   check_device_provider(args,topology)
   args.limit = (args.limit or args.redo or "[0-9]") + "*.yml"
+  args.steps = os.environ.get('NETLAB_INTEGRATION_STEPS',None) or args.steps
   log_clean = bool(args.redo)
   first_test = True
 
