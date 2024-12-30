@@ -1086,7 +1086,7 @@ def check_mixed_trunks(node: Box, topology: Box) -> None:
 
   err_ifmap = {}
   for intf in node.interfaces:
-    if not intf.get('parent_ifindex') or intf.type != 'vlan_member':  # Skip everything that is not a VLAN subinterface
+    if 'parent_ifindex' not in intf or intf.type != 'vlan_member':  # Skip everything that is not a VLAN subinterface
       continue
 
     parent_intf_list = [ x for x in node.interfaces if x.ifindex == intf.parent_ifindex ]
