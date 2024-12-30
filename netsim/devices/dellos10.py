@@ -33,7 +33,7 @@ Note: Anycast also requires VLT configuration on the switch, which Netlab curren
 """
 def check_anycast_gateways(node: Box) -> None:
   err_data = []
-  for intf in node.get('interfaces',[]):
+  for intf in node.interfaces:
     if intf.type != 'svi' and intf.get('gateway.anycast',None):
       err_data.append(f'Interface {intf.ifname}')
   
@@ -44,31 +44,35 @@ def check_anycast_gateways(node: Box) -> None:
       more_data=err_data,
       node=node)
 
-"""
-check_l3_mlag - check that any MLAG interfaces do not have an IP address (requires a SVI)
-"""
 def check_l3_mlag(node: Box, topology: Box) -> None:
+  err_data = []
   for intf in node.interfaces:
-    if intf.type != 'lag' or 'vlan' in intf or '_mlag' not in intf.lag:  # Look for MLAG interfaces without a VLAN
+    if intf.type != 'lag' or 'vlan' in intf or '_mlag' not in intf.lag:
       continue
     if intf.get('ipv4',False) is not False or intf.get('ipv6',False) is not False:
-      log.error(
-        f"MLAG interface {intf.ifname} on Dell OS10 node {node.name} cannot have IPv4/IPv6 address without a VLAN",
-        category=log.IncorrectType,
-        module='quirks')
+      err_data.append(f'Interface {intf.ifname}')
+
+  if err_data:
+    report_quirk(
+      f"Dell OS10 node {node.name} cannot have an IPv4/IPv6 address on a MLAG interface without a VLAN",
+      quirk='l3_mlag_without_vlan',
+      more_data=err_data,
+      node=node)
 
 class OS10(_Quirks):
 
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
-    check_vlan_ospf(node,node.interfaces,'default')
-    for vname,vdata in node.get('vrfs',{}).items():
-      check_vlan_ospf(node,vdata.get('ospf.interfaces',[]),vname)
+    mods = node.get('module',[])
+    if 'ospf' in mods:
+      check_vlan_ospf(node,node.interfaces,'default')
+      for vname,vdata in node.get('vrfs',{}).items():
+        check_vlan_ospf(node,vdata.get('ospf.interfaces',[]),vname)
     
-    if 'gateway' in node.get('module',[]) and 'anycast' in node.get('gateway',{}):
+    if 'gateway' in mods and 'anycast' in node.get('gateway',{}):
       check_anycast_gateways(node)
 
-    if 'lag' in node.get('module',[]):
+    if 'lag' in mods:
       check_l3_mlag(node,topology)
 
   def check_config_sw(self, node: Box, topology: Box) -> None:
