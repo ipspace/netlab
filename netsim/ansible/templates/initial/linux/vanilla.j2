@@ -51,13 +51,10 @@ ip link set {{ l.ifname }} mtu {{ l.mtu }}
 {% set sr_list = routing.static|default([]) %}
 {% for pfx in sr_list|map(attribute='ipv4',default='')|unique if pfx %}
 {%   if loop.first %}
-set +e
 echo Removing existing IPv4 routes
 {%   endif %}
-ip route del {{ pfx }} 2>/dev/null
-{%   if loop.last %}
-set -e
-{%   endif %}
+while ip route del {{ pfx }} 2>/dev/null; do
+  : ; done
 {% endfor %}
 #
 {% for pfx in sr_list|map(attribute='ipv6',default='')|unique if pfx %}
@@ -65,10 +62,8 @@ set -e
 set +e
 echo Removing existing IPv6 routes
 {%   endif %}
-ip route del {{ pfx }} 2>/dev/null
-{%   if loop.last %}
-set -e
-{%   endif %}
+while ip route del {{ pfx }} 2>/dev/null; do
+  : ; done
 {% endfor %}
 #
 {% macro sr_add(sr_entry) %}
