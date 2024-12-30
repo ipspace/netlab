@@ -340,7 +340,7 @@ Select a subset of the topology -- links and nodes relevant to the current provi
 def select_topology(topology: Box, provider: str) -> Box:
   topology = get_box(topology)                      # Create a copy of the topology
   for n in list(topology.nodes.keys()):             # Remove all nodes not belonging to the current provider
-    if topology.nodes[n].provider != provider:
+    if topology.nodes[n].provider != provider or topology.nodes[n].device == 'none':
       topology.nodes[n].unmanaged = True
 #      topology.nodes.pop(n,None)
 
