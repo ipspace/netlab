@@ -338,7 +338,7 @@ def process_lag_link(link: Box, topology: Box) -> bool:
     create_peer_links(link,topology)
     return False
   else:
-    link.type = 'virtual_lag'                    # Temporary virtual link, removed in module_post_link_transform
+    link._virtual_lag = True                     # Temporary virtual link, removed in module_post_link_transform
     return create_lag_member_links(link,topology)
 
 #
@@ -428,7 +428,7 @@ class LAG(_Module):
   def module_post_link_transform(self, topology: Box) -> None:
     if log.debug_active('lag'):
       print(f'LAG module_post_link_transform: Cleanup "virtual_lag" links')
-    topology.links = [ link for link in topology.links if link.type != 'virtual_lag' ]
+    topology.links = [ link for link in topology.links if '_virtual_lag' not in link ]
 
   """
   After attribute propagation and consolidation, verify that requested features are supported.
