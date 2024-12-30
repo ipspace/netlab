@@ -374,6 +374,7 @@ def validate_images(topology: Box) -> None:
   p_cache: dict = {}
 
   for n_data in topology.nodes.values():
-    execute_node('validate_node_image',n_data,topology)
+    if n_data.device != "none":
+      execute_node('validate_node_image',n_data,topology)
 
   log.exit_on_error()
