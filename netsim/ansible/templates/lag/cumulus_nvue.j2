@@ -1,3 +1,28 @@
+{% if lag.mlag is defined %}
+- set:
+    interface:
+      peerlink:
+        bond:
+          member:
+{% for intf in interfaces if intf.lag.mlag.peergroup is defined %}
+            {{ intf.ifname }}: {}
+{%   for ch in interfaces if ch.lag._parentindex|default(False) == intf.linkindex %}
+            {{ ch.ifname }}: {}
+{%   endfor %}
+{% endfor %}
+        type: peerlink
+      peerlink.{{ lag.mlag.vlan }}:
+        base-interface: peerlink
+        type: sub
+        vlan: {{ lag.mlag.vlan }}
+    mlag:
+      backup:
+        {{ lag.mlag.peer_backup_ip }}: {}
+      enable: on
+      mac-address: {{ lag.mlag.mac | hwaddr('linux') }}
+      peer-ip: {{ lag.mlag.peer }}
+{% endif %}
+
 {% for i in interfaces if i.type == 'lag' %}
 {%  if loop.first %}
 - set:
@@ -5,6 +30,11 @@
 {%  endif %}
       {{ i.ifname }}:
         bond:
+{%  if '_mlag' in i.lag %}
+          mlag:
+            enable: on
+            id: {{ i.lag.ifindex }}
+{%  endif %}
 {%  set _lacp = i.lag.lacp|default(lag.lacp) %}
 {%  if _lacp=='slow' %}
           lacp-rate: slow
