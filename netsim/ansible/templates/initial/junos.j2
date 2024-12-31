@@ -21,7 +21,12 @@ system {
 interfaces {
 {# Handle MTU outside the main interface loop, since it needs to be applied only to the master interface #}
 {% for l in interfaces|default([]) %}
-{%   if l.mtu is defined %}
+{%   if l.mtu is defined and l._vlan_master|default(false) and l._vlan_mtu_override is defined %}
+{#   - i.e., can be 22 bytes more (depending on mode) #}
+  {{ l.junos_interface }} {
+    mtu {{ l.mtu + l._vlan_mtu_override }};
+  }
+{%   elif l.mtu is defined %}
   {{ l.junos_interface }} {
     mtu {{ l.mtu + 14 }};
   }

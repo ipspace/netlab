@@ -47,6 +47,16 @@ def fix_unit_0(node: Box, topology: Box) -> None:
     for intf in node.get('interfaces', []):
       if intf.junos_unit=='0' and intf.junos_interface in base_vlan_interfaces:
         intf._vlan_master = True
+        # define vlan mtu override for VLAN tagging
+        junos_vlan_kind = topology.defaults.devices[node.device].features.vlan.get('model', '')
+        # in case of "flexible vlan tagging", 22 bytes more, depending on link type
+        if junos_vlan_kind == 'router':
+          # for a router, always add it
+          intf._vlan_mtu_override = 22
+        elif junos_vlan_kind == 'l3-switch':
+          # for a l3-switch, add it on vlan mode route or if no vlan structure is defined (flex vlan tagging with native only)
+          if not intf.get('vlan') or intf.get('vlan', {}).get('mode', '') == 'route':
+            intf._vlan_mtu_override = 22
   
   # need to append .0 unit trick to the interface list copied into vrf->ospf
   if 'vrf' in mods and 'ospf' in mods:
