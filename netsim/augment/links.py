@@ -12,6 +12,7 @@ from ..utils import log,strings
 from .. import data
 from ..data.validate import validate_attributes,get_object_attributes
 from ..data.types import must_be_string,must_be_list,must_be_dict,must_be_id
+from ..data.global_vars import get_const
 from . import devices,addressing
 
 VIRTUAL_INTERFACE_TYPES: typing.Final[typing.List[str]] = [
@@ -729,21 +730,30 @@ Calculate interface description:
 * A -> B when a link has two nodes
 * A -> [ B,C,D ] when a link has more than two nodes
 """
+def create_ifname(node_name: str, ngb_list: typing.List[str],p2p_OK: bool = True) -> str:
+  if not ngb_list:
+    return f'{node_name} -> stub'
+
+  if len(ngb_list) == 1 and p2p_OK:
+    return f'{node_name} -> {ngb_list[0]}'
+
+  max_ngb = get_const('ifname.neighbors',5)
+  ngb_text = ",".join(ngb_list[:max_ngb]) + ('' if len(ngb_list) <= max_ngb else '...')
+  ifname = f'{node_name} -> [{ngb_text}]'
+  maxlen = get_const('ifname.maxlength',255)
+  if len(ifname) >= maxlen:
+    ifname = ifname[:maxlen-3]+'...'
+
+  return ifname
+
 def set_interface_name(ifdata: Box, link: Box, ifcnt: int) -> None:
   if 'name' in link:
     ifdata.name = link.name
     return
 
   node_name = link.interfaces[ifcnt].node
-  if len(link.interfaces) == 1:
-    ifdata.name = f'{node_name} -> stub'
-    return
-
   n_list = [ link.interfaces[i].node for i in range(0,len(link.interfaces)) if i != ifcnt ]
-  if len(n_list) == 1:
-    ifdata.name = f'{node_name} -> {n_list[0]}'
-  else:
-    ifdata.name = f'{node_name} -> [{",".join(list(n_list))}]'
+  ifdata.name = create_ifname(node_name,n_list)
 
 """
 set_parent_interface -- set the parent interface and IP address for the IPv4 unnumbered interfaces

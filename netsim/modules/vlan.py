@@ -906,7 +906,7 @@ def set_svi_neighbor_list(node: Box, topology: Box) -> None:
       if ifdata.neighbors:
         if ' -> ' in ifdata.name:
           ifdata.name = ifdata.name.split(' -> ')[0]
-        ifdata.name = ifdata.name + " -> [" + ",".join([ n.node for n in ifdata.neighbors]) + "]"
+        ifdata.name = links.create_ifname(ifdata.name,[ n.node for n in ifdata.neighbors],p2p_OK=False)
 
 """
 map_trunk_vlans: build a list of VLAN IDs on trunk interfaces
