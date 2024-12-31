@@ -392,8 +392,12 @@ class LAG(_Module):
           log.error(f'Node {node.name} does not support passive LACP configured on interface {i.ifname}',
             category=log.IncorrectAttr,
             module='lag')
-        if i.lag.get('mlag',False) is True:
+        if i.lag.get('_mlag',False) is True:
           uses_mlag = True
+          if 'ipv4' in i or 'ipv6' in i:
+            log.error(f'Node {node.name}: IP address directly on MLAG interface {i.ifname} is not supported, use a VLAN instead',
+              category=log.IncorrectAttr,
+              module='lag')
     
     if uses_mlag and not has_peerlink:
       log.error(f'Node {node.name} uses MLAG but has no peerlink (lag with {PEERLINK_ID_ATT}) configured',
