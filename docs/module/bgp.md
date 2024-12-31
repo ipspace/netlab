@@ -163,7 +163,7 @@ Additional per-node BGP configuration parameters include:
 * **bgp.advertise_loopback** -- when set to `False`, the IP prefixes configured on loopback interfaces are not advertised in BGP. See also [*Advanced Global Configuration Parameters*](#advanced-global-configuration-parameters).
 * **bgp.community** -- override global BGP community propagation defaults for this node. See *[](bgp-community-propagation)* for more details.
 * **bgp.import** -- [import (redistribute) IPv4 and IPv6 routes](routing_import) into global BGP instance (default: **false**)
-* **bgp.local_as** -- the autonomous system used on all EBGP sessions. See *[](bgp-ibgp-localas)* on how this could result in **IBGP** sessions as well.
+* **bgp.local_as** -- the autonomous system used on all EBGP sessions. See *[IBGP local-as](bgp-ibgp-localas)* on how this could result in **IBGP** sessions as well.
 * **bgp.next_hop_self** -- Use *next-hop-self* on IBGP sessions. This parameter can also be specified as a global value; the system default is **true**.
 * **bgp.originate** -- a list of additional prefixes to advertise. The advertised prefixes are supported with a static route pointing to *Null0*.
 * **bgp.router_id** -- Set a static router ID. The default **router_id** is taken from the IPv4 address of the loopback interface or the **router_id** address pool if the device does not have a loopback interface or there is no usable IPv4 address on the loopback interface.
