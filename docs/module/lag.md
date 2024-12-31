@@ -83,7 +83,8 @@ The above diagram illustrates the 3 supported topologies:
 * 2:2 dual mlag between 2 pairs of nodes (4 nodes in total)
 
 MLAG related parameters:
-* **lag.mlag.peerlink**: Used on peerlink to configure a unique ID for the pair of switches providing the MLAG. Can be set to *True* for auto-id generation, or an integer (that must be globally unique)
+* **lag.mlag.mac**: Used at node or interface level to configure the MAC address for the peerlink. *Netlab* can auto-generate this, so it is normally not necessary to set this
+* **lag.mlag.peergroup**: Used on peerlink to configure a unique ID for the pair of switches providing the MLAG. Can be set to *True* for auto-id generation, or an integer (that must be globally unique)
 
 A simple example:
 ```
@@ -94,7 +95,7 @@ groups:
   device: dellos10
  hosts:
   members: [h1,h2]
-  device: frr          # 'linux' does not support the lag module yet
+  device: frr           # 'linux' does not support the lag module yet
 
 links:
 - lag:
@@ -104,5 +105,5 @@ links:
 
 # Inter-switch peer link(s) for MLAG sync
 - lag:
-   members: [s1-s2]    # Note that multiple physical links are allowed here
-   mlag.peerlink: True # (also) used to derive a unique MAC address for this group of MLAG peers
+   members: [s1-s2]     # Note that multiple physical links are allowed here
+   mlag.peergroup: True # (also) used to derive a unique MAC address for this group of MLAG peers
