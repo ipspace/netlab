@@ -44,21 +44,6 @@ def check_anycast_gateways(node: Box) -> None:
       more_data=err_data,
       node=node)
 
-def check_l3_mlag(node: Box, topology: Box) -> None:
-  err_data = []
-  for intf in node.interfaces:
-    if intf.type != 'lag' or 'vlan' in intf or '_mlag' not in intf.lag:
-      continue
-    if intf.get('ipv4',False) is not False or intf.get('ipv6',False) is not False:
-      err_data.append(f'Interface {intf.ifname}')
-
-  if err_data:
-    report_quirk(
-      f"Dell OS10 node {node.name} cannot have an IPv4/IPv6 address on a MLAG interface without a VLAN",
-      quirk='l3_mlag_without_vlan',
-      more_data=err_data,
-      node=node)
-
 class OS10(_Quirks):
 
   @classmethod
@@ -71,9 +56,6 @@ class OS10(_Quirks):
     
     if 'gateway' in mods and 'anycast' in node.get('gateway',{}):
       check_anycast_gateways(node)
-
-    if 'lag' in mods:
-      check_l3_mlag(node,topology)
 
   def check_config_sw(self, node: Box, topology: Box) -> None:
     need_ansible_collection(node,'dellemc.os10')
