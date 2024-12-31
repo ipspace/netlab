@@ -332,7 +332,7 @@ def populate_mlag_peer(node: Box, intf: Box, topology: Box) -> None:
   if 'ip' in mlag_peer:
     if mlag_peer.ip == 'linklocal':
       _target.mlag.peer = 'linklocal'
-    elif 'loopback' in mlag_peer.ip:
+    elif 'loopback' in mlag_peer.ip:                                        # Could check if an IGP is configured
       ip = peer.get(mlag_peer.ip,None)
       if ip:
         _target.mlag.peer = str(netaddr.IPNetwork(ip).ip)
