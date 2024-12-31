@@ -1447,7 +1447,7 @@ class VLAN(_Module):
       intf.pop('_vlan_saved_neighbors',None)
       intf.name = links.get_interface_description(node.name,intf)
       if intf.get('vlan.access',None):
-        if intf.get('parent_ifindex',None):
+        if 'parent_ifindex' in intf:
           intf.name = f'[SubIf VLAN {intf.vlan.access}] {intf.name}'
         else:
           intf.name = f'[Access VLAN {intf.vlan.access}] {intf.name}'
