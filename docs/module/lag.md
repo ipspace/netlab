@@ -20,7 +20,8 @@ LAG is currently supported on these platforms:
 
 The following parameters can be set globally, per node or per LAG link:
 
-* **lag.mode**: lag mode, one of **802.3ad** (IEEE LAG standard with LACP, default value), **balance-xor** (Linux non-LACP bonding mode) or **active-backup**
+* **lag.mode**: lag mode, one of **802.3ad** (IEEE LAG standard with LACP, default value), **balance-xor**, **balance-rr** or **broadcast** (Linux non-LACP bonding modes).
+                Most platforms only support **802.3ad**, it is strongly recommended to use this default mode
 * **lag.lacp**: LACP protocol interval: **fast** (1-second LACP timer, default value), **slow** (30-second LACP timer) or **off** (LACP is disabled).
                 Only relevant if **lag.mode** is set to **802.3ad**, else ignored
 
