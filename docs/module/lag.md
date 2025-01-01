@@ -20,10 +20,10 @@ LAG is currently supported on these platforms:
 
 The following parameters can be set globally, per node or per LAG link:
 
-* **lag.mode**: lag mode (deprecated), one of **802.3ad** (IEEE LAG standard with LACP, default value), **balance-xor**, **balance-rr** or **broadcast** (Linux non-LACP bonding modes).
+* **lag.mode**: lag mode (deprecated), one of **802.3ad** (IEEE LAG standard with LACP, default value) or **balance-xor** (Linux non-LACP bonding mode).
                 Most platforms only support **802.3ad**, other mode values are ignored by *Netlab*
 * **lag.lacp**: LACP protocol interval: **fast** (1-second LACP timer, default value), **slow** (30-second LACP timer) or **off** (LACP is disabled).
-                Only relevant if **lag.mode** is set to **802.3ad**, else ignored
+                Only relevant if **lag.mode** is set to **802.3ad**, else **off** is implied
 
 ```{tip}
 The  _link down_ condition is not easily detectable in a virtual environment. You should always use LACP.
