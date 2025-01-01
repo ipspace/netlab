@@ -64,6 +64,7 @@ if systemctl is-active --quiet lldpd.service; then
 else
   if "$NEED_APT_UPDATE"; then
     apt-get update -qq
+    NEED_APT_UPDATE=
   fi
   apt-get install -qq lldpd
 fi
@@ -114,29 +115,65 @@ network:
 SCRIPT
 {% endif %}
 
-# Interface addressing
-{% for l in interfaces|default([]) if (l.ipv4 is defined or l.ipv6 is defined or l.dhcp is defined)%}
+# Interface addressing and bonds
+{% for l in interfaces|default([]) if (l.ipv4 is defined or l.ipv6 is defined or l.dhcp is defined or l.type in ['lag','bond'])%}
 cat <<SCRIPT > /etc/netplan/03-eth-{{ l.ifname }}.yaml
 network:
   version: 2
   renderer: networkd
   ethernets:
+{%   if l.type in ['lag','bond'] %}
+{%     if l.type=='lag' %}
+{%       for i in interfaces if i.lag._parentindex|default(0)==l.linkindex %}
+    {{ i.ifname }}:
+      dhcp4: no
+{%       endfor %}
+{%     elif l.bonding.members is defined %}
+{%       for m in l.bonding.members %}
+    {{ m }}:
+      dhcp4: no
+{%       endfor %}
+{%     endif %}
+  bonds:
     {{ l.ifname }}:
+      interfaces:
+{%     if l.type=='lag' %}
+{%       for i in interfaces if i.lag._parentindex|default(0)==l.linkindex %}
+        - {{ i.ifname }}
+{%       endfor %}
+{%     elif l.bonding.members is defined %}
+{%       for m in l.bonding.members %}
+        - {{ m }}
+{%       endfor %}
+{%     endif %}
+{%     set _m = l.lag.mode|default(l.bonding.mode|default("802.3ad")) %}
+      parameters:
+        mode: {{ _m }}
+{%     if _m=='802.3ad' %}
+        lacp-rate: {{ l.lag.lacp|default('fast') }}
+{%     elif l.bonding.primary is defined %}
+        primary: {{ l.bonding.primary }}
+{%     endif %}
+        mii-monitor-interval: 100
+        transmit-hash-policy: encap3+4
+{%   else %}
+    {{ l.ifname }}:
+{%     if l.mtu is defined %}
+      mtu: {{ l.mtu }}
+{%     endif %}
+{%   endif %}
 {%   if l.dhcp.client.ipv4|default(False) %}
       dhcp4: true
 {%   endif %}
 {%   if l.dhcp.client.ipv6|default(False) %}
       dhcp6: true
 {%   endif %}
-{%   for af in ('ipv4','ipv6') if af in l %}
+{%   for af in ('ipv4','ipv6') if af in l and l[af] is string %}
 {%     if loop.first %}
       addresses:
 {%     endif %}
         - {{ l[af] }}
 {%   endfor %}
-{%   if l.mtu is defined %}
-      mtu: {{ l.mtu }}
-{%   endif %}
 SCRIPT
 {% endfor %}
 

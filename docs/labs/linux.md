@@ -1,3 +1,4 @@
+(generic-linux-devices)=
 # Generic Linux Devices
 
 You can run Linux hosts or routers in virtual machines or containers. The default image used for a Linux virtual machine is Ubuntu 20.04, the default container image is Python 3.9 container running on Alpine Linux.
@@ -144,7 +145,7 @@ _netlab_ initial configuration script will skip Ubuntu package installation if i
 The initial configuration process (**[netlab initial](../netlab/initial.md)**) does not rely on commands executed within Linux containers:
 
 * The `/etc/hosts` file is generated during the **[netlab create](../netlab/create.md)** process from the ```templates/provider/clab/frr/hosts.j2``` template (see [](clab-config-template)).
-* Interface IP addresses and static routes to the default gateway (see [](linux-routes)) are configured with **ip** commands executed on the Linux host but within the container network namespace.
+* Interface IP addresses, static routes to the default gateway (see [](linux-routes)) and any lag bonding interfaces are configured with **ip** commands executed on the Linux host but within the container network namespace.
 * Static default route points to the management interface.
 
 You can, therefore, use any container image as a Linux node.

@@ -201,7 +201,7 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
   members = normalized_members(l,topology)        # Build list of normalized member links
   if not members:
     return
-  node_count: typing.Dict[str,int] = {}                  # Count how many times nodes are used
+  node_count: typing.Dict[str,int] = {}           # Count how many times nodes are used
   is_mlag, dual_mlag, one_side = analyze_lag(members,node_count)
   if one_side=="<error>":                         # Check for errors
     return
@@ -222,9 +222,6 @@ def create_lag_member_links(l: Box, topology: Box) -> None:
       if not check_lag_config(node,l._linkname,topology):
         return
     elif is_mlag:
-      lag_mode = l.get('lag.mode',topology.get('lag.mode',"802.3ad"))
-      if lag_mode == "active-backup":             # Exception: active-backup lag to 2 nodes
-        continue                                  # Skip adding the lag interface on M-side
       if not check_mlag_support(node,l._linkname,topology):
         return
       ifatts.lag._mlag = True                     # Set internal flag
@@ -387,12 +384,13 @@ class LAG(_Module):
         has_peerlink = True
       elif i.type=='lag':
         i.lag = node.get('lag',{}) + i.lag  # Merge node level settings with interface overrides
+        # i.pop('mtu',None)                 # Next PR: Remove any MTU settings - inherited from members
         lacp_mode = i.get('lag.lacp_mode')  # Inheritance copying is done elsewhere
         if lacp_mode=='passive' and not features.lag.get('passive',False):
           log.error(f'Node {node.name} does not support passive LACP configured on interface {i.ifname}',
             category=log.IncorrectAttr,
             module='lag')
-        if i.lag.get('mlag',False) is True:
+        if i.lag.get('_mlag',False) is True:
           uses_mlag = True
     
     if uses_mlag and not has_peerlink:

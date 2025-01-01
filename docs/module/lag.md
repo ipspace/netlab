@@ -12,8 +12,9 @@ LAG is currently supported on these platforms:
 | Aruba AOS-CX          | ✅ | ✅ | ✅ | ✅ |
 | Cumulus Linux 4.x     | ✅ | ✅ | ❌  | ❌ |
 | Cumulus 5.x (NVUE)    | ✅ | ✅ | ❌  | ❌ |
-| Dell OS10             | ✅ | ✅ | ✅ | ✅ |
+| Dell OS10             | ✅ | ✅ | ✅  | ✅ |
 | FRR                   | ✅ | ✅ | ❌  | ❌ |
+| Generic Linux hosts   | ✅ | ✅ | ❌  | ❌ |
 
 ## Parameters
 
@@ -32,7 +33,7 @@ The following parameters can be set on individual links:
 
 * **lag.members**: Mandatory list of links that form the LAG. It uses the [same format as the topology **links** list](link-formats).
 * **lag.ifindex**: Optional parameter that controls the naming of the LAG (bonding, port-channel) interface.
-* **lag.mlag**: Optional Boolean or dict with peer link parameters; see [below](mlag)
+* **lag.mlag**: Optional dict with peer link parameters; see [below](mlag)
 
 This configuration module creates a virtual link with the link type set to **lag** between the **lag.members** and appends the links described in the **lag.members** list to the topology **links** list.
 
@@ -65,6 +66,10 @@ links:
     r2:
      ifindex: 50
 ```
+
+### Caveat: Multi-provider Labs
+
+There is a known issue with multi-provider labs, where 'lag' type links get converted into 'lan'; this breaks the lag module
 
 (mlag)=
 ## Multi-chassis Link Aggregation (MLAG)

@@ -1,0 +1,56 @@
+message: |
+  The device under test is a pair of switches with a pair of links connected to 2 Linux hosts.
+  The Linux hosts are using active-standby bonding, which doesn't require any special support from the switches
+  (and technically isn't "link aggregation")
+
+  The hosts should be able to ping each other
+
+defaults.device: frr
+
+plugin: [ bonding ]     # To be created
+
+bonding.mode: active-backup
+
+groups:
+  _auto_create: true
+  switches:
+    members: [ s1, s2 ]
+    module: [vlan]      # No 'lag' module support enabled
+  hosts:
+    members: [ h1, h2 ]
+    device: linux
+
+vlans:
+  red:
+    mode: bridge
+
+links:
+- s1:
+  s2:
+  vlan.trunk: [red]
+- h1:
+    bonding.ifindex: 1
+  s1:
+  vlan.access: red
+- h1:
+    bonding.ifindex: 1
+  s2:
+  vlan.access: red
+- h2:
+    bonding.ifindex: 1
+  s1:
+  vlan.access: red
+- h2:
+    bonding:
+      ifindex: 1
+      primary: True   # Prefer s2 as active switch for h2
+  s2:
+  vlan.access: red
+
+validate:
+  ping:
+    description: Pinging H2 from H1
+    nodes: [h1]
+    wait_msg: Waiting for STP to enable the ports
+    wait: 45
+    plugin: ping('h1',af='ipv4')

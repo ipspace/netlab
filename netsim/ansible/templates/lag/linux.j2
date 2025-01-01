@@ -1,0 +1,24 @@
+{% if node_provider=='clab' or netlab_linux_distro|default("") != "ubuntu" %}
+#!/bin/bash
+#
+set -e # Exit immediately when any command fails
+#
+# Bond devices are created by 'initial' module - add members
+#
+{% for l in interfaces if 'lag' in l and l.type not in ['lag','bond'] %}
+{%   if l.type=='p2p' %}
+{%     if node_provider!='clab' %}
+ethtool -s {{ l.ifname }} autoneg off speed 1000 duplex full
+{%     endif %}
+ip link set dev {{ l.ifname }} down
+ip link set dev {{ l.ifname }} master {%
+       for i in interfaces if i.type=='lag' and i.linkindex==l.lag._parentindex %}{{ i.ifname }}
+{%     endfor %}
+{%   endif %}
+ip link set dev {{ l.ifname }} up
+{% endfor %}
+{% for l in interfaces if 'lag' in l and l.type in ['lag','bond'] %}
+ip link set dev {{ l.ifname }} up
+{% endfor %}
+exit 0
+{% endif %}
