@@ -33,7 +33,7 @@ Note: Anycast also requires VLT configuration on the switch, which Netlab curren
 """
 def check_anycast_gateways(node: Box) -> None:
   err_data = []
-  for intf in node.get('interfaces',[]):
+  for intf in node.interfaces:
     if intf.type != 'svi' and intf.get('gateway.anycast',None):
       err_data.append(f'Interface {intf.ifname}')
   
@@ -48,11 +48,13 @@ class OS10(_Quirks):
 
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
-    check_vlan_ospf(node,node.interfaces,'default')
-    for vname,vdata in node.get('vrfs',{}).items():
-      check_vlan_ospf(node,vdata.get('ospf.interfaces',[]),vname)
+    mods = node.get('module',[])
+    if 'ospf' in mods:
+      check_vlan_ospf(node,node.interfaces,'default')
+      for vname,vdata in node.get('vrfs',{}).items():
+        check_vlan_ospf(node,vdata.get('ospf.interfaces',[]),vname)
     
-    if 'gateway' in node.get('module',[]) and 'anycast' in node.get('gateway',{}):
+    if 'gateway' in mods and 'anycast' in node.get('gateway',{}):
       check_anycast_gateways(node)
 
   def check_config_sw(self, node: Box, topology: Box) -> None:

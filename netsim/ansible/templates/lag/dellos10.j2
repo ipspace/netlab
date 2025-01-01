@@ -13,7 +13,11 @@ vlt-domain {{ intf.lag.mlag.peergroup }}
 {% for intf in interfaces if intf.type == 'lag' %}
 interface {{ intf.ifname }}
 {%  if '_mlag' in intf.lag %}
- description "{{ intf.name }} in vlt-port-channel {{ intf.lag.ifindex }}"
+{%   set desc = intf.name.replace(",", "\\\\,") + " in vlt-port-channel " + intf.lag.ifindex|string %}
+ description "{{ desc[:255] }}"
+{%  if 'vlan' not in intf %}
+ switchport mode access
+{%  endif %}
  vlt-port-channel {{ intf.lag.ifindex }}
 {% else %}
  description "{{ intf.name }}"
@@ -25,7 +29,8 @@ interface {{ intf.ifname }}
       'active' if intf.lag.lacp_mode|default('') == 'active' else 
       'passive' %}
 interface {{ ch.ifname }}
- description "{{ ch.name }} in channel-group {{ intf.lag.ifindex }}"
+{%   set desc = ch.name.replace(",", "\\\\,") + " in channel-group " + intf.lag.ifindex|string %}
+ description "{{ desc[:255] }}"
  channel-group {{ intf.lag.ifindex }} mode {{ _lag_mode }}
  lacp rate {{ 'fast' if intf.lag.lacp|default('fast') == 'fast' else 'normal' }}
 !
