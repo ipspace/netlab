@@ -190,7 +190,7 @@ def create_lag_member_links(l: Box, topology: Box) -> bool:
   return True
 
 """
-create_lag_interfaces -- create interfaces of type "lag" for each link of type virtual_lag
+create_lag_interfaces -- create interfaces of type "lag" for each link marked as _virtual_lag
 """
 def create_lag_interfaces(l: Box, topology: Box) -> None:
 
