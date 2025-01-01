@@ -22,6 +22,7 @@ The following parameters can be set globally, per node or per LAG link:
 
 * **lag.mode**: lag mode, one of **802.3ad** (IEEE LAG standard with LACP, default value), **balance-xor** (Linux non-LACP bonding mode) or **active-backup**
 * **lag.lacp**: LACP protocol interval: **fast** (1-second LACP timer, default value), **slow** (30-second LACP timer) or **off** (LACP is disabled).
+                Only relevant if **lag.mode** is set to **802.3ad**, else ignored
 
 ```{tip}
 The  _link down_ condition is not easily detectable in a virtual environment. You should always use LACP.
