@@ -5,12 +5,12 @@
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [h1]
 ok: [h2]
+ok: [h1]
 ok: [h3]
 ok: [h4]
-ok: [s2]
 ok: [s1]
+ok: [s2]
 
 TASK [Find device readiness script] ********************************************
 ok: [h1]
@@ -30,26 +30,29 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/vjunos-sw
 TASK [Wait for SSH server] *****************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/vm-clab-ssh-check.yml for s1, s2
 
+TASK [Check if 'sshpass' is installed] *****************************************
+ok: [s1 -> localhost]
+
 TASK [Execute local ssh command to check vjunos-switch readiness] **************
 FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (40 retries left).
 FAILED - RETRYING: [s2 -> localhost]: Execute local ssh command to check vjunos-switch readiness (40 retries left).
 FAILED - RETRYING: [s2 -> localhost]: Execute local ssh command to check vjunos-switch readiness (39 retries left).
 FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (39 retries left).
-changed: [s2 -> localhost]
-changed: [s1 -> localhost]
+ok: [s2 -> localhost]
+ok: [s1 -> localhost]
 
 TASK [Confirm s1 SSH server works] *********************************************
-ok: [s1] => 
-  msg: Node s1 is ready.
 ok: [s2] => 
   msg: Node s2 is ready.
+ok: [s1] => 
+  msg: Node s1 is ready.
 
 TASK [Wait for ge-0/0/0 interface] *********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/vjunos-switch.yml for s1, s2
 
 TASK [Wait for ge-0/0/0 to appear] *********************************************
-ok: [s2]
 ok: [s1]
+ok: [s2]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, h3, h4, s1, s2
@@ -59,16 +62,16 @@ ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
-ok: [s1]
 ok: [s2]
+ok: [s1]
 
 TASK [Find configuration template for initial] *********************************
 ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
-ok: [s1]
 ok: [s2]
+ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [h1] => 
@@ -84,6 +87,7 @@ ok: [h1] =>
     #  /etc/hosts file is generated as a clab bind.
     #
     set -e
+  
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
     # Disable IPv4 and IPv6 forwarding
@@ -91,7 +95,7 @@ ok: [h1] =>
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
     #
-    # Interface addressing
+    # Interface addressing, create any bond devices
     #
     ip link set dev eth1 up
     set +e
@@ -100,9 +104,9 @@ ok: [h1] =>
     ip addr add 172.31.1.1/24 dev eth1
     ip link set eth1 mtu 1500
     #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
     #
     #
     # Print the final routing table
@@ -120,6 +124,7 @@ ok: [h2] =>
     #  /etc/hosts file is generated as a clab bind.
     #
     set -e
+  
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
     # Disable IPv4 and IPv6 forwarding
@@ -127,7 +132,7 @@ ok: [h2] =>
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
     #
-    # Interface addressing
+    # Interface addressing, create any bond devices
     #
     ip link set dev eth1 up
     set +e
@@ -136,9 +141,9 @@ ok: [h2] =>
     ip addr add 172.31.1.2/24 dev eth1
     ip link set eth1 mtu 1500
     #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
     #
     #
     # Print the final routing table
@@ -156,6 +161,7 @@ ok: [h3] =>
     #  /etc/hosts file is generated as a clab bind.
     #
     set -e
+  
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
     # Disable IPv4 and IPv6 forwarding
@@ -163,7 +169,7 @@ ok: [h3] =>
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
     #
-    # Interface addressing
+    # Interface addressing, create any bond devices
     #
     ip link set dev eth1 up
     set +e
@@ -172,9 +178,9 @@ ok: [h3] =>
     ip addr add 172.31.1.3/24 dev eth1
     ip link set eth1 mtu 1500
     #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
     #
     #
     # Print the final routing table
@@ -192,6 +198,7 @@ ok: [h4] =>
     #  /etc/hosts file is generated as a clab bind.
     #
     set -e
+  
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
     # Disable IPv4 and IPv6 forwarding
@@ -199,7 +206,7 @@ ok: [h4] =>
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
     #
-    # Interface addressing
+    # Interface addressing, create any bond devices
     #
     ip link set dev eth1 up
     set +e
@@ -208,9 +215,9 @@ ok: [h4] =>
     ip addr add 172.31.1.4/24 dev eth1
     ip link set eth1 mtu 1500
     #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
     #
     #
     # Print the final routing table
@@ -220,14 +227,14 @@ ok: [s2] =>
     initial configuration for s2
     =========================================
     system {
-      host-name s2
-        static-host-mapping {
-            h1 inet 172.31.1.1;
-            h2 inet 172.31.1.2;
-            h3 inet 172.31.1.3;
-            h4 inet 172.31.1.4;
-            s1 inet 10.0.0.5;
-        }
+      host-name s2;
+      static-host-mapping {
+        h1 inet 172.31.1.1;
+        h2 inet 172.31.1.2;
+        h3 inet 172.31.1.3;
+        h4 inet 172.31.1.4;
+        s1 inet 10.0.0.5;
+      }
     }
   
   
@@ -237,44 +244,7 @@ ok: [s2] =>
   
   
   
-      ge-0/0/0 {
-        flexible-vlan-tagging;
-        native-vlan-id 1000;
-      }
   
-      ge-0/0/0.0 {
-        vlan-id 1000;
-      }
-  
-  
-  
-  
-  
-  
-  
-      ge-0/0/1 {
-        flexible-vlan-tagging;
-        native-vlan-id 1000;
-      }
-  
-      ge-0/0/1.0 {
-        vlan-id 1000;
-      }
-  
-  
-  
-  
-  
-  
-  
-      ge-0/0/2 {
-        flexible-vlan-tagging;
-        native-vlan-id 1001;
-      }
-  
-      ge-0/0/2.0 {
-        vlan-id 1001;
-      }
   
   
   
@@ -311,24 +281,27 @@ ok: [s2] =>
   
       }
       ge-0/0/0.0 {
+        description "s2 -> s1";
   
   
       }
       ge-0/0/1.0 {
+        description "[Access VLAN red] s2 -> h2";
   
   
       }
       ge-0/0/2.0 {
+        description "[Access VLAN blue] s2 -> h4";
   
   
       }
-      irb.1000 {
-        description "VLAN red (1000) -> [s1,h1,h2]";
+      irb.700 {
+        description "VLAN red (700) -> [s1,h1,h2]";
   
   
       }
-      irb.1001 {
-        description "VLAN blue (1001) -> [h3,s1,h4]";
+      irb.701 {
+        description "VLAN blue (701) -> [h3,s1,h4]";
   
   
       }
@@ -346,14 +319,14 @@ ok: [s1] =>
     initial configuration for s1
     =========================================
     system {
-      host-name s1
-        static-host-mapping {
-            h1 inet 172.31.1.1;
-            h2 inet 172.31.1.2;
-            h3 inet 172.31.1.3;
-            h4 inet 172.31.1.4;
-            s2 inet 10.0.0.6;
-        }
+      host-name s1;
+      static-host-mapping {
+        h1 inet 172.31.1.1;
+        h2 inet 172.31.1.2;
+        h3 inet 172.31.1.3;
+        h4 inet 172.31.1.4;
+        s2 inet 10.0.0.6;
+      }
     }
   
   
@@ -363,44 +336,7 @@ ok: [s1] =>
   
   
   
-      ge-0/0/0 {
-        flexible-vlan-tagging;
-        native-vlan-id 1000;
-      }
   
-      ge-0/0/0.0 {
-        vlan-id 1000;
-      }
-  
-  
-  
-  
-  
-  
-  
-      ge-0/0/1 {
-        flexible-vlan-tagging;
-        native-vlan-id 1000;
-      }
-  
-      ge-0/0/1.0 {
-        vlan-id 1000;
-      }
-  
-  
-  
-  
-  
-  
-  
-      ge-0/0/2 {
-        flexible-vlan-tagging;
-        native-vlan-id 1001;
-      }
-  
-      ge-0/0/2.0 {
-        vlan-id 1001;
-      }
   
   
   
@@ -437,24 +373,27 @@ ok: [s1] =>
   
       }
       ge-0/0/0.0 {
+        description "s1 -> s2";
   
   
       }
       ge-0/0/1.0 {
+        description "[Access VLAN red] s1 -> h1";
   
   
       }
       ge-0/0/2.0 {
+        description "[Access VLAN blue] s1 -> h3";
   
   
       }
-      irb.1000 {
-        description "VLAN red (1000) -> [s2,h1,h2]";
+      irb.700 {
+        description "VLAN red (700) -> [s2,h1,h2]";
   
   
       }
-      irb.1001 {
-        description "VLAN blue (1001) -> [h3,s2,h4]";
+      irb.701 {
+        description "VLAN blue (701) -> [h3,s2,h4]";
   
   
       }
@@ -470,41 +409,60 @@ ok: [s1] =>
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [h1]
+ok: [h4]
 ok: [h2]
 ok: [h3]
-ok: [h4]
 ok: [s1]
 ok: [s2]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for h1, h2, h3, h4
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2, h3, h4
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for s1, s2
 
-TASK [set_fact] ****************************************************************
+TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
 
-TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+TASK [Create a temporary file for the rendered script] *************************
 changed: [h1 -> localhost]
-changed: [h3 -> localhost]
-changed: [h2 -> localhost]
 changed: [h4 -> localhost]
+changed: [h2 -> localhost]
+changed: [h3 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-wVGHClBi-h1.sh] **********
+TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h3 -> localhost]
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 changed: [h4 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [file] ********************************************************************
-changed: [h4 -> localhost]
+TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+
+TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+
+TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h4 -> localhost]
 changed: [h3 -> localhost]
+
+TASK [Remove temporary file /tmp/h1_initial-4ptdk1kd.sh] ***********************
+changed: [h1 -> localhost]
+changed: [h3 -> localhost]
+changed: [h2 -> localhost]
+changed: [h4 -> localhost]
 
 TASK [junos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/junos.j2] ***
+[WARNING]: mgd: statement has no contents; ignored
 changed: [s2]
 changed: [s1]
 
@@ -533,12 +491,12 @@ ok: [s1] =>
   
     vlans {
       blue {
-        vlan-id 1001;
+        vlan-id 701;
   
   
       }
       red {
-        vlan-id 1000;
+        vlan-id 700;
   
   
       }
@@ -559,7 +517,7 @@ ok: [s1] =>
       }
   
       ge-0/0/0 {
-        native-vlan-id 1000;
+        native-vlan-id 700;
       }
   
   
@@ -594,12 +552,12 @@ ok: [s2] =>
   
     vlans {
       blue {
-        vlan-id 1001;
+        vlan-id 701;
   
   
       }
       red {
-        vlan-id 1000;
+        vlan-id 700;
   
   
       }
@@ -620,7 +578,7 @@ ok: [s2] =>
       }
   
       ge-0/0/0 {
-        native-vlan-id 1000;
+        native-vlan-id 700;
       }
   
   
@@ -650,26 +608,26 @@ ok: [s2] =>
     }
 
 TASK [Find configuration deployment deploy_script for vlan] ********************
-ok: [s1]
 ok: [s2]
+ok: [s1]
 
 TASK [Deploy vlan configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for s1, s2
 
 TASK [junos_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/vjunos-switch.j2] ***
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-h3                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-h4                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-s1                         : ok=23   changed=3    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-s2                         : ok=23   changed=3    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+h1                         : ok=13   changed=4    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
+h2                         : ok=13   changed=4    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
+h3                         : ok=13   changed=4    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
+h4                         : ok=13   changed=4    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
+s1                         : ok=24   changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+s2                         : ok=23   changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
 
 
 

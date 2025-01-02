@@ -22,10 +22,12 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/vjunos-sw
 TASK [Wait for SSH server] *****************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/vm-clab-ssh-check.yml for s1
 
+TASK [Check if 'sshpass' is installed] *****************************************
+ok: [s1 -> localhost]
+
 TASK [Execute local ssh command to check vjunos-switch readiness] **************
 FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (40 retries left).
-FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (39 retries left).
-changed: [s1 -> localhost]
+ok: [s1 -> localhost]
 
 TASK [Confirm s1 SSH server works] *********************************************
 ok: [s1] => 
@@ -64,6 +66,7 @@ ok: [h1] =>
     #  /etc/hosts file is generated as a clab bind.
     #
     set -e
+  
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
     # Disable IPv4 and IPv6 forwarding
@@ -71,7 +74,7 @@ ok: [h1] =>
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
     #
-    # Interface addressing
+    # Interface addressing, create any bond devices
     #
     ip link set dev eth1 up
     set +e
@@ -80,32 +83,24 @@ ok: [h1] =>
     ip addr add 172.16.0.1/24 dev eth1
     ip link set eth1 mtu 1500
     #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
     #
-    # lan prefix: 172.16.0.0/16 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 172.16.0.0/16 2>/dev/null
-    set -e
-    ip route add 172.16.0.0/16 via 172.16.0.3
-    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.0.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.0.0.0/24 via 172.16.0.3
-    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.0.0/24
-    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.1.0.0/16 2>/dev/null
-    set -e
-    ip route add 10.1.0.0/16 via 172.16.0.3
-    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
-    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.2.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.2.0.0/24 via 172.16.0.3
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.0.3 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.0.3 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.0.3 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.0.3 dev eth1 protocol static
     #
     # Print the final routing table
     ip route
@@ -122,6 +117,7 @@ ok: [h2] =>
     #  /etc/hosts file is generated as a clab bind.
     #
     set -e
+  
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
     # Disable IPv4 and IPv6 forwarding
@@ -129,7 +125,7 @@ ok: [h2] =>
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
     #
-    # Interface addressing
+    # Interface addressing, create any bond devices
     #
     ip link set dev eth1 up
     set +e
@@ -138,32 +134,24 @@ ok: [h2] =>
     ip addr add 172.16.0.2/24 dev eth1
     ip link set eth1 mtu 1500
     #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
     #
-    # lan prefix: 172.16.0.0/16 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 172.16.0.0/16 2>/dev/null
-    set -e
-    ip route add 172.16.0.0/16 via 172.16.0.3
-    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.0.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.0.0.0/24 via 172.16.0.3
-    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.0.0/24
-    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.1.0.0/16 2>/dev/null
-    set -e
-    ip route add 10.1.0.0/16 via 172.16.0.3
-    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
-    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.2.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.2.0.0/24 via 172.16.0.3
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.0.3 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.0.3 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.0.3 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.0.3 dev eth1 protocol static
     #
     # Print the final routing table
     ip route
@@ -172,11 +160,11 @@ ok: [s1] =>
     initial configuration for s1
     =========================================
     system {
-      host-name s1
-        static-host-mapping {
-            h1 inet 172.16.0.1;
-            h2 inet 172.16.0.2;
-        }
+      host-name s1;
+      static-host-mapping {
+        h1 inet 172.16.0.1;
+        h2 inet 172.16.0.2;
+      }
     }
   
   
@@ -185,30 +173,6 @@ ok: [s1] =>
   
   
   
-  
-      ge-0/0/0 {
-        flexible-vlan-tagging;
-        native-vlan-id 1000;
-      }
-  
-      ge-0/0/0.0 {
-        vlan-id 1000;
-      }
-  
-  
-  
-  
-  
-  
-  
-      ge-0/0/1 {
-        flexible-vlan-tagging;
-        native-vlan-id 1000;
-      }
-  
-      ge-0/0/1.0 {
-        vlan-id 1000;
-      }
   
   
   
@@ -236,15 +200,17 @@ ok: [s1] =>
   
       }
       ge-0/0/0.0 {
+        description "[Access VLAN red] s1 -> h1";
   
   
       }
       ge-0/0/1.0 {
+        description "[Access VLAN red] s1 -> h2";
   
   
       }
-      irb.1000 {
-        description "VLAN red (1000) -> [h1,h2] [stub]";
+      irb.700 {
+        description "VLAN red (700) -> [h1,h2] [stub]";
   
           family inet {
             address 172.16.0.3/24;
@@ -267,26 +233,39 @@ ok: [h2]
 ok: [s1]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for h1, h2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for s1
 
-TASK [set_fact] ****************************************************************
+TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
 ok: [h2]
 
-TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
-changed: [h1 -> localhost]
-
-TASK [Initial container configuration via /tmp/config-OmtVlDVJ-h1.sh] **********
+TASK [Create a temporary file for the rendered script] *************************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [file] ********************************************************************
-changed: [h2 -> localhost]
+TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
+skipping: [h1]
+skipping: [h2]
+
+TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+skipping: [h1]
+skipping: [h2]
+
+TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [Remove temporary file /tmp/h1_initial-3szitg9f.sh] ***********************
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [junos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/junos.j2] ***
+[WARNING]: mgd: statement has no contents; ignored
 changed: [s1]
 
 PLAY [Deploy module-specific configurations] ***********************************
@@ -311,9 +290,9 @@ ok: [s1] =>
   
     vlans {
       red {
-        vlan-id 1000;
+        vlan-id 700;
   
-        l3-interface irb.1000;
+        l3-interface irb.700;
   
       }
     }
@@ -359,9 +338,9 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-s1                         : ok=23   changed=3    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+h1                         : ok=13   changed=4    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
+h2                         : ok=13   changed=4    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
+s1                         : ok=24   changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
 
 
 
