@@ -157,22 +157,18 @@ These devices also support optional OSPF interface attributes:
 | Dell OS10                | ✅ | ✅ | ❌  | ❌  |
 | FRR                      | ✅ | ✅ | ✅ | ❌  |
 
-## Global Parameters
-
-* **ospf.reference_bandwidth** sets the OSPF auto-cost reference bandwidth (in Mbps) for all devices in the network.
-* **ospf.bfd.strict** enables RFC9355 BFD Strict-Mode (default: False)
-* **ospf.passive** sets the global default for passive interfaces (default: False)
-
 ## Node Parameters
 
 * **ospf.process** -- process ID (default: 1)
 * **ospf.af** -- [OSPF address families](routing_af), usually set by the data transformation code. Configures OSPFv2 when **ospf.af.ipv4** is set to `True` and OSPFv3 (on devices that support OSPFv3) when **ospf.af.ipv6** is set to `True`. 
 * **ospf.area** -- default OSPF area (default: 0.0.0.0). Used on links without explicit OSPF area and the loopback interface.
 * **ospf.bfd** -- enable BFD for OSPF (default: False)
+* **ospf.bfd.strict** enables RFC9355 BFD Strict-Mode (default: False)
 * **ospf.default** -- External default route origination ([more details](ospf-default))
 * **ospf.digest** -- default OSPFv2 digest authentication parameters. Applies to all interfaces without an explicit **ospf.digest** setting.
 * **ospf.import** -- [import (redistribute) routes](routing_import) into the global OSPF instance. By default, no routes are redistributed into the global OSPF instance.
 * **ospf.password** -- default OSPFv2 cleartext authentication password. Applies to all interfaces without an explicit **ospf.password** setting.
+* **ospf.priority** -- node-wide OSPF router priority. Applies to all interfaces without an explicit **ospf.priority** setting.
 * **ospf.reference_bandwidth** – per-node OSPF auto-cost reference bandwidth (in Mbps).
 * **ospf.router_id** -- set [static router ID](routing_router_id).
 * **ospf.passive** -- node-level default for passive interfaces (default: False)
