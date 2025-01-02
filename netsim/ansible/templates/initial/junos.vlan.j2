@@ -42,9 +42,22 @@ interfaces {
   }
 
 {%     endif %}
+
+{%   elif l.junos_interface != 'irb' and l.junos_unit == '0' and l._vlan_master is defined and 'vlan' not in l %}
+{#
+# in this case unit 0 is still present, but not handling any real vlan traffic (no vlan definition apart from _vlan_master)
+# --> we need to force a vlan id in any case on the sub unit 0, so let's put 1
+#   'flexible-vlan-tagging' - VLAN-ID must be specified on tagged ethernet interfaces
+#}
+
+  {{ l.junos_interface }}.0 {
+    vlan-id 1;
+  }
+
 {%   endif %}
 
-{%   if netlab_device_type != 'vptx' %}
+{# handling for devices with vlan model router #}
+{%   if netlab_device_type in [ 'vmx', 'vsrx', 'vjunos-router' ] %}
 
 {%     if l.junos_interface != 'irb' and l.junos_unit == '0' and l._vlan_master is defined and l.vlan.access_id is defined %}
 {# this is a irb port in access mode on unit 0 #}

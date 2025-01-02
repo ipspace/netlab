@@ -325,7 +325,6 @@ See also [](caveats-junos).
 
 * You can run Juniper vJunos-switch as a container packaged by Roman Dodin's fork of [vrnetlab](https://github.com/hellt/vrnetlab/). See [_containerlab_ documentation](https://containerlab.dev/manual/kinds/vr-vjunosswitch/) for further details.
 * Use a recent *vrnetlab* release that places the management interface into the **mgmt_junos** routing instance to avoid the conflict between [management IP subnet](clab-vrnetlab) `10.0.0.0/24` and **netlab** loopback addressing.
-* _netlab_ does not support VLANs on vJunos-router yet.
 
 See also [](caveats-junos).
 

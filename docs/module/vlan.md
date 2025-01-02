@@ -42,7 +42,8 @@ VLANs are supported on these platforms:
 | Juniper vMX           | ✅  | ✅  | ✅  | ✅ | ✅ |
 | Juniper vPTX          | ✅  | ✅  | ✅  | ✅ | ✅ |
 | Juniper vSRX 3.0      | ❌   | ❌   | ✅  |  ❌ |  ❌ |
-| vJunos-switch         | ✅  | ❌   | ❌   | ✅ | ❌  |
+| vJunos-switch         | ✅  | ✅   | ✅   | ✅ | ✅  |
+| vJunos-router         | ✅  | ✅   | ✅   | ✅ | ✅  |
 | Mikrotik RouterOS 6   | ✅  | ✅  | ✅  | ✅ | ✅ |
 | Mikrotik RouterOS 7   | ✅  | ✅  | ✅  | ✅ | ✅ |
 | Nokia SR Linux        | ✅  | ✅  | ✅   | ✅ | ✅ |

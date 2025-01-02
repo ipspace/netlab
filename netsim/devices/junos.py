@@ -11,6 +11,9 @@ from . import _Quirks
 from ..utils import log
 from ..augment import devices
 
+JUNOS_MTU_DEFAULT_HEADER_LENGTH = 14
+JUNOS_MTU_FLEX_VLAN_HEADER_LENGTH = 22
+
 def unit_0_trick(intf: Box, round: str ='global') -> None:
   oldname = intf.ifname
   newname = oldname + ".0"
@@ -20,6 +23,11 @@ def unit_0_trick(intf: Box, round: str ='global') -> None:
   intf.junos_interface = oldname
   intf.junos_unit = '0'
 
+def set_junos_mtu(intf: Box, delta: int) -> None:
+  if 'mtu' in intf:
+    mtu = int(intf.mtu)
+    intf._junos_mtu_with_headers = mtu + delta
+
 def fix_unit_0(node: Box, topology: Box) -> None:
   mods = node.get('module',[])
   # Need to understand if I need to configure unit 0 or not.
@@ -28,6 +36,7 @@ def fix_unit_0(node: Box, topology: Box) -> None:
   for intf in node.get('interfaces', []):
     if not '.' in intf.ifname:
         unit_0_trick(intf)
+        set_junos_mtu(intf, JUNOS_MTU_DEFAULT_HEADER_LENGTH)
         if 'vlan' in mods:
           # check VLAN params, and add if needed
           if '_vlan_native' in intf:
@@ -47,6 +56,16 @@ def fix_unit_0(node: Box, topology: Box) -> None:
     for intf in node.get('interfaces', []):
       if intf.junos_unit=='0' and intf.junos_interface in base_vlan_interfaces:
         intf._vlan_master = True
+        # define vlan mtu override for VLAN tagging
+        junos_vlan_kind = topology.defaults.devices[node.device].features.vlan.get('model', '')
+        # in case of "flexible vlan tagging", 22 bytes more, depending on link type
+        if junos_vlan_kind == 'router':
+          # for a router, always add it
+          set_junos_mtu(intf, JUNOS_MTU_FLEX_VLAN_HEADER_LENGTH)
+        elif junos_vlan_kind == 'l3-switch':
+          # for a l3-switch, add it on vlan mode route or if no vlan structure is defined (flex vlan tagging with native only)
+          if 'vlan' not in intf or intf.get('vlan', {}).get('mode', '') == 'route':
+            set_junos_mtu(intf, JUNOS_MTU_FLEX_VLAN_HEADER_LENGTH)
   
   # need to append .0 unit trick to the interface list copied into vrf->ospf
   if 'vrf' in mods and 'ospf' in mods:
