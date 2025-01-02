@@ -17,6 +17,8 @@ The *node.clone* plugin avoids tedious repetitive work by allowing users to mark
 
 The plugin is invoked early in the _netlab_ topology transformation process and updates groups and adds nodes and links to the lab topology.
 
+It is possible to override properties of cloned nodes by including a node with the resulting clone name in the topology. See the example below
+
 ### Supported attributes
 
 The naming of cloned nodes can be controlled through global **clone.node_name_pattern**, default "{name[:13]}-{id:02d}".
@@ -43,7 +45,7 @@ Avoid the use of static IPv4/v6 attributes for clones, they are not checked nor 
 ### Connect Multiple Hosts to a ToR
 
 The following lab topology has a cluster of 10 hosts all connected to a Top-of-Rack switch in the same way.
-The clones will be called H_01, H_02, ...
+The clones will be called H-01, H-02, ...
 
 ```yaml
 plugin: [ node.clone ]
@@ -58,10 +60,14 @@ nodes:
   H:
     device: linux
     clone.count: 10
+    unmanaged: True     # Mark as 'unmanaged' such that no containers or VMs get created for these nodes
+
+  H-01:
+    unmanaged: False    # Instantiate only the first node as a container or VM, leave the rest virtual
     
 links:
 - ToR:
-    ifindex: 4       # Start from port 4
+    ifindex: 4          # Start from port 4
     vlan.access: v1
   H:
 ```
