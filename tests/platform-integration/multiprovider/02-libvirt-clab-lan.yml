@@ -1,0 +1,51 @@
+message:
+  This topology tests multi-access multi-provider links and a multi-access
+  clab-only link that has to use a Linux bridge
+
+groups:
+  hosts:
+    members: [ h1, h2, h3 ]
+    device: linux
+    provider: clab
+
+  routers:
+    module: [ ospf ]
+    members: [ r1, r2, r3 ]
+
+defaults.device: frr
+provider: libvirt
+ospf.timers.hello: 1
+
+nodes:
+  r1:
+  r2:
+  r3:
+    provider: clab
+  h1:
+  h2:
+  h3:
+
+links:
+- h1:
+  r1:
+  r2:               # multi-access link that should not turn into a P2P tunnel
+  ospf.network_type: point-to-point
+- r1-r2             # Link that has to be libvirt P2P tunnel
+- r2-r3             # P2P link that should be a LAN link
+- h2-r3-h3          # clab-only link that requires a Linux bridge
+
+validate:
+  ospf:
+    nodes: [ r1, r3 ]
+    plugin: ospf_neighbor(nodes.r2.ospf.router_id)
+    wait: 15
+  ping_r1:
+    nodes: [ h1, h2, h3 ]
+    wait: 10
+    plugin: ping('r1')
+  ping_r2:
+    nodes: [ h1, h2, h3 ]
+    plugin: ping('r2')
+  ping_r3:
+    nodes: [ h1, h2, h3 ]
+    plugin: ping('r3')

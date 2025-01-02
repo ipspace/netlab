@@ -1,0 +1,42 @@
+message:
+  This simple libvirt + clab integration test checks stub networks and P2P links
+
+provider: libvirt
+defaults.device: frr
+module: [ ospf ]
+ospf.timers.hello: 1
+
+nodes:
+  r1:
+    device: frr
+  r2:
+    device: frr
+  r3:
+    provider: clab
+  r4:
+    provider: clab
+
+links:
+- r1                      # libvirt stub
+- r4                      # clab stub
+- r1-r2                   # libvirt P2P link
+- r2-r3                   # libvirt-to-clab link
+- r3-r4                   # clab P2P link
+
+validate:
+  adj_r2:
+    plugin: ospf_neighbor(nodes.r2.ospf.router_id)
+    wait: 15
+    nodes: [ r1, r3 ]
+  adj_r3:
+    plugin: ospf_neighbor(nodes.r3.ospf.router_id)
+    wait: 15
+    nodes: [ r2, r4 ]
+  pfx_r1:
+    plugin: ospf_prefix(links[0].prefix.ipv4)
+    wait: 10
+    nodes: [ r2, r3, r4 ]
+  pfx_r4:
+    plugin: ospf_prefix(links[1].prefix.ipv4)
+    wait: 10
+    nodes: [ r1, r2, r3 ]
