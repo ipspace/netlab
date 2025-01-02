@@ -17,7 +17,7 @@ The *node.clone* plugin avoids tedious repetitive work by allowing users to mark
 
 The plugin is invoked early in the _netlab_ topology transformation process and updates groups and adds nodes and links to the lab topology.
 
-It is possible to override properties of cloned nodes by including a node with the clone name in the topology. See the example below
+It is possible to override properties of cloned nodes by including a node with the resulting clone name in the topology. See the example below
 
 ### Supported attributes
 
@@ -60,10 +60,10 @@ nodes:
   H:
     device: linux
     clone.count: 10
-    provider: external  # Mark as 'external' such that no containers get created for these nodes
+    unmanaged: True     # Mark as 'unmanaged' such that no containers get created for these nodes
 
   H-01:
-    provider: clab      # Instantiate only the first node as a container, leave the rest virtual
+    unmanaged: False    # Instantiate only the first node as a container, leave the rest virtual
     
 links:
 - ToR:
