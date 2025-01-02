@@ -19,16 +19,14 @@ system {
 {% endif %}
 
 interfaces {
-{# Handle MTU outside the main interface loop, since it needs to be applied only to the master interface #}
+{#
+# Handle MTU outside the main interface loop, since it needs to be applied only to the master interface
+# JunOS MTU with headers is calculated on device quirks python code, depending on interface and model type.
+#}
 {% for l in interfaces|default([]) %}
-{%   if l.mtu is defined and l._vlan_master|default(false) and l._vlan_mtu_override is defined %}
-{#   - i.e., can be 22 bytes more (depending on mode) #}
+{%   if l._junos_mtu_with_headers is defined %}
   {{ l.junos_interface }} {
-    mtu {{ l.mtu + l._vlan_mtu_override }};
-  }
-{%   elif l.mtu is defined %}
-  {{ l.junos_interface }} {
-    mtu {{ l.mtu + 14 }};
+    mtu {{ l._junos_mtu_with_headers }};
   }
 {%   endif %}
 {% endfor %}
