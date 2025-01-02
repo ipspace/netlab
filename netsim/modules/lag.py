@@ -396,6 +396,15 @@ class LAG(_Module):
       elif i.type=='lag':
         node_atts = { k:v for k,v in node.get('lag',{}).items() if k!='mlag'}
         i.lag = node_atts + i.lag           # Merge node level settings with interface overrides
+        # i.pop('mtu',None)                 # Next PR: Remove any MTU settings - inherited from members
+
+        if 'mode' in i.lag:
+          log.error(f'lag.mode {i.lag.mode} used by node {node.name} is deprecated, use only 802.3ad',
+            category=Warning,
+            module='lag')
+          if i.lag.mode!='802.3ad':
+            i.lag.lacp = 'off'              # Disable LACP for other modes
+
         lacp_mode = i.get('lag.lacp_mode')
         if lacp_mode=='passive' and not features.lag.get('passive',False):
           log.error(f'Node {node.name}({node.device}) does not support passive LACP configured on interface {i.ifname}',
