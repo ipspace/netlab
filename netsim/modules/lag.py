@@ -325,33 +325,44 @@ def process_lag_links(topology: Box) -> None:
 # populate_mlag_peer - Lookup the IPv4 loopback address for the mlag peer, and derive a virtual MAC to use
 #
 def populate_mlag_peer(node: Box, intf: Box, topology: Box) -> None:
-  _n = intf.neighbors[0].node
-  peer = topology.nodes[_n]
+  peer = topology.nodes[intf.neighbors[0].node]
   features = devices.get_device_features(node,topology.defaults)
-  _mlag_peer = features.get('lag.mlag.peer',{})
-  if 'ip' in _mlag_peer:
-    if 'loopback' in _mlag_peer.ip:
-      _ip = peer.get(_mlag_peer.ip,None)
-      if _ip:
-        intf.lag.mlag.peer = str(netaddr.IPNetwork(_ip).ip)
+  mlag_peer = features.get('lag.mlag.peer',{})
+  _target = node.lag if mlag_peer.get('global',False) else intf.lag         # Set at node or intf level?
+  if 'ip' in mlag_peer:
+    if mlag_peer.ip == 'linklocal':
+      _target.mlag.peer = 'linklocal'
+    elif 'loopback' in mlag_peer.ip:                                        # Could check if an IGP is configured
+      ip = peer.get(mlag_peer.ip,None)
+      if ip:
+        _target.mlag.peer = str(netaddr.IPNetwork(ip).ip)
       else:
-        log.error(f'Node {peer.name} must have {_mlag_peer.ip} defined to support MLAG',
+        log.error(f'Node {peer.name} must have {mlag_peer.ip} defined to support MLAG',
           category=log.IncorrectValue,
           module='lag')
     else:
-      _net = netaddr.IPNetwork(_mlag_peer.ip)
-      _id = 0 if node.id < peer.id else 1
-      intf.lag.mlag.peer = str(_net[_id])
-      intf.lag.mlag.self = f"{_net[1-_id]}/{_net.prefixlen}"                # including /prefix
+      net = netaddr.IPNetwork(mlag_peer.ip)
+      id = 0 if node.id < peer.id else 1
+      _target.mlag.peer = str(net[1-id])                                    # Higher node ID gets .1
+      _target.mlag.self = f"{net[id]}/{net.prefixlen}"                      # including /prefix
 
-  if 'mac' in _mlag_peer:
-    _mac = netaddr.EUI(_mlag_peer.mac)                                      # Generate unique virtual MAC per MLAG group
-    _mac._set_value(_mac.value + intf.get(PEERLINK_ID_ATT,0) % 65536 )      # ...based on lag.mlag.peergroup
-    intf.lag.mlag.mac = str(_mac)
+  if 'backup_ip' in mlag_peer:
+    bk_ip = peer.get(mlag_peer.backup_ip,None)
+    if bk_ip:
+      _target.mlag.peer_backup_ip = str(netaddr.IPNetwork(bk_ip).ip)
+    else:
+      log.error(f'Node {peer.name} must have "{mlag_peer.backup_ip}" defined to support backup MLAG peerlink',
+                category=log.IncorrectValue,
+                module='lag')
+
+  if 'mac' in mlag_peer and not isinstance(_target.get('mlag.mac',None),str):
+    mac = netaddr.EUI(mlag_peer.mac)                                        # Generate unique virtual MAC per MLAG group
+    mac._set_value(mac.value + intf.get(PEERLINK_ID_ATT,0) % 65536 )        # ...based on lag.mlag.peergroup
+    _target.mlag.mac = str(mac)
 
   for v in ['vlan','ifindex']:
-    if v in _mlag_peer:
-      intf.lag.mlag[v] = _mlag_peer[v]
+    if v in mlag_peer:
+      _target.mlag[v] = mlag_peer[v]
   
   intf.pop('vlan',None)                                                     # Remove any VLANs provisioned on peerlinks
 
@@ -383,11 +394,11 @@ class LAG(_Module):
         populate_mlag_peer(node,i,topology)
         has_peerlink = True
       elif i.type=='lag':
-        i.lag = node.get('lag',{}) + i.lag  # Merge node level settings with interface overrides
-        # i.pop('mtu',None)                 # Next PR: Remove any MTU settings - inherited from members
-        lacp_mode = i.get('lag.lacp_mode')  # Inheritance copying is done elsewhere
+        node_atts = { k:v for k,v in node.get('lag',{}).items() if k!='mlag'}
+        i.lag = node_atts + i.lag           # Merge node level settings with interface overrides
+        lacp_mode = i.get('lag.lacp_mode')
         if lacp_mode=='passive' and not features.lag.get('passive',False):
-          log.error(f'Node {node.name} does not support passive LACP configured on interface {i.ifname}',
+          log.error(f'Node {node.name}({node.device}) does not support passive LACP configured on interface {i.ifname}',
             category=log.IncorrectAttr,
             module='lag')
         if i.lag.get('_mlag',False) is True:
