@@ -235,7 +235,7 @@ def create_lag_interfaces(l: Box, topology: Box) -> None:
 
   members = l.pop('lag.members',[])               # Remove lag.members
   skip_atts = list(topology.defaults.lag.attributes.lag_no_propagate)
-  copy_link_to_intf = ['vlan'] if 'vlan' in l else list(topology.defaults.lag.attributes.copy_link_to_intf)
+  copy_link_to_intf = [] if 'vlan' in l else list(topology.defaults.lag.attributes.copy_link_to_intf)
   link_atts = { k:v for k,v in l.items() if k in copy_link_to_intf }
   l.interfaces = []                               # Build interface list for lag link
   for node in node_count:
@@ -247,8 +247,8 @@ def create_lag_interfaces(l: Box, topology: Box) -> None:
       ifatts = ifatts + { k:v for k,v in m.items() if k not in skip_atts } + node_ifs[0]
       if dual_mlag:
         ifatts._peer = [ i.node for i in m.interfaces if i.node!=node ][0]
-    if not 'vlan' in ifatts:                      # VLAN on interface overrides link IP settings
-      ifatts = link_atts + ifatts                 # include vlan, gateway or prefix settings from link
+    if not 'vlan' in ifatts:                      # If not overridden by a VLAN
+      ifatts = link_atts + ifatts                 # include gateway or prefix settings from link
 
     is_mside = is_mlag and node!=one_side         # Set flag if this node is the M: side
     if not set_lag_ifindex(l,ifatts,is_mside,topology):
