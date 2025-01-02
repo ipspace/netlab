@@ -47,7 +47,7 @@ def post_transform(topology: Box) -> None:
     features = devices.get_device_features(node,topology.defaults)
     for intf in node.get('interfaces',[]):
       bond_ifindex = intf.get('bonding.ifindex',None)
-      if not bond_ifindex:
+      if bond_ifindex is None:
         continue
       if not 'bonding' in features:
         log.error( f"Node {node.name}({node.device}) does not support 'bonding.ifindex' used on {intf.name}",
