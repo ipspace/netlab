@@ -1,3 +1,4 @@
+{% from "initial/linux/create-bond.j2" import create_bond_dev %}
 #!/bin/bash
 #
 set -e
@@ -71,12 +72,16 @@ fi
 {% endif %}
 
 #
-# Create loopbacks and stub devices
+# Create loopbacks, stub and lag/bond devices
 #
-{% for i in netlab_interfaces if i.type in ['loopback','stub'] %}
+{% for i in netlab_interfaces if i.type in ['loopback','stub','lag','bond'] %}
 if [ ! -e /sys/class/net/{{ i.ifname }} ]; then
   if [ ! -e /sys/devices/virtual/net/{{ i.ifname }} ]; then
+{%   if i.type in ['lag','bond'] %}
+{{     create_bond_dev(i,node_provider) }}
+{%   else %}
     ip link add {{ i.ifname }} type dummy
+{%   endif %}
     ip link set dev {{ i.ifname }} up
   fi
 fi
