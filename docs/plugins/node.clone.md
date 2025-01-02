@@ -60,10 +60,10 @@ nodes:
   H:
     device: linux
     clone.count: 10
-    unmanaged: True     # Mark as 'unmanaged' such that no containers get created for these nodes
+    unmanaged: True     # Mark as 'unmanaged' such that no containers or VMs get created for these nodes
 
   H-01:
-    unmanaged: False    # Instantiate only the first node as a container, leave the rest virtual
+    unmanaged: False    # Instantiate only the first node as a container or VM, leave the rest virtual
     
 links:
 - ToR:
