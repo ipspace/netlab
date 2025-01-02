@@ -171,7 +171,7 @@ def create(topology: Box) -> Box:
         devdata = defaults.devices[group]
         group_vars = devdata.group_vars + devdata[defaults.provider].group_vars
         # add device features to device group_vars
-        group_vars['features'] = devdata.get('features', {})
+        group_vars.features = devdata.features
         if group_vars:
           inventory[group]['vars'] = group_vars
 
