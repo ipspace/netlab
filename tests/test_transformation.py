@@ -22,7 +22,7 @@ from netsim.data import types as _types
 
 def run_test(fname):
   log.init_log_system(header = False)
-  topology = _read.load(fname,relative_topo_name=True)
+  topology = _read.load(fname,relative_topo_name=True,user_defaults=[])
   log.exit_on_error()
   augment.main.transform(topology)
   log.exit_on_error()
