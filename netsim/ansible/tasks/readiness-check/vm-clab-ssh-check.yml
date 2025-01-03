@@ -10,11 +10,18 @@
   run_once: True
   any_errors_fatal: True
 
+- name: Check for 'timeout' command
+  local_action:
+    module: shell
+    cmd: which timeout || echo "FAILED"
+  changed_when: False
+  register: have_timeout
+
 - name: Execute local ssh command to check {{ netlab_device_type|default(inventory_hostname) }} readiness
   local_action:
     module: shell
     cmd: |
-      sshpass -p '{{ ansible_ssh_pass }}' \
+      {{ 'timeout -k 3s 5s' if "FAILED" not in have_timeout.stdout else '' }} sshpass -p '{{ ansible_ssh_pass }}' \
       ssh -o StrictHostKeyChecking=no {{ netlab_ssh_args|default('') }} \
           -o UserKnownHostsFile=/dev/null {{ ansible_user }}@{{ ansible_host }} \
           '{{ netlab_check_command | default("show version") }}'
