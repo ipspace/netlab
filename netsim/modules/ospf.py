@@ -24,9 +24,7 @@ def ospf_unnumbered(node: Box, features: Box) -> bool:
   OK = True
 
   for l in node.get('interfaces',[]):
-    is_unnumbered = \
-      'unnumbered' in l or \
-      ('ipv4' in l and isinstance(l.ipv4,bool) and l.ipv4)
+    is_unnumbered = l.get('ipv4',None) is True
     if is_unnumbered and 'ospf' in l:
       node.ospf.unnumbered = True
       if len(l.get('neighbors',[])) > 1:

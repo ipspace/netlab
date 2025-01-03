@@ -281,7 +281,7 @@ def build_vrf_interface_list(node: Box, proto: str, topology: Box) -> None:
 def remove_unaddressed_intf(node: Box, proto: str) -> None:
   for intf in node.interfaces:
     if proto in intf:
-      if not any(af in intf for af in ('ipv4','ipv6','unnumbered')):        # Do we have at least some addressing on the interface?
+      if not any(af in intf for af in ('ipv4','ipv6')):                     # Do we have at least some addressing on the interface?
         intf.pop(proto,None)                                                # Nope, no need to run IGP on that interface
 #
 # remove_unused_igp -- remove IGP module if it's not configured on any interface

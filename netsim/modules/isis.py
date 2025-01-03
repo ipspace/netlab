@@ -13,9 +13,7 @@ def isis_unnumbered(node: Box, features: Box) -> bool:
   for af in ('ipv4','ipv6'):
     is_unnumbered = False
     for l in node.get('interfaces',[]):
-      is_unnumbered = is_unnumbered or \
-        'unnumbered' in l or \
-        (af in l and isinstance(l[af],bool) and l[af])
+      is_unnumbered = is_unnumbered or (af in l and isinstance(l[af],bool) and l[af])
 
     if is_unnumbered and not features.isis.unnumbered[af]:
       log.error(
@@ -26,13 +24,12 @@ def isis_unnumbered(node: Box, features: Box) -> bool:
 
   OK = True
   for l in node.get('interfaces',[]):
-    unnum_v4 = 'unnumbered' in l or ('ipv4' in l and l.ipv4 is True)
+    unnum_v4 = l.get('ipv4',None) is True
     if unnum_v4 and \
         len(l.neighbors) > 1 and \
         not features.isis.unnumbered.network:
       log.error(
-        f'Device {node.device} used on node {node.name} cannot run IS-IS over\n'+
-        f'.. unnumbered multi-access interfaces (link {l.name})',
+        f'Device {node.device} (node {node.name}) cannot run IS-IS over unnumbered multi-access link {l.name}',
         log.IncorrectValue,
         'interfaces')
       OK = False
