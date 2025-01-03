@@ -665,7 +665,7 @@ def assign_interface_addresses(link: Box, addr_pools: Box, ndict: Box, defaults:
         rq = rq + f' plus first-hop gateway'
       hints = []
       if link.type == 'p2p':
-        hints = ['Use "type: lan" or a custom pool on links with default gateways']
+        hints = ['Use a custom pool with prefix /29 or shorter on links with default gateways']
 
       log.error(
         f'Cannot use {af} prefix {pfx_list[af]} to address {rq} on {link._linkname}',
