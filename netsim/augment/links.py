@@ -930,29 +930,42 @@ def check_link_type(data: Box) -> bool:
   link_type = data.get('type')
 
   if 'mtu' in data and not isinstance(data.mtu,int): # pragma: no cover
-    log.error(f'MTU parameter should be an integer: {data}',log.IncorrectValue,'links')
+    log.error(f'MTU parameter for link {data._linkname} should be an integer',log.IncorrectValue,'links')
 
   if not link_type: # pragma: no cover (shouldn't get here)
-    log.fatal('Internal error: link type still undefined in check_link_type: %s' % data,'links')
+    log.fatal(f'Internal error: link type still undefined in check_link_type: {data}','links')
     return False
 
   if node_cnt == 0:
-    log.error('No valid nodes on link %s' % data,log.MissingValue,'links')
+    log.error(
+      f'No valid nodes on link {data._linkname}',
+      category=log.MissingValue,
+      more_data=[ str(data) ],
+      module='links')
     return False
 
   if link_type == 'stub' and node_cnt > 1:
-    log.error('More than one node connected to a stub link: %s' % data,log.IncorrectValue,'links')
+    log.error(
+      f'More than one node connected to a stub link {data._linkname}',
+      category=log.IncorrectValue,
+      more_data=[ str(data) ],
+      module='links')
     return False
 
   if link_type == 'p2p' and node_cnt != 2:
-    log.error('Point-to-point link needs exactly two nodes: %s' % data,log.IncorrectValue,'links')
+    log.error(
+      f'Point-to-point link {data._linkname} needs exactly two nodes',
+      category=log.IncorrectValue,
+      more_data=[ str(data) ],
+      module='links')
     return False
 
   if link_type == 'loopback' and node_cnt != 1:
     log.error(
-      f'Loopback link {data._linkname} can have a single node attached\n... {data}',
-      log.IncorrectValue,
-      'links')
+      f'Loopback link {data._linkname} can have a single node attached',
+      more_data=[ str(data) ],
+      category=log.IncorrectValue,
+      module='links')
     return False
 
   return True
