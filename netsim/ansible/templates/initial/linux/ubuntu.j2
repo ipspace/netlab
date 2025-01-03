@@ -183,8 +183,14 @@ cat <<SCRIPT > /etc/netplan/04-routes.yaml
 network:
   version: 2
   renderer: networkd
-  ethernets:
 {%   for intf in routing.static|map(attribute='nexthop.intf',default='')|unique if intf %}
+{%     if loop.first %}
+{%       if 'bond' in intf %}
+  bonds:
+{%       else %}
+  ethernets:
+{%       endif %}
+{%     endif %}
     {{ intf }}:
       routes:
 {%     for sr_entry in routing.static|default([]) if sr_entry.nexthop.intf|default('') == intf %}
