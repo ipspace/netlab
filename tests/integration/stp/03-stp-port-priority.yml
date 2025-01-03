@@ -1,0 +1,73 @@
+message: |
+  The devices under test form a loop in the red VLAN.
+
+  The link with the lowest port_priority should be forwarding, all other links
+  should be blocked.
+
+module: [ vlan, stp ]
+
+groups:
+  _auto_create: true
+  probes:
+    members: [ x1 ]
+    device: frr
+
+nodes:
+  dut:
+    stp.priority: 4096  # High STP bridge priority (low value) -> becomes root
+
+vlans:
+  red:
+    mode: bridge
+    id: 42
+
+links:
+- dut:
+    stp.port_priority: 12
+  x1:
+  vlan.access: red
+- dut:
+    stp.port_priority: 10
+  x1:
+  vlan.access: red
+- dut:
+    stp.port_priority: 0
+  x1:
+  vlan.access: red
+
+validate:
+  eth3_fwd:
+    wait: 40
+    wait_msg: Waiting for STP
+    nodes: [ x1 ]
+    devices: [ frr ]
+    pass: Third link is forwarding; DUT set the correct port priority
+    fail: Third link is not forwarding; DUT probably did not set port priority
+    stop_on_error: True
+    exec: bridge link show|grep {{ interfaces[2].ifname }}
+    valid: |
+      "forwarding" in stdout
+
+  eth1_block:
+    wait: 10
+    wait_msg: Waiting for STP
+    nodes: [ x1 ]
+    devices: [ frr ]
+    pass: Second link is blocking; DUT set the correct port priority
+    fail: Second link is not blocking; DUT probably did not set port priority
+    stop_on_error: True
+    exec: bridge link show|grep {{ interfaces[0].ifname }}
+    valid: |
+      "blocking" in stdout
+
+  eth2_block:
+    wait: 10
+    wait_msg: Waiting for STP
+    nodes: [ x1 ]
+    devices: [ frr ]
+    pass: First link is blocking; DUT set the correct port priority
+    fail: First link is not blocking; DUT probably did not set port priority
+    stop_on_error: True
+    exec: bridge link show|grep {{ interfaces[1].ifname }}
+    valid: |
+      "blocking" in stdout

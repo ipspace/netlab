@@ -1,0 +1,80 @@
+message: |
+  The devices under test form a layer-2 triangle with two VLANs. STP is disabled
+  for red VLAN on DUT which means that the red VLAN should not be blocking.
+
+module: [ vlan, stp ]
+
+groups:
+  _auto_create: true
+  probes:
+    members: [ x1, x2 ]
+    device: eos
+
+vlans:
+  red:
+    mode: bridge
+    id: 42
+  blue:
+    mode: bridge
+    id: 76
+
+stp.protocol: pvrst
+
+nodes:
+  dut:
+    stp.priority: 4096
+    vlans:
+      red:
+        stp.enable: false
+  x2:
+    stp.priority: 16384
+
+links:
+- dut:
+  x1:
+  vlan.trunk: [ red, blue ]
+- dut:
+  x2:
+  vlan.trunk: [ red, blue ]
+- x1:
+  x2:
+  vlan.trunk: [ red, blue ]
+
+validate:
+  vlan_blue:
+    wait: 40
+    wait_msg: Waiting for STP (VLAN blue)
+    nodes: [ x1 ]
+    fail: DUT is not the root of the VLAN 76 spanning tree
+    pass: DUT is the root of the VLAN 76 spanning tree
+    devices: [ eos ]
+    show: spanning-tree | json
+    valid: >-
+      spanningTreeInstances.VL76.rootPort.interface == 'Ethernet1' and
+      spanningTreeInstances.VL76.rootBridge.priority == 4096 and
+      spanningTreeInstances.VL76.interfaces.Ethernet1.state == 'forwarding' and
+      spanningTreeInstances.VL76.interfaces.Ethernet2.state == 'discarding'
+
+  vlan_red:
+    wait: 20
+    wait_msg: Waiting for STP (VLAN red)
+    nodes: [ x1 ]
+    fail: X2 is not the root of the VLAN 42 spanning tree. STP might not be disabled in VLAN 42 on DUT
+    pass: X2 is the root of the VLAN 42 spanning tree
+    devices: [ eos ]
+    show: spanning-tree | json
+    valid: >-
+      spanningTreeInstances.VL42.rootBridge.priority == 16384
+
+  bpdu_drop:
+    wait: 20
+    wait_msg: Waiting for STP (VLAN red)
+    level: warning
+    nodes: [ x1 ]
+    devices: [ eos ]
+    show: spanning-tree | json
+    fail: X1-DUT link is not forwarding. DUT might be leaking BPDUs
+    pass: X1-DUT link is forwarding.
+    valid: >-
+      spanningTreeInstances.VL42.rootPort.interface == 'Ethernet2' and
+      spanningTreeInstances.VL42.interfaces.Ethernet1.state == 'forwarding'

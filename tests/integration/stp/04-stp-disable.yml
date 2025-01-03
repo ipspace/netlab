@@ -1,0 +1,58 @@
+message: |
+  The devices under test form a layer-2 triangle in the red VLAN. STP is
+  disabled on DUT which means that no link should be blocking.
+
+  If STP is not disabled on DUT, DUT becomes STP root and the X1-X2 port is
+  blocking. Otherwise, if DUT leaks BPDUs, X1-DUT port port is blocking.
+
+module: [ vlan, stp ]
+
+groups:
+  _auto_create: true
+  probes:
+    members: [ x1, x2 ]
+    device: frr
+
+nodes:
+  dut:
+    stp.priority: 4096    # Dut will become root if STP is not disabled
+    stp.enable: false
+  x2:
+    stp.priority: 16384   # Otherwise X2 will become root
+
+vlans:
+  red:
+    mode: bridge
+    id: 42
+    links:
+    - dut:
+      x1:
+    - dut:
+      x2:
+    - x1:
+      x2:
+        stp.port_priority: 0
+
+validate:
+  link_fwd:
+    wait: 40
+    wait_msg: Waiting for STP
+    nodes: [ x1 ]
+    devices: [ frr ]
+    exec: bridge link show|grep {{ interfaces[1].ifname }}
+    fail: The X1-X2 is not forwarding. STP is probably not disabled on DUT
+    pass: The X1-X2 link is forwarding
+    valid: |
+      "forwarding" in stdout
+
+  bpdu_lost:          # The direct link X1-X2 could be blocking if the device under test forwards
+    level: warning    # BPDUs instead of blocking them
+    wait: 10
+    wait_msg: Waiting for STP
+    nodes: [ x1 ]
+    devices: [ frr ]
+    exec: bridge link show|grep {{ interfaces[0].ifname }}
+    fail: The X1-DUT link is not forwarding. DUT is probably leaking BPDUs
+    pass: The X1-DUT link is forwarding
+    valid: |
+      "forwarding" in stdout

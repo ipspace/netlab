@@ -1,0 +1,62 @@
+message: |
+  The devices under test form a layer-2 triangle of VLAN trunks
+
+  The bridge with the highest priority (s1) should become the root on all VLANs,
+  the link x1-x2 should get blocked. Please note that we're running traditional
+  STP where BPDUs are sent untagged.
+
+module: [ vlan, stp ]
+
+groups:
+  _auto_create: true
+  probes:
+    members: [ x1, x2 ]
+    device: eos
+
+nodes:
+  dut:
+    stp.priority: 4096  # High STP bridge priority (low value) -> becomes root
+  x2:
+    stp.priority: 16384
+
+vlans:
+  red:
+    mode: bridge
+    id: 42
+  blue:
+    mode: bridge
+    id: 76
+
+links:
+- dut:
+  x1:
+  vlan.trunk: [ red, blue ]
+- dut:
+  x2:
+  vlan.trunk: [ red, blue ]
+- x1:
+  x2:
+  vlan.trunk: [ red, blue ]
+
+validate:
+  link_fwd:
+    wait: 40
+    wait_msg: Waiting for STP
+    nodes: [ x1 ]
+    devices: [ eos ]
+    pass: Port X1 => DUT the root port; DUT is STP root
+    fail: Port X1 => DUT the not root port; DUT is not STP root
+    show: spanning-tree | json
+    valid: |
+      spanningTreeInstances.MST0.rootPort.interface == 'Ethernet1'
+
+  link_block:
+    wait: 10
+    wait_msg: Waiting for STP
+    nodes: [ x1 ]
+    devices: [ eos ]
+    pass: Link X1-X2 is blocking; DUT is STP root
+    fail: Link X1-X2 is not blocking; DUT is not STP root
+    show: spanning-tree | json
+    valid: |
+      spanningTreeInstances.MST0.interfaces.Ethernet2.state == 'discarding'
