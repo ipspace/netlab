@@ -238,6 +238,22 @@ def extend_first_wait_time(args: argparse.Namespace, topology: Box) -> None:
     return
 
 '''
+Wait times for individual validation steps can be extended with the
+netlab_validate.test_name.wait device settings. Used for weird devices
+like junos-vrouter that passes packets between bridged ports immediately
+but fails to pass them to the routed interface of the same VLAN
+'''
+def extend_device_wait_time(v_entry: Box, topology: Box) -> None:
+  for ndata in topology.nodes.values():
+    v_params = topology.get(f'defaults.devices.{ndata.device}.netlab_validate.{v_entry.name}',{})
+    if not v_params:
+      continue
+    if 'wait' in v_params and v_params.wait > v_entry.get('wait',0):
+      if log.VERBOSE:
+        print(f'Extending wait time for test {v_entry.name} to {v_params.wait} (device {ndata.device})')
+      v_entry.wait = v_params.wait
+
+'''
 load_plugin: try to load the validation plugin for the specified device
 '''
 
@@ -1094,6 +1110,7 @@ def run(cli_args: typing.List[str]) -> None:
   extend_first_wait_time(args,topology)
 
   for v_entry in topology.validate:
+    extend_device_wait_time(v_entry,topology)
     if cnt and not ERROR_ONLY:
       print()
 
