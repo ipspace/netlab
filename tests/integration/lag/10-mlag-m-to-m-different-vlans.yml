@@ -1,7 +1,13 @@
 message: |
   The device under test are two pairs of switches, interconnected through
-  dual-sided MLAG links each carrying a different set of vlans The hosts should
-  be able to ping each other and their gateway
+  dual-sided MLAG links each carrying a different set of vlans.
+  This illustrates the need for 'split_dual_mlag_link' in the lag module.
+
+  The devices are only pairwise adjacent in OSPF, a1-a2 and b1-b2
+
+  The hosts should be able to ping each other and various gateways
+
+defaults.device: eos
 
 prefix:
   p2p1:
@@ -9,7 +15,7 @@ prefix:
     allocation: p2p # Oddly needed
   p2p2:
     pool: p2p
-    allocation: p2p # Oddly needed
+    allocation: p2p
 
 vlans:
   ospf-pair1:
@@ -32,7 +38,6 @@ groups:
   switches-a:
     members: [a1, a2]
     module: [lag, vlan, ospf]
-    device: eos
 
     vlans:
       ospf-pair1:
@@ -40,7 +45,6 @@ groups:
   switches-b:
     members: [b1, b2]
     module: [lag, vlan, ospf]
-    device: eos
 
     vlans:
       ospf-pair2:
@@ -60,15 +64,13 @@ links:
     mlag.peergroup: 2
   vlan.trunk: [ospf-pair2]
 - lag:
-   # mlag: True
     members:
     - a1:
       b1:
-      vlan.trunk: [red]
+      vlan.trunk: [red]       # Only 'red'
     - a2:
       b2:
-      vlan.trunk: [red, blue]
-  # vlan.trunk: [red]
+      vlan.trunk: [red, blue] # Both red and blue
 
 validate:
   ping:
@@ -77,7 +79,11 @@ validate:
     wait_msg: Waiting for STP to enable the ports
     wait: 45
     plugin: ping('h2')
-  ping_gw:
-    description: Pinging gateway from H1
+  ping_gw_red:
+    description: Pinging red gateway on B1 from H1
     nodes: [h1]
-    plugin: ping(nodes.b1.interfaces[4].ipv4,af='ipv4')
+    plugin: ping(nodes.b1.interfaces[-1].ipv4,af='ipv4')
+  ping_gw_blue:
+    description: Pinging blue gateway on A2 from H2
+    nodes: [h2]
+    plugin: ping(nodes.a2.interfaces[-2].ipv4,af='ipv4')
