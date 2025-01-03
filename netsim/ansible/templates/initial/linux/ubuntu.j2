@@ -115,7 +115,7 @@ network:
 SCRIPT
 {% endif %}
 
-# Interface addressing and bonds
+# Interface addressing and bonds, including any static routes
 {% for l in interfaces|default([]) if (l.ipv4 is defined or l.ipv6 is defined or l.dhcp is defined or l.type in ['lag','bond'])%}
 cat <<SCRIPT > /etc/netplan/03-eth-{{ l.ifname }}.yaml
 network:
@@ -174,34 +174,19 @@ network:
 {%     endif %}
         - {{ l[af] }}
 {%   endfor %}
-SCRIPT
-{% endfor %}
-
-{% if routing.static|default([]) %}
-# Add IPv4 static routes
-cat <<SCRIPT > /etc/netplan/04-routes.yaml
-network:
-  version: 2
-  renderer: networkd
-{%   for intf in routing.static|map(attribute='nexthop.intf',default='')|unique if intf %}
-{%     if loop.first %}
-{%       if 'bond' in intf %}
-  bonds:
-{%       else %}
-  ethernets:
-{%       endif %}
-{%     endif %}
-    {{ intf }}:
+{%   if routing.static|default([]) %}
+{%     for sr_entry in routing.static if sr_entry.nexthop.intf|default('') == l.ifname %}
+{%       if loop.first %}
       routes:
-{%     for sr_entry in routing.static|default([]) if sr_entry.nexthop.intf|default('') == intf %}
+{%       endif %}
 {%       for sr_af in ['ipv4','ipv6'] if sr_af in sr_entry %}
       - to: {{ sr_entry[sr_af] }}
         via: {{ sr_entry.nexthop[sr_af] }}
 {%       endfor %}
 {%     endfor %}
-{%   endfor %}
+{%   endif %}
 SCRIPT
-{% endif %}
+{% endfor %}
 
 echo -n 'Starting netplan generate ' && date
 netplan generate
