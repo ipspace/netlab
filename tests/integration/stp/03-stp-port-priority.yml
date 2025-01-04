@@ -1,0 +1,76 @@
+message: |
+  The devices under test form a loop in the red VLAN.
+
+  The link with the lowest port_priority should be forwarding, all other links
+  should be blocked.
+
+module: [ vlan, stp ]
+
+groups:
+  _auto_create: true
+  probes:
+    members: [ x1 ]
+    device: eos
+
+nodes:
+  dut:
+    stp.priority: 4096  # High STP bridge priority (low value) -> becomes root
+
+vlans:
+  red:
+    mode: bridge
+    id: 42
+
+links:
+- dut:
+    stp.port_priority: 12
+  x1:
+  vlan.access: red
+- dut:
+    stp.port_priority: 10
+  x1:
+  vlan.access: red
+- dut:
+    stp.port_priority: 0
+  x1:
+  vlan.access: red
+
+validate:
+  eth3_fwd:
+    wait: 40
+    wait_msg: Waiting for STP to enable third link
+    nodes: [ x1 ]
+    devices: [ eos ]
+    pass: Third link is forwarding; DUT set the correct port priority
+    fail: Third link is not forwarding; DUT probably did not set port priority
+    stop_on_error: True
+    show: spanning-tree | json
+    valid: |
+      spanningTreeInstances.MST0.interfaces.Ethernet3.state == 'forwarding'
+
+  eth1_prio:
+    nodes: [ x1 ]
+    devices: [ eos ]
+    pass: First link has root port priority 12 (192)
+    fail: The root port priority on the first link is not 12 (192)
+    show: spanning-tree interface Ethernet1 detail | json
+    valid:
+      spanningTreeInstances.MST0.detail.designatedPortPriority == 192
+
+  eth2_prio:
+    nodes: [ x1 ]
+    devices: [ eos ]
+    pass: Second link has root port priority 10 (160)
+    fail: The root port priority on the second link is not 10 (160)
+    show: spanning-tree interface Ethernet2 detail | json
+    valid:
+      spanningTreeInstances.MST0.detail.designatedPortPriority == 160
+
+  eth3_prio:
+    nodes: [ x1 ]
+    devices: [ eos ]
+    pass: Third link has root port priority zero
+    fail: The root port priority on the third link is not zero
+    show: spanning-tree interface Ethernet3 detail | json
+    valid:
+      spanningTreeInstances.MST0.detail.designatedPortPriority == 0

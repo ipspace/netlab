@@ -1,0 +1,53 @@
+---
+message: |
+  This is a config-only test that uses all possible STP port types. It's a bit
+  hard to validate whether a particular port type is configured ;), the only
+  check we can do is for edge ports.
+
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h1, h2, h3, h4 ]
+    device: linux
+    provider: clab
+  switches:
+    members: [ dut, x1 ]
+    module: [ vlan, stp ]
+
+vlans:
+  red:
+    mode: bridge
+    links:
+    - dut:
+      h1:
+      stp.port_type: edge
+    - dut:
+      h2:
+      stp.port_type: edge
+    - dut:
+      h3:
+      stp.port_type: auto
+  blue:
+    mode: bridge
+  green:
+    mode: bridge
+    stp.port_type: normal # Test: VLAN port_type
+    links: [ dut-h4 ]
+
+nodes:
+  x1:
+    device: eos
+
+links:
+- dut:
+  x1:
+  vlan.trunk: [ red, blue ]
+  stp.port_type: network
+
+validate:
+  edge:                     # The only thing we can test is the edge port type
+    wait: 3                 # It should be enabled in a few seconds
+    nodes: [ h1 ]
+    pass: H1 and H2 are connected to edge ports
+    fail: H1 and H2 are probably connected to regular STP-controlled ports
+    plugin: ping('h2',count=2)

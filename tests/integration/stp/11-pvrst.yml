@@ -1,0 +1,77 @@
+message: |
+  The devices under test form a layer-2 triangle of VLAN trunks. The devices
+  are running PVRST and have different per-VLAN root priorities.
+
+  If DUT_A and DUT_B run PVSRT and has correct per-VLAN root priorities, DUT_A becomes the
+  root bridge for red VLAN and DUT_B becomes the root bridge for the blue VLAN.
+
+module: [ vlan, stp ]
+
+groups:
+  _auto_create: true
+  probes:
+    members: [ x1, x2 ]
+    device: eos
+
+vlans:
+  red:
+    mode: bridge
+    id: 42
+  blue:
+    mode: bridge
+    id: 76
+
+stp.protocol: pvrst
+
+nodes:
+  dut_a:
+    vlans:
+      red:
+        stp.priority: 4096  # High STP bridge priority (low value) -> becomes root
+      blue:
+        stp.priority: 32768
+  dut_b:
+    stp.priority: 12288
+  x1:
+    stp.priority: 16384
+  x2:
+    stp.priority: 16384
+
+links:
+- dut_a:
+  x1:
+  vlan.trunk: [ red, blue ]
+- dut_b:
+  x2:
+  vlan.trunk: [ red, blue ]
+- dut_a:
+  dut_b:
+  vlan.trunk: [ red, blue ]
+- x1:
+  x2:
+  vlan.trunk: [ red, blue ]
+
+validate:
+  vlan_red:
+    wait: 40
+    wait_msg: Waiting for STP (VLAN red)
+    nodes: [ x1 ]
+    pass: DUT_A is root bridge in red VLAN
+    fail: DUT_A is not the root bridge in red VLAN or has incorrect root priority
+    devices: [ eos ]
+    show: spanning-tree | json
+    valid: >-
+      spanningTreeInstances.VL42.rootPort.interface == 'Ethernet1' and
+      spanningTreeInstances.VL42.rootBridge.priority == 4096
+
+  vlan_blue:
+    wait: 10
+    wait_msg: Waiting for STP (VLAN blue)
+    nodes: [ x1 ]
+    pass: DUT_B is root bridge in blue VLAN
+    fail: DUT_B is not the root bridge in blue VLAN or has incorrect root priority
+    devices: [ eos ]
+    show: spanning-tree | json
+    valid: >-
+      spanningTreeInstances.VL76.rootPort.interface == 'Ethernet2' and
+      spanningTreeInstances.VL76.rootBridge.priority == 12288
