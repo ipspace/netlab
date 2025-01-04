@@ -1,48 +1,43 @@
 message: |
-  The devices under test form a layer-2 triangle in the red VLAN.
-
-  The bridge with the highest priority (s1) should become the root, the link
-  x1-x2 should get blocked
+  The device under test is connected to the probe with default STP root priority.
+  Once the STP settles (the interconnecting link in red VLAN is forwarding), we can
+  check that the priority of the root bridge is what we expect.
 
 module: [ vlan, stp ]
 
 groups:
   _auto_create: true
   probes:
-    members: [ x1, x2 ]
-    device: frr
+    members: [ x1 ]
+    device: eos
 
 nodes:
   dut:
     stp.priority: 4096  # High STP bridge priority (low value) -> becomes root
-  x2:
-    stp.priority: 8192
 
 vlans:
   red:
     mode: bridge
     id: 42
-    links: [ dut-x1, dut-x2, x1-x2 ]
+    links: [ dut-x1 ]
 
 validate:
   link_fwd:
     wait: 40
     wait_msg: Waiting for STP
     nodes: [ x1 ]
-    pass: Link X1-DUT is forwarding; DUT is STP root
-    fail: Link X1-DUT is not forwarding; DUT is not STP root
-    devices: [ frr ]
-    exec: bridge link show|grep {{ interfaces[0].ifname }}
+    pass: Link X1-DUT is forwarding
+    fail: Link X1-DUT is not forwarding
+    devices: [ eos ]
+    show: spanning-tree | json
     valid: |
-      "forwarding" in stdout
+      spanningTreeInstances.MST0.interfaces.Ethernet1.state == 'forwarding'
 
-  link_block:
-    wait: 10
-    wait_msg: Waiting for STP
+  stp_prio:
     nodes: [ x1 ]
-    pass: Link X1-X2 is blocking; DUT is STP root
-    fail: Link X1-X2 is not blocking; DUT is not STP root
-    devices: [ frr ]
-    exec: bridge link show|grep {{ interfaces[1].ifname }}
+    pass: Root bridge has priority 4096
+    fail: Root bridge priority was not set correctly on DUT
+    devices: [ eos ]
+    show: spanning-tree | json
     valid: |
-      "blocking" in stdout
+      spanningTreeInstances.MST0.rootBridge.priority == 4096
