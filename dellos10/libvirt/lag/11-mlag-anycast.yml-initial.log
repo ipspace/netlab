@@ -1,0 +1,547 @@
+[WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [h1]
+ok: [s1]
+ok: [s2]
+ok: [x1]
+
+TASK [Find device readiness script] ********************************************
+ok: [h1]
+ok: [s1]
+ok: [s2]
+ok: [x1]
+
+TASK [Wait for device to become ready] *****************************************
+skipping: [s1]
+skipping: [s2]
+skipping: [x1]
+skipping: [h1]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, x1, h1
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [h1]
+ok: [s1]
+ok: [s2]
+ok: [x1]
+
+TASK [Find configuration template for initial] *********************************
+ok: [h1]
+ok: [s1]
+ok: [s2]
+ok: [x1]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
+skipping: [x1]
+skipping: [h1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.42.5/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.42.5/24 dev eth1
+    ip link set eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.42.1 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.42.1 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.42.1 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.42.1 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
+ok: [s1] => 
+  msg: |-
+    initial configuration for s1
+    =========================================
+    hostname s1
+    !
+    lldp enable
+    !
+    !
+    ip host s2 10.0.0.3
+    ip host x1 10.0.0.4
+    !
+    !
+    interface loopback0
+     ip address 10.0.0.2/32
+     no ipv6 enable
+    !
+    interface mgmt1/1/1
+     no lldp transmit
+     no lldp receive
+    !
+    interface ethernet1/1/1
+     no shutdown
+     no switchport
+     description "s1 -> s2"
+    !
+    interface port-channel1
+     no shutdown
+     description "[Access VLAN red] s1 -> [x1\\,s2]"
+    !
+    interface ethernet1/1/2
+     no shutdown
+     no switchport
+     description "s1 -> x1"
+    !
+    interface virtual-network1000
+     no shutdown
+     description "VLAN red (1000) -> [x1\\,s2\\,h1]"
+     ip address 172.16.42.2/24
+     no ipv6 enable
+    !
+ok: [s2] => 
+  msg: |-
+    initial configuration for s2
+    =========================================
+    hostname s2
+    !
+    lldp enable
+    !
+    !
+    ip host s1 10.0.0.2
+    ip host x1 10.0.0.4
+    !
+    !
+    interface loopback0
+     ip address 10.0.0.3/32
+     no ipv6 enable
+    !
+    interface mgmt1/1/1
+     no lldp transmit
+     no lldp receive
+    !
+    interface ethernet1/1/1
+     no shutdown
+     no switchport
+     description "s2 -> s1"
+    !
+    interface port-channel1
+     no shutdown
+     description "[Access VLAN red] s2 -> [x1\\,s1]"
+    !
+    interface ethernet1/1/2
+     no shutdown
+     no switchport
+     description "s2 -> x1"
+    !
+    interface virtual-network1000
+     no shutdown
+     description "VLAN red (1000) -> [x1\\,s1\\,h1]"
+     ip address 172.16.42.3/24
+     no ipv6 enable
+    !
+ok: [x1] => 
+  msg: |-
+    initial configuration for x1
+    =========================================
+    hostname x1
+    !
+    logging monitor debugging
+    aaa authorization exec default local
+    !
+    lldp run
+    ip routing
+    !
+    !
+    ip host h1 172.16.42.5
+    ip host s1 10.0.0.2 172.16.42.2
+    ip host s2 10.0.0.3 172.16.42.3
+    !
+    interface Management1
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     no shutdown
+     ip address 10.0.0.4/32
+    !
+    interface port-channel1
+     no shutdown
+     description [Access VLAN red] x1 -> [s1,s2]
+    !
+    interface Ethernet1
+     no shutdown
+     no switchport
+     description x1 -> s1
+    !
+     mac-address 52dc.cafe.0401
+    !
+    interface Ethernet2
+     no shutdown
+     no switchport
+     description x1 -> s2
+    !
+     mac-address 52dc.cafe.0402
+    !
+    interface Ethernet3
+     no shutdown
+     no switchport
+     description [Access VLAN red] x1 -> h1
+    !
+     mac-address 52dc.cafe.0403
+    !
+    interface Vlan1000
+     no shutdown
+     description VLAN red (1000) -> [s2,s1,h1]
+     ip address 172.16.42.4/24
+    !
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [h1]
+ok: [s1]
+ok: [s2]
+ok: [x1]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/dellos10.yml for s1, s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for x1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1
+
+TASK [wait_for_connection] *****************************************************
+skipping: [s1]
+skipping: [s2]
+
+TASK [dellos10_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/dellos10.j2] ***
+changed: [s1]
+changed: [s2]
+
+TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [x1]
+
+TASK [Define script filename and determine whether to execute in netns] ********
+ok: [h1]
+
+TASK [Create a temporary file for the rendered script] *************************
+changed: [h1 -> localhost]
+
+TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+changed: [h1 -> localhost]
+
+TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
+skipping: [h1]
+
+TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+skipping: [h1]
+
+TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
+changed: [h1 -> localhost]
+
+TASK [Remove temporary file /tmp/h1_initial-9tma8454.sh] ***********************
+changed: [h1 -> localhost]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [s1]
+ok: [s2]
+ok: [x1]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, x1 => (item=lag)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, x1 => (item=vlan)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, x1 => (item=gateway)
+
+TASK [Figure out whether to deploy the module lag on current device] ***********
+ok: [s1]
+ok: [s2]
+ok: [x1]
+
+TASK [Find configuration template for lag] *************************************
+ok: [s2]
+ok: [x1]
+ok: [s1]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
+skipping: [x1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [x1] => 
+  msg: |-
+    lag configuration for x1
+    =========================================
+  
+    interface port-channel1
+     description [Access VLAN red] x1 -> [s1,s2]
+    !
+    !
+    interface Ethernet1
+     description x1 -> s1 in channel-group 1
+     channel-group 1 mode active
+     lacp timer fast
+    !
+    interface Ethernet2
+     description x1 -> s2 in channel-group 1
+     channel-group 1 mode active
+     lacp timer fast
+ok: [s1] => 
+  msg: |-
+    lag configuration for s1
+    =========================================
+    ! OS10 internally uses port-channel 1000 and VLAN 4094 for VLT
+    vlt-domain 1
+     backup destination 10.0.0.3
+     vlt-mac 02:00:01:a9:00:01
+     discovery-interface ethernet1/1/1
+  
+    interface port-channel1
+     description "[Access VLAN red] s1 -> [x1\\,s2] in vlt-port-channel 1"
+     vlt-port-channel 1
+    !
+    interface ethernet1/1/2
+     description "s1 -> x1 in channel-group 1"
+     channel-group 1 mode active
+     lacp rate fast
+    !
+ok: [s2] => 
+  msg: |-
+    lag configuration for s2
+    =========================================
+    ! OS10 internally uses port-channel 1000 and VLAN 4094 for VLT
+    vlt-domain 1
+     backup destination 10.0.0.2
+     vlt-mac 02:00:01:a9:00:01
+     discovery-interface ethernet1/1/1
+  
+    interface port-channel1
+     description "[Access VLAN red] s2 -> [x1\\,s1] in vlt-port-channel 1"
+     vlt-port-channel 1
+    !
+    interface ethernet1/1/2
+     description "s2 -> x1 in channel-group 1"
+     channel-group 1 mode active
+     lacp rate fast
+    !
+
+TASK [Find configuration deployment deploy_script for lag] *********************
+ok: [s1]
+ok: [s2]
+ok: [x1]
+
+TASK [Deploy lag configuration] ************************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/dellos10.yml for s1, s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for x1
+
+TASK [wait_for_connection] *****************************************************
+skipping: [s1]
+skipping: [s2]
+
+TASK [dellos10_config: deploying lag from /home/pipi/net101/tools/netsim/ansible/templates/lag/dellos10.j2] ***
+changed: [s2]
+changed: [s1]
+
+TASK [eos_config: deploying lag from /home/pipi/net101/tools/netsim/ansible/templates/lag/eos.j2] ***
+changed: [x1]
+
+TASK [Figure out whether to deploy the module vlan on current device] **********
+ok: [s1]
+ok: [s2]
+ok: [x1]
+
+TASK [Find configuration template for vlan] ************************************
+ok: [s1]
+ok: [s2]
+ok: [x1]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
+skipping: [x1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [s1] => 
+  msg: |-
+    vlan configuration for s1
+    =========================================
+    ! First of all, create association VLAN<->Virtual-Network
+    virtual-network 1000
+      exit
+    interface vlan 1000
+      description "VLAN red"
+      virtual-network 1000
+      exit
+    !
+    !
+    interface port-channel1
+     switchport mode access
+     switchport access vlan 1000
+    !
+    interface virtual-network1000
+ok: [s2] => 
+  msg: |-
+    vlan configuration for s2
+    =========================================
+    ! First of all, create association VLAN<->Virtual-Network
+    virtual-network 1000
+      exit
+    interface vlan 1000
+      description "VLAN red"
+      virtual-network 1000
+      exit
+    !
+    !
+    interface port-channel1
+     switchport mode access
+     switchport access vlan 1000
+    !
+    interface virtual-network1000
+ok: [x1] => 
+  msg: |-
+    vlan configuration for x1
+    =========================================
+    vlan 1000
+     name red
+    !
+  
+    !
+    interface port-channel1
+     switchport
+     switchport access vlan 1000
+    !
+    interface Ethernet3
+     switchport
+     switchport access vlan 1000
+    !
+    interface Vlan1000
+
+TASK [Find configuration deployment deploy_script for vlan] ********************
+ok: [s1]
+ok: [s2]
+ok: [x1]
+
+TASK [Deploy vlan configuration] ***********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/dellos10.yml for s1, s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for x1
+
+TASK [wait_for_connection] *****************************************************
+skipping: [s1]
+skipping: [s2]
+
+TASK [dellos10_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/dellos10.j2] ***
+changed: [s1]
+changed: [s2]
+
+TASK [eos_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/eos.j2] ***
+changed: [x1]
+
+TASK [Figure out whether to deploy the module gateway on current device] *******
+ok: [s1]
+ok: [s2]
+ok: [x1]
+
+TASK [Find configuration template for gateway] *********************************
+skipping: [x1]
+ok: [s1]
+ok: [s2]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
+skipping: [x1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [x1]
+ok: [s1] => 
+  msg: |-
+    gateway configuration for s1
+    =========================================
+    ip virtual-router mac-address 02:00:ca:fe:00:ff
+  
+  
+    !
+    interface virtual-network1000
+      ip virtual-router address 172.16.42.1
+ok: [s2] => 
+  msg: |-
+    gateway configuration for s2
+    =========================================
+    ip virtual-router mac-address 02:00:ca:fe:00:ff
+  
+  
+    !
+    interface virtual-network1000
+      ip virtual-router address 172.16.42.1
+
+TASK [Find configuration deployment deploy_script for gateway] *****************
+skipping: [x1]
+ok: [s1]
+ok: [s2]
+
+TASK [Deploy gateway configuration] ********************************************
+skipping: [x1]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/dellos10.yml for s1, s2
+
+TASK [wait_for_connection] *****************************************************
+skipping: [s1]
+skipping: [s2]
+
+TASK [dellos10_config: deploying gateway from /home/pipi/net101/tools/netsim/ansible/templates/gateway/dellos10.j2] ***
+changed: [s2]
+changed: [s1]
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+h1                         : ok=13   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+s1                         : ok=31   changed=4    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+s2                         : ok=31   changed=4    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+x1                         : ok=26   changed=3    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+
+
+
+The devices under test are an MLAG pair sharing an anycast gateway and
+connected to an Arista EOS switch.
+
+The Arista EOS switch should have a working LAG and the attached host should
+be able to ping the anycast gateway.
+

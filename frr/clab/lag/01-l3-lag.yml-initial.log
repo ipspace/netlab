@@ -25,6 +25,10 @@ TASK [Find configuration template for initial] *********************************
 ok: [dut]
 ok: [xr]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [xr]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
   msg: |-
@@ -68,7 +72,7 @@ ok: [dut] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -76,9 +80,19 @@ ok: [dut] =>
         ip link set dev lo up
       fi
     fi
+    if [ ! -e /sys/class/net/bond1 ]; then
+      if [ ! -e /sys/devices/virtual/net/bond1 ]; then
+    if [ ! -e /sys/class/net/bond1 ]; then
+    ip link add dev bond1 type bond mode 802.3ad lacp_rate fast lacp_active on
+    fi
+  
+        ip link set dev bond1 up
+      fi
+    fi
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    sysctl -qw net.ipv6.conf.bond1.disable_ipv6=1
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
   
@@ -166,7 +180,7 @@ ok: [xr] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -174,9 +188,19 @@ ok: [xr] =>
         ip link set dev lo up
       fi
     fi
+    if [ ! -e /sys/class/net/bond1 ]; then
+      if [ ! -e /sys/devices/virtual/net/bond1 ]; then
+    if [ ! -e /sys/class/net/bond1 ]; then
+    ip link add dev bond1 type bond mode 802.3ad lacp_rate fast lacp_active on
+    fi
+  
+        ip link set dev bond1 up
+      fi
+    fi
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    sysctl -qw net.ipv6.conf.bond1.disable_ipv6=1
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
   
@@ -241,8 +265,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for dut, xr
 
 TASK [template] ****************************************************************
-changed: [xr]
 changed: [dut]
+changed: [xr]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
@@ -274,6 +298,10 @@ TASK [Find configuration template for lag] *************************************
 ok: [dut]
 ok: [xr]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [xr]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
   msg: |-
@@ -283,16 +311,12 @@ ok: [dut] =>
     #
     set -e # Exit immediately when any command fails
     #
+    # Bond devices are created by 'initial' module - add members
     #
-    # Create bonds for LAGs, if any. Requires kernel bonding module loaded
-    #
-    ip link add dev bond1 type bond mode 802.3ad xmit_hash_policy encap3+4 lacp_rate fast lacp_active on
-    ip link set dev bond1 down
     ip link set dev eth1 down
-    ip link set dev eth2 down
-  
     ip link set dev eth1 master bond1
     ip link set dev eth1 up
+    ip link set dev eth2 down
     ip link set dev eth2 master bond1
     ip link set dev eth2 up
     ip link set dev bond1 up
@@ -305,16 +329,12 @@ ok: [xr] =>
     #
     set -e # Exit immediately when any command fails
     #
+    # Bond devices are created by 'initial' module - add members
     #
-    # Create bonds for LAGs, if any. Requires kernel bonding module loaded
-    #
-    ip link add dev bond1 type bond mode 802.3ad xmit_hash_policy encap3+4 lacp_rate fast lacp_active on
-    ip link set dev bond1 down
     ip link set dev eth1 down
-    ip link set dev eth2 down
-  
     ip link set dev eth1 master bond1
     ip link set dev eth1 up
+    ip link set dev eth2 down
     ip link set dev eth2 master bond1
     ip link set dev eth2 up
     ip link set dev bond1 up
@@ -350,6 +370,10 @@ ok: [xr]
 TASK [Find configuration template for ospf] ************************************
 ok: [dut]
 ok: [xr]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [xr]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -417,8 +441,8 @@ TASK [Deploy ospf configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for dut, xr
 
 TASK [template] ****************************************************************
-changed: [dut]
 changed: [xr]
+changed: [dut]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
@@ -429,15 +453,15 @@ skipping: [dut]
 skipping: [xr]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [dut]
 changed: [xr]
+changed: [dut]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=32   changed=7    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
-xr                         : ok=31   changed=6    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
+dut                        : ok=32   changed=7    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+xr                         : ok=31   changed=6    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
 
 
 

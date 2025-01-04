@@ -25,6 +25,10 @@ TASK [Find configuration template for initial] *********************************
 ok: [dut]
 ok: [xr]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [xr]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
   msg: |-
@@ -89,7 +93,6 @@ ok: [dut] =>
     auto bond1
   
     iface bond1 inet static
-      mtu 1500
       address 10.1.0.1/30
     auto swp1
     auto swp2
@@ -189,16 +192,39 @@ ok: [xr] =>
     hostnamectl set-hostname xr
     sysctl -w net.ipv4.ip_forward=1
     sysctl -w net.ipv6.conf.all.forwarding=1
+    APT_INSTALL=
+    #
+    if which curl; then
+      echo "Package curl already installed"
+    else
+      APT_INSTALL="$APT_INSTALL curl"
+    fi
+    #
+    if which gpg; then
+      echo "Package gnupg already installed"
+    else
+      APT_INSTALL="$APT_INSTALL gnupg"
+    fi
+    #
+    # APT_INSTALL always starts with a blank, so we can't just check if it's empty
+    # The following hack turns a string that contains only whitespaces into
+    # an empty string and removes leading whitespaces
+    #
+    APT_INSTALL=`echo $APT_INSTALL`
+    if [ -n "$APT_INSTALL" ]; then
+      echo "Installing packages $APT_INSTALL"
+      apt-get update -qq && apt-get install -qq $APT_INSTALL
+    fi
     #
     # Install FRR on a Ubuntu VM if needed
     #
     if which /usr/lib/frr/frrinit.sh; then
       echo "FRR already installed, skipping installation"
     else
-      curl -s https://deb.frrouting.org/frr/keys.asc | apt-key add -
+      curl -s https://deb.frrouting.org/frr/keys.asc >/etc/apt/trusted.gpg.d/frr.asc
       FRRVER="frr-stable"
       echo deb https://deb.frrouting.org/frr $(lsb_release -s -c) $FRRVER > /etc/apt/sources.list.d/frr.list
-      apt-get update -qq && apt-get install -qq frr frr-pythontools bridge-utils
+      apt-get update -qq && apt-get install -qq frr frr-pythontools bridge-utils ethtool
     fi
     #
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
@@ -212,7 +238,7 @@ ok: [xr] =>
     /usr/lib/frr/frrinit.sh restart
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -220,9 +246,25 @@ ok: [xr] =>
         ip link set dev lo up
       fi
     fi
+    if [ ! -e /sys/class/net/bond1 ]; then
+      if [ ! -e /sys/devices/virtual/net/bond1 ]; then
+    #
+    # Make sure 'bonding' module is loaded
+    #
+    if [ ! -e /sys/module/bonding ]; then
+    modprobe bonding miimon=100 mode=802.3ad lacp_rate=fast
+    fi
+    if [ ! -e /sys/class/net/bond1 ]; then
+    ip link add dev bond1 type bond mode 802.3ad lacp_rate fast
+    fi
+  
+        ip link set dev bond1 up
+      fi
+    fi
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    sysctl -qw net.ipv6.conf.bond1.disable_ipv6=1
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
   
@@ -231,6 +273,8 @@ ok: [xr] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
+    ip link set eth1 mtu 1500
+    ip link set eth2 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -272,17 +316,20 @@ TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for xr
 
-TASK [copy cumulus config to /tmp/config.sh] ***********************************
-changed: [dut]
-
-TASK [set_fact deployed_config] ************************************************
+TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
 ok: [dut]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
+TASK [Create local temporary file] *********************************************
+changed: [dut -> localhost]
+
+TASK [Create initial config script in local temporary file] ********************
+changed: [dut -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
 
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
-skipping: [dut]
+TASK [Remove temporary file /tmp/ansible.dut.fryp8lw3temp] *********************
+changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
 changed: [xr]
@@ -313,6 +360,10 @@ ok: [xr]
 TASK [Find configuration template for lag] *************************************
 ok: [dut]
 ok: [xr]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [xr]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -348,19 +399,14 @@ ok: [xr] =>
     #
     set -e # Exit immediately when any command fails
     #
-    modprobe bonding miimon=100 mode=802.3ad lacp_rate=fast
+    # Bond devices are created by 'initial' module - add members
     #
-    # Create bonds for LAGs, if any. Requires kernel bonding module loaded
-    #
-    ip link add dev bond1 type bond mode 802.3ad xmit_hash_policy encap3+4 lacp_rate fast
-    ip link set dev bond1 down
-    ip link set dev eth1 down
-    ip link set dev eth2 down
-  
     ethtool -s eth1 autoneg off speed 1000 duplex full
+    ip link set dev eth1 down
     ip link set dev eth1 master bond1
     ip link set dev eth1 up
     ethtool -s eth2 autoneg off speed 1000 duplex full
+    ip link set dev eth2 down
     ip link set dev eth2 master bond1
     ip link set dev eth2 up
     ip link set dev bond1 up
@@ -374,17 +420,20 @@ TASK [Deploy lag configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for xr
 
-TASK [copy cumulus config to /tmp/config.sh] ***********************************
-changed: [dut]
-
-TASK [set_fact deployed_config] ************************************************
+TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/lag/cumulus.j2] ***
 ok: [dut]
 
-TASK [run /tmp/config.sh to deploy lag config from /home/pipi/net101/tools/netsim/ansible/templates/lag/cumulus.j2] ***
+TASK [Create local temporary file] *********************************************
+changed: [dut -> localhost]
+
+TASK [Create lag config script in local temporary file] ************************
+changed: [dut -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
 
-TASK [run vtysh to import lag config from /home/pipi/net101/tools/netsim/ansible/templates/lag/cumulus.j2] ***
-skipping: [dut]
+TASK [Remove temporary file /tmp/ansible.dut.ru2r_30ptemp] *********************
+changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
 changed: [xr]
@@ -405,6 +454,10 @@ ok: [xr]
 TASK [Find configuration template for ospf] ************************************
 ok: [dut]
 ok: [xr]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [xr]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -467,17 +520,20 @@ TASK [Deploy ospf configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for xr
 
-TASK [copy cumulus config to /tmp/config.sh] ***********************************
-changed: [dut]
-
-TASK [set_fact deployed_config] ************************************************
+TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/ospf/cumulus.j2] ***
 ok: [dut]
 
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/cumulus.j2] ***
-skipping: [dut]
+TASK [Create local temporary file] *********************************************
+changed: [dut -> localhost]
 
-TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/cumulus.j2] ***
+TASK [Create ospf config script in local temporary file] ***********************
+changed: [dut -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
+
+TASK [Remove temporary file /tmp/ansible.dut.bnsr4gwatemp] *********************
+changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
 changed: [xr]
@@ -495,8 +551,8 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=30   changed=6    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-xr                         : ok=30   changed=6    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+dut                        : ok=36   changed=12   unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+xr                         : ok=30   changed=6    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 
 
 
