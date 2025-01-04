@@ -779,6 +779,8 @@ def create_node_vlan(node: Box, vlan: str, topology: Box) -> typing.Optional[Box
 create_svi_interfaces: for every physical interface with access VLAN, create an SVI interface
 """
 
+SVI_IFINDEX_OFFSET: typing.Final[int] = 40000                               # Sync with VIRTUAL_INTERFACE_TYPES in links.py
+
 def create_svi_interfaces(node: Box, topology: Box) -> dict:
   skip_ifattr = list(topology.defaults.vlan.attributes.phy_ifattr)
   skip_ifattr.extend(topology.defaults.providers.keys())
@@ -849,14 +851,14 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
       if vlan_mode:                                                         # Set VLAN forwarding mode for completness' sake
         vlan_ifdata.vlan.mode = vlan_mode
       vlan_ifdata.vlan.name = access_vlan
-      vlan_ifdata.ifindex = node.interfaces[-1].ifindex + 1                 # Fill in the rest of interface data:
+      vlan_ifdata.type = "svi"
+      vlan_ifdata.ifindex = links.get_unique_ifindex(node,iftype='svi',start=SVI_IFINDEX_OFFSET)
       vlan_ifdata.ifname = svi_name.format(                                 # ... ifindex, ifname, description
                               vlan=vlan_data.id,
                               bvi=vlan_data.bridge_group,
                               ifname=ifdata.ifname)
       vlan_ifdata.name = f'VLAN {access_vlan} ({vlan_data.id})'
       vlan_ifdata.virtual_interface = True                                  # Mark interface as virtual
-      vlan_ifdata.type = "svi"
       vlan_ifdata.neighbors = []                                            # No neighbors so far
                                                                             # Overwrite interface settings with VLAN settings
       vlan_ifdata = vlan_ifdata + {
