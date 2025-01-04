@@ -207,8 +207,8 @@ pad_node_interfaces: Insert bogus interfaces in the node interface list to cope 
 required ifindex values.
 """
 def pad_node_interfaces(node: Box, topology: Box) -> None:
-  phy_iflist = [ intf for intf in node.interfaces if intf.ifindex < 1000 ]
-  vir_iflist = [ intf for intf in node.interfaces if intf.ifindex >= 1000 ]
+  phy_iflist = [ intf for intf in node.interfaces if 'virtual_interface' not in intf ]
+  vir_iflist = [ intf for intf in node.interfaces if 'virtual_interface' in intf ]
   phy_iflist.sort(key=lambda intf: intf.ifindex)
 
   dev_data = devices.get_consolidated_device_data(node,topology.defaults)
