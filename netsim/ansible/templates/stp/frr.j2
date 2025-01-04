@@ -8,12 +8,15 @@ set -e # Exit immediately when any command fails
 {# Check if port_priority defined at link/interface level #}
 {%  if i.stp is defined and 'port_priority' in i.stp %}
 {%    if i.vlan.access_id is defined and i.vlan.mode|default('') != 'route' %}
-brctl setportprio vlan{{ i.vlan.access_id }} {{ i.ifname }} {{ i.stp.port_priority }}
+bridge link set dev {{ i.ifname }} priority {{ i.stp.port_priority * 4 }}
 {%    endif %}
 
 {# Check if priority defined at node or VLAN level #}
-{%  elif i.type=='svi' and (i.stp.priority is defined or 'priority' in stp) %}
-brctl setbridgeprio {{ i.ifname }} {{ i.stp.priority|default(stp.priority) }}
+{%  elif i.type=='svi' %} 
+{%    set vlan = vlans[ i.vlan.name ] %}
+{%    if vlan.stp.priority is defined or 'priority' in stp %}
+brctl setbridgeprio {{ i.ifname }} {{ vlan.stp.priority|default(stp.priority) }}
+{%    endif %}
 {%  endif %}
 {% endfor %}
 
