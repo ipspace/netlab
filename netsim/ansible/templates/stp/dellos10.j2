@@ -16,11 +16,12 @@ spanning-tree rstp priority {{ stp.priority }}
 
 {# Check for per-VLAN enable and priority; implies Rapid-PVST #}
 {%  if vlans is defined %}
-{%   for vname,vdata in vlans.items() if 'stp' in vdata %}
+{%   set apply_stp_prio_per_vlan = stp.priority is defined and stp.protocol=='pvrst' %}
+{%   for vname,vdata in vlans.items() if 'stp' in vdata or apply_stp_prio_per_vlan %}
 {%    if not vdata.stp.enable|default(True) %}
 spanning-tree vlan {{ vdata.id }} disable
-{%    elif 'priority' in vdata.stp %}
-spanning-tree vlan {{ vdata.id }} priority {{ vdata.stp.priority }}
+{%    elif 'priority' in vdata.stp|default({}) or apply_stp_prio_per_vlan %}
+spanning-tree vlan {{ vdata.id }} priority {{ vdata.stp.priority|default(stp.priority) }}
 {%    endif %}
 {%   endfor +%}
 {%  endif %}
