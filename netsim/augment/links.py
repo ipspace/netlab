@@ -16,7 +16,7 @@ from ..data.global_vars import get_const
 from . import devices,addressing
 
 VIRTUAL_INTERFACE_TYPES: typing.Final[typing.List[str]] = [
-  'loopback', 'tunnel', 'lag' ]
+  'loopback', 'tunnel', 'lag', 'svi' ]
 
 def adjust_interface_list(iflist: list, link: Box, nodes: Box) -> list:
   link_intf = []
