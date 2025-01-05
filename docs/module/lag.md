@@ -39,6 +39,10 @@ The following parameters can be set on individual links:
 
 This configuration module creates a virtual link with the link type set to **lag** between the **lag.members** and appends the links described in the **lag.members** list to the topology **links** list.
 
+### Module Parameters
+
+* **lag.mlag_delay_restore**: Time in seconds to wait before bringing up MLAG ports after disruptions or startup, default 30
+
 ## Example
 
 The following example creates a LAG consisting of 2 links between r1 and r2:
