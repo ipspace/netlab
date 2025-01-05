@@ -18,24 +18,21 @@ LAG is currently supported on these platforms:
 
 ## Parameters
 
-The following parameters can be set globally, per node or per LAG link:
+The following parameters can be set globally, per node or link aggregation group:
 
-* **lag.mode**: lag mode (deprecated), one of **802.3ad** (IEEE LAG standard with LACP, default value) or **balance-xor** (Linux non-LACP bonding mode).
-                Most platforms only support **802.3ad**, other mode values are ignored by *Netlab*
 * **lag.lacp**: LACP protocol interval: **fast** (1-second LACP timer, default value), **slow** (30-second LACP timer) or **off** (LACP is disabled).
-                Only relevant if **lag.mode** is set to **802.3ad**, else **off** is implied
+* **lag.lacp_mode**: **active** (default) or **passive** (only one of the nodes can be passive)
 
 ```{tip}
-The  _link down_ condition is not easily detectable in a virtual environment. You should always use LACP.
+* The  _link down_ condition is not easily detectable in a virtual environment. Do not turn off LACP.
+* The **lag.mode** parameter from the original implementation of this module is no longer used. Use the Host-Side Link Bonding plugin to configure non-LAG device bonding on Linux.
 ```
-
-* **lag.lacp_mode**: **active** (default) or **passive** (only one of the nodes can be passive)
 
 The following parameters can be set on individual links:
 
 * **lag.members**: Mandatory list of links that form the LAG. It uses the [same format as the topology **links** list](link-formats).
 * **lag.ifindex**: Optional parameter that controls the naming of the LAG (bonding, port-channel) interface.
-* **lag.mlag**: Optional dict with peer link parameters; see [below](mlag)
+* **lag.mlag**: Optional dictionary with peer link parameters; see [below](lag-mlag)
 
 This configuration module creates a virtual link with the link type set to **lag** between the **lag.members** and appends the links described in the **lag.members** list to the topology **links** list.
 
@@ -54,7 +51,7 @@ links:
 
 You can specify any link parameter on the *lag* link.
 
-If you require additional physical interface attributes on individual member links (or interfaces), use the dictionary link format in the **lag.members** list. The following example sets **ifindex** on every Ethernet interface that is part of the LAG to [change the Ethernet interface name](links-ifname).
+If you require additional physical interface attributes on individual member links (or interfaces), use the dictionary link format in the **lag.members** list. The following example sets **ifindex** on every LAG member Ethernet interface to [change the Ethernet interface name](links-ifname).
 
 ```
 links:
@@ -71,41 +68,41 @@ links:
 
 ### Caveat: Multi-provider Labs
 
-There is a known issue with multi-provider labs, where 'lag' type links get converted into 'lan'; this breaks the lag module
+_netlab_ implements links between containers and virtual machines with Linux bridges that block LACP packets. Package virtual machines into [vrnetlab](clab-vrnetlab) containers to connect them to pure containers.
 
-(mlag)=
+(lag-mlag)=
 ## Multi-chassis Link Aggregation (MLAG)
 
-For platforms that support it, link level redundancy can be provided by creating multiple links to different switches. The switches have an internal *peer link* to synchronize state related to the link aggregation, allowing them to present a single consistent network interface to the connected system.
+For platforms that support it, link-level redundancy can be provided by creating multiple links to different switches. The switches have an internal *peer link* to synchronize the state related to the link aggregation, allowing them to present a single consistent network interface to the connected system.
 ![image](lag-topologies.png)
 
-The above diagram illustrates the 3 supported topologies:
-* 1:1 lag between 2 nodes
-* 1:2 mlag between 1 node and a pair of 2 nodes interconnected through one or more peerlinks (3 nodes in total)
-* 2:2 dual mlag between 2 pairs of nodes (4 nodes in total)
+The above diagram illustrates the three supported topologies:
+* 1:1 LAG between 2 nodes
+* 1:2 MLAG between 1 node and a pair of 2 nodes interconnected through one or more peer links (3 nodes in total)
+* 2:2 dual MLAG between 2 pairs of nodes (4 nodes in total)
 
 MLAG related parameters:
-* **lag.mlag.mac**: Used at node or interface level to configure the MAC address for the peerlink. *Netlab* can auto-generate this, so it is normally not necessary to set this
-* **lag.mlag.peergroup**: Used on peerlink to configure a unique ID for the pair of switches providing the MLAG. Can be set to *True* for auto-id generation, or an integer (that must be globally unique)
+* **lag.mlag.mac**: Used at node or interface level to configure the MAC address for the peer link. *Netlab* can auto-generate this, so it usually is not necessary to set this
+* **lag.mlag.peergroup**: This parameter configures a unique peer group ID for the pair of MLAG switches. Can be set to *True* for auto-id generation or an integer (that must be globally unique)
 
 A simple example:
 ```
 groups:
- _auto_create: True
- switches:
-  members: [s1,s2]
-  device: dellos10
- hosts:
-  members: [h1,h2]
-  device: frr           # 'linux' does not support the lag module yet
+  _auto_create: True
+  core:
+    members: [s1,s2]
+    device: dellos10
+  edge:
+    members: [h1,h2]
+    device: frr
 
 links:
 - lag:
-   members: [h1-s1,h1-s2]
+    members: [h1-s1,h1-s2]
 - lag:
-   members: [h2-s1,h2-s2]
+    members: [h2-s1,h2-s2]
 
 # Inter-switch peer link(s) for MLAG sync
 - lag:
-   members: [s1-s2]     # Note that multiple physical links are allowed here
-   mlag.peergroup: True # (also) used to derive a unique MAC address for this group of MLAG peers
+    members: [s1-s2]     # Note that multiple physical links are allowed here
+    mlag.peergroup: True # (also) used to derive a unique MAC address for this group of MLAG peers
