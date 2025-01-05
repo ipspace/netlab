@@ -157,6 +157,7 @@ These devices also support optional OSPF interface attributes:
 | Dell OS10                | ✅ | ✅ | ❌  | ❌  |
 | FRR                      | ✅ | ✅ | ✅ | ❌  |
 
+(ospf-node-parameters)=
 ## Node Parameters
 
 * **ospf.process** -- process ID (default: 1)

@@ -1,5 +1,5 @@
 (plugin-node-clone)=
-# Dealing with large amounts of identical devices
+# Dealing with Large Amounts of Identical Devices
 
 The *node.clone* plugin avoids tedious repetitive work by allowing users to mark any node for cloning. Any node with a **clone** attribute gets cloned N times, duplicating links and any group memberships.
 

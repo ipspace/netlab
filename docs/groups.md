@@ -1,3 +1,4 @@
+(topo-groups)=
 # Groups of Lab Objects (Nodes, VLANs, VRFs)
 
 If you have several lab objects (nodes, VLANs, or VRFs) with similar attributes, use _netlab_ groups to apply a set of valid attributes to all of them ([link groups](link-groups) are defined within the [links list](topo-links)).
@@ -267,6 +268,7 @@ nodes: [ a,b,c ]
 groups.cumulus.vars.ansible_user: other
 ```
 
+(groups-bgp)=
 ## Automatic BGP Groups
 
 The BGP module creates a node group named *asnnn* where *nnn* is the AS number for every BGP AS present in the lab topology. The members of the group are all nodes in that autonomous system.

@@ -1,3 +1,4 @@
+(topo-plugins)=
 # netlab Plugins
 
 *netlab* supports dynamically loadable plugins allowing you to implement custom data model transformations or other functionality without adding nerd knobs to the core topology transformation. You might want to [write your own plugins](dev/plugins.md) or use plugins shipped with _netlab_:

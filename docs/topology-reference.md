@@ -13,7 +13,7 @@ Other topology elements include:
 
 * **addressing** -- [IPv4 and IPv6 pools](addressing.md) used to address management, loopback, LAN, P2P and stub interfaces
 * **components** -- [reusable components](components.md) that you can include in multiple places in the lab topology
-* **groups** -- optional [groups of nodes](groups.md)
+* **groups** -- optional [groups of nodes](topo-groups)
 * **module** -- default list of [modules](modules.md) used by this network topology. You can use device-level **module** attribute to override this setting for individual nodes.
 * **plugin** -- list of [plugins](plugins.md) used by this topology.
 * **prefix** -- [named IP prefixes](prefix.md) that can be used to address links and VLANs or in prefix lists or validation expressions.

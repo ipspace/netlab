@@ -8,7 +8,7 @@ The *graph* output module is invoked with the **[netlab graph](netlab-graph)** c
 
 A single formatting modifier can be used to specify the graph type:
 
-* **topology** (default) -- Display inter-node links, multi-access- and stub subnets. When the network topology contains BGP information, the graph groups nodes into autonomous systems. Alternatively, you could set **defaults.outputs.graph.groups** attribute to use topology **[groups](../groups.md)** to group graph nodes.
+* **topology** (default) -- Display inter-node links, multi-access- and stub subnets. When the network topology contains BGP information, the graph groups nodes into autonomous systems. Alternatively, you could set **defaults.outputs.graph.groups** attribute to use topology **[groups](topo-groups)** to group graph nodes.
 * **bgp** -- Include autonomous systems, nodes, and BGP sessions. With the **rr** option (specified with `netlab create -o graph:bgp:rr`), RR-client sessions are drawn as directed arrows.
 
 ## Modifying Graph Attributes

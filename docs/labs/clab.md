@@ -28,7 +28,8 @@ Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab creat
 
 | Virtual network device | Container image              |
 |------------------------|------------------------------|
-| Arista cEOS            | ceos: 4.31.2F                 |
+| Arista cEOS            | ceos:4.31.2F                 |
+| Aruba CX               | vrnetlab/aruba_arubaos-cx:20240731173624 |
 | BIRD                   | netlab/bird:latest           |
 | Cisco Catalyst 8000v   | vrnetlab/vr-c8000v:17.13.01a |
 | Cisco CSR 1000v        | vrnetlab/vr-csr:17.03.04     |
@@ -41,13 +42,15 @@ Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab creat
 | Cumulus VX with NVUE   | networkop/cx:5.0.1           |
 | Dell OS10              | vrnetlab/vr-ftosv            |
 | dnsmasq                | netlab/dnsmasq:latest        |
-| FRR                    | frrouting/frr:v8.4.0         |
+| FRR                    | quay.io/frrouting/frr:10.0.1 |
 | Juniper vMX            | vrnetlab/vr-vmx:18.2R1.9     |
+| Juniper vPTX           | vrnetlab/juniper_vjunosevolved:23.4R2-S2.1 |
 | Juniper vSRX           | vrnetlab/vr-vsrx:23.1R1.8    |
-| vJunos-switch          | vrnetlab/vr-vjunosswitch:23.2R1.14 |
+| vJunos-router          | vrnetlab/juniper_vjunos-router:23.4R2-S2.1 |
+| vJunos-switch          | vrnetlab/juniper_vjunos-switch:23.4R2-S2.1 |
 | Linux[❗](clab-linux)  | python:3.9-alpine            |
 | Mikrotik RouterOS 7    | vrnetlab/vr-routeros:7.6     |
-| Nokia SR Linux         | ghcr.io/nokia/srlinux:latest |
+| Nokia SR Linux         | ghcr.io/nokia/srlinux:24.10.1 |
 | Nokia SR OS            | vrnetlab/vr-sros:latest      |
 | VyOS                   | ghcr.io/sysoleg/vyos-container |
 

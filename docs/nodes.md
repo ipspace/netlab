@@ -67,7 +67,7 @@ nodes:
 * **config** -- extra [configuration templates](custom-config) applied to this device.
 * **cpu** -- virtual CPU cores allocated to the VM lab device. It does not apply to container-based devices.
 * **device** -- device type (see [supported platforms](platforms.md)). [Default device type](default-device-type) is specified in **defaults.device**.
-* **group** -- list of [groups](groups.md) this node belongs to.
+* **group** -- list of [groups](topo-groups) this node belongs to.
 * **id** -- static node identifier[^id] (see below)
 * **image** or **box** -- specifies the Vagrant box or Docker container used by the lab device. Default images for individual device types are specified in system defaults and can be changed with **defaults.devices...** settings ([more details](default-device-image)).
 * **loopback** -- [non-standard loopback addresses](node-loopback).

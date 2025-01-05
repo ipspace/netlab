@@ -13,7 +13,7 @@ Topology description file is a YAML file with these top-level elements:
 : Lab devices (nodes). Individual nodes could be specified by node *name* (string) or a dictionary of node attributes including **name**. Use a node dictionary when you want to specify non-default device type or additional node attributes. See [Topology Reference -- Nodes](nodes.md) for more details.
 
 **groups**
-: [Groups of lab devices (nodes)](groups.md). Used to create inventory groups, either to add group variables, or for simpler deployment of group-wide custom configurations.
+: [Groups of lab devices (nodes)](topo-groups). Used to create inventory groups, either to add group variables, or for simpler deployment of group-wide custom configurations.
 
 **links**
 : [List of links](links.md) between lab devices. Formatted as a list of strings or dictionaries.
