@@ -18,6 +18,9 @@ LAG is currently supported on these platforms:
 
 ## Parameters
 
+The following parameters can be set globally or per node:
+* **lag.mlag.delay_restore**: Time in seconds to wait before bringing up MLAG ports after disruptions or startup, default 30
+
 The following parameters can be set globally, per node or per LAG link:
 
 * **lag.mode**: lag mode (deprecated), one of **802.3ad** (IEEE LAG standard with LACP, default value) or **balance-xor** (Linux non-LACP bonding mode).
@@ -38,10 +41,6 @@ The following parameters can be set on individual links:
 * **lag.mlag**: Optional dict with peer link parameters; see [below](mlag)
 
 This configuration module creates a virtual link with the link type set to **lag** between the **lag.members** and appends the links described in the **lag.members** list to the topology **links** list.
-
-### Module Parameters
-
-* **lag.mlag_delay_restore**: Time in seconds to wait before bringing up MLAG ports after disruptions or startup, default 30
 
 ## Example
 
