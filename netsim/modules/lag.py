@@ -475,3 +475,5 @@ class LAG(_Module):
         module='lag')
 
     node.pop('_lag_ifindex',None)              # Cleanup
+    if not uses_mlag:
+      node.pop('lag.mlag',None)
