@@ -14,14 +14,11 @@ ok: [x2]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [dut]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/eos-clab.yml for x1, x2
-
-TASK [Wait for cEOS SSH daemon to start] ***************************************
-ok: [x1]
-ok: [x2]
+skipping: [x1]
+skipping: [x2]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for x1, x2, dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
@@ -34,134 +31,66 @@ ok: [x1]
 ok: [x2]
 
 TASK [fail] ********************************************************************
+skipping: [dut]
 skipping: [x1]
 skipping: [x2]
-skipping: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
   msg: |-
     initial configuration for dut
     =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)#"
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
   
-    #
-    # Create loopbacks, stub and lag/bond devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
+    - set:
+        system:
+          hostname: dut
+        interface:
+          eth0:
+            ip:
+              vrf: mgmt
+              address:
+                dhcp: {}
+            type: eth
+          swp1:
+            type: swp
+            link:
+              mtu: 1500
+              state:
+                up: {}
+            description: "dut -> x1"
   
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
-    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+          swp2:
+            type: swp
+            link:
+              mtu: 1500
+              state:
+                up: {}
+            description: "dut -> x2"
   
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
-    ip link set eth2 mtu 1500
+          vlan76:
+            type: svi
+            link:
+              state:
+                up: {}
+            description: "VLAN blue (76) -> [x1,x2]"
   
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname dut
-    !
-    vrf mgmt
-     exit-vrf
-    !
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ip address 10.0.0.1/32
-    !
-    interface eth1
-     no shutdown
-     description dut -> x1
-     ! no ip address
-    !
-    interface eth2
-     no shutdown
-     description dut -> x2
-     ! no ip address
-    !
-    interface eth1.76
-     no shutdown
-     description [SubIf VLAN blue] dut -> x1
-     ! no ip address
-    !
-    interface eth1.42
-     no shutdown
-     description [SubIf VLAN red] dut -> x1
-     ! no ip address
-    !
-    interface eth2.76
-     no shutdown
-     description [SubIf VLAN blue] dut -> x2
-     ! no ip address
-    !
-    interface eth2.42
-     no shutdown
-     description [SubIf VLAN red] dut -> x2
-     ! no ip address
-    !
-    interface vlan76
-     no shutdown
-     description VLAN blue (76) -> [x1,x2]
-     ! no ip address
-    !
-    interface vlan42
-     no shutdown
-     description VLAN red (42) -> [x1,x2]
-     ! no ip address
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
+          vlan42:
+            type: svi
+            link:
+              state:
+                up: {}
+            description: "VLAN red (42) -> [x1,x2]"
+  
+  
+    - set:
+        interface:
+          lo:
+            type: loopback
+            ip:
+              address:
+                10.0.0.1/32: {}
+              ipv6:
+                enable: off
 ok: [x1] => 
   msg: |-
     initial configuration for x1
@@ -178,7 +107,7 @@ ok: [x1] =>
     ip host dut 10.0.0.1
     ip host x2 10.0.0.2
     !
-    interface Management0
+    interface Management1
      no lldp transmit
      no lldp receive
     !
@@ -224,7 +153,7 @@ ok: [x2] =>
     ip host dut 10.0.0.1
     ip host x1 10.0.0.3
     !
-    interface Management0
+    interface Management1
      no lldp transmit
      no lldp receive
     !
@@ -261,8 +190,26 @@ ok: [x1]
 ok: [x2]
 
 TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for x1, x2
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for dut
+
+TASK [set_fact] ****************************************************************
+ok: [dut]
+
+TASK [copy the cumulus nvue YAML initial config file to switch (generated from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus_nvue.j2)] ***
+changed: [dut]
+
+TASK [Wait for nvued to start] *************************************************
+ok: [dut]
+
+TASK [set_fact] ****************************************************************
+ok: [dut]
+
+TASK [execute on cumulus: 'nv config patch' for initial config] ****************
+changed: [dut]
+
+TASK [execute on cumulus: 'nv config apply -y' for initial config] *************
+changed: [dut]
 
 TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
@@ -270,27 +217,6 @@ should be similar to how they appear if present in the running configuration on
 device including the indentation
 changed: [x1]
 changed: [x2]
-
-TASK [Attempt to load VRF kernel module] ***************************************
-changed: [dut -> localhost]
-
-TASK [Disable FRR management VRF when modprobe fails] **************************
-skipping: [dut]
-
-TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for dut
-
-TASK [template] ****************************************************************
-changed: [dut]
-
-TASK [set_fact] ****************************************************************
-ok: [dut]
-
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [dut]
-
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-skipping: [dut]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -310,8 +236,8 @@ ok: [x2]
 
 TASK [Find configuration template for vlan] ************************************
 ok: [dut]
-ok: [x2]
 ok: [x1]
+ok: [x2]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -323,48 +249,31 @@ ok: [dut] =>
   msg: |-
     vlan configuration for dut
     =========================================
-    #!/bin/bash
-    #
-    set -e # Exit immediately when any command fails
-    #
-    if [ ! -e /sys/devices/virtual/net/eth1.76 ]; then
-      ip link add link eth1 name eth1.76 type vlan id 76
-      ip link set dev eth1.76 up
-    fi
-    if [ ! -e /sys/devices/virtual/net/eth1.42 ]; then
-      ip link add link eth1 name eth1.42 type vlan id 42
-      ip link set dev eth1.42 up
-    fi
-    if [ ! -e /sys/devices/virtual/net/eth2.76 ]; then
-      ip link add link eth2 name eth2.76 type vlan id 76
-      ip link set dev eth2.76 up
-    fi
-    if [ ! -e /sys/devices/virtual/net/eth2.42 ]; then
-      ip link add link eth2 name eth2.42 type vlan id 42
-      ip link set dev eth2.42 up
-    fi
-    if [ ! -e /sys/devices/virtual/net/vlan76 ]; then
-      brctl addbr vlan76
+    - set:
+        bridge:
+          domain:
+            br_default:
+              mac-address: "08:4f:c2:a9:00:01" # The default 'auto' setting picks the same MAC for multiple instances!
+              untagged: 1
+              vlan:
+                '76': {}
+                '42': {}
   
-      brctl stp vlan76 on
-  
-      ip link set dev vlan76 up
-      ip addr flush dev vlan76
-    fi
-    if [ ! -e /sys/devices/virtual/net/vlan42 ]; then
-      brctl addbr vlan42
-  
-      brctl stp vlan42 on
-  
-      ip link set dev vlan42 up
-      ip addr flush dev vlan42
-    fi
-  
-    brctl addif vlan76 eth1.76
-    brctl addif vlan42 eth1.42
-    brctl addif vlan76 eth2.76
-    brctl addif vlan42 eth2.42
-    exit 0
+        interface:
+         swp1:
+            bridge:
+              domain:
+                br_default:
+                  vlan:
+                    '42': {}
+                    '76': {}
+         swp2:
+            bridge:
+              domain:
+                br_default:
+                  vlan:
+                    '42': {}
+                    '76': {}
 ok: [x1] => 
   msg: |-
     vlan configuration for x1
@@ -422,20 +331,26 @@ ok: [x1]
 ok: [x2]
 
 TASK [Deploy vlan configuration] ***********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for x1, x2
-
-TASK [template] ****************************************************************
-changed: [dut]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
 
-TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
+TASK [copy the cumulus nvue YAML vlan config file to switch (generated from /home/pipi/net101/tools/netsim/ansible/templates/vlan/cumulus_nvue.j2)] ***
 changed: [dut]
 
-TASK [run vtysh to import vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
+TASK [Wait for nvued to start] *************************************************
 skipping: [dut]
+
+TASK [set_fact] ****************************************************************
+ok: [dut]
+
+TASK [execute on cumulus: 'nv config patch' for vlan config] *******************
+changed: [dut]
+
+TASK [execute on cumulus: 'nv config apply -y' for vlan config] ****************
+changed: [dut]
 
 TASK [eos_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/eos.j2] ***
 changed: [x2]
@@ -461,22 +376,28 @@ ok: [dut] =>
   msg: |-
     stp configuration for dut
     =========================================
-    #!/bin/bash
-    #
-    set -e # Exit immediately when any command fails
+    - set:
+        bridge:
+          domain:
+            br_default:
+              stp:
+                mode: pvrst
+                state:
+                  up: {}
+                priority: 4096
+                vlan:
+                 '76':
+                   bridge-priority: 4096
+                 '42':
+                   bridge-priority: 4096
   
-  
-  
-  
-  
-  
-  
-  
-    brctl setbridgeprio vlan76 4096
-  
-    brctl setbridgeprio vlan42 4096
-  
-    exit 0
+    # When using PVRST, NVidia recommends to increase from default 2000 pps
+        system:
+          control-plane:
+            policer:
+              rpvst:
+                burst: 7200
+                rate: 7200
 ok: [x1] => 
   msg: |-
     stp configuration for x1
@@ -499,20 +420,26 @@ ok: [x1]
 ok: [x2]
 
 TASK [Deploy stp configuration] ************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for x1, x2
-
-TASK [template] ****************************************************************
-changed: [dut]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
 
-TASK [run /tmp/config.sh to deploy stp config from /home/pipi/net101/tools/netsim/ansible/templates/stp/frr.j2] ***
+TASK [copy the cumulus nvue YAML stp config file to switch (generated from /home/pipi/net101/tools/netsim/ansible/templates/stp/cumulus_nvue.j2)] ***
 changed: [dut]
 
-TASK [run vtysh to import stp config from /home/pipi/net101/tools/netsim/ansible/templates/stp/frr.j2] ***
+TASK [Wait for nvued to start] *************************************************
 skipping: [dut]
+
+TASK [set_fact] ****************************************************************
+ok: [dut]
+
+TASK [execute on cumulus: 'nv config patch' for stp config] ********************
+changed: [dut]
+
+TASK [execute on cumulus: 'nv config apply -y' for stp config] *****************
+changed: [dut]
 
 TASK [eos_config: deploying stp from /home/pipi/net101/tools/netsim/ansible/templates/stp/eos.j2] ***
 changed: [x1]
@@ -522,9 +449,9 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=32   changed=7    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-x1                         : ok=26   changed=3    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
-x2                         : ok=26   changed=3    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
+dut                        : ok=37   changed=9    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+x1                         : ok=24   changed=3    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+x2                         : ok=24   changed=3    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 
 
 

@@ -42,55 +42,38 @@ ok: [dut] =>
     =========================================
     hostname dut
     !
-    lldp
+    lldp enable
     !
-  
-  
     !
-    vlan 76
-     name blue
+    ip host x1 10.0.0.3
+    ip host x2 10.0.0.2
     !
-    vlan 42
-     name red
     !
-  
+    interface loopback0
+     ip address 10.0.0.1/32
+     no ipv6 enable
     !
-  
+    interface mgmt1/1/1
+     no lldp transmit
+     no lldp receive
     !
-    interface loopback 0
-        ip address 10.0.0.1/32
+    interface ethernet1/1/1
+     no shutdown
+     no switchport
+     description "dut -> x1"
     !
-    interface mgmt
-        no lldp transmit
-        no lldp receive
+    interface ethernet1/1/2
+     no shutdown
+     no switchport
+     description "dut -> x2"
     !
-  
-  
-  
-    interface 1/1/1
-        shutdown
-        mtu 9198
-        description dut -> x1
-        no shutdown
+    interface virtual-network76
+     no shutdown
+     description "VLAN blue (76) -> [x1\\,x2]"
     !
-  
-  
-    interface 1/1/2
-        shutdown
-        mtu 9198
-        description dut -> x2
-        no shutdown
-    !
-  
-  
-    interface vlan76
-        description VLAN blue (76) -> [x1,x2]
-    !
-  
-  
-    interface vlan42
-        description VLAN red (42) -> [x1,x2]
-    !
+    interface virtual-network42
+     no shutdown
+     description "VLAN red (42) -> [x1\\,x2]"
     !
 ok: [x1] => 
   msg: |-
@@ -191,30 +174,21 @@ ok: [x1]
 ok: [x2]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/dellos10.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for x1, x2
 
-TASK [tempfile] ****************************************************************
-changed: [dut -> localhost]
+TASK [wait_for_connection] *****************************************************
+skipping: [dut]
 
-TASK [template] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [aoscx_config: set session auto-confirm for initial] **********************
+TASK [dellos10_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/dellos10.j2] ***
 changed: [dut]
-
-TASK [aoscx_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/arubacx.j2] ***
-changed: [dut]
-
-TASK [file] ********************************************************************
-changed: [dut -> localhost]
 
 TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
 should be similar to how they appear if present in the running configuration on
 device including the indentation
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -229,8 +203,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [dut]
-ok: [x2]
 ok: [x1]
+ok: [x2]
 
 TASK [Find configuration template for vlan] ************************************
 ok: [dut]
@@ -247,19 +221,40 @@ ok: [dut] =>
   msg: |-
     vlan configuration for dut
     =========================================
+    ! First of all, create association VLAN<->Virtual-Network
+    virtual-network 76
+      exit
+    interface vlan 76
+      description "VLAN blue"
+      virtual-network 76
+      exit
+    virtual-network 42
+      exit
+    interface vlan 42
+      description "VLAN red"
+      virtual-network 42
+      exit
     !
     !
-    interface 1/1/1
-     no routing
-     vlan trunk allow 42,76
+    interface ethernet1/1/1
+     switchport mode trunk
+  
+  
+  
+  
+     switchport trunk allowed vlan 42,76
     !
-    interface 1/1/2
-     no routing
-     vlan trunk allow 42,76
+    interface ethernet1/1/2
+     switchport mode trunk
+  
+  
+  
+  
+     switchport trunk allowed vlan 42,76
     !
-    interface vlan76
+    interface virtual-network76
     !
-    interface vlan42
+    interface virtual-network42
 ok: [x1] => 
   msg: |-
     vlan configuration for x1
@@ -317,23 +312,14 @@ ok: [x1]
 ok: [x2]
 
 TASK [Deploy vlan configuration] ***********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/dellos10.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for x1, x2
 
-TASK [tempfile] ****************************************************************
-changed: [dut -> localhost]
+TASK [wait_for_connection] *****************************************************
+skipping: [dut]
 
-TASK [template] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [aoscx_config: set session auto-confirm for vlan] *************************
+TASK [dellos10_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/dellos10.j2] ***
 changed: [dut]
-
-TASK [aoscx_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/arubacx.j2] ***
-changed: [dut]
-
-TASK [file] ********************************************************************
-changed: [dut -> localhost]
 
 TASK [eos_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/eos.j2] ***
 changed: [x1]
@@ -359,19 +345,13 @@ ok: [dut] =>
   msg: |-
     stp configuration for dut
     =========================================
-    !
-    ! stp config module
-    !
-    spanning-tree
-    spanning-tree mode rpvst
+    spanning-tree mode rapid-pvst
   
-    spanning-tree priority 1
   
-    spanning-tree vlan 76
-    spanning-tree vlan 42
+    spanning-tree rstp priority 4096
   
-    !
-    no spanning-tree vlan 42
+    spanning-tree vlan 76 priority 4096
+    spanning-tree vlan 42 disable
 ok: [x1] => 
   msg: |-
     stp configuration for x1
@@ -394,23 +374,14 @@ ok: [x1]
 ok: [x2]
 
 TASK [Deploy stp configuration] ************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/dellos10.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for x1, x2
 
-TASK [tempfile] ****************************************************************
-changed: [dut -> localhost]
+TASK [wait_for_connection] *****************************************************
+skipping: [dut]
 
-TASK [template] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [aoscx_config: set session auto-confirm for stp] **************************
+TASK [dellos10_config: deploying stp from /home/pipi/net101/tools/netsim/ansible/templates/stp/dellos10.j2] ***
 changed: [dut]
-
-TASK [aoscx_config: deploying stp from /home/pipi/net101/tools/netsim/ansible/templates/stp/arubacx.j2] ***
-changed: [dut]
-
-TASK [file] ********************************************************************
-changed: [dut -> localhost]
 
 TASK [eos_config: deploying stp from /home/pipi/net101/tools/netsim/ansible/templates/stp/eos.j2] ***
 changed: [x1]
@@ -420,7 +391,7 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=36   changed=15   unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+dut                        : ok=24   changed=3    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 x1                         : ok=24   changed=3    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 x2                         : ok=24   changed=3    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 
