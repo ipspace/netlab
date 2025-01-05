@@ -19,7 +19,7 @@ LAG is currently supported on these platforms:
 ## Parameters
 
 The following parameters can be set globally or per node:
-* **lag.mlag.delay_restore**: Time in seconds to wait before bringing up MLAG ports after disruptions or startup, default 30
+* **lag.mlag.delay_restore**: Time in seconds to wait before bringing up MLAG ports after disruptions or startup, default 30 (range: 1..1200)
 
 The following parameters can be set globally, per node or per LAG link:
 
