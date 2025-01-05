@@ -48,6 +48,7 @@ ok: [dut] =>
           bond1:
             type: bond
             link:
+              mtu: 1500
               state:
                 up: {}
             description: "dut -> xr"
@@ -98,14 +99,17 @@ ok: [xr] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
     cat <<SCRIPT >.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)$ "
+    export PATH=$PATH:/usr/sbin
+    echo
     echo "Use sudo vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -141,6 +145,12 @@ ok: [xr] =>
       echo "Package gnupg already installed"
     else
       APT_INSTALL="$APT_INSTALL gnupg"
+    fi
+    #
+    if which bridge; then
+      echo "Package iproute2 already installed"
+    else
+      APT_INSTALL="$APT_INSTALL iproute2"
     fi
     #
     # APT_INSTALL always starts with a blank, so we can't just check if it's empty
@@ -210,8 +220,9 @@ ok: [xr] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
-    ip link set eth2 mtu 1500
+    ip link set dev bond1 mtu 1500
+    ip link set dev eth1 mtu 1500
+    ip link set dev eth2 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -334,6 +345,8 @@ ok: [dut] =>
     - set:
         interface:
           bond1:
+            link:
+              mtu: 1500
             bond:
               member:
                 swp1: {}

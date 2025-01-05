@@ -53,6 +53,7 @@ ok: [dut] =>
     interface port-channel1
      no shutdown
      no switchport
+     mtu 1532
      description "dut -> xr"
      ip address 10.1.0.1/30
      no ipv6 enable
@@ -83,14 +84,17 @@ ok: [xr] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
     cat <<SCRIPT >.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)$ "
+    export PATH=$PATH:/usr/sbin
+    echo
     echo "Use sudo vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -126,6 +130,12 @@ ok: [xr] =>
       echo "Package gnupg already installed"
     else
       APT_INSTALL="$APT_INSTALL gnupg"
+    fi
+    #
+    if which bridge; then
+      echo "Package iproute2 already installed"
+    else
+      APT_INSTALL="$APT_INSTALL iproute2"
     fi
     #
     # APT_INSTALL always starts with a blank, so we can't just check if it's empty
@@ -195,8 +205,9 @@ ok: [xr] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
-    ip link set eth2 mtu 1500
+    ip link set dev bond1 mtu 1500
+    ip link set dev eth1 mtu 1500
+    ip link set dev eth2 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
