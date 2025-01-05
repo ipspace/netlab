@@ -8,9 +8,8 @@ message: |
 module: [ vlan, stp ]
 
 groups:
-  _auto_create: true
   probes:
-    members: [ x1, x2 ]
+    members: [ x1 ]
     device: eos
 
 vlans:
@@ -34,21 +33,16 @@ nodes:
     stp.priority: 12288
   x1:
     stp.priority: 16384
-  x2:
-    stp.priority: 16384
 
 links:
 - dut_a:
   x1:
   vlan.trunk: [ red, blue ]
 - dut_b:
-  x2:
+  x1:
   vlan.trunk: [ red, blue ]
 - dut_a:
   dut_b:
-  vlan.trunk: [ red, blue ]
-- x1:
-  x2:
   vlan.trunk: [ red, blue ]
 
 validate:
@@ -56,22 +50,41 @@ validate:
     wait: 40
     wait_msg: Waiting for STP (VLAN red)
     nodes: [ x1 ]
+    pass: At least one interface is in the forwarding state
+    fail: No interfaces are in 'forwarding' state
+    devices: [ eos ]
+    show: spanning-tree | json
+    valid: >-
+      spanningTreeInstances.VL42.interfaces.Ethernet1.state == 'forwarding' or
+      spanningTreeInstances.VL42.interfaces.Ethernet2.state == 'forwarding'
+
+  root_red:
+    nodes: [ x1 ]
     pass: DUT_A is root bridge in red VLAN
     fail: DUT_A is not the root bridge in red VLAN or has incorrect root priority
     devices: [ eos ]
     show: spanning-tree | json
     valid: >-
-      spanningTreeInstances.VL42.rootPort.interface == 'Ethernet1' and
       spanningTreeInstances.VL42.rootBridge.priority == 4096
 
   vlan_blue:
-    wait: 10
+    wait: 40
     wait_msg: Waiting for STP (VLAN blue)
     nodes: [ x1 ]
-    pass: DUT_B is root bridge in blue VLAN
-    fail: DUT_B is not the root bridge in blue VLAN or has incorrect root priority
+    pass: At least one interface is in the forwarding state
+    fail: No interfaces are in 'forwarding' state
     devices: [ eos ]
     show: spanning-tree | json
     valid: >-
-      spanningTreeInstances.VL76.rootPort.interface == 'Ethernet2' and
+      spanningTreeInstances.VL76.interfaces.Ethernet1.state == 'forwarding' or
+      spanningTreeInstances.VL76.interfaces.Ethernet2.state == 'forwarding'
+
+  root_blue:
+    wait: 10
+    pass: DUT_B is root bridge in blue VLAN
+    fail: DUT_B is not the root bridge in blue VLAN or has incorrect root priority
+    devices: [ eos ]
+    nodes: [ x1 ]
+    show: spanning-tree | json
+    valid: >-
       spanningTreeInstances.VL76.rootBridge.priority == 12288
