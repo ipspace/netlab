@@ -443,7 +443,6 @@ class LAG(_Module):
       elif i.type=='lag':
         node_atts = { k:v for k,v in node.get('lag',{}).items() if k!='mlag'}
         i.lag = node_atts + i.lag              # Merge node level settings with interface overrides
-        i.pop('mtu',None)                      # Remove any MTU settings - inherited from members
 
         if 'mode' in i.lag:
           log.error(f'lag.mode {i.lag.mode} used by node {node.name} is deprecated, use only 802.3ad',
