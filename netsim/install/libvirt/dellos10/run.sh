@@ -25,7 +25,7 @@ def main() -> None:
   strings.print_colored_text('[CONVERT] ','green',None)
   print("Converting OS10 installer disk to qcow2 and copying it to build directory")
   inst_disk = find_file('OS10-Installer-*.vmdk')
-  _pkg.abort_on_failure(f"qemu-img convert -c -f vmdk -O qcow2 {inst_disk} {workdir}/hdb_OS10-installer.qcow2")
+  _pkg.abort_on_failure(f"qemu-img convert -f vmdk -O qcow2 {inst_disk} {workdir}/hdb_OS10-installer.qcow2")
 
   strings.print_colored_text('[INFO]    ','bright_cyan',None)
   print("Assuming S5224F as the hardware platform")
@@ -33,7 +33,7 @@ def main() -> None:
 
   strings.print_colored_text('[CONVERT] ','green',None)
   print("Converting OS10 platform disk to qcow2 and copying it to build directory")
-  _pkg.abort_on_failure(f"qemu-img convert -c -f vmdk -O qcow2 {hw_disk} {workdir}/hdc_OS10-platform.qcow2")
+  _pkg.abort_on_failure(f"qemu-img convert -f vmdk -O qcow2 {hw_disk} {workdir}/hdc_OS10-platform.qcow2")
 
   return
 
