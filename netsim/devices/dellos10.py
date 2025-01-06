@@ -28,7 +28,7 @@ check_anycast_gateways - check that anycast gateways are only used on SVI interf
 See https://infohub.delltechnologies.com/en-us/l/dell-emc-smartfabric-os10-virtual-link-trunking-reference-architecture-guide-1/ip-anycast-gateway-support-2/
 "The Anycast IP-based Layer 3 gateway solution is a lightweight gateway router redundancy protocol that is enabled only on VLANs"
 
-Note: Anycast also requires VLT configuration on the switch, which Netlab currently does not do
+Note: Anycast also requires VLT configuration on the switch, which Netlab can support through the lag module
 
 """
 def check_anycast_gateways(node: Box) -> None:
@@ -44,6 +44,18 @@ def check_anycast_gateways(node: Box) -> None:
       more_data=err_data,
       node=node)
 
+"""
+check_pvrst - check if PVRST protocol is requested, not supported on virtual network interfaces
+"""
+def check_pvrst_on_virtual_networks(node:Box, topology: Box) -> None:
+  if node.get('stp.protocol',None) == 'pvrst':
+    features = devices.get_device_features(node,topology.defaults)
+    if 'virtual-network' in features.vlan.svi_interface_name:
+      report_quirk(
+        f'Dell OS10 (node {node.name}) does not support PVRST on virtual networks (used for VLANs)',
+        quirk='pvrst_on_virtual_networks',
+        node=node)
+
 class OS10(_Quirks):
 
   @classmethod
@@ -56,6 +68,9 @@ class OS10(_Quirks):
     
     if 'gateway' in mods and 'anycast' in node.get('gateway',{}):
       check_anycast_gateways(node)
+    
+    if 'stp' in mods:
+      check_pvrst_on_virtual_networks(node,topology)
 
   def check_config_sw(self, node: Box, topology: Box) -> None:
     need_ansible_collection(node,'dellemc.os10')
