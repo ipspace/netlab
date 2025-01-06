@@ -35,6 +35,12 @@ ok: [x1]
 ok: [x2]
 ok: [x3]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+skipping: [x3]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
   msg: |-
@@ -56,7 +62,7 @@ ok: [dut] =>
             link:
               mtu: 1500
               state:
-                up: {}
+                up : {}
             description: "dut -> x1 [external]"
             ip:
               address:
@@ -75,7 +81,7 @@ ok: [dut] =>
             link:
               mtu: 1500
               state:
-                up: {}
+                up : {}
             description: "dut -> x2 [external]"
             ip:
               address:
@@ -94,11 +100,11 @@ ok: [dut] =>
             link:
               mtu: 1500
               state:
-                up: {}
+                up : {}
             description: "dut -> x3 [external]"
             ip:
               address:
-                172.16.0.1/24: {}
+                10.1.0.1/30: {}
               ipv6:
                 enable: off
   
@@ -127,7 +133,8 @@ ok: [x1] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -155,7 +162,7 @@ ok: [x1] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -176,7 +183,7 @@ ok: [x1] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -218,7 +225,8 @@ ok: [x2] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -246,7 +254,7 @@ ok: [x2] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -267,7 +275,7 @@ ok: [x2] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -309,7 +317,8 @@ ok: [x3] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -337,7 +346,7 @@ ok: [x3] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -355,7 +364,7 @@ ok: [x3] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -375,7 +384,7 @@ ok: [x3] =>
     interface eth1
      no shutdown
      description x3 -> dut [external]
-     ip address 172.16.0.4/24
+     ip address 10.1.0.2/30
     !
     do write
     CONFIG
@@ -422,9 +431,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2, x3
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x3]
 changed: [x2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -463,6 +472,12 @@ ok: [dut]
 ok: [x1]
 ok: [x2]
 ok: [x3]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+skipping: [x3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -509,7 +524,7 @@ ok: [dut] =>
                         enable: off
                         community-advertise:
                           extended: on
-                  172.16.0.4:
+                  10.1.0.2:
                     description: "x3"
                     remote-as: 65102
                     address-family:
@@ -607,8 +622,8 @@ ok: [x3] =>
   
       bgp router-id 172.42.43.1
     !
-      neighbor 172.16.0.1 remote-as 65000
-      neighbor 172.16.0.1 description dut
+      neighbor 10.1.0.1 remote-as 65000
+      neighbor 10.1.0.1 description dut
     !
      address-family ipv4 unicast
     !
@@ -618,10 +633,10 @@ ok: [x3] =>
     !
     !
     !
-      neighbor 172.16.0.1 activate
-      no neighbor 172.16.0.1 send-community all
-      neighbor 172.16.0.1 send-community standard
-      neighbor 172.16.0.1 send-community large
+      neighbor 10.1.0.1 activate
+      no neighbor 10.1.0.1 send-community all
+      neighbor 10.1.0.1 send-community standard
+      neighbor 10.1.0.1 send-community large
     !
     !
     !
@@ -656,8 +671,8 @@ TASK [execute on cumulus: 'nv config apply -y' for bgp config] *****************
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 changed: [x3]
 
 TASK [set_fact] ****************************************************************
@@ -672,17 +687,17 @@ skipping: [x3]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [x1]
-changed: [x2]
 changed: [x3]
+changed: [x2]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=26   changed=6    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
-x1                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-x2                         : ok=22   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-x3                         : ok=22   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+dut                        : ok=26   changed=6    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+x1                         : ok=23   changed=5    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+x2                         : ok=22   changed=4    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+x3                         : ok=22   changed=4    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
 
 
 

@@ -7,8 +7,8 @@ ok: [xs]
 ok: [h1]
 ok: [h2]
 ok: [dut]
-ok: [h4]
 ok: [h3]
+ok: [h4]
 
 TASK [Find device readiness script] ********************************************
 ok: [xs]
@@ -32,17 +32,17 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [xs]
 ok: [h1]
-ok: [h3]
 ok: [h2]
+ok: [h3]
 ok: [dut]
 ok: [h4]
 
 TASK [Find configuration template for initial] *********************************
 ok: [xs]
 ok: [h1]
-ok: [dut]
-ok: [h3]
 ok: [h2]
+ok: [h3]
+ok: [dut]
 ok: [h4]
 
 TASK [fail] ********************************************************************
@@ -82,7 +82,7 @@ ok: [h1] =>
     ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.0.1/24 dev eth1
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
@@ -133,7 +133,7 @@ ok: [h3] =>
     ip addr del 172.16.1.3/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.1.3/24 dev eth1
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
@@ -184,7 +184,7 @@ ok: [h2] =>
     ip addr del 172.16.0.2/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.0.2/24 dev eth1
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
@@ -235,7 +235,7 @@ ok: [h4] =>
     ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.1.4/24 dev eth1
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
@@ -258,62 +258,6 @@ ok: [h4] =>
     #
     # Print the final routing table
     ip route
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    hostname dut
-    !
-    lldp enable
-    !
-    !
-    ip host xs 10.0.0.6
-    !
-    !
-    interface loopback0
-     ip address 10.0.0.5/32
-     no ipv6 enable
-    !
-    interface mgmt1/1/1
-     no lldp transmit
-     no lldp receive
-    !
-    interface port-channel1
-     no shutdown
-     description "dut -> xs"
-    !
-    interface ethernet1/1/1
-     no shutdown
-     no switchport
-     description "dut -> xs"
-    !
-    interface ethernet1/1/2
-     no shutdown
-     no switchport
-     description "dut -> xs"
-    !
-    interface ethernet1/1/3
-     no shutdown
-     no switchport
-     description "[Access VLAN v1] dut -> h1"
-    !
-    interface ethernet1/1/4
-     no shutdown
-     no switchport
-     description "[Access VLAN v2] dut -> h3"
-    !
-    interface virtual-network1000
-     no shutdown
-     description "VLAN v1 (1000) -> [h1\\,xs\\,h2]"
-     ip address 172.16.0.5/24
-     no ipv6 enable
-    !
-    interface virtual-network1001
-     no shutdown
-     description "VLAN v2 (1001) -> [h3\\,xs\\,h4]"
-     ip address 172.16.1.5/24
-     no ipv6 enable
-    !
 ok: [xs] => 
   msg: |-
     initial configuration for xs
@@ -328,14 +272,17 @@ ok: [xs] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
     cat <<SCRIPT >.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)$ "
+    export PATH=$PATH:/usr/sbin
+    echo
     echo "Use sudo vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -377,6 +324,12 @@ ok: [xs] =>
       echo "Package gnupg already installed"
     else
       APT_INSTALL="$APT_INSTALL gnupg"
+    fi
+    #
+    if which bridge; then
+      echo "Package iproute2 already installed"
+    else
+      APT_INSTALL="$APT_INSTALL iproute2"
     fi
     #
     # APT_INSTALL always starts with a blank, so we can't just check if it's empty
@@ -508,6 +461,62 @@ ok: [xs] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    hostname dut
+    !
+    lldp enable
+    !
+    !
+    ip host xs 10.0.0.6
+    !
+    !
+    interface loopback0
+     ip address 10.0.0.5/32
+     no ipv6 enable
+    !
+    interface mgmt1/1/1
+     no lldp transmit
+     no lldp receive
+    !
+    interface port-channel1
+     no shutdown
+     description "dut -> xs"
+    !
+    interface ethernet1/1/1
+     no shutdown
+     no switchport
+     description "dut -> xs"
+    !
+    interface ethernet1/1/2
+     no shutdown
+     no switchport
+     description "dut -> xs"
+    !
+    interface ethernet1/1/3
+     no shutdown
+     no switchport
+     description "[Access VLAN v1] dut -> h1"
+    !
+    interface ethernet1/1/4
+     no shutdown
+     no switchport
+     description "[Access VLAN v2] dut -> h3"
+    !
+    interface virtual-network1000
+     no shutdown
+     description "VLAN v1 (1000) -> [h1\\,xs\\,h2]"
+     ip address 172.16.0.5/24
+     no ipv6 enable
+    !
+    interface virtual-network1001
+     no shutdown
+     description "VLAN v2 (1001) -> [h3\\,xs\\,h4]"
+     ip address 172.16.1.5/24
+     no ipv6 enable
+    !
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [xs]
@@ -548,13 +557,13 @@ ok: [h4]
 
 TASK [Create a temporary file for the rendered script] *************************
 changed: [h1 -> localhost]
-changed: [h4 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
+changed: [h4 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
@@ -571,16 +580,16 @@ skipping: [h3]
 skipping: [h4]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-o8iy1083.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-1cjv_il1.sh] ***********************
 changed: [h1 -> localhost]
-changed: [h4 -> localhost]
-changed: [h2 -> localhost]
 changed: [h3 -> localhost]
+changed: [h2 -> localhost]
+changed: [h4 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 

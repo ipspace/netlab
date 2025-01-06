@@ -35,6 +35,12 @@ ok: [x1]
 ok: [x2]
 ok: [x3]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+skipping: [x3]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
   msg: |-
@@ -56,11 +62,11 @@ ok: [dut] =>
             link:
               mtu: 1500
               state:
-                up: {}
+                up : {}
             description: "dut -> x1"
             ip:
               address:
-                172.16.0.1/24: {}
+                10.1.0.1/30: {}
               ipv6:
                 enable: off
   
@@ -70,11 +76,11 @@ ok: [dut] =>
             link:
               mtu: 1500
               state:
-                up: {}
+                up : {}
             description: "dut -> x2"
             ip:
               address:
-                172.16.1.1/24: {}
+                10.1.0.5/30: {}
               ipv6:
                 enable: off
   
@@ -84,11 +90,11 @@ ok: [dut] =>
             link:
               mtu: 1500
               state:
-                up: {}
+                up : {}
             description: "dut -> x3"
             ip:
               address:
-                172.16.2.1/24: {}
+                10.1.0.9/30: {}
               ipv6:
                 enable: off
   
@@ -117,7 +123,8 @@ ok: [x1] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -145,7 +152,7 @@ ok: [x1] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -163,7 +170,7 @@ ok: [x1] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -183,7 +190,7 @@ ok: [x1] =>
     interface eth1
      no shutdown
      description x1 -> dut
-     ip address 172.16.0.2/24
+     ip address 10.1.0.2/30
     !
     do write
     CONFIG
@@ -203,7 +210,8 @@ ok: [x2] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -231,7 +239,7 @@ ok: [x2] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -249,7 +257,7 @@ ok: [x2] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -269,7 +277,7 @@ ok: [x2] =>
     interface eth1
      no shutdown
      description x2 -> dut
-     ip address 172.16.1.3/24
+     ip address 10.1.0.6/30
     !
     do write
     CONFIG
@@ -289,7 +297,8 @@ ok: [x3] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -317,7 +326,7 @@ ok: [x3] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -335,7 +344,7 @@ ok: [x3] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -355,7 +364,7 @@ ok: [x3] =>
     interface eth1
      no shutdown
      description x3 -> dut
-     ip address 172.16.2.4/24
+     ip address 10.1.0.10/30
     !
     do write
     CONFIG
@@ -412,9 +421,9 @@ ok: [x2]
 ok: [x3]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+changed: [x1]
 changed: [x2]
 changed: [x3]
-changed: [x1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
@@ -443,6 +452,12 @@ ok: [dut]
 ok: [x1]
 ok: [x2]
 ok: [x3]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+skipping: [x3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -515,34 +530,6 @@ ok: [x1] =>
   
     !
     do write
-ok: [x3] => 
-  msg: |-
-    ospf configuration for x3
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.4
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.3
-    !
-    interface eth1
-    ! x3 -> dut
-     ip ospf area 0.0.0.3
-     ip ospf network point-to-point
-    !
-  
-    !
-    do write
 ok: [x2] => 
   msg: |-
     ospf configuration for x2
@@ -566,6 +553,34 @@ ok: [x2] =>
     interface eth1
     ! x2 -> dut
      ip ospf area 0.0.0.2
+     ip ospf network point-to-point
+    !
+  
+    !
+    do write
+ok: [x3] => 
+  msg: |-
+    ospf configuration for x3
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.4
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.3
+    !
+    interface eth1
+    ! x3 -> dut
+     ip ospf area 0.0.0.3
      ip ospf network point-to-point
     !
   
@@ -602,8 +617,8 @@ changed: [dut]
 
 TASK [template] ****************************************************************
 changed: [x1]
-changed: [x2]
 changed: [x3]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -616,18 +631,18 @@ skipping: [x2]
 skipping: [x3]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+changed: [x2]
 changed: [x3]
 changed: [x1]
-changed: [x2]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=26   changed=6    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
-x1                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-x2                         : ok=22   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-x3                         : ok=22   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+dut                        : ok=26   changed=6    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+x1                         : ok=23   changed=5    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+x2                         : ok=22   changed=4    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+x3                         : ok=22   changed=4    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
 
 
 
