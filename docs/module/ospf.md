@@ -154,7 +154,7 @@ These devices also support optional OSPF interface attributes:
 | Cisco IOS XE[^18v]       | ✅ | ✅ | ✅ | ❌  |
 | Cisco Nexus OS           | ✅ | ✅ | ✅ | ❌  |
 | Cumulus Linux 4.x        | ✅ | ✅ | ✅ | ❌  |
-| Dell OS10                | ✅ | ✅ | ❌  | ❌  |
+| Dell OS10                | ✅ | ✅ | ✅ | ❌  |
 | FRR                      | ✅ | ✅ | ✅ | ❌  |
 
 (ospf-node-parameters)=
