@@ -40,7 +40,7 @@ def add_bond_interfaces(node: Box, bonds: typing.Dict[int,Box], topology: Box) -
 post_link_transform hook
 
 Apply plugin config to nodes with interfaces marked with 'bonding.ifindex', for devices that support this plugin.
-Executes before IP addresses are assigned
+Executes after IP addresses are assigned, but before vlan gateways are fixed
 '''
 def post_link_transform(topology: Box) -> None:
   global _config_name
@@ -57,6 +57,7 @@ def post_link_transform(topology: Box) -> None:
                    category=log.IncorrectAttr,module=_config_name)
         continue
 
+      intf.neighbors = [ { 'node': n.node, 'ifname': n.ifname } for n in intf.neighbors ]  # Clear any IP addresses from neighbors
       link = topology.links[ intf.linkindex-1 ]
       if 'virtual_interface' in intf or link.node_count!=2:
         log.error( f"{intf.name}: 'bonding.ifindex' can only be applied to interfaces on direct p2p links",
