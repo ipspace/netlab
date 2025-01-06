@@ -13,15 +13,15 @@ The following table describes per-platform support of individual STP features:
 | ------------------ |:---:|:---:|:---:|:---:|:---:|
 | Arista EOS[^EOS]   | ✅  | ✅  | ✅  | ✅ |  ✅ |
 | Aruba AOS-CX[^AOSCX] | ❗  | ✅  | ❌  | ✅ |  ✅ |
-| Cumulus Linux 4.x[^CL] | ✅  |  ❌  | ✅  | ❌   |  ✅ |  ✅ |    
-| Cumulus 5.x (NVUE)[^CL] | ✅  |  ❌  | ✅  | ❌   |  ✅ |  ✅ |  
-| Dell OS10[^OS10]   | ✅  | ✅  | ✅  | ✅ |  ✅ |  ✅ |
-| FRR[^FRR]          | ✅  |  ❌  |  ❌  |  ❌ | ❌   | ❌   |
+| Cumulus Linux 4.x[^CL] | ✅  |  ❌  | ✅  | ❌   |  ✅ |
+| Cumulus 5.x (NVUE)[^CL] | ✅  |  ❌  | ✅  | ❌   |  ✅ |
+| Dell OS10[^OS10]   | ✅  | ✅  | ✅  | ❗ |  ✅ |
+| FRR[^FRR]          | ✅  |  ❌  |  ❌  |  ❌ | ❌   |
 
 [^EOS]: MSTP is enabled by default
 [^AOSCX]: MSTP is enabled by default; STP is stated as not supported, but it is configured as MSTP (see tip below).
 [^CL]: STP is enabled by default
-[^OS10]: PVRST is enabled by default
+[^OS10]: PVRST is enabled by default, but will require custom VLAN templates as Netlab uses virtual networks (which don't support STP)
 [^FRR]: STP is disabled by default; STP is not supported on VLAN trunks as FRR sends BPDUs tagged, you could use Cumulus instead
 
 ```{tip}
