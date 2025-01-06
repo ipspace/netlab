@@ -59,7 +59,7 @@ The following table describes per-platform support of individual router-level OS
 | Cisco IOS XE[^18v]       | ✅| ✅| ✅| ✅| ✅|
 | Cisco Nexus OS           | ✅| ✅| ✅| ❌ | ❌ |
 | Cumulus Linux            | ✅| ✅| ✅| ✅| ✅|
-| Cumulus Linux 5.0 (NVUE) | ✅| ✅| ❌ | ❌ | ❌ |
+| Cumulus Linux 5.x (NVUE) | ✅| ✅| ❌ | ❌ | ❌ |
 | Dell OS10 ([❗](caveats-os10)) | | ✅| ✅| ✅| ❌ | ❌ |
 | Fortinet FortiOS         |[❗](caveats-fortios)| ✅ | ❌ | ❌ | ❌ |
 | FRR                      | ✅| ✅| ✅| ✅| ✅|
@@ -119,7 +119,7 @@ The following table documents the common interface-level OSPF features:
 | Cisco IOS XRv            | ✅ | ✅ | ✅ | ✅ |
 | Cisco Nexus OS           | ✅ | ✅ | ✅ | ✅ |
 | Cumulus Linux            | ✅ | ✅ | ✅ | ✅ |
-| Cumulus Linux 5.0 (NVUE) | ✅ | ✅ | ✅ | ✅ |
+| Cumulus Linux 5.x (NVUE) | ✅ | ✅ | ✅ | ✅ |
 | Dell OS10                | ✅ | ✅ | ❌  | ✅ |
 | Fortinet FortiOS         | ✅ | [❗](caveats-fortios) | ❌ | ✅ |
 | FRR                      | ✅ | ✅ | ✅ | ✅ |
@@ -154,6 +154,7 @@ These devices also support optional OSPF interface attributes:
 | Cisco IOS XE[^18v]       | ✅ | ✅ | ✅ | ❌  |
 | Cisco Nexus OS           | ✅ | ✅ | ✅ | ❌  |
 | Cumulus Linux 4.x        | ✅ | ✅ | ✅ | ❌  |
+| Cumulus Linux 5.x (NVUE) | ✅ | ✅ | ❌  | ❌  |
 | Dell OS10                | ✅ | ✅ | ✅ | ❌  |
 | FRR                      | ✅ | ✅ | ✅ | ❌  |
 
