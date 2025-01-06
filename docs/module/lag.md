@@ -11,7 +11,7 @@ LAG is currently supported on these platforms:
 | Arista EOS [❗](caveats-eos) | ✅ | ✅ | ✅ | ✅ |
 | Aruba AOS-CX          | ✅ | ✅ | ✅ | ✅ |
 | Cumulus Linux 4.x     | ✅ | ✅ | ❌  | ❌ |
-| Cumulus 5.x (NVUE)    | ✅ | ✅ | ❌  | ❌ |
+| Cumulus 5.x (NVUE)    | ✅ | ✅ | ❌  | ✅ |
 | Dell OS10             | ✅ | ✅ | ✅  | ✅ |
 | FRR                   | ✅ | ✅ | ❌  | ❌ |
 | Generic Linux hosts   | ✅ | ✅ | ❌  | ❌ |

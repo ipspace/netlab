@@ -155,7 +155,7 @@ These devices also support optional OSPF interface attributes:
 | Cisco Nexus OS           | ✅ | ✅ | ✅ | ❌  |
 | Cumulus Linux 4.x        | ✅ | ✅ | ✅ | ❌  |
 | Cumulus Linux 5.x (NVUE) | ✅ | ✅ | ❌  | ❌  |
-| Dell OS10                | ✅ | ✅ | ❌  | ❌  |
+| Dell OS10                | ✅ | ✅ | ✅ | ❌  |
 | FRR                      | ✅ | ✅ | ✅ | ❌  |
 
 (ospf-node-parameters)=
