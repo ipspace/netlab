@@ -37,7 +37,7 @@ def add_bond_interfaces(node: Box, bonds: typing.Dict[int,Box], topology: Box) -
     node.interfaces.append(bond_if)
 
 """
-Update all neighbors with the new interface name
+Update the link and all neighbors with the new interface name
 """
 def update_neighbors( node: Box, intf: Box, topology: Box ) -> bool:
   link = topology.links[ intf.linkindex-1 ]
@@ -49,13 +49,13 @@ def update_neighbors( node: Box, intf: Box, topology: Box ) -> bool:
   intf.neighbors = [ { 'node': n.node, 'ifname': n.ifname } for n in intf.neighbors ]  # Clear any IP addresses from neighbors
   bond_interface_name = topology.defaults.bonding.bond_interface_name
   ifname = strings.eval_format(bond_interface_name, intf)
-  for neigh in link.interfaces:
-    if neigh.node==node.name:
-      neigh.ifname = ifname
+  for if2 in link.interfaces:
+    if if2.node==node.name:
+      if2.ifname = ifname
     else:
-      nb = topology.nodes[neigh.node]
-      for i2 in nb.interfaces:
-        for n2 in i2.neighbors:
+      nb = topology.nodes[if2.node]
+      for if3 in nb.interfaces:
+        for n2 in if3.neighbors:
           if n2.node==node.name:
             n2.ifname = ifname
   return True
