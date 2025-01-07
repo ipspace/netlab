@@ -341,6 +341,9 @@ class Libvirt(_Provider):
         if not 'libvirt' in link.provider:                          # Not a libvirt link? skip it
           continue
 
+        if 'bridge' in link:                                        # Copy link bridge name into interface for P2P links
+          intf.bridge = link.bridge                                 # that became stubs due to unmanaged node removal
+
         if 'libvirt' in link:                                       # Do we have libvirt-specific data on the link?
           intf.libvirt = link.libvirt + intf.libvirt                # ... then add it to the interface data
           continue                                                  # ... and move on -- links with libvirt attributes

@@ -19,7 +19,7 @@ class LogLevel(IntEnum):
 
 from box import Box
 
-from . import external_commands, set_dry_run
+from . import external_commands, set_dry_run, error_and_exit
 
 from . import load_snapshot, parser_add_verbose
 from ..outputs import common as outputs_common
@@ -243,6 +243,8 @@ def run(cli_args: typing.List[str]) -> None:
 
   try:
     if host in topology.nodes:
+      if topology.nodes[host].get('unmanaged',False):
+        error_and_exit(f'"netlab connect" command cannot be used to connect to unmanaged node {args.host}')
       connect_to_node(node=host,args=args,rest=rest,topology=topology,log_level=log_level)
     elif host in topology.tools:
       connect_to_tool(host,rest,topology,log_level)
