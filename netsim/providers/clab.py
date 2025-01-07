@@ -16,7 +16,7 @@ from ..augment import devices
 from ..cli import external_commands
 
 def list_bridges( topology: Box ) -> typing.Set[str]:
-  return { l.bridge for l in topology.links if l.bridge and l.node_count != 2 and not 'external_bridge' in l.clab }
+  return { l.bridge for l in topology.links if l.bridge and l.node_count > 2 and not 'external_bridge' in l.clab }
 
 def use_ovs_bridge( topology: Box ) -> bool:
     return topology.defaults.providers.clab.bridge_type == "ovs-bridge"

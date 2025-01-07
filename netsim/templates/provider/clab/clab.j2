@@ -60,7 +60,7 @@ topology:
 {% if links|default([]) %}
 {# Define bridges for links with less (stub) or more than 2 nodes #}
 {% set bridge_type = defaults.providers.clab.bridge_type|default('bridge') %}
-{% for b in links|rejectattr('node_count','eq',2)|selectattr('bridge','defined')|map(attribute='bridge')|unique %}
+{% for b in links|rejectattr('node_count','le',2)|selectattr('bridge','defined')|map(attribute='bridge')|unique %}
     {{ b }}:
       kind: {{ bridge_type }}
 {% endfor %}
@@ -79,7 +79,22 @@ topology:
     - "macvlan:{{ l.clab.uplink }}"
 {%     endfor %}
 {%   endfor %}
-{% elif (l.bridge is not defined) or l.node_count==2 %}
+{% elif l.node_count == 1 %}
+{#
+    stub link implemented with dummy device
+#}
+{%   for n in nodes.values() if not (n.unmanaged|default(False)) %}
+{%     for nl in n.interfaces|default([]) if nl.linkindex|default(0) == l.linkindex %}
+{%       if loop.first %}
+  - type: dummy
+    endpoint:
+      node: "{{ n.name }}"
+{%       set clab = nl.clab|default({}) %}
+      interface: "{{ clab.name|default(nl.ifname) }}"
+{%       endif %}
+{%     endfor %}
+{%   endfor %}
+{% elif l.node_count == 2 %}
 {#
     point-to-point link between two containers
 #}
