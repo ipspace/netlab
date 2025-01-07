@@ -119,12 +119,16 @@ def show_lab_nodes(topology: Box) -> None:
     p_module   = providers.get_provider_module(topology,n_provider)
     load_provider_status(p_status,n_provider,topology)
 
-    row = [ n_data.name, n_data.device, n_data.box, n_data.mgmt.ipv4, n_ext.ansible_connection, n_provider ]
-    wk_name = p_module.call('get_node_name',n_name,topology)
-    row.append(wk_name)
+    if n_data.get('unmanaged',False):
+      row = [ n_data.name, n_data.device, 'unmanaged', n_data.mgmt.ipv4 ]
+    else:
+      row = [ n_data.name, n_data.device, n_data.box, n_data.mgmt.ipv4, n_ext.ansible_connection, n_provider ]
+      wk_name = p_module.call('get_node_name',n_name,topology)
+      row.append(wk_name)
 
-    wk_state = p_status[n_provider].get(wk_name,None) or p_status[n_provider].get(n_name,None)
-    row.append(wk_state.status if wk_state else 'Unknown')
+      wk_state = p_status[n_provider].get(wk_name,None) or p_status[n_provider].get(n_name,None)
+      row.append(wk_state.status if wk_state else 'Unknown')
+
     rows.append(row)
 
   for t_name,t_data in topology.tools.items():

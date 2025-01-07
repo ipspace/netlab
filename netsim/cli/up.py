@@ -14,10 +14,10 @@ from box import Box
 from pathlib import Path
 
 from . import create
-from . import external_commands, set_dry_run, is_dry_run
+from . import external_commands, set_dry_run, is_dry_run, load_snapshot
 from . import common_parse_args, get_message
 from . import lab_status_update, lab_status_change
-from .. import providers
+from .. import providers, augment
 from ..utils import log,strings,status as _status, read as _read
 from ..data import global_vars
 from ..devices import process_config_sw_check
@@ -80,15 +80,12 @@ def get_topology(args: argparse.Namespace, cli_args: typing.List[str]) -> Box:
     args = up_args_parser.parse_args(cli_args)                # ... and reparse
     log.set_logging_flags(args)                               # ... use these arguments to set logging flags and read the snapshot
 
-    topology = _read.read_yaml(filename=args.snapshot)
-    if topology is None:
-      log.fatal(f'Cannot read snapshot file {args.snapshot}, aborting...')
-
+    topology = load_snapshot(args,ghosts=False)
     print(f"Using transformed lab topology from snapshot file {args.snapshot}")
-    global_vars.init(topology)    
   else:                                                       # No snapshot file, use 'netlab create' parser
     log.section_header('Creating','configuration files')
     topology = create.run(cli_args,'up','Create configuration files, start a virtual lab, and configure it',up_args_parser)
+    topology = augment.nodes.ghost_buster(topology)
 
   return topology
 

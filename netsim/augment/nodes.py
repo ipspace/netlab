@@ -14,7 +14,7 @@ from ..utils import log
 from .. import data
 from .. import utils
 from .. import providers
-from . import devices,addressing
+from . import devices,addressing,links
 from ..data.validate import validate_attributes,get_object_attributes
 from ..data.types import must_be_int,must_be_string,must_be_id,must_be_device
 from ..data import global_vars
@@ -537,5 +537,25 @@ def ghost_buster(topology: Box) -> Box:
   topo_copy = data.get_box(topology)
   
   # Remove all nodes with "unmanaged" flag set
-  topo_copy.nodes = { k:v for k,v in topo_copy.nodes.items() if not v.get('unmanaged',False) }  
+  topo_copy.nodes = { k:v for k,v in topo_copy.nodes.items() if not v.get('unmanaged',False) }
+
+  # Remove unmanaged nodes frop links
+  for link in topo_copy.links:
+    o_cnt = len(link.interfaces)
+    link.interfaces = [ intf for intf in link.interfaces if intf.node in topo_copy.nodes ]
+    if len(link.interfaces) == o_cnt:                   # No changes in interfaces, move on
+      continue
+
+    if link.node_count == o_cnt:                        # Adjust link count only if nobody hacked it (example: libvirt)
+      link.node_count = len(link.interfaces)
+
+    if o_cnt == 2:                                      # What seems like a P2P link might have become a stub link
+      link.type = links.get_default_link_type(link)     # But don't change LAN links to P2P links
+
+    # Oh, and based on the new link type we might need a bridge name
+    links.set_link_bridge_name(link,{'name': topology.name } + topo_copy.get('defaults',{}))
+
+  # Finally, remove links between unmanaged nodes
+  topo_copy.links = [ link for link in topo_copy.links if link.node_count > 0 ]
+
   return topo_copy

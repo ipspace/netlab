@@ -130,7 +130,7 @@ def load_topology(args: typing.Union[argparse.Namespace,Box]) -> Box:
 
 # Snapshot loading code -- loads the specified snapshot file and checks its modification date
 #
-def load_snapshot(args: typing.Union[argparse.Namespace,Box]) -> Box:
+def load_snapshot(args: typing.Union[argparse.Namespace,Box],ghosts: bool = True) -> Box:
   if not os.path.isfile(args.snapshot):
     print(f"The topology snapshot file {args.snapshot} does not exist.\n"+
           "Looks like no lab was started from this directory")
@@ -140,6 +140,9 @@ def load_snapshot(args: typing.Union[argparse.Namespace,Box]) -> Box:
   if topology is None:
     print(f"Cannot read the topology snapshot file {args.snapshot}")
     sys.exit(1)
+
+  if not ghosts:
+    topology = augment.nodes.ghost_buster(topology)
 
   global_vars.init(topology)
   check_modified_source(args.snapshot,topology)

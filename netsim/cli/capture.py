@@ -53,6 +53,8 @@ def run(cli_args: typing.List[str]) -> None:
       more_hints=[ 'Use "netlab status" to display the node names in the current lab topology' ])
   
   ndata = topology.nodes[args.node]
+  if ndata.get('unmanaged',False):
+    error_and_exit(f'Node {args.node} is an unmanaged node and cannot be used in the capture command')
   intf_hint = [ f'Use "netlab report --node {args.node} addressing" to display valid interface names and their descriptions' ]
   if not args.intf:
     error_and_exit('Missing interface name',more_hints=intf_hint)

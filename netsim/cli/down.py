@@ -201,7 +201,7 @@ def run(cli_args: typing.List[str]) -> None:
   if args.instance:
     change_lab_instance(args.instance)
 
-  topology = load_snapshot(args)
+  topology = load_snapshot(args,ghosts=False)
   log.status_success()
   print(f"Read transformed lab topology from snapshot file {args.snapshot}")
 
