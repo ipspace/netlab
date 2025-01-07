@@ -14,7 +14,7 @@ from ..utils import log
 from .. import data
 from .. import utils
 from .. import providers
-from . import devices,addressing
+from . import devices,addressing,links
 from ..data.validate import validate_attributes,get_object_attributes
 from ..data.types import must_be_int,must_be_string,must_be_id,must_be_device
 from ..data import global_vars
@@ -533,9 +533,29 @@ Return a copy of the topology (leaving original topology unchanged) with unmanag
 '''
 def ghost_buster(topology: Box) -> Box:
   log.print_verbose('Removing unmanaged devices from topology')
-  # Create a copy of topology
-  topo_copy = data.get_box(topology)
-  
+
+  topo_copy = data.get_box(topology)                        # Create a copy of topology
+
+  for link in list(topo_copy.get('links',[])):              # Remove unmanaged nodes from links
+    count = len(link.interfaces)
+    link.interfaces = [ i for i in link.interfaces if not topo_copy.nodes[i.node].get('unmanaged',False) ]
+    new_count = len(link.interfaces)
+    if new_count < count:
+      link.node_count -= (count-new_count)
+      if link.node_count==1:
+        link.type = 'stub'
+        links.set_link_bridge_name(link,topology.defaults)
+
+        node = topo_copy.nodes[ link.interfaces[0].node ]   # Update node interface too
+        for i in node.interfaces:
+          if i.linkindex==link.linkindex:
+            i.type = 'stub'
+            i.bridge = link.bridge                          # Make sure a bridge gets created
+            # i.neighbors = []                              # Leave neighbors info in place
+
+      elif link.node_count==0:
+        topo_copy.links.remove(link)                        # No nodes left -> remove link
+
   # Remove all nodes with "unmanaged" flag set
   topo_copy.nodes = { k:v for k,v in topo_copy.nodes.items() if not v.get('unmanaged',False) }  
   return topo_copy
