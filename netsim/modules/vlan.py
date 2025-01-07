@@ -1149,7 +1149,9 @@ def fix_vlan_gateways(topology: Box) -> None:
     if node.get('role') != 'host':                                    # Fix first-hop gateways only for hosts
       continue
     for intf in node.get('interfaces',[]):                            # Iterate over all interfaces
-      if intf.get('gateway.ipv4',None):                               # ... that don't have an IPv4 gateway
+      if not intf.get('ipv4',None):                                   # ... that are IP interfaces
+        continue
+      if intf.get('gateway.ipv4',None):                               # ... that don't already have an IPv4 gateway
         continue
 
       gw_found = False
