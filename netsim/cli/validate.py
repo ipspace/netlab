@@ -1015,13 +1015,13 @@ def execute_validation_test(
       time.sleep(1)
 
   if ret_value:                                   # If we got to 'True'
-    if wait_cnt:
-      log_info(
-        f'Succeeded in { round(time.time() - start_time,1) } seconds',
-        f_status = 'PASS',
-        f_color= 'light_green',
-        topology=topology)
-    p_test_pass(v_entry,topology)                 # ... declare Mission Accomplished
+    log_info(
+      f'Test succeeded in { round(time.time() - start_time,1) } seconds',
+      f_status = 'PASS',
+      f_color= 'light_green',
+      topology=topology)
+    if 'pass' in v_entry:
+      p_test_pass(v_entry,topology)               # ... declare Mission Accomplished
 
   return ret_value
 
