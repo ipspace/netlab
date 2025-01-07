@@ -3,7 +3,10 @@ message:
   with one of the nodes being an unmanaged nodes
 
 provider: libvirt
-defaults.device: linux
+defaults.device: frr
+
+module: [ ospf ]
+ospf.timers.hello: 1
 
 nodes:
   a:
@@ -17,8 +20,35 @@ nodes:
     unmanaged: true
 
 links:
-- a-c-x
-- a-c-d-x
-- c-x
-- c-d-x
-- c-d-e-x
+- interfaces: [ a, c, x ]
+  ospf.network_type: point-to-multipoint
+- interfaces: [ a, c, d, x ]
+  ospf.network_type: point-to-multipoint
+- interfaces: [ c, x ]
+  ospf.network_type: point-to-multipoint
+- interfaces: [ c, d, x ]
+  ospf.network_type: point-to-multipoint
+- interfaces: [ c, d, e, x ]
+  ospf.network_type: point-to-multipoint
+
+validate:
+  adj_c:
+    plugin: ospf_neighbor(nodes.c.ospf.router_id)
+    wait: 15
+    nodes: [ a, d, e ]
+  pfx_0:
+    plugin: ospf_prefix(nodes.c.interfaces[0].ipv4.split('/')[0]+'/32')
+    wait: 10
+    nodes: [ a, d, e ]
+  pfx_1:
+    plugin: ospf_prefix(nodes.c.interfaces[1].ipv4.split('/')[0]+'/32')
+    nodes: [ a, d, e ]
+  pfx_2:
+    plugin: ospf_prefix(nodes.c.interfaces[2].ipv4.split('/')[0]+'/32')
+    nodes: [ a, d, e ]
+  pfx_3:
+    plugin: ospf_prefix(nodes.c.interfaces[3].ipv4.split('/')[0]+'/32')
+    nodes: [ a, d, e ]
+  pfx_4:
+    plugin: ospf_prefix(nodes.c.interfaces[4].ipv4.split('/')[0]+'/32')
+    nodes: [ a, d, e ]

@@ -6,22 +6,29 @@ defaults.device: frr
 module: [ ospf ]
 ospf.timers.hello: 1
 
-nodes:
-  r1:
-    device: frr
-  r2:
-    device: frr
-  r3:
-    provider: clab
-  r4:
+groups:
+  hosts:
+    members: [ h1, h2, h3, h4 ]
+    device: linux
+  clab:
+    members: [ r3, r4, h3, h4 ]
     provider: clab
 
+nodes: [ r1, r2, r3, r4, h1, h2, h3, h4 ]
+
 links:
-- r1                      # libvirt stub
-- r4                      # clab stub
-- r1-r2                   # libvirt P2P link
-- r2-r3                   # libvirt-to-clab link
-- r3-r4                   # clab P2P link
+  stubs:
+  - r1                    # libvirt stub
+  - r4                    # clab stub
+  p2p:
+  - r1-r2                 # libvirt P2P link
+  - r2-r3                 # libvirt-to-clab link
+  - r3-r4                 # clab P2P link
+  hosts:
+  - r1-h1                 # libvirt router-to-host
+  - r4-h4                 # clab router-to-host
+  - r2-h3                 # libvirt-to-clab
+  - r3-h2                 # clab-to-libvirt
 
 validate:
   adj_r2:
@@ -36,7 +43,13 @@ validate:
     plugin: ospf_prefix(links[0].prefix.ipv4)
     wait: 10
     nodes: [ r2, r3, r4 ]
-  pfx_r4:
+  pfx_r3:
     plugin: ospf_prefix(links[1].prefix.ipv4)
     wait: 10
-    nodes: [ r1, r2, r3 ]
+    nodes: [ r1, r2, r4 ]
+  ping_r1:
+    plugin: ping('r1')
+    nodes: [ h1, h2, h3, h4 ]
+  ping_r3:
+    plugin: ping('r3')
+    nodes: [ h1, h2, h3, h4 ]
