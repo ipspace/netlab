@@ -343,10 +343,8 @@ def loopback_interface(n: Box, pools: Box, topology: Box) -> None:
   n.loopback.type = 'loopback'
   n.loopback.neighbors = []
   n.loopback.virtual_interface = True
-  lbname = devices.get_loopback_name(n,topology)
-  if lbname:
-    n.loopback.ifname = lbname
-    n.loopback.ifindex = 0
+  n.loopback.ifindex = 0
+  n.loopback.ifname = devices.get_loopback_name(n,topology) or 'Loopback'
 
   pool = n.get('loopback.pool','loopback')
   prefix_list = addressing.get(pools,[ pool ],n.id)
@@ -372,7 +370,9 @@ def loopback_interface(n: Box, pools: Box, topology: Box) -> None:
       log.error(
         f'{af} address on the main loopback interface of node {n.name} must be a CIDR prefix',
         category=log.IncorrectType,
-        module='nodes')  
+        module='nodes')
+  
+  links.check_interface_host_bits(n.loopback,n)
 
 '''
 Main node transformation code

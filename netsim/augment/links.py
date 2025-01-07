@@ -515,6 +515,40 @@ def get_nth_ip_from_prefix(pfx: netaddr.IPNetwork, n_id: int) -> str:
   return str(node_addr)
 
 """
+check_interface_host_bits: Check whether the IP addresses on an interface have host bits. The check is disabled
+for special prefixes (IPv4: /31, /32, IPv6: /127, /128)
+"""
+def check_interface_host_bits(intf: Box, node: Box) -> bool:
+  OK = True
+
+  for af in log.AF_LIST:
+    if af not in intf:                          # Skip unusued AFs
+      continue
+    if not isinstance(intf[af],str):            # Skip unnumbered interfaces
+      continue
+    pfx = netaddr.IPNetwork(intf[af])
+    if pfx.last <= pfx.first + 1:               # Are we dealing with special prefix (loopback or /31)
+      continue                                  # ... then it's OK not to have host bits
+
+    if str(pfx) == str(pfx.cidr):               # Does the IP address have host bits -- is it different from its CIDR subnet?
+      log.error(
+        f'Address {intf[af]} on interface {intf.ifname}/node {node.name} does not contain host bits',
+        log.IncorrectValue,
+        'links')
+      OK = False
+      continue
+
+    if str(pfx[-1]) == str(pfx.ip):
+      log.error(
+        f'Address {intf[af]} on interface {intf.ifname}/node {node.name} is a broadcast address',
+        log.IncorrectValue,
+        'links')
+      OK = False
+      continue
+
+  return OK
+
+"""
 Set an interface address based on the link prefix and interface sequential number (could be node.id or counter)
 """
 def set_interface_address(intf: Box, af: str, pfx: netaddr.IPNetwork, node_id: int) -> bool:
