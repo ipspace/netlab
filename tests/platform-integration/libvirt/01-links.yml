@@ -2,29 +2,35 @@ message:
   The test creates all three types of CLAB links (stub, p2p, multi-access) and
   checks that we can run OSPF on FRR over them.
 
-provider: clab
+provider: libvirt
 defaults.device: frr
 module: [ ospf ]
 ospf.timers.hello: 1
 
-nodes: [ r1, r2, r3, r4 ]
+nodes: [ r1, r2, r3, r4, r5 ]
 
 links:
 - r1:                                 # Stub => dummy
   prefix.ipv4: 10.42.42.0/24
 - r1:
-  r2:                                 # P2P veth pair
+  r2:                                 # P2P UDP tunnel
+- r1:
+  r5:
+  type: lan                           # LAN link between two nodes
 - r2:
   r3:
   r4:
   ospf.network_type: point-to-multipoint
 
 validate:
-  adj:
+  adj_r2:
     plugin: ospf_neighbor(nodes.r2.ospf.router_id)
-    pass: OSPF routers have adjacency with R2
     wait: 15
     nodes: [ r1, r3, r4 ]
+  adj_r1:
+    plugin: ospf_neighbor(nodes.r1.ospf.router_id)
+    wait: 15
+    nodes: [ r5 ]
   pfx:
     plugin: ospf_prefix(links[0].prefix.ipv4)
     wait: 10
