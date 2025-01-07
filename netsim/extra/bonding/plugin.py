@@ -36,6 +36,30 @@ def add_bond_interfaces(node: Box, bonds: typing.Dict[int,Box], topology: Box) -
         bond_if[af] = bond[af]     # Take the first one, if any
     node.interfaces.append(bond_if)
 
+"""
+Update all neighbors with the new interface name
+"""
+def update_neighbors( node: Box, intf: Box, topology: Box ) -> bool:
+  link = topology.links[ intf.linkindex-1 ]
+  if 'virtual_interface' in intf or link.node_count!=2:
+    log.error( f"{intf.name}: 'bonding.ifindex' can only be applied to interfaces on direct p2p links",
+               category=log.IncorrectAttr,module=_config_name)
+    return False
+
+  intf.neighbors = [ { 'node': n.node, 'ifname': n.ifname } for n in intf.neighbors ]  # Clear any IP addresses from neighbors
+  bond_interface_name = topology.defaults.bonding.bond_interface_name
+  ifname = strings.eval_format(bond_interface_name, intf)
+  for neigh in link.interfaces:
+    if neigh.node==node.name:
+      neigh.ifname = ifname
+    else:
+      nb = topology.nodes[neigh.node]
+      for i2 in nb.interfaces:
+        for n2 in i2.neighbors:
+          if n2.node==node.name:
+            n2.ifname = ifname
+  return True
+
 '''
 post_link_transform hook
 
@@ -57,12 +81,9 @@ def post_link_transform(topology: Box) -> None:
                    category=log.IncorrectAttr,module=_config_name)
         continue
 
-      intf.neighbors = [ { 'node': n.node, 'ifname': n.ifname } for n in intf.neighbors ]  # Clear any IP addresses from neighbors
-      link = topology.links[ intf.linkindex-1 ]
-      if 'virtual_interface' in intf or link.node_count!=2:
-        log.error( f"{intf.name}: 'bonding.ifindex' can only be applied to interfaces on direct p2p links",
-                   category=log.IncorrectAttr,module=_config_name)
+      if not update_neighbors(node,intf,topology):
         continue
+
       clone = data.get_box(intf)
       if node.name in bonds and bond_ifindex in bonds[node.name]:
         bonds[node.name][bond_ifindex]['members'].append( clone.ifname )
@@ -78,8 +99,6 @@ def post_link_transform(topology: Box) -> None:
         bonds[node.name][bond_ifindex]['primary'] = intf.ifname
       intf.prefix = False                              # L2 interface
 
-  # Interface neighbors may need to be updated to reflect the new bonded interface
-  bond_interface_name = topology.defaults.bonding.bond_interface_name
   for node in topology.nodes.values():                 # For each node
     if node.name in bonds:                             # ...that has 1 or more bonds
       add_bond_interfaces(node,bonds[node.name],topology)
