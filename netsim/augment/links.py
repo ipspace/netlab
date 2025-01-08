@@ -538,9 +538,9 @@ def check_interface_host_bits(intf: Box, node: Box) -> bool:
       OK = False
       continue
 
-    if str(pfx[-1]) == str(pfx.ip):
+    if str(pfx[-1]) == str(pfx.ip) and af == 'ipv4':
       log.error(
-        f'Address {intf[af]} on interface {intf.ifname}/node {node.name} is a broadcast address',
+        f'Address {intf[af]} on interface {intf.ifname}/node {node.name} is a subnet broadcast address',
         log.IncorrectValue,
         'links')
       OK = False
