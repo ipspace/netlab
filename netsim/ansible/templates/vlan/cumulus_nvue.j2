@@ -18,19 +18,26 @@
     interface:
 {%   endif %}
      {{ i.ifname }}:
-        bridge:
-          domain:
-            br_default:{% if i.vlan.access_id is defined +%}
-{%            if 'native' in i.vlan %}
-              untagged: {{ vlans[i.vlan.native].id }}
-{%            else %}
-              access: {{ i.vlan.access_id }}
-{%            endif %}
-{%          elif i.vlan.trunk_id is defined and i.type != "lag" +%}
-              vlan:
-{%            for v in i.vlan.trunk_id|sort %}
-                '{{ v }}': {}
-{%            endfor %}
-{%          else %} {}
-{%          endif %}
+       bridge:
+         domain:
+           br_default:
+{%-  if i.type=="lag" %} {}
+{%     if i.vlan.access_id is defined +%}
+       vlan: {{ i.vlan.access_id }}
+{%     endif %}
+{%   else %}
+{%     if i.vlan.access_id is defined +%}
+{%       if 'native' in i.vlan %}
+             untagged: {{ vlans[i.vlan.native].id }}
+{%       else %}
+             access: {{ i.vlan.access_id }}
+{%       endif %}
+{%     elif i.vlan.trunk_id is defined +%}
+             vlan:
+{%       for v in i.vlan.trunk_id|sort %}
+               '{{ v }}': {}
+{%       endfor %}
+{%     else %} {}
+{%     endif %}
+{%   endif %}
 {% endfor %}
