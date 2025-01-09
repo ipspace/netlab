@@ -16,10 +16,9 @@ Based on your lab topology the **[netlab up](netlab/up.md)** command will:
 * Start the lab using Vagrant or containerlab
 * Create additional virtual networking infrastructure needed to support your lab
 * Deploy initial configurations (interfaces, IPv4 and IPv6 addresses, usernames...) to your lab devices
-* Configure VLANs, VRFs, VXLAN, LLDP, BFD, OSPFv2, OSPFv3, EIGRP, RIPv2, RIPng, IS-IS, BGP, VRRP, anycast gateways,
-  MPLS, BGP-LU, L3VPN (VPNv4 + VPNv6), 6PE, EVPN, SR-MPLS, or SRv6 on your lab devices.
-* Configure prefix lists, AS-path filters, BGP community filters, route maps, route redistribution, and default route origination.
-* Start external network management tools specified in lab topology like Graphite or SuzieQ
+* Configure VLANs, VRFs, VXLAN, LLDP, LAG (including MLAG and Linux link bonding), STP, BFD, OSPFv2, OSPFv3, EIGRP, RIPv2, RIPng, IS-IS, BGP, VRRP, anycast gateways, DHCP clients and servers, MPLS, BGP-LU, L3VPN (VPNv4 + VPNv6), 6PE, EVPN, SR-MPLS, or SRv6 on your lab devices.
+* Configure static routes, prefix lists, AS-path filters, BGP community filters, route maps, route redistribution, and default route origination.
+* Start external network management tools specified in lab topology like Graphite, SuzieQ, or Cisco NSO.
 
 When the lab is fully configured, you can use the:
 
