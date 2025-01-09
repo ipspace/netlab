@@ -282,9 +282,6 @@ We're not testing Fortinet implementation as part of the regular integration tes
 * Junos configuration template configures BFD timers within routing protocol configuration, not on individual interfaces
 * Requires `ncclient` Python package and its dependencies to be installed (`python3 -m pip install ncclient`).
 
-## Linux caveats
-See [](generic-linux-devices)
-
 (caveats-vptx)=
 ## Juniper vPTX
 
@@ -328,6 +325,9 @@ See also [](caveats-junos).
 * Use a recent *vrnetlab* release that places the management interface into the **mgmt_junos** routing instance to avoid the conflict between [management IP subnet](clab-vrnetlab) `10.0.0.0/24` and **netlab** loopback addressing.
 
 See also [](caveats-junos).
+
+## Linux caveats
+See [](generic-linux-devices)
 
 (caveats-routeros6)=
 ## Mikrotik RouterOS 6
