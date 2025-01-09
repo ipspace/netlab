@@ -25,7 +25,8 @@ The module is supported on these platforms:
 | Cisco CSR 1000v       |  ❌  | ✅  | ✅  |
 | Cisco IOSv/IOSvL2     |  ❌  | ✅  | ✅  |
 | Cisco Nexus OS        |  ❌  | ✅  | ✅  |
-| Cumulus Linux         | ✅  | ✅  | ✅  |
+| Cumulus Linux 4.x     | ✅  | ✅  | ✅  |
+| Cumulus 5.x (NVUE)    | ✅ | ✅ |  ✅ |
 | Dell OS10             | ✅ [❗](caveats-os10) | ✅ [❗](caveats-os10) | ✅ [❗](caveats-os10)  |
 | FRRouting             | ✅  | ✅  | ✅  |
 | Nokia SR OS           | ✅  | ✅  | ✅  |
