@@ -2,14 +2,14 @@
 
 import sys
 
-__version__ = "1.9.3rc1"
+__version__ = "1.9.3"
 
 abort = False
 
 try:
   import box
 
-  if box.__version__ < '7.2.0':                 # netlab needs Python Box version 7.0 or higher
+  if box.__version__ < '7.2.0':                 # netlab needs Python Box version 7.2.0 or higher
     print("FATAL ERROR: python-box version 7.2.0 or higher required, use 'pip3 install --upgrade python-box' to install")
     abort = True
 

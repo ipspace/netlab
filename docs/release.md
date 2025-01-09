@@ -1,6 +1,17 @@
 Release Notes
 =============
 
+**[Release 1.9.3](release-1.9.3) (2025-01-09)**
+
+* Multi-chassis Link Aggregation (MLAG) support in the [](module-lag)
+* [Generic object (node, VRF, VLAN) groups](topo-groups)
+* Global, VRF, and inter-VRF [static routes](generic-routing-static) with direct or indirect next hops.
+* [OSPF interface timers, cleartext passwords, and DR priority](ospf-interface-support)
+* [Node cloning plugin](plugin-node-clone) simplifies repetitive topologies by cloning nodes
+* [Consistent selection of prefix pools](links-default-pools) based on the number of nodes attached to a link (⚠️ [breaking change](release-1.9.3-breaking))
+
+[More details...](release-1.9.3)
+
 **Release 1.9.2-post1 (2024-12-10)**
 
 This release [fixes an annoying bug](bug-fixes-1.9.2-post1) affecting users of Ansible 11.x.
