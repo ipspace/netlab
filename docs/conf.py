@@ -40,8 +40,6 @@ extensions = [
   'sphinx_rtd_dark_mode'
 ]
 
-suppress_warnings = ["myst.xref_ambiguous"]
-
 myst_heading_anchors = 3
 default_dark_mode = False
 
