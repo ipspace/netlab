@@ -13,24 +13,27 @@
 {%  endfor %}
 {% endif %}
 
+{# Note: interface.xyz.vlan is only used for SVI interfaces in case of multiple bridges #}
+
 {% for i in interfaces if i.vlan is defined and (i.virtual_interface is not defined or i.type=="lag") %}
 {%   if loop.first %}
     interface:
 {%   endif %}
      {{ i.ifname }}:
-        bridge:
-          domain:
-            br_default:{% if i.vlan.access_id is defined +%}
-{%            if 'native' in i.vlan %}
-              untagged: {{ vlans[i.vlan.native].id }}
-{%            else %}
-              access: {{ i.vlan.access_id }}
-{%            endif %}
-{%          elif i.vlan.trunk_id is defined and i.type != "lag" +%}
-              vlan:
-{%            for v in i.vlan.trunk_id|sort %}
-                '{{ v }}': {}
-{%            endfor %}
-{%          else %} {}
-{%          endif %}
+       bridge:
+         domain:
+           br_default:
+{%-     if i.vlan.access_id is defined +%}
+{%       if 'native' in i.vlan %}
+             untagged: {{ vlans[i.vlan.native].id }}
+{%       else %}
+             access: {{ i.vlan.access_id }}
+{%       endif %}
+{%     elif i.vlan.trunk_id is defined +%}
+             vlan:
+{%       for v in i.vlan.trunk_id|sort %}
+               '{{ v }}': {}
+{%       endfor %}
+{%     else %} {}
+{%     endif %}
 {% endfor %}
