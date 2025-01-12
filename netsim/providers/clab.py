@@ -49,7 +49,7 @@ def insert_ipv6_forwarding_rule( brname: str ) -> bool:
     ['sudo','nft',f'insert rule ip6 filter DOCKER-USER oifname "{brname}" counter accept'],
     check_result=True,return_stdout=True)
   log.print_verbose(f"Insert ipv6 nftables rule for Linux bridge '{brname}': {status}")
-  return status
+  return status is not False
 
 def destroy_linux_bridge( brname: str ) -> bool:
   status = external_commands.run_command(
