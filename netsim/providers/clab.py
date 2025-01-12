@@ -40,11 +40,15 @@ def create_linux_bridge( brname: str ) -> bool:
   log.print_verbose( f"Enable Linux bridge '{brname}': {status}" )
 
   status = linuxbridge.configure_bridge_forwarding(brname)
-  if status:
-    status = external_commands.run_command(
-      ['sudo','nft',f'insert rule ip6 filter DOCKER-USER oifname "{brname}" counter accept'],
-      check_result=True,return_stdout=True)
-    log.print_verbose(f"Insert ipv6 nftables rule for Linux bridge '{brname}': {status}")
+  if status is False:
+    return False
+  return insert_ipv6_forwarding_rule( brname )
+
+def insert_ipv6_forwarding_rule( brname: str ) -> bool:
+  status = external_commands.run_command(
+    ['sudo','nft',f'insert rule ip6 filter DOCKER-USER oifname "{brname}" counter accept'],
+    check_result=True,return_stdout=True)
+  log.print_verbose(f"Insert ipv6 nftables rule for Linux bridge '{brname}': {status}")
   return status
 
 def destroy_linux_bridge( brname: str ) -> bool:
@@ -53,7 +57,30 @@ def destroy_linux_bridge( brname: str ) -> bool:
   if status is False:
     return False
   log.print_verbose( f"Delete Linux bridge '{brname}': {status}" )
-  return True
+  return remove_ipv6_forwarding_rule( brname )
+
+def remove_ipv6_forwarding_rule( brname: str ) -> bool:
+  status = external_commands.run_command(
+    ['sudo','nft','--handle','--json','list chain ip6 filter DOCKER-USER'],
+    check_result=True,return_stdout=True)
+  if status is False:
+    log.print_verbose( f"remove_ipv6_forwarding_rule failed to list rules for Linux bridge '{brname}'" )
+    return False
+  try:
+    result = json.loads(status)
+    for rule in result['nftables']:
+      if 'rule' in rule and rule["rule"]["expr"][0]["match"]["right"]==brname:
+        handle = rule["rule"]["handle"]
+        status = external_commands.run_command(
+          ['sudo','nft',f'destroy rule ip6 filter DOCKER-USER handle {handle}'],
+          check_result=True,return_stdout=True)
+        log.print_verbose(f"Remove ipv6 nftables rule for Linux bridge '{brname}': {status}")
+        return status
+    log.print_verbose( f"remove_ipv6_forwarding_rule did not find any rules for '{brname}'" )
+    return True
+  except Exception as ex:
+    log.print_verbose(ex)
+    return False
 
 _OVS_OK: bool = False
 def check_ovs_installation() -> None:
