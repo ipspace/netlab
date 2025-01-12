@@ -7,6 +7,7 @@ import typing
 import warnings
 import typing
 import argparse
+import inspect
 from box import Box
 from ..data import types as _types
 from . import strings
@@ -175,12 +176,26 @@ def print_more_hints(
       print(f"... {line}",file=sys.stderr)                  # Teletype/file, just print the line
 
 """
+If needed, get the module name that called an error function. Return whatever the caller
+supplied if it's not none, otherwise inspect the stack.
+"""
+def get_calling_module(module: typing.Optional[str]) -> str:
+  if module is not None:
+    return module or 'topology'
+
+  try:
+    err_caller = inspect.stack()[2].filename
+    return os.path.splitext(os.path.basename(err_caller))[0]
+  except:
+    return 'unknown'
+
+"""
 Display an error message, including error category, calling module and optional hints
 """
 def error(
       text: str,                                                    # Error text
       category: typing.Union[typing.Type[Warning],typing.Type[Exception]] = UserWarning,
-      module: str = 'topology',                                     # Module generating the error
+      module: typing.Optional[str] = None,                          # Module generating the error
       hint: typing.Optional[str] = None,                            # Pointer to a static hint
       more_hints: typing.Optional[typing.Union[str,list]] = None,   # More hints or extra data
       more_data: typing.Optional[typing.Union[str,list]] = None,
@@ -190,6 +205,7 @@ def error(
 
   global _ERROR_LOG,err_class_map,_WARNING_LOG,_HINTS_CACHE,QUIET,err_color_map,_error_header_printed
 
+  module = get_calling_module(module)
   err_name = category.__name__
   err_line = f'{err_name} in {module}: {text}' if module else f'{err_name}: {text}'
 
