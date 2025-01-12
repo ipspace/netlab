@@ -40,6 +40,11 @@ def create_linux_bridge( brname: str ) -> bool:
   log.print_verbose( f"Enable Linux bridge '{brname}': {status}" )
 
   status = linuxbridge.configure_bridge_forwarding(brname)
+  if status:
+    status = external_commands.run_command(
+      ['sudo','nft',f'insert rule ip6 filter DOCKER-USER oifname "{brname}" counter accept'],
+      check_result=True,return_stdout=True)
+    log.print_verbose(f"Insert ipv6 nftables rule for Linux bridge '{brname}': {status}")
   return status
 
 def destroy_linux_bridge( brname: str ) -> bool:
