@@ -67,20 +67,21 @@ def remove_ipv6_forwarding_rule( brname: str ) -> bool:
     log.print_verbose( f"remove_ipv6_forwarding_rule failed to list rules for Linux bridge '{brname}'" )
     return False
   try:
-    result = json.loads(status)
-    for rule in result['nftables']:
-      if 'rule' in rule and rule["rule"]["expr"][0]["match"]["right"]==brname:
-        handle = rule["rule"]["handle"]
-        status = external_commands.run_command(
-          ['sudo','nft',f'destroy rule ip6 filter DOCKER-USER handle {handle}'],
-          check_result=True,return_stdout=True)
-        log.print_verbose(f"Remove ipv6 nftables rule for Linux bridge '{brname}': {status}")
-        return status
-    log.print_verbose( f"remove_ipv6_forwarding_rule did not find any rules for '{brname}'" )
-    return True
+    if isinstance(status,str):
+      result = json.loads(status)
+      for rule in result['nftables']:
+        if 'rule' in rule and rule["rule"]["expr"][0]["match"]["right"]==brname:
+          handle = rule["rule"]["handle"]
+          status = external_commands.run_command(
+            ['sudo','nft',f'destroy rule ip6 filter DOCKER-USER handle {handle}'],
+            check_result=True,return_stdout=True)
+          log.print_verbose(f"Remove ipv6 nftables rule for Linux bridge '{brname}': {status}")
+          return status is not False
+      log.print_verbose( f"remove_ipv6_forwarding_rule did not find any rules for '{brname}'" )
+      return True
   except Exception as ex:
     log.print_verbose(ex)
-    return False
+  return False
 
 def create_ovs_bridge( brname: str ) -> bool:
   status = external_commands.run_command(
