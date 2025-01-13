@@ -228,10 +228,9 @@ def validate_link_vlan_attributes(link: Box,v_attr: Box,topology: Box) -> bool:
     
     if len(v_attr.access.set) > 1:
       set_txt = ','.join(set(v_attr.access.set))
-      log.error(
-        f"Using more than one access VLAN per link is not supported",
+      log.warning(
+        text=f"Using more than one access VLAN per link is not supported",
         more_data=f"Link {link._linkname}, access VLANs: {set_txt}",
-        category=Warning,
         module='vlan')
 
   link_ok = True
