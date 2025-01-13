@@ -44,7 +44,7 @@ err_class_map = {                       # Map error classes into short error cod
 err_color_map = {
   'FATAL':   'red',
   'ERROR':   'red',
-  'WARNING': 'magenta',
+  'WARNING': 'yellow',
   'INFO':    'bright_cyan'
 }
 
