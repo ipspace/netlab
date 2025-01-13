@@ -198,6 +198,7 @@ def change_lab_instance(instance: typing.Union[int,str]) -> None:
 def run(cli_args: typing.List[str]) -> None:
   args = down_parse(cli_args)
   set_dry_run(args)
+  log.set_logging_flags(args)
   if args.instance:
     change_lab_instance(args.instance)
 
