@@ -352,14 +352,14 @@ def run_up(cli_args: typing.List[str]) -> None:
 
   if args.validate:
     if args.no_config:
-      log.error('Lab is not configured, skipping the validation phase',Warning,'')
+      log.warning(text='Lab is not configured, skipping the validation phase',module='-')
     else:
       try:
         status = external_commands.run_command('netlab validate',return_exitcode=True)
         if status == 1:
           log.error('Validation failed',log.FatalError,module='netlab validate')
         elif status == 3:
-          log.error('Validation generated a warning',Warning,module='netlab validate')
+          log.warning(text='Validation generated a warning',module='netlab validate')
       except KeyboardInterrupt:                       # netlab validate displays its own error message
         sys.exit(1)
 

@@ -185,11 +185,9 @@ def show_lab(args: argparse.Namespace,lab_states: Box) -> None:
   show_lab_nodes(topology)
   if lab_status != 'started':
     print()
-    log.error(
-      "Lab is not in 'started' state, inspect details with 'netlab status --log'",
-      category=Warning,
-      module=''
-    )
+    log.warning(
+      text="Lab is not in 'started' state, inspect details with 'netlab status --log'",
+      module='-')
 
 def show_lab_log(args: argparse.Namespace, lab_states: Box) -> None:
   iid = get_instance(args,lab_states)

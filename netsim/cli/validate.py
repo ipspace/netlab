@@ -231,10 +231,9 @@ def extend_first_wait_time(args: argparse.Namespace, topology: Box) -> None:
     v_entry.wait = v_entry.wait + max_delay
     if not args.error_only:
       indent = (topology._v_len + 3) if topology else 10
-      log.error(
-        f'Initial wait time extended by {max_delay} seconds required by {d_device}',
-        category=Warning,
-        module='',indent=indent)
+      log.warning(
+        text=f'Initial wait time extended by {max_delay} seconds required by {d_device}',
+        module='-',indent=indent)
     return
 
 '''
