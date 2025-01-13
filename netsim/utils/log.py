@@ -315,14 +315,18 @@ def warning(*,
 
   # Add the 'this is how you disable this warning' hint
   #
-  q_hint = f'Set {flag} to False to hide this warning'
+  q_hint = f'Set {flag} to False to hide this warning'                    # The 'disable me' hint
+  c_hint = kwargs.get('more_hints',None)                                  # The caller hint
+  if c_hint in _HINTS_CACHE:                                              # Was the caller hint already displayed?
+    c_hint = None
+
   if q_hint not in _HINTS_CACHE:                                          # Did we already tell the user how to do it?
-    if 'more_hints' not in kwargs:                                        # Did the caller supply hints?
+    if c_hint is None:                                                    # Did the caller supply a unique hint?
       kwargs['more_hints'] = [ q_hint ]
-    elif isinstance(kwargs['more_hints'],list):                           # Append to existing hint list?
-      kwargs['more_hints'].append(q_hint)
-    elif isinstance(kwargs['more_hints'],str):                            # Add second line to the existing hint?
-      kwargs['more_hints'] = [ kwargs['more_hints'], q_hint ]
+    elif isinstance(c_hint,list):                                         # Append to existing hint list?
+      kwargs['more_hints'] = c_hint + [ q_hint ]
+    elif isinstance(c_hint,str):                                          # Add second line to the existing hint?
+      kwargs['more_hints'] = [ c_hint, q_hint ]
     else:                                                                 # Otherwise we can't hint
       q_hint = ''
 
@@ -330,6 +334,8 @@ def warning(*,
       _HINTS_CACHE.append(q_hint)                                         # ... make sure we don't do it twice
 
   error(text,category=Warning,module=module,**kwargs)                     # And finally, generate the warning
+  if c_hint:                                                              # ... and add the caller hint (if any)
+    _HINTS_CACHE.append(c_hint)                                           # ... to the displayed hints
 
 """
 Print informational message. The arguments are similar to the ones used in 'error' function
