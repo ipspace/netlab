@@ -86,14 +86,21 @@ nodes: [ s1, s2, s3 ]
 links: [ s1-s2, s2-s3 ]
 ```
 
-### IPTables / Netfilter Interaction ###
+### Interaction with iptables / netfilter
 
-The virtual network topologies built by Netlab are subject to `iptables` and - on more recent Linux hosts - [`nftables`](https://netfilter.org/projects/nftables/) policy rules. 
+Linux bridges created by _netlab_ to support multi-access container networks are subject to the same security rules as all other Linux bridges on your server.
 
-Those interested could try ```sudo nft list table ip filter``` or ```sudo nft list table ip6 filter``` to get an impression of the various rules in place. Both Containerlab and Libvirt insert their own rules to handle various forwarding scenarios.
+The `iptables` or [`nftables`](https://netfilter.org/projects/nftables/) policy rules do not apply to bridged traffic unless your server uses the **br_netfilter** module, which you can check with `lsmod|grep netfilter`. In a default setup of a typical Ubuntu server, the **br_netfilter** module would not impact IPv4 traffic but would block all IPv6 traffic. The default settings of other Linux distributions vary and may block all bridged traffic.
 
-Although perhaps not advisable in general, in the course of *Netlab* evolution and for testing purposes at times
-```sudo nft 'add chain ip6 filter FORWARD { policy accept; }``` has helped solve certain forwarding issues. Similarly, ```sudo dropwatch -l kas``` may help shed some light on where packets are being dropped.
+If your server uses the **br_netfilter** module, use `sudo sysctl net.bridge.bridge-nf-call-ip6tables=0` to turn off filtering of bridged IPv6 traffic (caution: this setting applies to the whole server). The `net.bridge.bridge-nf-call-iptables` parameter controls the filtering of bridged IPv4 traffic, and the `net.bridge.bridge-nf-call-arptables` parameter controls ARP. Alternatively, you could use `sudo nft add chain ip6 filter 'FORWARD { policy accept; }'` to change the default handling of IPv6 traffic from **drop all** to **permit all**.
+
+```{warning}
+Before changing the security settings of a server that is not a throwaway VM, please evaluate the broader impact of the changes you're planning to make.
+```
+
+If you want to troubleshoot the setup of `nftables` on your system, use `sudo nft list table ip filter` or `sudo nft list table ip6 filter` (both Containerlab and Libvirt insert their own rules to handle various forwarding scenarios).
+
+Finally, `sudo dropwatch -l kas` ([Ubuntu installation guide](https://snapcraft.io/install/dropwatch/ubuntu)) may help shed some light on where packets are being dropped.
 
 (clab-network-external)=
 ### Connecting to the Outside World
@@ -173,7 +180,7 @@ nodes:
 
 ```{warning}
 * _vrnetlab_ has to add another layer of abstraction and [spaghetti networking](vrnetlab-internal-net). If you can choose between a _vrnetlab_ container and a Vagrant box supported by _netlab_, use the Vagrant box.
-* Do not use the original _vrnetlab_ project to create device containers. _netlab_ has been tested with the [vrnetlab fork](https://github.com/hellt/vrnetlab) supported by _containerlab_ (see [containerlab documentation](https://containerlab.dev/manual/vrnetlab/) for more details).
+* Do not create device containers using the original _vrnetlab_ project. _netlab_ has been tested with the [vrnetlab fork](https://github.com/hellt/vrnetlab) supported by _containerlab_ (see [containerlab documentation](https://containerlab.dev/manual/vrnetlab/) for more details).
 * Finally, _vrnetlab_ is an independent open-source project. If it fails to produce a working container image ([example](https://github.com/hellt/vrnetlab/issues/231)), please contact them.
 ```
 
@@ -287,7 +294,7 @@ Faced with the above lab topology, _netlab_ creates ```clab_files/t1/some_daemon
 The custom configuration files are generated within _netlab_ and can use standard Jinja2 filters. If you have Ansible installed as a Python package[^HB], _netlab_ tries to import the **ipaddr** family of filters, making filters like **ipv4**, **ipv6**, or **ipaddr** available in custom configuration file templates.
 
 ```{warning}
-Ansible developers love to restructure stuff and move it into different directories. This functionality works with two implementations of **ipaddr** filters (tested on Ansible 2.10 and Ansible 7.4/ Ansible Core 2.14) but might break in the future -- we're effectively playing whack-a-mole with Ansible developers.
+Ansible developers love to restructure stuff and move it into different directories. This functionality works with two implementations of **ipaddr** filters (tested on Ansible 2.10 and Ansible 7.4/ Ansible Core 2.14) but might break in the future. We're effectively playing whack-a-mole with Ansible developers.
 ```
 
 [^HB]: Installing Ansible with Homebrew or into a separate virtual environment won't work -- _netlab_ has to be able to import Ansible modules
@@ -313,11 +320,13 @@ String values (for example, the command to execute specified in **clab.cmd**) ar
 
 The complete list of supported Containerlab attributes is in the [system defaults](https://github.com/ipspace/netlab/blob/dev/netsim/providers/clab.yml#L22) and can be printed with the `netlab show defaults providers.clab.attributes` command.
 
-To add other *containerlab* attributes to the `clab.yml` configuration file, modify **defaults.providers.clab.node_config_attributes** settings, for example:
+To enable additional *containerlab* attributes in your lab topology, add them to the **defaults.providers.clab.attributes.node._keys** dictionary, for example:
 
 ```
 provider: clab
-defaults.providers.clab.node_config_attributes: [ ports, env, user ]
+defaults.providers.clab.attributes.node._keys:
+  env:
+  user: str
 ```
 
 (clab-prefix)=
@@ -325,7 +334,8 @@ defaults.providers.clab.node_config_attributes: [ ports, env, user ]
 
 By default, Netlab uses `clab` as the [containerlab naming prefix](https://containerlab.dev/manual/topo-def-file/#prefix),
 which causes each container to be named `clab-{ topology name }-{ node name }`.
-If you prefer plain node names (e.g. matching DNS names used in your network), set the `defaults.providers.clab.lab_prefix`
+
+If you prefer plain node names (for example, to match DNS names used in your network), set the `defaults.providers.clab.lab_prefix`
 to an empty string to remove both prefix strings, leaving just the node name as the container name.
 
 Example:
