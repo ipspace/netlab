@@ -86,6 +86,15 @@ nodes: [ s1, s2, s3 ]
 links: [ s1-s2, s2-s3 ]
 ```
 
+### IPTables / Netfilter Interaction ###
+
+The virtual network topologies built by Netlab are subject to `iptables` and - on more recent Linux hosts - [`nftables`](https://netfilter.org/projects/nftables/) policy rules. 
+
+Those interested could try ```sudo nft list table ip filter``` or ```sudo nft list table ip6 filter``` to get an impression of the various rules in place. Both Containerlab and Libvirt insert their own rules to handle various forwarding scenarios.
+
+Although perhaps not advisable in general, in the course of *Netlab* evolution and for testing purposes at times
+```sudo nft 'add chain ip6 filter FORWARD { policy accept; }``` has helped solve certain forwarding issues. Similarly, ```sudo dropwatch -l kas``` may help shed some light on where packets are being dropped.
+
 (clab-network-external)=
 ### Connecting to the Outside World
 
