@@ -43,6 +43,12 @@ def add_netlab_path() -> None:
   return
 
 """
+has_command: figures out whether a command is available
+"""
+def has_command(cmd: str) -> bool:
+  return bool(run_command(['bash','-c',f'command -v {cmd}'],check_result=True,ignore_errors=True))
+
+"""
 run_command: Execute an external command specified as a string or a list of CLI parameters
 
 Flags:
