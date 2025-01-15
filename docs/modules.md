@@ -139,7 +139,7 @@ Module parameters are dictionaries of values stored under the *module-name* key 
 Node module parameters are adjusted based on topology parameters and default settings ([more details](dev/module-attributes.md)):
 
 * For every node, the topology-level settings for modules used by that node are merged with the node-level settings.
-* Node settings are further adjusted with device-specific settings and [global system defaults](defaults.md)
+* Node settings are further adjusted with device-specific settings and [global system defaults](topo-defaults)
 * Final node-level settings are saved into expanded topology file or Ansible inventory, and used by configuration templates.
 
 Link module parameters are not changed during the topology expansion. They are merged with interface data when individual interfaces are created during the topology transformation process. Interface module settings are later augmented with module-specific subset of node data (example: OSPF area).

@@ -33,7 +33,7 @@ Finally, you can set these topology-level parameters:
 **Notes:**
 
 * All elements apart from **nodes** are optional -- missing **links** element indicates a topology without inter-node links (just the management interfaces)
-* Default values of **defaults** and **addressing** elements are taken from [default settings](defaults.md).
+* Default values of **defaults** and **addressing** elements are taken from [default settings](topo-defaults).
 * List of modules is used to specify additional initial configuration elements (example: OSPF routing)
 * Default topology name is the directory name[^RBC].
 

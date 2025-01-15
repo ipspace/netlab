@@ -145,7 +145,7 @@ Unfortunately, the Nexus 9300v linecards become active almost a minute after com
 (change-search-paths)=
 ## Changing and Troubleshooting Search Paths
 
-The directory and filename search paths used by the **netlab initial** and **netlab config** commands are defined in the **paths** dictionary within the [system defaults](defaults). You can change these parameters or prepend/append another list to them:
+The directory and filename search paths used by the **netlab initial** and **netlab config** commands are defined in the **paths** dictionary within the [system defaults](topo-defaults). You can change these parameters or prepend/append another list to them:
 
 * To change a search path list, set the corresponding **defaults.paths** variable in lab topology or user defaults.
 * To prepend a list of path components to a search path list, set the **defaults.paths.prepend._path_name_** list.

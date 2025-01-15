@@ -13,7 +13,7 @@ A single formatting modifier can be used to specify the graph type:
 
 ## Modifying Graph Attributes
 
-Graphing routines use **[default](defaults)** topology settings to modify the generated DOT file's node- or link parameters. You can change these defaults.
+Graphing routines use **[default](topo-defaults)** topology settings to modify the generated DOT file's node- or link parameters. You can change these defaults.
 
 * **outputs.graph.interface_labels** -- Add IP addresses to links in **topology** graph. Results in a cluttered image (but feel free to fix that and submit a pull request).
 * **outputs.graph.colors._object_** -- Specify background color for *as*, *node*, *stub* subnet, *ibgp* or *ebgp* session.

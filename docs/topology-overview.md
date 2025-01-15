@@ -4,7 +4,7 @@
 Topology description file is a YAML file with these top-level elements:
 
 **defaults** (optional)
-: Topology-wide defaults like default device type. Further default settings are taken from [user- or system-wide defaults](defaults.md).
+: Topology-wide defaults like default device type. Further default settings are taken from [user- or system-wide defaults](topo-defaults).
 
 **addressing** (optional)
 : [IPv4 and IPv6 pools](addressing.md) used to address management, loopback, LAN, P2P and stub interfaces

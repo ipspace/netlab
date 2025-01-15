@@ -53,7 +53,7 @@
 **Notes:**
 
 * Use the **[netlab show devices](netlab-show-devices)** command to display the list of supported devices and daemons.
-* You can specify the device type in the **device** property of the [node data](node-attributes) or the topology-wide **[defaults.device](defaults.md)** setting. See [lab topology overview](topology-overview.md) for more details.
+* You can specify the device type in the **device** property of the [node data](node-attributes) or the topology-wide **[defaults.device](default-device-type)** setting. See [lab topology overview](topology-overview.md) for more details.
 * If you want to use an unsupported device in a *netlab*-managed lab, use [an unknown device](platform-unknown) or [contribute a new device implementation](dev/devices.md).
 * The daemons run on top of Ubuntu Linux and use the same scripts as Linux for initial device configuration. See *linux* device for initial configuration capabilities.
 

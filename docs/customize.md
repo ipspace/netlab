@@ -3,7 +3,7 @@
 
 _netlab_ is designed to be highly extensible and customizable. Starting with the system settings, you can:
 
-* [Overwrite system defaults](defaults.md), either with user default files or in the lab topology.
+* [Overwrite system defaults](topo-defaults), either with user default files or in the lab topology.
 * Change the [default device images](default-device-image) to run a specific software version in your lab.
 * Change [system addressing pools](addressing.md) or define your own.
 
@@ -29,7 +29,7 @@ Finally, you might want to use external tools or devices not yet supported by _n
 * If you want to add unsupported devices to a lab but are willing to configure them manually, just [define them as _unknown_ devices](platform-unknown).
 * Adding [new functionality to an existing device](dev/device-features.md) or adding a new device to _netlab_ takes more effort. When adding a new device, it's easier to [define a new device](dev/device-box.md) and keep it _[unprovisioned](group-special-names)_ than going for a [full-blown implementation](dev/devices.md).
 
-Regardless of how far you're willing to go, we'd appreciate if you decided to [contribute your changes](dev/guidelines.md), but it's perfectly fine to keep them private. The best part: you don't have to modify the _netlab_ package to get the job done; you could use [user defaults](defaults.md) to define new stuff, and user-defined configuration templates (see above) to configure it.
+Regardless of how far you're willing to go, we'd appreciate if you decided to [contribute your changes](dev/guidelines.md), but it's perfectly fine to keep them private. The best part: you don't have to modify the _netlab_ package to get the job done; you could use [user defaults](defaults-user-file) to define new stuff, and user-defined configuration templates (see above) to configure it.
 
 ```eval_rst
 .. toctree::

@@ -199,8 +199,8 @@ Each link could have a **name** attribute. That attribute is copied into interfa
 
 ```{tip}
 * VLAN interfaces get interface names in the format `X -> [list]` where X is either the link or VLAN **‌name**, or VLAN description.
-* The maximum interface description length is 255 characters (limited by SNMP MIB-2) and can be changed with the `defaults.const.ifname.maxlength` [system parameter](defaults).
-* The interface description contains up to five neighbors. That limit can be changed with the `defaults.const.ifname.neighbors` [system parameter](defaults).
+* The maximum interface description length is 255 characters (limited by SNMP MIB-2) and can be changed with the `defaults.const.ifname.maxlength` [system parameter](topo-defaults).
+* The interface description contains up to five neighbors. That limit can be changed with the `defaults.const.ifname.neighbors` [system parameter](topo-defaults).
 ```
 
 ### Example

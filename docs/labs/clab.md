@@ -211,7 +211,7 @@ During the **netlab up** process, *containerlab* starts the containers and repor
 
 _vrnetlab_-based supported platforms go through an extra "_is the device ready_" check during the initial configuration process: _netlab_ tries to establish an SSH session with the device and execute a command. The SSH session is retried up to 20 times, and as each retry usually takes 30 seconds (due to TCP timeouts), **netlab initial** waits up to 10 minutes for a VM to become ready.
 
-If your virtual machines take even longer to boot, increase the number of retries. You can set the **netlab_check_retries** node variable to increase the number of retries for an individual node or set the **defaults.devices._device_.clab.group_vars.netlab_check_retries** variable to increase the number of retries for a specific device (see also [](defaults) and [](defaults-user-file))
+If your virtual machines take even longer to boot, increase the number of retries. You can set the **netlab_check_retries** node variable to increase the number of retries for an individual node or set the **defaults.devices._device_.clab.group_vars.netlab_check_retries** variable to increase the number of retries for a specific device (see also [](topo-defaults) and [](defaults-user-file))
 
 ## Advanced Topics
 

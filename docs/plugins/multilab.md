@@ -13,7 +13,7 @@ The plugin has been tested with **[libvirt](../labs/libvirt.md)** and **[clab](.
 
 ```{warning}
 * While you can use the same topology file for multiple lab instances, you MUST run each lab instance in a different working directory.
-* The *‌multilab* plugin changes the lab topology parameters *‌after* the topology file, user- and system [defaults](defaults) have been processed. You cannot change a parameter controlled by the *‌multilab* plugin with a topology file setting; you must change the corresponding **defaults.multilab.change** parameter. See also [](multilab-behind-the-scenes)
+* The *‌multilab* plugin changes the lab topology parameters *‌after* the topology file, user- and system [defaults](topo-defaults) have been processed. You cannot change a parameter controlled by the *‌multilab* plugin with a topology file setting; you must change the corresponding **defaults.multilab.change** parameter. See also [](multilab-behind-the-scenes)
 ```
 
 ## Using the Plugin

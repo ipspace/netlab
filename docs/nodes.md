@@ -34,7 +34,7 @@ You cannot specify the device types or any other node attributes when using this
 The [topology transformation process](dev/transform.md) converts the **nodes** element specified as a list of strings into a dictionary of dictionaries before further processing.
 
 ```{tip}
-Node names can have up to 16 characters. To increase the maximum node name length, set the `defaults.const.MAX_NODE_ID_LENGTH` attribute (see also: [changing defaults](defaults.md)).
+Node names can have up to 16 characters. To increase the maximum node name length, set the `defaults.const.MAX_NODE_ID_LENGTH` attribute (see also: [changing defaults](topo-defaults)).
 ```
 
 ### Dictionary of Nodes

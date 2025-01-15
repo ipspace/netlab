@@ -1,7 +1,7 @@
 (netlab-capture)=
 # Packet Capture
 
-The **netlab capture** command can be used to capture packets on [*libvirt* virtual machines](libvirt-capture) or [*containerlab*-created Docker containers](lab-clab). The default packet capturing program is `tcpdump`; you can change that with the [default settings](defaults).
+The **netlab capture** command can be used to capture packets on [*libvirt* virtual machines](libvirt-capture) or [*containerlab*-created Docker containers](lab-clab). The default packet capturing program is `tcpdump`; you can change that with the [default settings](topo-defaults).
 
 ```{warning}
 You cannot capture traffic on point-to-point links between *‌libvirt* virtual machines; you have to change them into Linux bridges ([more details](libvirt-capture)).
@@ -74,7 +74,7 @@ tcpdump: listening on swp1, link-type EN10MB (Ethernet), snapshot length 262144 
 
 ## Changing the Packet-Capturing Utility
 
-**netlab capture** uses **tcpdump** as the default packet-capturing utility. You can change that with the **defaults.netlab.capture.command** parameter ([default changing details](defaults)). The command you specify must include the `{intf}` string at the point where the packet-capturing utility expects the interface name.
+**netlab capture** uses **tcpdump** as the default packet-capturing utility. You can change that with the **defaults.netlab.capture.command** parameter ([default changing details](topo-defaults)). The command you specify must include the `{intf}` string at the point where the packet-capturing utility expects the interface name.
 
 To change the default parameters passed to the packet-capturing utility, change the **defaults.netlab.capture.command_args** parameter.
 
