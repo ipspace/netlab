@@ -96,12 +96,6 @@ def check_crazy_pip3(args: argparse.Namespace) -> None:
     os.environ['FLAG_USER'] = 'Y'
 
 """
-has_command: figures out whether a command is available
-"""
-def has_command(cmd: str) -> typing.Union[bool,int,str]:
-  return external_commands.run_command(['bash','-c',f'command -v {cmd}'],check_result=True,ignore_errors=True)
-
-"""
 set_sudo_flag: figures out whether we have 'sudo' installed and whether the user
 is a root user if there's no sudo.
 """
@@ -113,7 +107,7 @@ def set_sudo_flag() -> None:
   if os.getuid() == 0:
     return
 
-  if has_command('sudo'):
+  if external_commands.has_command('sudo'):
     os.environ['SUDO'] = "sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a"
     return
 
@@ -138,7 +132,7 @@ def check_script(path: str, args: argparse.Namespace) -> None:
   cmds = script.read_text()
 
   if ' apt-get ' in cmds:
-    if not has_command('apt-get'):
+    if not external_commands.has_command('apt-get'):
       log.error(
         'This script uses apt-get command that is not available on your system',
         more_hints='Most netlab installation scripts work on Ubuntu (and probably on Debian)',
@@ -148,7 +142,7 @@ def check_script(path: str, args: argparse.Namespace) -> None:
   if ' pip3 ' not in cmds:
     return
 
-  if not has_command('pip3'):
+  if not external_commands.has_command('pip3'):
     log.error(
       'This script uses pip3 command that is not available on your system',
       more_hints="Install pip3 (for example, with 'sudo apt-get install python-pip3')",

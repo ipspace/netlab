@@ -19,7 +19,7 @@ def list_bridges( topology: Box ) -> typing.Set[str]:
   return { l.bridge for l in topology.links if l.bridge and l.node_count > 2 and not 'external_bridge' in l.clab }
 
 def use_ovs_bridge( topology: Box ) -> bool:
-    return topology.defaults.providers.clab.bridge_type == "ovs-bridge"
+  return topology.defaults.providers.clab.bridge_type == "ovs-bridge"
 
 def create_linux_bridge( brname: str ) -> bool:
   if external_commands.run_command(
@@ -50,7 +50,26 @@ def destroy_linux_bridge( brname: str ) -> bool:
   log.print_verbose( f"Delete Linux bridge '{brname}': {status}" )
   return True
 
+_OVS_OK: bool = False
+def check_ovs_installation() -> None:
+  global _OVS_OK
+  if _OVS_OK:
+    return
+
+  if not external_commands.has_command('ovs-vsctl'):
+    log.error(
+      'Open vSwitch package is not installed, you cannot use OVS bridges with containerlab',
+      more_hints = [
+        'This error was caused by defaults.providers.clab.bridge_type being set to ovs-bridge',
+        'Use "sudo apt install openvswitch-switch" on Ubuntu or an equivalent command to install Open vSwitch'],
+      category=log.FatalError,
+      module='clab')
+    log.exit_on_error()
+
+  _OVS_OK = True
+
 def create_ovs_bridge( brname: str ) -> bool:
+  check_ovs_installation()
   status = external_commands.run_command(
       ['sudo','ovs-vsctl','add-br',brname],check_result=True,return_stdout=True)
   if status is False:
@@ -168,6 +187,9 @@ class Containerlab(_Provider):
     self.create_extra_files_mappings(node,topology)
 
   def post_configuration_create(self, topology: Box) -> None:
+    if use_ovs_bridge(topology):
+      check_ovs_installation()
+
     for n in topology.nodes.values():
       if n.get('clab.binds',None):
         self.create_extra_files(n,topology)
