@@ -1,6 +1,10 @@
 Release Notes
 =============
 
+**Release 1.9.3-post1 (2025-01-15)**
+
+This release [fixes a few things we broke in 1.9.3](bug-fixes-1.9.3-post1) and [pins the version of `python-box`](https://github.com/ipspace/netlab/issues/1815).
+
 **[Release 1.9.3](release-1.9.3) (2025-01-09)**
 
 * Multi-chassis Link Aggregation (MLAG) support in the [](module-lag)
