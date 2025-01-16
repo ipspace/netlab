@@ -285,9 +285,9 @@ def select_primary_provider(topology: Box) -> None:
     if not 'provider' in ndata:
       ndata.provider = p_default
 
-  log.error(
-    f'Topology provider changed from {p_default} to {p_top}. Nodes are not affected',
-    category=Warning,
+  log.warning(
+    text=f'Topology provider changed from {p_default} to {p_top}. Nodes are not affected',
+    flag='providers.change',
     module='providers')
 
 """

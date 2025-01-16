@@ -445,10 +445,10 @@ class LAG(_Module):
         i.lag = node_atts + i.lag              # Merge node level settings with interface overrides
 
         if 'mode' in i.lag:
-          log.error(f'lag.mode {i.lag.mode} used by node {node.name} is deprecated, use only 802.3ad',
-            category=Warning,
+          log.warning(
+            text=f'lag.mode {i.lag.mode} used by node {node.name} is deprecated, use only 802.3ad',
             module='lag')
-          if i.lag.mode!='802.3ad':
+          if i.lag.mode != '802.3ad':
             i.lag.lacp = 'off'                 # Disable LACP for other modes
 
         linkindex = i.pop('linkindex',None)    # Remove linkindex (copied from link that no longer exists)

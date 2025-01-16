@@ -177,10 +177,9 @@ def check_group_data_structure(
 
     # Validate node_data attributes (if any)
     if 'node_data' in gdata and g_type == 'node':
-      log.error(
+      log.warning(
         text=f'Group {grp} uses an obsolete attribute node_data. Migrate node parameters into group definition',
-        category=Warning,
-        module='groups')
+        flag='groups.node_data')
 
       validate_attributes(
         data=gdata.node_data,

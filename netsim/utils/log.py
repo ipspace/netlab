@@ -7,6 +7,7 @@ import typing
 import warnings
 import typing
 import argparse
+import inspect
 from box import Box
 from ..data import types as _types
 from . import strings
@@ -43,7 +44,7 @@ err_class_map = {                       # Map error classes into short error cod
 err_color_map = {
   'FATAL':   'red',
   'ERROR':   'red',
-  'WARNING': 'magenta',
+  'WARNING': 'yellow',
   'INFO':    'bright_cyan'
 }
 
@@ -175,12 +176,30 @@ def print_more_hints(
       print(f"... {line}",file=sys.stderr)                  # Teletype/file, just print the line
 
 """
+If needed, get the module name that called an error function. Return whatever the caller
+supplied if it's not none, otherwise inspect the stack.
+"""
+def get_calling_module(module: typing.Optional[str]) -> str:
+  if module is not None:
+    return module or 'topology'
+
+  try:
+    err_caller = inspect.stack()[2].filename
+    return os.path.splitext(os.path.basename(err_caller))[0]
+  except:
+    return 'unknown'
+
+"""
 Display an error message, including error category, calling module and optional hints
+
+When called with calling module set to None, the function uses stack trace to find out
+which module called it. The display of the calling module is skipped if the module is
+set to '-' and the category is Warning (used to repeat warnings)
 """
 def error(
       text: str,                                                    # Error text
       category: typing.Union[typing.Type[Warning],typing.Type[Exception]] = UserWarning,
-      module: str = 'topology',                                     # Module generating the error
+      module: typing.Optional[str] = None,                          # Module generating the error
       hint: typing.Optional[str] = None,                            # Pointer to a static hint
       more_hints: typing.Optional[typing.Union[str,list]] = None,   # More hints or extra data
       more_data: typing.Optional[typing.Union[str,list]] = None,
@@ -190,6 +209,7 @@ def error(
 
   global _ERROR_LOG,err_class_map,_WARNING_LOG,_HINTS_CACHE,QUIET,err_color_map,_error_header_printed
 
+  module = '' if module == '-' else get_calling_module(module)
   err_name = category.__name__
   err_line = f'{err_name} in {module}: {text}' if module else f'{err_name}: {text}'
 
@@ -220,13 +240,13 @@ def error(
     else:
       print(err_line,file=sys.stderr)
 
+  if more_data is not None:                                         # Caller supplied data, print it with DATA label
+    print_more_hints(more_data,'DATA','bright_black',h_warning=category is Warning,indent=indent)
+
   if more_hints is not None:                                        # Caller supplied hints, print them with HINT label
     if more_hints not in _HINTS_CACHE:
       print_more_hints(more_hints,h_warning=category is Warning,indent=indent)
     _HINTS_CACHE.append(more_hints)
-
-  if more_data is not None:                                         # Caller supplied data, print it with DATA label
-    print_more_hints(more_data,'DATA','bright_black',h_warning=category is Warning,indent=indent)
 
   if hint is None:                                                  # No pointers to static hints
     if exit_on_error and category is not Warning:
@@ -258,6 +278,64 @@ def error(
 
   if exit_on_error and category is not Warning:
     sys.exit(1)
+
+"""
+Print a warning. The arguments are similar to the 'error' function apart from:
+
+* Category is assumed to be 'Warning'
+* The 'flag' argument specifies a defaults setting to check. If it includes a dot, it's
+  assumed to be a global warning (under defaults.warnings), otherwise it's a module-level
+  warning (under defaults._module_.warnings).
+"""
+def warning(*,
+      text: str,
+      module: typing.Optional[str] = None,
+      flag: typing.Optional[str] = None,
+      **kwargs: typing.Any) -> None:
+
+  global _HINTS_CACHE
+
+  module = get_calling_module(module)
+  if flag is None:
+    error(text,category=Warning,module=module,**kwargs)
+    return
+
+  if flag.startswith('defaults.'):
+    pass
+  elif '.' in flag:
+    flag = f'defaults.warnings.{flag}'
+  else:
+    flag = f'defaults.{module}.warnings.{flag}'
+
+  from ..data import global_vars
+  topology = global_vars.get_topology()
+  flag_value = topology[flag] if topology is not None else True
+  if flag_value is False:
+    return
+
+  # Add the 'this is how you disable this warning' hint
+  #
+  q_hint = f'Set {flag} to False to hide this warning'                    # The 'disable me' hint
+  c_hint = kwargs.get('more_hints',None)                                  # The caller hint
+  if c_hint in _HINTS_CACHE:                                              # Was the caller hint already displayed?
+    c_hint = None
+
+  if q_hint not in _HINTS_CACHE:                                          # Did we already tell the user how to do it?
+    if c_hint is None:                                                    # Did the caller supply a unique hint?
+      kwargs['more_hints'] = [ q_hint ]
+    elif isinstance(c_hint,list):                                         # Append to existing hint list?
+      kwargs['more_hints'] = c_hint + [ q_hint ]
+    elif isinstance(c_hint,str):                                          # Add second line to the existing hint?
+      kwargs['more_hints'] = [ c_hint, q_hint ]
+    else:                                                                 # Otherwise we can't hint
+      q_hint = ''
+
+    if q_hint:                                                            # If we managed to squeeze in our hint...
+      _HINTS_CACHE.append(q_hint)                                         # ... make sure we don't do it twice
+
+  error(text,category=Warning,module=module,**kwargs)                     # And finally, generate the warning
+  if c_hint:                                                              # ... and add the caller hint (if any)
+    _HINTS_CACHE.append(c_hint)                                           # ... to the displayed hints
 
 """
 Print informational message. The arguments are similar to the ones used in 'error' function
@@ -306,10 +384,10 @@ def repeat_warnings(cmd: str) -> None:
     error(
       text=f"The following warnings were generated during the '{cmd}' processing",
       category=Warning,
-      module='',
+      module='-',
     )
     for wline in wlist:
-      error(wline,category=Warning,module='')
+      error(wline,category=Warning,module='-')
 
 """
 Print colored status headers

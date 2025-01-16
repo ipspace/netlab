@@ -33,12 +33,9 @@ def cleanup(topology: Box) -> None:
       data.append_to_list(missing[cfg_id].devices,ndata.device,ndata.name)
       ndata.config = [ f for f in ndata.config if f != cfg ]
 
-  hint: typing.Optional[str] = "You will have to configure the missing functionality yourself"
   for m_config in missing.values():
     for m_device,m_nodes in m_config.devices.items():
-      log.error(
-        f'Custom configuration {m_config.item} is missing for device {m_device} (nodes {",".join(m_nodes)})',
-        category=Warning,
-        more_hints=hint,
+      log.warning(
+        text=f'Custom configuration {m_config.item} is missing for device {m_device} (nodes {",".join(m_nodes)})',
+        more_hints='You will have to configure the missing functionality yourself',
         module='check.config')
-      hint = None

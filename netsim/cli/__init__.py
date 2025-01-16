@@ -161,11 +161,11 @@ def check_modified_source(snapshot: str, topology: typing.Optional[Box] = None) 
     if in_time <= snap_time:
       continue
 
-    log.error(
+    log.warning(
       text=f'Lab topology source file {infile} has been modified',
-      more_data=f'after the snapshot {snapshot} has been created',
-      category=Warning,
       module='cli',
+      flag='snapshot.modified',
+      more_data=f'after the snapshot {snapshot} has been created',
       hint='recreate')
 
 # Load snapshot or topology -- used by 'netlab initial'

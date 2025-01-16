@@ -118,11 +118,8 @@ def create_vagrant_network(topology: typing.Optional[Box] = None) -> None:
       ['vagrant','status','--machine-readable'],check_result=True,ignore_errors=True,return_stdout=True)
 
   if isinstance(v_status,str) and ('state,running' in v_status):
-    log.error(
-      f'Vagrant virtual machines are already running, skipping the management network setup',
-      category=Warning,
-      skip_header=True,
-      module='libvirt')
+    log.warning(
+      text=f'Vagrant virtual machines are already running, skipping the management network setup')
     return
 
   mgmt_net = topology.addressing.mgmt._network if topology is not None else ''

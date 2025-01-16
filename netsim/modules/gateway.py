@@ -4,7 +4,7 @@
 import typing
 from box import Box
 
-from . import _Module,get_effective_module_attribute
+from . import _Module,get_effective_module_attribute,remove_module
 from ..utils import log, strings
 from .. import data
 from ..augment.nodes import reserve_id
@@ -171,10 +171,10 @@ class FHRP(_Module):
         continue                                            # ... sure, I can do that ;)
       if 'gateway' in link:                                 # Do we already have 'gateway' on link?
         if link.gateway is False:                           # If we have 'gateway:false' we're dealing with a stupidity
-          log.error(
-            'Interface gateway attribute ignored due to gateway:false configured on the link',
+          log.warning(
+            text='Interface gateway attribute ignored due to gateway:false configured on the link',
             more_data=f'Link {link._linkname} node {intf.node}',
-            category=Warning,
+            flag='no_gateway',
             module='gateway')
           intf.pop('gateway',None)
       else:
@@ -260,12 +260,12 @@ class FHRP(_Module):
         if not k in active_proto:                                     # Not a parameter for a FHRP active on this node?
           node.gateway.pop(k,None)                                    # ... zap it!
 
-    if not active_proto:
-      if topology.defaults.get('gateway.warnings.inactive',False):
-        log.error(
-          f"Node {node.name} does not use any FHRP technology, removing 'gateway' from node modules",
-          category=Warning,
-          module='gateway')
+    if active_proto:
+      return
 
-      node.pop('gateway',None)                                        # If not: Remove its configuration entirely
-      node.module = [ m for m in node.module if m != 'gateway' ]      # and the module
+    log.warning(
+      text=f"Node {node.name} does not use any FHRP technology, removing 'gateway' from node modules",
+      flag='inactive',
+      module='gateway')
+
+    remove_module(node,'gateway')

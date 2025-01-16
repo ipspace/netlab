@@ -196,11 +196,12 @@ def build_ibgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
         break
 
   if ibgp_warning:
-    log.error(
-      f'Node {node.name} has IBGP sessions but no IGP',
-      category=Warning,
+    igp_text = f'({", ".join(igp_list)})'
+    log.warning(
+      text=f'Node {node.name} has IBGP sessions but no IGP',
       module='bgp',
-      hint='igp')
+      flag='missing_igp',
+      more_hints=[ f'Add a supported IGP {igp_text} to the list of modules' ])
 
 """
 build_ebgp_sessions: create EBGP session data structure

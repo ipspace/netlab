@@ -129,6 +129,17 @@ def cleanup(topology: Box) -> None:
   node_transform("cleanup",topology)
   link_transform("cleanup",topology)
 
+"""
+remove_module: Remove a module from a node
+"""
+def remove_module(node: Box, module: str, extra: list = []) -> None:
+  for attr in extra + [ module ]:
+    node.pop(attr,None)                                     # Remove node configuration
+    for intf in [ intf for intf in node.interfaces if attr in intf ]:
+      intf.pop(attr,None)                                   # Remove interface configuration
+
+  node.module = [ m for m in node.module if m != module ]   # Remove module from the list of node modules
+
 # Set default list of modules for nodes without specific module list
 #
 def augment_node_module(topology: Box) -> None:

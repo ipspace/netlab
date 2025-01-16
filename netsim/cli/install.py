@@ -111,9 +111,8 @@ def set_sudo_flag() -> None:
     os.environ['SUDO'] = "sudo DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a"
     return
 
-  log.error(
-    "sudo command is not available and you're not root. The installation will most likely fail",
-    category=Warning,
+  log.warning(
+    text="sudo command is not available and you're not root. The installation will most likely fail",
     module='install')
 
   if strings.confirm('Do you want to continue',blank_line=True):

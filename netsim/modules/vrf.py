@@ -5,7 +5,7 @@ import typing, re
 import netaddr
 from box import Box
 
-from . import _Module,_routing,_dataplane,get_effective_module_attribute
+from . import _Module,_routing,_dataplane,get_effective_module_attribute,remove_module
 from ..utils import log
 from .. import data
 from ..data import global_vars
@@ -514,16 +514,15 @@ class VRF(_Module):
 
     # Do we have any need for the VRF module?
     if not vrf_count:
-      if topology.defaults.get('vrf.warnings.inactive',False):
-        log.error(
-          f"Node {node.name} uses no VRFs, removing 'vrf' from node modules",
-          category=Warning,
-          module='vrf',
-          hint='inactive')
+      log.warning(
+        text=f"Node {node.name} uses no VRFs, removing 'vrf' from node modules",
+        module='vrf',
+        flag='inactive',
+        hint='inactive')
+
       # Remove VRF module from the node if the node has no VRFs, unless the vrf.keep_module flag is set
       if not features.get('vrf.keep_module',False):
-        node.module = [ m for m in node.module if m != 'vrf' ]
-        node.pop('vrfs',None)
+        remove_module(node,'vrf',['vrfs'])
       
       return
 

@@ -286,7 +286,7 @@ def remove_unaddressed_intf(node: Box, proto: str) -> None:
 #
 # remove_unused_igp -- remove IGP module if it's not configured on any interface
 #
-def remove_unused_igp(node: Box, proto: str, warning: bool = False) -> bool:
+def remove_unused_igp(node: Box, proto: str) -> bool:
   if not any(proto in ifdata for ifdata in node.interfaces):                # Is protocol configured on any non-loopback interface?
     node.pop(proto,None)                                                    # ... no, remove protocol data from node
 
@@ -298,12 +298,11 @@ def remove_unused_igp(node: Box, proto: str, warning: bool = False) -> bool:
       return False                                                          # ... OK, we're good
 
   node.module = [ m for m in node.module if m != proto ]                    # Makes no sense to keep it, remove the config module
-  if warning:
-    log.error(
-      f'{node.name} does not use {proto} on any non-loopback interface or VRF',
-      more_hints=f'It has been removed from the list of modules active on {node.name}',
-      category=Warning,
-      module=proto)
+  log.warning(
+    text=f'{node.name} does not use {proto} on any non-loopback interface or VRF',
+    more_hints=f'It has been removed from the list of modules active on {node.name}',
+    flag='inactive',
+    module=proto)
     
   return True
 
@@ -459,15 +458,14 @@ def get_unique_router_ids(node: Box, proto: str, topology: Box) -> None:
 
     if rid_pfx:                                             # If we have a prefix, we also have a RID
       vdata[proto].router_id = router_id                    # ... so set it and report the change
-      log.error(
-        f'router ID for VRF {vname} on node {node.name} was changed from {rid} to {vdata[proto].router_id}',
-        category=Warning,
+      log.warning(
+        text=f'router ID for VRF {vname} on node {node.name} was changed from {rid} to {vdata[proto].router_id}',
         module=proto,
-        more_hints=f'Device {node.device} requires a unique router ID for each {proto} instance')
+        more_hints=f'Device {node.device} requires a unique router ID for each {proto} instance',
+        flag='changed_id')
     else:                                                   # Ran out of RID pool, report another error
-      log.error(
-        f'Cannot change router ID for VRF {vname} on node {node.name}',
-        category=Warning,
+      log.warning(
+        text=f'Cannot change router ID for VRF {vname} on node {node.name}',
         module=proto)
 
 """
@@ -727,7 +725,7 @@ def igp_post_transform(
   if propagate is not None:
     propagate(node,topology)
   
-  if remove_unused_igp(node,proto,topology.defaults.get(f'{proto}.warnings.inactive',False)):
+  if remove_unused_igp(node,proto):
     return
 
   process_imports(node,proto,topology,['bgp','connected'])
