@@ -98,75 +98,6 @@ ok: [h2] =>
     #
     # Print the final routing table
     ip route
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    hostname dut
-    !
-    lldp
-    !
-  
-  
-    !
-    vlan 1000
-     name edge
-    !
-  
-    !
-  
-    !
-    interface loopback 0
-        ip address 10.0.0.1/32
-    !
-    interface mgmt
-        no lldp transmit
-        no lldp receive
-    !
-  
-  
-  
-    interface 1/1/1
-        shutdown
-        mtu 9198
-        ip mtu 1500
-        description dut -> [x1,h2]
-        ip address 172.16.44.1/24
-        ipv6 address 2001:db8:cafe:44::1/64
-        no ipv6 nd suppress-ra
-        ipv6 nd ra min-interval 3
-        ipv6 nd ra max-interval 4
-        no shutdown
-    !
-  
-  
-    interface 1/1/2
-        shutdown
-        mtu 9198
-        ip mtu 1500
-        description [Access VLAN edge] dut -> h1
-        no shutdown
-    !
-  
-  
-    interface 1/1/3
-        shutdown
-        mtu 9198
-        ip mtu 1500
-        description [Access VLAN edge] dut -> x1
-        no shutdown
-    !
-  
-  
-    interface vlan1000
-        description VLAN edge (1000) -> [h1,x1]
-        ip address 172.16.33.1/24
-        ipv6 address 2001:db8:cafe:33::1/64
-        no ipv6 nd suppress-ra
-        ipv6 nd ra min-interval 3
-        ipv6 nd ra max-interval 4
-    !
-    !
 ok: [h1] => 
   msg: |-
     initial configuration for h1
@@ -356,6 +287,60 @@ ok: [x1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    hostname dut
+    !
+    lldp enable
+    !
+    !
+    ip host x1 10.0.0.2
+    !
+    !
+    default mtu 1532
+    !
+    interface loopback0
+     ip address 10.0.0.1/32
+     no ipv6 enable
+    !
+    interface mgmt1/1/1
+     no lldp transmit
+     no lldp receive
+    !
+    interface ethernet1/1/1
+     no shutdown
+     no switchport
+     mtu 1532
+     description "dut -> [x1\\,h2]"
+     ip address 172.16.44.1/24
+     ipv6 nd max-ra-interval 4
+     ipv6 nd min-ra-interval 3
+     ipv6 nd send-ra
+     ipv6 address 2001:db8:cafe:44::1/64
+    !
+    interface ethernet1/1/2
+     no shutdown
+     no switchport
+     mtu 1532
+     description "[Access VLAN edge] dut -> h1"
+    !
+    interface ethernet1/1/3
+     no shutdown
+     no switchport
+     mtu 1532
+     description "[Access VLAN edge] dut -> x1"
+    !
+    interface virtual-network1000
+     no shutdown
+     description "VLAN edge (1000) -> [h1\\,x1]"
+     ip address 172.16.33.1/24
+     ipv6 nd max-ra-interval 4
+     ipv6 nd min-ra-interval 3
+     ipv6 nd send-ra
+     ipv6 address 2001:db8:cafe:33::1/64
+    !
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [h1]
@@ -364,21 +349,15 @@ ok: [h2]
 ok: [dut]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/dellos10.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for h1, x1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h2
 
-TASK [tempfile] ****************************************************************
-changed: [dut -> localhost]
+TASK [wait_for_connection] *****************************************************
+skipping: [dut]
 
-TASK [template] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [aoscx_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/arubacx.j2] ***
+TASK [dellos10_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/dellos10.j2] ***
 changed: [dut]
-
-TASK [file] ********************************************************************
-changed: [dut -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [h1 -> localhost]
@@ -391,8 +370,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for h1, x1
 
 TASK [template] ****************************************************************
-changed: [h1]
 changed: [x1]
+changed: [h1]
 
 TASK [set_fact] ****************************************************************
 ok: [h1]
@@ -424,14 +403,14 @@ skipping: [h2]
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h2_initial-pfsnvywq.sh] ***********************
+TASK [Remove temporary file /tmp/h2_initial-9oonitnj.sh] ***********************
 changed: [h2 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [x1]
 ok: [h1]
+ok: [x1]
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
@@ -533,17 +512,24 @@ ok: [dut] =>
   msg: |-
     vlan configuration for dut
     =========================================
+    ! First of all, create association VLAN<->Virtual-Network
+    virtual-network 1000
+      exit
+    interface vlan 1000
+      description "VLAN edge"
+      virtual-network 1000
+      exit
     !
     !
-    interface 1/1/2
-     no routing
-     vlan access 1000
+    interface ethernet1/1/2
+     switchport mode access
+     switchport access vlan 1000
     !
-    interface 1/1/3
-     no routing
-     vlan access 1000
+    interface ethernet1/1/3
+     switchport mode access
+     switchport access vlan 1000
     !
-    interface vlan1000
+    interface virtual-network1000
 
 TASK [Find configuration deployment deploy_script for vlan] ********************
 skipping: [h1]
@@ -552,20 +538,14 @@ ok: [dut]
 
 TASK [Deploy vlan configuration] ***********************************************
 skipping: [h1]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/dellos10.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1
 
-TASK [tempfile] ****************************************************************
-changed: [dut -> localhost]
+TASK [wait_for_connection] *****************************************************
+skipping: [dut]
 
-TASK [template] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [aoscx_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/arubacx.j2] ***
+TASK [dellos10_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/dellos10.j2] ***
 changed: [dut]
-
-TASK [file] ********************************************************************
-changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
 changed: [x1]
@@ -622,15 +602,13 @@ ok: [dut] =>
   msg: |-
     gateway configuration for dut
     =========================================
+    ip virtual-router mac-address 02:00:ca:fe:c0:01
+  
+  
     !
-    no ip icmp redirect
-  
-    ! globally enable vrrp if needed
-  
-  
-    interface vlan1000
-     active-gateway ip mac 02:00:ca:fe:c0:01
-     active-gateway ip 172.16.33.42
+    interface virtual-network1000
+      ip virtual-router address 172.16.33.42
+      ipv6 virtual-router address 2001:db8:cafe:33::2a
 
 TASK [Find configuration deployment deploy_script for gateway] *****************
 skipping: [h1]
@@ -639,20 +617,14 @@ ok: [dut]
 
 TASK [Deploy gateway configuration] ********************************************
 skipping: [h1]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/dellos10.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1
 
-TASK [tempfile] ****************************************************************
-changed: [dut -> localhost]
+TASK [wait_for_connection] *****************************************************
+skipping: [dut]
 
-TASK [template] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [aoscx_config: deploying gateway from /home/pipi/net101/tools/netsim/ansible/templates/gateway/arubacx.j2] ***
+TASK [dellos10_config: deploying gateway from /home/pipi/net101/tools/netsim/ansible/templates/gateway/dellos10.j2] ***
 changed: [dut]
-
-TASK [file] ********************************************************************
-changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
 changed: [x1]
@@ -670,7 +642,7 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=35   changed=12   unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+dut                        : ok=26   changed=3    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
 h1                         : ok=27   changed=5    unreachable=0    failed=0    skipped=16   rescued=0    ignored=0   
 h2                         : ok=13   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 x1                         : ok=33   changed=6    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
