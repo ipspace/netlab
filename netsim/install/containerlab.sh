@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Install a specific version of Containerlab
-CONTAINERLAB_VERSION="0.59.0"
+CONTAINERLAB_VERSION="0.62.2"
 
 cat <<EOM
 Docker/Containerlab Installation Script
