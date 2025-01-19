@@ -5,89 +5,85 @@ message: |
   first device in the forwarding path intercepts the packets with the shared MAC
   address.
 
-module: [ gateway, ospf, vlan ]
+module: [ gateway, vlan ]
 defaults.interfaces.mtu: 1500
 
 vlans:
   edge:
     gateway: True
-    links: [ h1-d1, d1-d2, d2-h2 ]
-    ospf.passive: True
+    links: [ h1-dut, dut-x1 ]
+    prefix:
+      ipv4: 172.16.33.0/24
+      ipv6: 2001:db8:cafe:33::/64
 
 groups:
   probes:
     provider: clab
-    members: [ r1, r2 ]
+    members: [ h1, x1 ]
     device: frr
-    module: [ ospf ]
   hosts:
     device: linux
     provider: clab
-    members: [ h1, h2, h3 ]
+    members: [ h2 ]
 
 gateway.protocol: anycast
 gateway.id: 42
 gateway.anycast.mac: 0200.cafe.c001
 
-nodes:
-  d1:
-  d2:
-  r1:
-  r2:
-  h1:
-  h2:
-  h3:
-
-links:
-- d1:
-  r1:
-  prefix:
-    ipv4: 172.16.33.0/24
-    ipv6: 2001:db8:cafe:33::/64
-
-- d2:
-  r2:
-  prefix:
+prefix:
+  target:
     ipv4: 172.16.44.0/24
     ipv6: 2001:db8:cafe:44::/64
 
-- r1-r2-h3
+nodes:
+  dut:
+  x1:
+  h1:
+    module: [ routing ]
+    role: host
+    routing.static:
+    - prefix: target
+      nexthop:
+        ipv4: 172.16.33.42
+        ipv6: "2001:db8:cafe:33::2a"
+  h2:
+
+links:
+- interfaces: [ dut, x1, h2 ]
+  prefix: target
 
 validate:
-  adj_d1:
-    description: Check D1-R1 OSPFv2 adjacencies
-    wait_msg: Waiting for OSPFv2 adjacency process to complete
+  ping_h1_v4:
+    description: IPv4 ping H2 from H1
     wait: 40
-    nodes: [ r1 ]
-    plugin: ospf_neighbor(nodes.d1.ospf.router_id)
-  adj_d2:
-    description: Check D2-R2 OSPFv2 adjacencies
-    wait_msg: Waiting for OSPFv2 adjacency process to complete
-    wait: 40
-    nodes: [ r2 ]
-    plugin: ospf_neighbor(nodes.d2.ospf.router_id)
-  trace_h1:
-    description: Traceroute H1-H3 (should go over R1)
-    wait: 10
-    wait_msg: We might have to wait for the OSPF SPF run
+    wait_msg: Waiting for STP to enable VLAN ports
     nodes: [ h1 ]
-    devices: [ linux ]
-    exec: traceroute -w 1 -q 2 h3
+    plugin: ping('h2',af='ipv4')
+  ping_h1_v6:
+    level: warning
+    description: IPv6 ping H2 from H1
+    wait: 3
+    wait_msg: Waiting for ping to work
+    nodes: [ h1 ]
+    plugin: ping('h2',af='ipv6')
+  ping_dup:
+    description: Check for duplicate packets
+    nodes: [ h1 ]
+    devices: [ frr ]
+    exec: ping -4 h2 -c 2
     valid: |
-      'r1' in stdout
-  trace_h2:
-    description: Traceroute H1-H3 (should go over R1)
-    wait: 5
-    wait_msg: We might have to wait for the OSPF SPF run
-    nodes: [ h2 ]
-    devices: [ linux ]
-    exec: traceroute -w 1 -q 2 h3
+      'DUP' not in stdout
+  trace_h1:
+    description: Traceroute H1-H3 (should go over DUT)
+    nodes: [ h1 ]
+    devices: [ frr ]
+    exec: traceroute -4 -w 1 -q 2 h2
     valid: |
-      'r2' in stdout
+      'h2' in stdout and 'x1' not in stdout
   arp:
     description: Check the ARP entry for the anycast gateway
-    nodes: [ h1, h2 ]
-    devices: [ linux ]
-    exec: arp {{ interfaces[0].gateway.ipv4|ipaddr('address') }}
+    nodes: [ h1 ]
+    devices: [ frr ]
+    exec: arp -n {{ interfaces[0].gateway.ipv4|ipaddr('address') }}
     valid: |
       '02:00:ca:fe:c0:01' in stdout
