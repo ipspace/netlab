@@ -10,7 +10,8 @@ iface {{ intf.ifname }}
     address-virtual {{ intf.gateway.anycast.mac|hwaddr('linux') }} {{ intf.gateway.ipv4 }}
 {%   endif %}
 {%   if intf.gateway.protocol == 'vrrp' %}
-    vrrp {{ intf.gateway.vrrp.group }}{% for af in 'ipv4','ipv6' if af in intf.gateway %} {{ intf.gateway[af] }}{% endfor +%}
+{%     set v6_ll = " fe80::200:5eff:fe00:2%02x/64"|format(intf.gateway.vrrp.group) if 'ipv6' in intf.gateway else "" %} 
+    vrrp {{ intf.gateway.vrrp.group }}{{ v6_ll }}{% for af in 'ipv4','ipv6' if af in intf.gateway %} {{ intf.gateway[af] }}{% endfor +%}
 {%   endif %}
 {% endfor %}
 CONFIG
@@ -18,6 +19,10 @@ ifreload -a
 cat >/tmp/vrrp_config <<CONFIG
 {% for intf in interfaces if intf.gateway.protocol|default('') == 'vrrp' %}
 interface {{ intf.ifname }}
+{%   if 'ipv6' in intf.gateway %}
+{# Per RFC9568 5.2.9, the link-local ipv6 address MUST be included first. Required for interop with EOS (for example) #}
+  vrrp {{ intf.gateway.vrrp.group }} ipv6 fe80::200:5eff:fe00:2{{ '%02x' | format(intf.gateway.vrrp.group) }}
+{%   endif %}
 {%   for af in 'ipv4','ipv6' if af in intf.gateway %}
   vrrp {{ intf.gateway.vrrp.group }} {{ af|replace('ipv4','ip') }} {{ intf.gateway[af]|ipaddr('address') }}
 {%   endfor %}
