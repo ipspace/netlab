@@ -37,32 +37,34 @@
       msg: >
         Cannot find {{ config_module }} configuration template for
         {{ netlab_device_type|default(ansible_network_os) }}
-    when: not config_template
+    when: not config_template and not (netlab_skip_missing_template|default(False))
 
-  - name: "Print deployed configuration when running in verbose mode"
-    debug:
-      msg: |
-        {{ config_module }} configuration for {{ inventory_hostname }}
-        =========================================
-        {{ lookup('template',config_template or paths[0]+'/missing.j2') }}
-    when: (ansible_verbosity or netlab_show_config|default(False)) and config_template
+  - when: config_template
+    block:
+    - name: "Print deployed configuration when running in verbose mode"
+      debug:
+        msg: |
+          {{ config_module }} configuration for {{ inventory_hostname }}
+          =========================================
+          {{ lookup('template',config_template or paths[0]+'/missing.j2') }}
+      when: (ansible_verbosity or netlab_show_config|default(False)) and config_template
 
-  - name: "Find configuration deployment deploy_script for {{ config_module }}"
-    set_fact:
-      deploy_script: "{{ lookup('first_found',params,errors='ignore') }}"
-    vars:
-      params:
-        paths: "{{ paths_deploy.dirs }}"
-        files: "{{ paths_deploy.files }}"
+    - name: "Find configuration deployment deploy_script for {{ config_module }}"
+      set_fact:
+        deploy_script: "{{ lookup('first_found',params,errors='ignore') }}"
+      vars:
+        params:
+          paths: "{{ paths_deploy.dirs }}"
+          files: "{{ paths_deploy.files }}"
 
-  - name: "Deploy {{ config_module }} configuration"
-    include_tasks: "{{ deploy_script }}"
-    when: do_deploy and deploy_script
-    args:
-      apply:
-        vars:
-          config_template: "{{ config_template }}"
-          netsim_action: "{{ config_module }}"
-        tags: [ always ]
+    - name: "Deploy {{ config_module }} configuration"
+      include_tasks: "{{ deploy_script }}"
+      when: do_deploy and deploy_script
+      args:
+        apply:
+          vars:
+            config_template: "{{ config_template }}"
+            netsim_action: "{{ config_module }}"
+          tags: [ always ]
 
   when: do_deploy
