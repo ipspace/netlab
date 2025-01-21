@@ -51,160 +51,104 @@ ok: [h1] =>
     =========================================
     #!/bin/bash
     #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
     set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)# "
-    echo
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
   
+    ### One-Shot configuration (non-Ubuntu VM or container)
     #
-    # Create loopbacks, stub and lag/bond devices
+    # Disable IPv4 and IPv6 forwarding
     #
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
     #
-  
+    # Interface addressing, create any bond devices
     #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.33.3/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.33.3/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:cafe:33::3/64 dev eth1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:cafe:33::3/64 dev eth1
     ip link set dev eth1 mtu 1500
-  
     #
-    # Rest of initial configuration done through VTYSH
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
-    cat >/tmp/config <<CONFIG
-    hostname h1
-    !
-    vrf mgmt
-     exit-vrf
-    !
-    ipv6 forwarding
-    frr defaults datacenter
-    !
-    interface eth1
-     no shutdown
-     description h1 -> [dut,r2]
-     ip address 172.16.33.3/24
-     ipv6 address 2001:db8:cafe:33::3/64
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.44.0/24 2>/dev/null; do
+      : ; done
+    #
+    set +e
+    echo Removing existing IPv6 routes
+    while ip route del 2001:db8:cafe:44::/64 2>/dev/null; do
+      : ; done
+    #
+    echo Adding direct static routes
+    ip route add 172.16.44.0/24 via 172.16.33.42 dev eth1 protocol static
+    ip route add 2001:db8:cafe:44::/64 via 2001:db8:cafe:33::2a dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
 ok: [h2] => 
   msg: |-
     initial configuration for h2
     =========================================
     #!/bin/bash
     #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
     set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)# "
-    echo
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
   
+    ### One-Shot configuration (non-Ubuntu VM or container)
     #
-    # Create loopbacks, stub and lag/bond devices
+    # Disable IPv4 and IPv6 forwarding
     #
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
     #
-  
+    # Interface addressing, create any bond devices
     #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.44.4/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.44.4/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:cafe:44::4/64 dev eth1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:cafe:44::4/64 dev eth1
     ip link set dev eth1 mtu 1500
-  
     #
-    # Rest of initial configuration done through VTYSH
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
-    cat >/tmp/config <<CONFIG
-    hostname h2
-    !
-    vrf mgmt
-     exit-vrf
-    !
-    ipv6 forwarding
-    frr defaults datacenter
-    !
-    interface eth1
-     no shutdown
-     description h2 -> [dut,r2]
-     ip address 172.16.44.4/24
-     ipv6 address 2001:db8:cafe:44::4/64
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.33.0/24 2>/dev/null; do
+      : ; done
+    #
+    set +e
+    echo Removing existing IPv6 routes
+    while ip route del 2001:db8:cafe:33::/64 2>/dev/null; do
+      : ; done
+    #
+    echo Adding direct static routes
+    ip route add 172.16.33.0/24 via 172.16.44.1 dev eth1 protocol static
+    ip route add 2001:db8:cafe:33::/64 via 2001:db8:cafe:44::1 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
 ok: [r2] => 
   msg: |-
     initial configuration for r2
@@ -310,7 +254,7 @@ ok: [dut]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for r2
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for h1, h2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
 
 TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
@@ -319,31 +263,33 @@ should be similar to how they appear if present in the running configuration on
 device including the indentation
 changed: [r2]
 
-TASK [Attempt to load VRF kernel module] ***************************************
-changed: [h1 -> localhost]
-
-TASK [Disable FRR management VRF when modprobe fails] **************************
-skipping: [h1]
-skipping: [h2]
-
-TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for h1, h2
-
-TASK [template] ****************************************************************
-changed: [h2]
-changed: [h1]
-
-TASK [set_fact] ****************************************************************
+TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
 ok: [h2]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [h2]
-changed: [h1]
+TASK [Create a temporary file for the rendered script] *************************
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+changed: [h2 -> localhost]
+changed: [h1 -> localhost]
+
+TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
 skipping: [h2]
+
+TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+skipping: [h1]
+skipping: [h2]
+
+TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [Remove temporary file /tmp/h1_initial-xhlj4awc.sh] ***********************
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
 changed: [dut]
@@ -454,26 +400,22 @@ ok: [h1] =>
   msg: |-
     routing configuration for h1
     =========================================
-    !
-    !
-    !
-    !
-    ! Global static routes
-    !
-    ip route 172.16.44.0/24 172.16.33.42
-    ipv6 route 2001:db8:cafe:44::/64 2001:db8:cafe:33::2a
+    #!/bin/bash
+    #
+    echo "Static routes are configured as part of the initial configuration template"
+    echo
+    #
+    ip route
 ok: [h2] => 
   msg: |-
     routing configuration for h2
     =========================================
-    !
-    !
-    !
-    !
-    ! Global static routes
-    !
-    ip route 172.16.33.0/24 172.16.44.1 eth1
-    ipv6 route 2001:db8:cafe:33::/64 2001:db8:cafe:44::1 eth1
+    #!/bin/bash
+    #
+    echo "Static routes are configured as part of the initial configuration template"
+    echo
+    #
+    ip route
 
 TASK [Find configuration deployment deploy_script for routing] *****************
 skipping: [dut]
@@ -484,31 +426,43 @@ ok: [h2]
 TASK [Deploy routing configuration] ********************************************
 skipping: [dut]
 skipping: [r2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for h1, h2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
 
-TASK [template] ****************************************************************
-changed: [h1]
-changed: [h2]
-
-TASK [set_fact] ****************************************************************
+TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
 ok: [h2]
 
-TASK [run /tmp/config.sh to deploy routing config from /home/pipi/net101/tools/netsim/ansible/templates/routing/frr.j2] ***
+TASK [Create a temporary file for the rendered script] *************************
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux.j2] ***
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [Execute /tmp/config-h1_routing.sh to deploy routing config based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux.j2] ***
+changed: [h1]
+changed: [h2]
+
+TASK [Container configuration for routing based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux.j2 executed in netns] ***
 skipping: [h1]
 skipping: [h2]
 
-TASK [run vtysh to import routing config from /home/pipi/net101/tools/netsim/ansible/templates/routing/frr.j2] ***
-changed: [h1]
-changed: [h2]
+TASK [Remove temporary file /tmp/h1_routing-ojb_7y20.sh] ***********************
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
 dut                        : ok=19   changed=2    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-h1                         : ok=25   changed=5    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
-h2                         : ok=24   changed=4    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
+h1                         : ok=28   changed=9    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
+h2                         : ok=28   changed=9    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
 r2                         : ok=21   changed=2    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 
 
