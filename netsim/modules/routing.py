@@ -775,6 +775,39 @@ def resolve_node_nexthop(sr_data: Box, node: Box, topology: Box) -> Box:
   return nh
 
 """
+When a static route uses an IPv4 or IPv6 address as the next hop,
+we're trying to find the outgoing interface for directly-connected next hops.
+
+We have to do this for platforms like Linux that do not support indirect next hops.
+
+The next-hop list is returned as the 'nhlist' attribute of the 'nexthop' data structure.
+"""
+def resolve_nexthop_intf(sr_data: Box, node: Box, topology: Box) -> Box:
+  nh = sr_data.nexthop
+  nh_vrf = sr_data.nexthop.vrf if 'vrf' in sr_data.nexthop else sr_data.get('vrf',None)
+
+  for af in log.AF_LIST:
+    if af not in sr_data:
+      continue
+
+    nh_addr = netaddr.IPAddress(nh[af])
+    for intf in node.interfaces:
+      if af not in intf or not isinstance(intf[af],str):
+        continue
+      if intf.get('vrf',None) != nh_vrf:
+        continue
+      if nh_addr not in netaddr.IPNetwork(intf[af]):
+        continue
+
+      nh_data = data.get_box({ af: nh[af], 'intf': intf.ifname })
+      if 'vrf' in sr_data.nexthop:
+        nh_data.vrf = sr_data.nexthop.vrf
+
+      data.append_to_list(nh,'nhlist',nh_data)
+  
+  return nh
+
+"""
 Check whether a VRF static route is valid and supported by the device on which it's used
 """
 def check_VRF_static_route(sr_data: Box, node: Box, sr_features: Box) -> bool:
@@ -849,6 +882,8 @@ def check_static_routes(idx: int,o_name: str,node: Box,topology: Box) -> None:
 
   if sr_data.nexthop.get('node',None):
     sr_data.nexthop = resolve_node_nexthop(sr_data,node,topology) + sr_data.nexthop
+  elif 'ipv4' in sr_data.nexthop or 'ipv6' in sr_data.nexthop:
+    resolve_nexthop_intf(sr_data,node,topology)
 
   for af in ['ipv4','ipv6']:
     if af not in sr_data:
@@ -867,7 +902,10 @@ def check_static_routes(idx: int,o_name: str,node: Box,topology: Box) -> None:
     for af in log.AF_LIST:
       if af not in sr_data:
         continue
-      for (nh_idx,nh_entry) in enumerate(sr_data.nexthop.nhlist[:sr_features.get('max_nexthop',256)]):
+      nexthops = [ nh_entry for nh_entry in sr_data.nexthop.nhlist if af in nh_entry ]
+      if not nexthops:
+        continue
+      for (nh_idx,nh_entry) in enumerate(nexthops[:sr_features.get('max_nexthop',256)]):
         sr_entry = data.get_box({ af: sr_data[af], 'nexthop': nh_entry })
         sr_entry.nexthop.idx = nh_idx
         if 'vrf' in sr_data:
