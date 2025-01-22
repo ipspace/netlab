@@ -51,7 +51,8 @@ def routing_af(node: Box, proto: str, features: typing.Optional[Box] = None) -> 
         continue
 
       for l in node.get('interfaces',[]):             # Scan all interfaces
-        if af in l and proto in l and not 'vrf' in l: # Do we have AF enabled on any global interface?
+        if proto in l and (af in l or af in l.get('dhcp.client',{})) \
+           and not 'vrf' in l:                        # Do we have AF enabled on any global interface?
           node[proto].af[af] = True                   # Found it - we need it the module
           continue
 
@@ -281,7 +282,8 @@ def build_vrf_interface_list(node: Box, proto: str, topology: Box) -> None:
 def remove_unaddressed_intf(node: Box, proto: str) -> None:
   for intf in node.interfaces:
     if proto in intf:
-      if not any(af in intf for af in ('ipv4','ipv6')):                     # Do we have at least some addressing on the interface?
+      if not any(af in intf or af in intf.get('dhcp.client',{})
+                   for af in ('ipv4','ipv6')):                              # Do we have at least some addressing on the interface?
         intf.pop(proto,None)                                                # Nope, no need to run IGP on that interface
 #
 # remove_unused_igp -- remove IGP module if it's not configured on any interface
