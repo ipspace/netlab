@@ -21,16 +21,19 @@ The module is supported on these platforms:
 | --------------------- | :-: | :-: | :-: |
 | Arista EOS            | ✅  | ✅  | ✅  |
 | Aruba AOS-CX          | ✅  | ✅  | ✅  |
-| Cisco Catalyst 8000v  |  ❌  | ✅  | ✅  |
-| Cisco CSR 1000v       |  ❌  | ✅  | ✅  |
-| Cisco IOSv/IOSvL2     |  ❌  | ✅  | ✅  |
+| Cisco IOS/XE[^18v]    |  ❌  | ✅  | ✅  |
 | Cisco Nexus OS        |  ❌  | ✅  | ✅  |
 | Cumulus Linux         | ✅  | ✅  | ✅  |
 | Dell OS10             | ✅ [❗](caveats-os10) | ✅ [❗](caveats-os10) | ✅ [❗](caveats-os10)  |
 | FRRouting             | ✅  | ✅  | ✅  |
+| Junos[^Junos]         | ❌  | ✅  | ✅  |
 | Nokia SR OS           | ✅  | ✅  | ✅  |
 | Nokia SR Linux        | ✅  | ❌  | ❌  |
 | VyOS                  | ❌  | ✅  | ✅  |
+
+[^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOSv, Cisco IOSv Layer-2 image, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
+
+[^Junos]: Includes vMX, vSRX, vPTX, vJunos-switch, and vJunos-router
 
 (gateway-global)=
 ## Global Parameters
