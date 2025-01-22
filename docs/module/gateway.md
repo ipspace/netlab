@@ -23,7 +23,8 @@ The module is supported on these platforms:
 | Aruba AOS-CX          | ✅  | ✅  | ✅  |
 | Cisco IOS/XE[^18v]    |  ❌  | ✅  | ✅  |
 | Cisco Nexus OS        |  ❌  | ✅  | ✅  |
-| Cumulus Linux         | ✅  | ✅  | ✅  |
+| Cumulus Linux 4.x     | ✅  | ✅  | ✅  |
+| Cumulus 5.x (NVUE)    | ✅ | ✅ |  ✅ |
 | Dell OS10             | ✅ [❗](caveats-os10) | ✅ [❗](caveats-os10) | ✅ [❗](caveats-os10)  |
 | FRRouting             | ✅  | ✅  | ✅  |
 | Junos[^Junos]         | ❌  | ✅  | ✅  |

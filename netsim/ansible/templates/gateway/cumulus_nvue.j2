@@ -1,0 +1,57 @@
+{% if gateway.anycast is defined %}
+- set:
+    router:
+      vrr:
+        enable: on
+{% endif %}
+{% if gateway.vrrp is defined %}
+- set:
+    router:
+      vrrp:
+        enable: on
+{% endif %}
+
+{% for intf in interfaces if intf.gateway is defined %}
+{%  if loop.first %}
+- set:
+    interface:
+{%  endif %}
+      {{ intf.ifname }}:
+        ip:
+{%   if intf.gateway.protocol=='anycast' %}
+          vrr:
+            address:
+{%     for af in 'ipv4','ipv6' if af in intf.gateway %}
+              {{ intf.gateway[af] }}: {}
+{%     endfor %}
+            enable: on
+            mac-address: {{ intf.gateway.anycast.mac|hwaddr('linux') }}
+            state:
+              up: {}
+{%   elif intf.gateway.protocol=='vrrp' %}
+          vrrp:
+            enable: on
+            virtual-router:
+              '{{ intf.gateway.vrrp.group }}':
+                address:
+{%     if 'ipv6' in intf.gateway %}
+{# Per RFC9568 5.2.9, the link-local ipv6 address MUST be included first. Required for interop with EOS (for example) #}
+                  fe80::200:5eff:fe00:2{{ '%02x' | format(intf.gateway.vrrp.group) }}: {}
+- set:
+    interface:
+      {{ intf.ifname }}:
+        ip:
+          vrrp:
+            virtual-router:
+              '{{ intf.gateway.vrrp.group }}':
+                address:
+{%     endif %}
+{%     for af in 'ipv4','ipv6' if af in intf.gateway %}
+                  {{ intf.gateway[af]|ipaddr('address') }}: {}
+{%     endfor %}
+                preempt: {{ 'on' if intf.gateway.vrrp.preempt|default(True) else 'off' }}
+{%     if intf.gateway.vrrp.priority is defined %}
+                priority: {{ intf.gateway.vrrp.priority }}
+{%     endif %}
+{%   endif %}
+{% endfor %}
