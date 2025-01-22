@@ -188,7 +188,7 @@ If you have to configure additional parameters on physical interfaces (for examp
 ```
 {% if l.virtual_interface is not defined %}
 !
- mac-address {{ '52dc.cafe.%02d%02d' % ( id,l.ifindex ) }}
+ mac-address {{ '52dc.cafe.%02x%02x' % ( id,l.ifindex ) }}
 {% endif %}
 ```
 
@@ -311,7 +311,7 @@ The interface MAC address is not part of the device data model. If you have to s
 ```
 {% for l in interfaces %}
 interface {{ l.ifname }}
- mac-address {{ '52dc.cafe.%02d%02d' % ( id,l.ifindex ) }}
+ mac-address {{ '52dc.cafe.%02x%02x' % ( id,l.ifindex ) }}
 !
 {% endfor %}
 ```

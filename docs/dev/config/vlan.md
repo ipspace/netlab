@@ -122,7 +122,7 @@ interface {{ l.ifname }}
  no shutdown
 {% if l.virtual_interface is not defined %}
  no switchport
- mac-address {{ '52dc.cafe.%02d%02d' % ( id,l.ifindex ) }}
+ mac-address {{ '52dc.cafe.%02x%02x' % ( id,l.ifindex ) }}
 {% endif %}
 {% endfor %}
 ```
