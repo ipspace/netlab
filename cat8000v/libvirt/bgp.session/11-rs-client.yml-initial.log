@@ -4,17 +4,56 @@ PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [r2]
-ok: [r3]
 ok: [rs]
+ok: [r3]
 ok: [dut]
 
 TASK [Find device readiness script] ********************************************
 ok: [r2]
-ok: [rs]
 ok: [r3]
+ok: [rs]
 ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
+skipping: [dut]
+skipping: [r2]
+skipping: [r3]
+skipping: [rs]
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, r3, rs
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [r2]
+ok: [r3]
+ok: [rs]
+ok: [dut]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [r2]
+ok: [r3]
+ok: [rs]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r2]
+skipping: [r3]
+skipping: [rs]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+skipping: [r2]
+skipping: [r3]
+skipping: [rs]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [dut]
+skipping: [r2]
+skipping: [r3]
+skipping: [rs]
+
+TASK [Deploy normalize configuration] ******************************************
 skipping: [dut]
 skipping: [r2]
 skipping: [r3]
@@ -24,16 +63,22 @@ TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, r3, rs
 
 TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [r3]
 ok: [r2]
 ok: [rs]
-ok: [r3]
 ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
 ok: [r2]
-ok: [rs]
 ok: [r3]
+ok: [rs]
 ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r2]
+skipping: [r3]
+skipping: [rs]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [r2] => 
@@ -50,7 +95,8 @@ ok: [r2] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -78,7 +124,7 @@ ok: [r2] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -96,7 +142,8 @@ ok: [r2] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -135,7 +182,8 @@ ok: [rs] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -163,7 +211,7 @@ ok: [rs] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -181,7 +229,8 @@ ok: [rs] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -220,7 +269,8 @@ ok: [r3] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -248,7 +298,7 @@ ok: [r3] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -266,7 +316,8 @@ ok: [r3] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -285,7 +336,7 @@ ok: [r3] =>
     interface eth1
      no shutdown
      description r3 -> dut [external]
-     ip address 172.16.1.2/24
+     ip address 10.1.0.2/30
     !
     do write
     CONFIG
@@ -302,7 +353,7 @@ ok: [dut] =>
     lldp run
     !
     ip host r2 10.0.0.10 172.16.0.10
-    ip host r3 10.0.0.2 172.16.1.2
+    ip host r3 10.0.0.2 10.1.0.2
     ip host rs 10.0.0.3 172.16.0.3
     !
     ip routing
@@ -316,23 +367,27 @@ ok: [dut] =>
      no lldp receive
     !
     interface GigabitEthernet2
-     no shutdown
      description dut -> [r2,rs] [external]
      ip address 172.16.0.1 255.255.255.0
+     no shutdown
     !
     interface GigabitEthernet3
-     no shutdown
      description dut -> r3 [external]
-     ip address 172.16.1.1 255.255.255.0
+     ip address 10.1.0.1 255.255.255.252
+     no shutdown
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
     !
     no banner exec
     no banner login
     no banner incoming
 
 TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [r3]
-ok: [rs]
 ok: [r2]
+ok: [rs]
+ok: [r3]
 ok: [dut]
 
 TASK [Deploy initial configuration] ********************************************
@@ -346,8 +401,6 @@ device including the indentation
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [rs -> localhost]
-changed: [r3 -> localhost]
 changed: [r2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
@@ -359,8 +412,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r2, r3, rs
 
 TASK [template] ****************************************************************
-changed: [rs]
 changed: [r2]
+changed: [rs]
 changed: [r3]
 
 TASK [set_fact] ****************************************************************
@@ -381,8 +434,8 @@ skipping: [rs]
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [r3]
 ok: [r2]
+ok: [r3]
 ok: [rs]
 ok: [dut]
 
@@ -397,11 +450,89 @@ ok: [dut]
 
 TASK [Find configuration template for bgp] *************************************
 ok: [r2]
-ok: [r3]
 ok: [rs]
+ok: [r3]
 ok: [dut]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r2]
+skipping: [r3]
+skipping: [rs]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+    !
+    ip bgp-community new-format
+    !
+    router bgp 65000
+     no bgp default ipv4-unicast
+     bgp update-delay 5
+     bgp nopeerup-delay cold-boot 1
+     bgp nopeerup-delay user-initiated 1
+     bgp router-id 10.0.0.1
+      neighbor 172.16.0.3 remote-as 65100
+      neighbor 172.16.0.3 description rs
+  
+      neighbor 10.1.0.2 remote-as 65002
+      neighbor 10.1.0.2 description r3
+  
+    !
+     address-family ipv4
+      bgp scan-time 5
+  
+    !
+      network 10.0.0.1 mask 255.255.255.255
+  
+    !
+    !
+      neighbor 172.16.0.3 activate
+      neighbor 172.16.0.3 advertisement-interval 0
+      neighbor 172.16.0.3 send-community standard
+  
+      neighbor 10.1.0.2 activate
+      neighbor 10.1.0.2 advertisement-interval 0
+      neighbor 10.1.0.2 send-community standard
+  
+    !
+ok: [r2] => 
+  msg: |-
+    bgp configuration for r2
+    =========================================
+    !
+    router bgp 65001
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.10
+    !
+      neighbor 172.16.0.3 remote-as 65100
+      neighbor 172.16.0.3 description rs
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.10/32
+    !
+    !
+    !
+      neighbor 172.16.0.3 activate
+      no neighbor 172.16.0.3 send-community all
+      neighbor 172.16.0.3 send-community standard
+      neighbor 172.16.0.3 send-community large
+    !
+    !
+    !
+    do write
 ok: [r3] => 
   msg: |-
     bgp configuration for r3
@@ -418,8 +549,8 @@ ok: [r3] =>
   
       bgp router-id 10.0.0.2
     !
-      neighbor 172.16.1.1 remote-as 65000
-      neighbor 172.16.1.1 description dut
+      neighbor 10.1.0.1 remote-as 65000
+      neighbor 10.1.0.1 description dut
     !
      address-family ipv4 unicast
     !
@@ -429,10 +560,10 @@ ok: [r3] =>
     !
     !
     !
-      neighbor 172.16.1.1 activate
-      no neighbor 172.16.1.1 send-community all
-      neighbor 172.16.1.1 send-community standard
-      neighbor 172.16.1.1 send-community large
+      neighbor 10.1.0.1 activate
+      no neighbor 10.1.0.1 send-community all
+      neighbor 10.1.0.1 send-community standard
+      neighbor 10.1.0.1 send-community large
     !
     !
     !
@@ -480,78 +611,6 @@ ok: [rs] =>
     !
     !
     do write
-ok: [r2] => 
-  msg: |-
-    bgp configuration for r2
-    =========================================
-    !
-    router bgp 65001
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.10
-    !
-      neighbor 172.16.0.3 remote-as 65100
-      neighbor 172.16.0.3 description rs
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-      network 10.0.0.10/32
-    !
-    !
-    !
-      neighbor 172.16.0.3 activate
-      no neighbor 172.16.0.3 send-community all
-      neighbor 172.16.0.3 send-community standard
-      neighbor 172.16.0.3 send-community large
-    !
-    !
-    !
-    do write
-ok: [dut] => 
-  msg: |-
-    bgp configuration for dut
-    =========================================
-    !
-    ip bgp-community new-format
-    !
-    router bgp 65000
-     no bgp default ipv4-unicast
-     bgp update-delay 5
-     bgp nopeerup-delay cold-boot 1
-     bgp nopeerup-delay user-initiated 1
-     bgp router-id 10.0.0.1
-      neighbor 172.16.0.3 remote-as 65100
-      neighbor 172.16.0.3 description rs
-  
-      neighbor 172.16.1.2 remote-as 65002
-      neighbor 172.16.1.2 description r3
-  
-    !
-     address-family ipv4
-      bgp scan-time 5
-  
-    !
-      network 10.0.0.1 mask 255.255.255.255
-  
-    !
-    !
-      neighbor 172.16.0.3 activate
-      neighbor 172.16.0.3 advertisement-interval 0
-      neighbor 172.16.0.3 send-community standard
-  
-      neighbor 172.16.1.2 activate
-      neighbor 172.16.1.2 advertisement-interval 0
-      neighbor 172.16.1.2 send-community standard
-  
-    !
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [r2]
@@ -567,14 +626,14 @@ TASK [ios_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/temp
 changed: [dut]
 
 TASK [template] ****************************************************************
+changed: [rs]
 changed: [r2]
 changed: [r3]
-changed: [rs]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
-ok: [r3]
 ok: [rs]
+ok: [r3]
 
 TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [r2]
@@ -583,8 +642,8 @@ skipping: [rs]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [r2]
-changed: [r3]
 changed: [rs]
+changed: [r3]
 
 PLAY [Deploy custom deployment templates] **************************************
 
@@ -592,8 +651,8 @@ TASK [Run custom configuration deployment scripts] *****************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-custom-config.yml for dut, r2, rs => (item=bgp.session)
 
 TASK [Find configuration template] *********************************************
-ok: [r2]
 ok: [rs]
+ok: [r2]
 ok: [dut]
 
 TASK [fail] ********************************************************************
@@ -617,9 +676,9 @@ skipping: [rs]
 skipping: [dut]
 
 TASK [Find custom configuration deployment script] *****************************
+ok: [dut]
 ok: [r2]
 ok: [rs]
-ok: [dut]
 
 TASK [Run the configuration deployment script] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
@@ -629,8 +688,8 @@ TASK [ios_config: deploying bgp.session from /home/pipi/net101/tools/netsim/extr
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [r2]
 changed: [rs]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
@@ -645,10 +704,10 @@ skipping: [r2]
 skipping: [rs]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=23   changed=3    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-r2                         : ok=31   changed=7    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-r3                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-rs                         : ok=31   changed=7    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+dut                        : ok=26   changed=3    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+r2                         : ok=34   changed=7    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
+r3                         : ok=25   changed=4    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+rs                         : ok=33   changed=6    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
 
 
 

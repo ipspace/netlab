@@ -5,14 +5,47 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [pe2]
 ok: [p1]
-ok: [p2]
 ok: [h1]
+ok: [p2]
+ok: [dut]
 ok: [h2]
 ok: [h3]
-ok: [dut]
 ok: [h4]
 
 TASK [Find device readiness script] ********************************************
+ok: [pe2]
+ok: [p2]
+ok: [p1]
+ok: [h1]
+ok: [dut]
+ok: [h2]
+ok: [h3]
+ok: [h4]
+
+TASK [Wait for device to become ready] *****************************************
+skipping: [dut]
+skipping: [pe2]
+skipping: [p1]
+skipping: [p2]
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, pe2, p1, p2, h1, h2, h3, h4
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [pe2]
+ok: [p1]
+ok: [p2]
+ok: [h1]
+ok: [h2]
+ok: [dut]
+ok: [h3]
+ok: [h4]
+
+TASK [Find configuration template for normalize] *******************************
 ok: [pe2]
 ok: [p1]
 ok: [p2]
@@ -22,7 +55,37 @@ ok: [dut]
 ok: [h3]
 ok: [h4]
 
-TASK [Wait for device to become ready] *****************************************
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [pe2]
+skipping: [p1]
+skipping: [p2]
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+skipping: [pe2]
+skipping: [p1]
+skipping: [p2]
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [dut]
+skipping: [pe2]
+skipping: [p1]
+skipping: [p2]
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+
+TASK [Deploy normalize configuration] ******************************************
 skipping: [dut]
 skipping: [pe2]
 skipping: [p1]
@@ -40,20 +103,30 @@ ok: [pe2]
 ok: [p1]
 ok: [p2]
 ok: [h1]
-ok: [h3]
 ok: [h2]
-ok: [dut]
+ok: [h3]
 ok: [h4]
+ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
 ok: [pe2]
 ok: [p1]
-ok: [h1]
 ok: [p2]
-ok: [dut]
+ok: [h1]
 ok: [h3]
 ok: [h2]
 ok: [h4]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [pe2]
+skipping: [p1]
+skipping: [p2]
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [pe2] => 
@@ -70,7 +143,8 @@ ok: [pe2] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -98,7 +172,7 @@ ok: [pe2] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -118,9 +192,10 @@ ok: [pe2] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
-    ip link set eth2 mtu 1500
-    ip link set eth3 mtu 1500
+    ip link set dev eth1 mtu 1500
+    ip link set dev eth2 mtu 1500
+    ip link set dev eth3 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -139,138 +214,22 @@ ok: [pe2] =>
     interface eth1
      no shutdown
      description pe2 -> p2
-     ip address 172.16.2.6/24
+     ip address 10.1.0.10/30
     !
     interface eth2
      no shutdown
      description pe2 -> h2 [stub]
-     ip address 172.16.4.6/24
+     ip address 172.16.1.6/24
     !
     interface eth3
      no shutdown
      description pe2 -> h4 [stub]
-     ip address 172.16.6.6/24
+     ip address 172.16.3.6/24
     !
     do write
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [h3] => 
-  msg: |-
-    initial configuration for h3
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.5.3/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.5.3/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    # lan prefix: 172.16.0.0/16 local subnet: 172.16.5.0/24
-    set +e
-    ip route del 172.16.0.0/16 2>/dev/null
-    set -e
-    ip route add 172.16.0.0/16 via 172.16.5.5
-    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.5.0/24
-    set +e
-    ip route del 10.0.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.0.0.0/24 via 172.16.5.5
-    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.5.0/24
-    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.5.0/24
-    set +e
-    ip route del 10.1.0.0/16 2>/dev/null
-    set -e
-    ip route add 10.1.0.0/16 via 172.16.5.5
-    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.5.0/24
-    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.5.0/24
-    set +e
-    ip route del 10.2.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.2.0.0/24 via 172.16.5.5
-    #
-    # Print the final routing table
-    ip route
-ok: [h1] => 
-  msg: |-
-    initial configuration for h1
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.3.1/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.3.1/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    # lan prefix: 172.16.0.0/16 local subnet: 172.16.3.0/24
-    set +e
-    ip route del 172.16.0.0/16 2>/dev/null
-    set -e
-    ip route add 172.16.0.0/16 via 172.16.3.5
-    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.3.0/24
-    set +e
-    ip route del 10.0.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.0.0.0/24 via 172.16.3.5
-    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.3.0/24
-    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.3.0/24
-    set +e
-    ip route del 10.1.0.0/16 2>/dev/null
-    set -e
-    ip route add 10.1.0.0/16 via 172.16.3.5
-    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.3.0/24
-    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.3.0/24
-    set +e
-    ip route del 10.2.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.2.0.0/24 via 172.16.3.5
-    #
-    # Print the final routing table
-    ip route
 ok: [p1] => 
   msg: |-
     initial configuration for p1
@@ -285,7 +244,8 @@ ok: [p1] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -313,7 +273,7 @@ ok: [p1] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -332,8 +292,9 @@ ok: [p1] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
-    ip link set eth2 mtu 1500
+    ip link set dev eth1 mtu 1500
+    ip link set dev eth2 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -352,17 +313,170 @@ ok: [p1] =>
     interface eth1
      no shutdown
      description p1 -> dut
-     ip address 172.16.0.7/24
+     ip address 10.1.0.2/30
     !
     interface eth2
      no shutdown
      description p1 -> p2
-     ip address 172.16.1.7/24
+     ip address 10.1.0.5/30
     !
     do write
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.1/24 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.0.5 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.0.5 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.0.5 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.0.5 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.1.2/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.1.2/24 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.1.6 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.1.6 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.1.6 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.1.6 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
+ok: [h3] => 
+  msg: |-
+    initial configuration for h3
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.2.3/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.2.3/24 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.2.5 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.2.5 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.2.5 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.2.5 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
 ok: [dut] => 
   msg: |-
     initial configuration for dut
@@ -373,17 +487,17 @@ ok: [dut] =>
     !
     lldp run
     !
-    ip host dut-t1 172.16.3.5
-    ip host dut-t2 172.16.5.5
-    ip host h1 172.16.3.1
-    ip host h2 172.16.4.2
-    ip host h3 172.16.5.3
-    ip host h4 172.16.6.4
-    ip host p1 10.0.0.7 172.16.0.7 172.16.1.7
-    ip host p2 10.0.0.8 172.16.1.8 172.16.2.8
-    ip host pe2 10.0.0.6 172.16.2.6
-    ip host pe2-t1 172.16.4.6
-    ip host pe2-t2 172.16.6.6
+    ip host dut-t1 172.16.0.5
+    ip host dut-t2 172.16.2.5
+    ip host h1 172.16.0.1
+    ip host h2 172.16.1.2
+    ip host h3 172.16.2.3
+    ip host h4 172.16.3.4
+    ip host p1 10.0.0.7 10.1.0.2 10.1.0.5
+    ip host p2 10.0.0.8 10.1.0.6 10.1.0.9
+    ip host pe2 10.0.0.6 10.1.0.10
+    ip host pe2-t1 172.16.1.6
+    ip host pe2-t2 172.16.3.6
     !
     ip routing
     !
@@ -414,21 +528,21 @@ ok: [dut] =>
      no lldp receive
     !
     interface GigabitEthernet2
-     no shutdown
      description dut -> p1
-     ip address 172.16.0.5 255.255.255.0
+     ip address 10.1.0.1 255.255.255.252
+     no shutdown
     !
     interface GigabitEthernet3
-     no shutdown
      vrf forwarding t1
      description dut -> h1 [stub]
-     ip address 172.16.3.5 255.255.255.0
+     ip address 172.16.0.5 255.255.255.0
+     no shutdown
     !
     interface GigabitEthernet4
-     no shutdown
      vrf forwarding t2
      description dut -> h3 [stub]
-     ip address 172.16.5.5 255.255.255.0
+     ip address 172.16.2.5 255.255.255.0
+     no shutdown
     !
     !
     line vty 0 4
@@ -437,6 +551,57 @@ ok: [dut] =>
     no banner exec
     no banner login
     no banner incoming
+ok: [h4] => 
+  msg: |-
+    initial configuration for h4
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.3.4/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.3.4/24 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.3.6 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.3.6 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.3.6 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.3.6 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
 ok: [p2] => 
   msg: |-
     initial configuration for p2
@@ -451,7 +616,8 @@ ok: [p2] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -479,7 +645,7 @@ ok: [p2] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -498,8 +664,9 @@ ok: [p2] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
-    ip link set eth2 mtu 1500
+    ip link set dev eth1 mtu 1500
+    ip link set dev eth2 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -518,133 +685,17 @@ ok: [p2] =>
     interface eth1
      no shutdown
      description p2 -> p1
-     ip address 172.16.1.8/24
+     ip address 10.1.0.6/30
     !
     interface eth2
      no shutdown
      description p2 -> pe2
-     ip address 172.16.2.8/24
+     ip address 10.1.0.9/30
     !
     do write
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [h2] => 
-  msg: |-
-    initial configuration for h2
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.4.2/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.4.2/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    # lan prefix: 172.16.0.0/16 local subnet: 172.16.4.0/24
-    set +e
-    ip route del 172.16.0.0/16 2>/dev/null
-    set -e
-    ip route add 172.16.0.0/16 via 172.16.4.6
-    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.4.0/24
-    set +e
-    ip route del 10.0.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.0.0.0/24 via 172.16.4.6
-    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.4.0/24
-    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.4.0/24
-    set +e
-    ip route del 10.1.0.0/16 2>/dev/null
-    set -e
-    ip route add 10.1.0.0/16 via 172.16.4.6
-    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.4.0/24
-    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.4.0/24
-    set +e
-    ip route del 10.2.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.2.0.0/24 via 172.16.4.6
-    #
-    # Print the final routing table
-    ip route
-ok: [h4] => 
-  msg: |-
-    initial configuration for h4
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.6.4/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.6.4/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    # lan prefix: 172.16.0.0/16 local subnet: 172.16.6.0/24
-    set +e
-    ip route del 172.16.0.0/16 2>/dev/null
-    set -e
-    ip route add 172.16.0.0/16 via 172.16.6.6
-    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.6.0/24
-    set +e
-    ip route del 10.0.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.0.0.0/24 via 172.16.6.6
-    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.6.0/24
-    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.6.0/24
-    set +e
-    ip route del 10.1.0.0/16 2>/dev/null
-    set -e
-    ip route add 10.1.0.0/16 via 172.16.6.6
-    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.6.0/24
-    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.6.0/24
-    set +e
-    ip route del 10.2.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.2.0.0/24 via 172.16.6.6
-    #
-    # Print the final routing table
-    ip route
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [pe2]
@@ -652,14 +703,14 @@ ok: [p1]
 ok: [p2]
 ok: [dut]
 ok: [h1]
-ok: [h3]
 ok: [h4]
 ok: [h2]
+ok: [h3]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for pe2, p1, p2
-included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for h1, h2, h3, h4
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2, h3, h4
 
 TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
@@ -668,9 +719,7 @@ device including the indentation
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [p2 -> localhost]
 changed: [pe2 -> localhost]
-changed: [p1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [pe2]
@@ -692,37 +741,55 @@ ok: [p2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [p1]
-changed: [pe2]
 changed: [p2]
+changed: [pe2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [pe2]
 skipping: [p1]
 skipping: [p2]
 
-TASK [set_fact] ****************************************************************
+TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
 
-TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
-changed: [h3 -> localhost]
+TASK [Create a temporary file for the rendered script] *************************
 changed: [h4 -> localhost]
+changed: [h3 -> localhost]
+changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-ubdXRSMP-h1.sh] **********
-changed: [h1 -> localhost]
+TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h2 -> localhost]
-changed: [h3 -> localhost]
+changed: [h1 -> localhost]
 changed: [h4 -> localhost]
+changed: [h3 -> localhost]
 
-TASK [file] ********************************************************************
-changed: [h4 -> localhost]
+TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+
+TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+
+TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h4 -> localhost]
 changed: [h3 -> localhost]
+
+TASK [Remove temporary file /tmp/h1_initial-12due8nr.sh] ***********************
+changed: [h4 -> localhost]
+changed: [h1 -> localhost]
+changed: [h3 -> localhost]
+changed: [h2 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -749,6 +816,12 @@ skipping: [p1]
 skipping: [p2]
 ok: [pe2]
 ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [p1]
+skipping: [p2]
+skipping: [pe2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [p1]
@@ -860,9 +933,15 @@ ok: [dut]
 
 TASK [Find configuration template for ospf] ************************************
 ok: [p1]
-ok: [pe2]
 ok: [p2]
+ok: [pe2]
 ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [p1]
+skipping: [p2]
+skipping: [pe2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [p1] => 
@@ -898,52 +977,6 @@ ok: [p1] =>
   
     !
     do write
-ok: [pe2] => 
-  msg: |-
-    ospf configuration for pe2
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.6
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! pe2 -> p2
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    do write
-ok: [dut] => 
-  msg: |-
-    ospf configuration for dut
-    =========================================
-    router ospf 1
-     router-id 10.0.0.5
-  
-  
-    !
-    interface Loopback0
-    !
-     ip ospf 1 area 0.0.0.0
-    !
-    interface GigabitEthernet2
-    ! dut -> p1
-     ip ospf 1 area 0.0.0.0
-     ip ospf network point-to-point
-    !
 ok: [p2] => 
   msg: |-
     ospf configuration for p2
@@ -971,6 +1004,52 @@ ok: [p2] =>
     !
     interface eth2
     ! p2 -> pe2
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    do write
+ok: [dut] => 
+  msg: |-
+    ospf configuration for dut
+    =========================================
+    router ospf 1
+     router-id 10.0.0.5
+  
+  
+    !
+    interface Loopback0
+    !
+     ip ospf 1 area 0.0.0.0
+    !
+    interface GigabitEthernet2
+    ! dut -> p1
+     ip ospf 1 area 0.0.0.0
+     ip ospf network point-to-point
+    !
+ok: [pe2] => 
+  msg: |-
+    ospf configuration for pe2
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.6
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! pe2 -> p2
      ip ospf area 0.0.0.0
      ip ospf network point-to-point
     !
@@ -1008,8 +1087,8 @@ skipping: [pe2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [p2]
-changed: [pe2]
 changed: [p1]
+changed: [pe2]
 
 TASK [Figure out whether to deploy the module mpls on current device] **********
 ok: [p1]
@@ -1019,29 +1098,17 @@ ok: [dut]
 
 TASK [Find configuration template for mpls] ************************************
 ok: [p1]
-ok: [pe2]
 ok: [p2]
+ok: [pe2]
 ok: [dut]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [p1]
+skipping: [p2]
+skipping: [pe2]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [dut] => 
-  msg: |-
-    mpls configuration for dut
-    =========================================
-    ! {'vpn': {'ipv4': ['ibgp']}}
-    !
-    mpls ldp router-id Loopback0
-    mpls ldp logging neighbor-changes
-    !
-    interface GigabitEthernet2
-     mpls ip
-    !
-    !
-    router bgp 65001
-     address-family vpnv4
-    !
-      neighbor 10.0.0.6 activate
-      neighbor 10.0.0.6 send-community both
 ok: [p1] => 
   msg: |-
     mpls configuration for p1
@@ -1146,30 +1213,42 @@ ok: [pe2] =>
     vtysh -f /tmp/config
   
     exit 0
+ok: [dut] => 
+  msg: |-
+    mpls configuration for dut
+    =========================================
+    ! {'vpn': {'ipv4': ['ibgp']}}
+    !
+    mpls ldp router-id Loopback0
+    mpls ldp logging neighbor-changes
+    !
+    interface GigabitEthernet2
+     mpls ip
+    !
+    !
+    router bgp 65001
+     address-family vpnv4
+    !
+      neighbor 10.0.0.6 activate
+      neighbor 10.0.0.6 send-community both
 
 TASK [Find configuration deployment deploy_script for mpls] ********************
 ok: [p1]
-ok: [pe2]
 ok: [p2]
+ok: [pe2]
 ok: [dut]
 
 TASK [Deploy mpls configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/mpls-clab.yml for p1, p2, pe2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for p1, p2, pe2
 
 TASK [ios_config: deploying mpls from /home/pipi/net101/tools/netsim/ansible/templates/mpls/ios.j2] ***
 changed: [dut]
 
-TASK [Load MPLS kernel modules] ************************************************
-changed: [p1 -> localhost]
-
-TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for p1, p2, pe2
-
 TASK [template] ****************************************************************
 changed: [pe2]
-changed: [p2]
 changed: [p1]
+changed: [p2]
 
 TASK [set_fact] ****************************************************************
 ok: [p1]
@@ -1198,9 +1277,33 @@ skipping: [p2]
 ok: [pe2]
 ok: [dut]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [p1]
+skipping: [p2]
+skipping: [pe2]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [p1]
 skipping: [p2]
+ok: [dut] => 
+  msg: |-
+    vrf configuration for dut
+    =========================================
+    !
+    router bgp 65001
+     address-family ipv4 vrf t1
+      bgp router-id 10.0.0.5
+      redistribute connected
+  
+    !
+    !
+     address-family ipv4 vrf t2
+      bgp router-id 10.0.0.5
+      redistribute connected
+  
+    !
+    !
 ok: [pe2] => 
   msg: |-
     vrf configuration for pe2
@@ -1272,24 +1375,6 @@ ok: [pe2] =>
     CONFIG
     vtysh -f /tmp/vrf_config
     exit $?
-ok: [dut] => 
-  msg: |-
-    vrf configuration for dut
-    =========================================
-    !
-    router bgp 65001
-     address-family ipv4 vrf t1
-      bgp router-id 10.0.0.5
-      redistribute connected
-  
-    !
-    !
-     address-family ipv4 vrf t2
-      bgp router-id 10.0.0.5
-      redistribute connected
-  
-    !
-    !
 
 TASK [Find configuration deployment deploy_script for vrf] *********************
 skipping: [p1]
@@ -1322,14 +1407,14 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=38   changed=5    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-h1                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-h3                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-h4                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-p1                         : ok=38   changed=8    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
-p2                         : ok=37   changed=7    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
-pe2                        : ok=51   changed=11   unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+dut                        : ok=41   changed=5    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+h1                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+h2                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+h3                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+h4                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+p1                         : ok=38   changed=6    unreachable=0    failed=0    skipped=22   rescued=0    ignored=0   
+p2                         : ok=38   changed=6    unreachable=0    failed=0    skipped=22   rescued=0    ignored=0   
+pe2                        : ok=53   changed=11   unreachable=0    failed=0    skipped=16   rescued=0    ignored=0   
 
 
 
