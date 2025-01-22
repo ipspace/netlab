@@ -17,6 +17,33 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/nxos.yml 
 TASK [Wait for Eth1/1 to appear] ***********************************************
 ok: [dut]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [x1]
+ok: [dut]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [x1]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+skipping: [x1]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [dut]
+skipping: [x1]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [dut]
+skipping: [x1]
+
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1
 
@@ -27,6 +54,10 @@ ok: [dut]
 TASK [Find configuration template for initial] *********************************
 ok: [x1]
 ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [x1] => 
@@ -43,18 +74,11 @@ ok: [x1] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.17 172.16.0.17 2001:db8:4::11 dut" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 2001:db8:4::1 x1" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -79,7 +103,7 @@ ok: [x1] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -100,7 +124,8 @@ ok: [x1] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -120,8 +145,8 @@ ok: [x1] =>
     interface eth1
      no shutdown
      description x1 -> dut [external]
-     ip address 172.16.0.1/24
-     ipv6 address 2001:db8:4::1/64
+     ip address 10.1.0.2/30
+     ipv6 address 2001:db8:3::1/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -157,8 +182,8 @@ ok: [dut] =>
      no switchport
      mac-address 52dc.cafe.1701
      description dut -> x1 [external]
-     ip address 172.16.0.17/24
-     ipv6 address 2001:db8:4::11/64
+     ip address 10.1.0.1/30
+     ipv6 address 2001:db8:3::11/64
      ipv6 nd ra-interval 5 min 3
     !
 
@@ -214,6 +239,10 @@ TASK [Find configuration template for bgp] *************************************
 ok: [x1]
 ok: [dut]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [x1] => 
   msg: |-
@@ -231,31 +260,35 @@ ok: [x1] =>
   
       bgp router-id 10.0.0.1
     !
-      neighbor 172.16.0.17 remote-as 65000
-      neighbor 172.16.0.17 description dut
+      neighbor 10.1.0.1 remote-as 65000
+      neighbor 10.1.0.1 description dut
     !
-      neighbor 2001:db8:4::11 remote-as 65000
-      neighbor 2001:db8:4::11 description dut
+      neighbor 2001:db8:3::11 remote-as 65000
+      neighbor 2001:db8:3::11 description dut
     !
      address-family ipv4 unicast
+    !
+  
     !
       network 10.0.0.1/32
     !
     !
     !
-      neighbor 172.16.0.17 activate
-      no neighbor 172.16.0.17 send-community all
-      neighbor 172.16.0.17 send-community standard
-      neighbor 172.16.0.17 send-community large
+      neighbor 10.1.0.1 activate
+      no neighbor 10.1.0.1 send-community all
+      neighbor 10.1.0.1 send-community standard
+      neighbor 10.1.0.1 send-community large
     !
      address-family ipv6 unicast
     !
+  
     !
     !
-      neighbor 2001:db8:4::11 activate
-      no neighbor 2001:db8:4::11 send-community all
-      neighbor 2001:db8:4::11 send-community standard
-      neighbor 2001:db8:4::11 send-community large
+    !
+      neighbor 2001:db8:3::11 activate
+      no neighbor 2001:db8:3::11 send-community all
+      neighbor 2001:db8:3::11 send-community standard
+      neighbor 2001:db8:3::11 send-community large
     !
     !
     !
@@ -281,12 +314,12 @@ ok: [dut] =>
     !
     !
     !
-     neighbor 172.16.0.1 remote-as 65100
+     neighbor 10.1.0.2 remote-as 65100
       description x1
       address-family ipv4 unicast
        send-community standard
     !
-     neighbor 2001:db8:4::1 remote-as 65100
+     neighbor 2001:db8:3::1 remote-as 65100
       description x1
       address-family ipv6 unicast
        send-community standard
@@ -365,8 +398,8 @@ TASK [run vtysh to import bgp.session config from /home/pipi/net101/tools/netsim
 skipping: [x1]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=25   changed=3    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
-x1                         : ok=31   changed=7    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+dut                        : ok=28   changed=3    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+x1                         : ok=34   changed=7    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
 
 
 
