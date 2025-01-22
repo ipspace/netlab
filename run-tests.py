@@ -94,7 +94,7 @@ def prune_setup(setup: Box, args: argparse.Namespace) -> None:
 
     setup.devices = { k:v for k,v in setup.devices.items() if k in i_devices }
 
-  elif args.exclude:
+  if args.exclude:
     x_devices = args.exclude.split(',')
     setup.devices = { k:v for k,v in setup.devices.items() if k not in x_devices }
 
