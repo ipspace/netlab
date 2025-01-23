@@ -20,6 +20,45 @@ skipping: [s2]
 skipping: [h1]
 skipping: [h2]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, h1, h2
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [s2]
+ok: [h1]
+ok: [h2]
+ok: [s1]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [s2]
+ok: [h1]
+ok: [h2]
+ok: [s1]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
+skipping: [h1]
+skipping: [h2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [s1]
+skipping: [s2]
+skipping: [h1]
+skipping: [h2]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [s1]
+skipping: [s2]
+skipping: [h1]
+skipping: [h2]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [s1]
+skipping: [s2]
+skipping: [h1]
+skipping: [h2]
+
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, h1, h2
 
@@ -35,7 +74,115 @@ ok: [h1]
 ok: [h2]
 ok: [s1]
 
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
+skipping: [h1]
+skipping: [h2]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.1/24 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.0.3 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.0.3 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.0.3 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.0.3 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.1.2/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.1.2/24 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.1.4 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.1.4 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.1.4 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.1.4 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
 ok: [s1] => 
   msg: |-
     initial configuration for s1
@@ -65,6 +212,7 @@ ok: [s1] =>
     !
   
   
+  
     interface 1/1/1
         shutdown
         mtu 9198
@@ -74,12 +222,13 @@ ok: [s1] =>
         no shutdown
     !
   
+  
     interface 1/1/2
         shutdown
         mtu 9198
         ip mtu 1600
         description s1 -> s2
-        ip address 172.16.2.3/24
+        ip address 10.1.0.1/30
         no shutdown
     !
     !
@@ -97,7 +246,8 @@ ok: [s2] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -125,7 +275,7 @@ ok: [s2] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -144,8 +294,9 @@ ok: [s2] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
-    ip link set eth2 mtu 1600
+    ip link set dev eth1 mtu 1500
+    ip link set dev eth2 mtu 1600
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -169,128 +320,12 @@ ok: [s2] =>
     interface eth2
      no shutdown
      description s2 -> s1
-     ip address 172.16.2.4/24
+     ip address 10.1.0.2/30
     !
     do write
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [h2] => 
-  msg: |-
-    initial configuration for h2
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.1.2/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.1.2/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    # lan prefix: 172.16.0.0/16 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 172.16.0.0/16 2>/dev/null
-    set -e
-    ip route add 172.16.0.0/16 via 172.16.1.4
-    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 10.0.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.0.0.0/24 via 172.16.1.4
-    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.1.0/24
-    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 10.1.0.0/16 2>/dev/null
-    set -e
-    ip route add 10.1.0.0/16 via 172.16.1.4
-    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
-    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 10.2.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.2.0.0/24 via 172.16.1.4
-    #
-    # Print the final routing table
-    ip route
-ok: [h1] => 
-  msg: |-
-    initial configuration for h1
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.0.1/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    # lan prefix: 172.16.0.0/16 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 172.16.0.0/16 2>/dev/null
-    set -e
-    ip route add 172.16.0.0/16 via 172.16.0.3
-    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.0.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.0.0.0/24 via 172.16.0.3
-    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.0.0/24
-    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.1.0.0/16 2>/dev/null
-    set -e
-    ip route add 10.1.0.0/16 via 172.16.0.3
-    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
-    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.2.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.2.0.0/24 via 172.16.0.3
-    #
-    # Print the final routing table
-    ip route
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [s2]
@@ -301,16 +336,13 @@ ok: [s1]
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for s1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for s2
-included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for h1, h2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
 
 TASK [tempfile] ****************************************************************
 changed: [s1 -> localhost]
 
 TASK [template] ****************************************************************
 changed: [s1 -> localhost]
-
-TASK [aoscx_config: set session auto-confirm for initial] **********************
-changed: [s1]
 
 TASK [aoscx_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/arubacx.j2] ***
 changed: [s1]
@@ -339,19 +371,31 @@ changed: [s2]
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [s2]
 
-TASK [set_fact] ****************************************************************
+TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
 ok: [h2]
 
-TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+TASK [Create a temporary file for the rendered script] *************************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-IvyRURel-h1.sh] **********
+TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [file] ********************************************************************
+TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
+skipping: [h1]
+skipping: [h2]
+
+TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+skipping: [h1]
+skipping: [h2]
+
+TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [Remove temporary file /tmp/h1_initial-5896ni6m.sh] ***********************
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
@@ -376,6 +420,10 @@ ok: [s1]
 TASK [Find configuration template for vlan] ************************************
 ok: [s2]
 ok: [s1]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [s2] => 
@@ -408,9 +456,6 @@ changed: [s1 -> localhost]
 TASK [template] ****************************************************************
 changed: [s1 -> localhost]
 
-TASK [aoscx_config: set session auto-confirm for vlan] *************************
-changed: [s1]
-
 TASK [aoscx_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/arubacx.j2] ***
 ok: [s1]
 
@@ -436,6 +481,10 @@ ok: [s1]
 TASK [Find configuration template for bgp] *************************************
 ok: [s2]
 ok: [s1]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [s2] => 
@@ -518,9 +567,6 @@ changed: [s1 -> localhost]
 TASK [template] ****************************************************************
 changed: [s1 -> localhost]
 
-TASK [aoscx_config: set session auto-confirm for bgp] **************************
-changed: [s1]
-
 TASK [aoscx_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/arubacx.j2] ***
 changed: [s1]
 
@@ -546,6 +592,10 @@ ok: [s1]
 TASK [Find configuration template for ospf] ************************************
 ok: [s2]
 ok: [s1]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [s1] => 
@@ -615,9 +665,6 @@ changed: [s1 -> localhost]
 TASK [template] ****************************************************************
 changed: [s1 -> localhost]
 
-TASK [aoscx_config: set session auto-confirm for ospf] *************************
-changed: [s1]
-
 TASK [aoscx_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/arubacx.j2] ***
 changed: [s1]
 
@@ -643,6 +690,10 @@ ok: [s1]
 TASK [Find configuration template for vrf] *************************************
 ok: [s2]
 ok: [s1]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [s1] => 
@@ -723,9 +774,6 @@ changed: [s1 -> localhost]
 TASK [template] ****************************************************************
 changed: [s1 -> localhost]
 
-TASK [aoscx_config: set session auto-confirm for vrf] **************************
-changed: [s1]
-
 TASK [aoscx_config: deploying vrf from /home/pipi/net101/tools/netsim/ansible/templates/vrf/arubacx.j2] ***
 changed: [s1]
 
@@ -751,6 +799,10 @@ ok: [s1]
 TASK [Find configuration template for vxlan] ***********************************
 ok: [s2]
 ok: [s1]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [s2] => 
@@ -812,9 +864,6 @@ changed: [s1 -> localhost]
 TASK [template] ****************************************************************
 changed: [s1 -> localhost]
 
-TASK [aoscx_config: set session auto-confirm for vxlan] ************************
-changed: [s1]
-
 TASK [aoscx_config: deploying vxlan from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/arubacx.j2] ***
 changed: [s1]
 
@@ -840,6 +889,10 @@ ok: [s1]
 TASK [Find configuration template for evpn] ************************************
 ok: [s2]
 ok: [s1]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [s2] => 
@@ -916,9 +969,6 @@ changed: [s1 -> localhost]
 TASK [template] ****************************************************************
 changed: [s1 -> localhost]
 
-TASK [aoscx_config: set session auto-confirm for evpn] *************************
-changed: [s1]
-
 TASK [aoscx_config: deploying evpn from /home/pipi/net101/tools/netsim/ansible/templates/evpn/arubacx.j2] ***
 changed: [s1]
 
@@ -941,10 +991,10 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-s1                         : ok=80   changed=34   unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-s2                         : ok=68   changed=15   unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+h1                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+h2                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+s1                         : ok=76   changed=27   unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+s2                         : ok=71   changed=15   unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
 
 
 

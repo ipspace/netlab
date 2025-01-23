@@ -14,6 +14,33 @@ TASK [Wait for device to become ready] *****************************************
 skipping: [dut]
 skipping: [probe]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [probe]
+ok: [dut]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [probe]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [probe]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+skipping: [probe]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [dut]
+skipping: [probe]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [dut]
+skipping: [probe]
+
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe
 
@@ -24,6 +51,10 @@ ok: [dut]
 TASK [Find configuration template for initial] *********************************
 ok: [probe]
 ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [probe]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -46,11 +77,12 @@ ok: [dut] =>
     !
   
   
+  
     interface 1/1/1
         shutdown
         mtu 9198
         description dut -> probe [external]
-        ip address 172.16.0.1/24
+        ip address 10.1.0.1/30
         no shutdown
     !
     !
@@ -68,7 +100,8 @@ ok: [probe] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -96,7 +129,7 @@ ok: [probe] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -114,7 +147,8 @@ ok: [probe] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -133,7 +167,7 @@ ok: [probe] =>
     interface eth1
      no shutdown
      description probe -> dut [external]
-     ip address 172.16.0.2/24
+     ip address 10.1.0.2/30
     !
     do write
     CONFIG
@@ -153,9 +187,6 @@ changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
 changed: [dut -> localhost]
-
-TASK [aoscx_config: set session auto-confirm for initial] **********************
-changed: [dut]
 
 TASK [aoscx_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/arubacx.j2] ***
 changed: [dut]
@@ -202,11 +233,16 @@ TASK [Find configuration template for routing] *********************************
 ok: [probe]
 ok: [dut]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [probe]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [probe] => 
   msg: |-
     routing configuration for probe
     =========================================
+    !
     !
 ok: [dut] => 
   msg: |-
@@ -219,6 +255,10 @@ ok: [dut] =>
     !
     route-map set_comm-ipv4 permit seq 10
       set community 65000:101
+  
+    !
+    ! Static routes
+    !
 
 TASK [Find configuration deployment deploy_script for routing] *****************
 ok: [probe]
@@ -233,9 +273,6 @@ changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
 changed: [dut -> localhost]
-
-TASK [aoscx_config: set session auto-confirm for routing] **********************
-changed: [dut]
 
 TASK [aoscx_config: deploying routing from /home/pipi/net101/tools/netsim/ansible/templates/routing/arubacx.j2] ***
 changed: [dut]
@@ -263,6 +300,10 @@ TASK [Find configuration template for bgp] *************************************
 ok: [probe]
 ok: [dut]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [probe]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [probe] => 
   msg: |-
@@ -280,8 +321,8 @@ ok: [probe] =>
   
       bgp router-id 10.0.0.2
     !
-      neighbor 172.16.0.1 remote-as 65000
-      neighbor 172.16.0.1 description dut
+      neighbor 10.1.0.1 remote-as 65000
+      neighbor 10.1.0.1 description dut
     !
      address-family ipv4 unicast
     !
@@ -291,10 +332,10 @@ ok: [probe] =>
     !
     !
     !
-      neighbor 172.16.0.1 activate
-      no neighbor 172.16.0.1 send-community all
-      neighbor 172.16.0.1 send-community standard
-      neighbor 172.16.0.1 send-community large
+      neighbor 10.1.0.1 activate
+      no neighbor 10.1.0.1 send-community all
+      neighbor 10.1.0.1 send-community standard
+      neighbor 10.1.0.1 send-community large
     !
     !
     !
@@ -309,8 +350,8 @@ ok: [dut] =>
       bgp log-neighbor-changes
       timers bgp connect-retry 10
       bgp router-id 10.0.0.1
-      neighbor 172.16.0.2 remote-as 65100
-      neighbor 172.16.0.2 description probe
+      neighbor 10.1.0.2 remote-as 65100
+      neighbor 10.1.0.2 description probe
   
     !
       address-family ipv4 unicast
@@ -319,9 +360,9 @@ ok: [dut] =>
         network 10.0.0.1/32
     !
     !
-        neighbor 172.16.0.2 activate
-        neighbor 172.16.0.2 advertisement-interval 1
-        neighbor 172.16.0.2 send-community standard
+        neighbor 10.1.0.2 activate
+        neighbor 10.1.0.2 advertisement-interval 1
+        neighbor 10.1.0.2 send-community standard
   
     !
 
@@ -338,9 +379,6 @@ changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
 changed: [dut -> localhost]
-
-TASK [aoscx_config: set session auto-confirm for bgp] **************************
-changed: [dut]
 
 TASK [aoscx_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/arubacx.j2] ***
 changed: [dut]
@@ -392,9 +430,6 @@ changed: [dut -> localhost]
 TASK [template] ****************************************************************
 changed: [dut -> localhost]
 
-TASK [aoscx_config: set session auto-confirm for bgp.policy] *******************
-changed: [dut]
-
 TASK [aoscx_config: deploying bgp.policy from /home/pipi/net101/tools/netsim/extra/bgp.policy/arubacx.j2] ***
 changed: [dut]
 
@@ -402,8 +437,8 @@ TASK [file] ********************************************************************
 changed: [dut -> localhost]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=46   changed=20   unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-probe                      : ok=32   changed=7    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
+dut                        : ok=45   changed=16   unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
+probe                      : ok=35   changed=7    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
 
 
 

@@ -20,20 +20,65 @@ skipping: [s2]
 skipping: [ce1]
 skipping: [ce2]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, ce1, ce2
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [s2]
+ok: [ce1]
+ok: [ce2]
+ok: [s1]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [s2]
+ok: [ce1]
+ok: [ce2]
+ok: [s1]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
+skipping: [ce1]
+skipping: [ce2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [s1]
+skipping: [s2]
+skipping: [ce1]
+skipping: [ce2]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [s1]
+skipping: [s2]
+skipping: [ce1]
+skipping: [ce2]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [s1]
+skipping: [s2]
+skipping: [ce1]
+skipping: [ce2]
+
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, ce1, ce2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [s2]
 ok: [ce1]
-ok: [ce2]
 ok: [s1]
+ok: [ce2]
 
 TASK [Find configuration template for initial] *********************************
 ok: [s2]
-ok: [ce1]
 ok: [ce2]
+ok: [ce1]
 ok: [s1]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
+skipping: [ce1]
+skipping: [ce2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [s1] => 
@@ -65,21 +110,23 @@ ok: [s1] =>
     !
   
   
+  
     interface 1/1/1
         shutdown
         mtu 9198
         ip mtu 1600
         description s1 -> s2
-        ip address 172.16.0.3/24
+        ip address 10.1.0.1/30
         no shutdown
     !
+  
   
     interface 1/1/2
         shutdown
         mtu 9198
         vrf attach tenant
         description s1 -> ce1
-        ip address 172.16.1.3/24
+        ip address 10.1.0.6/30
         no shutdown
     !
     !
@@ -97,7 +144,8 @@ ok: [s2] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -125,7 +173,7 @@ ok: [s2] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -144,8 +192,9 @@ ok: [s2] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1600
-    ip link set eth2 mtu 1500
+    ip link set dev eth1 mtu 1600
+    ip link set dev eth2 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -164,12 +213,12 @@ ok: [s2] =>
     interface eth1
      no shutdown
      description s2 -> s1
-     ip address 172.16.0.4/24
+     ip address 10.1.0.2/30
     !
     interface eth2
      no shutdown
      description s2 -> ce2
-     ip address 172.16.2.4/24
+     ip address 10.1.0.10/30
     !
     do write
     CONFIG
@@ -189,7 +238,8 @@ ok: [ce1] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -217,7 +267,7 @@ ok: [ce1] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -235,7 +285,8 @@ ok: [ce1] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -254,7 +305,7 @@ ok: [ce1] =>
     interface eth1
      no shutdown
      description ce1 -> s1
-     ip address 172.16.1.1/24
+     ip address 10.1.0.5/30
     !
     do write
     CONFIG
@@ -274,7 +325,8 @@ ok: [ce2] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -302,7 +354,7 @@ ok: [ce2] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -320,7 +372,8 @@ ok: [ce2] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -339,7 +392,7 @@ ok: [ce2] =>
     interface eth1
      no shutdown
      description ce2 -> s2
-     ip address 172.16.2.2/24
+     ip address 10.1.0.9/30
     !
     do write
     CONFIG
@@ -362,9 +415,6 @@ changed: [s1 -> localhost]
 TASK [template] ****************************************************************
 changed: [s1 -> localhost]
 
-TASK [aoscx_config: set session auto-confirm for initial] **********************
-changed: [s1]
-
 TASK [aoscx_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/arubacx.j2] ***
 changed: [s1]
 
@@ -373,8 +423,6 @@ changed: [s1 -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [s2 -> localhost]
-changed: [ce2 -> localhost]
-changed: [ce1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [s2]
@@ -385,13 +433,13 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for s2, ce1, ce2
 
 TASK [template] ****************************************************************
+changed: [ce1]
 changed: [ce2]
 changed: [s2]
-changed: [ce1]
 
 TASK [set_fact] ****************************************************************
-ok: [ce1]
 ok: [s2]
+ok: [ce1]
 ok: [ce2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -432,6 +480,12 @@ skipping: [ce2]
 ok: [s2]
 ok: [s1]
 
+TASK [fail] ********************************************************************
+skipping: [ce1]
+skipping: [ce2]
+skipping: [s1]
+skipping: [s2]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ce1]
 skipping: [ce2]
@@ -469,9 +523,6 @@ changed: [s1 -> localhost]
 TASK [template] ****************************************************************
 changed: [s1 -> localhost]
 
-TASK [aoscx_config: set session auto-confirm for vlan] *************************
-changed: [s1]
-
 TASK [aoscx_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/arubacx.j2] ***
 ok: [s1]
 
@@ -501,6 +552,12 @@ skipping: [ce1]
 skipping: [ce2]
 ok: [s2]
 ok: [s1]
+
+TASK [fail] ********************************************************************
+skipping: [ce1]
+skipping: [ce2]
+skipping: [s1]
+skipping: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ce1]
@@ -589,9 +646,6 @@ changed: [s1 -> localhost]
 TASK [template] ****************************************************************
 changed: [s1 -> localhost]
 
-TASK [aoscx_config: set session auto-confirm for bgp] **************************
-changed: [s1]
-
 TASK [aoscx_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/arubacx.j2] ***
 changed: [s1]
 
@@ -621,6 +675,12 @@ ok: [ce1]
 ok: [ce2]
 ok: [s2]
 ok: [s1]
+
+TASK [fail] ********************************************************************
+skipping: [ce1]
+skipping: [ce2]
+skipping: [s1]
+skipping: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [ce1] => 
@@ -679,6 +739,30 @@ ok: [ce2] =>
   
     !
     do write
+ok: [s1] => 
+  msg: |-
+    ospf configuration for s1
+    =========================================
+    !
+    router ospf 1
+        router-id 10.0.0.3
+  
+  
+  
+  
+  
+        area 0.0.0.0
+        area 0.0.0.0
+  
+    !
+    interface loopback 0
+        ip ospf 1 area 0.0.0.0
+    !
+    interface 1/1/1
+    ! s1 -> s2
+        ip ospf 1 area 0.0.0.0
+        ip ospf network point-to-point
+    !
 ok: [s2] => 
   msg: |-
     ospf configuration for s2
@@ -707,30 +791,6 @@ ok: [s2] =>
   
     !
     do write
-ok: [s1] => 
-  msg: |-
-    ospf configuration for s1
-    =========================================
-    !
-    router ospf 1
-        router-id 10.0.0.3
-  
-  
-  
-  
-  
-        area 0.0.0.0
-        area 0.0.0.0
-  
-    !
-    interface loopback 0
-        ip ospf 1 area 0.0.0.0
-    !
-    interface 1/1/1
-    ! s1 -> s2
-        ip ospf 1 area 0.0.0.0
-        ip ospf network point-to-point
-    !
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [ce1]
@@ -744,8 +804,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml
 
 TASK [template] ****************************************************************
 changed: [ce2]
-changed: [ce1]
 changed: [s2]
+changed: [ce1]
 
 TASK [set_fact] ****************************************************************
 ok: [ce1]
@@ -768,9 +828,6 @@ changed: [s1 -> localhost]
 TASK [template] ****************************************************************
 changed: [s1 -> localhost]
 
-TASK [aoscx_config: set session auto-confirm for ospf] *************************
-changed: [s1]
-
 TASK [aoscx_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/arubacx.j2] ***
 changed: [s1]
 
@@ -788,6 +845,12 @@ skipping: [ce1]
 skipping: [ce2]
 ok: [s2]
 ok: [s1]
+
+TASK [fail] ********************************************************************
+skipping: [ce1]
+skipping: [ce2]
+skipping: [s1]
+skipping: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ce1]
@@ -918,9 +981,6 @@ changed: [s1 -> localhost]
 TASK [template] ****************************************************************
 changed: [s1 -> localhost]
 
-TASK [aoscx_config: set session auto-confirm for vrf] **************************
-changed: [s1]
-
 TASK [aoscx_config: deploying vrf from /home/pipi/net101/tools/netsim/ansible/templates/vrf/arubacx.j2] ***
 changed: [s1]
 
@@ -950,6 +1010,12 @@ skipping: [ce1]
 skipping: [ce2]
 ok: [s2]
 ok: [s1]
+
+TASK [fail] ********************************************************************
+skipping: [ce1]
+skipping: [ce2]
+skipping: [s1]
+skipping: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ce1]
@@ -1017,9 +1083,6 @@ changed: [s1 -> localhost]
 TASK [template] ****************************************************************
 changed: [s1 -> localhost]
 
-TASK [aoscx_config: set session auto-confirm for vxlan] ************************
-changed: [s1]
-
 TASK [aoscx_config: deploying vxlan from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/arubacx.j2] ***
 changed: [s1]
 
@@ -1049,6 +1112,12 @@ skipping: [ce1]
 skipping: [ce2]
 ok: [s2]
 ok: [s1]
+
+TASK [fail] ********************************************************************
+skipping: [ce1]
+skipping: [ce2]
+skipping: [s1]
+skipping: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ce1]
@@ -1131,9 +1200,6 @@ changed: [s1 -> localhost]
 TASK [template] ****************************************************************
 changed: [s1 -> localhost]
 
-TASK [aoscx_config: set session auto-confirm for evpn] *************************
-changed: [s1]
-
 TASK [aoscx_config: deploying evpn from /home/pipi/net101/tools/netsim/ansible/templates/evpn/arubacx.j2] ***
 changed: [s1]
 
@@ -1156,10 +1222,10 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-ce1                        : ok=33   changed=5    unreachable=0    failed=0    skipped=24   rescued=0    ignored=0   
-ce2                        : ok=33   changed=5    unreachable=0    failed=0    skipped=24   rescued=0    ignored=0   
-s1                         : ok=80   changed=34   unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-s2                         : ok=68   changed=15   unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+ce1                        : ok=35   changed=4    unreachable=0    failed=0    skipped=35   rescued=0    ignored=0   
+ce2                        : ok=35   changed=4    unreachable=0    failed=0    skipped=35   rescued=0    ignored=0   
+s1                         : ok=76   changed=27   unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+s2                         : ok=71   changed=15   unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
 
 
 

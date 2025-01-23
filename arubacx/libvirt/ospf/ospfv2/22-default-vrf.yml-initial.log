@@ -20,6 +20,45 @@ skipping: [xf]
 skipping: [p1]
 skipping: [p2]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, xf, p1, p2
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [xf]
+ok: [p1]
+ok: [p2]
+ok: [dut]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [xf]
+ok: [p1]
+ok: [p2]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [xf]
+skipping: [p1]
+skipping: [p2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+skipping: [xf]
+skipping: [p1]
+skipping: [p2]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [dut]
+skipping: [xf]
+skipping: [p1]
+skipping: [p2]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [dut]
+skipping: [xf]
+skipping: [p1]
+skipping: [p2]
+
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, xf, p1, p2
 
@@ -34,6 +73,12 @@ ok: [xf]
 ok: [p1]
 ok: [p2]
 ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [xf]
+skipping: [p1]
+skipping: [p2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -74,32 +119,36 @@ ok: [dut] =>
     !
   
   
+  
     interface 1/1/1
         shutdown
         mtu 9198
         vrf attach d1
         description dut -> p1
-        ip address 172.16.0.1/24
+        ip address 10.1.0.1/30
         no shutdown
     !
+  
   
     interface 1/1/2
         shutdown
         mtu 9198
         vrf attach d2
         description dut -> p2
-        ip address 172.16.1.1/24
+        ip address 10.1.0.5/30
         no shutdown
     !
+  
   
     interface 1/1/3
         shutdown
         mtu 9198
         vrf attach d2
         description dut -> xf [external]
-        ip address 172.16.2.1/24
+        ip address 10.1.0.9/30
         no shutdown
     !
+  
   
     interface loopback 1
         vrf attach d2
@@ -121,7 +170,8 @@ ok: [xf] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -149,7 +199,7 @@ ok: [xf] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -167,7 +217,8 @@ ok: [xf] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -186,7 +237,7 @@ ok: [xf] =>
     interface eth1
      no shutdown
      description xf -> dut [external]
-     ip address 172.16.2.4/24
+     ip address 10.1.0.10/30
     !
     do write
     CONFIG
@@ -206,7 +257,8 @@ ok: [p1] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -234,7 +286,7 @@ ok: [p1] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -252,7 +304,8 @@ ok: [p1] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -271,7 +324,7 @@ ok: [p1] =>
     interface eth1
      no shutdown
      description p1 -> dut
-     ip address 172.16.0.2/24
+     ip address 10.1.0.2/30
     !
     do write
     CONFIG
@@ -291,7 +344,8 @@ ok: [p2] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -319,7 +373,7 @@ ok: [p2] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -337,7 +391,8 @@ ok: [p2] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -356,7 +411,7 @@ ok: [p2] =>
     interface eth1
      no shutdown
      description p2 -> dut
-     ip address 172.16.1.3/24
+     ip address 10.1.0.6/30
     !
     do write
     CONFIG
@@ -379,9 +434,6 @@ changed: [dut -> localhost]
 TASK [template] ****************************************************************
 changed: [dut -> localhost]
 
-TASK [aoscx_config: set session auto-confirm for initial] **********************
-changed: [dut]
-
 TASK [aoscx_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/arubacx.j2] ***
 changed: [dut]
 
@@ -389,8 +441,6 @@ TASK [file] ********************************************************************
 changed: [dut -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [p2 -> localhost]
-changed: [p1 -> localhost]
 changed: [xf -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
@@ -412,9 +462,9 @@ ok: [p1]
 ok: [p2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [p2]
 changed: [xf]
 changed: [p1]
+changed: [p2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [xf]
@@ -446,6 +496,12 @@ skipping: [p2]
 ok: [xf]
 ok: [dut]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [p1]
+skipping: [p2]
+skipping: [xf]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [p1]
 skipping: [p2]
@@ -465,8 +521,8 @@ ok: [xf] =>
   
       bgp router-id 10.0.0.4
     !
-      neighbor 172.16.2.1 remote-as 65000
-      neighbor 172.16.2.1 description dut
+      neighbor 10.1.0.9 remote-as 65000
+      neighbor 10.1.0.9 description dut
     !
      address-family ipv4 unicast
     !
@@ -476,10 +532,10 @@ ok: [xf] =>
     !
     !
     !
-      neighbor 172.16.2.1 activate
-      no neighbor 172.16.2.1 send-community all
-      neighbor 172.16.2.1 send-community standard
-      neighbor 172.16.2.1 send-community large
+      neighbor 10.1.0.9 activate
+      no neighbor 10.1.0.9 send-community all
+      neighbor 10.1.0.9 send-community standard
+      neighbor 10.1.0.9 send-community large
     !
     !
     !
@@ -521,9 +577,6 @@ changed: [dut -> localhost]
 TASK [template] ****************************************************************
 changed: [dut -> localhost]
 
-TASK [aoscx_config: set session auto-confirm for bgp] **************************
-changed: [dut]
-
 TASK [aoscx_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/arubacx.j2] ***
 changed: [dut]
 
@@ -553,6 +606,12 @@ skipping: [xf]
 ok: [p1]
 ok: [p2]
 ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [p1]
+skipping: [p2]
+skipping: [xf]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [xf]
@@ -634,9 +693,6 @@ changed: [dut -> localhost]
 TASK [template] ****************************************************************
 changed: [dut -> localhost]
 
-TASK [aoscx_config: set session auto-confirm for ospf] *************************
-changed: [dut]
-
 TASK [aoscx_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/arubacx.j2] ***
 ok: [dut]
 
@@ -670,6 +726,12 @@ skipping: [p1]
 skipping: [p2]
 skipping: [xf]
 ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [p1]
+skipping: [p2]
+skipping: [xf]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [p1]
@@ -744,8 +806,8 @@ ok: [dut] =>
       vrf d2
       bgp router-id 10.0.0.1
   
-      neighbor 172.16.2.4 remote-as 65100
-      neighbor 172.16.2.4 description xf
+      neighbor 10.1.0.10 remote-as 65100
+      neighbor 10.1.0.10 description xf
   
   
      address-family ipv4 unicast
@@ -755,9 +817,9 @@ ok: [dut] =>
     !
         network 192.168.43.1/32
     !
-        neighbor 172.16.2.4 activate
-        neighbor 172.16.2.4 advertisement-interval 1
-        neighbor 172.16.2.4 send-community standard
+        neighbor 10.1.0.10 activate
+        neighbor 10.1.0.10 advertisement-interval 1
+        neighbor 10.1.0.10 send-community standard
 
 TASK [Find configuration deployment deploy_script for vrf] *********************
 skipping: [p1]
@@ -777,9 +839,6 @@ changed: [dut -> localhost]
 TASK [template] ****************************************************************
 changed: [dut -> localhost]
 
-TASK [aoscx_config: set session auto-confirm for vrf] **************************
-changed: [dut]
-
 TASK [aoscx_config: deploying vrf from /home/pipi/net101/tools/netsim/ansible/templates/vrf/arubacx.j2] ***
 changed: [dut]
 
@@ -790,10 +849,10 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=47   changed=19   unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-p1                         : ok=27   changed=5    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
-p2                         : ok=27   changed=5    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
-xf                         : ok=27   changed=5    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+dut                        : ok=46   changed=15   unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+p1                         : ok=29   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+p2                         : ok=29   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+xf                         : ok=30   changed=5    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
 
 
 
