@@ -25,9 +25,15 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/vm-clab-s
 TASK [Check if 'sshpass' is installed] *****************************************
 ok: [dut -> localhost]
 
+TASK [Check for 'timeout' command] *********************************************
+ok: [dut -> localhost]
+
 TASK [Execute local ssh command to check vjunos-router readiness] **************
-FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-router readiness (40 retries left).
-FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-router readiness (39 retries left).
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-router readiness (60 retries left).
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-router readiness (59 retries left).
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-router readiness (58 retries left).
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-router readiness (57 retries left).
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-router readiness (56 retries left).
 ok: [dut -> localhost]
 
 TASK [Confirm dut SSH server works] ********************************************
@@ -39,6 +45,39 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/vjunos-sw
 
 TASK [Wait for ge-0/0/0 to appear] *********************************************
 ok: [dut]
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for x1, x2, dut
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [x1]
+skipping: [x2]
+skipping: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [x1]
+skipping: [x2]
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [x1]
+skipping: [x2]
+skipping: [dut]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [x1]
+skipping: [x2]
+skipping: [dut]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for x1, x2, dut
@@ -52,6 +91,11 @@ TASK [Find configuration template for initial] *********************************
 ok: [x1]
 ok: [x2]
 ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [x1]
+skipping: [x2]
+skipping: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [x1] => 
@@ -68,7 +112,8 @@ ok: [x1] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -114,7 +159,7 @@ ok: [x1] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -154,7 +199,8 @@ ok: [x2] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -200,7 +246,7 @@ ok: [x2] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -300,16 +346,16 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
 ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
@@ -334,11 +380,74 @@ ok: [x2]
 ok: [dut]
 
 TASK [Find configuration template for ospf] ************************************
-ok: [x2]
 ok: [x1]
+ok: [x2]
 ok: [dut]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [x1] => 
+  msg: |-
+    ospf configuration for x1
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.2
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! x1 -> dut
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+     ip ospf cost 10
+    !
+  
+    !
+    do write
+ok: [x2] => 
+  msg: |-
+    ospf configuration for x2
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.3
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! x2 -> dut
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+     ip ospf cost 10
+    !
+  
+    !
+    do write
 ok: [dut] => 
   msg: |-
     ospf configuration for dut
@@ -370,64 +479,6 @@ ok: [dut] =>
         }
       }
     }
-ok: [x2] => 
-  msg: |-
-    ospf configuration for x2
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.3
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! x2 -> dut
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-     ip ospf cost 10
-    !
-  
-    !
-    do write
-ok: [x1] => 
-  msg: |-
-    ospf configuration for x1
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.2
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! x1 -> dut
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-     ip ospf cost 10
-    !
-  
-    !
-    do write
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [x2]
@@ -443,8 +494,8 @@ TASK [junos_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/t
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -455,16 +506,16 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=24   changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-x1                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-x2                         : ok=22   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+dut                        : ok=28   changed=2    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+x1                         : ok=26   changed=5    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+x2                         : ok=25   changed=4    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
 
 
 

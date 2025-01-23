@@ -34,8 +34,6 @@ FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos
 FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-switch readiness (38 retries left).
 FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-switch readiness (37 retries left).
 FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-switch readiness (36 retries left).
-FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-switch readiness (35 retries left).
-FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-switch readiness (34 retries left).
 ok: [dut -> localhost]
 
 TASK [Confirm dut SSH server works] ********************************************
@@ -47,6 +45,39 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/vjunos-sw
 
 TASK [Wait for ge-0/0/0 to appear] *********************************************
 ok: [dut]
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for x1, x2, dut
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [x2]
+ok: [x1]
+ok: [dut]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [x1]
+skipping: [x2]
+skipping: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [x1]
+skipping: [x2]
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [x1]
+skipping: [x2]
+skipping: [dut]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [x1]
+skipping: [x2]
+skipping: [dut]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for x1, x2, dut
@@ -81,7 +112,8 @@ ok: [x1] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -130,7 +162,7 @@ ok: [x1] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -230,7 +262,8 @@ ok: [x2] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -279,7 +312,7 @@ ok: [x2] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -331,16 +364,16 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
 ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
@@ -361,13 +394,13 @@ TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=isis)
 
 TASK [Figure out whether to deploy the module isis on current device] **********
-ok: [x1]
 ok: [x2]
+ok: [x1]
 ok: [dut]
 
 TASK [Find configuration template for isis] ************************************
-ok: [x2]
 ok: [x1]
+ok: [x2]
 ok: [dut]
 
 TASK [fail] ********************************************************************
@@ -376,35 +409,6 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [x1] => 
-  msg: |-
-    isis configuration for x1
-    =========================================
-    !
-    !
-    ipv6 forwarding
-    !
-    router isis Gandalf
-     log-adjacency-changes
-     hostname dynamic
-     is-type level-2
-     metric-style wide
-     lsp-timers gen-interval 1 refresh-interval 900 max-lifetime 1800
-     net 49.0042.0000.0000.0002.00
-     topology ipv6-unicast
-  
-    !
-    interface eth1
-    ! x1 -> dut
-     ipv6 router isis Gandalf
-     isis network point-to-point
-    !
-  
-    !
-    interface lo
-     ipv6 router isis Gandalf
-    !
-    do write
 ok: [x2] => 
   msg: |-
     isis configuration for x2
@@ -426,6 +430,35 @@ ok: [x2] =>
     !
     interface eth1
     ! x2 -> dut
+     ipv6 router isis Gandalf
+     isis network point-to-point
+    !
+  
+    !
+    interface lo
+     ipv6 router isis Gandalf
+    !
+    do write
+ok: [x1] => 
+  msg: |-
+    isis configuration for x1
+    =========================================
+    !
+    !
+    ipv6 forwarding
+    !
+    router isis Gandalf
+     log-adjacency-changes
+     hostname dynamic
+     is-type level-2
+     metric-style wide
+     lsp-timers gen-interval 1 refresh-interval 900 max-lifetime 1800
+     net 49.0042.0000.0000.0002.00
+     topology ipv6-unicast
+  
+    !
+    interface eth1
+    ! x1 -> dut
      ipv6 router isis Gandalf
      isis network point-to-point
     !
@@ -482,8 +515,8 @@ ok: [dut] =>
     }
 
 TASK [Find configuration deployment deploy_script for isis] ********************
-ok: [x1]
 ok: [x2]
+ok: [x1]
 ok: [dut]
 
 TASK [Deploy isis configuration] ***********************************************
@@ -514,9 +547,9 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=25   changed=2    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
-x1                         : ok=23   changed=5    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
-x2                         : ok=22   changed=4    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+dut                        : ok=28   changed=2    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+x1                         : ok=26   changed=5    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+x2                         : ok=25   changed=4    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
 
 
 

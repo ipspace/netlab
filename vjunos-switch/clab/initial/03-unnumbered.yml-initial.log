@@ -16,9 +16,19 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/vjunos-sw
 TASK [Wait for SSH server] *****************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/vm-clab-ssh-check.yml for r
 
+TASK [Check if 'sshpass' is installed] *****************************************
+ok: [r -> localhost]
+
+TASK [Check for 'timeout' command] *********************************************
+ok: [r -> localhost]
+
 TASK [Execute local ssh command to check vjunos-switch readiness] **************
 FAILED - RETRYING: [r -> localhost]: Execute local ssh command to check vjunos-switch readiness (40 retries left).
-changed: [r -> localhost]
+FAILED - RETRYING: [r -> localhost]: Execute local ssh command to check vjunos-switch readiness (39 retries left).
+FAILED - RETRYING: [r -> localhost]: Execute local ssh command to check vjunos-switch readiness (38 retries left).
+FAILED - RETRYING: [r -> localhost]: Execute local ssh command to check vjunos-switch readiness (37 retries left).
+FAILED - RETRYING: [r -> localhost]: Execute local ssh command to check vjunos-switch readiness (36 retries left).
+ok: [r -> localhost]
 
 TASK [Confirm r SSH server works] **********************************************
 ok: [r] => 
@@ -30,6 +40,27 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/vjunos-sw
 TASK [Wait for ge-0/0/0 to appear] *********************************************
 ok: [r]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for r
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [r]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [r]
+
+TASK [fail] ********************************************************************
+skipping: [r]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [r]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [r]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [r]
+
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for r
 
@@ -39,8 +70,106 @@ ok: [r]
 TASK [Find configuration template for initial] *********************************
 ok: [r]
 
-TASK [Print deployed configuration when running in verbose mode] ***************
+TASK [fail] ********************************************************************
 skipping: [r]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [r] => 
+  msg: |-
+    initial configuration for r
+    =========================================
+    system {
+      host-name r;
+      static-host-mapping {
+      }
+    }
+  
+  
+    interfaces {
+      ge-0/0/0 {
+        mtu 1514;
+      }
+      ge-0/0/1 {
+        mtu 1514;
+      }
+      ge-0/0/2 {
+        mtu 1514;
+      }
+      ge-0/0/3 {
+        mtu 1514;
+      }
+      ge-0/0/4 {
+        mtu 1514;
+      }
+  
+      lo0.0 {
+  
+          family inet {
+            address 10.0.0.1/32;
+          }
+          family inet6 {
+            address 2001:db8:0:1::1/64;
+          }
+  
+      }
+      ge-0/0/0.0 {
+        description "r -> stub [stub]";
+  
+          family inet {
+            unnumbered-address lo0.0
+          }
+          family inet6;
+  
+      }
+      ge-0/0/1.0 {
+        description "r -> stub [stub]";
+  
+          family inet {
+            unnumbered-address lo0.0
+          }
+  
+      }
+      ge-0/0/2.0 {
+        description "r -> stub [stub]";
+  
+          family inet6;
+  
+      }
+      ge-0/0/3.0 {
+        description "r -> stub [stub]";
+  
+          family inet {
+            unnumbered-address lo0.0
+          }
+          family inet6 {
+            address 2001:db8:1:3::1/64;
+          }
+  
+      }
+      ge-0/0/4.0 {
+        description "r -> stub [stub]";
+  
+          family inet {
+            address 172.16.4.1/24;
+          }
+          family inet6;
+  
+      }
+    }
+    protocols {
+      lldp {
+        interface fxp0 {
+          disable;
+        }
+        interface all;
+      }
+      router-advertisement {
+        interface ge-0/0/0.0;
+        interface ge-0/0/2.0;
+        interface ge-0/0/3.0;
+        interface ge-0/0/4.0;
+      }
+    }
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [r]
@@ -59,11 +188,11 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-r                          : ok=14   changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+r                          : ok=20   changed=1    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
 
 
 
-This test checks that the initial configuration doesn't crash when
-dealing with the unnumbered interfaces. Use OSPFv2/OSPFv3 integration
-tests to validate the unnumbered interface functionality.
+This test checks that the initial configuration doesn't crash when dealing
+with the all possible combinations of unnumbered interfaces. Use OSPFv2/OSPFv3
+integration tests to validate the unnumbered interface functionality.
 

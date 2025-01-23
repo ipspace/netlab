@@ -34,7 +34,6 @@ FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-
 FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-router readiness (58 retries left).
 FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-router readiness (57 retries left).
 FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-router readiness (56 retries left).
-FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-router readiness (55 retries left).
 ok: [s1 -> localhost]
 
 TASK [Confirm s1 SSH server works] *********************************************
@@ -46,6 +45,39 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/vjunos-sw
 
 TASK [Wait for ge-0/0/0 to appear] *********************************************
 ok: [s1]
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [h1]
+ok: [h2]
+ok: [s1]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [h1]
+ok: [h2]
+ok: [s1]
+
+TASK [fail] ********************************************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [s1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [h1]
+skipping: [h2]
+skipping: [s1]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [h1]
+skipping: [h2]
+skipping: [s1]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [s1]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1
@@ -94,7 +126,7 @@ ok: [h1] =>
     ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.0.1/24 dev eth1
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
@@ -110,10 +142,10 @@ ok: [h1] =>
     #
     #
     echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.0.3 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.0.3 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.0.3 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.0.3 dev eth1 protocol static
+    ip route add 172.16.0.0/16 via 172.16.0.132 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.0.132 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.0.132 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.0.132 dev eth1 protocol static
     #
     # Print the final routing table
     ip route
@@ -145,7 +177,7 @@ ok: [h2] =>
     ip addr del 172.16.0.2/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.0.2/24 dev eth1
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
@@ -161,10 +193,10 @@ ok: [h2] =>
     #
     #
     echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.0.3 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.0.3 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.0.3 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.0.3 dev eth1 protocol static
+    ip route add 172.16.0.0/16 via 172.16.0.132 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.0.132 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.0.132 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.0.132 dev eth1 protocol static
     #
     # Print the final routing table
     ip route
@@ -232,7 +264,7 @@ ok: [s1] =>
       lo0.0 {
   
           family inet {
-            address 10.0.0.3/32;
+            address 10.0.0.132/32;
           }
   
       }
@@ -250,7 +282,7 @@ ok: [s1] =>
         description "VLAN red (700) -> [h1,h2] [stub]";
   
           family inet {
-            address 172.16.0.3/24;
+            address 172.16.0.132/24;
           }
   
       }
@@ -282,8 +314,8 @@ changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -297,7 +329,7 @@ TASK [Container configuration for initial based on /home/pipi/net101/tools/netsi
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-90w4ix2p.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-x3ue9yc8.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -375,9 +407,9 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=13   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-h2                         : ok=13   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-s1                         : ok=25   changed=2    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
+h1                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+h2                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+s1                         : ok=28   changed=2    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
 
 
 
