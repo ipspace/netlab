@@ -20,6 +20,73 @@ skipping: [h2]
 skipping: [r1]
 skipping: [r2]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, r1, r2
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [h1]
+ok: [h2]
+ok: [r1]
+ok: [r2]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [h1]
+ok: [h2]
+ok: [r1]
+ok: [r2]
+
+TASK [fail] ********************************************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [r1]
+skipping: [r2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [h1]
+skipping: [h2]
+ok: [r1] => 
+  msg: |-
+    normalize configuration for r1
+    =========================================
+    !
+    interface GigabitEthernet0/1
+     no switchport
+     mac-address 52dc.cafe.0301
+    !
+    interface GigabitEthernet0/2
+     no switchport
+     mac-address 52dc.cafe.0302
+ok: [r2] => 
+  msg: |-
+    normalize configuration for r2
+    =========================================
+    !
+    interface GigabitEthernet0/1
+     no switchport
+     mac-address 52dc.cafe.0401
+    !
+    interface GigabitEthernet0/2
+     no switchport
+     mac-address 52dc.cafe.0402
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [h1]
+skipping: [h2]
+ok: [r1]
+ok: [r2]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [h1]
+skipping: [h2]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for r1, r2
+
+TASK [ios_config: deploying normalize from /home/pipi/net101/tools/netsim/ansible/templates/normalize/iosvl2.j2] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [r2]
+changed: [r1]
+
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, r1, r2
 
@@ -35,6 +102,12 @@ ok: [h2]
 ok: [r1]
 ok: [r2]
 
+TASK [fail] ********************************************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [r1]
+skipping: [r2]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [h1] => 
   msg: |-
@@ -49,6 +122,7 @@ ok: [h1] =>
     #  /etc/hosts file is generated as a clab bind.
     #
     set -e
+  
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
     # Disable IPv4 and IPv6 forwarding
@@ -56,7 +130,7 @@ ok: [h1] =>
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
     #
-    # Interface addressing
+    # Interface addressing, create any bond devices
     #
     ip link set dev eth1 up
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
@@ -64,11 +138,11 @@ ok: [h1] =>
     ip -6 addr del 2001:db8:1::1/64 dev eth1 2>/dev/null
     set -e
     ip -6 addr add 2001:db8:1::1/64 dev eth1
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
     #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
     #
     #
     # Print the final routing table
@@ -86,6 +160,7 @@ ok: [h2] =>
     #  /etc/hosts file is generated as a clab bind.
     #
     set -e
+  
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
     # Disable IPv4 and IPv6 forwarding
@@ -93,7 +168,7 @@ ok: [h2] =>
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
     #
-    # Interface addressing
+    # Interface addressing, create any bond devices
     #
     ip link set dev eth1 up
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
@@ -101,11 +176,11 @@ ok: [h2] =>
     ip -6 addr del 2001:db8:1:1::2/64 dev eth1 2>/dev/null
     set -e
     ip -6 addr add 2001:db8:1:1::2/64 dev eth1
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
     #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
     #
     #
     # Print the final routing table
@@ -132,16 +207,20 @@ ok: [r1] =>
      no lldp receive
     !
     interface GigabitEthernet0/1
-     no shutdown
      no switchport
      description r1 -> h1 [stub]
      ipv6 address 2001:DB8:1::3/64
+     no shutdown
     !
     interface GigabitEthernet0/2
-     no shutdown
      no switchport
      description r1 -> r2
      ipv6 enable
+     no shutdown
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
     !
     no banner exec
     no banner login
@@ -168,16 +247,20 @@ ok: [r2] =>
      no lldp receive
     !
     interface GigabitEthernet0/1
-     no shutdown
      no switchport
      description r2 -> r1
      ipv6 enable
+     no shutdown
     !
     interface GigabitEthernet0/2
-     no shutdown
      no switchport
      description r2 -> h2 [stub]
      ipv6 address 2001:DB8:1:1::4/64
+     no shutdown
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
     !
     no banner exec
     no banner login
@@ -190,31 +273,40 @@ ok: [r1]
 ok: [r2]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for h1, h2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for r1, r2
 
-TASK [set_fact] ****************************************************************
+TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
 ok: [h2]
 
-TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
-changed: [h2 -> localhost]
-
-TASK [Initial container configuration via /tmp/config-UKsqkKOj-h1.sh] **********
+TASK [Create a temporary file for the rendered script] *************************
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
-TASK [file] ********************************************************************
+TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
+skipping: [h1]
+skipping: [h2]
+
+TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+skipping: [h1]
+skipping: [h2]
+
+TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [Remove temporary file /tmp/h1_initial-qve5pnsh.sh] ***********************
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
 TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
-[WARNING]: To ensure idempotency and correct diff the input configuration lines
-should be similar to how they appear if present in the running configuration on
-device including the indentation
-changed: [r1]
 changed: [r2]
+changed: [r1]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -232,6 +324,10 @@ ok: [r2]
 TASK [Find configuration template for eigrp] ***********************************
 ok: [r1]
 ok: [r2]
+
+TASK [fail] ********************************************************************
+skipping: [r1]
+skipping: [r2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [r1] => 
@@ -286,8 +382,8 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-r1                         : ok=17   changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-r2                         : ok=17   changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h1                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+h2                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+r1                         : ok=24   changed=3    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+r2                         : ok=24   changed=3    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 

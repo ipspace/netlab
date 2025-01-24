@@ -20,6 +20,69 @@ skipping: [xf]
 skipping: [probe]
 skipping: [dut_a]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut_c, xf, probe, dut_a
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [xf]
+ok: [probe]
+ok: [dut_c]
+ok: [dut_a]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [xf]
+ok: [probe]
+ok: [dut_c]
+ok: [dut_a]
+
+TASK [fail] ********************************************************************
+skipping: [dut_c]
+skipping: [xf]
+skipping: [probe]
+skipping: [dut_a]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [xf]
+skipping: [probe]
+ok: [dut_c] => 
+  msg: |-
+    normalize configuration for dut_c
+    =========================================
+    !
+    interface GigabitEthernet0/1
+     no switchport
+     mac-address 52dc.cafe.0201
+    !
+    interface GigabitEthernet0/2
+     no switchport
+     mac-address 52dc.cafe.0202
+ok: [dut_a] => 
+  msg: |-
+    normalize configuration for dut_a
+    =========================================
+    !
+    interface GigabitEthernet0/1
+     no switchport
+     mac-address 52dc.cafe.0101
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [xf]
+skipping: [probe]
+ok: [dut_c]
+ok: [dut_a]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [xf]
+skipping: [probe]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut_c, dut_a
+
+TASK [ios_config: deploying normalize from /home/pipi/net101/tools/netsim/ansible/templates/normalize/iosvl2.j2] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [dut_a]
+changed: [dut_c]
+
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut_c, xf, probe, dut_a
 
@@ -34,6 +97,12 @@ ok: [xf]
 ok: [probe]
 ok: [dut_c]
 ok: [dut_a]
+
+TASK [fail] ********************************************************************
+skipping: [dut_c]
+skipping: [xf]
+skipping: [probe]
+skipping: [dut_a]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [xf] => 
@@ -50,20 +119,11 @@ ok: [xf] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "2001:db8:1:1::1 2001:db8:2::1 dut_a" >>/tmp/hosts
-    echo "2001:db8:1:2::1 2001:db8:2:1::2 2001:db8:2:2::2 dut_c" >>/tmp/hosts
-    echo "2001:db8:1:3::1 2001:db8:2::3 2001:db8:2:1::3 probe" >>/tmp/hosts
-    echo "2001:db8:1:4::1 2001:db8:2:2::4 xf" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -88,7 +148,7 @@ ok: [xf] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -109,7 +169,8 @@ ok: [xf] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -131,7 +192,7 @@ ok: [xf] =>
      no shutdown
      description xf -> dut_c [external]
      ! no ip address
-     ipv6 address 2001:db8:2:2::4/64
+     ipv6 address 2001:db8:3:2::4/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -153,20 +214,11 @@ ok: [probe] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "2001:db8:1:1::1 2001:db8:2::1 dut_a" >>/tmp/hosts
-    echo "2001:db8:1:2::1 2001:db8:2:1::2 2001:db8:2:2::2 dut_c" >>/tmp/hosts
-    echo "2001:db8:1:3::1 2001:db8:2::3 2001:db8:2:1::3 probe" >>/tmp/hosts
-    echo "2001:db8:1:4::1 2001:db8:2:2::4 xf" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -191,7 +243,7 @@ ok: [probe] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -216,8 +268,9 @@ ok: [probe] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
-    ip link set eth2 mtu 1500
+    ip link set dev eth1 mtu 1500
+    ip link set dev eth2 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -239,7 +292,7 @@ ok: [probe] =>
      no shutdown
      description probe -> dut_a
      ! no ip address
-     ipv6 address 2001:db8:2::3/64
+     ipv6 address 2001:db8:3::3/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -247,7 +300,7 @@ ok: [probe] =>
      no shutdown
      description probe -> dut_c
      ! no ip address
-     ipv6 address 2001:db8:2:1::3/64
+     ipv6 address 2001:db8:3:1::3/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -277,16 +330,20 @@ ok: [dut_c] =>
      no lldp receive
     !
     interface GigabitEthernet0/1
-     no shutdown
      no switchport
      description dut_c -> probe
-     ipv6 address 2001:DB8:2:1::2/64
+     ipv6 address 2001:DB8:3:1::2/64
+     no shutdown
     !
     interface GigabitEthernet0/2
-     no shutdown
      no switchport
      description dut_c -> xf [external]
-     ipv6 address 2001:DB8:2:2::2/64
+     ipv6 address 2001:DB8:3:2::2/64
+     no shutdown
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
     !
     no banner exec
     no banner login
@@ -313,10 +370,14 @@ ok: [dut_a] =>
      no lldp receive
     !
     interface GigabitEthernet0/1
-     no shutdown
      no switchport
      description dut_a -> probe
-     ipv6 address 2001:DB8:2::1/64
+     ipv6 address 2001:DB8:3::1/64
+     no shutdown
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
     !
     no banner exec
     no banner login
@@ -333,14 +394,10 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for xf, probe
 
 TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
-[WARNING]: To ensure idempotency and correct diff the input configuration lines
-should be similar to how they appear if present in the running configuration on
-device including the indentation
 changed: [dut_a]
 changed: [dut_c]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [probe -> localhost]
 changed: [xf -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
@@ -390,6 +447,12 @@ skipping: [probe]
 ok: [xf]
 ok: [dut_c]
 
+TASK [fail] ********************************************************************
+skipping: [dut_a]
+skipping: [dut_c]
+skipping: [probe]
+skipping: [xf]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut_a]
 skipping: [probe]
@@ -409,19 +472,21 @@ ok: [xf] =>
   
       bgp router-id 10.0.0.4
     !
-      neighbor 2001:db8:2:2::2 remote-as 65000
-      neighbor 2001:db8:2:2::2 description dut_c
+      neighbor 2001:db8:3:2::2 remote-as 65000
+      neighbor 2001:db8:3:2::2 description dut_c
     !
      address-family ipv6 unicast
+    !
+  
     !
       network 2001:db8:1:4::/64
     !
     !
     !
-      neighbor 2001:db8:2:2::2 activate
-      no neighbor 2001:db8:2:2::2 send-community all
-      neighbor 2001:db8:2:2::2 send-community standard
-      neighbor 2001:db8:2:2::2 send-community large
+      neighbor 2001:db8:3:2::2 activate
+      no neighbor 2001:db8:3:2::2 send-community all
+      neighbor 2001:db8:3:2::2 send-community standard
+      neighbor 2001:db8:3:2::2 send-community large
     !
     !
     !
@@ -434,25 +499,26 @@ ok: [dut_c] =>
     ip bgp-community new-format
     !
     router bgp 65000
-      no bgp default ipv4-unicast
-      bgp update-delay 5
-      bgp nopeerup-delay cold-boot 1
-      bgp nopeerup-delay user-initiated 1
-      bgp router-id 10.0.0.2
-      neighbor 2001:db8:2:2::4 remote-as 65100
-      neighbor 2001:db8:2:2::4 description xf
+     no bgp default ipv4-unicast
+     bgp update-delay 5
+     bgp nopeerup-delay cold-boot 1
+     bgp nopeerup-delay user-initiated 1
+     bgp router-id 10.0.0.2
+      neighbor 2001:db8:3:2::4 remote-as 65100
+      neighbor 2001:db8:3:2::4 description xf
   
     !
      address-family ipv6
       bgp scan-time 5
+  
     !
       network 2001:db8:1:2::/64
   
     !
     !
-      neighbor 2001:db8:2:2::4 activate
-      neighbor 2001:db8:2:2::4 advertisement-interval 0
-      neighbor 2001:db8:2:2::4 send-community standard
+      neighbor 2001:db8:3:2::4 activate
+      neighbor 2001:db8:3:2::4 advertisement-interval 0
+      neighbor 2001:db8:3:2::4 send-community standard
   
     !
 
@@ -495,6 +561,12 @@ ok: [probe]
 ok: [dut_a]
 ok: [dut_c]
 
+TASK [fail] ********************************************************************
+skipping: [dut_a]
+skipping: [dut_c]
+skipping: [probe]
+skipping: [xf]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [xf]
 ok: [probe] => 
@@ -525,6 +597,7 @@ ok: [probe] =>
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
   
+  
     exit
   
     !
@@ -536,7 +609,8 @@ ok: [dut_a] =>
     router ospfv3 1
      router-id 10.0.0.1
      address-family ipv6 unicast
-     default-information originate always metric-type 2 metric 40
+      default-information originate always metric-type 2 metric 40
+  
   
     !
     interface Loopback0
@@ -555,7 +629,8 @@ ok: [dut_c] =>
     router ospfv3 1
      router-id 10.0.0.2
      address-family ipv6 unicast
-     default-information originate metric-type 1 metric 20
+      default-information originate metric-type 1 metric 20
+  
   
     !
     interface Loopback0
@@ -600,10 +675,10 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut_a                      : ok=19   changed=2    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
-dut_c                      : ok=24   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-probe                      : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-xf                         : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+dut_a                      : ok=26   changed=3    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+dut_c                      : ok=31   changed=4    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
+probe                      : ok=27   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+xf                         : ok=28   changed=5    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 
 
 
