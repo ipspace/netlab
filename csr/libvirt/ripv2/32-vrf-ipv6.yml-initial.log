@@ -4,19 +4,64 @@ PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [r2]
-ok: [r1]
 ok: [r4]
-ok: [r3]
+ok: [r1]
 ok: [dut]
+ok: [r3]
 
 TASK [Find device readiness script] ********************************************
+ok: [r2]
+ok: [r4]
+ok: [r3]
+ok: [r1]
+ok: [dut]
+
+TASK [Wait for device to become ready] *****************************************
+skipping: [dut]
+skipping: [r2]
+skipping: [r4]
+skipping: [r1]
+skipping: [r3]
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, r4, r1, r3
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [r2]
 ok: [r4]
 ok: [r1]
 ok: [r3]
 ok: [dut]
 
-TASK [Wait for device to become ready] *****************************************
+TASK [Find configuration template for normalize] *******************************
+ok: [r2]
+ok: [r4]
+ok: [r3]
+ok: [r1]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r2]
+skipping: [r4]
+skipping: [r1]
+skipping: [r3]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+skipping: [r2]
+skipping: [r4]
+skipping: [r1]
+skipping: [r3]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [dut]
+skipping: [r2]
+skipping: [r4]
+skipping: [r1]
+skipping: [r3]
+
+TASK [Deploy normalize configuration] ******************************************
 skipping: [dut]
 skipping: [r2]
 skipping: [r4]
@@ -35,10 +80,17 @@ ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
 ok: [r2]
+ok: [r1]
 ok: [r4]
 ok: [r3]
-ok: [r1]
 ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r2]
+skipping: [r4]
+skipping: [r1]
+skipping: [r3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [r2] => 
@@ -55,7 +107,8 @@ ok: [r2] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -83,7 +136,7 @@ ok: [r2] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -104,7 +157,8 @@ ok: [r2] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -126,7 +180,7 @@ ok: [r2] =>
      no shutdown
      description r2 -> dut [external]
      ! no ip address
-     ipv6 address 2001:db8:2:1::3/64
+     ipv6 address 2001:db8:3:1::3/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -134,9 +188,9 @@ ok: [r2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [r3] => 
+ok: [r4] => 
   msg: |-
-    initial configuration for r3
+    initial configuration for r4
     =========================================
     #!/bin/bash
     #
@@ -148,7 +202,8 @@ ok: [r3] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -176,7 +231,7 @@ ok: [r3] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -191,23 +246,19 @@ ok: [r3] =>
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
     ip link set eth1 down
     ip link set eth1 up
-    sysctl -qw net.ipv6.conf.eth2.autoconf=0
-    sysctl -qw net.ipv6.conf.eth2.accept_ra=0
-    ip link set eth2 down
-    ip link set eth2 up
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
-    ip link set eth2 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
     cat >/tmp/config <<CONFIG
-    hostname r3
+    hostname r4
     !
     vrf mgmt
      exit-vrf
@@ -218,21 +269,13 @@ ok: [r3] =>
     interface lo
      no shutdown
      ! no ip address
-     ipv6 address 2001:db8:1:4::1/64
+     ipv6 address 2001:db8:1:5::1/64
     !
     interface eth1
      no shutdown
-     description r3 -> stub [stub]
+     description r4 -> dut [external]
      ! no ip address
-     ipv6 address 2001:db8:cafe:1::4/64
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    interface eth2
-     no shutdown
-     description r3 -> dut
-     ! no ip address
-     ipv6 address 2001:db8:2:2::4/64
+     ipv6 address 2001:db8:3:3::5/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -254,7 +297,8 @@ ok: [r1] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -282,7 +326,7 @@ ok: [r1] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -307,8 +351,9 @@ ok: [r1] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
-    ip link set eth2 mtu 1500
+    ip link set dev eth1 mtu 1500
+    ip link set dev eth2 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -338,7 +383,7 @@ ok: [r1] =>
      no shutdown
      description r1 -> dut
      ! no ip address
-     ipv6 address 2001:db8:2::2/64
+     ipv6 address 2001:db8:3::2/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -346,9 +391,9 @@ ok: [r1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [r4] => 
+ok: [r3] => 
   msg: |-
-    initial configuration for r4
+    initial configuration for r3
     =========================================
     #!/bin/bash
     #
@@ -360,7 +405,8 @@ ok: [r4] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -388,7 +434,7 @@ ok: [r4] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -403,18 +449,24 @@ ok: [r4] =>
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
     ip link set eth1 down
     ip link set eth1 up
+    sysctl -qw net.ipv6.conf.eth2.autoconf=0
+    sysctl -qw net.ipv6.conf.eth2.accept_ra=0
+    ip link set eth2 down
+    ip link set eth2 up
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+    ip link set dev eth2 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
     cat >/tmp/config <<CONFIG
-    hostname r4
+    hostname r3
     !
     vrf mgmt
      exit-vrf
@@ -425,13 +477,21 @@ ok: [r4] =>
     interface lo
      no shutdown
      ! no ip address
-     ipv6 address 2001:db8:1:5::1/64
+     ipv6 address 2001:db8:1:4::1/64
     !
     interface eth1
      no shutdown
-     description r4 -> dut [external]
+     description r3 -> stub [stub]
      ! no ip address
-     ipv6 address 2001:db8:2:3::5/64
+     ipv6 address 2001:db8:cafe:1::4/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    interface eth2
+     no shutdown
+     description r3 -> dut
+     ! no ip address
+     ipv6 address 2001:db8:3:2::4/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -449,12 +509,12 @@ ok: [dut] =>
     !
     lldp run
     !
-    ip host dut-blue 2001:db8:2:2::1 2001:db8:2:3::1
-    ip host dut-red 2001:db8:2::1 2001:db8:2:1::1
-    ip host r1 2001:db8:1:2::1 2001:db8:cafe::2 2001:db8:2::2
-    ip host r2 2001:db8:1:3::1 2001:db8:2:1::3
-    ip host r3 2001:db8:1:4::1 2001:db8:cafe:1::4 2001:db8:2:2::4
-    ip host r4 2001:db8:1:5::1 2001:db8:2:3::5
+    ip host dut-blue 2001:db8:3:2::1 2001:db8:3:3::1
+    ip host dut-red 2001:db8:3::1 2001:db8:3:1::1
+    ip host r1 2001:db8:1:2::1 2001:db8:cafe::2 2001:db8:3::2
+    ip host r2 2001:db8:1:3::1 2001:db8:3:1::3
+    ip host r3 2001:db8:1:4::1 2001:db8:cafe:1::4 2001:db8:3:2::4
+    ip host r4 2001:db8:1:5::1 2001:db8:3:3::5
     !
     ipv6 unicast-routing
     !
@@ -485,28 +545,32 @@ ok: [dut] =>
      no lldp receive
     !
     interface GigabitEthernet2
-     no shutdown
      vrf forwarding red
      description dut -> r1
-     ipv6 address 2001:DB8:2::1/64
+     ipv6 address 2001:DB8:3::1/64
+     no shutdown
     !
     interface GigabitEthernet3
-     no shutdown
      vrf forwarding red
      description dut -> r2 [external]
-     ipv6 address 2001:DB8:2:1::1/64
+     ipv6 address 2001:DB8:3:1::1/64
+     no shutdown
     !
     interface GigabitEthernet4
-     no shutdown
      vrf forwarding blue
      description dut -> r3
-     ipv6 address 2001:DB8:2:2::1/64
+     ipv6 address 2001:DB8:3:2::1/64
+     no shutdown
     !
     interface GigabitEthernet5
-     no shutdown
      vrf forwarding blue
      description dut -> r4 [external]
-     ipv6 address 2001:DB8:2:3::1/64
+     ipv6 address 2001:DB8:3:3::1/64
+     no shutdown
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
     !
     no banner exec
     no banner login
@@ -514,10 +578,10 @@ ok: [dut] =>
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [r2]
-ok: [r1]
 ok: [r4]
-ok: [r3]
 ok: [dut]
+ok: [r1]
+ok: [r3]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
@@ -531,9 +595,6 @@ changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [r2 -> localhost]
-changed: [r1 -> localhost]
-changed: [r3 -> localhost]
-changed: [r4 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [r2]
@@ -546,21 +607,21 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for
 
 TASK [template] ****************************************************************
 changed: [r2]
+changed: [r1]
 changed: [r4]
 changed: [r3]
-changed: [r1]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
-ok: [r4]
 ok: [r1]
 ok: [r3]
+ok: [r4]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [r2]
-changed: [r3]
-changed: [r1]
 changed: [r4]
+changed: [r1]
+changed: [r3]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r2]
@@ -585,9 +646,9 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [r1]
 ok: [r2]
-ok: [r4]
 ok: [r3]
 ok: [dut]
+ok: [r4]
 
 TASK [Find configuration template for bgp] *************************************
 skipping: [r1]
@@ -595,6 +656,13 @@ skipping: [r3]
 ok: [r2]
 ok: [r4]
 ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r1]
+skipping: [r2]
+skipping: [r3]
+skipping: [r4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r1]
@@ -615,8 +683,8 @@ ok: [r2] =>
   
       bgp router-id 10.0.0.3
     !
-      neighbor 2001:db8:2:1::1 remote-as 65000
-      neighbor 2001:db8:2:1::1 description dut
+      neighbor 2001:db8:3:1::1 remote-as 65000
+      neighbor 2001:db8:3:1::1 description dut
     !
      address-family ipv6 unicast
     !
@@ -626,10 +694,10 @@ ok: [r2] =>
     !
     !
     !
-      neighbor 2001:db8:2:1::1 activate
-      no neighbor 2001:db8:2:1::1 send-community all
-      neighbor 2001:db8:2:1::1 send-community standard
-      neighbor 2001:db8:2:1::1 send-community large
+      neighbor 2001:db8:3:1::1 activate
+      no neighbor 2001:db8:3:1::1 send-community all
+      neighbor 2001:db8:3:1::1 send-community standard
+      neighbor 2001:db8:3:1::1 send-community large
     !
     !
     !
@@ -650,8 +718,8 @@ ok: [r4] =>
   
       bgp router-id 10.0.0.5
     !
-      neighbor 2001:db8:2:3::1 remote-as 65000
-      neighbor 2001:db8:2:3::1 description dut
+      neighbor 2001:db8:3:3::1 remote-as 65000
+      neighbor 2001:db8:3:3::1 description dut
     !
      address-family ipv6 unicast
     !
@@ -661,10 +729,10 @@ ok: [r4] =>
     !
     !
     !
-      neighbor 2001:db8:2:3::1 activate
-      no neighbor 2001:db8:2:3::1 send-community all
-      neighbor 2001:db8:2:3::1 send-community standard
-      neighbor 2001:db8:2:3::1 send-community large
+      neighbor 2001:db8:3:3::1 activate
+      no neighbor 2001:db8:3:3::1 send-community all
+      neighbor 2001:db8:3:3::1 send-community standard
+      neighbor 2001:db8:3:3::1 send-community large
     !
     !
     !
@@ -697,8 +765,8 @@ TASK [Find configuration deployment deploy_script for bgp] *********************
 skipping: [r1]
 skipping: [r3]
 ok: [r2]
-ok: [r4]
 ok: [dut]
+ok: [r4]
 
 TASK [Deploy bgp configuration] ************************************************
 skipping: [r1]
@@ -722,22 +790,29 @@ skipping: [r2]
 skipping: [r4]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [r4]
 changed: [r2]
+changed: [r4]
 
 TASK [Figure out whether to deploy the module ripv2 on current device] *********
 ok: [r1]
 ok: [r2]
 ok: [r3]
-ok: [dut]
 ok: [r4]
+ok: [dut]
 
 TASK [Find configuration template for ripv2] ***********************************
 skipping: [r2]
-skipping: [r4]
 ok: [r1]
+skipping: [r4]
 ok: [r3]
 ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r1]
+skipping: [r2]
+skipping: [r3]
+skipping: [r4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r2]
@@ -816,8 +891,8 @@ changed: [r3]
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [r1]
 ok: [r2]
-ok: [r3]
 ok: [r4]
+ok: [r3]
 ok: [dut]
 
 TASK [Find configuration template for vrf] *************************************
@@ -826,6 +901,13 @@ skipping: [r2]
 skipping: [r3]
 skipping: [r4]
 ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r1]
+skipping: [r2]
+skipping: [r3]
+skipping: [r4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r1]
@@ -845,12 +927,12 @@ ok: [dut] =>
   
     !
     !
-      neighbor 2001:db8:2:3::5 remote-as 65101
-      neighbor 2001:db8:2:3::5 description r4
+      neighbor 2001:db8:3:3::5 remote-as 65101
+      neighbor 2001:db8:3:3::5 description r4
   
-      neighbor 2001:db8:2:3::5 activate
-      neighbor 2001:db8:2:3::5 advertisement-interval 0
-      neighbor 2001:db8:2:3::5 send-community standard
+      neighbor 2001:db8:3:3::5 activate
+      neighbor 2001:db8:3:3::5 advertisement-interval 0
+      neighbor 2001:db8:3:3::5 send-community standard
   
      address-family ipv6 vrf red
       bgp router-id 10.0.0.1
@@ -859,12 +941,12 @@ ok: [dut] =>
   
     !
     !
-      neighbor 2001:db8:2:1::3 remote-as 65100
-      neighbor 2001:db8:2:1::3 description r2
+      neighbor 2001:db8:3:1::3 remote-as 65100
+      neighbor 2001:db8:3:1::3 description r2
   
-      neighbor 2001:db8:2:1::3 activate
-      neighbor 2001:db8:2:1::3 advertisement-interval 0
-      neighbor 2001:db8:2:1::3 send-community standard
+      neighbor 2001:db8:3:1::3 activate
+      neighbor 2001:db8:3:1::3 advertisement-interval 0
+      neighbor 2001:db8:3:1::3 send-community standard
   
     ipv6 rip vrf-mode enable
     !
@@ -913,11 +995,11 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=31   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-r1                         : ok=27   changed=5    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
-r2                         : ok=27   changed=5    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
-r3                         : ok=27   changed=5    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
-r4                         : ok=27   changed=5    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+dut                        : ok=34   changed=3    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+r1                         : ok=29   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+r2                         : ok=30   changed=5    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+r3                         : ok=29   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+r4                         : ok=29   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
 
 
 

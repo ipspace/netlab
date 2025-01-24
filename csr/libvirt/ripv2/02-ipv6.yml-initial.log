@@ -3,8 +3,8 @@
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [x1]
 ok: [x2]
+ok: [x1]
 ok: [dut]
 
 TASK [Find device readiness script] ********************************************
@@ -13,6 +13,39 @@ ok: [x2]
 ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
+TASK [Deploy normalize configuration] ******************************************
 skipping: [dut]
 skipping: [x1]
 skipping: [x2]
@@ -30,6 +63,11 @@ ok: [x1]
 ok: [x2]
 ok: [dut]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [x1] => 
   msg: |-
@@ -45,7 +83,8 @@ ok: [x1] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -73,7 +112,7 @@ ok: [x1] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -98,8 +137,9 @@ ok: [x1] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
-    ip link set eth2 mtu 1500
+    ip link set dev eth1 mtu 1500
+    ip link set dev eth2 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -121,7 +161,7 @@ ok: [x1] =>
      no shutdown
      description x1 -> dut
      ! no ip address
-     ipv6 address 2001:db8:2::2/64
+     ipv6 address 2001:db8:3::2/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -151,7 +191,8 @@ ok: [x2] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -179,7 +220,7 @@ ok: [x2] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -204,8 +245,9 @@ ok: [x2] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
-    ip link set eth2 mtu 1500
+    ip link set dev eth1 mtu 1500
+    ip link set dev eth2 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -227,7 +269,7 @@ ok: [x2] =>
      no shutdown
      description x2 -> dut
      ! no ip address
-     ipv6 address 2001:db8:2:1::3/64
+     ipv6 address 2001:db8:3:1::3/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -253,8 +295,8 @@ ok: [dut] =>
     !
     lldp run
     !
-    ip host x1 2001:db8:1:2::1 2001:db8:2::2 2001:db8:cafe::2
-    ip host x2 2001:db8:1:3::1 2001:db8:2:1::3 2001:db8:cafe:1::3
+    ip host x1 2001:db8:1:2::1 2001:db8:3::2 2001:db8:cafe::2
+    ip host x2 2001:db8:1:3::1 2001:db8:3:1::3 2001:db8:cafe:1::3
     !
     ipv6 unicast-routing
     !
@@ -267,14 +309,18 @@ ok: [dut] =>
      no lldp receive
     !
     interface GigabitEthernet2
-     no shutdown
      description dut -> x1
-     ipv6 address 2001:DB8:2::1/64
+     ipv6 address 2001:DB8:3::1/64
+     no shutdown
     !
     interface GigabitEthernet3
-     no shutdown
      description dut -> x2
-     ipv6 address 2001:DB8:2:1::1/64
+     ipv6 address 2001:DB8:3:1::1/64
+     no shutdown
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
     !
     no banner exec
     no banner login
@@ -297,7 +343,6 @@ changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [x1 -> localhost]
-changed: [x2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [x1]
@@ -307,16 +352,16 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
 ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
@@ -342,10 +387,15 @@ ok: [x1]
 ok: [x2]
 ok: [dut]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [x2] => 
+ok: [x1] => 
   msg: |-
-    ripv2 configuration for x2
+    ripv2 configuration for x1
     =========================================
     !
     !
@@ -359,9 +409,9 @@ ok: [x2] =>
   
     !
     do write
-ok: [x1] => 
+ok: [x2] => 
   msg: |-
-    ripv2 configuration for x1
+    ripv2 configuration for x2
     =========================================
     !
     !
@@ -408,8 +458,8 @@ TASK [ios_config: deploying ripv2 from /home/pipi/net101/tools/netsim/ansible/te
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -420,16 +470,16 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [run vtysh to import ripv2 config from /home/pipi/net101/tools/netsim/ansible/templates/ripv2/frr.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=17   changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-x1                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-x2                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+dut                        : ok=20   changed=2    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+x1                         : ok=26   changed=5    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+x2                         : ok=25   changed=4    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
 
 
 

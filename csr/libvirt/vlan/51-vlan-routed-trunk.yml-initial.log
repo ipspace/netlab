@@ -4,19 +4,64 @@ PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [r1]
-ok: [s1]
 ok: [r2]
-ok: [s2]
+ok: [s1]
 ok: [ros]
+ok: [s2]
 
 TASK [Find device readiness script] ********************************************
 ok: [r1]
-ok: [r2]
 ok: [s1]
-ok: [ros]
+ok: [r2]
 ok: [s2]
+ok: [ros]
 
 TASK [Wait for device to become ready] *****************************************
+skipping: [ros]
+skipping: [r1]
+skipping: [r2]
+skipping: [s1]
+skipping: [s2]
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ros, r1, r2, s1, s2
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [r1]
+ok: [r2]
+ok: [s1]
+ok: [s2]
+ok: [ros]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [r1]
+ok: [r2]
+ok: [s2]
+ok: [s1]
+ok: [ros]
+
+TASK [fail] ********************************************************************
+skipping: [ros]
+skipping: [r1]
+skipping: [r2]
+skipping: [s1]
+skipping: [s2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [ros]
+skipping: [r1]
+skipping: [r2]
+skipping: [s1]
+skipping: [s2]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [ros]
+skipping: [r1]
+skipping: [r2]
+skipping: [s1]
+skipping: [s2]
+
+TASK [Deploy normalize configuration] ******************************************
 skipping: [ros]
 skipping: [r1]
 skipping: [r2]
@@ -40,6 +85,13 @@ ok: [s1]
 ok: [s2]
 ok: [ros]
 
+TASK [fail] ********************************************************************
+skipping: [ros]
+skipping: [r1]
+skipping: [r2]
+skipping: [s1]
+skipping: [s2]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [r1] => 
   msg: |-
@@ -55,7 +107,8 @@ ok: [r1] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -83,7 +136,7 @@ ok: [r1] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -101,7 +154,7 @@ ok: [r1] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -141,7 +194,8 @@ ok: [r2] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -169,7 +223,7 @@ ok: [r2] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -187,7 +241,7 @@ ok: [r2] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -227,7 +281,8 @@ ok: [s1] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -255,7 +310,7 @@ ok: [s1] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -275,9 +330,9 @@ ok: [s1] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
-    ip link set eth2 mtu 1500
-    ip link set eth3 mtu 1500
+    ip link set dev eth1 mtu 1500
+    ip link set dev eth2 mtu 1500
+    ip link set dev eth3 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -333,6 +388,56 @@ ok: [s1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [ros] => 
+  msg: |-
+    initial configuration for ros
+    =========================================
+    hostname ros
+    !
+    no ip domain lookup
+    !
+    lldp run
+    !
+    ip host r1 10.0.0.4 172.16.0.4
+    ip host r2 10.0.0.5 172.16.1.5
+    ip host s1 10.0.0.2 172.16.0.2 172.16.1.2
+    ip host s2 10.0.0.3 172.16.1.3 172.16.0.3
+    !
+    ip routing
+    !
+  
+    !
+    !
+    interface Loopback0
+     ip address 10.0.0.1 255.255.255.255
+    !
+    interface GigabitEthernet1
+     no lldp transmit
+     no lldp receive
+    !
+    interface GigabitEthernet2
+     description ros -> s2
+     no shutdown
+    !
+    interface GigabitEthernet2.1
+     encapsulation dot1Q 701
+     description ros -> [r2,s1,s2]
+     ip address 172.16.1.1 255.255.255.0
+     no shutdown
+    !
+    interface GigabitEthernet2.2
+     encapsulation dot1Q 700
+     description ros -> [r1,s1,s2]
+     ip address 172.16.0.1 255.255.255.0
+     no shutdown
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
+    !
+    no banner exec
+    no banner login
+    no banner incoming
 ok: [s2] => 
   msg: |-
     initial configuration for s2
@@ -347,7 +452,8 @@ ok: [s2] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -375,7 +481,7 @@ ok: [s2] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -394,8 +500,8 @@ ok: [s2] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
-    ip link set eth2 mtu 1500
+    ip link set dev eth1 mtu 1500
+    ip link set dev eth2 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -456,63 +562,13 @@ ok: [s2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [ros] => 
-  msg: |-
-    initial configuration for ros
-    =========================================
-    hostname ros
-    !
-    no ip domain lookup
-    !
-    lldp run
-    !
-    ip host r1 10.0.0.4 172.16.0.4
-    ip host r2 10.0.0.5 172.16.1.5
-    ip host s1 10.0.0.2 172.16.0.2 172.16.1.2
-    ip host s2 10.0.0.3 172.16.1.3 172.16.0.3
-    !
-    ip routing
-    !
-  
-    !
-    !
-    interface Loopback0
-     ip address 10.0.0.1 255.255.255.255
-    !
-    interface GigabitEthernet1
-     no lldp transmit
-     no lldp receive
-    !
-    interface GigabitEthernet2
-     no shutdown
-     description ros -> s2
-    !
-    interface GigabitEthernet2.1
-     no shutdown
-     encapsulation dot1Q 701
-     description ros -> [r2,s1,s2]
-     ip address 172.16.1.1 255.255.255.0
-    !
-    interface GigabitEthernet2.2
-     no shutdown
-     encapsulation dot1Q 700
-     description ros -> [r1,s1,s2]
-     ip address 172.16.0.1 255.255.255.0
-    !
-    !
-    line vty 0 4
-     exec-timeout 0 0
-    !
-    no banner exec
-    no banner login
-    no banner incoming
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [r1]
-ok: [s1]
-ok: [r2]
-ok: [ros]
 ok: [s2]
+ok: [r2]
+ok: [s1]
+ok: [ros]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for ros
@@ -530,28 +586,28 @@ changed: [r1 -> localhost]
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [r1]
 skipping: [r2]
-skipping: [s1]
 skipping: [s2]
+skipping: [s1]
 
 TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, s1, s2
 
 TASK [template] ****************************************************************
 changed: [s1]
+changed: [r2]
 changed: [s2]
 changed: [r1]
-changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
 ok: [r2]
-ok: [s2]
 ok: [s1]
+ok: [s2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [r1]
-changed: [r2]
 changed: [s1]
+changed: [r2]
 changed: [s2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -586,6 +642,13 @@ skipping: [r2]
 ok: [s1]
 ok: [s2]
 ok: [ros]
+
+TASK [fail] ********************************************************************
+skipping: [r1]
+skipping: [r2]
+skipping: [ros]
+skipping: [s1]
+skipping: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r1]
@@ -706,16 +769,16 @@ TASK [ios_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/tem
 changed: [ros]
 
 TASK [template] ****************************************************************
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [set_fact] ****************************************************************
 ok: [s1]
 ok: [s2]
 
 TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [run vtysh to import vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
 skipping: [s1]
@@ -734,6 +797,13 @@ ok: [r1]
 skipping: [s2]
 ok: [r2]
 ok: [ros]
+
+TASK [fail] ********************************************************************
+skipping: [r1]
+skipping: [r2]
+skipping: [ros]
+skipping: [s1]
+skipping: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [s1]
@@ -828,8 +898,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for ros
 
 TASK [template] ****************************************************************
-changed: [r2]
 changed: [r1]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -850,11 +920,11 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-r1                         : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-r2                         : ok=24   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-ros                        : ok=24   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-s1                         : ok=24   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-s2                         : ok=24   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+r1                         : ok=28   changed=5    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+r2                         : ok=27   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+ros                        : ok=27   changed=3    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+s1                         : ok=27   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+s2                         : ok=27   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 
 
 
