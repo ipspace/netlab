@@ -17,6 +17,39 @@ skipping: [dut]
 skipping: [pe2]
 skipping: [c1]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, pe2, c1
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [dut]
+ok: [pe2]
+ok: [c1]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [dut]
+ok: [pe2]
+ok: [c1]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [pe2]
+skipping: [c1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+skipping: [pe2]
+skipping: [c1]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [dut]
+skipping: [pe2]
+skipping: [c1]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [dut]
+skipping: [pe2]
+skipping: [c1]
+
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, pe2, c1
 
@@ -29,6 +62,11 @@ TASK [Find configuration template for initial] *********************************
 ok: [dut]
 ok: [pe2]
 ok: [c1]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [pe2]
+skipping: [c1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [pe2] => 
@@ -45,7 +83,8 @@ ok: [pe2] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -73,7 +112,7 @@ ok: [pe2] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -94,7 +133,8 @@ ok: [pe2] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -115,8 +155,8 @@ ok: [pe2] =>
     interface eth1
      no shutdown
      description pe2 -> c1
-     ip address 172.16.1.3/24
-     ipv6 address 2001:db8:2:1::3/64
+     ip address 10.1.0.6/30
+     ipv6 address 2001:db8:3:1::3/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -138,7 +178,8 @@ ok: [c1] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -166,7 +207,7 @@ ok: [c1] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -191,8 +232,9 @@ ok: [c1] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
-    ip link set eth2 mtu 1500
+    ip link set dev eth1 mtu 1500
+    ip link set dev eth2 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -213,16 +255,16 @@ ok: [c1] =>
     interface eth1
      no shutdown
      description c1 -> dut
-     ip address 172.16.0.2/24
-     ipv6 address 2001:db8:2::2/64
+     ip address 10.1.0.2/30
+     ipv6 address 2001:db8:3::2/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
     interface eth2
      no shutdown
      description c1 -> pe2
-     ip address 172.16.1.2/24
-     ipv6 address 2001:db8:2:1::2/64
+     ip address 10.1.0.5/30
+     ipv6 address 2001:db8:3:1::2/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -263,20 +305,20 @@ ok: [dut] =>
     #
     10.0.0.1 dut
     2001:db8:1:1::1 dut
-    172.16.0.1 swp1.dut
-    2001:db8:2::1 swp1.dut
+    10.1.0.1 swp1.dut
+    2001:db8:3::1 swp1.dut
     192.168.42.1 swp2.dut
     2001:db8:42::1 swp2.dut
     10.0.0.3 pe2
     2001:db8:1:3::1 pe2
-    172.16.1.3 eth1.pe2
-    2001:db8:2:1::3 eth1.pe2
+    10.1.0.6 eth1.pe2
+    2001:db8:3:1::3 eth1.pe2
     10.0.0.2 c1
     2001:db8:1:2::1 c1
-    172.16.0.2 eth1.c1
-    2001:db8:2::2 eth1.c1
-    172.16.1.2 eth2.c1
-    2001:db8:2:1::2 eth2.c1
+    10.1.0.2 eth1.c1
+    2001:db8:3::2 eth1.c1
+    10.1.0.5 eth2.c1
+    2001:db8:3:1::2 eth2.c1
     SCRIPT
     grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
     #
@@ -308,11 +350,11 @@ ok: [dut] =>
   
     iface swp1 inet static
       mtu 1500
-      address 172.16.0.1/24
+      address 10.1.0.1/30
   
     iface swp1 inet6 static
       mtu 1500
-      address 2001:db8:2::1/64
+      address 2001:db8:3::1/64
     auto swp2
   
     iface swp2 inet static
@@ -387,21 +429,23 @@ TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for pe2, c1
 
-TASK [copy cumulus config to /tmp/config.sh] ***********************************
-changed: [dut]
-
-TASK [set_fact deployed_config] ************************************************
+TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
 ok: [dut]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
+TASK [Create local temporary file] *********************************************
+changed: [dut -> localhost]
+
+TASK [Create initial config script in local temporary file] ********************
+changed: [dut -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
 
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
-skipping: [dut]
+TASK [Remove temporary file /tmp/ansible.dut.cjspfr7otemp] *********************
+changed: [dut -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [pe2 -> localhost]
-changed: [c1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [pe2]
@@ -429,8 +473,8 @@ skipping: [c1]
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [c1]
 ok: [dut]
+ok: [c1]
 ok: [pe2]
 
 TASK [Deploy individual configuration modules] *********************************
@@ -446,6 +490,11 @@ TASK [Find configuration template for bgp] *************************************
 skipping: [c1]
 ok: [dut]
 ok: [pe2]
+
+TASK [fail] ********************************************************************
+skipping: [c1]
+skipping: [dut]
+skipping: [pe2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [c1]
@@ -568,17 +617,20 @@ skipping: [c1]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for pe2
 
-TASK [copy cumulus config to /tmp/config.sh] ***********************************
-changed: [dut]
-
-TASK [set_fact deployed_config] ************************************************
+TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/bgp/cumulus.j2] ***
 ok: [dut]
 
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/cumulus.j2] ***
-skipping: [dut]
+TASK [Create local temporary file] *********************************************
+changed: [dut -> localhost]
 
-TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/cumulus.j2] ***
+TASK [Create bgp config script in local temporary file] ************************
+changed: [dut -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
+
+TASK [Remove temporary file /tmp/ansible.dut.0cc6ol5xtemp] *********************
+changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
 changed: [pe2]
@@ -593,8 +645,8 @@ TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible
 changed: [pe2]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
-ok: [c1]
 ok: [dut]
+ok: [c1]
 ok: [pe2]
 
 TASK [Find configuration template for ospf] ************************************
@@ -602,7 +654,59 @@ ok: [c1]
 ok: [dut]
 ok: [pe2]
 
+TASK [fail] ********************************************************************
+skipping: [c1]
+skipping: [dut]
+skipping: [pe2]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => 
+  msg: |-
+    ospf configuration for dut
+    =========================================
+    !
+    router ospf
+     ospf router-id 10.0.0.1
+     passive-interface swp2
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    !
+    interface lo
+     ip ospf area 0.0.0.0
+    !
+    interface swp1
+    ! dut -> c1
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    interface swp2
+    ! dut -> stub
+     ip ospf area 0.0.0.0
+    !
+    !
+    router ospf6
+     ospf6 router-id 10.0.0.1
+     timers lsa min-arrival 100
+     timers throttle spf 10 50 500
+  
+  
+     interface lo area 0.0.0.0
+     interface swp1 area 0.0.0.0
+     interface swp2 area 0.0.0.0
+    !
+    interface swp1
+    ! dut -> c1
+     ipv6 ospf6 network point-to-point
+    !
+    interface swp2
+    ! dut -> stub
+     ipv6 ospf6 passive
+    !
+  
+    do write
 ok: [c1] => 
   msg: |-
     ospf configuration for c1
@@ -661,53 +765,6 @@ ok: [c1] =>
     exit
   
     !
-    do write
-ok: [dut] => 
-  msg: |-
-    ospf configuration for dut
-    =========================================
-    !
-    router ospf
-     ospf router-id 10.0.0.1
-     passive-interface swp2
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    !
-    interface lo
-     ip ospf area 0.0.0.0
-    !
-    interface swp1
-    ! dut -> c1
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-    interface swp2
-    ! dut -> stub
-     ip ospf area 0.0.0.0
-    !
-    !
-    router ospf6
-     ospf6 router-id 10.0.0.1
-     timers lsa min-arrival 100
-     timers throttle spf 10 50 500
-  
-  
-     interface lo area 0.0.0.0
-     interface swp1 area 0.0.0.0
-     interface swp2 area 0.0.0.0
-    !
-    interface swp1
-    ! dut -> c1
-     ipv6 ospf6 network point-to-point
-    !
-    interface swp2
-    ! dut -> stub
-     ipv6 ospf6 passive
-    !
-  
     do write
 ok: [pe2] => 
   msg: |-
@@ -769,8 +826,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
 
 TASK [template] ****************************************************************
-changed: [c1]
 changed: [pe2]
+changed: [c1]
 
 TASK [set_fact] ****************************************************************
 ok: [c1]
@@ -781,20 +838,23 @@ skipping: [c1]
 skipping: [pe2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [pe2]
 changed: [c1]
+changed: [pe2]
 
-TASK [copy cumulus config to /tmp/config.sh] ***********************************
-changed: [dut]
-
-TASK [set_fact deployed_config] ************************************************
+TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/ospf/cumulus.j2] ***
 ok: [dut]
 
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/cumulus.j2] ***
-skipping: [dut]
+TASK [Create local temporary file] *********************************************
+changed: [dut -> localhost]
 
-TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/cumulus.j2] ***
+TASK [Create ospf config script in local temporary file] ***********************
+changed: [dut -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
+
+TASK [Remove temporary file /tmp/ansible.dut.eg2yglg5temp] *********************
+changed: [dut -> localhost]
 
 PLAY [Deploy custom deployment templates] **************************************
 
@@ -831,17 +891,20 @@ TASK [Run the configuration deployment script] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for pe2
 
-TASK [copy cumulus config to /tmp/config.sh] ***********************************
-changed: [dut]
-
-TASK [set_fact deployed_config] ************************************************
+TASK [Render device configuration from /home/pipi/net101/tools/netsim/extra/ebgp.multihop/cumulus.j2] ***
 ok: [dut]
 
-TASK [run /tmp/config.sh to deploy ebgp.multihop config from /home/pipi/net101/tools/netsim/extra/ebgp.multihop/cumulus.j2] ***
-skipping: [dut]
+TASK [Create local temporary file] *********************************************
+changed: [dut -> localhost]
 
-TASK [run vtysh to import ebgp.multihop config from /home/pipi/net101/tools/netsim/extra/ebgp.multihop/cumulus.j2] ***
+TASK [Create ebgp.multihop config script in local temporary file] **************
+changed: [dut -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
+
+TASK [Remove temporary file /tmp/ansible.dut.znotnl3jtemp] *********************
+changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
 changed: [pe2]
@@ -889,9 +952,9 @@ TASK [run vtysh to import bgp.session config from /home/pipi/net101/tools/netsim
 skipping: [pe2]
 
 PLAY RECAP *********************************************************************
-c1                         : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-dut                        : ok=38   changed=8    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-pe2                        : ok=48   changed=11   unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
+c1                         : ok=27   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+dut                        : ok=49   changed=16   unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
+pe2                        : ok=51   changed=11   unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
 
 
 

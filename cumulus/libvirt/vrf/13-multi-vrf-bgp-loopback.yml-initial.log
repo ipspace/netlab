@@ -6,8 +6,8 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
 ok: [r1]
 ok: [r2]
-ok: [r4]
 ok: [r3]
+ok: [r4]
 
 TASK [Find device readiness script] ********************************************
 ok: [dut]
@@ -17,6 +17,51 @@ ok: [r3]
 ok: [r4]
 
 TASK [Wait for device to become ready] *****************************************
+skipping: [dut]
+skipping: [r1]
+skipping: [r2]
+skipping: [r3]
+skipping: [r4]
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [dut]
+ok: [r1]
+ok: [r2]
+ok: [r3]
+ok: [r4]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [dut]
+ok: [r1]
+ok: [r2]
+ok: [r3]
+ok: [r4]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r1]
+skipping: [r2]
+skipping: [r3]
+skipping: [r4]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+skipping: [r1]
+skipping: [r2]
+skipping: [r3]
+skipping: [r4]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [dut]
+skipping: [r1]
+skipping: [r2]
+skipping: [r3]
+skipping: [r4]
+
+TASK [Deploy normalize configuration] ******************************************
 skipping: [dut]
 skipping: [r1]
 skipping: [r2]
@@ -40,6 +85,13 @@ ok: [r2]
 ok: [r3]
 ok: [r4]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r1]
+skipping: [r2]
+skipping: [r3]
+skipping: [r4]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [r1] => 
   msg: |-
@@ -55,7 +107,8 @@ ok: [r1] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -83,7 +136,7 @@ ok: [r1] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -101,7 +154,8 @@ ok: [r1] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -120,7 +174,7 @@ ok: [r1] =>
     interface eth1
      no shutdown
      description r1 -> dut [external]
-     ip address 172.16.0.2/24
+     ip address 10.1.0.2/30
     !
     do write
     CONFIG
@@ -140,7 +194,8 @@ ok: [r2] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -168,7 +223,7 @@ ok: [r2] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -186,7 +241,8 @@ ok: [r2] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -205,92 +261,7 @@ ok: [r2] =>
     interface eth1
      no shutdown
      description r2 -> dut [external]
-     ip address 172.16.1.3/24
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
-ok: [r3] => 
-  msg: |-
-    initial configuration for r3
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)#"
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    #
-    # Create loopbacks and stub devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname r3
-    !
-    vrf mgmt
-     exit-vrf
-    !
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ip address 10.0.0.4/32
-    !
-    interface eth1
-     no shutdown
-     description r3 -> dut [external]
-     ip address 172.16.2.4/24
+     ip address 10.1.0.6/30
     !
     do write
     CONFIG
@@ -328,20 +299,20 @@ ok: [dut] =>
     # Created by netlab initial
     #
     10.0.0.1 dut
-    172.16.0.1 swp1.red.dut
-    172.16.1.1 swp2.red.dut
-    172.16.2.1 swp3.blue.dut
-    172.16.3.1 swp4.blue.dut
+    10.1.0.1 swp1.red.dut
+    10.1.0.5 swp2.red.dut
+    10.1.0.9 swp3.blue.dut
+    10.1.0.13 swp4.blue.dut
     10.0.0.42 red.dut
     10.0.0.43 blue.dut
     10.0.0.2 r1
-    172.16.0.2 eth1.r1
+    10.1.0.2 eth1.r1
     10.0.0.3 r2
-    172.16.1.3 eth1.r2
+    10.1.0.6 eth1.r2
     10.0.0.4 r3
-    172.16.2.4 eth1.r3
+    10.1.0.10 eth1.r3
     10.0.0.5 r4
-    172.16.3.5 eth1.r4
+    10.1.0.14 eth1.r4
     SCRIPT
     grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
     #
@@ -383,22 +354,22 @@ ok: [dut] =>
   
     iface swp1 inet static
       mtu 1500
-      address 172.16.0.1/24
+      address 10.1.0.1/30
     auto swp2
   
     iface swp2 inet static
       mtu 1500
-      address 172.16.1.1/24
+      address 10.1.0.5/30
     auto swp3
   
     iface swp3 inet static
       mtu 1500
-      address 172.16.2.1/24
+      address 10.1.0.9/30
     auto swp4
   
     iface swp4 inet static
       mtu 1500
-      address 172.16.3.1/24
+      address 10.1.0.13/30
     CONFIG
     #
     echo "INIT: executing ifreload"
@@ -480,7 +451,8 @@ ok: [r4] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -508,7 +480,7 @@ ok: [r4] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -526,7 +498,8 @@ ok: [r4] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -545,7 +518,94 @@ ok: [r4] =>
     interface eth1
      no shutdown
      description r4 -> dut [external]
-     ip address 172.16.3.5/24
+     ip address 10.1.0.14/30
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
+ok: [r3] => 
+  msg: |-
+    initial configuration for r3
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+    #
+    # Set Ethernet interface MTU
+    ip link set dev eth1 mtu 1500
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname r3
+    !
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.4/32
+    !
+    interface eth1
+     no shutdown
+     description r3 -> dut [external]
+     ip address 10.1.0.10/30
     !
     do write
     CONFIG
@@ -563,23 +623,23 @@ TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for r1, r2, r3, r4
 
-TASK [copy cumulus config to /tmp/config.sh] ***********************************
-changed: [dut]
-
-TASK [set_fact deployed_config] ************************************************
+TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
 ok: [dut]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
+TASK [Create local temporary file] *********************************************
+changed: [dut -> localhost]
+
+TASK [Create initial config script in local temporary file] ********************
+changed: [dut -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
 
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
-skipping: [dut]
+TASK [Remove temporary file /tmp/ansible.dut.cq6y9qo9temp] *********************
+changed: [dut -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [r1 -> localhost]
-changed: [r2 -> localhost]
-changed: [r3 -> localhost]
-changed: [r4 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [r1]
@@ -592,9 +652,9 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for
 
 TASK [template] ****************************************************************
 changed: [r1]
-changed: [r3]
-changed: [r2]
 changed: [r4]
+changed: [r2]
+changed: [r3]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -641,6 +701,13 @@ ok: [r2]
 ok: [r3]
 ok: [r4]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r1]
+skipping: [r2]
+skipping: [r3]
+skipping: [r4]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
   msg: |-
@@ -685,8 +752,8 @@ ok: [r1] =>
   
       bgp router-id 10.0.0.2
     !
-      neighbor 172.16.0.1 remote-as 65000
-      neighbor 172.16.0.1 description dut
+      neighbor 10.1.0.1 remote-as 65000
+      neighbor 10.1.0.1 description dut
     !
      address-family ipv4 unicast
     !
@@ -696,10 +763,10 @@ ok: [r1] =>
     !
     !
     !
-      neighbor 172.16.0.1 activate
-      no neighbor 172.16.0.1 send-community all
-      neighbor 172.16.0.1 send-community standard
-      neighbor 172.16.0.1 send-community large
+      neighbor 10.1.0.1 activate
+      no neighbor 10.1.0.1 send-community all
+      neighbor 10.1.0.1 send-community standard
+      neighbor 10.1.0.1 send-community large
     !
     !
     !
@@ -720,8 +787,8 @@ ok: [r2] =>
   
       bgp router-id 10.0.0.3
     !
-      neighbor 172.16.1.1 remote-as 65000
-      neighbor 172.16.1.1 description dut
+      neighbor 10.1.0.5 remote-as 65000
+      neighbor 10.1.0.5 description dut
     !
      address-family ipv4 unicast
     !
@@ -731,10 +798,10 @@ ok: [r2] =>
     !
     !
     !
-      neighbor 172.16.1.1 activate
-      no neighbor 172.16.1.1 send-community all
-      neighbor 172.16.1.1 send-community standard
-      neighbor 172.16.1.1 send-community large
+      neighbor 10.1.0.5 activate
+      no neighbor 10.1.0.5 send-community all
+      neighbor 10.1.0.5 send-community standard
+      neighbor 10.1.0.5 send-community large
     !
     !
     !
@@ -755,8 +822,8 @@ ok: [r4] =>
   
       bgp router-id 10.0.0.5
     !
-      neighbor 172.16.3.1 remote-as 65000
-      neighbor 172.16.3.1 description dut
+      neighbor 10.1.0.13 remote-as 65000
+      neighbor 10.1.0.13 description dut
     !
      address-family ipv4 unicast
     !
@@ -766,10 +833,10 @@ ok: [r4] =>
     !
     !
     !
-      neighbor 172.16.3.1 activate
-      no neighbor 172.16.3.1 send-community all
-      neighbor 172.16.3.1 send-community standard
-      neighbor 172.16.3.1 send-community large
+      neighbor 10.1.0.13 activate
+      no neighbor 10.1.0.13 send-community all
+      neighbor 10.1.0.13 send-community standard
+      neighbor 10.1.0.13 send-community large
     !
     !
     !
@@ -790,8 +857,8 @@ ok: [r3] =>
   
       bgp router-id 10.0.0.4
     !
-      neighbor 172.16.2.1 remote-as 65000
-      neighbor 172.16.2.1 description dut
+      neighbor 10.1.0.9 remote-as 65000
+      neighbor 10.1.0.9 description dut
     !
      address-family ipv4 unicast
     !
@@ -801,10 +868,10 @@ ok: [r3] =>
     !
     !
     !
-      neighbor 172.16.2.1 activate
-      no neighbor 172.16.2.1 send-community all
-      neighbor 172.16.2.1 send-community standard
-      neighbor 172.16.2.1 send-community large
+      neighbor 10.1.0.9 activate
+      no neighbor 10.1.0.9 send-community all
+      neighbor 10.1.0.9 send-community standard
+      neighbor 10.1.0.9 send-community large
     !
     !
     !
@@ -821,23 +888,26 @@ TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2, r3, r4
 
-TASK [copy cumulus config to /tmp/config.sh] ***********************************
-changed: [dut]
-
-TASK [set_fact deployed_config] ************************************************
+TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/bgp/cumulus.j2] ***
 ok: [dut]
 
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/cumulus.j2] ***
-skipping: [dut]
+TASK [Create local temporary file] *********************************************
+changed: [dut -> localhost]
 
-TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/cumulus.j2] ***
+TASK [Create bgp config script in local temporary file] ************************
+changed: [dut -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
 
+TASK [Remove temporary file /tmp/ansible.dut.2rf1wy03temp] *********************
+changed: [dut -> localhost]
+
 TASK [template] ****************************************************************
-changed: [r4]
-changed: [r1]
-changed: [r3]
 changed: [r2]
+changed: [r3]
+changed: [r1]
+changed: [r4]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -852,8 +922,8 @@ skipping: [r3]
 skipping: [r4]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [r2]
 changed: [r1]
+changed: [r2]
 changed: [r3]
 changed: [r4]
 
@@ -866,9 +936,16 @@ ok: [r4]
 
 TASK [Find configuration template for vrf] *************************************
 skipping: [r1]
+ok: [dut]
 skipping: [r2]
 skipping: [r3]
-ok: [dut]
+skipping: [r4]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r1]
+skipping: [r2]
+skipping: [r3]
 skipping: [r4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -933,10 +1010,10 @@ ok: [dut] =>
      no bgp ebgp-requires-policy
      no bgp default ipv4-unicast
      bgp router-id 10.0.0.1
-     neighbor 172.16.2.4 remote-as 65103
-     neighbor 172.16.2.4 description r3
-     neighbor 172.16.3.5 remote-as 65104
-     neighbor 172.16.3.5 description r4
+     neighbor 10.1.0.10 remote-as 65103
+     neighbor 10.1.0.10 description r3
+     neighbor 10.1.0.14 remote-as 65104
+     neighbor 10.1.0.14 description r4
      address-family ipv4 unicast
       redistribute connected
   
@@ -947,12 +1024,12 @@ ok: [dut] =>
       rt vpn import 65000:2
       rt vpn export 65000:2
       network 10.0.0.43/32
-      neighbor 172.16.2.4 activate
-      neighbor 172.16.2.4 send-community standard
-      neighbor 172.16.2.4 send-community large
-      neighbor 172.16.3.5 activate
-      neighbor 172.16.3.5 send-community standard
-      neighbor 172.16.3.5 send-community large
+      neighbor 10.1.0.10 activate
+      neighbor 10.1.0.10 send-community standard
+      neighbor 10.1.0.10 send-community large
+      neighbor 10.1.0.14 activate
+      neighbor 10.1.0.14 send-community standard
+      neighbor 10.1.0.14 send-community large
      exit-address-family
     !
     !
@@ -960,10 +1037,10 @@ ok: [dut] =>
      no bgp ebgp-requires-policy
      no bgp default ipv4-unicast
      bgp router-id 10.0.0.1
-     neighbor 172.16.0.2 remote-as 65101
-     neighbor 172.16.0.2 description r1
-     neighbor 172.16.1.3 remote-as 65102
-     neighbor 172.16.1.3 description r2
+     neighbor 10.1.0.2 remote-as 65101
+     neighbor 10.1.0.2 description r1
+     neighbor 10.1.0.6 remote-as 65102
+     neighbor 10.1.0.6 description r2
      address-family ipv4 unicast
       redistribute connected
   
@@ -974,12 +1051,12 @@ ok: [dut] =>
       rt vpn import 65000:1
       rt vpn export 65000:1
       network 10.0.0.42/32
-      neighbor 172.16.0.2 activate
-      neighbor 172.16.0.2 send-community standard
-      neighbor 172.16.0.2 send-community large
-      neighbor 172.16.1.3 activate
-      neighbor 172.16.1.3 send-community standard
-      neighbor 172.16.1.3 send-community large
+      neighbor 10.1.0.2 activate
+      neighbor 10.1.0.2 send-community standard
+      neighbor 10.1.0.2 send-community large
+      neighbor 10.1.0.6 activate
+      neighbor 10.1.0.6 send-community standard
+      neighbor 10.1.0.6 send-community large
      exit-address-family
     !
     !
@@ -1003,27 +1080,30 @@ skipping: [r3]
 skipping: [r4]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
 
-TASK [copy cumulus config to /tmp/config.sh] ***********************************
-changed: [dut]
-
-TASK [set_fact deployed_config] ************************************************
+TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/vrf/cumulus.j2] ***
 ok: [dut]
 
-TASK [run /tmp/config.sh to deploy vrf config from /home/pipi/net101/tools/netsim/ansible/templates/vrf/cumulus.j2] ***
+TASK [Create local temporary file] *********************************************
+changed: [dut -> localhost]
+
+TASK [Create vrf config script in local temporary file] ************************
+changed: [dut -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
 
-TASK [run vtysh to import vrf config from /home/pipi/net101/tools/netsim/ansible/templates/vrf/cumulus.j2] ***
-skipping: [dut]
+TASK [Remove temporary file /tmp/ansible.dut.4dg6evlqtemp] *********************
+changed: [dut -> localhost]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=30   changed=6    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-r1                         : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-r2                         : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-r3                         : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-r4                         : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+dut                        : ok=39   changed=12   unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+r1                         : ok=28   changed=5    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+r2                         : ok=27   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+r3                         : ok=27   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+r4                         : ok=27   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 
 
 

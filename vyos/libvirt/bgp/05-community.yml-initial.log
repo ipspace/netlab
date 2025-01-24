@@ -20,6 +20,45 @@ skipping: [r2]
 skipping: [rc]
 skipping: [x1]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, rc, x1
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [dut]
+ok: [r2]
+ok: [rc]
+ok: [x1]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [dut]
+ok: [r2]
+ok: [rc]
+ok: [x1]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r2]
+skipping: [rc]
+skipping: [x1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+skipping: [r2]
+skipping: [rc]
+skipping: [x1]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [dut]
+skipping: [r2]
+skipping: [rc]
+skipping: [x1]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [dut]
+skipping: [r2]
+skipping: [rc]
+skipping: [x1]
+
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, rc, x1
 
@@ -34,6 +73,12 @@ ok: [dut]
 ok: [r2]
 ok: [rc]
 ok: [x1]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r2]
+skipping: [rc]
+skipping: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -61,7 +106,7 @@ ok: [dut] =>
   
     set interfaces ethernet eth1 mtu 1500
   
-    set interfaces ethernet eth1 address 172.16.0.1/24
+    set interfaces ethernet eth1 address 10.1.0.1/30
   
   
   
@@ -71,7 +116,7 @@ ok: [dut] =>
   
     set interfaces ethernet eth2 mtu 1500
   
-    set interfaces ethernet eth2 address 172.16.2.1/24
+    set interfaces ethernet eth2 address 10.1.0.9/30
   
   
   
@@ -103,20 +148,11 @@ ok: [r2] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 172.16.2.1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 172.16.1.2 r2" >>/tmp/hosts
-    echo "10.0.0.10 172.16.1.10 rc" >>/tmp/hosts
-    echo "10.0.0.3 172.16.2.3 x1" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -141,7 +177,7 @@ ok: [r2] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -160,8 +196,9 @@ ok: [r2] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
-    ip link set eth2 mtu 1500
+    ip link set dev eth1 mtu 1500
+    ip link set dev eth2 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -180,12 +217,12 @@ ok: [r2] =>
     interface eth1
      no shutdown
      description r2 -> dut
-     ip address 172.16.0.2/24
+     ip address 10.1.0.2/30
     !
     interface eth2
      no shutdown
      description r2 -> rc
-     ip address 172.16.1.2/24
+     ip address 10.1.0.5/30
     !
     do write
     CONFIG
@@ -205,20 +242,11 @@ ok: [rc] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 172.16.2.1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 172.16.1.2 r2" >>/tmp/hosts
-    echo "10.0.0.10 172.16.1.10 rc" >>/tmp/hosts
-    echo "10.0.0.3 172.16.2.3 x1" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -243,7 +271,7 @@ ok: [rc] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -261,7 +289,8 @@ ok: [rc] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -280,7 +309,7 @@ ok: [rc] =>
     interface eth1
      no shutdown
      description rc -> r2
-     ip address 172.16.1.10/24
+     ip address 10.1.0.6/30
     !
     do write
     CONFIG
@@ -300,20 +329,11 @@ ok: [x1] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 172.16.2.1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 172.16.1.2 r2" >>/tmp/hosts
-    echo "10.0.0.10 172.16.1.10 rc" >>/tmp/hosts
-    echo "10.0.0.3 172.16.2.3 x1" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -338,7 +358,7 @@ ok: [x1] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -356,7 +376,8 @@ ok: [x1] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -375,7 +396,7 @@ ok: [x1] =>
     interface eth1
      no shutdown
      description x1 -> dut [external]
-     ip address 172.16.2.3/24
+     ip address 10.1.0.10/30
     !
     do write
     CONFIG
@@ -412,8 +433,6 @@ changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [r2 -> localhost]
-changed: [x1 -> localhost]
-changed: [rc -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [r2]
@@ -424,8 +443,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r2, rc, x1
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [rc]
+changed: [x1]
 changed: [r2]
 
 TASK [set_fact] ****************************************************************
@@ -434,8 +453,8 @@ ok: [rc]
 ok: [x1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [rc]
 changed: [x1]
+changed: [rc]
 changed: [r2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -466,6 +485,12 @@ ok: [dut]
 ok: [r2]
 ok: [rc]
 ok: [x1]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r2]
+skipping: [rc]
+skipping: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -506,8 +531,8 @@ ok: [dut] =>
   
   
   
-    set protocols bgp neighbor 172.16.2.3 remote-as 65101
-    set protocols bgp neighbor 172.16.2.3 description 'x1'
+    set protocols bgp neighbor 10.1.0.10 remote-as 65101
+    set protocols bgp neighbor 10.1.0.10 description 'x1'
   
   
   
@@ -538,11 +563,11 @@ ok: [dut] =>
   
   
   
-    set protocols bgp neighbor 172.16.2.3 address-family ipv4-unicast soft-reconfiguration inbound
+    set protocols bgp neighbor 10.1.0.10 address-family ipv4-unicast soft-reconfiguration inbound
   
-    set protocols bgp neighbor 172.16.2.3 address-family ipv4-unicast nexthop-self
+    set protocols bgp neighbor 10.1.0.10 address-family ipv4-unicast nexthop-self
   
-    set protocols bgp neighbor 172.16.2.3 address-family ipv4-unicast disable-send-community extended
+    set protocols bgp neighbor 10.1.0.10 address-family ipv4-unicast disable-send-community extended
   
   
   
@@ -573,6 +598,8 @@ ok: [r2] =>
       neighbor 10.0.0.1 update-source lo
     !
      address-family ipv4 unicast
+    !
+  
     !
       network 10.0.0.2/32
     !
@@ -610,6 +637,8 @@ ok: [rc] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.10/32
     !
     !
@@ -642,19 +671,21 @@ ok: [x1] =>
   
       bgp router-id 10.0.0.3
     !
-      neighbor 172.16.2.1 remote-as 65000
-      neighbor 172.16.2.1 description dut
+      neighbor 10.1.0.9 remote-as 65000
+      neighbor 10.1.0.9 description dut
     !
      address-family ipv4 unicast
+    !
+  
     !
       network 10.0.0.3/32
     !
     !
     !
-      neighbor 172.16.2.1 activate
-      no neighbor 172.16.2.1 send-community all
-      neighbor 172.16.2.1 send-community standard
-      neighbor 172.16.2.1 send-community large
+      neighbor 10.1.0.9 activate
+      no neighbor 10.1.0.9 send-community all
+      neighbor 10.1.0.9 send-community standard
+      neighbor 10.1.0.9 send-community large
     !
     !
     !
@@ -704,8 +735,8 @@ skipping: [rc]
 skipping: [x1]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [rc]
 changed: [r2]
+changed: [rc]
 changed: [x1]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
@@ -719,6 +750,12 @@ ok: [dut]
 skipping: [x1]
 ok: [r2]
 ok: [rc]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r2]
+skipping: [rc]
+skipping: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [x1]
@@ -769,6 +806,7 @@ ok: [r2] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -800,6 +838,7 @@ ok: [rc] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
   
     exit
     !
@@ -858,8 +897,8 @@ skipping: [r2]
 skipping: [rc]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [rc]
 changed: [r2]
+changed: [rc]
 
 PLAY [Deploy custom deployment templates] **************************************
 
@@ -900,10 +939,10 @@ TASK [run vtysh to import frr-community config from /home/pipi/net101/tools/test
 changed: [rc]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=33   changed=6    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-r2                         : ok=32   changed=7    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
-rc                         : ok=40   changed=9    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
-x1                         : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+dut                        : ok=36   changed=6    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
+r2                         : ok=35   changed=7    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+rc                         : ok=42   changed=8    unreachable=0    failed=0    skipped=16   rescued=0    ignored=0   
+x1                         : ok=27   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 
 
 

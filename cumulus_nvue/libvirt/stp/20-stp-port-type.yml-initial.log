@@ -13,9 +13,9 @@ ok: [x1]
 TASK [Find device readiness script] ********************************************
 ok: [dut]
 ok: [h1]
+ok: [h3]
 ok: [h2]
 ok: [h4]
-ok: [h3]
 ok: [x1]
 
 TASK [Wait for device to become ready] *****************************************
@@ -25,6 +25,70 @@ skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, h1, h2, h3, h4
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [dut]
+ok: [h1]
+ok: [h3]
+ok: [h2]
+ok: [h4]
+ok: [x1]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [dut]
+ok: [h1]
+ok: [h2]
+ok: [h4]
+ok: [h3]
+ok: [x1]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+ok: [x1] => 
+  msg: |-
+    normalize configuration for x1
+    =========================================
+    !
+    interface Ethernet1
+     no switchport
+     mac-address 52dc.cafe.0101
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [dut]
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+ok: [x1]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [dut]
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for x1
+
+TASK [eos_config: deploying normalize from /home/pipi/net101/tools/netsim/ansible/templates/normalize/eos.j2] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [x1]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, h1, h2, h3, h4
@@ -82,7 +146,7 @@ ok: [h1] =>
     ip addr del 172.16.0.2/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.0.2/24 dev eth1
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
@@ -111,7 +175,7 @@ ok: [dut] =>
             link:
               mtu: 1500
               state:
-                up: {}
+                up : {}
             description: "dut -> x1"
   
           swp2:
@@ -119,7 +183,7 @@ ok: [dut] =>
             link:
               mtu: 1500
               state:
-                up: {}
+                up : {}
             description: "[Access VLAN red] dut -> h1"
   
           swp3:
@@ -127,7 +191,7 @@ ok: [dut] =>
             link:
               mtu: 1500
               state:
-                up: {}
+                up : {}
             description: "[Access VLAN red] dut -> h2"
   
           swp4:
@@ -135,7 +199,7 @@ ok: [dut] =>
             link:
               mtu: 1500
               state:
-                up: {}
+                up : {}
             description: "[Access VLAN red] dut -> h3"
   
           swp5:
@@ -143,28 +207,28 @@ ok: [dut] =>
             link:
               mtu: 1500
               state:
-                up: {}
+                up : {}
             description: "[Access VLAN green] dut -> h4"
   
           vlan1000:
             type: svi
             link:
               state:
-                up: {}
+                up : {}
             description: "VLAN red (1000) -> [x1,h1,h2,h3]"
   
           vlan1002:
             type: svi
             link:
               state:
-                up: {}
+                up : {}
             description: "VLAN green (1002) -> [h4] [stub]"
   
           vlan1001:
             type: svi
             link:
               state:
-                up: {}
+                up : {}
             description: "VLAN blue (1001) -> [x1]"
   
   
@@ -205,7 +269,7 @@ ok: [h4] =>
     ip addr del 172.16.2.5/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.2.5/24 dev eth1
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
@@ -242,7 +306,7 @@ ok: [h2] =>
     ip addr del 172.16.0.3/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.0.3/24 dev eth1
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
@@ -279,7 +343,7 @@ ok: [h3] =>
     ip addr del 172.16.0.4/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.0.4/24 dev eth1
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
@@ -312,22 +376,19 @@ ok: [x1] =>
      no lldp receive
     !
     interface Loopback0
-     no shutdown
      ip address 10.0.0.1/32
     !
     interface Ethernet1
-     no shutdown
      no switchport
      description x1 -> dut
     !
      mac-address 52dc.cafe.0101
+     no shutdown
     !
     interface Vlan1001
-     no shutdown
      description VLAN blue (1001) -> [dut]
     !
     interface Vlan1000
-     no shutdown
      description VLAN red (1000) -> [dut,h1,h2,h3]
     !
 
@@ -335,8 +396,8 @@ TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [dut]
 ok: [h1]
 ok: [h2]
-ok: [h4]
 ok: [h3]
+ok: [h4]
 ok: [x1]
 
 TASK [Deploy initial configuration] ********************************************
@@ -363,9 +424,6 @@ TASK [execute on cumulus: 'nv config apply -y' for initial config] *************
 changed: [dut]
 
 TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
-[WARNING]: To ensure idempotency and correct diff the input configuration lines
-should be similar to how they appear if present in the running configuration on
-device including the indentation
 changed: [x1]
 
 TASK [Define script filename and determine whether to execute in netns] ********
@@ -376,15 +434,15 @@ ok: [h4]
 
 TASK [Create a temporary file for the rendered script] *************************
 changed: [h4 -> localhost]
-changed: [h3 -> localhost]
 changed: [h1 -> localhost]
+changed: [h3 -> localhost]
 changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
-changed: [h4 -> localhost]
+changed: [h2 -> localhost]
 changed: [h3 -> localhost]
+changed: [h4 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -400,15 +458,15 @@ skipping: [h4]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [h1 -> localhost]
-changed: [h3 -> localhost]
 changed: [h2 -> localhost]
+changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-dij4ncqv.sh] ***********************
-changed: [h1 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-ke8a7koa.sh] ***********************
 changed: [h2 -> localhost]
-changed: [h3 -> localhost]
+changed: [h1 -> localhost]
 changed: [h4 -> localhost]
+changed: [h3 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -448,34 +506,35 @@ ok: [dut] =>
                 '1002': {}
                 '1000': {}
   
+  
         interface:
          swp1:
-            bridge:
-              domain:
-                br_default:
-                  vlan:
-                    '1000': {}
-                    '1001': {}
+           bridge:
+             domain:
+               br_default:
+                 vlan:
+                   '1000': {}
+                   '1001': {}
          swp2:
-            bridge:
-              domain:
-                br_default:
-                  access: 1000
+           bridge:
+             domain:
+               br_default:
+                 access: 1000
          swp3:
-            bridge:
-              domain:
-                br_default:
-                  access: 1000
+           bridge:
+             domain:
+               br_default:
+                 access: 1000
          swp4:
-            bridge:
-              domain:
-                br_default:
-                  access: 1000
+           bridge:
+             domain:
+               br_default:
+                 access: 1000
          swp5:
-            bridge:
-              domain:
-                br_default:
-                  access: 1002
+           bridge:
+             domain:
+               br_default:
+                 access: 1002
 ok: [x1] => 
   msg: |-
     vlan configuration for x1
@@ -635,12 +694,12 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=37   changed=9    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
-h1                         : ok=13   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-h2                         : ok=13   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-h3                         : ok=13   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-h4                         : ok=13   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-x1                         : ok=24   changed=3    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+dut                        : ok=40   changed=9    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+h1                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+h2                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+h3                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+h4                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+x1                         : ok=31   changed=4    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
 
 
 

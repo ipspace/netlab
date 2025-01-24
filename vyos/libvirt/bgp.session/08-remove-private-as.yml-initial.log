@@ -17,6 +17,39 @@ skipping: [dut]
 skipping: [x2]
 skipping: [x1]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x2, x1
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [dut]
+ok: [x2]
+ok: [x1]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [dut]
+ok: [x2]
+ok: [x1]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x2]
+skipping: [x1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+skipping: [x2]
+skipping: [x1]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [dut]
+skipping: [x2]
+skipping: [x1]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [dut]
+skipping: [x2]
+skipping: [x1]
+
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x2, x1
 
@@ -29,6 +62,11 @@ TASK [Find configuration template for initial] *********************************
 ok: [dut]
 ok: [x2]
 ok: [x1]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x2]
+skipping: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -55,9 +93,9 @@ ok: [dut] =>
     set interfaces ethernet eth1 description 'dut -> x1 [external]'
   
   
-    set interfaces ethernet eth1 address 172.16.0.1/24
+    set interfaces ethernet eth1 address 10.1.0.1/30
   
-    set interfaces ethernet eth1 address 2001:db8:4::1/64;
+    set interfaces ethernet eth1 address 2001:db8:3::1/64;
   
   
   
@@ -65,9 +103,9 @@ ok: [dut] =>
     set interfaces ethernet eth2 description 'dut -> x2 [external]'
   
   
-    set interfaces ethernet eth2 address 172.16.1.1/24
+    set interfaces ethernet eth2 address 10.1.0.5/30
   
-    set interfaces ethernet eth2 address 2001:db8:4:1::1/64;
+    set interfaces ethernet eth2 address 2001:db8:3:1::1/64;
   
   
   
@@ -100,19 +138,11 @@ ok: [x2] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 172.16.1.1 2001:db8:4::1 2001:db8:4:1::1 dut" >>/tmp/hosts
-    echo "172.42.42.1 172.16.0.2 2001:db8:a01::1 2001:db8:4::2 x1" >>/tmp/hosts
-    echo "172.42.43.1 172.16.1.3 2001:db8:4:1::3 x2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -137,7 +167,7 @@ ok: [x2] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -158,7 +188,8 @@ ok: [x2] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -178,8 +209,8 @@ ok: [x2] =>
     interface eth1
      no shutdown
      description x2 -> dut [external]
-     ip address 172.16.1.3/24
-     ipv6 address 2001:db8:4:1::3/64
+     ip address 10.1.0.6/30
+     ipv6 address 2001:db8:3:1::3/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -201,19 +232,11 @@ ok: [x1] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 172.16.1.1 2001:db8:4::1 2001:db8:4:1::1 dut" >>/tmp/hosts
-    echo "172.42.42.1 172.16.0.2 2001:db8:a01::1 2001:db8:4::2 x1" >>/tmp/hosts
-    echo "172.42.43.1 172.16.1.3 2001:db8:4:1::3 x2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -238,7 +261,7 @@ ok: [x1] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -259,7 +282,8 @@ ok: [x1] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -280,8 +304,8 @@ ok: [x1] =>
     interface eth1
      no shutdown
      description x1 -> dut [external]
-     ip address 172.16.0.2/24
-     ipv6 address 2001:db8:4::2/64
+     ip address 10.1.0.2/30
+     ipv6 address 2001:db8:3::2/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -319,7 +343,6 @@ changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [x2 -> localhost]
-changed: [x1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [x2]
@@ -337,8 +360,8 @@ ok: [x2]
 ok: [x1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x2]
@@ -364,6 +387,11 @@ ok: [dut]
 ok: [x1]
 ok: [x2]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
   msg: |-
@@ -386,29 +414,29 @@ ok: [dut] =>
   
   
   
-    set protocols bgp neighbor 172.16.0.2 remote-as 65100
-    set protocols bgp neighbor 172.16.0.2 description 'x1'
+    set protocols bgp neighbor 10.1.0.2 remote-as 65100
+    set protocols bgp neighbor 10.1.0.2 description 'x1'
   
   
   
   
   
-    set protocols bgp neighbor 2001:db8:4::2 remote-as 65100
-    set protocols bgp neighbor 2001:db8:4::2 description 'x1'
+    set protocols bgp neighbor 2001:db8:3::2 remote-as 65100
+    set protocols bgp neighbor 2001:db8:3::2 description 'x1'
   
   
   
   
   
-    set protocols bgp neighbor 172.16.1.3 remote-as 64507
-    set protocols bgp neighbor 172.16.1.3 description 'x2'
+    set protocols bgp neighbor 10.1.0.6 remote-as 64507
+    set protocols bgp neighbor 10.1.0.6 description 'x2'
   
   
   
   
   
-    set protocols bgp neighbor 2001:db8:4:1::3 remote-as 64507
-    set protocols bgp neighbor 2001:db8:4:1::3 description 'x2'
+    set protocols bgp neighbor 2001:db8:3:1::3 remote-as 64507
+    set protocols bgp neighbor 2001:db8:3:1::3 description 'x2'
   
   
   
@@ -423,19 +451,19 @@ ok: [dut] =>
   
   
   
-    set protocols bgp neighbor 172.16.0.2 address-family ipv4-unicast soft-reconfiguration inbound
+    set protocols bgp neighbor 10.1.0.2 address-family ipv4-unicast soft-reconfiguration inbound
   
-    set protocols bgp neighbor 172.16.0.2 address-family ipv4-unicast nexthop-self
+    set protocols bgp neighbor 10.1.0.2 address-family ipv4-unicast nexthop-self
   
-    set protocols bgp neighbor 172.16.0.2 address-family ipv4-unicast disable-send-community extended
+    set protocols bgp neighbor 10.1.0.2 address-family ipv4-unicast disable-send-community extended
   
   
   
-    set protocols bgp neighbor 172.16.1.3 address-family ipv4-unicast soft-reconfiguration inbound
+    set protocols bgp neighbor 10.1.0.6 address-family ipv4-unicast soft-reconfiguration inbound
   
-    set protocols bgp neighbor 172.16.1.3 address-family ipv4-unicast nexthop-self
+    set protocols bgp neighbor 10.1.0.6 address-family ipv4-unicast nexthop-self
   
-    set protocols bgp neighbor 172.16.1.3 address-family ipv4-unicast disable-send-community extended
+    set protocols bgp neighbor 10.1.0.6 address-family ipv4-unicast disable-send-community extended
   
   
   
@@ -447,19 +475,19 @@ ok: [dut] =>
   
   
   
-    set protocols bgp neighbor 2001:db8:4::2 address-family ipv6-unicast soft-reconfiguration inbound
+    set protocols bgp neighbor 2001:db8:3::2 address-family ipv6-unicast soft-reconfiguration inbound
   
-    set protocols bgp neighbor 2001:db8:4::2 address-family ipv6-unicast nexthop-self
+    set protocols bgp neighbor 2001:db8:3::2 address-family ipv6-unicast nexthop-self
   
-    set protocols bgp neighbor 2001:db8:4::2 address-family ipv6-unicast disable-send-community extended
+    set protocols bgp neighbor 2001:db8:3::2 address-family ipv6-unicast disable-send-community extended
   
   
   
-    set protocols bgp neighbor 2001:db8:4:1::3 address-family ipv6-unicast soft-reconfiguration inbound
+    set protocols bgp neighbor 2001:db8:3:1::3 address-family ipv6-unicast soft-reconfiguration inbound
   
-    set protocols bgp neighbor 2001:db8:4:1::3 address-family ipv6-unicast nexthop-self
+    set protocols bgp neighbor 2001:db8:3:1::3 address-family ipv6-unicast nexthop-self
   
-    set protocols bgp neighbor 2001:db8:4:1::3 address-family ipv6-unicast disable-send-community extended
+    set protocols bgp neighbor 2001:db8:3:1::3 address-family ipv6-unicast disable-send-community extended
   
   
   
@@ -485,33 +513,37 @@ ok: [x1] =>
   
       bgp router-id 172.42.42.1
     !
-      neighbor 172.16.0.1 remote-as 64500
-      neighbor 172.16.0.1 description dut
+      neighbor 10.1.0.1 remote-as 64500
+      neighbor 10.1.0.1 description dut
     !
-      neighbor 2001:db8:4::1 remote-as 64500
-      neighbor 2001:db8:4::1 description dut
+      neighbor 2001:db8:3::1 remote-as 64500
+      neighbor 2001:db8:3::1 description dut
     !
      address-family ipv4 unicast
+    !
+  
     !
       network 172.42.42.0/24
     !
     !
     !
-      neighbor 172.16.0.1 activate
-      no neighbor 172.16.0.1 send-community all
-      neighbor 172.16.0.1 send-community standard
-      neighbor 172.16.0.1 send-community large
+      neighbor 10.1.0.1 activate
+      no neighbor 10.1.0.1 send-community all
+      neighbor 10.1.0.1 send-community standard
+      neighbor 10.1.0.1 send-community large
     !
      address-family ipv6 unicast
+    !
+  
     !
       network 2001:db8:a01::/64
     !
     !
     !
-      neighbor 2001:db8:4::1 activate
-      no neighbor 2001:db8:4::1 send-community all
-      neighbor 2001:db8:4::1 send-community standard
-      neighbor 2001:db8:4::1 send-community large
+      neighbor 2001:db8:3::1 activate
+      no neighbor 2001:db8:3::1 send-community all
+      neighbor 2001:db8:3::1 send-community standard
+      neighbor 2001:db8:3::1 send-community large
     !
     !
     !
@@ -532,31 +564,35 @@ ok: [x2] =>
   
       bgp router-id 172.42.43.1
     !
-      neighbor 172.16.1.1 remote-as 64500
-      neighbor 172.16.1.1 description dut
+      neighbor 10.1.0.5 remote-as 64500
+      neighbor 10.1.0.5 description dut
     !
-      neighbor 2001:db8:4:1::1 remote-as 64500
-      neighbor 2001:db8:4:1::1 description dut
+      neighbor 2001:db8:3:1::1 remote-as 64500
+      neighbor 2001:db8:3:1::1 description dut
     !
      address-family ipv4 unicast
+    !
+  
     !
       network 172.42.43.0/24
     !
     !
     !
-      neighbor 172.16.1.1 activate
-      no neighbor 172.16.1.1 send-community all
-      neighbor 172.16.1.1 send-community standard
-      neighbor 172.16.1.1 send-community large
+      neighbor 10.1.0.5 activate
+      no neighbor 10.1.0.5 send-community all
+      neighbor 10.1.0.5 send-community standard
+      neighbor 10.1.0.5 send-community large
     !
      address-family ipv6 unicast
     !
+  
     !
     !
-      neighbor 2001:db8:4:1::1 activate
-      no neighbor 2001:db8:4:1::1 send-community all
-      neighbor 2001:db8:4:1::1 send-community standard
-      neighbor 2001:db8:4:1::1 send-community large
+    !
+      neighbor 2001:db8:3:1::1 activate
+      no neighbor 2001:db8:3:1::1 send-community all
+      neighbor 2001:db8:3:1::1 send-community standard
+      neighbor 2001:db8:3:1::1 send-community large
     !
     !
     !
@@ -602,8 +638,8 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 PLAY [Deploy custom deployment templates] **************************************
 
@@ -650,9 +686,9 @@ TASK [execute config-bgp.session.sh to deploy bgp.session config from /home/pipi
 changed: [dut]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=32   changed=6    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
-x1                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-x2                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+dut                        : ok=35   changed=6    unreachable=0    failed=0    skipped=16   rescued=0    ignored=0   
+x1                         : ok=25   changed=4    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+x2                         : ok=26   changed=5    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
 
 
 

@@ -20,6 +20,45 @@ skipping: [s2]
 skipping: [ce1]
 skipping: [ce2]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, ce1, ce2
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [s1]
+ok: [s2]
+ok: [ce1]
+ok: [ce2]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [s1]
+ok: [s2]
+ok: [ce1]
+ok: [ce2]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
+skipping: [ce1]
+skipping: [ce2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [s1]
+skipping: [s2]
+skipping: [ce1]
+skipping: [ce2]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [s1]
+skipping: [s2]
+skipping: [ce1]
+skipping: [ce2]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [s1]
+skipping: [s2]
+skipping: [ce1]
+skipping: [ce2]
+
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, ce1, ce2
 
@@ -34,6 +73,12 @@ ok: [s1]
 ok: [s2]
 ok: [ce1]
 ok: [ce2]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
+skipping: [ce1]
+skipping: [ce2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [s1] => 
@@ -62,7 +107,7 @@ ok: [s1] =>
   
     set interfaces ethernet eth1 mtu 1600
   
-    set interfaces ethernet eth1 address 172.16.0.3/24
+    set interfaces ethernet eth1 address 10.1.0.1/30
   
   
   
@@ -71,7 +116,7 @@ ok: [s1] =>
     set interfaces ethernet eth2 description 's1 -> ce1'
   
   
-    set interfaces ethernet eth2 address 172.16.1.3/24
+    set interfaces ethernet eth2 address 10.1.0.6/30
   
   
     set interfaces ethernet eth2 vrf tenant
@@ -104,22 +149,11 @@ ok: [s2] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.1.1 ce1" >>/tmp/hosts
-    echo "10.0.0.2 172.16.2.2 ce2" >>/tmp/hosts
-    echo "10.0.0.3 172.16.0.3 s1" >>/tmp/hosts
-    echo "172.16.1.3 s1-tenant" >>/tmp/hosts
-    echo "10.0.0.4 172.16.0.4 s2" >>/tmp/hosts
-    echo "172.16.2.4 s2-tenant" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -144,7 +178,7 @@ ok: [s2] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -163,8 +197,9 @@ ok: [s2] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1600
-    ip link set eth2 mtu 1500
+    ip link set dev eth1 mtu 1600
+    ip link set dev eth2 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -183,12 +218,12 @@ ok: [s2] =>
     interface eth1
      no shutdown
      description s2 -> s1
-     ip address 172.16.0.4/24
+     ip address 10.1.0.2/30
     !
     interface eth2
      no shutdown
      description s2 -> ce2
-     ip address 172.16.2.4/24
+     ip address 10.1.0.10/30
     !
     do write
     CONFIG
@@ -208,22 +243,11 @@ ok: [ce1] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.1.1 ce1" >>/tmp/hosts
-    echo "10.0.0.2 172.16.2.2 ce2" >>/tmp/hosts
-    echo "10.0.0.3 172.16.0.3 s1" >>/tmp/hosts
-    echo "172.16.1.3 s1-tenant" >>/tmp/hosts
-    echo "10.0.0.4 172.16.0.4 s2" >>/tmp/hosts
-    echo "172.16.2.4 s2-tenant" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -248,7 +272,7 @@ ok: [ce1] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -266,7 +290,8 @@ ok: [ce1] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -285,7 +310,7 @@ ok: [ce1] =>
     interface eth1
      no shutdown
      description ce1 -> s1
-     ip address 172.16.1.1/24
+     ip address 10.1.0.5/30
     !
     do write
     CONFIG
@@ -305,22 +330,11 @@ ok: [ce2] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.1.1 ce1" >>/tmp/hosts
-    echo "10.0.0.2 172.16.2.2 ce2" >>/tmp/hosts
-    echo "10.0.0.3 172.16.0.3 s1" >>/tmp/hosts
-    echo "172.16.1.3 s1-tenant" >>/tmp/hosts
-    echo "10.0.0.4 172.16.0.4 s2" >>/tmp/hosts
-    echo "172.16.2.4 s2-tenant" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -345,7 +359,7 @@ ok: [ce2] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -363,7 +377,8 @@ ok: [ce2] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -382,7 +397,7 @@ ok: [ce2] =>
     interface eth1
      no shutdown
      description ce2 -> s2
-     ip address 172.16.2.2/24
+     ip address 10.1.0.9/30
     !
     do write
     CONFIG
@@ -419,8 +434,6 @@ changed: [s1]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [s2 -> localhost]
-changed: [ce1 -> localhost]
-changed: [ce2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [s2]
@@ -432,8 +445,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for
 
 TASK [template] ****************************************************************
 changed: [ce1]
-changed: [ce2]
 changed: [s2]
+changed: [ce2]
 
 TASK [set_fact] ****************************************************************
 ok: [s2]
@@ -467,8 +480,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, s1, s2 => (item=evpn)
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
-ok: [ce1]
 ok: [ce2]
+ok: [ce1]
 ok: [s1]
 ok: [s2]
 
@@ -477,6 +490,12 @@ skipping: [ce1]
 skipping: [ce2]
 ok: [s1]
 ok: [s2]
+
+TASK [fail] ********************************************************************
+skipping: [ce1]
+skipping: [ce2]
+skipping: [s1]
+skipping: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ce1]
@@ -566,6 +585,12 @@ skipping: [ce2]
 ok: [s1]
 ok: [s2]
 
+TASK [fail] ********************************************************************
+skipping: [ce1]
+skipping: [ce2]
+skipping: [s1]
+skipping: [s2]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ce1]
 skipping: [ce2]
@@ -642,6 +667,8 @@ ok: [s2] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.4/32
     !
     !
@@ -711,6 +738,12 @@ ok: [ce2]
 ok: [s1]
 ok: [s2]
 
+TASK [fail] ********************************************************************
+skipping: [ce1]
+skipping: [ce2]
+skipping: [s1]
+skipping: [s2]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [s1] => 
   msg: |-
@@ -759,6 +792,7 @@ ok: [ce1] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -785,6 +819,7 @@ ok: [ce2] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
   
     exit
     !
@@ -813,6 +848,7 @@ ok: [s2] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -839,9 +875,9 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for s1
 
 TASK [template] ****************************************************************
-changed: [ce2]
-changed: [s2]
 changed: [ce1]
+changed: [s2]
+changed: [ce2]
 
 TASK [set_fact] ****************************************************************
 ok: [ce1]
@@ -855,8 +891,8 @@ skipping: [s2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [ce2]
-changed: [ce1]
 changed: [s2]
+changed: [ce1]
 
 TASK [wait_for_connection] *****************************************************
 skipping: [s1]
@@ -887,6 +923,12 @@ skipping: [ce1]
 skipping: [ce2]
 ok: [s1]
 ok: [s2]
+
+TASK [fail] ********************************************************************
+skipping: [ce1]
+skipping: [ce2]
+skipping: [s1]
+skipping: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ce1]
@@ -984,9 +1026,9 @@ ok: [s2] =>
      no bgp default ipv4-unicast
      bgp router-id 10.0.0.4
      address-family ipv4 unicast
-    !
       redistribute connected
       redistribute ospf
+  
       label vpn export auto
       export vpn
       import vpn
@@ -1007,6 +1049,7 @@ ok: [s2] =>
   
      redistribute bgp
      redistribute connected
+  
     exit
     !
     interface eth2
@@ -1075,6 +1118,12 @@ skipping: [ce1]
 skipping: [ce2]
 ok: [s1]
 ok: [s2]
+
+TASK [fail] ********************************************************************
+skipping: [ce1]
+skipping: [ce2]
+skipping: [s1]
+skipping: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ce1]
@@ -1189,6 +1238,12 @@ skipping: [ce1]
 skipping: [ce2]
 ok: [s1]
 ok: [s2]
+
+TASK [fail] ********************************************************************
+skipping: [ce1]
+skipping: [ce2]
+skipping: [s1]
+skipping: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ce1]
@@ -1335,10 +1390,10 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-ce1                        : ok=33   changed=5    unreachable=0    failed=0    skipped=24   rescued=0    ignored=0   
-ce2                        : ok=33   changed=5    unreachable=0    failed=0    skipped=24   rescued=0    ignored=0   
-s1                         : ok=73   changed=14   unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
-s2                         : ok=68   changed=15   unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+ce1                        : ok=35   changed=4    unreachable=0    failed=0    skipped=35   rescued=0    ignored=0   
+ce2                        : ok=35   changed=4    unreachable=0    failed=0    skipped=35   rescued=0    ignored=0   
+s1                         : ok=76   changed=14   unreachable=0    failed=0    skipped=26   rescued=0    ignored=0   
+s2                         : ok=71   changed=15   unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
 
 
 

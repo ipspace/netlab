@@ -14,6 +14,33 @@ TASK [Wait for device to become ready] *****************************************
 skipping: [dut]
 skipping: [probe]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [dut]
+ok: [probe]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [dut]
+ok: [probe]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [probe]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+skipping: [probe]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [dut]
+skipping: [probe]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [dut]
+skipping: [probe]
+
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe
 
@@ -24,6 +51,10 @@ ok: [probe]
 TASK [Find configuration template for initial] *********************************
 ok: [dut]
 ok: [probe]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [probe]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -50,7 +81,7 @@ ok: [dut] =>
     set interfaces ethernet eth1 description 'dut -> probe [external]'
   
   
-    set interfaces ethernet eth1 address 172.16.0.1/24
+    set interfaces ethernet eth1 address 10.1.0.1/30
   
   
   
@@ -82,18 +113,11 @@ ok: [probe] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 probe" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -118,7 +142,7 @@ ok: [probe] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -136,7 +160,8 @@ ok: [probe] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -155,7 +180,7 @@ ok: [probe] =>
     interface eth1
      no shutdown
      description probe -> dut [external]
-     ip address 172.16.0.2/24
+     ip address 10.1.0.2/30
     !
     do write
     CONFIG
@@ -227,6 +252,10 @@ TASK [Find configuration template for routing] *********************************
 ok: [dut]
 ok: [probe]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [probe]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
   msg: |-
@@ -264,6 +293,7 @@ ok: [probe] =>
   msg: |-
     routing configuration for probe
     =========================================
+    !
     !
 
 TASK [Find configuration deployment deploy_script for routing] *****************
@@ -312,6 +342,10 @@ TASK [Find configuration template for bgp] *************************************
 ok: [dut]
 ok: [probe]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [probe]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
   msg: |-
@@ -334,8 +368,8 @@ ok: [dut] =>
   
   
   
-    set protocols bgp neighbor 172.16.0.2 remote-as 65100
-    set protocols bgp neighbor 172.16.0.2 description 'probe'
+    set protocols bgp neighbor 10.1.0.2 remote-as 65100
+    set protocols bgp neighbor 10.1.0.2 description 'probe'
   
   
   
@@ -350,11 +384,11 @@ ok: [dut] =>
   
   
   
-    set protocols bgp neighbor 172.16.0.2 address-family ipv4-unicast soft-reconfiguration inbound
+    set protocols bgp neighbor 10.1.0.2 address-family ipv4-unicast soft-reconfiguration inbound
   
-    set protocols bgp neighbor 172.16.0.2 address-family ipv4-unicast nexthop-self
+    set protocols bgp neighbor 10.1.0.2 address-family ipv4-unicast nexthop-self
   
-    set protocols bgp neighbor 172.16.0.2 address-family ipv4-unicast disable-send-community extended
+    set protocols bgp neighbor 10.1.0.2 address-family ipv4-unicast disable-send-community extended
   
   
   
@@ -380,19 +414,21 @@ ok: [probe] =>
   
       bgp router-id 10.0.0.2
     !
-      neighbor 172.16.0.1 remote-as 65000
-      neighbor 172.16.0.1 description dut
+      neighbor 10.1.0.1 remote-as 65000
+      neighbor 10.1.0.1 description dut
     !
      address-family ipv4 unicast
+    !
+  
     !
       network 10.0.0.2/32
     !
     !
     !
-      neighbor 172.16.0.1 activate
-      no neighbor 172.16.0.1 send-community all
-      neighbor 172.16.0.1 send-community standard
-      neighbor 172.16.0.1 send-community large
+      neighbor 10.1.0.1 activate
+      no neighbor 10.1.0.1 send-community all
+      neighbor 10.1.0.1 send-community standard
+      neighbor 10.1.0.1 send-community large
     !
     !
     !
@@ -481,8 +517,8 @@ TASK [execute config-bgp.policy.sh to deploy bgp.policy config from /home/pipi/n
 changed: [dut]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=42   changed=8    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
-probe                      : ok=32   changed=7    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
+dut                        : ok=45   changed=8    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+probe                      : ok=35   changed=7    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
 
 
 

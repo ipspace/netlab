@@ -20,6 +20,39 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/routeros7
 TASK [Execute local ssh command to check router readiness] *********************
 skipping: [dut]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
 
@@ -32,6 +65,11 @@ TASK [Find configuration template for initial] *********************************
 ok: [x1]
 ok: [x2]
 ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -53,7 +91,7 @@ ok: [dut] =>
   
     /interface ethernet set mtu=1500 ether2
   
-    /ip address add interface=ether2 address=172.16.0.1/24
+    /ip address add interface=ether2 address=10.1.0.1/30
     /ip address set [find where interface=ether2] comment="dut -> x1"
   
   
@@ -61,7 +99,7 @@ ok: [dut] =>
   
     /interface ethernet set mtu=1500 ether3
   
-    /ip address add interface=ether3 address=172.16.1.1/24
+    /ip address add interface=ether3 address=10.1.0.5/30
     /ip address set [find where interface=ether3] comment="dut -> x2 [external]"
   
   
@@ -80,19 +118,11 @@ ok: [x1] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 172.16.1.1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 x1" >>/tmp/hosts
-    echo "172.42.42.1 172.16.1.3 x2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -117,7 +147,7 @@ ok: [x1] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -135,7 +165,8 @@ ok: [x1] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -154,7 +185,7 @@ ok: [x1] =>
     interface eth1
      no shutdown
      description x1 -> dut
-     ip address 172.16.0.2/24
+     ip address 10.1.0.2/30
     !
     do write
     CONFIG
@@ -174,19 +205,11 @@ ok: [x2] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 172.16.1.1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 x1" >>/tmp/hosts
-    echo "172.42.42.1 172.16.1.3 x2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -211,7 +234,7 @@ ok: [x2] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -229,7 +252,8 @@ ok: [x2] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -248,7 +272,7 @@ ok: [x2] =>
     interface eth1
      no shutdown
      description x2 -> dut [external]
-     ip address 172.16.1.3/24
+     ip address 10.1.0.6/30
     !
     do write
     CONFIG
@@ -271,7 +295,6 @@ TASK [Run commands on CHR] *****************************************************
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [x2 -> localhost]
 changed: [x1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
@@ -318,6 +341,11 @@ ok: [x1]
 ok: [x2]
 ok: [dut]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [x1] => 
   msg: |-
@@ -340,6 +368,8 @@ ok: [x1] =>
       neighbor 10.0.0.1 update-source lo
     !
      address-family ipv4 unicast
+    !
+  
     !
       network 10.0.0.2/32
     !
@@ -371,19 +401,21 @@ ok: [x2] =>
   
       bgp router-id 172.42.42.1
     !
-      neighbor 172.16.1.1 remote-as 65000
-      neighbor 172.16.1.1 description dut
+      neighbor 10.1.0.5 remote-as 65000
+      neighbor 10.1.0.5 description dut
     !
      address-family ipv4 unicast
+    !
+  
     !
       network 172.42.42.0/24
     !
     !
     !
-      neighbor 172.16.1.1 activate
-      no neighbor 172.16.1.1 send-community all
-      neighbor 172.16.1.1 send-community standard
-      neighbor 172.16.1.1 send-community large
+      neighbor 10.1.0.5 activate
+      no neighbor 10.1.0.5 send-community all
+      neighbor 10.1.0.5 send-community standard
+      neighbor 10.1.0.5 send-community large
     !
     !
     !
@@ -414,10 +446,10 @@ ok: [dut] =>
   
   
   
-    /routing/bgp/connection add template=main name=172_16_1_3 remote.address=172.16.1.3 remote.as=65100 comment="x2" address-families=ip local.role=ebgp
+    /routing/bgp/connection add template=main name=10_1_0_6 remote.address=10.1.0.6 remote.as=65100 comment="x2" address-families=ip local.role=ebgp
   
   
-    /routing/bgp/connection set [/routing/bgp/connection find name=172_16_1_3] nexthop-choice=force-self
+    /routing/bgp/connection set [/routing/bgp/connection find name=10_1_0_6] nexthop-choice=force-self
   
   
   
@@ -465,6 +497,11 @@ skipping: [x2]
 ok: [x1]
 ok: [dut]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [x2]
 ok: [x1] => 
@@ -479,6 +516,7 @@ ok: [x1] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
   
     exit
     !
@@ -548,12 +586,47 @@ TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansibl
 changed: [x1]
 
 PLAY [Deploy custom deployment templates] **************************************
-skipping: no hosts matched
+
+TASK [Run custom configuration deployment scripts] *****************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-custom-config.yml for x1 => (item=bgp.session)
+
+TASK [Find configuration template] *********************************************
+ok: [x1]
+
+TASK [fail] ********************************************************************
+skipping: [x1]
+
+TASK [Check is the configuration template is a file] ***************************
+ok: [x1 -> localhost]
+
+TASK [fail] ********************************************************************
+skipping: [x1]
+
+TASK [Process template /home/pipi/net101/tools/netsim/extra/bgp.session/frr.j2 for x1] ***
+skipping: [x1]
+
+TASK [Find custom configuration deployment script] *****************************
+ok: [x1]
+
+TASK [Run the configuration deployment script] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1
+
+TASK [template] ****************************************************************
+changed: [x1]
+
+TASK [set_fact] ****************************************************************
+ok: [x1]
+
+TASK [run /tmp/config.sh to deploy bgp.session config from /home/pipi/net101/tools/netsim/extra/bgp.session/frr.j2] ***
+changed: [x1]
+
+TASK [run vtysh to import bgp.session config from /home/pipi/net101/tools/netsim/extra/bgp.session/frr.j2] ***
+skipping: [x1]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=28   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-x1                         : ok=32   changed=7    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
-x2                         : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+dut                        : ok=31   changed=3    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+x1                         : ok=43   changed=9    unreachable=0    failed=0    skipped=16   rescued=0    ignored=0   
+x2                         : ok=27   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 
 
 

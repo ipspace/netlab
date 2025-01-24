@@ -17,6 +17,39 @@ skipping: [dut]
 skipping: [x1]
 skipping: [x2]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
 
@@ -230,6 +263,8 @@ ok: [dut] =>
     ip host x2 10.0.0.3
     !
     !
+    default mtu 1532
+    !
     interface loopback0
      ip address 10.0.0.1/32
      no ipv6 enable
@@ -242,6 +277,7 @@ ok: [dut] =>
      no shutdown
      no switchport
      ip vrf forwarding tenant
+     mtu 1532
      description "dut -> x1 [external]"
      ip address 10.1.0.1/30
      no ipv6 enable
@@ -250,6 +286,7 @@ ok: [dut] =>
      no shutdown
      no switchport
      ip vrf forwarding tenant
+     mtu 1532
      description "dut -> x2 [external]"
      ip address 10.1.0.5/30
      no ipv6 enable
@@ -360,6 +397,31 @@ ok: [x1] =>
     ip route 172.42.42.0/24 Null0
     !
     do write
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+    !
+    router bgp 65000
+      log-neighbor-changes
+  
+    ! define a generic unnumbered template to be used for eBGP unnumbered...
+    ! additionally, need to define link-local-only-nexthop as per Dell suggested "Cumulus workaround"
+    ! WTF Dell...
+      template unnumbered_ebgp
+        link-local-only-nexthop
+        exit
+  
+      router-id 10.0.0.1
+    !
+    !
+     address-family ipv4 unicast
+    !
+      network 10.0.0.1/32
+    !
+    !
+    !
+    !
 ok: [x2] => 
   msg: |-
     bgp configuration for x2
@@ -395,31 +457,6 @@ ok: [x2] =>
     !
     !
     do write
-ok: [dut] => 
-  msg: |-
-    bgp configuration for dut
-    =========================================
-    !
-    router bgp 65000
-      log-neighbor-changes
-  
-    ! define a generic unnumbered template to be used for eBGP unnumbered...
-    ! additionally, need to define link-local-only-nexthop as per Dell suggested "Cumulus workaround"
-    ! WTF Dell...
-      template unnumbered_ebgp
-        link-local-only-nexthop
-        exit
-  
-      router-id 10.0.0.1
-    !
-    !
-     address-family ipv4 unicast
-    !
-      network 10.0.0.1/32
-    !
-    !
-    !
-    !
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [x1]
@@ -548,9 +585,9 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=24   changed=3    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-x1                         : ok=25   changed=5    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
-x2                         : ok=24   changed=4    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
+dut                        : ok=27   changed=3    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
+x1                         : ok=28   changed=5    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+x2                         : ok=27   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 
 
 

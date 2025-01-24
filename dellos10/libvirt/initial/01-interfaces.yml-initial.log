@@ -17,6 +17,39 @@ skipping: [r]
 skipping: [h1]
 skipping: [h2]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for r, h1, h2
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [h1]
+ok: [h2]
+ok: [r]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [h1]
+ok: [h2]
+ok: [r]
+
+TASK [fail] ********************************************************************
+skipping: [r]
+skipping: [h1]
+skipping: [h2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [r]
+skipping: [h1]
+skipping: [h2]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [r]
+skipping: [h1]
+skipping: [h2]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [r]
+skipping: [h1]
+skipping: [h2]
+
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for r, h1, h2
 
@@ -61,14 +94,14 @@ ok: [h1] =>
     #
     ip link set dev eth1 up
     set +e
-    ip addr del 172.16.0.2/24 dev eth1 2>/dev/null
+    ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
     set -e
-    ip addr add 172.16.0.2/24 dev eth1
+    ip addr add 172.16.0.1/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
     set +e
-    ip -6 addr del 2001:db8:1::2/64 dev eth1 2>/dev/null
+    ip -6 addr del 2001:db8:1::1/64 dev eth1 2>/dev/null
     set -e
-    ip -6 addr add 2001:db8:1::2/64 dev eth1
+    ip -6 addr add 2001:db8:1::1/64 dev eth1
     ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
@@ -85,10 +118,10 @@ ok: [h1] =>
     #
     #
     echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.0.1 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.0.1 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.0.1 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.0.1 dev eth1 protocol static
+    ip route add 172.16.0.0/16 via 172.16.0.132 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.0.132 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.0.132 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.0.132 dev eth1 protocol static
     #
     # Print the final routing table
     ip route
@@ -117,14 +150,14 @@ ok: [h2] =>
     #
     ip link set dev eth1 up
     set +e
-    ip addr del 172.16.1.3/24 dev eth1 2>/dev/null
+    ip addr del 172.16.1.2/24 dev eth1 2>/dev/null
     set -e
-    ip addr add 172.16.1.3/24 dev eth1
+    ip addr add 172.16.1.2/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
     set +e
-    ip -6 addr del 2001:db8:1:1::3/64 dev eth1 2>/dev/null
+    ip -6 addr del 2001:db8:1:1::2/64 dev eth1 2>/dev/null
     set -e
-    ip -6 addr add 2001:db8:1:1::3/64 dev eth1
+    ip -6 addr add 2001:db8:1:1::2/64 dev eth1
     ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
@@ -141,10 +174,10 @@ ok: [h2] =>
     #
     #
     echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.1.1 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.1.1 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.1.1 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.1.1 dev eth1 protocol static
+    ip route add 172.16.0.0/16 via 172.16.1.132 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.1.132 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.1.132 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.1.132 dev eth1 protocol static
     #
     # Print the final routing table
     ip route
@@ -159,9 +192,11 @@ ok: [r] =>
     !
     !
     !
+    default mtu 1532
+    !
     interface loopback0
-     ip address 10.0.0.1/32
-     ipv6 address 2001:db8:0:1::1/64
+     ip address 10.0.0.132/32
+     ipv6 address 2001:db8:0:84::1/64
     !
     interface mgmt1/1/1
      no lldp transmit
@@ -170,22 +205,24 @@ ok: [r] =>
     interface ethernet1/1/1
      no shutdown
      no switchport
+     mtu 1532
      description "r -> h1 [stub]"
-     ip address 172.16.0.1/24
+     ip address 172.16.0.132/24
      ipv6 nd max-ra-interval 4
      ipv6 nd min-ra-interval 3
      ipv6 nd send-ra
-     ipv6 address 2001:db8:1::1/64
+     ipv6 address 2001:db8:1::84/64
     !
     interface ethernet1/1/2
      no shutdown
      no switchport
+     mtu 1532
      description "r -> h2 [stub]"
-     ip address 172.16.1.1/24
+     ip address 172.16.1.132/24
      ipv6 nd max-ra-interval 4
      ipv6 nd min-ra-interval 3
      ipv6 nd send-ra
-     ipv6 address 2001:db8:1:1::1/64
+     ipv6 address 2001:db8:1:1::84/64
     !
 
 TASK [Find configuration deployment deploy_script for initial] *****************
@@ -208,12 +245,12 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -224,12 +261,12 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-m8n88796.sh] ***********************
-changed: [h1 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-fpmdxluh.sh] ***********************
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 skipping: no hosts matched
@@ -238,9 +275,9 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=13   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-h2                         : ok=13   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-r                          : ok=9    changed=1    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
+h1                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+h2                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+r                          : ok=12   changed=1    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 
 
 
