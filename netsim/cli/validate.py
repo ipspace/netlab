@@ -628,9 +628,12 @@ find_test_action -- find something that can be executed on current node
 * If everything fails, return None (nothing usable for the current node)
 '''
 def find_test_action(v_entry: Box, node: Box) -> typing.Optional[str]:
+  action_kw_found = False
   for kw in ('show','exec','config','suzieq'):
     if kw not in v_entry:
       continue
+
+    action_kw_found = True
     if kw in ['suzieq','config'] or isinstance(v_entry[kw],(str,int)):
       return kw
     if node.device in v_entry[kw]:
@@ -639,7 +642,7 @@ def find_test_action(v_entry: Box, node: Box) -> typing.Optional[str]:
   if 'plugin' in v_entry:
     return find_plugin_action(v_entry,node)
 
-  if 'wait' in v_entry:
+  if 'wait' in v_entry and not action_kw_found:
     return 'wait'
 
   return None
