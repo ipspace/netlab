@@ -21,15 +21,58 @@ skipping: [p2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/iol-clab.yml for dut
 
 TASK [Check if 'sshpass' is installed] *****************************************
-changed: [dut -> localhost]
+ok: [dut -> localhost]
+
+TASK [Check for 'timeout' command] *********************************************
+ok: [dut -> localhost]
 
 TASK [Execute local ssh command to check iol readiness] ************************
 FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check iol readiness (20 retries left).
-changed: [dut -> localhost]
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check iol readiness (19 retries left).
+ok: [dut -> localhost]
 
 TASK [Confirm dut SSH server works] ********************************************
 ok: [dut] => 
   msg: Node dut is ready.
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, xf, p1, p2
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [xf]
+ok: [p1]
+ok: [p2]
+ok: [dut]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [xf]
+ok: [p1]
+ok: [p2]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [xf]
+skipping: [p1]
+skipping: [p2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+skipping: [xf]
+skipping: [p1]
+skipping: [p2]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [dut]
+skipping: [xf]
+skipping: [p1]
+skipping: [p2]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [dut]
+skipping: [xf]
+skipping: [p1]
+skipping: [p2]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, xf, p1, p2
@@ -46,6 +89,12 @@ ok: [p1]
 ok: [p2]
 ok: [dut]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [xf]
+skipping: [p1]
+skipping: [p2]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [xf] => 
   msg: |-
@@ -61,7 +110,8 @@ ok: [xf] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -89,7 +139,7 @@ ok: [xf] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -110,7 +160,8 @@ ok: [xf] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -154,7 +205,8 @@ ok: [p1] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -182,7 +234,7 @@ ok: [p1] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -203,7 +255,8 @@ ok: [p1] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -247,7 +300,8 @@ ok: [p2] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -275,7 +329,7 @@ ok: [p2] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -296,7 +350,8 @@ ok: [p2] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -371,31 +426,31 @@ ok: [dut] =>
      no lldp receive
     !
     interface Ethernet0/1
-     no shutdown
      vrf forwarding d1
      description dut -> p1
      mtu 1500
      ipv6 address 2001:DB8:3::1/64
+     no shutdown
     !
     interface Ethernet0/2
-     no shutdown
      vrf forwarding d2
      description dut -> p2
      mtu 1500
      ipv6 address 2001:DB8:3:1::1/64
+     no shutdown
     !
     interface Ethernet0/3
-     no shutdown
      vrf forwarding d2
      description dut -> xf [external]
      mtu 1500
      ipv6 address 2001:DB8:3:2::1/64
+     no shutdown
     !
     interface Loopback1
-     no shutdown
      vrf forwarding d2
      description VRF Loopback d2
      ipv6 address 2001:DB8:CAFE:43::1/64
+     no shutdown
     !
     !
     line vty 0 4
@@ -423,8 +478,6 @@ changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [xf -> localhost]
-changed: [p1 -> localhost]
-changed: [p2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [xf]
@@ -435,8 +488,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for xf, p1, p2
 
 TASK [template] ****************************************************************
-changed: [xf]
 changed: [p2]
+changed: [xf]
 changed: [p1]
 
 TASK [set_fact] ****************************************************************
@@ -445,8 +498,8 @@ ok: [p1]
 ok: [p2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [p1]
 changed: [xf]
+changed: [p1]
 changed: [p2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -478,6 +531,12 @@ skipping: [p1]
 skipping: [p2]
 ok: [xf]
 ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [p1]
+skipping: [p2]
+skipping: [xf]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [p1]
@@ -580,6 +639,12 @@ ok: [p1]
 ok: [p2]
 ok: [dut]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [p1]
+skipping: [p2]
+skipping: [xf]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [xf]
 ok: [p1] => 
@@ -656,8 +721,8 @@ TASK [ios_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/tem
 ok: [dut]
 
 TASK [template] ****************************************************************
-changed: [p1]
 changed: [p2]
+changed: [p1]
 
 TASK [set_fact] ****************************************************************
 ok: [p1]
@@ -668,8 +733,8 @@ skipping: [p1]
 skipping: [p2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [p1]
 changed: [p2]
+changed: [p1]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [p1]
@@ -682,6 +747,12 @@ skipping: [p1]
 skipping: [p2]
 skipping: [xf]
 ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [p1]
+skipping: [p2]
+skipping: [xf]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [p1]
@@ -769,10 +840,10 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=35   changed=5    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-p1                         : ok=27   changed=5    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
-p2                         : ok=27   changed=5    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
-xf                         : ok=27   changed=5    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+dut                        : ok=39   changed=3    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+p1                         : ok=29   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+p2                         : ok=29   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+xf                         : ok=30   changed=5    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
 
 
 

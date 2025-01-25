@@ -4,15 +4,15 @@ PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [h1]
-ok: [h3]
 ok: [s1]
 ok: [h2]
+ok: [h3]
 ok: [x1]
 ok: [s2]
 
 TASK [Find device readiness script] ********************************************
-ok: [h3]
 ok: [h1]
+ok: [h3]
 ok: [h2]
 ok: [s1]
 ok: [s2]
@@ -25,9 +25,111 @@ skipping: [h3]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/eos-clab.yml for s1, s2, x1
 
 TASK [Wait for cEOS SSH daemon to start] ***************************************
+ok: [x1]
+ok: [s2]
+ok: [s1]
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, x1, h1, h2, h3
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [h1]
+ok: [h2]
+ok: [h3]
 ok: [s1]
 ok: [s2]
 ok: [x1]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [h1]
+ok: [h2]
+ok: [s1]
+ok: [h3]
+ok: [s2]
+ok: [x1]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
+skipping: [x1]
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+ok: [s1] => 
+  msg: |-
+    normalize configuration for s1
+    =========================================
+    !
+    interface Ethernet1
+     no switchport
+     mac-address 52dc.cafe.0101
+    !
+    interface Ethernet2
+     no switchport
+     mac-address 52dc.cafe.0102
+    !
+    interface Ethernet3
+     no switchport
+     mac-address 52dc.cafe.0103
+ok: [s2] => 
+  msg: |-
+    normalize configuration for s2
+    =========================================
+    !
+    interface Ethernet1
+     no switchport
+     mac-address 52dc.cafe.0201
+    !
+    interface Ethernet2
+     no switchport
+     mac-address 52dc.cafe.0202
+    !
+    interface Ethernet3
+     no switchport
+     mac-address 52dc.cafe.0203
+ok: [x1] => 
+  msg: |-
+    normalize configuration for x1
+    =========================================
+    !
+    interface Ethernet1
+     no switchport
+     mac-address 52dc.cafe.0301
+    !
+    interface Ethernet2
+     no switchport
+     mac-address 52dc.cafe.0302
+    !
+    interface Ethernet3
+     no switchport
+     mac-address 52dc.cafe.0303
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+ok: [s1]
+ok: [x1]
+ok: [s2]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for s1, s2, x1
+
+TASK [eos_config: deploying normalize from /home/pipi/net101/tools/netsim/ansible/templates/normalize/eos.j2] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [x1]
+changed: [s2]
+changed: [s1]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, x1, h1, h2, h3
@@ -43,8 +145,8 @@ ok: [x1]
 TASK [Find configuration template for initial] *********************************
 ok: [h1]
 ok: [h2]
-ok: [s1]
 ok: [h3]
+ok: [s1]
 ok: [s2]
 ok: [x1]
 
@@ -85,7 +187,7 @@ ok: [h2] =>
     ip addr del 172.16.0.5/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.0.5/24 dev eth1
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
@@ -136,7 +238,7 @@ ok: [h1] =>
     ip addr del 172.16.0.4/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.0.4/24 dev eth1
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
@@ -187,7 +289,7 @@ ok: [h3] =>
     ip addr del 172.16.0.6/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.0.6/24 dev eth1
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
@@ -234,36 +336,33 @@ ok: [s1] =>
      no lldp receive
     !
     interface Loopback0
-     no shutdown
      ip address 10.0.0.1/32
     !
     interface Ethernet1
-     no shutdown
      no switchport
      description s1 -> s2
     !
      mac-address 52dc.cafe.0101
+     no shutdown
     !
     interface port-channel1
-     no shutdown
      description [Access VLAN red] s1 -> [x1,s2]
     !
     interface Ethernet2
-     no shutdown
      no switchport
      description s1 -> x1
     !
      mac-address 52dc.cafe.0102
+     no shutdown
     !
     interface Ethernet3
-     no shutdown
      no switchport
      description [Access VLAN red] s1 -> h2
     !
      mac-address 52dc.cafe.0103
+     no shutdown
     !
     interface Vlan1000
-     no shutdown
      description VLAN red (1000) -> [x1,s2,h2,h3,h1]
      ip address 172.16.0.1/24
     !
@@ -291,36 +390,33 @@ ok: [s2] =>
      no lldp receive
     !
     interface Loopback0
-     no shutdown
      ip address 10.0.0.2/32
     !
     interface Ethernet1
-     no shutdown
      no switchport
      description s2 -> s1
     !
      mac-address 52dc.cafe.0201
+     no shutdown
     !
     interface port-channel1
-     no shutdown
      description [Access VLAN red] s2 -> [x1,s1]
     !
     interface Ethernet2
-     no shutdown
      no switchport
      description s2 -> x1
     !
      mac-address 52dc.cafe.0202
+     no shutdown
     !
     interface Ethernet3
-     no shutdown
      no switchport
      description [Access VLAN red] s2 -> h3
     !
      mac-address 52dc.cafe.0203
+     no shutdown
     !
     interface Vlan1000
-     no shutdown
      description VLAN red (1000) -> [x1,s1,h2,h3,h1]
      ip address 172.16.0.2/24
     !
@@ -348,45 +444,42 @@ ok: [x1] =>
      no lldp receive
     !
     interface Loopback0
-     no shutdown
      ip address 10.0.0.3/32
     !
     interface port-channel1
-     no shutdown
      description [Access VLAN red] x1 -> [s1,s2]
     !
     interface Ethernet1
-     no shutdown
      no switchport
      description x1 -> s1
     !
      mac-address 52dc.cafe.0301
+     no shutdown
     !
     interface Ethernet2
-     no shutdown
      no switchport
      description x1 -> s2
     !
      mac-address 52dc.cafe.0302
+     no shutdown
     !
     interface Ethernet3
-     no shutdown
      no switchport
      description [Access VLAN red] x1 -> h1
     !
      mac-address 52dc.cafe.0303
+     no shutdown
     !
     interface Vlan1000
-     no shutdown
      description VLAN red (1000) -> [s2,s1,h2,h3,h1]
      ip address 172.16.0.3/24
     !
 
 TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [h2]
-ok: [h1]
-ok: [s1]
 ok: [h3]
+ok: [h1]
+ok: [h2]
+ok: [s1]
 ok: [s2]
 ok: [x1]
 
@@ -395,12 +488,9 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2, h3
 
 TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
-[WARNING]: To ensure idempotency and correct diff the input configuration lines
-should be similar to how they appear if present in the running configuration on
-device including the indentation
+changed: [s1]
 changed: [x1]
 changed: [s2]
-changed: [s1]
 
 TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
@@ -408,9 +498,9 @@ ok: [h2]
 ok: [h3]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h3 -> localhost]
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+changed: [h3 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
@@ -429,13 +519,13 @@ skipping: [h3]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [h3 -> localhost]
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-7ar8014s.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-xgo73jpg.sh] ***********************
 changed: [h1 -> localhost]
-changed: [h2 -> localhost]
 changed: [h3 -> localhost]
+changed: [h2 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -591,8 +681,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for
 
 TASK [eos_config: deploying lag from /home/pipi/net101/tools/netsim/ansible/templates/lag/eos.j2] ***
 changed: [x1]
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [s1]
@@ -601,8 +691,8 @@ ok: [x1]
 
 TASK [Find configuration template for vlan] ************************************
 ok: [s1]
-ok: [s2]
 ok: [x1]
+ok: [s2]
 
 TASK [fail] ********************************************************************
 skipping: [s1]
@@ -610,24 +700,6 @@ skipping: [s2]
 skipping: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [x1] => 
-  msg: |-
-    vlan configuration for x1
-    =========================================
-    vlan 1000
-     name red
-    !
-  
-    !
-    interface port-channel1
-     switchport
-     switchport access vlan 1000
-    !
-    interface Ethernet3
-     switchport
-     switchport access vlan 1000
-    !
-    interface Vlan1000
 ok: [s1] => 
   msg: |-
     vlan configuration for s1
@@ -664,30 +736,48 @@ ok: [s2] =>
      switchport access vlan 1000
     !
     interface Vlan1000
+ok: [x1] => 
+  msg: |-
+    vlan configuration for x1
+    =========================================
+    vlan 1000
+     name red
+    !
+  
+    !
+    interface port-channel1
+     switchport
+     switchport access vlan 1000
+    !
+    interface Ethernet3
+     switchport
+     switchport access vlan 1000
+    !
+    interface Vlan1000
 
 TASK [Find configuration deployment deploy_script for vlan] ********************
-ok: [s2]
 ok: [s1]
+ok: [s2]
 ok: [x1]
 
 TASK [Deploy vlan configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for s1, s2, x1
 
 TASK [eos_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/eos.j2] ***
-changed: [s2]
 changed: [x1]
 changed: [s1]
+changed: [s2]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=13   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-h2                         : ok=13   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-h3                         : ok=13   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-s1                         : ok=26   changed=3    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
-s2                         : ok=26   changed=3    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
-x1                         : ok=26   changed=3    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
+h1                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+h2                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+h3                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+s1                         : ok=33   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+s2                         : ok=33   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+x1                         : ok=33   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 
 
 

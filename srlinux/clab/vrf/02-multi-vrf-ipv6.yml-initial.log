@@ -13,10 +13,55 @@ TASK [Find device readiness script] ********************************************
 ok: [h1]
 ok: [h2]
 ok: [h3]
+ok: [h4]
+ok: [rtr]
+
+TASK [Wait for device to become ready] *****************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+skipping: [rtr]
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, h3, h4, rtr
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [h1]
+ok: [h2]
+ok: [h3]
 ok: [rtr]
 ok: [h4]
 
-TASK [Wait for device to become ready] *****************************************
+TASK [Find configuration template for normalize] *******************************
+ok: [h1]
+ok: [h2]
+ok: [h3]
+ok: [h4]
+ok: [rtr]
+
+TASK [fail] ********************************************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+skipping: [rtr]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+skipping: [rtr]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+skipping: [rtr]
+
+TASK [Deploy normalize configuration] ******************************************
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
@@ -27,18 +72,25 @@ TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, h3, h4, rtr
 
 TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [h2]
+ok: [h1]
+ok: [h3]
+ok: [h4]
+ok: [rtr]
+
+TASK [Find configuration template for initial] *********************************
 ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [rtr]
 ok: [h4]
 
-TASK [Find configuration template for initial] *********************************
-ok: [h1]
-ok: [h2]
-ok: [h3]
-ok: [h4]
-ok: [rtr]
+TASK [fail] ********************************************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+skipping: [rtr]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [h1] => 
@@ -54,6 +106,7 @@ ok: [h1] =>
     #  /etc/hosts file is generated as a clab bind.
     #
     set -e
+  
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
     # Disable IPv4 and IPv6 forwarding
@@ -61,7 +114,7 @@ ok: [h1] =>
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
     #
-    # Interface addressing
+    # Interface addressing, create any bond devices
     #
     ip link set dev eth1 up
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
@@ -69,11 +122,11 @@ ok: [h1] =>
     ip -6 addr del 2001:db8:2::1/64 dev eth1 2>/dev/null
     set -e
     ip -6 addr add 2001:db8:2::1/64 dev eth1
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
     #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
     #
     #
     # Print the final routing table
@@ -91,6 +144,7 @@ ok: [h2] =>
     #  /etc/hosts file is generated as a clab bind.
     #
     set -e
+  
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
     # Disable IPv4 and IPv6 forwarding
@@ -98,7 +152,7 @@ ok: [h2] =>
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
     #
-    # Interface addressing
+    # Interface addressing, create any bond devices
     #
     ip link set dev eth1 up
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
@@ -106,11 +160,11 @@ ok: [h2] =>
     ip -6 addr del 2001:db8:2:2::2/64 dev eth1 2>/dev/null
     set -e
     ip -6 addr add 2001:db8:2:2::2/64 dev eth1
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
     #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
     #
     #
     # Print the final routing table
@@ -128,6 +182,7 @@ ok: [h3] =>
     #  /etc/hosts file is generated as a clab bind.
     #
     set -e
+  
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
     # Disable IPv4 and IPv6 forwarding
@@ -135,7 +190,7 @@ ok: [h3] =>
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
     #
-    # Interface addressing
+    # Interface addressing, create any bond devices
     #
     ip link set dev eth1 up
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
@@ -143,48 +198,11 @@ ok: [h3] =>
     ip -6 addr del 2001:db8:2:1::3/64 dev eth1 2>/dev/null
     set -e
     ip -6 addr add 2001:db8:2:1::3/64 dev eth1
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
     #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
     #
-    # Print the final routing table
-    ip route
-ok: [h4] => 
-  msg: |-
-    initial configuration for h4
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
-    set +e
-    ip -6 addr del 2001:db8:2:3::4/64 dev eth1 2>/dev/null
-    set -e
-    ip -6 addr add 2001:db8:2:3::4/64 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
     #
     #
     # Print the final routing table
@@ -329,41 +347,97 @@ ok: [rtr] =>
        type: ip-vrf
        interface:
        - name: ethernet-1/2.0
+ok: [h4] => 
+  msg: |-
+    initial configuration for h4
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:2:3::4/64 dev eth1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:2:3::4/64 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    #
+    #
+    # Print the final routing table
+    ip route
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [h4]
 ok: [rtr]
+ok: [h4]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for h1, h2, h3, h4
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2, h3, h4
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for rtr
 
-TASK [set_fact] ****************************************************************
+TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
 
-TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
-changed: [h4 -> localhost]
-changed: [h2 -> localhost]
-changed: [h3 -> localhost]
-
-TASK [Initial container configuration via /tmp/config-CLAMhWHT-h1.sh] **********
-changed: [h3 -> localhost]
+TASK [Create a temporary file for the rendered script] *************************
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [file] ********************************************************************
+TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+changed: [h2 -> localhost]
+changed: [h4 -> localhost]
 changed: [h1 -> localhost]
+changed: [h3 -> localhost]
+
+TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+
+TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+
+TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
+changed: [h3 -> localhost]
+changed: [h4 -> localhost]
+changed: [h2 -> localhost]
+changed: [h1 -> localhost]
+
+TASK [Remove temporary file /tmp/h1_initial-g4xn9cuc.sh] ***********************
+changed: [h2 -> localhost]
 changed: [h4 -> localhost]
 changed: [h3 -> localhost]
-changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [rtr]
@@ -387,6 +461,9 @@ ok: [rtr]
 
 TASK [Find configuration template for vrf] *************************************
 ok: [rtr]
+
+TASK [fail] ********************************************************************
+skipping: [rtr]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [rtr] => 
@@ -514,11 +591,11 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-h3                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-h4                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-rtr                        : ok=19   changed=2    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
+h1                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+h2                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+h3                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+h4                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+rtr                        : ok=22   changed=2    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
 
 
 

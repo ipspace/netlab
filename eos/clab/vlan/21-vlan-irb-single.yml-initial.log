@@ -20,6 +20,56 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/eos-clab.
 TASK [Wait for cEOS SSH daemon to start] ***************************************
 ok: [s1]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, h1, h2
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [h1]
+ok: [h2]
+ok: [s1]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [h1]
+ok: [h2]
+ok: [s1]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [h1]
+skipping: [h2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [h1]
+skipping: [h2]
+ok: [s1] => 
+  msg: |-
+    normalize configuration for s1
+    =========================================
+    !
+    interface Ethernet1
+     no switchport
+     mac-address 52dc.cafe.8401
+    !
+    interface Ethernet2
+     no switchport
+     mac-address 52dc.cafe.8402
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [h1]
+skipping: [h2]
+ok: [s1]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [h1]
+skipping: [h2]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for s1
+
+TASK [eos_config: deploying normalize from /home/pipi/net101/tools/netsim/ansible/templates/normalize/eos.j2] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [s1]
+
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, h1, h2
 
@@ -32,6 +82,11 @@ TASK [Find configuration template for initial] *********************************
 ok: [h1]
 ok: [h2]
 ok: [s1]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [h1]
+skipping: [h2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [h1] => 
@@ -47,6 +102,7 @@ ok: [h1] =>
     #  /etc/hosts file is generated as a clab bind.
     #
     set -e
+  
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
     # Disable IPv4 and IPv6 forwarding
@@ -54,41 +110,33 @@ ok: [h1] =>
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
     #
-    # Interface addressing
+    # Interface addressing, create any bond devices
     #
     ip link set dev eth1 up
     set +e
     ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.0.1/24 dev eth1
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
     #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
     #
-    # lan prefix: 172.16.0.0/16 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 172.16.0.0/16 2>/dev/null
-    set -e
-    ip route add 172.16.0.0/16 via 172.16.0.3
-    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.0.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.0.0.0/24 via 172.16.0.3
-    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.0.0/24
-    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.1.0.0/16 2>/dev/null
-    set -e
-    ip route add 10.1.0.0/16 via 172.16.0.3
-    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
-    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.2.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.2.0.0/24 via 172.16.0.3
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.0.132 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.0.132 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.0.132 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.0.132 dev eth1 protocol static
     #
     # Print the final routing table
     ip route
@@ -105,6 +153,7 @@ ok: [h2] =>
     #  /etc/hosts file is generated as a clab bind.
     #
     set -e
+  
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
     # Disable IPv4 and IPv6 forwarding
@@ -112,41 +161,33 @@ ok: [h2] =>
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
     #
-    # Interface addressing
+    # Interface addressing, create any bond devices
     #
     ip link set dev eth1 up
     set +e
     ip addr del 172.16.0.2/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.0.2/24 dev eth1
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
     #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
     #
-    # lan prefix: 172.16.0.0/16 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 172.16.0.0/16 2>/dev/null
-    set -e
-    ip route add 172.16.0.0/16 via 172.16.0.3
-    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.0.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.0.0.0/24 via 172.16.0.3
-    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.0.0/24
-    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.1.0.0/16 2>/dev/null
-    set -e
-    ip route add 10.1.0.0/16 via 172.16.0.3
-    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
-    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.2.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.2.0.0/24 via 172.16.0.3
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.0.132 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.0.132 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.0.132 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.0.132 dev eth1 protocol static
     #
     # Print the final routing table
     ip route
@@ -157,6 +198,7 @@ ok: [s1] =>
     hostname s1
     !
     logging monitor debugging
+    aaa authorization exec default local
     !
     lldp run
     ip routing
@@ -170,25 +212,25 @@ ok: [s1] =>
      no lldp receive
     !
     interface Loopback0
-     no shutdown
-     ip address 10.0.0.3/32
+     ip address 10.0.0.132/32
     !
     interface Ethernet1
-     no shutdown
      no switchport
+     description [Access VLAN red] s1 -> h1
     !
-     mac-address 52dc.cafe.0301
+     mac-address 52dc.cafe.8401
+     no shutdown
     !
     interface Ethernet2
-     no shutdown
      no switchport
+     description [Access VLAN red] s1 -> h2
     !
-     mac-address 52dc.cafe.0302
-    !
-    interface Vlan1000
+     mac-address 52dc.cafe.8402
      no shutdown
-     description VLAN red (1000) -> [h1,h2] [stub]
-     ip address 172.16.0.3/24
+    !
+    interface Vlan700
+     description VLAN red (700) -> [h1,h2] [stub]
+     ip address 172.16.0.132/24
     !
 
 TASK [Find configuration deployment deploy_script for initial] *****************
@@ -198,27 +240,36 @@ ok: [s1]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for s1
-included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for h1, h2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
 
 TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
-[WARNING]: To ensure idempotency and correct diff the input configuration lines
-should be similar to how they appear if present in the running configuration on
-device including the indentation
 changed: [s1]
 
-TASK [set_fact] ****************************************************************
+TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
 ok: [h2]
 
-TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
-changed: [h2 -> localhost]
-
-TASK [Initial container configuration via /tmp/config-OoeAZUQF-h1.sh] **********
+TASK [Create a temporary file for the rendered script] *************************
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
-TASK [file] ********************************************************************
+TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
+skipping: [h1]
+skipping: [h2]
+
+TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+skipping: [h1]
+skipping: [h2]
+
+TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
+changed: [h2 -> localhost]
+changed: [h1 -> localhost]
+
+TASK [Remove temporary file /tmp/h1_initial-thew4aub.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -236,25 +287,28 @@ ok: [s1]
 TASK [Find configuration template for vlan] ************************************
 ok: [s1]
 
+TASK [fail] ********************************************************************
+skipping: [s1]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [s1] => 
   msg: |-
     vlan configuration for s1
     =========================================
-    vlan 1000
+    vlan 700
      name red
     !
   
     !
     interface Ethernet1
      switchport
-     switchport access vlan 1000
+     switchport access vlan 700
     !
     interface Ethernet2
      switchport
-     switchport access vlan 1000
+     switchport access vlan 700
     !
-    interface Vlan1000
+    interface Vlan700
 
 TASK [Find configuration deployment deploy_script for vlan] ********************
 ok: [s1]
@@ -269,9 +323,9 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-s1                         : ok=19   changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+h1                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+h2                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+s1                         : ok=26   changed=3    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
 
 
 

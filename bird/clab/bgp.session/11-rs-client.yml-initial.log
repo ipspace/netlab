@@ -20,6 +20,45 @@ skipping: [r2]
 skipping: [r3]
 skipping: [rs]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, r3, rs
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [dut]
+ok: [r2]
+ok: [r3]
+ok: [rs]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [dut]
+ok: [r2]
+ok: [r3]
+ok: [rs]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r2]
+skipping: [r3]
+skipping: [rs]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+skipping: [r2]
+skipping: [r3]
+skipping: [rs]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [dut]
+skipping: [r2]
+skipping: [r3]
+skipping: [rs]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [dut]
+skipping: [r2]
+skipping: [r3]
+skipping: [rs]
+
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, r3, rs
 
@@ -35,6 +74,12 @@ ok: [r2]
 ok: [r3]
 ok: [rs]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r2]
+skipping: [r3]
+skipping: [rs]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
   msg: |-
@@ -49,6 +94,7 @@ ok: [dut] =>
     #  /etc/hosts file is generated as a clab bind.
     #
     set -e
+  
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
     # Disable IPv4 and IPv6 forwarding
@@ -56,45 +102,39 @@ ok: [dut] =>
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
     #
-    # Interface addressing
+    # Interface addressing, create any bond devices
     #
     ip link set dev eth1 up
     set +e
     ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.0.1/24 dev eth1
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
     ip link set dev eth2 up
     set +e
     ip addr del 172.16.1.1/24 dev eth2 2>/dev/null
     set -e
     ip addr add 172.16.1.1/24 dev eth2
-    ip link set eth2 mtu 1500
+    ip link set dev eth2 mtu 1500
     #
-    # Add routes to IPv4 address pools pointing to the first usable default gateway
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
     #
-    echo "sr_entry: {'ipv4': '172.16.0.0/16', 'nexthop': {'intf': 'eth2', 'ipv4': '172.16.1.2'}}"
-    set +e
-    ip route del 172.16.0.0/16 via 172.16.1.2 2>/dev/null
-    set -e
-    ip route add 172.16.0.0/16 via 172.16.1.2 dev eth2
-    echo "sr_entry: {'ipv4': '10.0.0.0/24', 'nexthop': {'intf': 'eth2', 'ipv4': '172.16.1.2'}}"
-    set +e
-    ip route del 10.0.0.0/24 via 172.16.1.2 2>/dev/null
-    set -e
-    ip route add 10.0.0.0/24 via 172.16.1.2 dev eth2
-    echo "sr_entry: {'ipv4': '10.1.0.0/16', 'nexthop': {'intf': 'eth2', 'ipv4': '172.16.1.2'}}"
-    set +e
-    ip route del 10.1.0.0/16 via 172.16.1.2 2>/dev/null
-    set -e
-    ip route add 10.1.0.0/16 via 172.16.1.2 dev eth2
-    echo "sr_entry: {'ipv4': '10.2.0.0/24', 'nexthop': {'intf': 'eth2', 'ipv4': '172.16.1.2'}}"
-    set +e
-    ip route del 10.2.0.0/24 via 172.16.1.2 2>/dev/null
-    set -e
-    ip route add 10.2.0.0/24 via 172.16.1.2 dev eth2
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.1.2 dev eth2 protocol static
+    ip route add 10.0.0.0/24 via 172.16.1.2 dev eth2 protocol static
+    ip route add 10.1.0.0/16 via 172.16.1.2 dev eth2 protocol static
+    ip route add 10.2.0.0/24 via 172.16.1.2 dev eth2 protocol static
     #
     # Print the final routing table
     ip route
@@ -115,7 +155,8 @@ ok: [r2] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -143,7 +184,7 @@ ok: [r2] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -161,7 +202,7 @@ ok: [r2] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -201,7 +242,8 @@ ok: [r3] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -229,7 +271,7 @@ ok: [r3] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -247,7 +289,7 @@ ok: [r3] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -287,7 +329,8 @@ ok: [rs] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -315,7 +358,7 @@ ok: [rs] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -333,7 +376,7 @@ ok: [rs] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -367,19 +410,28 @@ ok: [r3]
 ok: [rs]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for r2, r3, rs
 
-TASK [set_fact] ****************************************************************
+TASK [Define script filename and determine whether to execute in netns] ********
 ok: [dut]
 
-TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/bird-clab.j2] ***
+TASK [Create a temporary file for the rendered script] *************************
 changed: [dut -> localhost]
 
-TASK [Initial container configuration via /tmp/config-tGKbeIyb-dut.sh] *********
+TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/bird-clab.j2] ***
 changed: [dut -> localhost]
 
-TASK [file] ********************************************************************
+TASK [Copy script into running container at /tmp/config-dut_initial.sh] ********
+skipping: [dut]
+
+TASK [Execute /tmp/config-dut_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/bird-clab.j2] ***
+skipping: [dut]
+
+TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/bird-clab.j2 executed in netns] ***
+changed: [dut -> localhost]
+
+TASK [Remove temporary file /tmp/dut_initial-i1bc94sn.sh] **********************
 changed: [dut -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
@@ -395,8 +447,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for
 
 TASK [template] ****************************************************************
 changed: [r3]
-changed: [rs]
 changed: [r2]
+changed: [rs]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
@@ -405,8 +457,8 @@ ok: [rs]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [r2]
-changed: [r3]
 changed: [rs]
+changed: [r3]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r2]
@@ -435,6 +487,12 @@ skipping: [dut]
 ok: [r2]
 ok: [r3]
 ok: [rs]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r2]
+skipping: [r3]
+skipping: [rs]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
@@ -563,8 +621,8 @@ skipping: [dut]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r2, r3, rs
 
 TASK [template] ****************************************************************
-changed: [r3]
 changed: [rs]
+changed: [r3]
 changed: [r2]
 
 TASK [set_fact] ****************************************************************
@@ -578,8 +636,8 @@ skipping: [r3]
 skipping: [rs]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [rs]
 changed: [r2]
+changed: [rs]
 changed: [r3]
 
 PLAY [Deploy custom deployment templates] **************************************
@@ -590,8 +648,8 @@ skipping: [dut]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-custom-config.yml for r2, rs => (item=bgp.session)
 
 TASK [Find configuration template] *********************************************
-ok: [r2]
 ok: [rs]
+ok: [r2]
 
 TASK [fail] ********************************************************************
 skipping: [r2]
@@ -625,18 +683,18 @@ ok: [r2]
 ok: [rs]
 
 TASK [run /tmp/config.sh to deploy bgp.session config from /home/pipi/net101/tools/netsim/extra/bgp.session/frr.j2] ***
-changed: [rs]
 changed: [r2]
+changed: [rs]
 
 TASK [run vtysh to import bgp.session config from /home/pipi/net101/tools/netsim/extra/bgp.session/frr.j2] ***
 skipping: [r2]
 skipping: [rs]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=15   changed=3    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
-r2                         : ok=31   changed=7    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-r3                         : ok=22   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-rs                         : ok=30   changed=6    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+dut                        : ok=19   changed=4    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
+r2                         : ok=34   changed=7    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
+r3                         : ok=25   changed=4    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+rs                         : ok=33   changed=6    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
 
 
 

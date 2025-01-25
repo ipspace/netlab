@@ -20,19 +20,64 @@ skipping: [probe]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/iol-clab.yml for dut_c, dut_a
 
 TASK [Check if 'sshpass' is installed] *****************************************
-changed: [dut_c -> localhost]
+ok: [dut_c -> localhost]
+
+TASK [Check for 'timeout' command] *********************************************
+ok: [dut_c -> localhost]
+ok: [dut_a -> localhost]
 
 TASK [Execute local ssh command to check iol readiness] ************************
-FAILED - RETRYING: [dut_c -> localhost]: Execute local ssh command to check iol readiness (20 retries left).
 FAILED - RETRYING: [dut_a -> localhost]: Execute local ssh command to check iol readiness (20 retries left).
-changed: [dut_a -> localhost]
-changed: [dut_c -> localhost]
+FAILED - RETRYING: [dut_c -> localhost]: Execute local ssh command to check iol readiness (20 retries left).
+FAILED - RETRYING: [dut_a -> localhost]: Execute local ssh command to check iol readiness (19 retries left).
+FAILED - RETRYING: [dut_c -> localhost]: Execute local ssh command to check iol readiness (19 retries left).
+ok: [dut_a -> localhost]
+ok: [dut_c -> localhost]
 
 TASK [Confirm dut_c SSH server works] ******************************************
 ok: [dut_c] => 
   msg: Node dut_c is ready.
 ok: [dut_a] => 
   msg: Node dut_a is ready.
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut_c, xf, probe, dut_a
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [xf]
+ok: [probe]
+ok: [dut_c]
+ok: [dut_a]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [xf]
+ok: [probe]
+ok: [dut_c]
+ok: [dut_a]
+
+TASK [fail] ********************************************************************
+skipping: [dut_c]
+skipping: [xf]
+skipping: [probe]
+skipping: [dut_a]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut_c]
+skipping: [xf]
+skipping: [probe]
+skipping: [dut_a]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [dut_c]
+skipping: [xf]
+skipping: [probe]
+skipping: [dut_a]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [dut_c]
+skipping: [xf]
+skipping: [probe]
+skipping: [dut_a]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut_c, xf, probe, dut_a
@@ -49,6 +94,12 @@ ok: [probe]
 ok: [dut_c]
 ok: [dut_a]
 
+TASK [fail] ********************************************************************
+skipping: [dut_c]
+skipping: [xf]
+skipping: [probe]
+skipping: [dut_a]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [xf] => 
   msg: |-
@@ -64,7 +115,8 @@ ok: [xf] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -92,7 +144,7 @@ ok: [xf] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -110,7 +162,8 @@ ok: [xf] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -149,7 +202,8 @@ ok: [probe] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -177,7 +231,7 @@ ok: [probe] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -196,8 +250,9 @@ ok: [probe] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
-    ip link set eth2 mtu 1500
+    ip link set dev eth1 mtu 1500
+    ip link set dev eth2 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -252,16 +307,16 @@ ok: [dut_c] =>
      no lldp receive
     !
     interface Ethernet0/1
-     no shutdown
      description dut_c -> probe
      mtu 1500
      ip address 10.1.0.5 255.255.255.252
+     no shutdown
     !
     interface Ethernet0/2
-     no shutdown
      description dut_c -> xf [external]
      mtu 1500
      ip address 10.1.0.9 255.255.255.252
+     no shutdown
     !
     !
     line vty 0 4
@@ -295,10 +350,10 @@ ok: [dut_a] =>
      no lldp receive
     !
     interface Ethernet0/1
-     no shutdown
      description dut_a -> probe
      mtu 1500
      ip address 10.1.0.1 255.255.255.252
+     no shutdown
     !
     !
     line vty 0 4
@@ -327,7 +382,6 @@ changed: [dut_c]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [xf -> localhost]
-changed: [probe -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [xf]
@@ -337,8 +391,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for xf, probe
 
 TASK [template] ****************************************************************
-changed: [probe]
 changed: [xf]
+changed: [probe]
 
 TASK [set_fact] ****************************************************************
 ok: [xf]
@@ -375,6 +429,12 @@ skipping: [dut_a]
 skipping: [probe]
 ok: [xf]
 ok: [dut_c]
+
+TASK [fail] ********************************************************************
+skipping: [dut_a]
+skipping: [dut_c]
+skipping: [probe]
+skipping: [xf]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut_a]
@@ -484,6 +544,12 @@ ok: [probe]
 ok: [dut_a]
 ok: [dut_c]
 
+TASK [fail] ********************************************************************
+skipping: [dut_a]
+skipping: [dut_c]
+skipping: [probe]
+skipping: [xf]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [xf]
 ok: [probe] => 
@@ -591,10 +657,10 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut_a                      : ok=22   changed=3    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-dut_c                      : ok=28   changed=5    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-probe                      : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-xf                         : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+dut_a                      : ok=26   changed=2    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
+dut_c                      : ok=32   changed=3    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+probe                      : ok=27   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+xf                         : ok=28   changed=5    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 
 
 

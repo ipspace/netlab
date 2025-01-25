@@ -16,9 +16,81 @@ TASK [Wait for device to become ready] *****************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/eos-clab.yml for dut, x1, x2
 
 TASK [Wait for cEOS SSH daemon to start] ***************************************
+ok: [x2]
+ok: [x1]
+ok: [dut]
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [dut]
 ok: [x1]
 ok: [x2]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [dut]
+ok: [x1]
+ok: [x2]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [x1] => 
+  msg: |-
+    normalize configuration for x1
+    =========================================
+    !
+    interface Ethernet1
+     no switchport
+     mac-address 52dc.cafe.0301
+    !
+    interface Ethernet2
+     no switchport
+     mac-address 52dc.cafe.0302
+ok: [x2] => 
+  msg: |-
+    normalize configuration for x2
+    =========================================
+    !
+    interface Ethernet1
+     no switchport
+     mac-address 52dc.cafe.0201
+    !
+    interface Ethernet2
+     no switchport
+     mac-address 52dc.cafe.0202
+ok: [dut] => 
+  msg: |-
+    normalize configuration for dut
+    =========================================
+    !
+    interface Ethernet1
+     no switchport
+     mac-address 52dc.cafe.0101
+    !
+    interface Ethernet2
+     no switchport
+     mac-address 52dc.cafe.0102
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [dut]
+ok: [x1]
+ok: [x2]
+
+TASK [Deploy normalize configuration] ******************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for dut, x1, x2
+
+TASK [eos_config: deploying normalize from /home/pipi/net101/tools/netsim/ansible/templates/normalize/eos.j2] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [dut]
+changed: [x2]
+changed: [x1]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
@@ -29,9 +101,9 @@ ok: [x1]
 ok: [x2]
 
 TASK [Find configuration template for initial] *********************************
+ok: [dut]
 ok: [x1]
 ok: [x2]
-ok: [dut]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -60,76 +132,27 @@ ok: [dut] =>
      no lldp receive
     !
     interface Loopback0
-     no shutdown
      ip address 10.0.0.1/32
     !
     interface Ethernet1
-     no shutdown
      no switchport
      description dut -> x1
     !
      mac-address 52dc.cafe.0101
+     no shutdown
     !
     interface Ethernet2
-     no shutdown
      no switchport
      description dut -> x2
     !
      mac-address 52dc.cafe.0102
+     no shutdown
     !
     interface Vlan76
-     no shutdown
      description VLAN blue (76) -> [x1,x2]
     !
     interface Vlan42
-     no shutdown
      description VLAN red (42) -> [x1,x2]
-    !
-ok: [x2] => 
-  msg: |-
-    initial configuration for x2
-    =========================================
-    hostname x2
-    !
-    logging monitor debugging
-    aaa authorization exec default local
-    !
-    lldp run
-    ip routing
-    !
-    !
-    ip host dut 10.0.0.1
-    ip host x1 10.0.0.3
-    !
-    interface Management0
-     no lldp transmit
-     no lldp receive
-    !
-    interface Loopback0
-     no shutdown
-     ip address 10.0.0.2/32
-    !
-    interface Ethernet1
-     no shutdown
-     no switchport
-     description x2 -> dut
-    !
-     mac-address 52dc.cafe.0201
-    !
-    interface Ethernet2
-     no shutdown
-     no switchport
-     description x2 -> x1
-    !
-     mac-address 52dc.cafe.0202
-    !
-    interface Vlan76
-     no shutdown
-     description VLAN blue (76) -> [x1,dut]
-    !
-    interface Vlan42
-     no shutdown
-     description VLAN red (42) -> [x1,dut]
     !
 ok: [x1] => 
   msg: |-
@@ -152,47 +175,84 @@ ok: [x1] =>
      no lldp receive
     !
     interface Loopback0
-     no shutdown
      ip address 10.0.0.3/32
     !
     interface Ethernet1
-     no shutdown
      no switchport
      description x1 -> dut
     !
      mac-address 52dc.cafe.0301
+     no shutdown
     !
     interface Ethernet2
-     no shutdown
      no switchport
      description x1 -> x2
     !
      mac-address 52dc.cafe.0302
+     no shutdown
     !
     interface Vlan76
-     no shutdown
      description VLAN blue (76) -> [dut,x2]
     !
     interface Vlan42
-     no shutdown
      description VLAN red (42) -> [dut,x2]
+    !
+ok: [x2] => 
+  msg: |-
+    initial configuration for x2
+    =========================================
+    hostname x2
+    !
+    logging monitor debugging
+    aaa authorization exec default local
+    !
+    lldp run
+    ip routing
+    !
+    !
+    ip host dut 10.0.0.1
+    ip host x1 10.0.0.3
+    !
+    interface Management0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     ip address 10.0.0.2/32
+    !
+    interface Ethernet1
+     no switchport
+     description x2 -> dut
+    !
+     mac-address 52dc.cafe.0201
+     no shutdown
+    !
+    interface Ethernet2
+     no switchport
+     description x2 -> x1
+    !
+     mac-address 52dc.cafe.0202
+     no shutdown
+    !
+    interface Vlan76
+     description VLAN blue (76) -> [x1,dut]
+    !
+    interface Vlan42
+     description VLAN red (42) -> [x1,dut]
     !
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [dut]
-ok: [x2]
 ok: [x1]
+ok: [x2]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for dut, x1, x2
 
 TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
-[WARNING]: To ensure idempotency and correct diff the input configuration lines
-should be similar to how they appear if present in the running configuration on
-device including the indentation
+changed: [x1]
 changed: [x2]
 changed: [dut]
-changed: [x1]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -211,8 +271,8 @@ ok: [x1]
 ok: [x2]
 
 TASK [Find configuration template for vlan] ************************************
-ok: [x1]
 ok: [dut]
+ok: [x1]
 ok: [x2]
 
 TASK [fail] ********************************************************************
@@ -306,9 +366,9 @@ TASK [Deploy vlan configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for dut, x1, x2
 
 TASK [eos_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/eos.j2] ***
-changed: [x1]
-changed: [x2]
 changed: [dut]
+changed: [x2]
+changed: [x1]
 
 TASK [Figure out whether to deploy the module stp on current device] ***********
 ok: [dut]
@@ -363,9 +423,9 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=26   changed=3    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
-x1                         : ok=26   changed=3    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
-x2                         : ok=26   changed=3    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
+dut                        : ok=33   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+x1                         : ok=33   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+x2                         : ok=33   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 
 
 

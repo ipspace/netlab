@@ -14,6 +14,33 @@ TASK [Wait for device to become ready] *****************************************
 skipping: [dut]
 skipping: [xr]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, xr
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [dut]
+ok: [xr]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [dut]
+ok: [xr]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [xr]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+skipping: [xr]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [dut]
+skipping: [xr]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [dut]
+skipping: [xr]
+
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, xr
 
@@ -62,10 +89,11 @@ ok: [dut] =>
     ip addr del 172.16.0.1/24 dev bond1 2>/dev/null
     set -e
     ip addr add 172.16.0.1/24 dev bond1
+    ip link set dev bond1 mtu 1500
     ip link set dev eth1 up
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
     ip link set dev eth2 up
-    ip link set eth2 mtu 1500
+    ip link set dev eth2 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
@@ -105,7 +133,8 @@ ok: [xr] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -162,8 +191,9 @@ ok: [xr] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
-    ip link set eth2 mtu 1500
+    ip link set dev bond1 mtu 1500
+    ip link set dev eth1 mtu 1500
+    ip link set dev eth2 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -226,7 +256,7 @@ skipping: [dut]
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/bird-clab.j2 executed in netns] ***
 changed: [dut -> localhost]
 
-TASK [Remove temporary file /tmp/dut_initial-ana5fl60.sh] **********************
+TASK [Remove temporary file /tmp/dut_initial-d8d_mh0m.sh] **********************
 changed: [dut -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
@@ -273,24 +303,6 @@ skipping: [dut]
 skipping: [xr]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [xr] => 
-  msg: |-
-    lag configuration for xr
-    =========================================
-    #!/bin/bash
-    #
-    set -e # Exit immediately when any command fails
-    #
-    # Bond devices are created by 'initial' module - add members
-    #
-    ip link set dev eth1 down
-    ip link set dev eth1 master bond1
-    ip link set dev eth1 up
-    ip link set dev eth2 down
-    ip link set dev eth2 master bond1
-    ip link set dev eth2 up
-    ip link set dev bond1 up
-    exit 0
 ok: [dut] => 
   msg: |-
     lag configuration for dut
@@ -313,6 +325,24 @@ ok: [dut] =>
     #
     # Note: The above script is executed within the netns context on the host
     #
+ok: [xr] => 
+  msg: |-
+    lag configuration for xr
+    =========================================
+    #!/bin/bash
+    #
+    set -e # Exit immediately when any command fails
+    #
+    # Bond devices are created by 'initial' module - add members
+    #
+    ip link set dev eth1 down
+    ip link set dev eth1 master bond1
+    ip link set dev eth1 up
+    ip link set dev eth2 down
+    ip link set dev eth2 master bond1
+    ip link set dev eth2 up
+    ip link set dev bond1 up
+    exit 0
 
 TASK [Find configuration deployment deploy_script for lag] *********************
 ok: [dut]
@@ -340,7 +370,7 @@ skipping: [dut]
 TASK [Container configuration for lag based on /home/pipi/net101/tools/netsim/ansible/templates/lag/linux-clab.j2 executed in netns] ***
 changed: [dut -> localhost]
 
-TASK [Remove temporary file /tmp/dut_lag-s4rzon4h.sh] **************************
+TASK [Remove temporary file /tmp/dut_lag-7un60xgo.sh] **************************
 changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
@@ -422,8 +452,8 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=27   changed=8    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
-xr                         : ok=32   changed=7    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+dut                        : ok=30   changed=8    unreachable=0    failed=0    skipped=16   rescued=0    ignored=0   
+xr                         : ok=35   changed=7    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
 
 
 

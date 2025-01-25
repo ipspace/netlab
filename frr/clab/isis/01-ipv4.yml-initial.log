@@ -17,6 +17,39 @@ skipping: [dut]
 skipping: [x1]
 skipping: [x2]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [dut]
+ok: [x1]
+ok: [x2]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [dut]
+ok: [x1]
+ok: [x2]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
 
@@ -29,6 +62,11 @@ TASK [Find configuration template for initial] *********************************
 ok: [dut]
 ok: [x1]
 ok: [x2]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -45,7 +83,8 @@ ok: [dut] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -73,7 +112,7 @@ ok: [dut] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -92,8 +131,8 @@ ok: [dut] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
-    ip link set eth2 mtu 1500
+    ip link set dev eth1 mtu 1500
+    ip link set dev eth2 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -138,7 +177,8 @@ ok: [x1] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -166,7 +206,7 @@ ok: [x1] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -184,7 +224,7 @@ ok: [x1] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -224,7 +264,8 @@ ok: [x2] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -252,7 +293,7 @@ ok: [x2] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -270,7 +311,7 @@ ok: [x2] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -317,8 +358,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for dut, x1, x2
 
 TASK [template] ****************************************************************
-changed: [dut]
 changed: [x2]
+changed: [dut]
 changed: [x1]
 
 TASK [set_fact] ****************************************************************
@@ -356,7 +397,44 @@ ok: [dut]
 ok: [x1]
 ok: [x2]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => 
+  msg: |-
+    isis configuration for dut
+    =========================================
+    !
+    !
+    !
+    router isis Gandalf
+     log-adjacency-changes
+     hostname dynamic
+     is-type level-1
+     metric-style wide
+     lsp-timers gen-interval 1 refresh-interval 900 max-lifetime 1800
+     net 49.0042.0000.0000.0001.00
+  
+    !
+    interface eth1
+    ! dut -> x1
+     ip router isis Gandalf
+     isis network point-to-point
+    !
+    interface eth2
+    ! dut -> x2
+     ip router isis Gandalf
+     isis network point-to-point
+    !
+  
+    !
+    interface lo
+     ip router isis Gandalf
+    !
+    do write
 ok: [x1] => 
   msg: |-
     isis configuration for x1
@@ -412,38 +490,6 @@ ok: [x2] =>
      ip router isis Gandalf
     !
     do write
-ok: [dut] => 
-  msg: |-
-    isis configuration for dut
-    =========================================
-    !
-    !
-    !
-    router isis Gandalf
-     log-adjacency-changes
-     hostname dynamic
-     is-type level-1
-     metric-style wide
-     lsp-timers gen-interval 1 refresh-interval 900 max-lifetime 1800
-     net 49.0042.0000.0000.0001.00
-  
-    !
-    interface eth1
-    ! dut -> x1
-     ip router isis Gandalf
-     isis network point-to-point
-    !
-    interface eth2
-    ! dut -> x2
-     ip router isis Gandalf
-     isis network point-to-point
-    !
-  
-    !
-    interface lo
-     ip router isis Gandalf
-    !
-    do write
 
 TASK [Find configuration deployment deploy_script for isis] ********************
 ok: [dut]
@@ -477,9 +523,9 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-x1                         : ok=22   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-x2                         : ok=22   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+dut                        : ok=26   changed=5    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+x1                         : ok=25   changed=4    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+x2                         : ok=25   changed=4    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
 
 
 
