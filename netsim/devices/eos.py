@@ -3,8 +3,9 @@
 #
 from box import Box
 
-from . import _Quirks
+from . import _Quirks,report_quirk
 from ..utils import log
+from ..modules import _routing
 from .. import data
 from ..augment import devices
 
@@ -102,6 +103,23 @@ def configure_ceos_attributes(node: Box, topology: Box) -> None:
   data.append_to_list(node.clab,'binds',f'clab_files/{node.name}/ceos-config:{mnt_config}')
   data.append_to_list(node.clab,'config_templates',f'ceos-config:{mnt_config}')
 
+def passive_stub_interfaces(node: Box, topology: Box) -> None:
+  if devices.get_provider(node,topology) != 'clab':
+    return
+
+  for intf in _routing.routing_protocol_interfaces(node,'ospf'):
+    if intf.type != 'stub' or 'ipv4' not in intf:
+      continue
+
+    report_quirk(
+      f'Changed OSPF network type on {node.name}/{intf.ifname} to point-to-point',
+      more_hints = [ f'Arista cEOS does not run OSPFv2 on container stub interfaces configured as broadcast networks' ],
+      node=node,
+      category=Warning,
+      quirk='ospf_stub')
+
+    intf.ospf.network_type = 'point-to-point'
+
 class EOS(_Quirks):
 
   @classmethod
@@ -119,5 +137,7 @@ class EOS(_Quirks):
       check_dhcp_clients(node,topology)
     if 'lag' in mods:
       check_l3_lag(node,topology)
+    if 'ospf' in mods:
+      passive_stub_interfaces(node,topology)
     if 'eos' in node:
       configure_ceos_attributes(node,topology)

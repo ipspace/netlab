@@ -18,6 +18,7 @@
 * Arista EOS does not support routed port-channel interfaces. Port channel interfaces can be used only as VLAN trunks or VLAN access interfaces.
 * Anycast gateways and DHCP/DHCPv6 clients do not work on Arista cEOS Ethernet interfaces.
 * cEOS MPLS data plane was introduced in release 4.32.1F.
+* Arista cEOS disables OSPFv2 on broadcast container stub interfaces (implemented as _dummy_ interfaces). _netlab_ automatically changes the OSPF network type for Arista cEOS dummy interfaces to **point-to-point**.
 
 The default name of the management interface is **Management0** on vEOS and **Management1** on cEOS. If you'd like to change the management interface name on cEOS:
 
