@@ -747,3 +747,22 @@ def routing_protocol_data(node: Box, proto: str) -> typing.Generator:
   for vname,vdata in node.get('vrfs',{}).items():
     if isinstance(vdata.get(proto,None),Box):
       yield vdata[proto]
+
+"""
+routing_protocol_interfaces: Given a node and a protocol name, returns the
+interface data structures for global and VRF interfaces running the specified
+protocol
+
+You can use this generator to iterate over all interface instances without going
+through the "global first, then VRFs" logic on your own
+"""
+def routing_protocol_interfaces(node: Box, proto: str) -> typing.Generator:
+  for intf in node.interfaces:
+    if proto in intf:
+      yield intf
+
+  for vname,vdata in node.get('vrfs',{}).items():
+    if not isinstance(vdata.get(proto,None),Box):
+      continue
+    for intf in vdata[proto].get('interfaces',[]):
+      yield intf
