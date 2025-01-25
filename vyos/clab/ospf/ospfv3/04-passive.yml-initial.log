@@ -69,6 +69,71 @@ skipping: [x2]
 skipping: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+  
+    configure
+    set system host-name 'dut'
+  
+  
+    set interfaces dummy dum0 address 2001:db8:1:1::1/64
+  
+  
+  
+    set interfaces ethernet eth1 description 'dut -> x1'
+  
+    set interfaces ethernet eth1 mtu 1500
+  
+  
+    set interfaces ethernet eth1 address 2001:db8:3::1/64;
+  
+  
+  
+  
+    set interfaces ethernet eth2 description 'dut -> x2'
+  
+    set interfaces ethernet eth2 mtu 1500
+  
+  
+    set interfaces ethernet eth2 address 2001:db8:cafe:1::1/64;
+  
+  
+  
+  
+    set interfaces dummy dum1 description 'dut -> stub'
+  
+  
+  
+    set interfaces dummy dum1 address 2001:db8:cafe:2::1/64;
+  
+  
+  
+    set service lldp interface all
+    set service lldp interface eth0 disable
+  
+    set service router-advert interface eth1
+    set service router-advert interface eth2
+  
+    set service ssh
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
+  
+    # Restart FRR to pick up the new hostname
+    sudo service frr restart
 ok: [x1] => 
   msg: |-
     initial configuration for x1
@@ -285,73 +350,6 @@ ok: [x2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
-  
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-    fi
-  
-    # Configuration items start here
-  
-    configure
-    set system host-name 'dut'
-  
-  
-    set interfaces dummy dum0 address 2001:db8:1:1::1/64
-  
-  
-  
-    set interfaces ethernet eth1 description 'dut -> x1'
-  
-    set interfaces ethernet eth1 mtu 1500
-  
-  
-    set interfaces ethernet eth1 address 2001:db8:3::1/64;
-  
-  
-  
-  
-    set interfaces ethernet eth2 description 'dut -> x2'
-  
-    set interfaces ethernet eth2 mtu 1500
-  
-  
-    set interfaces ethernet eth2 address 2001:db8:cafe:1::1/64;
-  
-  
-  
-  
-    set interfaces ethernet eth3 description 'dut -> stub [stub]'
-  
-    set interfaces ethernet eth3 mtu 1500
-  
-  
-    set interfaces ethernet eth3 address 2001:db8:cafe:2::1/64;
-  
-  
-  
-    set service lldp interface all
-    set service lldp interface eth0 disable
-  
-    set service router-advert interface eth1
-    set service router-advert interface eth2
-    set service router-advert interface eth3
-  
-    set service ssh
-  
-    # Commit, save and exit from subshell
-  
-    commit
-    save
-    exit
-  
-    # Restart FRR to pick up the new hostname
-    sudo service frr restart
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [x1]
@@ -453,7 +451,6 @@ ok: [dut] =>
   
   
     set protocols ospfv3 interface eth2 passive
-    set protocols ospfv3 interface eth3 passive
   
     set protocols ospfv3 interface dum0 passive
     set protocols ospfv3 interface dum0 area 0.0.0.0
@@ -473,9 +470,9 @@ ok: [dut] =>
   
   
   
-    set protocols ospfv3 interface eth3 area 0.0.0.0
+    set protocols ospfv3 interface dum1 area 0.0.0.0
   
-    set protocols ospfv3 interface eth3 cost 25
+    set protocols ospfv3 interface dum1 cost 25
   
   
   
@@ -579,8 +576,8 @@ TASK [execute config-ospf.sh to deploy ospf config from /home/pipi/net101/tools/
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
