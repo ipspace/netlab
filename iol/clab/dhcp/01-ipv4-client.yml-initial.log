@@ -17,19 +17,60 @@ skipping: [server]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/iol-clab.yml for c1, c2
 
 TASK [Check if 'sshpass' is installed] *****************************************
-changed: [c1 -> localhost]
+ok: [c1 -> localhost]
+
+TASK [Check for 'timeout' command] *********************************************
+ok: [c1 -> localhost]
+ok: [c2 -> localhost]
 
 TASK [Execute local ssh command to check iol readiness] ************************
 FAILED - RETRYING: [c2 -> localhost]: Execute local ssh command to check iol readiness (20 retries left).
 FAILED - RETRYING: [c1 -> localhost]: Execute local ssh command to check iol readiness (20 retries left).
-changed: [c1 -> localhost]
-changed: [c2 -> localhost]
+FAILED - RETRYING: [c2 -> localhost]: Execute local ssh command to check iol readiness (19 retries left).
+FAILED - RETRYING: [c2 -> localhost]: Execute local ssh command to check iol readiness (18 retries left).
+FAILED - RETRYING: [c2 -> localhost]: Execute local ssh command to check iol readiness (17 retries left).
+FAILED - RETRYING: [c1 -> localhost]: Execute local ssh command to check iol readiness (19 retries left).
+ok: [c2 -> localhost]
+ok: [c1 -> localhost]
 
 TASK [Confirm c1 SSH server works] *********************************************
 ok: [c1] => 
   msg: Node c1 is ready.
 ok: [c2] => 
   msg: Node c2 is ready.
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for server, c1, c2
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [server]
+ok: [c1]
+ok: [c2]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [server]
+ok: [c1]
+ok: [c2]
+
+TASK [fail] ********************************************************************
+skipping: [server]
+skipping: [c1]
+skipping: [c2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [server]
+skipping: [c1]
+skipping: [c2]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [server]
+skipping: [c1]
+skipping: [c2]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [server]
+skipping: [c1]
+skipping: [c2]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for server, c1, c2
@@ -43,6 +84,11 @@ TASK [Find configuration template for initial] *********************************
 ok: [server]
 ok: [c1]
 ok: [c2]
+
+TASK [fail] ********************************************************************
+skipping: [server]
+skipping: [c1]
+skipping: [c2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [server] => 
@@ -58,6 +104,7 @@ ok: [server] =>
     #  /etc/hosts file is generated as a clab bind.
     #
     set -e
+  
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
     # Disable IPv4 and IPv6 forwarding
@@ -65,18 +112,18 @@ ok: [server] =>
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
     #
-    # Interface addressing
+    # Interface addressing, create any bond devices
     #
     ip link set dev eth1 up
     set +e
     ip addr del 172.16.0.3/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.0.3/24 dev eth1
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
     #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    #
     #
     #
     # Print the final routing table
@@ -105,9 +152,9 @@ ok: [c1] =>
      no lldp receive
     !
     interface Ethernet0/1
-     no shutdown
      description c1 -> [c2,server]
      mtu 1500
+     no shutdown
     !
     !
     line vty 0 4
@@ -140,9 +187,9 @@ ok: [c2] =>
      no lldp receive
     !
     interface Ethernet0/1
-     no shutdown
      description c2 -> [c1,server]
      mtu 1500
+     no shutdown
     !
     !
     line vty 0 4
@@ -158,27 +205,36 @@ ok: [c1]
 ok: [c2]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for server
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for server
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for c1, c2
 
-TASK [set_fact] ****************************************************************
+TASK [Define script filename and determine whether to execute in netns] ********
 ok: [server]
 
-TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+TASK [Create a temporary file for the rendered script] *************************
 changed: [server -> localhost]
 
-TASK [Initial container configuration via /tmp/config-bFJkafAJ-server.sh] ******
+TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [server -> localhost]
 
-TASK [file] ********************************************************************
+TASK [Copy script into running container at /tmp/config-server_initial.sh] *****
+skipping: [server]
+
+TASK [Execute /tmp/config-server_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+skipping: [server]
+
+TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
+changed: [server -> localhost]
+
+TASK [Remove temporary file /tmp/server_initial-5ypb7gra.sh] *******************
 changed: [server -> localhost]
 
 TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
 should be similar to how they appear if present in the running configuration on
 device including the indentation
-changed: [c1]
 changed: [c2]
+changed: [c1]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -199,6 +255,11 @@ TASK [Find configuration template for dhcp] ************************************
 skipping: [server]
 ok: [c1]
 ok: [c2]
+
+TASK [fail] ********************************************************************
+skipping: [c1]
+skipping: [c2]
+skipping: [server]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [server]
@@ -233,9 +294,9 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-c1                         : ok=21   changed=4    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-c2                         : ok=20   changed=3    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-server                     : ok=15   changed=3    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
+c1                         : ok=25   changed=2    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+c2                         : ok=24   changed=2    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+server                     : ok=19   changed=4    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
 
 
 

@@ -35,8 +35,8 @@ ok: [c2]
 TASK [Find configuration template for normalize] *******************************
 ok: [server]
 ok: [c1]
-ok: [c2]
 ok: [relay]
+ok: [c2]
 
 TASK [fail] ********************************************************************
 skipping: [c1]
@@ -85,8 +85,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for c1,
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [server]
 ok: [c1]
-ok: [c2]
 ok: [relay]
+ok: [c2]
 
 TASK [Find configuration template for initial] *********************************
 ok: [server]
@@ -176,6 +176,43 @@ ok: [c1] =>
     no banner exec
     no banner login
     no banner incoming
+ok: [c2] => 
+  msg: |-
+    initial configuration for c2
+    =========================================
+    hostname c2
+    !
+    no ip domain lookup
+    !
+    lldp run
+    !
+    ip host c1 10.0.0.2
+    ip host relay 10.0.0.1 2001:db8:cafe::1 2001:db8:cafe:1::1
+    ip host server 2001:db8:cafe:1::4
+    !
+    ip routing
+    !
+    ipv6 unicast-routing
+    !
+    !
+    interface Loopback0
+     ip address 10.0.0.3 255.255.255.255
+    !
+    interface GigabitEthernet1
+     no lldp transmit
+     no lldp receive
+    !
+    interface GigabitEthernet2
+     description c2 -> [c1,relay]
+     no shutdown
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
+    !
+    no banner exec
+    no banner login
+    no banner incoming
 ok: [relay] => 
   msg: |-
     initial configuration for relay
@@ -219,43 +256,6 @@ ok: [relay] =>
      mac-address 52dc.cafe.0102
      no shutdown
     !
-ok: [c2] => 
-  msg: |-
-    initial configuration for c2
-    =========================================
-    hostname c2
-    !
-    no ip domain lookup
-    !
-    lldp run
-    !
-    ip host c1 10.0.0.2
-    ip host relay 10.0.0.1 2001:db8:cafe::1 2001:db8:cafe:1::1
-    ip host server 2001:db8:cafe:1::4
-    !
-    ip routing
-    !
-    ipv6 unicast-routing
-    !
-    !
-    interface Loopback0
-     ip address 10.0.0.3 255.255.255.255
-    !
-    interface GigabitEthernet1
-     no lldp transmit
-     no lldp receive
-    !
-    interface GigabitEthernet2
-     description c2 -> [c1,relay]
-     no shutdown
-    !
-    !
-    line vty 0 4
-     exec-timeout 0 0
-    !
-    no banner exec
-    no banner login
-    no banner incoming
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [server]
@@ -290,7 +290,7 @@ skipping: [server]
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [server -> localhost]
 
-TASK [Remove temporary file /tmp/server_initial-xg1zm3ty.sh] *******************
+TASK [Remove temporary file /tmp/server_initial-u6oacfjh.sh] *******************
 changed: [server -> localhost]
 
 TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
@@ -300,9 +300,9 @@ PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [server]
-ok: [relay]
 ok: [c1]
 ok: [c2]
+ok: [relay]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for c1, c2, relay, server => (item=dhcp)
@@ -311,8 +311,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for c1,
 TASK [Figure out whether to deploy the module dhcp on current device] **********
 ok: [server]
 ok: [c1]
-ok: [c2]
 ok: [relay]
+ok: [c2]
 
 TASK [Find configuration template for dhcp] ************************************
 skipping: [server]
@@ -369,15 +369,15 @@ changed: [relay]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [server]
-ok: [c2]
 ok: [c1]
+ok: [c2]
 ok: [relay]
 
 TASK [Find configuration template for ospf] ************************************
 skipping: [server]
 ok: [c1]
-ok: [relay]
 ok: [c2]
+ok: [relay]
 
 TASK [fail] ********************************************************************
 skipping: [c1]
@@ -409,30 +409,6 @@ ok: [c1] =>
     !
     interface GigabitEthernet2
     ! c1 -> [c2,relay]
-     ospfv3 1 ipv6 area 0.0.0.0
-    !
-ok: [c2] => 
-  msg: |-
-    ospf configuration for c2
-    =========================================
-    router ospf 1
-     router-id 10.0.0.3
-  
-  
-    !
-    interface Loopback0
-    !
-     ip ospf 1 area 0.0.0.0
-    !
-  
-    router ospfv3 1
-     router-id 10.0.0.3
-     address-family ipv6 unicast
-  
-  
-    !
-    interface GigabitEthernet2
-    ! c2 -> [c1,relay]
      ospfv3 1 ipv6 area 0.0.0.0
     !
 ok: [relay] => 
@@ -474,12 +450,36 @@ ok: [relay] =>
      timers spf delay initial 100 200 500
      timers lsa rx min interval 100
      timers lsa tx delay initial 100 200 500
+ok: [c2] => 
+  msg: |-
+    ospf configuration for c2
+    =========================================
+    router ospf 1
+     router-id 10.0.0.3
+  
+  
+    !
+    interface Loopback0
+    !
+     ip ospf 1 area 0.0.0.0
+    !
+  
+    router ospfv3 1
+     router-id 10.0.0.3
+     address-family ipv6 unicast
+  
+  
+    !
+    interface GigabitEthernet2
+    ! c2 -> [c1,relay]
+     ospfv3 1 ipv6 area 0.0.0.0
+    !
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 skipping: [server]
 ok: [c1]
-ok: [c2]
 ok: [relay]
+ok: [c2]
 
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [server]
