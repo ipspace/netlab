@@ -51,6 +51,25 @@
 - set:
     system:
       hostname: {{ inventory_hostname.replace("_","-") }}
+      config:
+        snippet:
+          lldp-interfaces-config:
+            file: "/etc/lldpd.d/lldp-interfaces.conf"
+            content: |
+              configure system interface pattern eth*,swp*,!eth0
+              configure lldp tx-interval 30
+              configure lldp tx-hold 3
+            services:
+              lldp:
+                service: lldpd
+                action: restart
+{% if mtu is defined %}
+{# Cumulus platform default is 9216 #}
+          system-mtu:
+            file: /etc/network/ifupdown2/policy.d/mtu.json
+            content: |
+              { "address": { "defaults": { "mtu": "{{ mtu }}" } } }
+{% endif %}
     interface:
       eth0:
         ip:
