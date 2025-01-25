@@ -16,15 +16,20 @@ def parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespace,typing.List
     action='store_true',
     help='Create "rerun test" instructions')
   parser.add_argument(
+    '--oneline',
+    dest='oneline',
+    action='store_true',
+    help='Create one-line "rerun test" instructions')
+  parser.add_argument(
     '--summary',
     dest='summary',
     action='store_true',
     help='Create summary failure report')
   parser.add_argument(
-    '--oneline',
-    dest='oneline',
+    '--caveats',
+    dest='caveats',
     action='store_true',
-    help='Create one-line "rerun test" instructions')
+    help='Create caveats data structure')
 
   return parser.parse_known_args(args)
 
@@ -59,6 +64,16 @@ def print_rerun_instructions(path: str,args: argparse.Namespace) -> None:
   separator = '; ' if args.oneline else '\n'
   print(f'./run-tests.py -d {device} -p {provider} -t {test_suite} --limit {limit}',end=separator)
 
+def print_caveats(path: str) -> None:
+  components = path.split('.')
+  if len(components) < 3:
+    fatal(f'Cannot create caveats for {path}')
+
+  for idx,value in enumerate(components[2:]):
+    print (" " * idx * 2 + value + ":")
+    if idx == len(components) - 3:
+      print(" " * (idx + 1) * 2 + "caveat: |\n")
+
 def check_test_result(path: str, results: Box, args: argparse.Namespace) -> bool:
   test_failed = False
   for k in results.keys():
@@ -69,16 +84,18 @@ def check_test_result(path: str, results: Box, args: argparse.Namespace) -> bool
         continue
 
       test_failed = True
-      if not args.rerun and not args.summary:
+      if not args.rerun and not args.summary and not args.caveats:
         print(f'{path}: {k}')
 
   if not test_failed:
     return True
   
-  if args.rerun:
-    print_rerun_instructions(path,args)
   if args.summary:
     sum_failure(path)
+  if args.rerun:
+    print_rerun_instructions(path,args)
+  if args.caveats:
+    print_caveats(path)
 
   return False
 
