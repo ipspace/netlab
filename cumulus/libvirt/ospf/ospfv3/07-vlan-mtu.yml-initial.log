@@ -1,0 +1,583 @@
+[WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+ok: [x2]
+ok: [x1]
+
+TASK [Find device readiness script] ********************************************
+ok: [dut]
+ok: [x2]
+ok: [x1]
+
+TASK [Wait for device to become ready] *****************************************
+skipping: [dut]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/eos-clab.yml for x1, x2
+
+TASK [Wait for cEOS SSH daemon to start] ***************************************
+ok: [x2]
+ok: [x1]
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [dut]
+ok: [x1]
+ok: [x2]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [dut]
+ok: [x1]
+ok: [x2]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+ok: [x1] => 
+  msg: |-
+    normalize configuration for x1
+    =========================================
+    !
+    interface Ethernet1
+     no switchport
+     mac-address 52dc.cafe.0201
+ok: [x2] => 
+  msg: |-
+    normalize configuration for x2
+    =========================================
+    !
+    interface Ethernet1
+     no switchport
+     mac-address 52dc.cafe.0301
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [dut]
+ok: [x1]
+ok: [x2]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [dut]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for x1, x2
+
+TASK [eos_config: deploying normalize from /home/pipi/net101/tools/netsim/ansible/templates/normalize/eos.j2] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [x1]
+changed: [x2]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [dut]
+ok: [x1]
+ok: [x2]
+
+TASK [Find configuration template for initial] *********************************
+ok: [dut]
+ok: [x1]
+ok: [x2]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Build hosts file
+    #
+    echo "INIT: setting hostname"
+    hostname dut
+    #
+    #
+    # Build hosts file
+    #
+    #
+    cat <<SCRIPT >/tmp/hosts
+    #
+    # Created by netlab initial
+    #
+    2001:db8:1:1::1 dut
+    2001:db8:2::1 vlan1000.dut
+    2001:db8:2:1::1 vlan1001.dut
+    2001:db8:1:2::1 x1
+    2001:db8:2::2 Vlan1000.x1
+    2001:db8:1:3::1 x2
+    2001:db8:2:1::3 Vlan1001.x2
+    SCRIPT
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
+    #
+    # Disable ZTP
+    #
+    ztp --disable
+    #
+    #
+  
+    echo "INIT: Configuring system wide default MTU policy"
+    cat > /etc/network/ifupdown2/policy.d/mtu.json <<CONFIG
+    { "address": { "defaults": { "mtu": "1400" } } }
+    CONFIG
+    #
+    echo "INIT: creating loopback interface"
+    #
+    # Create loopback interface entry
+    #
+    cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
+    auto lo
+    iface lo inet6 loopback
+      address 2001:db8:1:1::1/64
+  
+    CONFIG
+    #
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    echo "INIT: creating other interface"
+    cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
+    auto swp1
+    auto swp2
+    CONFIG
+    #
+    echo "INIT: executing ifreload"
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    # For whatever crazy reason, I had to enable IPv6 in containers
+    #
+    #
+    # Enable FRR modules for ['vlan', 'ospf']
+    #
+    #
+    # Enable FRR daemons
+    #
+    echo "ospfd=yes" >>/etc/frr/daemons
+    echo "ospf6d=yes" >>/etc/frr/daemons
+  
+    systemctl enable frr.service
+    systemctl start frr.service
+    systemctl reload frr.service
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    ipv6 forwarding
+    !
+    interface swp1
+    ! no shutdown
+     description [Access VLAN ospf_1] dut -> x1
+    !
+    interface swp2
+    ! no shutdown
+     description [Access VLAN ospf_2] dut -> x2
+    !
+    interface vlan1000
+    ! no shutdown
+     description VLAN ospf_1 (1000) -> [x1]
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    interface vlan1001
+    ! no shutdown
+     description VLAN ospf_2 (1001) -> [x2]
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    #
+    # Enable LLDP
+    #
+    echo "INIT: enabling LLDP"
+    cat <<CONFIG >/etc/lldpd.d/system.conf
+    configure lldp tx-interval 30
+    configure lldp tx-hold 3
+    configure system interface pattern *,!eth0,swp*
+    CONFIG
+    service lldpd restart
+ok: [x1] => 
+  msg: |-
+    initial configuration for x1
+    =========================================
+    hostname x1
+    !
+    logging monitor debugging
+    aaa authorization exec default local
+    !
+    lldp run
+    ipv6 unicast-routing
+    !
+    !
+    ipv6 host dut 2001:db8:1:1::1
+    ipv6 host x2 2001:db8:1:3::1
+    !
+    interface defaults
+     mtu 1400
+    !
+    interface Management0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     ipv6 nd ra interval 5
+     ipv6 address 2001:db8:1:2::1/64
+    !
+    interface Ethernet1
+     no switchport
+     description [Access VLAN ospf_1] x1 -> dut
+    !
+     mac-address 52dc.cafe.0201
+     no shutdown
+    !
+    interface Vlan1000
+     description VLAN ospf_1 (1000) -> [dut]
+     ipv6 nd ra interval 5
+     ipv6 address 2001:db8:2::2/64
+    !
+ok: [x2] => 
+  msg: |-
+    initial configuration for x2
+    =========================================
+    hostname x2
+    !
+    logging monitor debugging
+    aaa authorization exec default local
+    !
+    lldp run
+    ipv6 unicast-routing
+    !
+    !
+    ipv6 host dut 2001:db8:1:1::1
+    ipv6 host x1 2001:db8:1:2::1
+    !
+    interface Management0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     ipv6 nd ra interval 5
+     ipv6 address 2001:db8:1:3::1/64
+    !
+    interface Ethernet1
+     no switchport
+     mtu 1280
+     description [Access VLAN ospf_2] x2 -> dut
+    !
+     mac-address 52dc.cafe.0301
+     no shutdown
+    !
+    interface Vlan1001
+     mtu 1280
+     description VLAN ospf_2 (1001) -> [dut]
+     ipv6 nd ra interval 5
+     ipv6 address 2001:db8:2:1::3/64
+    !
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [dut]
+ok: [x1]
+ok: [x2]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for x1, x2
+
+TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
+ok: [dut]
+
+TASK [Create local temporary file] *********************************************
+changed: [dut -> localhost]
+
+TASK [Create initial config script in local temporary file] ********************
+changed: [dut -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
+changed: [dut]
+
+TASK [Remove temporary file /tmp/ansible.dut.5le2zdddtemp] *********************
+changed: [dut -> localhost]
+
+TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
+changed: [x1]
+changed: [x2]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+ok: [x1]
+ok: [x2]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=vlan)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=ospf)
+
+TASK [Figure out whether to deploy the module vlan on current device] **********
+ok: [dut]
+ok: [x1]
+ok: [x2]
+
+TASK [Find configuration template for vlan] ************************************
+ok: [dut]
+ok: [x2]
+ok: [x1]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => 
+  msg: |-
+    vlan configuration for dut
+    =========================================
+    #!/bin/bash
+    #
+    set -e # Exit immediately when any command fails
+    #
+    #
+    # Create multi-vlan bridge, specify VLANs, and attach interfaces to it
+    #
+    cat >/etc/network/interfaces.d/50-bridge.intf <<CONFIG
+    auto bridge
+    iface bridge
+        bridge-vlan-aware yes
+        bridge-vids 1000,1001
+        bridge-ports swp1
+        bridge-ports swp2
+    CONFIG
+    #
+    # Create VLAN interfaces
+    #
+    cat >/etc/network/interfaces.d/51-bridge-interfaces.intf <<CONFIG
+    iface swp1
+        bridge-access 1000
+    iface swp2
+        bridge-access 1001
+    auto vlan1000
+    iface vlan1000
+        address 2001:db8:2::1/64
+  
+        vlan-id 1000
+        vlan-raw-device bridge
+    auto vlan1001
+    iface vlan1001
+        address 2001:db8:2:1::1/64
+  
+        vlan-id 1001
+        vlan-raw-device bridge
+    CONFIG
+    ifreload -a
+ok: [x2] => 
+  msg: |-
+    vlan configuration for x2
+    =========================================
+    vlan 1001
+     name ospf_2
+    !
+  
+    !
+    interface Ethernet1
+     switchport
+     switchport access vlan 1001
+    !
+    interface Vlan1001
+ok: [x1] => 
+  msg: |-
+    vlan configuration for x1
+    =========================================
+    vlan 1000
+     name ospf_1
+    !
+  
+    !
+    interface Ethernet1
+     switchport
+     switchport access vlan 1000
+    !
+    interface Vlan1000
+
+TASK [Find configuration deployment deploy_script for vlan] ********************
+ok: [dut]
+ok: [x1]
+ok: [x2]
+
+TASK [Deploy vlan configuration] ***********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for x1, x2
+
+TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/vlan/cumulus.j2] ***
+ok: [dut]
+
+TASK [Create local temporary file] *********************************************
+changed: [dut -> localhost]
+
+TASK [Create vlan config script in local temporary file] ***********************
+changed: [dut -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
+changed: [dut]
+
+TASK [Remove temporary file /tmp/ansible.dut.ddootfk0temp] *********************
+changed: [dut -> localhost]
+
+TASK [eos_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/eos.j2] ***
+changed: [x2]
+changed: [x1]
+
+TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [dut]
+ok: [x1]
+ok: [x2]
+
+TASK [Find configuration template for ospf] ************************************
+ok: [dut]
+ok: [x1]
+ok: [x2]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => 
+  msg: |-
+    ospf configuration for dut
+    =========================================
+    !
+    router ospf6
+     ospf6 router-id 10.0.0.1
+     timers lsa min-arrival 100
+     timers throttle spf 10 50 500
+  
+  
+     interface lo area 0.0.0.0
+     interface vlan1000 area 0.0.0.0
+     interface vlan1001 area 0.0.0.0
+    !
+    interface vlan1000
+    ! VLAN ospf_1 (1000) -> [x1]
+     ipv6 ospf6 network point-to-point
+    !
+    interface vlan1001
+    ! VLAN ospf_2 (1001) -> [x2]
+     ipv6 ospf6 network point-to-point
+    !
+  
+    do write
+ok: [x1] => 
+  msg: |-
+    ospf configuration for x1
+    =========================================
+    !
+    ! OSPFv3 configuration
+    !
+    interface Loopback0
+    !
+     ipv6 ospf 1 area 0.0.0.0
+    !
+    interface Vlan1000
+    ! VLAN ospf_1 (1000) -> [dut]
+     ipv6 ospf 1 area 0.0.0.0
+     ipv6 ospf network point-to-point
+    !
+    !
+    ipv6 router ospf 1
+     router-id 10.0.0.2
+     timers spf delay initial 100 200 500
+     timers lsa rx min interval 100
+     timers lsa tx delay initial 100 200 500
+ok: [x2] => 
+  msg: |-
+    ospf configuration for x2
+    =========================================
+    !
+    ! OSPFv3 configuration
+    !
+    interface Loopback0
+    !
+     ipv6 ospf 1 area 0.0.0.0
+    !
+    interface Vlan1001
+    ! VLAN ospf_2 (1001) -> [dut]
+     ipv6 ospf 1 area 0.0.0.0
+     ipv6 ospf network point-to-point
+    !
+    !
+    ipv6 router ospf 1
+     router-id 10.0.0.3
+     timers spf delay initial 100 200 500
+     timers lsa rx min interval 100
+     timers lsa tx delay initial 100 200 500
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+ok: [dut]
+ok: [x1]
+ok: [x2]
+
+TASK [Deploy ospf configuration] ***********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for x1, x2
+
+TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/ospf/cumulus.j2] ***
+ok: [dut]
+
+TASK [Create local temporary file] *********************************************
+changed: [dut -> localhost]
+
+TASK [Create ospf config script in local temporary file] ***********************
+changed: [dut -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
+changed: [dut]
+
+TASK [Remove temporary file /tmp/ansible.dut.a1vktswctemp] *********************
+changed: [dut -> localhost]
+
+TASK [eos_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/eos.j2] ***
+changed: [x2]
+changed: [x1]
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+dut                        : ok=39   changed=12   unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+x1                         : ok=33   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+x2                         : ok=33   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+
+
+
+This lab tests OSPFv3 adjacencies on VLAN interfaces with non-default MTU
+settings. The adjacency establishment could fail due to MTU mismatch.
+

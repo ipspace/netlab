@@ -426,9 +426,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for s2, ce1, ce2
 
 TASK [template] ****************************************************************
-changed: [ce1]
-changed: [s2]
 changed: [ce2]
+changed: [s2]
+changed: [ce1]
 
 TASK [set_fact] ****************************************************************
 ok: [ce1]
@@ -436,8 +436,8 @@ ok: [s2]
 ok: [ce2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [s2]
 changed: [ce1]
+changed: [s2]
 changed: [ce2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -482,6 +482,12 @@ skipping: [s2]
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ce1]
 skipping: [ce2]
+ok: [s1] => 
+  msg: |-
+    vlan configuration for s1
+    =========================================
+    ! First of all, create association VLAN<->Virtual-Network
+    !
 ok: [s2] => 
   msg: |-
     vlan configuration for s2
@@ -492,12 +498,6 @@ ok: [s2] =>
     #
   
     exit 0
-ok: [s1] => 
-  msg: |-
-    vlan configuration for s1
-    =========================================
-    ! First of all, create association VLAN<->Virtual-Network
-    !
 
 TASK [Find configuration deployment deploy_script for vlan] ********************
 skipping: [ce1]
@@ -618,6 +618,44 @@ ok: [ce2] =>
     !
     !
     do write
+ok: [s2] => 
+  msg: |-
+    bgp configuration for s2
+    =========================================
+    !
+    router bgp 65000
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.4
+    !
+      neighbor 10.0.0.3 remote-as 65000
+      neighbor 10.0.0.3 description s1
+      neighbor 10.0.0.3 update-source lo
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.4/32
+    !
+    !
+    !
+      neighbor 10.0.0.3 activate
+      neighbor 10.0.0.3 next-hop-self
+      no neighbor 10.0.0.3 send-community all
+      neighbor 10.0.0.3 send-community standard
+      neighbor 10.0.0.3 send-community large
+      neighbor 10.0.0.3 send-community extended
+    !
+    !
+    !
+    do write
 ok: [s1] => 
   msg: |-
     bgp configuration for s1
@@ -665,44 +703,6 @@ ok: [s1] =>
     !
     !
     !
-ok: [s2] => 
-  msg: |-
-    bgp configuration for s2
-    =========================================
-    !
-    router bgp 65000
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.4
-    !
-      neighbor 10.0.0.3 remote-as 65000
-      neighbor 10.0.0.3 description s1
-      neighbor 10.0.0.3 update-source lo
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-      network 10.0.0.4/32
-    !
-    !
-    !
-      neighbor 10.0.0.3 activate
-      neighbor 10.0.0.3 next-hop-self
-      no neighbor 10.0.0.3 send-community all
-      neighbor 10.0.0.3 send-community standard
-      neighbor 10.0.0.3 send-community large
-      neighbor 10.0.0.3 send-community extended
-    !
-    !
-    !
-    do write
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [ce1]
@@ -715,8 +715,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/dellos10.yml for s1
 
 TASK [template] ****************************************************************
-changed: [s2]
 changed: [ce1]
+changed: [s2]
 changed: [ce2]
 
 TASK [set_fact] ****************************************************************
@@ -730,8 +730,8 @@ skipping: [ce2]
 skipping: [s2]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [ce2]
 changed: [ce1]
+changed: [ce2]
 changed: [s2]
 
 TASK [wait_for_connection] *****************************************************
@@ -1001,12 +1001,6 @@ skipping: [s2]
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ce1]
 skipping: [ce2]
-ok: [s1] => 
-  msg: |-
-    vxlan configuration for s1
-    =========================================
-    nve
-      source-interface loopback0
 ok: [s2] => 
   msg: |-
     vxlan configuration for s2
@@ -1043,6 +1037,12 @@ ok: [s2] =>
   
   
     exit $?
+ok: [s1] => 
+  msg: |-
+    vxlan configuration for s1
+    =========================================
+    nve
+      source-interface loopback0
 
 TASK [Find configuration deployment deploy_script for vxlan] *******************
 skipping: [ce1]
