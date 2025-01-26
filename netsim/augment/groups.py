@@ -6,6 +6,7 @@ top-level element. That dictionary is merged from global- and node-level paramet
 
 import typing
 import re
+import copy
 
 from box import Box
 
@@ -402,7 +403,7 @@ def copy_group_node_data(topology: Box,pfx: str) -> None:
 
       if log.debug_active('groups'):
         print(f'... merging {g_type} data with {name}')
-      merge_data = data.get_box(gdata.node_data)
+      merge_data = copy.deepcopy(gdata.node_data)
       if g_type == 'node' and 'module' in topology.nodes[name]:
         for m in topo_modules:
           if not m in topology.nodes[name].module:
