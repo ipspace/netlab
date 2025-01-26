@@ -146,7 +146,7 @@ def build_vtep_list(vlan: Box, node: str, nodes: typing.List[str], topology: Box
     ndata = topology.nodes[n]
     if not 'vlans' in ndata:                                        # No VLANs on remote node, skip it
       continue
-    vni_match = filter(lambda x: x.vni == vlan.vni,ndata.vlans.values())
+    vni_match = filter(lambda x: x.get('vni',None) == vlan.vni,ndata.vlans.values())
     if list(vni_match):                                             # Is there a VLAN with matching VNI on remote node?
       vlan.vtep_list.append(ndata.vxlan.vtep)                       # ... if so, add remote VTEP to VLAN flood list
 
