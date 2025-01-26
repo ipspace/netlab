@@ -142,29 +142,35 @@ def set_lag_ifindex(laglink: Box, intf: Box, is_mside: bool, topology: Box) -> b
   return True
 
 """
-split_dual_mlag_link - Split dual-mlag pairs into 2 lag link groups, returns the new link
+split_dual_mlag_link - Split dual-mlag pairs into 2 virtual lag links, one for each side
 """
 def split_dual_mlag_link(link: Box, topology: Box) -> None:
+  first_pair = set()
+  other_pair = set()
+  for i in link.interfaces:
+    if i.node not in first_pair and i.node not in other_pair:
+      first_pair.add( i.node )
+      other_pair = other_pair | { p for p in i._peers }
+
   def no_peer(i: Box) -> Box:
-    i.pop('_peer',None)                                  # Remove internal _peer attribute
+    i.pop('_peers',None)                                 # Remove internal _peers attribute
     return i
 
   split_copy = data.get_box(link)                        # Make a copy
   split_copy.linkindex = len(topology.links)+1           # Update its link index
   split_copy._linkname = split_copy._linkname + "-2"     # Assign unique name
-  first_pair = ( link.interfaces[0].node, link.interfaces[0]._peer )
-  split_copy.interfaces = [ no_peer(i) for i in link.interfaces if i.node in first_pair ]
-  topology.links[link.linkindex-1].interfaces = [ no_peer(i) for i in link.interfaces if i.node not in first_pair ]
+  split_copy.interfaces = [ no_peer(i) for i in link.interfaces if i.node not in first_pair ]
 
-  for l in topology.links:
-    if 'lag' in l:
-      nodes = [ i.node for i in l.interfaces ]
-      if first_pair[0] in nodes and first_pair[1] in nodes:
-        l.lag._parentindex = split_copy.linkindex
+  topology.links[link.linkindex-1].interfaces = [ no_peer(i) for i in link.interfaces if i.node in first_pair ]
+
+  for l in topology.links:                               # Update lag interfaces with correct parent linkindex
+    if l.get('lag._parentindex',None) == link.linkindex:
+      for i in l.interfaces:
+        i.lag._parentindex = link.linkindex if i.node in first_pair else split_copy.linkindex
 
   if log.debug_active('lag'):
-    print(f'LAG split_dual_mlag_links -> adding split link {split_copy}')
-    print(f'LAG split_dual_mlag_links -> remaining link {topology.links[link.linkindex-1]}')
+    print(f'LAG split_dual_mlag_link -> adding split link {split_copy}')
+    print(f'LAG split_dual_mlag_link -> remaining link {topology.links[link.linkindex-1]}')
   topology.links.append(split_copy)
 
 """
@@ -244,7 +250,8 @@ def create_lag_interfaces(l: Box, topology: Box) -> None:
         continue
       ifatts = ifatts + { k:v for k,v in m.items() if k not in skip_atts } + node_ifs[0]
       if dual_mlag:
-        ifatts._peer = [ i.node for i in m.interfaces if i.node!=node ][0]
+        new_peer = [ i.node for i in m.interfaces if i.node!=node ]
+        ifatts._peers = ifatts.get('_peers',[]) + new_peer
 
     is_mside = is_mlag and node!=one_side         # Set flag if this node is the M: side
     if not set_lag_ifindex(l,ifatts,is_mside,topology):
