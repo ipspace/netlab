@@ -127,7 +127,7 @@ ok: [x1] =>
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1024
+    ip link set dev eth1 mtu 1400
   
     #
     # Add vtysh.conf file
@@ -287,7 +287,7 @@ ok: [dut] =>
     }
     interfaces {
       et-0/0/0 {
-        mtu 1038;
+        mtu 1414;
       }
       et-0/0/1 {
         mtu 1294;
@@ -356,16 +356,16 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
 ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
@@ -392,8 +392,8 @@ ok: [x2]
 ok: [dut]
 
 TASK [Find configuration template for vlan] ************************************
-ok: [x2]
 ok: [x1]
+ok: [x2]
 ok: [dut]
 
 TASK [fail] ********************************************************************
@@ -498,12 +498,11 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml f
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2
 
 TASK [junos_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/vptx.j2] ***
-fatal: [dut]: FAILED! => changed=false 
-  msg: b'Not connected to NETCONF server'
+changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -520,16 +519,48 @@ skipping: [x2]
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [x1]
 ok: [x2]
+ok: [dut]
 
 TASK [Find configuration template for ospf] ************************************
 ok: [x1]
 ok: [x2]
+ok: [dut]
 
 TASK [fail] ********************************************************************
+skipping: [dut]
 skipping: [x1]
 skipping: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => 
+  msg: |-
+    ospf configuration for dut
+    =========================================
+    routing-options {
+      router-id 10.0.0.1
+    }
+    protocols {
+      delete: ospf;
+    }
+  
+    protocols {
+      ospf {
+        area 0.0.0.0 {
+          interface lo0.0 {
+          }
+        }
+        area 0.0.0.0 {
+          interface irb.1000 {
+            interface-type p2p;
+          }
+        }
+        area 0.0.0.0 {
+          interface irb.1001 {
+            interface-type p2p;
+          }
+        }
+      }
+    }
 ok: [x1] => 
   msg: |-
     ospf configuration for x1
@@ -590,9 +621,15 @@ ok: [x2] =>
 TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [x1]
 ok: [x2]
+ok: [dut]
 
 TASK [Deploy ospf configuration] ***********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2
+
+TASK [junos_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/junos.j2] ***
+[WARNING]:  statement not found
+changed: [dut]
 
 TASK [template] ****************************************************************
 changed: [x1]
@@ -607,17 +644,19 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=22   changed=1    unreachable=0    failed=1    skipped=6    rescued=0    ignored=0   
+dut                        : ok=29   changed=3    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 x1                         : ok=35   changed=7    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
 x2                         : ok=34   changed=6    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
 
-Fatal error in netlab: Executing Ansible playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible failed
-Error executing ansible-playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible:
-  Command '['ansible-playbook', '/home/pipi/net101/tools/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.
+
+
+This lab tests OSPF adjacencies on VLAN interfaces with non-default MTU
+settings. The adjacency establishment could fail due to MTU mismatch.
+
