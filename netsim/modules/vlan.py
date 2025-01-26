@@ -865,6 +865,9 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
                         if k not in svi_skipattr and k not in copy_attr and
                            (v is not True or k not in vlan_ifdata) }
       fix_vlan_mode_attribute(vlan_ifdata)
+      if 'mtu' in node and 'mtu' not in vlan_ifdata and vlan_mode != 'bridge':
+        if not features.get('initial.system_mtu',False):                    # If we have node MTU on a device without system MTU
+          vlan_ifdata.mtu = node.mtu                                        # ... copy node MTU to VLAN MTU on IRB interfaces
       node.interfaces.append(vlan_ifdata)                                   # ... and add SVI interface to list of node interfaces
       vlan_ifmap[access_vlan] = vlan_ifdata
     else:
