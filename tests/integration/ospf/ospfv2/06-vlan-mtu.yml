@@ -1,0 +1,36 @@
+---
+message: |
+  This lab tests OSPF adjacencies on VLAN interfaces with non-default MTU
+  settings. The adjacency establishment could fail due to MTU mismatch.
+
+module: [ ospf, vlan ]
+
+vlans:
+  ospf_1:
+    links: [ dut-x1 ]
+    ospf.network_type: point-to-point
+  ospf_2:
+    mtu: 1800
+    links: [ dut-x2 ]
+    ospf.network_type: point-to-point
+
+groups:
+  probe:
+    device: frr
+    provider: clab
+    members: [ x1, x2 ]
+
+nodes:
+  dut:
+    mtu: 1750
+  x1:
+    mtu: 1750
+  x2:
+
+validate:
+  adj:
+    description: Check OSPF adjacencies
+    wait_msg: Waiting for OSPF adjacency process to complete
+    wait: 60
+    nodes: [ x1, x2 ]
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id)
