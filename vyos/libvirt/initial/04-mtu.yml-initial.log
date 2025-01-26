@@ -3,187 +3,103 @@
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [h1]
-ok: [h2]
-ok: [r]
+ok: [t_1300]
+ok: [t_1400]
+ok: [dut]
+ok: [p1]
 
 TASK [Find device readiness script] ********************************************
-ok: [h1]
-ok: [h2]
-ok: [r]
+ok: [t_1400]
+ok: [t_1300]
+ok: [dut]
+ok: [p1]
 
 TASK [Wait for device to become ready] *****************************************
-skipping: [h1]
-skipping: [h2]
-skipping: [r]
+skipping: [t_1300]
+skipping: [t_1400]
+skipping: [dut]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/eos-clab.yml for p1
+
+TASK [Wait for cEOS SSH daemon to start] ***************************************
+ok: [p1]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, r
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for p1, t_1300, t_1400, dut
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
-ok: [h1]
-ok: [h2]
-ok: [r]
+ok: [t_1300]
+ok: [t_1400]
+ok: [dut]
+ok: [p1]
 
 TASK [Find configuration template for normalize] *******************************
-ok: [h1]
-ok: [h2]
-ok: [r]
+ok: [t_1300]
+ok: [t_1400]
+ok: [dut]
+ok: [p1]
 
 TASK [fail] ********************************************************************
-skipping: [h1]
-skipping: [h2]
-skipping: [r]
+skipping: [p1]
+skipping: [t_1300]
+skipping: [t_1400]
+skipping: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [h1]
-skipping: [h2]
-skipping: [r]
+skipping: [t_1300]
+skipping: [t_1400]
+skipping: [dut]
+ok: [p1] => 
+  msg: |-
+    normalize configuration for p1
+    =========================================
+    !
+    interface Ethernet1
+     no switchport
+     mac-address 52dc.cafe.0201
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
-skipping: [h1]
-skipping: [h2]
-skipping: [r]
+skipping: [t_1300]
+skipping: [t_1400]
+skipping: [dut]
+ok: [p1]
 
 TASK [Deploy normalize configuration] ******************************************
-skipping: [h1]
-skipping: [h2]
-skipping: [r]
+skipping: [t_1300]
+skipping: [t_1400]
+skipping: [dut]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for p1
+
+TASK [eos_config: deploying normalize from /home/pipi/net101/tools/netsim/ansible/templates/normalize/eos.j2] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [p1]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, r
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for p1, t_1300, t_1400, dut
 
 TASK [Figure out whether to deploy the module initial on current device] *******
-ok: [h1]
-ok: [h2]
-ok: [r]
+ok: [t_1300]
+ok: [t_1400]
+ok: [dut]
+ok: [p1]
 
 TASK [Find configuration template for initial] *********************************
-ok: [h1]
-ok: [h2]
-ok: [r]
+ok: [t_1300]
+ok: [t_1400]
+ok: [dut]
+ok: [p1]
 
 TASK [fail] ********************************************************************
-skipping: [h1]
-skipping: [h2]
-skipping: [r]
+skipping: [p1]
+skipping: [t_1300]
+skipping: [t_1400]
+skipping: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [h1] => 
+ok: [dut] => 
   msg: |-
-    initial configuration for h1
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.0.2/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.0.2/24 dev eth1
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
-    set +e
-    ip -6 addr del 2001:db8:1::2/64 dev eth1 2>/dev/null
-    set -e
-    ip -6 addr add 2001:db8:1::2/64 dev eth1
-    ip link set dev eth1 mtu 1400
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.2.0.0/24 2>/dev/null; do
-      : ; done
-    #
-    #
-    echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.0.1 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.0.1 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.0.1 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.0.1 dev eth1 protocol static
-    #
-    # Print the final routing table
-    ip route
-ok: [h2] => 
-  msg: |-
-    initial configuration for h2
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.1.3/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.1.3/24 dev eth1
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
-    set +e
-    ip -6 addr del 2001:db8:1:1::3/64 dev eth1 2>/dev/null
-    set -e
-    ip -6 addr add 2001:db8:1:1::3/64 dev eth1
-    ip link set dev eth1 mtu 1600
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.2.0.0/24 2>/dev/null; do
-      : ; done
-    #
-    #
-    echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.1.1 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.1.1 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.1.1 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.1.1 dev eth1 protocol static
-    #
-    # Print the final routing table
-    ip route
-ok: [r] => 
-  msg: |-
-    initial configuration for r
+    initial configuration for dut
     =========================================
     #!/bin/vbash
     source /opt/vyatta/etc/functions/script-template
@@ -195,7 +111,7 @@ ok: [r] =>
     # Configuration items start here
   
     configure
-    set system host-name 'vyos-r'
+    set system host-name 'dut'
   
   
     set interfaces dummy dum0 address 10.0.0.1/32
@@ -203,9 +119,9 @@ ok: [r] =>
   
   
   
-    set interfaces ethernet eth1 description 'r -> h1 [stub]'
+    set interfaces ethernet eth1 description 'dut -> p1'
   
-    set interfaces ethernet eth1 mtu 1400
+    set interfaces ethernet eth1 mtu 1500
   
     set interfaces ethernet eth1 address 172.16.0.1/24
   
@@ -214,13 +130,24 @@ ok: [r] =>
   
   
   
-    set interfaces ethernet eth2 description 'r -> h2 [stub]'
+    set interfaces ethernet eth2 description 'dut -> t_1400 [stub]'
   
-    set interfaces ethernet eth2 mtu 1600
+    set interfaces ethernet eth2 mtu 1400
   
     set interfaces ethernet eth2 address 172.16.1.1/24
   
     set interfaces ethernet eth2 address 2001:db8:1:1::1/64;
+  
+  
+  
+  
+    set interfaces ethernet eth3 description 'dut -> t_1300 [stub]'
+  
+    set interfaces ethernet eth3 mtu 1300
+  
+    set interfaces ethernet eth3 address 172.16.2.1/24
+  
+    set interfaces ethernet eth3 address 2001:db8:1:2::1/64;
   
   
   
@@ -229,6 +156,7 @@ ok: [r] =>
   
     set service router-advert interface eth1
     set service router-advert interface eth2
+    set service router-advert interface eth3
   
   
     # Commit, save and exit from subshell
@@ -239,72 +167,371 @@ ok: [r] =>
   
     # Restart FRR to pick up the new hostname
     sudo service frr restart
+ok: [t_1300] => 
+  msg: |-
+    initial configuration for t_1300
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)$ "
+    SCRIPT
+    hostname t-1300
+    #
+    # Build hosts file
+    #
+    #
+    cat <<SCRIPT >/tmp/hosts
+    #
+    # Created by netlab initial
+    #
+    10.0.0.2 p1
+    2001:db8:0:2::1 p1
+    172.16.0.2 Ethernet1.p1
+    2001:db8:1::2 Ethernet1.p1
+    172.16.2.3 t_1300 eth1.t_1300
+    2001:db8:1:2::3 t_1300 eth1.t_1300
+    172.16.1.4 t_1400 eth1.t_1400
+    2001:db8:1:1::4 t_1400 eth1.t_1400
+    10.0.0.1 dut
+    2001:db8:0:1::1 dut
+    172.16.0.1 eth1.dut
+    2001:db8:1::1 eth1.dut
+    172.16.1.1 eth2.dut
+    2001:db8:1:1::1 eth2.dut
+    172.16.2.1 eth3.dut
+    2001:db8:1:2::1 eth3.dut
+    SCRIPT
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
+    # It seems on the Vagrant box for ubuntu 20.04, DNS Servers are hardcoded as 4.2.2.1 & Co.
+    # This is annoying on a network with filtered DNS.
+    # DNSMasq server used for giving out DHCP addresses on the management network is able to act as a DNS Server.
+    # Let's use that.
+    #
+    # (Overwrite netplan config to remove DNS stuff)
+    echo -n 'Starting initial config ' && date
+    cat <<SCRIPT >/etc/netplan/01-netcfg.yaml
+    network:
+      version: 2
+      renderer: networkd
+      ethernets:
+        eth0:
+          dhcp4: true
+          dhcp6: false
+          optional: true
+    SCRIPT
+    netplan apply
+  
+    # (Overwrite resolved config to remove DNS stuff)
+    cat <<SCRIPT > /etc/systemd/resolved.conf
+    [Resolve]
+    DNS=
+    FallbackDNS=
+    Domains=
+    DNSOverTLS=no
+    Cache=yes
+    DNSStubListener=yes
+    SCRIPT
+  
+    systemctl restart systemd-resolved
+  
+    # Set persistent hostname
+    hostnamectl set-hostname t_1300
+  
+    NEED_APT_UPDATE=YES
+  
+    # Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA
+    #
+    cat <<SCRIPT > /etc/sysctl.d/10-netsim.conf
+    net.ipv4.ip_forward=0
+    net.ipv6.conf.all.forwarding=0
+  
+    net.ipv6.conf.eth1.disable_ipv6=0
+  
+    SCRIPT
+    sysctl -p /etc/sysctl.d/10-netsim.conf
+  
+    # Loopback addressing
+  
+    # Interface addressing and bonds, including any static routes
+    cat <<SCRIPT > /etc/netplan/03-eth-eth1.yaml
+    network:
+      version: 2
+      renderer: networkd
+      ethernets:
+        eth1:
+          addresses:
+            - 172.16.2.3/24
+            - 2001:db8:1:2::3/64
+          routes:
+          - to: 172.16.0.0/16
+            via: 172.16.2.1
+          - to: 10.0.0.0/24
+            via: 172.16.2.1
+          - to: 10.1.0.0/16
+            via: 172.16.2.1
+          - to: 10.2.0.0/24
+            via: 172.16.2.1
+    SCRIPT
+  
+    echo -n 'Starting netplan generate ' && date
+    netplan generate
+    echo -n 'Starting netplan apply ' && date
+    nohup netplan apply &
+ok: [t_1400] => 
+  msg: |-
+    initial configuration for t_1400
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)$ "
+    SCRIPT
+    hostname t-1400
+    #
+    # Build hosts file
+    #
+    #
+    cat <<SCRIPT >/tmp/hosts
+    #
+    # Created by netlab initial
+    #
+    10.0.0.2 p1
+    2001:db8:0:2::1 p1
+    172.16.0.2 Ethernet1.p1
+    2001:db8:1::2 Ethernet1.p1
+    172.16.2.3 t_1300 eth1.t_1300
+    2001:db8:1:2::3 t_1300 eth1.t_1300
+    172.16.1.4 t_1400 eth1.t_1400
+    2001:db8:1:1::4 t_1400 eth1.t_1400
+    10.0.0.1 dut
+    2001:db8:0:1::1 dut
+    172.16.0.1 eth1.dut
+    2001:db8:1::1 eth1.dut
+    172.16.1.1 eth2.dut
+    2001:db8:1:1::1 eth2.dut
+    172.16.2.1 eth3.dut
+    2001:db8:1:2::1 eth3.dut
+    SCRIPT
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
+    # It seems on the Vagrant box for ubuntu 20.04, DNS Servers are hardcoded as 4.2.2.1 & Co.
+    # This is annoying on a network with filtered DNS.
+    # DNSMasq server used for giving out DHCP addresses on the management network is able to act as a DNS Server.
+    # Let's use that.
+    #
+    # (Overwrite netplan config to remove DNS stuff)
+    echo -n 'Starting initial config ' && date
+    cat <<SCRIPT >/etc/netplan/01-netcfg.yaml
+    network:
+      version: 2
+      renderer: networkd
+      ethernets:
+        eth0:
+          dhcp4: true
+          dhcp6: false
+          optional: true
+    SCRIPT
+    netplan apply
+  
+    # (Overwrite resolved config to remove DNS stuff)
+    cat <<SCRIPT > /etc/systemd/resolved.conf
+    [Resolve]
+    DNS=
+    FallbackDNS=
+    Domains=
+    DNSOverTLS=no
+    Cache=yes
+    DNSStubListener=yes
+    SCRIPT
+  
+    systemctl restart systemd-resolved
+  
+    # Set persistent hostname
+    hostnamectl set-hostname t_1400
+  
+    NEED_APT_UPDATE=YES
+  
+    # Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA
+    #
+    cat <<SCRIPT > /etc/sysctl.d/10-netsim.conf
+    net.ipv4.ip_forward=0
+    net.ipv6.conf.all.forwarding=0
+  
+    net.ipv6.conf.eth1.disable_ipv6=0
+  
+    SCRIPT
+    sysctl -p /etc/sysctl.d/10-netsim.conf
+  
+    # Loopback addressing
+  
+    # Interface addressing and bonds, including any static routes
+    cat <<SCRIPT > /etc/netplan/03-eth-eth1.yaml
+    network:
+      version: 2
+      renderer: networkd
+      ethernets:
+        eth1:
+          addresses:
+            - 172.16.1.4/24
+            - 2001:db8:1:1::4/64
+          routes:
+          - to: 172.16.0.0/16
+            via: 172.16.1.1
+          - to: 10.0.0.0/24
+            via: 172.16.1.1
+          - to: 10.1.0.0/16
+            via: 172.16.1.1
+          - to: 10.2.0.0/24
+            via: 172.16.1.1
+    SCRIPT
+  
+    echo -n 'Starting netplan generate ' && date
+    netplan generate
+    echo -n 'Starting netplan apply ' && date
+    nohup netplan apply &
+ok: [p1] => 
+  msg: |-
+    initial configuration for p1
+    =========================================
+    hostname p1
+    !
+    logging monitor debugging
+    aaa authorization exec default local
+    !
+    lldp run
+    ip routing
+    ipv6 unicast-routing
+    !
+    !
+    ip host dut 10.0.0.1 172.16.0.1 172.16.1.1 172.16.2.1
+    ip host t1300 172.16.2.3
+    ip host t1400 172.16.1.4
+    ipv6 host dut 2001:db8:0:1::1
+    ipv6 host t1300 2001:db8:1:2::3
+    ipv6 host t1400 2001:db8:1:1::4
+    !
+    interface Management0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     ip address 10.0.0.2/32
+     ipv6 nd ra interval 5
+     ipv6 address 2001:db8:0:2::1/64
+    !
+    interface Ethernet1
+     no switchport
+     mtu 1500
+     description p1 -> dut
+     ip address 172.16.0.2/24
+     ipv6 nd ra interval 5
+     ipv6 address 2001:db8:1::2/64
+    !
+     mac-address 52dc.cafe.0201
+     no shutdown
+    !
 
 TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [h1]
-ok: [h2]
-ok: [r]
+ok: [t_1300]
+ok: [t_1400]
+ok: [dut]
+ok: [p1]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for r
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for p1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux.yml for t_1300, t_1400
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for dut
 
-TASK [Define script filename and determine whether to execute in netns] ********
-ok: [h1]
-ok: [h2]
-
-TASK [Create a temporary file for the rendered script] *************************
-changed: [h2 -> localhost]
-changed: [h1 -> localhost]
-
-TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
-changed: [h2 -> localhost]
-
-TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
-skipping: [h1]
-skipping: [h2]
-
-TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-skipping: [h1]
-skipping: [h2]
-
-TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h2 -> localhost]
-changed: [h1 -> localhost]
-
-TASK [Remove temporary file /tmp/h1_initial-l5x4r8ih.sh] ***********************
-changed: [h1 -> localhost]
-changed: [h2 -> localhost]
-
-TASK [wait_for_connection] *****************************************************
-skipping: [r]
-
-TASK [wait_for] ****************************************************************
-skipping: [r]
-
-TASK [set_fact] ****************************************************************
-ok: [r]
-
-TASK [set_fact] ****************************************************************
-ok: [r]
+TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
+changed: [p1]
 
 TASK [template] ****************************************************************
-changed: [r]
+changed: [t_1400]
+changed: [t_1300]
+
+TASK [Execute /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux.j2] ***
+changed: [t_1300]
+changed: [t_1400]
+
+TASK [wait_for_connection] *****************************************************
+skipping: [dut]
+
+TASK [wait_for] ****************************************************************
+skipping: [dut]
+
+TASK [set_fact] ****************************************************************
+ok: [dut]
+
+TASK [set_fact] ****************************************************************
+ok: [dut]
+
+TASK [template] ****************************************************************
+changed: [dut]
 
 TASK [execute config-initial.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/vyos.j2] ***
-changed: [r]
+changed: [dut]
 
 PLAY [Deploy module-specific configurations] ***********************************
-skipping: no hosts matched
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [p1]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for p1 => (item=routing)
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [p1]
+
+TASK [Find configuration template for routing] *********************************
+ok: [p1]
+
+TASK [fail] ********************************************************************
+skipping: [p1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [p1] => 
+  msg: |-
+    routing configuration for p1
+    =========================================
+    !
+    !
+    ! AS-path access lists
+    !
+    !
+    ! Static routes
+    !
+    ip route 0.0.0.0/0 Ethernet1 172.16.0.1
+    ipv6 route ::/0 Ethernet1 2001:db8:1::1
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+ok: [p1]
+
+TASK [Deploy routing configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for p1
+
+TASK [eos_config: deploying routing from /home/pipi/net101/tools/netsim/ansible/templates/routing/eos.j2] ***
+changed: [p1]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-h2                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-r                          : ok=15   changed=2    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+dut                        : ok=15   changed=2    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+p1                         : ok=26   changed=3    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
+t_1300                     : ok=13   changed=2    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+t_1400                     : ok=13   changed=2    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
 
 
 
