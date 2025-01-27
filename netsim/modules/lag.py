@@ -145,8 +145,8 @@ def set_lag_ifindex(laglink: Box, intf: Box, is_mside: bool, topology: Box) -> b
 split_dual_mlag_link - Split dual-mlag pairs into 2 virtual lag links, one for each side
 """
 def split_dual_mlag_link(link: Box, topology: Box) -> None:
-  first_pair : set[str] = set()
-  other_pair : set[str] = set()
+  first_pair : typing.Set[str] = set()
+  other_pair : typing.Set[str] = set()
   for i in link.interfaces:
     if i.node not in first_pair and i.node not in other_pair:
       first_pair.add( i.node )
