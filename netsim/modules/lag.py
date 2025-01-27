@@ -159,11 +159,11 @@ def split_dual_mlag_link(link: Box, topology: Box) -> None:
   split_copy = data.get_box(link)                        # Make a copy
   split_copy.linkindex = len(topology.links)+1           # Update its link index
   split_copy._linkname = split_copy._linkname + "-2"     # Assign unique name
-  split_copy.name = f"Back-2-back MLAG { " - ".join(other_pair)} -> { " - ".join(first_pair)}"
+  split_copy.name = f"Back-2-back MLAG { '+'.join(other_pair)} -> { '+'.join(first_pair)}"
   split_copy.interfaces = [ no_peer(i) for i in link.interfaces if i.node not in first_pair ]
 
   topology.links[link.linkindex-1].interfaces = [ no_peer(i) for i in link.interfaces if i.node in first_pair ]
-  topology.links[link.linkindex-1].name = f"Back-2-back MLAG { " - ".join(first_pair)} -> { " - ".join(other_pair)}"
+  topology.links[link.linkindex-1].name = f"Back-2-back MLAG { '+'.join(first_pair)} -> { '+'.join(other_pair)}"
 
   for l in topology.links:                               # Update lag interfaces with correct parent linkindex
     if l.get('lag._parentindex',None) == link.linkindex:
