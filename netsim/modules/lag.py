@@ -150,7 +150,7 @@ def split_dual_mlag_link(link: Box, topology: Box) -> None:
   for i in link.interfaces:
     if i.node not in first_pair and i.node not in other_pair:
       first_pair.add( i.node )
-      other_pair = other_pair | { p for p in i._peers }
+      other_pair = other_pair | set(i._peers)
   _p1 = '+'.join(sorted(list(first_pair)))
   _p2 = '+'.join(sorted(list(other_pair)))
 
