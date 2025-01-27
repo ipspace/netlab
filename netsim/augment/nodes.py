@@ -511,6 +511,64 @@ def check_unique_ifnames(n: Box) -> None:
       ifnames[intf.ifname] = intf
 
 '''
+Cleanup node MTU values:
+
+* Check the minimum and maximum MTU values
+* For devices with system MTU remove the interface MTU values identical to system MTU
+* Set _use_ip_mtu flag if the interface MTU is lower than min_phy_mtu
+
+Also, throw errors if:
+
+* MTU is lower than 1280 but the node uses IPv6
+* MTU is lower than min_mtu or higher than max_mtu
+'''
+def cleanup_mtu(node: Box, topology: Box) -> None:
+  features = devices.get_device_features(node,topology.defaults).initial
+  system_mtu = bool(features.system_mtu) and 'mtu' in node
+  if system_mtu:
+    if 'min_phy_mtu' in features and node.mtu < features.min_phy_mtu:
+      log.error(
+        f'Node MTU {node.mtu} on node {node.name} is lower than the minimum physical ' + \
+        f'MTU for {node.device} ({features.min_phy_mtu})',
+        category=log.IncorrectValue)
+    elif 'min_mtu' in features and node.mtu < features.min_mtu:
+      log.error(
+        f'Node MTU {node.mtu} on node {node.name} is lower than the minimum MTU for {node.device} ({features.min_mtu})',
+        category=log.IncorrectValue)
+    elif 'ipv6' in node.get('af',{}) and node.mtu < 1280:
+      log.error(
+        f'Node MTU cannot be lower than 1280 on IPv6-enabled devices. Node {node.name} has MTU {node.mtu}',
+        category=log.IncorrectValue)
+    if 'max_mtu' in features and node.mtu > features.max_mtu:
+      log.error(
+        f'Node MTU {node.mtu} on node {node.name} is higher than the maximum MTU for {node.device} ({features.max_mtu})',
+        category=log.IncorrectValue)
+
+  for intf in node.interfaces:
+    if 'mtu' not in intf:
+      continue
+    if system_mtu and intf.mtu == node.mtu:
+      intf.pop('mtu',None)
+      continue
+    if 'max_mtu' in features and intf.mtu > features.max_mtu:
+      log.error(
+        f'Interface MTU {intf.mtu} on node {node.name}/{intf.ifname}({intf.name}) is higher '+\
+        f'than the maximum MTU for {node.device} ({features.max_mtu})',
+        category=log.IncorrectValue)
+    if 'min_mtu' in features and intf.mtu < features.min_mtu:
+      log.error(
+        f'Interface MTU {intf.mtu} on node {node.name}/{intf.ifname}({intf.name}) is lower '+\
+        f'than the minimum MTU for {node.device} ({features.min_mtu})',
+        category=log.IncorrectValue)
+    elif 'ipv6' in intf and intf.mtu < 1280:
+      log.error(
+        f'IPv6-enabled interface {intf.ifname}({intf.name}) on node {node.name} cannot have '+\
+        f'MTU lower than 1280 (now: {intf.mtu})',
+        category=log.IncorrectValue)
+    if 'min_phy_mtu' in features and intf.mtu < features.min_phy_mtu:
+      intf._use_ip_mtu = True
+
+'''
 Final cleanup of node data
 '''
 def cleanup(topology: Box) -> None:
@@ -518,6 +576,7 @@ def cleanup(topology: Box) -> None:
 
   for name,n in topology.nodes.items():
     check_unique_ifnames(n)
+    cleanup_mtu(n,topology)
     if '_daemon_config' in n:
       cleanup_daemon_config(n)
 

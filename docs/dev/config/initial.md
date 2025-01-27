@@ -30,6 +30,9 @@ features:
 
 * **loopback_interface_name** -- Loopback interface name template. Use `{ifindex}` to insert interface number.
 * **features.initial.system_mtu** -- The device supports system MTU settings
+* **features.initial.min_mtu** -- The minimum IPv4 MTU supported by your device (the minimum IPv6 MTU cannot be lower than 1280)
+* **features.initial.max_mtu** -- The maximum MTU supported by your device (the maximum MTU cannot be higher than 9216)
+* **features.initial.min_phy_mtu** -- The minimum physical MTU that can be configured on your device (many devices won't accept the physical MTU lower than 1500 bytes).
 * **features.initial.ipv4.unnumbered** -- The device supports unnumbered IPv4 interfaces. The IP address of the primary loopback interface should be used as the IPv4 address of those interfaces.
 * **features.initial.ipv6.lla** -- The device supports IPv6 interfaces using just link-local addresses.
 
@@ -131,6 +134,7 @@ Data-plane device interfaces are specified in the **interfaces** list. Each inte
 * **virtual_interface** -- the interface is a virtual interface (loopback, VLAN interface, subinterface...). Use this parameter to skip physical interface configuration (for example, bandwidth)
 * **role** -- link role (as set by **role** link attribute -- optional)
 * **mtu** -- interface MTU (optional)
+* **_use_ip_mtu** -- a hint that the interface MTU is lower than the **min_phy_mtu** accepted by your device and that you should configure IPv4/IPv6 MTU instead of interface MTU.
 * **bandwidth** -- interface bandwidth (optional)
 * **name** -- interface description (optional)
 * **ipv4** -- IPv4 interface address (optional)
@@ -169,7 +173,11 @@ interface {{ l.ifname }}
  bandwidth {{ l.bandwidth  }}
 {% endif %}
 {% if l.mtu is defined %}
- ip mtu {{ l.mtu }}
+{%   if l._use_ip_mtu|default(False) %}
+ ip mtu {{ l.mtu }}
+{%   else %}
+ mtu {{ l.mtu }}
+{%   endif %}
 {% endif %}
 {% if 'ipv4' in l %}
 ...
@@ -214,26 +222,6 @@ interface {{ l.ifname }}
 {% endif %}
 ...
 {% endfor %} 
-```
-
-### Minimum Interface MTU
-
-Some devices have weird MTU rules. For example, CSR 1000V cannot set the L2 MTU below 1500 bytes or the L3 MTU above 1500. In those scenarios, you could use the **min_mtu** device setting and generate the MTU configuration accordingly.
-
-Cisco IOS example:
-
-```
-{% for l in interfaces %}
-interface {{ l.ifname }}
- no shutdown
-{% if l.mtu is defined %}
-{%   if min_mtu is defined and min_mtu > l.mtu %}
- ip mtu {{ l.mtu }}
-{%   else %}
- mtu {{ l.mtu }}
-{%   endif %}
-{% endif %}
-{% endfor %}
 ```
 
 ### Interface Addresses
