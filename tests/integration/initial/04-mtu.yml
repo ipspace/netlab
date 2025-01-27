@@ -1,4 +1,3 @@
----
 message:
   This scenario tests MTU configuration and path MTU discovery
   (generation of ICMP unreachables)
@@ -9,37 +8,144 @@ addressing:
   lan:
     ipv6: 2001:db8:1::/48
 
+groups:
+  probes:
+    members: [ p1 ]
+    device: eos
+    provider: clab
+    module: [ routing ]
+    routing.static:
+    - ipv4: 0.0.0.0/0
+      ipv6: ::/0
+      nexthop.node: dut
+  targets:
+    members: [ t_1300, t_1400 ]
+    device: linux
+
 nodes:
-  r:
-  h1:
-    device: linux
-    provider: clab
-  h2:
-    device: linux
-    provider: clab
+  dut:
+    mtu: 1300
+  p1:
+  t_1300:
+  t_1400:
 
 links:
-- r:
-  h1:
-  mtu: 1400
+- dut:
+  p1:
   bandwidth: 1000
-- r:
-  h2:
-  mtu: 1600
-  bandwidth: 2000
+  pool: lan
+  mtu: 1500
+- dut:
+    mtu: 1400
+  t_1400:
+- dut:
+  t_1300:
 
 validate:
-  ping:
-    description: IPv4 ping H1 => H2
+  v4_p1300:
+    description: Initial IPv4 ping => target(1300)
     wait: 10
-    wait_msg: Wait for IPv4 interfaces to become operational
-    nodes: [ h1 ]
-    plugin: ping('h2')
-  pmtud:
-    description: ICMP DF error when pinging H2 => H1 (succeeds once)
-    nodes: [ h2 ]
-    plugin: ping('h1',count=1,pkt_len=1500,expect='fail')
-  mtud:
-    description: H2 => H1 MTU discovered
-    nodes: [ h2 ]
-    plugin: ping('h1',count=1,pkt_len=1500)
+    nodes: [ p1 ]
+    exec:
+      eos: ping t1300
+    valid: |
+      'bytes from' in stdout
+  v6_p1300:
+    description: Initial IPv6 ping => target(1300)
+    wait: 10
+    nodes: [ p1 ]
+    exec:
+      eos: ping ipv6 t1300
+    valid: |
+      'bytes from' in stdout
+
+  v4_p1400:
+    description: Initial IPv4 ping => target(1400)
+    wait: 10
+    nodes: [ p1 ]
+    exec:
+      eos: ping t1400
+    valid: |
+      'bytes from' in stdout
+  v6_p1400:
+    description: Initial IPv6 ping => target(1400)
+    wait: 10
+    nodes: [ p1 ]
+    exec:
+      eos: ping ipv6 t1400
+    valid: |
+      'bytes from' in stdout
+
+  v4_1400_low:
+    description: IPv4 ping p1 => target (under MTU)
+    nodes: [ p1 ]
+    exec:
+      eos: ping t1400 df-bit size 1400
+    valid: |
+      'bytes from' in stdout
+  v4_1400_ptb:
+    description: IPv4 ping p1 => target (expecting Frag Needed)
+    nodes: [ p1 ]
+    level: warning
+    exec:
+      eos: ping t1400 df-bit size 1420
+    valid: |
+      'Frag needed and DF set' in stdout
+  v4_1400_high:
+    description: IPv4 ping p1 => target (over MTU)
+    nodes: [ p1 ]
+    exec:
+      eos: ping t1400 df-bit size 1420
+    valid: |
+      'bytes from' not in stdout
+  v6_1400_low:
+    description: IPv6 ping p1 => target (under MTU)
+    nodes: [ p1 ]
+    exec:
+      eos: ping ipv6 t1400 df-bit size 1400
+    valid: |
+      'bytes from' in stdout
+  v6_1400_ptb:
+    description: IPv6 ping p1 => target (expecting PTB)
+    nodes: [ p1 ]
+    level: warning
+    exec:
+      eos: ping ipv6 t1400 df-bit size 1420
+    valid: |
+      'Packet too big' in stdout
+  v6_1400_high:
+    description: IPv6 ping p1 => target (over MTU)
+    nodes: [ p1 ]
+    exec:
+      eos: ping ipv6 t1400 df-bit size 1420
+    valid: |
+      'bytes from' not in stdout
+
+  v4_1300_low:
+    description: IPv4 ping p1 => target (under MTU)
+    nodes: [ p1 ]
+    exec:
+      eos: ping t1300 df-bit size 1300
+    valid: |
+      'bytes from' in stdout
+  v4_1300_high:
+    description: IPv4 ping p1 => target (over MTU)
+    nodes: [ p1 ]
+    exec:
+      eos: ping t1300 df-bit size 1320
+    valid: |
+      'bytes from' not in stdout
+  v6_1300_low:
+    description: IPv6 ping p1 => target (under MTU)
+    nodes: [ p1 ]
+    exec:
+      eos: ping ipv6 t1300 df-bit size 1300
+    valid: |
+      'bytes from' in stdout
+  v6_1300_high:
+    description: IPv6 ping p1 => target (over MTU)
+    nodes: [ p1 ]
+    exec:
+      eos: ping ipv6 t1300 df-bit size 1320
+    valid: |
+      'bytes from' not in stdout
