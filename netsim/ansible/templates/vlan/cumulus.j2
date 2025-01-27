@@ -2,15 +2,6 @@
 #
 set -e # Exit immediately when any command fails
 #
-{% macro ipaddr(ifdata,loopback) -%}
-{%   if ifdata.ipv4 is defined %}
-    address {{ ifdata.ipv4 if ifdata.ipv4 is string else loopback.ipv4 }}
-{%   endif %}
-{%   if ifdata.ipv6 is defined and ifdata.ipv6 is string %}
-    address {{ ifdata.ipv6 }}
-{%   endif %}
-{%- endmacro %}
-#
 # Create multi-vlan bridge, specify VLANs, and attach interfaces to it
 #
 cat >/etc/network/interfaces.d/50-bridge.intf <<CONFIG
@@ -42,14 +33,11 @@ iface {{ ifdata.ifname }}
     bridge-allow-untagged no
 {%     endif %}
 {%   elif ifdata.vlan.access_id is defined %}
-{%     if ifdata.type == 'vlan_member' %}
-{{       ipaddr(ifdata,loopback|default({})) }}
-{%     else %}
+{%     if ifdata.type != 'vlan_member' %}
     bridge-access {{ ifdata.vlan.access_id }}
 {%     endif %}
 {%   endif %}
 {%   if ifdata.type == "svi" %}
-{{     ipaddr(ifdata,loopback|default({})) }}
     vlan-id {{ ifdata.ifname|replace("vlan","") }}
     vlan-raw-device bridge
 {%   endif %}
