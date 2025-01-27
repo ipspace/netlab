@@ -130,13 +130,11 @@ ok: [x1] =>
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
     ip link set eth1 down
     ip link set eth1 up
+    ip link set dev eth1 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -225,13 +223,11 @@ ok: [x2] =>
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
     ip link set eth1 down
     ip link set eth1 up
+    ip link set dev eth1 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -384,70 +380,6 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [dut] => 
-  msg: |-
-    bgp configuration for dut
-    =========================================
-    routing-options {
-      autonomous-system 65000;
-      router-id 10.0.0.1
-    }
-    policy-options {
-      delete: policy-statement ibgp-export;
-      delete: policy-statement ebgp-export;
-    }
-    policy-options {
-      policy-statement ibgp-export {
-        term advertise {
-          from {
-            protocol direct;
-            interface [ lo0.0 ];
-          }
-          then accept;
-        }
-        term next-hop-self {
-          from {
-            route-type external;
-          }
-          then {
-            next-hop self;
-          }
-        }
-      }
-      policy-statement ebgp-export {
-        term advertise {
-          from {
-            protocol direct;
-            interface [ lo0.0 ];
-          }
-          then accept;
-        }
-      }
-    }
-    protocols {
-      delete: bgp;
-    }
-    protocols {
-      bgp {
-        group ibgp-peers-ipv6 {
-          type internal;
-          export ibgp-export;
-          advertise-inactive;
-          local-address 2001:db8:1:1::1;
-          neighbor 2001:db8:1:2::1 {
-            description x1;
-          }
-        }
-        group ebgp-peers {
-          export ebgp-export;
-          advertise-inactive;
-          neighbor 2001:db8:3:1::3 {
-            peer-as 65100;
-            description x2;
-          }
-        }
-      }
-    }
 ok: [x1] => 
   msg: |-
     bgp configuration for x1
@@ -486,6 +418,77 @@ ok: [x1] =>
     !
     !
     do write
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+    routing-options {
+      autonomous-system 65000;
+      router-id 10.0.0.1
+    }
+    policy-options {
+      delete: policy-statement ibgp-export;
+      delete: policy-statement ebgp-export;
+    }
+    policy-options {
+      policy-statement ibgp-export {
+        term advertise {
+          from {
+            protocol direct;
+            interface [
+               lo0.0  ];
+          }
+          then accept;
+        }
+        term next-hop-self {
+          from {
+            route-type external;
+          }
+          then {
+            next-hop self;
+          }
+        }
+      }
+      policy-statement ebgp-export {
+        term advertise {
+          from {
+            protocol direct;
+            interface [ lo0.0 ];
+          }
+          then accept;
+        }
+      }
+    }
+    protocols {
+      delete: bgp;
+    }
+    protocols {
+      bgp {
+        group ibgp-peers-ipv6 {
+          type internal;
+          export ibgp-export;
+          advertise-inactive;
+          local-address 2001:db8:1:1::1;
+          neighbor 2001:db8:1:2::1 {
+            description x1;
+            family inet6 {
+              unicast;
+            }
+          }
+        }
+        group ebgp-peers {
+          export ebgp-export;
+          advertise-inactive;
+          neighbor 2001:db8:3:1::3 {
+            peer-as 65100;
+            description x2;
+            family inet6 {
+              unicast;
+            }
+          }
+        }
+      }
+    }
 ok: [x2] => 
   msg: |-
     bgp configuration for x2
@@ -536,8 +539,8 @@ TASK [junos_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/te
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
