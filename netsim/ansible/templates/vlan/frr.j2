@@ -12,7 +12,7 @@ fi
 {% for i in interfaces if i.type == 'svi' %}
 if [ ! -e /sys/devices/virtual/net/{{ i.ifname }} ]; then
   brctl addbr {{ i.ifname }}
-
+  ip link set dev {{ i.ifname }} address {{ '52:dc:ca:fd:%02x:%02x' % ( id,i.ifindex % 100 ) }}
 {# If STP is required, enable it before bringing up the bridge device to avoid any forwarding loops #}
 {%  if 'stp' in module|default([]) and (i.stp|default(stp)).enable|default(True) %}
   brctl stp {{ i.ifname }} on
@@ -21,12 +21,12 @@ if [ ! -e /sys/devices/virtual/net/{{ i.ifname }} ]; then
 {%   if l.mtu is defined %}
   ip link set dev {{ l.ifname }} mtu {{ l.mtu }}
 {%   endif %}
-  ip link set dev {{ i.ifname }} up
   ip addr flush dev {{ i.ifname }}
 {%   if 'ipv4' in i and (i.ipv4 is string or 'ipv4' in loopback) %}
   ip addr add {{ i.ipv4 if i.ipv4 is string else loopback.ipv4 }} dev {{ i.ifname }}
 {%   endif %}
 {%   if 'ipv6' in i %}
+  sysctl -w net.ipv6.conf.{{ i.ifname }}.addr_gen_mode=3
 {%     if i.ipv6 is string %}
   ip addr add {{ i.ipv6 }} dev {{ i.ifname }}
 {%     elif not i.ipv6 %}
@@ -39,5 +39,9 @@ fi
 {# Add interfaces to VLAN bridges #}
 {% for i in interfaces if i.vlan.access_id is defined and i.vlan.mode|default('') != 'route' %}
 brctl addif vlan{{ i.vlan.access_id }} {{ i.ifname }}
+{% endfor %}
+
+{% for i in interfaces if i.type == 'svi' %}
+ip link set dev {{ i.ifname }} up
 {% endfor %}
 exit 0
