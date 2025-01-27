@@ -37,8 +37,8 @@ TASK [Find configuration template for normalize] *******************************
 ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 
 TASK [fail] ********************************************************************
 skipping: [spine]
@@ -222,15 +222,13 @@ ok: [l2] =>
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1600
     sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+    ip link set dev eth2 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1600
-    ip link set dev eth2 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -313,6 +311,12 @@ ok: [spine] =>
     #
     ztp --disable
     #
+    #
+  
+    echo "INIT: Configuring system wide default MTU policy"
+    cat > /etc/network/ifupdown2/policy.d/mtu.json <<CONFIG
+    { "address": { "defaults": { "mtu": "1500" } } }
+    CONFIG
     #
     echo "INIT: creating loopback interface"
     #
@@ -437,6 +441,12 @@ ok: [l1] =>
     ztp --disable
     #
     #
+  
+    echo "INIT: Configuring system wide default MTU policy"
+    cat > /etc/network/ifupdown2/policy.d/mtu.json <<CONFIG
+    { "address": { "defaults": { "mtu": "1500" } } }
+    CONFIG
+    #
     echo "INIT: creating loopback interface"
     #
     # Create loopback interface entry
@@ -460,6 +470,7 @@ ok: [l1] =>
       mtu 1600
       address 10.1.0.1/30
     auto swp2
+    auto vlan1000
     CONFIG
     #
     echo "INIT: executing ifreload"
@@ -537,12 +548,12 @@ changed: [spine -> localhost]
 changed: [l1 -> localhost]
 
 TASK [Execute local config script on Cumulus node] *****************************
-changed: [l1]
 changed: [spine]
+changed: [l1]
 
-TASK [Remove temporary file /tmp/ansible.spine.wgf70l6ytemp] *******************
-changed: [spine -> localhost]
+TASK [Remove temporary file /tmp/ansible.spine.c1gph3fdtemp] *******************
 changed: [l1 -> localhost]
+changed: [spine -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [l2 -> localhost]
@@ -589,7 +600,7 @@ TASK [Container configuration for initial based on /home/pipi/net101/tools/netsi
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-2qdt805s.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-flop3c0k.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -631,7 +642,6 @@ ok: [l1] =>
     #
     set -e # Exit immediately when any command fails
     #
-    #
     # Create multi-vlan bridge, specify VLANs, and attach interfaces to it
     #
     cat >/etc/network/interfaces.d/50-bridge.intf <<CONFIG
@@ -649,7 +659,6 @@ ok: [l1] =>
         bridge-access 1000
     auto vlan1000
     iface vlan1000
-  
         vlan-id 1000
         vlan-raw-device bridge
     CONFIG
@@ -695,7 +704,7 @@ changed: [l1 -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [l1]
 
-TASK [Remove temporary file /tmp/ansible.l1.3t9xk77gtemp] **********************
+TASK [Remove temporary file /tmp/ansible.l1.w4gkar8ztemp] **********************
 changed: [l1 -> localhost]
 
 TASK [template] ****************************************************************
@@ -878,14 +887,14 @@ changed: [l1 -> localhost]
 changed: [spine -> localhost]
 
 TASK [Create bgp config script in local temporary file] ************************
-changed: [spine -> localhost]
 changed: [l1 -> localhost]
+changed: [spine -> localhost]
 
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [l1]
 changed: [spine]
 
-TASK [Remove temporary file /tmp/ansible.l1.z_mo9l25temp] **********************
+TASK [Remove temporary file /tmp/ansible.l1.9o5_lrlxtemp] **********************
 changed: [l1 -> localhost]
 changed: [spine -> localhost]
 
@@ -1005,7 +1014,7 @@ changed: [l1 -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [l1]
 
-TASK [Remove temporary file /tmp/ansible.l1.rebrzwpftemp] **********************
+TASK [Remove temporary file /tmp/ansible.l1.em7b_xv9temp] **********************
 changed: [l1 -> localhost]
 
 TASK [template] ****************************************************************
@@ -1150,18 +1159,18 @@ ok: [l1]
 ok: [spine]
 
 TASK [Create local temporary file] *********************************************
-changed: [l1 -> localhost]
 changed: [spine -> localhost]
+changed: [l1 -> localhost]
 
 TASK [Create evpn config script in local temporary file] ***********************
-changed: [spine -> localhost]
 changed: [l1 -> localhost]
+changed: [spine -> localhost]
 
 TASK [Execute local config script on Cumulus node] *****************************
-changed: [l1]
 changed: [spine]
+changed: [l1]
 
-TASK [Remove temporary file /tmp/ansible.l1.xp7qyg4xtemp] **********************
+TASK [Remove temporary file /tmp/ansible.l1.4bb52ltqtemp] **********************
 changed: [l1 -> localhost]
 changed: [spine -> localhost]
 
@@ -1193,8 +1202,8 @@ skipping: [l2]
 skipping: [spine]
 
 TASK [Check is the configuration template is a file] ***************************
-ok: [l2 -> localhost]
 ok: [l1 -> localhost]
+ok: [l2 -> localhost]
 ok: [spine -> localhost]
 
 TASK [fail] ********************************************************************
@@ -1225,14 +1234,14 @@ changed: [l1 -> localhost]
 changed: [spine -> localhost]
 
 TASK [Create ebgp.multihop config script in local temporary file] **************
-changed: [l1 -> localhost]
 changed: [spine -> localhost]
+changed: [l1 -> localhost]
 
 TASK [Execute local config script on Cumulus node] *****************************
-changed: [spine]
 changed: [l1]
+changed: [spine]
 
-TASK [Remove temporary file /tmp/ansible.l1.0fe_7rratemp] **********************
+TASK [Remove temporary file /tmp/ansible.l1.1huy39dhtemp] **********************
 changed: [l1 -> localhost]
 changed: [spine -> localhost]
 

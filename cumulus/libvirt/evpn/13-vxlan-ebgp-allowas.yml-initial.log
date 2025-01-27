@@ -82,8 +82,8 @@ TASK [Find configuration template for initial] *********************************
 ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 
 TASK [fail] ********************************************************************
 skipping: [spine]
@@ -93,9 +93,9 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [h1] => 
+ok: [h2] => 
   msg: |-
-    initial configuration for h1
+    initial configuration for h2
     =========================================
     #!/bin/bash
     #
@@ -118,9 +118,9 @@ ok: [h1] =>
     #
     ip link set dev eth1 up
     set +e
-    ip addr del 172.31.1.4/24 dev eth1 2>/dev/null
+    ip addr del 172.31.1.5/24 dev eth1 2>/dev/null
     set -e
-    ip addr add 172.31.1.4/24 dev eth1
+    ip addr add 172.31.1.5/24 dev eth1
     ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
@@ -185,15 +185,13 @@ ok: [spine] =>
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1600
     sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+    ip link set dev eth2 mtu 1600
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1600
-    ip link set dev eth2 mtu 1600
   
     #
     # Rest of initial configuration done through VTYSH
@@ -224,9 +222,9 @@ ok: [spine] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [h2] => 
+ok: [h1] => 
   msg: |-
-    initial configuration for h2
+    initial configuration for h1
     =========================================
     #!/bin/bash
     #
@@ -249,9 +247,9 @@ ok: [h2] =>
     #
     ip link set dev eth1 up
     set +e
-    ip addr del 172.31.1.5/24 dev eth1 2>/dev/null
+    ip addr del 172.31.1.4/24 dev eth1 2>/dev/null
     set -e
-    ip addr add 172.31.1.5/24 dev eth1
+    ip addr add 172.31.1.4/24 dev eth1
     ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
@@ -316,15 +314,13 @@ ok: [l2] =>
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1600
     sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+    ip link set dev eth2 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1600
-    ip link set dev eth2 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -408,6 +404,12 @@ ok: [l1] =>
     ztp --disable
     #
     #
+  
+    echo "INIT: Configuring system wide default MTU policy"
+    cat > /etc/network/ifupdown2/policy.d/mtu.json <<CONFIG
+    { "address": { "defaults": { "mtu": "1500" } } }
+    CONFIG
+    #
     echo "INIT: creating loopback interface"
     #
     # Create loopback interface entry
@@ -431,6 +433,7 @@ ok: [l1] =>
       mtu 1600
       address 10.1.0.2/30
     auto swp2
+    auto vlan1000
     CONFIG
     #
     echo "INIT: executing ifreload"
@@ -506,8 +509,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for spine, l2
 
 TASK [template] ****************************************************************
-changed: [spine]
 changed: [l2]
+changed: [spine]
 
 TASK [set_fact] ****************************************************************
 ok: [spine]
@@ -533,7 +536,7 @@ changed: [l1 -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [l1]
 
-TASK [Remove temporary file /tmp/ansible.l1.bl2x3yy_temp] **********************
+TASK [Remove temporary file /tmp/ansible.l1.c42ygu9ztemp] **********************
 changed: [l1 -> localhost]
 
 TASK [Define script filename and determine whether to execute in netns] ********
@@ -557,10 +560,10 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-99_2c71x.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-0ya6xbgx.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -602,7 +605,6 @@ ok: [l1] =>
     #
     set -e # Exit immediately when any command fails
     #
-    #
     # Create multi-vlan bridge, specify VLANs, and attach interfaces to it
     #
     cat >/etc/network/interfaces.d/50-bridge.intf <<CONFIG
@@ -620,7 +622,6 @@ ok: [l1] =>
         bridge-access 1000
     auto vlan1000
     iface vlan1000
-  
         vlan-id 1000
         vlan-raw-device bridge
     CONFIG
@@ -666,7 +667,7 @@ changed: [l1 -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [l1]
 
-TASK [Remove temporary file /tmp/ansible.l1.pdblq3eztemp] **********************
+TASK [Remove temporary file /tmp/ansible.l1.4x0op3ratemp] **********************
 changed: [l1 -> localhost]
 
 TASK [template] ****************************************************************
@@ -836,7 +837,7 @@ changed: [l1 -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [l1]
 
-TASK [Remove temporary file /tmp/ansible.l1.yuo594d6temp] **********************
+TASK [Remove temporary file /tmp/ansible.l1.ztweosjptemp] **********************
 changed: [l1 -> localhost]
 
 TASK [template] ****************************************************************
@@ -959,7 +960,7 @@ changed: [l1 -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [l1]
 
-TASK [Remove temporary file /tmp/ansible.l1.jta9pj9_temp] **********************
+TASK [Remove temporary file /tmp/ansible.l1.yfr_lrvhtemp] **********************
 changed: [l1 -> localhost]
 
 TASK [template] ****************************************************************
@@ -1102,12 +1103,12 @@ changed: [l1 -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [l1]
 
-TASK [Remove temporary file /tmp/ansible.l1.knrm7inftemp] **********************
+TASK [Remove temporary file /tmp/ansible.l1.8f_wuvz3temp] **********************
 changed: [l1 -> localhost]
 
 TASK [template] ****************************************************************
-changed: [spine]
 changed: [l2]
+changed: [spine]
 
 TASK [set_fact] ****************************************************************
 ok: [l2]
@@ -1166,7 +1167,7 @@ changed: [l1 -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [l1]
 
-TASK [Remove temporary file /tmp/ansible.l1.9ssqq6oftemp] **********************
+TASK [Remove temporary file /tmp/ansible.l1.m72k6dvctemp] **********************
 changed: [l1 -> localhost]
 
 TASK [template] ****************************************************************

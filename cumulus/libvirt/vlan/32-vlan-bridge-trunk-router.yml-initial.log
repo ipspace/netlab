@@ -3,92 +3,92 @@
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [r1]
 ok: [s1]
 ok: [s2]
+ok: [r1]
 ok: [h1]
 ok: [h2]
 
 TASK [Find device readiness script] ********************************************
-ok: [r1]
 ok: [s1]
 ok: [s2]
-ok: [h2]
+ok: [r1]
 ok: [h1]
+ok: [h2]
 
 TASK [Wait for device to become ready] *****************************************
-skipping: [r1]
 skipping: [s1]
 skipping: [s2]
+skipping: [r1]
 skipping: [h1]
 skipping: [h2]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for r1, s1, s2, h1, h2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, r1, h1, h2
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
-ok: [r1]
 ok: [s1]
 ok: [s2]
+ok: [r1]
 ok: [h1]
 ok: [h2]
 
 TASK [Find configuration template for normalize] *******************************
-ok: [r1]
 ok: [s1]
 ok: [s2]
+ok: [r1]
 ok: [h1]
 ok: [h2]
 
 TASK [fail] ********************************************************************
-skipping: [r1]
 skipping: [s1]
 skipping: [s2]
+skipping: [r1]
 skipping: [h1]
 skipping: [h2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [r1]
 skipping: [s1]
 skipping: [s2]
+skipping: [r1]
 skipping: [h1]
 skipping: [h2]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
-skipping: [r1]
 skipping: [s1]
 skipping: [s2]
+skipping: [r1]
 skipping: [h1]
 skipping: [h2]
 
 TASK [Deploy normalize configuration] ******************************************
-skipping: [r1]
 skipping: [s1]
 skipping: [s2]
+skipping: [r1]
 skipping: [h1]
 skipping: [h2]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for r1, s1, s2, h1, h2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, r1, h1, h2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
-ok: [r1]
 ok: [s1]
 ok: [s2]
+ok: [r1]
 ok: [h1]
 ok: [h2]
 
 TASK [Find configuration template for initial] *********************************
-ok: [r1]
 ok: [s1]
 ok: [s2]
+ok: [r1]
 ok: [h1]
 ok: [h2]
 
 TASK [fail] ********************************************************************
-skipping: [r1]
 skipping: [s1]
 skipping: [s2]
+skipping: [r1]
 skipping: [h1]
 skipping: [h2]
 
@@ -202,117 +202,91 @@ ok: [r1] =>
     #!/bin/bash
     #
     set -e
+    set -x
     #
     # Create bash profile script
     #
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
     #
-    # Build hosts file
+    # Get the current next hop for the default route
     #
-    echo "INIT: setting hostname"
-    hostname r1
+    def_nh=$(ip route list default|awk '{ print $3 }')
     #
+    # Create the management VRF and add eth0 to it
     #
-    # Build hosts file
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
     #
+    # Reinstall the default route if we had it before
     #
-    cat <<SCRIPT >/tmp/hosts
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
     #
-    # Created by netlab initial
-    #
-    10.0.0.5 r1
-    172.16.0.5 swp1.r1
-    172.16.1.5 swp2.r1
-    10.0.0.3 s1
-    10.0.0.4 s2
-    172.16.0.1 h1 eth1.h1
-    172.16.1.2 h2 eth1.h2
-    SCRIPT
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
-    #
-    # Disable ZTP
-    #
-    ztp --disable
-    #
-    #
-    echo "INIT: creating loopback interface"
-    #
-    # Create loopback interface entry
-    #
-    cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
-    auto lo
-    iface lo inet loopback
-      address 10.0.0.5/32
-  
-    CONFIG
-    #
-    until ifreload -a; do
-      sleep 1
-    done
-    #
-    echo "INIT: creating other interface"
-    cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
-    auto swp1
-  
-    iface swp1 inet static
-      mtu 1500
-      address 172.16.0.5/24
-    auto swp2
-  
-    iface swp2 inet static
-      mtu 1500
-      address 172.16.1.5/24
-    CONFIG
-    #
-    echo "INIT: executing ifreload"
-    until ifreload -a; do
-      sleep 1
-    done
-    #
-    # For whatever crazy reason, I had to enable IPv6 in containers
-    #
-    #
-    # Enable FRR modules for none
-    #
-    #
-    # Enable FRR daemons
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
-    systemctl enable frr.service
-    systemctl start frr.service
-    systemctl reload frr.service
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+    ip link set dev eth2 mtu 1500
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
     #
     # Rest of initial configuration done through VTYSH
     #
     cat >/tmp/config <<CONFIG
+    hostname r1
     !
-    interface swp1
-    ! no shutdown
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.5/32
+    !
+    interface eth1
+     no shutdown
      description r1 -> [h1,s1,s2]
+     ip address 172.16.0.5/24
     !
-    interface swp2
-    ! no shutdown
+    interface eth2
+     no shutdown
      description r1 -> [h2,s1,s2]
+     ip address 172.16.1.5/24
     !
     do write
     CONFIG
     vtysh -f /tmp/config
-    #
-    # Enable LLDP
-    #
-    echo "INIT: enabling LLDP"
-    cat <<CONFIG >/etc/lldpd.d/system.conf
-    configure lldp tx-interval 30
-    configure lldp tx-hold 3
-    configure system interface pattern *,!eth0,swp*
-    CONFIG
-    service lldpd restart
+    exit 0
 ok: [s1] => 
   msg: |-
     initial configuration for s1
@@ -344,11 +318,11 @@ ok: [s1] =>
     #
     # Created by netlab initial
     #
-    10.0.0.5 r1
-    172.16.0.5 swp1.r1
-    172.16.1.5 swp2.r1
     10.0.0.3 s1
     10.0.0.4 s2
+    10.0.0.5 r1
+    172.16.0.5 eth1.r1
+    172.16.1.5 eth2.r1
     172.16.0.1 h1 eth1.h1
     172.16.1.2 h2 eth1.h2
     SCRIPT
@@ -358,6 +332,12 @@ ok: [s1] =>
     #
     ztp --disable
     #
+    #
+  
+    echo "INIT: Configuring system wide default MTU policy"
+    cat > /etc/network/ifupdown2/policy.d/mtu.json <<CONFIG
+    { "address": { "defaults": { "mtu": "1500" } } }
+    CONFIG
     #
     echo "INIT: creating loopback interface"
     #
@@ -379,6 +359,8 @@ ok: [s1] =>
     auto swp1
     auto swp2
     auto swp3
+    auto vlan700
+    auto vlan701
     CONFIG
     #
     echo "INIT: executing ifreload"
@@ -467,11 +449,11 @@ ok: [s2] =>
     #
     # Created by netlab initial
     #
-    10.0.0.5 r1
-    172.16.0.5 swp1.r1
-    172.16.1.5 swp2.r1
     10.0.0.3 s1
     10.0.0.4 s2
+    10.0.0.5 r1
+    172.16.0.5 eth1.r1
+    172.16.1.5 eth2.r1
     172.16.0.1 h1 eth1.h1
     172.16.1.2 h2 eth1.h2
     SCRIPT
@@ -481,6 +463,12 @@ ok: [s2] =>
     #
     ztp --disable
     #
+    #
+  
+    echo "INIT: Configuring system wide default MTU policy"
+    cat > /etc/network/ifupdown2/policy.d/mtu.json <<CONFIG
+    { "address": { "defaults": { "mtu": "1500" } } }
+    CONFIG
     #
     echo "INIT: creating loopback interface"
     #
@@ -502,6 +490,8 @@ ok: [s2] =>
     auto swp1
     auto swp2
     auto swp3
+    auto vlan700
+    auto vlan701
     CONFIG
     #
     echo "INIT: executing ifreload"
@@ -561,40 +551,57 @@ ok: [s2] =>
     service lldpd restart
 
 TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [r1]
 ok: [s1]
-ok: [h1]
 ok: [s2]
+ok: [r1]
+ok: [h1]
 ok: [h2]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for r1, s1, s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for s1, s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for r1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
 
 TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
-ok: [r1]
 ok: [s1]
 ok: [s2]
 
 TASK [Create local temporary file] *********************************************
-changed: [s1 -> localhost]
-changed: [r1 -> localhost]
 changed: [s2 -> localhost]
+changed: [s1 -> localhost]
 
 TASK [Create initial config script in local temporary file] ********************
-changed: [s2 -> localhost]
 changed: [s1 -> localhost]
-changed: [r1 -> localhost]
+changed: [s2 -> localhost]
 
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [s2]
 changed: [s1]
-changed: [r1]
 
-TASK [Remove temporary file /tmp/ansible.r1.uc_mf40rtemp] **********************
-changed: [r1 -> localhost]
+TASK [Remove temporary file /tmp/ansible.s1.d1w1cjnbtemp] **********************
 changed: [s1 -> localhost]
 changed: [s2 -> localhost]
+
+TASK [Attempt to load VRF kernel module] ***************************************
+changed: [r1 -> localhost]
+
+TASK [Disable FRR management VRF when modprobe fails] **************************
+skipping: [r1]
+
+TASK [include_tasks] ***********************************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1
+
+TASK [template] ****************************************************************
+changed: [r1]
+
+TASK [set_fact] ****************************************************************
+ok: [r1]
+
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+changed: [r1]
+
+TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+skipping: [r1]
 
 TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
@@ -605,8 +612,8 @@ changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -620,7 +627,7 @@ TASK [Container configuration for initial based on /home/pipi/net101/tools/netsi
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-xjtllbzt.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-3vo5_ayp.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -654,7 +661,6 @@ ok: [s1] =>
     #
     set -e # Exit immediately when any command fails
     #
-    #
     # Create multi-vlan bridge, specify VLANs, and attach interfaces to it
     #
     cat >/etc/network/interfaces.d/50-bridge.intf <<CONFIG
@@ -679,12 +685,10 @@ ok: [s1] =>
         bridge-access 701
     auto vlan700
     iface vlan700
-  
         vlan-id 700
         vlan-raw-device bridge
     auto vlan701
     iface vlan701
-  
         vlan-id 701
         vlan-raw-device bridge
     CONFIG
@@ -697,7 +701,6 @@ ok: [s2] =>
     #
     set -e # Exit immediately when any command fails
     #
-    #
     # Create multi-vlan bridge, specify VLANs, and attach interfaces to it
     #
     cat >/etc/network/interfaces.d/50-bridge.intf <<CONFIG
@@ -722,12 +725,10 @@ ok: [s2] =>
         bridge-access 701
     auto vlan700
     iface vlan700
-  
         vlan-id 700
         vlan-raw-device bridge
     auto vlan701
     iface vlan701
-  
         vlan-id 701
         vlan-raw-device bridge
     CONFIG
@@ -745,18 +746,18 @@ ok: [s1]
 ok: [s2]
 
 TASK [Create local temporary file] *********************************************
-changed: [s2 -> localhost]
 changed: [s1 -> localhost]
+changed: [s2 -> localhost]
 
 TASK [Create vlan config script in local temporary file] ***********************
 changed: [s2 -> localhost]
 changed: [s1 -> localhost]
 
 TASK [Execute local config script on Cumulus node] *****************************
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
-TASK [Remove temporary file /tmp/ansible.s1.cfubi480temp] **********************
+TASK [Remove temporary file /tmp/ansible.s1._zd0yv2vtemp] **********************
 changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 
@@ -766,7 +767,7 @@ skipping: no hosts matched
 PLAY RECAP *********************************************************************
 h1                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
 h2                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-r1                         : ok=16   changed=4    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+r1                         : ok=16   changed=3    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
 s1                         : ok=28   changed=8    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 s2                         : ok=28   changed=8    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 

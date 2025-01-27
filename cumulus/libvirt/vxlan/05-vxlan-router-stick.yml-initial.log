@@ -230,6 +230,12 @@ ok: [ros] =>
     ztp --disable
     #
     #
+  
+    echo "INIT: Configuring system wide default MTU policy"
+    cat > /etc/network/ifupdown2/policy.d/mtu.json <<CONFIG
+    { "address": { "defaults": { "mtu": "1500" } } }
+    CONFIG
+    #
     echo "INIT: creating loopback interface"
     #
     # Create loopback interface entry
@@ -252,6 +258,14 @@ ok: [ros] =>
     iface swp1 inet static
       mtu 1600
       address 10.1.0.1/30
+    auto vlan1000
+  
+    iface vlan1000 inet static
+      address 172.16.0.2/24
+    auto vlan1001
+  
+    iface vlan1001 inet static
+      address 172.16.1.2/24
     CONFIG
     #
     echo "INIT: executing ifreload"
@@ -351,6 +365,12 @@ ok: [s1] =>
     ztp --disable
     #
     #
+  
+    echo "INIT: Configuring system wide default MTU policy"
+    cat > /etc/network/ifupdown2/policy.d/mtu.json <<CONFIG
+    { "address": { "defaults": { "mtu": "1500" } } }
+    CONFIG
+    #
     echo "INIT: creating loopback interface"
     #
     # Create loopback interface entry
@@ -375,6 +395,8 @@ ok: [s1] =>
       address 10.1.0.2/30
     auto swp2
     auto swp3
+    auto vlan1000
+    auto vlan1001
     CONFIG
     #
     echo "INIT: executing ifreload"
@@ -454,14 +476,14 @@ changed: [s1 -> localhost]
 changed: [ros -> localhost]
 
 TASK [Create initial config script in local temporary file] ********************
-changed: [ros -> localhost]
 changed: [s1 -> localhost]
+changed: [ros -> localhost]
 
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [s1]
 changed: [ros]
 
-TASK [Remove temporary file /tmp/ansible.ros.slm41w4ntemp] *********************
+TASK [Remove temporary file /tmp/ansible.ros.e4tg04smtemp] *********************
 changed: [ros -> localhost]
 changed: [s1 -> localhost]
 
@@ -474,8 +496,8 @@ changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -486,10 +508,10 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-sg5foaww.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-rdg7xao4.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -526,7 +548,6 @@ ok: [ros] =>
     #
     set -e # Exit immediately when any command fails
     #
-    #
     # Create multi-vlan bridge, specify VLANs, and attach interfaces to it
     #
     cat >/etc/network/interfaces.d/50-bridge.intf <<CONFIG
@@ -541,14 +562,10 @@ ok: [ros] =>
     cat >/etc/network/interfaces.d/51-bridge-interfaces.intf <<CONFIG
     auto vlan1000
     iface vlan1000
-        address 172.16.0.2/24
-  
         vlan-id 1000
         vlan-raw-device bridge
     auto vlan1001
     iface vlan1001
-        address 172.16.1.2/24
-  
         vlan-id 1001
         vlan-raw-device bridge
     CONFIG
@@ -560,7 +577,6 @@ ok: [s1] =>
     #!/bin/bash
     #
     set -e # Exit immediately when any command fails
-    #
     #
     # Create multi-vlan bridge, specify VLANs, and attach interfaces to it
     #
@@ -582,12 +598,10 @@ ok: [s1] =>
         bridge-access 1001
     auto vlan1000
     iface vlan1000
-  
         vlan-id 1000
         vlan-raw-device bridge
     auto vlan1001
     iface vlan1001
-  
         vlan-id 1001
         vlan-raw-device bridge
     CONFIG
@@ -609,16 +623,16 @@ changed: [ros -> localhost]
 changed: [s1 -> localhost]
 
 TASK [Create vlan config script in local temporary file] ***********************
-changed: [ros -> localhost]
 changed: [s1 -> localhost]
+changed: [ros -> localhost]
 
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [ros]
 changed: [s1]
 
-TASK [Remove temporary file /tmp/ansible.ros.6_hnb18utemp] *********************
-changed: [s1 -> localhost]
+TASK [Remove temporary file /tmp/ansible.ros.tygwnkmetemp] *********************
 changed: [ros -> localhost]
+changed: [s1 -> localhost]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [ros]
@@ -700,12 +714,12 @@ changed: [ros -> localhost]
 changed: [s1 -> localhost]
 
 TASK [Execute local config script on Cumulus node] *****************************
-changed: [s1]
 changed: [ros]
+changed: [s1]
 
-TASK [Remove temporary file /tmp/ansible.ros._315hs5htemp] *********************
-changed: [ros -> localhost]
+TASK [Remove temporary file /tmp/ansible.ros.tgmyce4gtemp] *********************
 changed: [s1 -> localhost]
+changed: [ros -> localhost]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [ros]
@@ -801,7 +815,7 @@ changed: [ros -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [ros]
 
-TASK [Remove temporary file /tmp/ansible.ros.lll2l_mxtemp] *********************
+TASK [Remove temporary file /tmp/ansible.ros.0z07roq4temp] *********************
 changed: [ros -> localhost]
 
 TASK [Figure out whether to deploy the module vxlan on current device] *********
@@ -906,18 +920,18 @@ ok: [ros]
 ok: [s1]
 
 TASK [Create local temporary file] *********************************************
-changed: [s1 -> localhost]
 changed: [ros -> localhost]
+changed: [s1 -> localhost]
 
 TASK [Create vxlan config script in local temporary file] **********************
 changed: [s1 -> localhost]
 changed: [ros -> localhost]
 
 TASK [Execute local config script on Cumulus node] *****************************
-changed: [ros]
 changed: [s1]
+changed: [ros]
 
-TASK [Remove temporary file /tmp/ansible.ros.mbihu2lqtemp] *********************
+TASK [Remove temporary file /tmp/ansible.ros.waslr_2otemp] *********************
 changed: [ros -> localhost]
 changed: [s1 -> localhost]
 

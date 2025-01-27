@@ -14,9 +14,9 @@ TASK [Find device readiness script] ********************************************
 ok: [s1]
 ok: [s2]
 ok: [h1]
-ok: [h3]
 ok: [h2]
 ok: [h4]
+ok: [h3]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [s1]
@@ -42,8 +42,8 @@ ok: [s1]
 ok: [s2]
 ok: [h1]
 ok: [h2]
-ok: [h4]
 ok: [h3]
+ok: [h4]
 
 TASK [fail] ********************************************************************
 skipping: [s1]
@@ -92,8 +92,8 @@ TASK [Find configuration template for initial] *********************************
 ok: [s1]
 ok: [s2]
 ok: [h1]
-ok: [h2]
 ok: [h3]
+ok: [h2]
 ok: [h4]
 
 TASK [fail] ********************************************************************
@@ -298,6 +298,12 @@ ok: [s1] =>
     ztp --disable
     #
     #
+  
+    echo "INIT: Configuring system wide default MTU policy"
+    cat > /etc/network/ifupdown2/policy.d/mtu.json <<CONFIG
+    { "address": { "defaults": { "mtu": "1500" } } }
+    CONFIG
+    #
     echo "INIT: creating loopback interface"
     #
     # Create loopback interface entry
@@ -318,6 +324,8 @@ ok: [s1] =>
     auto swp1
     auto swp2
     auto swp3
+    auto vlan700
+    auto vlan701
     CONFIG
     #
     echo "INIT: executing ifreload"
@@ -420,6 +428,12 @@ ok: [s2] =>
     ztp --disable
     #
     #
+  
+    echo "INIT: Configuring system wide default MTU policy"
+    cat > /etc/network/ifupdown2/policy.d/mtu.json <<CONFIG
+    { "address": { "defaults": { "mtu": "1500" } } }
+    CONFIG
+    #
     echo "INIT: creating loopback interface"
     #
     # Create loopback interface entry
@@ -440,6 +454,8 @@ ok: [s2] =>
     auto swp1
     auto swp2
     auto swp3
+    auto vlan700
+    auto vlan701
     CONFIG
     #
     echo "INIT: executing ifreload"
@@ -502,9 +518,9 @@ TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [s1]
 ok: [s2]
 ok: [h1]
-ok: [h3]
 ok: [h2]
 ok: [h4]
+ok: [h3]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for s1, s2
@@ -519,14 +535,14 @@ changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 
 TASK [Create initial config script in local temporary file] ********************
-changed: [s1 -> localhost]
 changed: [s2 -> localhost]
+changed: [s1 -> localhost]
 
 TASK [Execute local config script on Cumulus node] *****************************
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
-TASK [Remove temporary file /tmp/ansible.s1.xri72tybtemp] **********************
+TASK [Remove temporary file /tmp/ansible.s1.ng57t4fztemp] **********************
 changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 
@@ -537,16 +553,16 @@ ok: [h3]
 ok: [h4]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
-changed: [h4 -> localhost]
 changed: [h3 -> localhost]
+changed: [h4 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -561,14 +577,14 @@ skipping: [h3]
 skipping: [h4]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h4 -> localhost]
-changed: [h1 -> localhost]
-changed: [h2 -> localhost]
 changed: [h3 -> localhost]
-
-TASK [Remove temporary file /tmp/h1_initial-yv5rpk1e.sh] ***********************
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
+changed: [h4 -> localhost]
+
+TASK [Remove temporary file /tmp/h1_initial-tih4jz17.sh] ***********************
+changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
@@ -602,7 +618,6 @@ ok: [s1] =>
     #
     set -e # Exit immediately when any command fails
     #
-    #
     # Create multi-vlan bridge, specify VLANs, and attach interfaces to it
     #
     cat >/etc/network/interfaces.d/50-bridge.intf <<CONFIG
@@ -627,12 +642,10 @@ ok: [s1] =>
         bridge-access 701
     auto vlan700
     iface vlan700
-  
         vlan-id 700
         vlan-raw-device bridge
     auto vlan701
     iface vlan701
-  
         vlan-id 701
         vlan-raw-device bridge
     CONFIG
@@ -645,7 +658,6 @@ ok: [s2] =>
     #
     set -e # Exit immediately when any command fails
     #
-    #
     # Create multi-vlan bridge, specify VLANs, and attach interfaces to it
     #
     cat >/etc/network/interfaces.d/50-bridge.intf <<CONFIG
@@ -670,12 +682,10 @@ ok: [s2] =>
         bridge-access 701
     auto vlan700
     iface vlan700
-  
         vlan-id 700
         vlan-raw-device bridge
     auto vlan701
     iface vlan701
-  
         vlan-id 701
         vlan-raw-device bridge
     CONFIG
@@ -701,12 +711,12 @@ changed: [s2 -> localhost]
 changed: [s1 -> localhost]
 
 TASK [Execute local config script on Cumulus node] *****************************
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
-TASK [Remove temporary file /tmp/ansible.s1.7muukxtetemp] **********************
-changed: [s1 -> localhost]
+TASK [Remove temporary file /tmp/ansible.s1.cakexefutemp] **********************
 changed: [s2 -> localhost]
+changed: [s1 -> localhost]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched

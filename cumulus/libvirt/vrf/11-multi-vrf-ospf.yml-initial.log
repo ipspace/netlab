@@ -30,15 +30,15 @@ TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [r1]
 ok: [r2]
 ok: [r3]
-ok: [dut]
 ok: [r4]
+ok: [dut]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [r1]
 ok: [r2]
 ok: [r3]
-ok: [r4]
 ok: [dut]
+ok: [r4]
 
 TASK [fail] ********************************************************************
 skipping: [r1]
@@ -148,13 +148,11 @@ ok: [r1] =>
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -235,13 +233,11 @@ ok: [r2] =>
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -322,13 +318,11 @@ ok: [r3] =>
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -409,13 +403,11 @@ ok: [r4] =>
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -493,6 +485,12 @@ ok: [dut] =>
     ztp --disable
     #
     #
+  
+    echo "INIT: Configuring system wide default MTU policy"
+    cat > /etc/network/ifupdown2/policy.d/mtu.json <<CONFIG
+    { "address": { "defaults": { "mtu": "1500" } } }
+    CONFIG
+    #
     echo "INIT: creating loopback interface"
     #
     # Create loopback interface entry
@@ -513,22 +511,18 @@ ok: [dut] =>
     auto swp1
   
     iface swp1 inet static
-      mtu 1500
       address 10.1.0.1/30
     auto swp2
   
     iface swp2 inet static
-      mtu 1500
       address 10.1.0.5/30
     auto swp3
   
     iface swp3 inet static
-      mtu 1500
       address 10.1.0.9/30
     auto swp4
   
     iface swp4 inet static
-      mtu 1500
       address 10.1.0.13/30
     CONFIG
     #
@@ -611,10 +605,10 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, r3, r4
 
 TASK [template] ****************************************************************
-changed: [r3]
+changed: [r4]
 changed: [r1]
 changed: [r2]
-changed: [r4]
+changed: [r3]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -624,9 +618,9 @@ ok: [r4]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [r2]
-changed: [r4]
 changed: [r1]
 changed: [r3]
+changed: [r4]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r1]
@@ -646,7 +640,7 @@ changed: [dut -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
 
-TASK [Remove temporary file /tmp/ansible.dut.dmb3eg9dtemp] *********************
+TASK [Remove temporary file /tmp/ansible.dut.rc6pp1p7temp] *********************
 changed: [dut -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
@@ -807,8 +801,8 @@ TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [dut]
 ok: [r1]
 ok: [r2]
-ok: [r4]
 ok: [r3]
+ok: [r4]
 
 TASK [Deploy ospf configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
@@ -826,14 +820,14 @@ changed: [dut -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
 
-TASK [Remove temporary file /tmp/ansible.dut._iowh7witemp] *********************
+TASK [Remove temporary file /tmp/ansible.dut.tlhgckxbtemp] *********************
 changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
+changed: [r2]
 changed: [r1]
 changed: [r4]
 changed: [r3]
-changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -850,8 +844,8 @@ skipping: [r4]
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [r3]
 changed: [r1]
-changed: [r4]
 changed: [r2]
+changed: [r4]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [dut]
@@ -1006,7 +1000,7 @@ changed: [dut -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
 
-TASK [Remove temporary file /tmp/ansible.dut.0a39tkzwtemp] *********************
+TASK [Remove temporary file /tmp/ansible.dut.m13qck4stemp] *********************
 changed: [dut -> localhost]
 
 PLAY [Deploy custom deployment templates] **************************************

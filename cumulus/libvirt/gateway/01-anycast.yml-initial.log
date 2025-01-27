@@ -185,13 +185,11 @@ ok: [h1] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set dev eth1 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -275,15 +273,13 @@ ok: [x1] =>
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
     ip link set eth1 down
     ip link set eth1 up
+    ip link set dev eth1 mtu 1500
     sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+    ip link set dev eth2 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
-    ip link set dev eth2 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -379,6 +375,12 @@ ok: [dut] =>
     ztp --disable
     #
     #
+  
+    echo "INIT: Configuring system wide default MTU policy"
+    cat > /etc/network/ifupdown2/policy.d/mtu.json <<CONFIG
+    { "address": { "defaults": { "mtu": "1500" } } }
+    CONFIG
+    #
     echo "INIT: creating loopback interface"
     #
     # Create loopback interface entry
@@ -399,14 +401,19 @@ ok: [dut] =>
     auto swp1
   
     iface swp1 inet static
-      mtu 1500
       address 172.16.44.1/24
   
     iface swp1 inet6 static
-      mtu 1500
       address 2001:db8:cafe:44::1/64
     auto swp2
     auto swp3
+    auto vlan1000
+  
+    iface vlan1000 inet static
+      address 172.16.33.1/24
+  
+    iface vlan1000 inet6 static
+      address 2001:db8:cafe:33::1/64
     CONFIG
     #
     echo "INIT: executing ifreload"
@@ -491,7 +498,7 @@ changed: [dut -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
 
-TASK [Remove temporary file /tmp/ansible.dut.177ulj1utemp] *********************
+TASK [Remove temporary file /tmp/ansible.dut.67u_z47ztemp] *********************
 changed: [dut -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
@@ -538,7 +545,7 @@ skipping: [h2]
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h2_initial-14jhq2_8.sh] ***********************
+TASK [Remove temporary file /tmp/h2_initial-oncw_ctx.sh] ***********************
 changed: [h2 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
@@ -631,7 +638,6 @@ ok: [dut] =>
     #
     set -e # Exit immediately when any command fails
     #
-    #
     # Create multi-vlan bridge, specify VLANs, and attach interfaces to it
     #
     cat >/etc/network/interfaces.d/50-bridge.intf <<CONFIG
@@ -652,9 +658,6 @@ ok: [dut] =>
         bridge-access 1000
     auto vlan1000
     iface vlan1000
-        address 172.16.33.1/24
-        address 2001:db8:cafe:33::1/64
-  
         vlan-id 1000
         vlan-raw-device bridge
     CONFIG
@@ -702,7 +705,7 @@ changed: [dut -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
 
-TASK [Remove temporary file /tmp/ansible.dut.9ef57lfztemp] *********************
+TASK [Remove temporary file /tmp/ansible.dut.t52bau_ttemp] *********************
 changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
@@ -799,7 +802,7 @@ changed: [dut -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
 
-TASK [Remove temporary file /tmp/ansible.dut.48fovcsntemp] *********************
+TASK [Remove temporary file /tmp/ansible.dut.5u1oxgo0temp] *********************
 changed: [dut -> localhost]
 
 TASK [template] ****************************************************************

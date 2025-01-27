@@ -156,9 +156,9 @@ ok: [h1] =>
     #
     # Print the final routing table
     ip route
-ok: [h2] => 
+ok: [h4] => 
   msg: |-
-    initial configuration for h2
+    initial configuration for h4
     =========================================
     #!/bin/bash
     #
@@ -181,9 +181,9 @@ ok: [h2] =>
     #
     ip link set dev eth1 up
     set +e
-    ip addr del 172.16.0.2/24 dev eth1 2>/dev/null
+    ip addr del 172.16.2.4/24 dev eth1 2>/dev/null
     set -e
-    ip addr add 172.16.0.2/24 dev eth1
+    ip addr add 172.16.2.4/24 dev eth1
     ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
@@ -200,10 +200,10 @@ ok: [h2] =>
     #
     #
     echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.0.6 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.0.6 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.0.6 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.0.6 dev eth1 protocol static
+    ip route add 172.16.0.0/16 via 172.16.2.6 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.2.6 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.2.6 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.2.6 dev eth1 protocol static
     #
     # Print the final routing table
     ip route
@@ -258,9 +258,9 @@ ok: [h3] =>
     #
     # Print the final routing table
     ip route
-ok: [h4] => 
+ok: [h2] => 
   msg: |-
-    initial configuration for h4
+    initial configuration for h2
     =========================================
     #!/bin/bash
     #
@@ -283,9 +283,9 @@ ok: [h4] =>
     #
     ip link set dev eth1 up
     set +e
-    ip addr del 172.16.2.4/24 dev eth1 2>/dev/null
+    ip addr del 172.16.0.2/24 dev eth1 2>/dev/null
     set -e
-    ip addr add 172.16.2.4/24 dev eth1
+    ip addr add 172.16.0.2/24 dev eth1
     ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
@@ -302,10 +302,10 @@ ok: [h4] =>
     #
     #
     echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.2.6 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.2.6 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.2.6 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.2.6 dev eth1 protocol static
+    ip route add 172.16.0.0/16 via 172.16.0.6 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.0.6 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.0.6 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.0.6 dev eth1 protocol static
     #
     # Print the final routing table
     ip route
@@ -360,6 +360,12 @@ ok: [s1] =>
     ztp --disable
     #
     #
+  
+    echo "INIT: Configuring system wide default MTU policy"
+    cat > /etc/network/ifupdown2/policy.d/mtu.json <<CONFIG
+    { "address": { "defaults": { "mtu": "1500" } } }
+    CONFIG
+    #
     echo "INIT: creating loopback interface"
     #
     # Create loopback interface entry
@@ -384,6 +390,14 @@ ok: [s1] =>
       address 10.1.0.1/30
     auto swp2
     auto swp3
+    auto vlan1000
+  
+    iface vlan1000 inet static
+      address 172.16.0.5/24
+    auto vlan1001
+  
+    iface vlan1001 inet static
+      address 172.16.1.5/24
     CONFIG
     #
     echo "INIT: executing ifreload"
@@ -495,6 +509,12 @@ ok: [s2] =>
     ztp --disable
     #
     #
+  
+    echo "INIT: Configuring system wide default MTU policy"
+    cat > /etc/network/ifupdown2/policy.d/mtu.json <<CONFIG
+    { "address": { "defaults": { "mtu": "1500" } } }
+    CONFIG
+    #
     echo "INIT: creating loopback interface"
     #
     # Create loopback interface entry
@@ -521,8 +541,11 @@ ok: [s2] =>
     auto swp3
   
     iface swp3 inet static
-      mtu 1500
       address 172.16.2.6/24
+    auto vlan1000
+  
+    iface vlan1000 inet static
+      address 172.16.0.6/24
     CONFIG
     #
     echo "INIT: executing ifreload"
@@ -584,9 +607,9 @@ TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [s1]
 ok: [s2]
 ok: [h1]
+ok: [h3]
 ok: [h2]
 ok: [h4]
-ok: [h3]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for s1, s2
@@ -601,14 +624,14 @@ changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 
 TASK [Create initial config script in local temporary file] ********************
-changed: [s2 -> localhost]
 changed: [s1 -> localhost]
+changed: [s2 -> localhost]
 
 TASK [Execute local config script on Cumulus node] *****************************
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
-TASK [Remove temporary file /tmp/ansible.s1.1r0p77nvtemp] **********************
+TASK [Remove temporary file /tmp/ansible.s1.4s_bihb1temp] **********************
 changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 
@@ -625,9 +648,9 @@ changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 changed: [h3 -> localhost]
-changed: [h2 -> localhost]
 changed: [h4 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
@@ -643,12 +666,12 @@ skipping: [h3]
 skipping: [h4]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h3 -> localhost]
-changed: [h2 -> localhost]
-changed: [h4 -> localhost]
 changed: [h1 -> localhost]
+changed: [h3 -> localhost]
+changed: [h4 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-qksz42od.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-p_jksjjt.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
@@ -687,7 +710,6 @@ ok: [s1] =>
     #
     set -e # Exit immediately when any command fails
     #
-    #
     # Create multi-vlan bridge, specify VLANs, and attach interfaces to it
     #
     cat >/etc/network/interfaces.d/50-bridge.intf <<CONFIG
@@ -708,14 +730,10 @@ ok: [s1] =>
         bridge-access 1001
     auto vlan1000
     iface vlan1000
-        address 172.16.0.5/24
-  
         vlan-id 1000
         vlan-raw-device bridge
     auto vlan1001
     iface vlan1001
-        address 172.16.1.5/24
-  
         vlan-id 1001
         vlan-raw-device bridge
     CONFIG
@@ -727,7 +745,6 @@ ok: [s2] =>
     #!/bin/bash
     #
     set -e # Exit immediately when any command fails
-    #
     #
     # Create multi-vlan bridge, specify VLANs, and attach interfaces to it
     #
@@ -746,8 +763,6 @@ ok: [s2] =>
         bridge-access 1000
     auto vlan1000
     iface vlan1000
-        address 172.16.0.6/24
-  
         vlan-id 1000
         vlan-raw-device bridge
     CONFIG
@@ -769,14 +784,14 @@ changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 
 TASK [Create vlan config script in local temporary file] ***********************
-changed: [s1 -> localhost]
 changed: [s2 -> localhost]
+changed: [s1 -> localhost]
 
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [s2]
 changed: [s1]
 
-TASK [Remove temporary file /tmp/ansible.s1.hokw96x9temp] **********************
+TASK [Remove temporary file /tmp/ansible.s1.a18wpbiytemp] **********************
 changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 
@@ -852,18 +867,18 @@ ok: [s1]
 ok: [s2]
 
 TASK [Create local temporary file] *********************************************
-changed: [s2 -> localhost]
 changed: [s1 -> localhost]
+changed: [s2 -> localhost]
 
 TASK [Create ospf config script in local temporary file] ***********************
-changed: [s1 -> localhost]
 changed: [s2 -> localhost]
+changed: [s1 -> localhost]
 
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [s1]
 changed: [s2]
 
-TASK [Remove temporary file /tmp/ansible.s1.i1omi8c2temp] **********************
+TASK [Remove temporary file /tmp/ansible.s1.lu4xj78itemp] **********************
 changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 
@@ -1022,14 +1037,14 @@ changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 
 TASK [Create vrf config script in local temporary file] ************************
-changed: [s2 -> localhost]
 changed: [s1 -> localhost]
+changed: [s2 -> localhost]
 
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [s2]
 changed: [s1]
 
-TASK [Remove temporary file /tmp/ansible.s1.1gf_mx_wtemp] **********************
+TASK [Remove temporary file /tmp/ansible.s1.bknh5qo4temp] **********************
 changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 
@@ -1133,10 +1148,10 @@ changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 
 TASK [Execute local config script on Cumulus node] *****************************
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
-TASK [Remove temporary file /tmp/ansible.s1.upqzyj5ttemp] **********************
+TASK [Remove temporary file /tmp/ansible.s1.6m6i190vtemp] **********************
 changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 

@@ -28,8 +28,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [dut]
-ok: [dut2]
 ok: [r1]
+ok: [dut2]
 ok: [x1]
 ok: [x2]
 
@@ -148,13 +148,11 @@ ok: [r1] =>
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -233,6 +231,12 @@ ok: [dut] =>
     ztp --disable
     #
     #
+  
+    echo "INIT: Configuring system wide default MTU policy"
+    cat > /etc/network/ifupdown2/policy.d/mtu.json <<CONFIG
+    { "address": { "defaults": { "mtu": "1500" } } }
+    CONFIG
+    #
     echo "INIT: creating loopback interface"
     #
     # Create loopback interface entry
@@ -253,27 +257,22 @@ ok: [dut] =>
     auto swp1
   
     iface swp1 inet static
-      mtu 1500
       address 10.1.0.1/30
     auto swp2
   
     iface swp2 inet static
-      mtu 1500
       address 10.1.0.5/30
     auto swp3
   
     iface swp3 inet static
-      mtu 1500
       address 10.1.0.9/30
     auto swp4
   
     iface swp4 inet static
-      mtu 1500
       address 172.0.66.1/24
     auto swp5
   
     iface swp5 inet static
-      mtu 1500
       address 172.0.42.1/24
     CONFIG
     #
@@ -393,13 +392,11 @@ ok: [x2] =>
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -478,6 +475,12 @@ ok: [dut2] =>
     ztp --disable
     #
     #
+  
+    echo "INIT: Configuring system wide default MTU policy"
+    cat > /etc/network/ifupdown2/policy.d/mtu.json <<CONFIG
+    { "address": { "defaults": { "mtu": "1500" } } }
+    CONFIG
+    #
     echo "INIT: creating loopback interface"
     #
     # Create loopback interface entry
@@ -498,7 +501,6 @@ ok: [dut2] =>
     auto swp1
   
     iface swp1 inet static
-      mtu 1500
       address 172.0.66.2/24
     CONFIG
     #
@@ -598,13 +600,11 @@ ok: [x1] =>
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -647,20 +647,20 @@ ok: [dut]
 ok: [dut2]
 
 TASK [Create local temporary file] *********************************************
-changed: [dut2 -> localhost]
 changed: [dut -> localhost]
+changed: [dut2 -> localhost]
 
 TASK [Create initial config script in local temporary file] ********************
-changed: [dut -> localhost]
 changed: [dut2 -> localhost]
+changed: [dut -> localhost]
 
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut2]
 changed: [dut]
 
-TASK [Remove temporary file /tmp/ansible.dut.zwov4m9dtemp] *********************
-changed: [dut -> localhost]
+TASK [Remove temporary file /tmp/ansible.dut.x1c7mplrtemp] *********************
 changed: [dut2 -> localhost]
+changed: [dut -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [r1 -> localhost]
@@ -674,9 +674,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1, x1, x2
 
 TASK [template] ****************************************************************
+changed: [r1]
 changed: [x1]
 changed: [x2]
-changed: [r1]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -699,8 +699,8 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
 ok: [dut2]
 ok: [r1]
-ok: [x2]
 ok: [x1]
+ok: [x2]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, dut2, r1, x1, x2 => (item=bgp)
@@ -864,41 +864,6 @@ ok: [r1] =>
     !
     !
     do write
-ok: [x1] => 
-  msg: |-
-    bgp configuration for x1
-    =========================================
-    !
-    router bgp 65100
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.3
-    !
-      neighbor 10.1.0.5 remote-as 65000
-      neighbor 10.1.0.5 description dut
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-      network 10.0.0.3/32
-    !
-    !
-    !
-      neighbor 10.1.0.5 activate
-      no neighbor 10.1.0.5 send-community all
-      neighbor 10.1.0.5 send-community standard
-      neighbor 10.1.0.5 send-community large
-    !
-    !
-    !
-    do write
 ok: [x2] => 
   msg: |-
     bgp configuration for x2
@@ -934,6 +899,41 @@ ok: [x2] =>
     !
     !
     do write
+ok: [x1] => 
+  msg: |-
+    bgp configuration for x1
+    =========================================
+    !
+    router bgp 65100
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.3
+    !
+      neighbor 10.1.0.5 remote-as 65000
+      neighbor 10.1.0.5 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.3/32
+    !
+    !
+    !
+      neighbor 10.1.0.5 activate
+      no neighbor 10.1.0.5 send-community all
+      neighbor 10.1.0.5 send-community standard
+      neighbor 10.1.0.5 send-community large
+    !
+    !
+    !
+    do write
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [dut]
@@ -951,18 +951,18 @@ ok: [dut]
 ok: [dut2]
 
 TASK [Create local temporary file] *********************************************
-changed: [dut2 -> localhost]
 changed: [dut -> localhost]
+changed: [dut2 -> localhost]
 
 TASK [Create bgp config script in local temporary file] ************************
 changed: [dut -> localhost]
 changed: [dut2 -> localhost]
 
 TASK [Execute local config script on Cumulus node] *****************************
-changed: [dut2]
 changed: [dut]
+changed: [dut2]
 
-TASK [Remove temporary file /tmp/ansible.dut.cvbx9rb2temp] *********************
+TASK [Remove temporary file /tmp/ansible.dut.imu1m9qetemp] *********************
 changed: [dut -> localhost]
 changed: [dut2 -> localhost]
 
@@ -982,9 +982,9 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [x2]
 changed: [x1]
 changed: [r1]
+changed: [x2]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [dut]
@@ -1094,7 +1094,7 @@ changed: [dut -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
 
-TASK [Remove temporary file /tmp/ansible.dut.xb1n8j9ftemp] *********************
+TASK [Remove temporary file /tmp/ansible.dut.mx13e89itemp] *********************
 changed: [dut -> localhost]
 
 TASK [template] ****************************************************************

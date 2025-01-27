@@ -4,13 +4,13 @@ PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
-ok: [x2]
 ok: [x1]
+ok: [x2]
 
 TASK [Find device readiness script] ********************************************
 ok: [dut]
-ok: [x2]
 ok: [x1]
+ok: [x2]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [dut]
@@ -70,8 +70,8 @@ TASK [eos_config: deploying normalize from /home/pipi/net101/tools/netsim/ansibl
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
 should be similar to how they appear if present in the running configuration on
 device including the indentation
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
@@ -163,6 +163,15 @@ ok: [dut] =>
     cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
     auto swp1
     auto swp2
+    auto vlan1000
+  
+    iface vlan1000 inet6 static
+      address 2001:db8:2::1/64
+    auto vlan1001
+  
+    iface vlan1001 inet6 static
+      mtu 1280
+      address 2001:db8:2:1::1/64
     CONFIG
     #
     echo "INIT: executing ifreload"
@@ -322,12 +331,12 @@ changed: [dut -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
 
-TASK [Remove temporary file /tmp/ansible.dut.5le2zdddtemp] *********************
+TASK [Remove temporary file /tmp/ansible.dut.exxelv3ztemp] *********************
 changed: [dut -> localhost]
 
 TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -364,7 +373,6 @@ ok: [dut] =>
     #
     set -e # Exit immediately when any command fails
     #
-    #
     # Create multi-vlan bridge, specify VLANs, and attach interfaces to it
     #
     cat >/etc/network/interfaces.d/50-bridge.intf <<CONFIG
@@ -385,14 +393,10 @@ ok: [dut] =>
         bridge-access 1001
     auto vlan1000
     iface vlan1000
-        address 2001:db8:2::1/64
-  
         vlan-id 1000
         vlan-raw-device bridge
     auto vlan1001
     iface vlan1001
-        address 2001:db8:2:1::1/64
-  
         vlan-id 1001
         vlan-raw-device bridge
     CONFIG
@@ -447,12 +451,12 @@ changed: [dut -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
 
-TASK [Remove temporary file /tmp/ansible.dut.ddootfk0temp] *********************
+TASK [Remove temporary file /tmp/ansible.dut.x5912g7ctemp] *********************
 changed: [dut -> localhost]
 
 TASK [eos_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/eos.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [dut]
@@ -561,7 +565,7 @@ changed: [dut -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
 
-TASK [Remove temporary file /tmp/ansible.dut.a1vktswctemp] *********************
+TASK [Remove temporary file /tmp/ansible.dut.9a1pdx2jtemp] *********************
 changed: [dut -> localhost]
 
 TASK [eos_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/eos.j2] ***
@@ -580,4 +584,8 @@ x2                         : ok=33   changed=4    unreachable=0    failed=0    s
 
 This lab tests OSPFv3 adjacencies on VLAN interfaces with non-default MTU
 settings. The adjacency establishment could fail due to MTU mismatch.
+
+Failure to establish X2-DUT adjacency means that the VLAN interface does not
+get the correct MTU. Failure to establish X1-DUT adjacency indicates a
+potential problem with system MTU.
 
