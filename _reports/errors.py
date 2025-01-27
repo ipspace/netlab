@@ -26,6 +26,11 @@ def parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespace,typing.List
     action='store_true',
     help='Create summary failure report')
   parser.add_argument(
+    '--report',
+    dest='report',
+    action='store_true',
+    help='Create summary failure report')
+  parser.add_argument(
     '--caveats',
     dest='caveats',
     action='store_true',
@@ -74,8 +79,17 @@ def print_caveats(path: str) -> None:
     if idx == len(components) - 3:
       print(" " * (idx + 1) * 2 + "caveat: |\n")
 
+def print_report(path: str, fail_step: str) -> None:
+  components = path.split('.')
+  test_url = "https://github.com/ipspace/netlab/blob/dev/tests/integration/"
+  result_url = "https://tests.netlab.tools/"
+  print(f'{components[-1].split('.')[0]}:')
+  print(f'* [Test topology]({test_url}{"/".join(components[2:])}.yml)')
+  print(f'* [Test results]({result_url}{"/".join(components)}.yml-{fail_step}.log)')
+  print()
+
 def check_test_result(path: str, results: Box, args: argparse.Namespace) -> bool:
-  test_failed = False
+  fail_step = None
   for k in results.keys():
     if results[k] is False:
       if k in ['create','supported']:
@@ -83,11 +97,12 @@ def check_test_result(path: str, results: Box, args: argparse.Namespace) -> bool
       if k == 'validate' and 'caveat' in results:
         continue
 
-      test_failed = True
-      if not args.rerun and not args.summary and not args.caveats:
+      fail_step = k
+      xkw = [ kw for kw in ['rerun','summary','caveats','report'] if vars(args)[kw] ]
+      if not xkw:
         print(f'{path}: {k}')
 
-  if not test_failed:
+  if fail_step is None:
     return True
   
   if args.summary:
@@ -96,6 +111,8 @@ def check_test_result(path: str, results: Box, args: argparse.Namespace) -> bool
     print_rerun_instructions(path,args)
   if args.caveats:
     print_caveats(path)
+  if args.report:
+    print_report(path,fail_step)
 
   return False
 
