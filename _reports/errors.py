@@ -83,7 +83,7 @@ def print_report(path: str, fail_step: str) -> None:
   components = path.split('.')
   test_url = "https://github.com/ipspace/netlab/blob/dev/tests/integration/"
   result_url = "https://tests.netlab.tools/"
-  print(f'{components[-1].split('.')[0]}:')
+  print(f'{components[-1].split(".")[0]}:')
   print(f'* [Test topology]({test_url}{"/".join(components[2:])}.yml)')
   print(f'* [Test results]({result_url}{"/".join(components)}.yml-{fail_step}.log)')
   print()

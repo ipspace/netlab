@@ -17,8 +17,8 @@ skipping: [dut]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/eos-clab.yml for x1, x2
 
 TASK [Wait for cEOS SSH daemon to start] ***************************************
-ok: [x1]
 ok: [x2]
+ok: [x1]
 
 TASK [Normalize config on bridge-like devices] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for x1, x2, dut
@@ -83,8 +83,8 @@ ok: [x2]
 
 TASK [Find configuration template for initial] *********************************
 ok: [dut]
-ok: [x1]
 ok: [x2]
+ok: [x1]
 
 TASK [fail] ********************************************************************
 skipping: [x1]
@@ -290,8 +290,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for dut
 
 TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [dut -> localhost]
@@ -332,8 +332,8 @@ ok: [x2]
 
 TASK [Find configuration template for vlan] ************************************
 ok: [dut]
-ok: [x1]
 ok: [x2]
+ok: [x1]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -353,21 +353,24 @@ ok: [dut] =>
       brctl addbr vlan1000
   
   
-      ip link set dev vlan1000 up
       ip addr flush dev vlan1000
+      sysctl -w net.ipv6.conf.vlan1000.addr_gen_mode=3
       ip addr add 2001:db8:2::1/64 dev vlan1000
     fi
     if [ ! -e /sys/devices/virtual/net/vlan1001 ]; then
       brctl addbr vlan1001
   
   
-      ip link set dev vlan1001 up
       ip addr flush dev vlan1001
+      sysctl -w net.ipv6.conf.vlan1001.addr_gen_mode=3
       ip addr add 2001:db8:2:1::1/64 dev vlan1001
     fi
   
     brctl addif vlan1000 eth1
     brctl addif vlan1001 eth2
+  
+    ip link set dev vlan1000 up
+    ip link set dev vlan1001 up
     exit 0
 ok: [x1] => 
   msg: |-
@@ -420,8 +423,8 @@ TASK [run vtysh to import vlan config from /home/pipi/net101/tools/netsim/ansibl
 skipping: [dut]
 
 TASK [eos_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/eos.j2] ***
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [dut]
@@ -553,4 +556,8 @@ x2                         : ok=33   changed=4    unreachable=0    failed=0    s
 
 This lab tests OSPFv3 adjacencies on VLAN interfaces with non-default MTU
 settings. The adjacency establishment could fail due to MTU mismatch.
+
+Failure to establish X2-DUT adjacency means that the VLAN interface does not
+get the correct MTU. Failure to establish X1-DUT adjacency indicates a
+potential problem with system MTU.
 

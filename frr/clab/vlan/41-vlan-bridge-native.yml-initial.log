@@ -6,8 +6,8 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [s1]
 ok: [s2]
 ok: [h1]
-ok: [h2]
 ok: [h3]
+ok: [h2]
 ok: [h4]
 
 TASK [Find device readiness script] ********************************************
@@ -33,8 +33,8 @@ TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [s1]
 ok: [s2]
 ok: [h1]
-ok: [h3]
 ok: [h2]
+ok: [h3]
 ok: [h4]
 
 TASK [Find configuration template for normalize] *******************************
@@ -42,8 +42,8 @@ ok: [s1]
 ok: [s2]
 ok: [h1]
 ok: [h2]
-ok: [h4]
 ok: [h3]
+ok: [h4]
 
 TASK [fail] ********************************************************************
 skipping: [s1]
@@ -92,8 +92,8 @@ TASK [Find configuration template for initial] *********************************
 ok: [s1]
 ok: [s2]
 ok: [h1]
-ok: [h3]
 ok: [h2]
+ok: [h3]
 ok: [h4]
 
 TASK [fail] ********************************************************************
@@ -179,6 +179,43 @@ ok: [h3] =>
     #
     # Print the final routing table
     ip route
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.31.1.2/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.31.1.2/24 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    #
+    #
+    # Print the final routing table
+    ip route
 ok: [s1] => 
   msg: |-
     initial configuration for s1
@@ -234,17 +271,15 @@ ok: [s1] =>
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
     sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+    ip link set dev eth2 mtu 1500
     sysctl -qw net.ipv6.conf.eth3.disable_ipv6=1
+    ip link set dev eth3 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
-    ip link set dev eth2 mtu 1500
-    ip link set dev eth3 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -350,17 +385,15 @@ ok: [s2] =>
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
     sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+    ip link set dev eth2 mtu 1500
     sysctl -qw net.ipv6.conf.eth3.disable_ipv6=1
+    ip link set dev eth3 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
-    ip link set dev eth2 mtu 1500
-    ip link set dev eth3 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -411,43 +444,6 @@ ok: [s2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [h2] => 
-  msg: |-
-    initial configuration for h2
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.31.1.2/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.31.1.2/24 dev eth1
-    ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    #
-    #
-    #
-    # Print the final routing table
-    ip route
 ok: [h4] => 
   msg: |-
     initial configuration for h4
@@ -502,15 +498,15 @@ TASK [Attempt to load VRF kernel module] ***************************************
 changed: [s1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
-skipping: [s2]
 skipping: [s1]
+skipping: [s2]
 
 TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for s1, s2
 
 TASK [template] ****************************************************************
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [set_fact] ****************************************************************
 ok: [s1]
@@ -531,16 +527,16 @@ ok: [h3]
 ok: [h4]
 
 TASK [Create a temporary file for the rendered script] *************************
+changed: [h1 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+changed: [h3 -> localhost]
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h4 -> localhost]
-changed: [h3 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -560,10 +556,10 @@ changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-7pp6wjfw.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-4j2h2w8m.sh] ***********************
 changed: [h1 -> localhost]
-changed: [h4 -> localhost]
 changed: [h3 -> localhost]
+changed: [h4 -> localhost]
 changed: [h2 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
@@ -602,16 +598,14 @@ ok: [s1] =>
     fi
     if [ ! -e /sys/devices/virtual/net/vlan700 ]; then
       brctl addbr vlan700
+      ip link set dev vlan700 address 52:dc:ca:fd:05:00
   
-  
-      ip link set dev vlan700 up
       ip addr flush dev vlan700
     fi
     if [ ! -e /sys/devices/virtual/net/vlan701 ]; then
       brctl addbr vlan701
+      ip link set dev vlan701 address 52:dc:ca:fd:05:01
   
-  
-      ip link set dev vlan701 up
       ip addr flush dev vlan701
     fi
   
@@ -619,6 +613,9 @@ ok: [s1] =>
     brctl addif vlan700 eth2
     brctl addif vlan701 eth3
     brctl addif vlan701 eth1.701
+  
+    ip link set dev vlan700 up
+    ip link set dev vlan701 up
     exit 0
 ok: [s2] => 
   msg: |-
@@ -634,16 +631,14 @@ ok: [s2] =>
     fi
     if [ ! -e /sys/devices/virtual/net/vlan700 ]; then
       brctl addbr vlan700
+      ip link set dev vlan700 address 52:dc:ca:fd:06:00
   
-  
-      ip link set dev vlan700 up
       ip addr flush dev vlan700
     fi
     if [ ! -e /sys/devices/virtual/net/vlan701 ]; then
       brctl addbr vlan701
+      ip link set dev vlan701 address 52:dc:ca:fd:06:01
   
-  
-      ip link set dev vlan701 up
       ip addr flush dev vlan701
     fi
   
@@ -651,6 +646,9 @@ ok: [s2] =>
     brctl addif vlan700 eth2
     brctl addif vlan701 eth3
     brctl addif vlan701 eth1.701
+  
+    ip link set dev vlan700 up
+    ip link set dev vlan701 up
     exit 0
 
 TASK [Find configuration deployment deploy_script for vlan] ********************
