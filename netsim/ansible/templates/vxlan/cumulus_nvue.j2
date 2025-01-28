@@ -1,0 +1,30 @@
+{% for vname in vxlan.vlans if vlans[vname].vni is defined %}
+{%   set vlan = vlans[vname] %}
+{%   if loop.first %}
+- set:
+    bridge:
+      domain:
+        br_default:
+          vlan:
+{%  endif %}
+            '{{ vlan.id }}':
+              vni:
+                '{{ vlan.vni }}':
+                  flooding:
+                    enable: on
+{%   if vlan.vtep_list|default([]) %}
+                    head-end-replication:
+{%     for remote_vtep in vlan.vtep_list %}
+                      {{ remote_vtep }}: {}
+{%     endfor %}
+{%   endif %}
+{% endfor %}
+{% if vxlan.vlans is defined %}
+- set:
+    nve:
+      vxlan:
+        enable: on
+        mac-learning: {{ 'on' if vxlan.flooding|default("") != "evpn" else 'off' }}
+        source:
+          address: {{ vxlan.vtep }}
+{% endif %}
