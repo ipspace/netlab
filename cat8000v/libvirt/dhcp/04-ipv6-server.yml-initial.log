@@ -3,14 +3,14 @@
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
+ok: [server]
 ok: [c1]
 ok: [c2]
-ok: [server]
 
 TASK [Find device readiness script] ********************************************
+ok: [server]
 ok: [c1]
 ok: [c2]
-ok: [server]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [server]
@@ -21,14 +21,14 @@ TASK [Normalize config on bridge-like devices] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for server, c1, c2
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [server]
 ok: [c1]
 ok: [c2]
-ok: [server]
 
 TASK [Find configuration template for normalize] *******************************
+ok: [server]
 ok: [c1]
 ok: [c2]
-ok: [server]
 
 TASK [fail] ********************************************************************
 skipping: [server]
@@ -54,14 +54,14 @@ TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for server, c1, c2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [server]
 ok: [c1]
 ok: [c2]
-ok: [server]
 
 TASK [Find configuration template for initial] *********************************
+ok: [server]
 ok: [c1]
 ok: [c2]
-ok: [server]
 
 TASK [fail] ********************************************************************
 skipping: [server]
@@ -69,212 +69,6 @@ skipping: [c1]
 skipping: [c2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [c1] => 
-  msg: |-
-    initial configuration for c1
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)#"
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "INIT: setting hostname"
-    hostname c1
-    #
-    #
-    # Build hosts file
-    #
-    #
-    cat <<SCRIPT >/tmp/hosts
-    #
-    # Created by netlab initial
-    #
-    10.0.0.3 server
-    2001:db8:cafe::3 GigabitEthernet2.server
-    10.0.0.1 c1
-    10.0.0.2 c2
-    SCRIPT
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
-    #
-    # Disable ZTP
-    #
-    ztp --disable
-    #
-    #
-    echo "INIT: creating loopback interface"
-    #
-    # Create loopback interface entry
-    #
-    cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
-    auto lo
-    iface lo inet loopback
-      address 10.0.0.1/32
-  
-    CONFIG
-    #
-    until ifreload -a; do
-      sleep 1
-    done
-    #
-    echo "INIT: creating other interface"
-    cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
-    auto swp1
-    CONFIG
-    #
-    echo "INIT: executing ifreload"
-    until ifreload -a; do
-      sleep 1
-    done
-    #
-    # For whatever crazy reason, I had to enable IPv6 in containers
-    #
-    #
-    # Enable FRR modules for ['dhcp']
-    #
-    #
-    # Enable FRR daemons
-    #
-  
-    systemctl enable frr.service
-    systemctl start frr.service
-    systemctl reload frr.service
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    ipv6 forwarding
-    !
-    interface swp1
-    ! no shutdown
-     description c1 -> [c2,server]
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    #
-    # Enable LLDP
-    #
-    echo "INIT: enabling LLDP"
-    cat <<CONFIG >/etc/lldpd.d/system.conf
-    configure lldp tx-interval 30
-    configure lldp tx-hold 3
-    configure system interface pattern *,!eth0,swp*
-    CONFIG
-    service lldpd restart
-ok: [c2] => 
-  msg: |-
-    initial configuration for c2
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)#"
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "INIT: setting hostname"
-    hostname c2
-    #
-    #
-    # Build hosts file
-    #
-    #
-    cat <<SCRIPT >/tmp/hosts
-    #
-    # Created by netlab initial
-    #
-    10.0.0.3 server
-    2001:db8:cafe::3 GigabitEthernet2.server
-    10.0.0.1 c1
-    10.0.0.2 c2
-    SCRIPT
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
-    #
-    # Disable ZTP
-    #
-    ztp --disable
-    #
-    #
-    echo "INIT: creating loopback interface"
-    #
-    # Create loopback interface entry
-    #
-    cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
-    auto lo
-    iface lo inet loopback
-      address 10.0.0.2/32
-  
-    CONFIG
-    #
-    until ifreload -a; do
-      sleep 1
-    done
-    #
-    echo "INIT: creating other interface"
-    cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
-    auto swp1
-    CONFIG
-    #
-    echo "INIT: executing ifreload"
-    until ifreload -a; do
-      sleep 1
-    done
-    #
-    # For whatever crazy reason, I had to enable IPv6 in containers
-    #
-    #
-    # Enable FRR modules for ['dhcp']
-    #
-    #
-    # Enable FRR daemons
-    #
-  
-    systemctl enable frr.service
-    systemctl start frr.service
-    systemctl reload frr.service
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    ipv6 forwarding
-    !
-    interface swp1
-    ! no shutdown
-     description c2 -> [c1,server]
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    #
-    # Enable LLDP
-    #
-    echo "INIT: enabling LLDP"
-    cat <<CONFIG >/etc/lldpd.d/system.conf
-    configure lldp tx-interval 30
-    configure lldp tx-hold 3
-    configure system interface pattern *,!eth0,swp*
-    CONFIG
-    service lldpd restart
 ok: [server] => 
   msg: |-
     initial configuration for server
@@ -312,41 +106,94 @@ ok: [server] =>
     no banner exec
     no banner login
     no banner incoming
+ok: [c1] => 
+  msg: |-
+    initial configuration for c1
+    =========================================
+    hostname c1
+    !
+    no ip domain lookup
+    !
+    lldp run
+    !
+    ip host c2 10.0.0.2
+    ip host server 10.0.0.3 2001:db8:cafe::3
+    !
+    ip routing
+    !
+    ipv6 unicast-routing
+    !
+    !
+    interface Loopback0
+     ip address 10.0.0.1 255.255.255.255
+    !
+    interface GigabitEthernet0/0
+     no lldp transmit
+     no lldp receive
+    !
+    interface GigabitEthernet0/1
+     description c1 -> [c2,server]
+     no shutdown
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
+    !
+    no banner exec
+    no banner login
+    no banner incoming
+ok: [c2] => 
+  msg: |-
+    initial configuration for c2
+    =========================================
+    hostname c2
+    !
+    no ip domain lookup
+    !
+    lldp run
+    !
+    ip host c1 10.0.0.1
+    ip host server 10.0.0.3 2001:db8:cafe::3
+    !
+    ip routing
+    !
+    ipv6 unicast-routing
+    !
+    !
+    interface Loopback0
+     ip address 10.0.0.2 255.255.255.255
+    !
+    interface GigabitEthernet0/0
+     no lldp transmit
+     no lldp receive
+    !
+    interface GigabitEthernet0/1
+     description c2 -> [c1,server]
+     no shutdown
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
+    !
+    no banner exec
+    no banner login
+    no banner incoming
 
 TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [server]
 ok: [c1]
 ok: [c2]
-ok: [server]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for server
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for c1, c2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for server, c1, c2
 
 TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
 should be similar to how they appear if present in the running configuration on
 device including the indentation
 changed: [server]
-
-TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
-ok: [c1]
-ok: [c2]
-
-TASK [Create local temporary file] *********************************************
-changed: [c1 -> localhost]
-changed: [c2 -> localhost]
-
-TASK [Create initial config script in local temporary file] ********************
-changed: [c2 -> localhost]
-changed: [c1 -> localhost]
-
-TASK [Execute local config script on Cumulus node] *****************************
-changed: [c2]
 changed: [c1]
-
-TASK [Remove temporary file /tmp/ansible.c1.sl125zoitemp] **********************
-changed: [c1 -> localhost]
-changed: [c2 -> localhost]
+changed: [c2]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -378,68 +225,16 @@ ok: [c1] =>
   msg: |-
     dhcp configuration for c1
     =========================================
-    #!/bin/bash
-    #
-    # Disable IPv6 RA on DHCPv6 client interfaces
-    #
-    echo "Disable IPv6 RA"
-    cat >/tmp/config <<CONFIG
-    interface swp1
-      ipv6 nd suppress-ra
-      no ipv6 nd ra-interval
-    !
-    CONFIG
-    vtysh -f /tmp/config
-    #
-    # Configure DHCP clients on interfaces
-    #
-    set -e
-    #
-    echo "DHCP: set IP addresses on interfaces"
-    cat >/etc/network/interfaces.d/12-dhcp.intf <<CONFIG
-    auto swp1
-    iface swp1 inet6 dhcp
-      mtu 1500
-    CONFIG
-    #
-    echo "DHCP: executing ifup"
-    nohup bash -c 'ifreload -a || ifreload -a' &
-    sysctl net/ipv6/conf/swp1/forwarding=0
-    sysctl net/ipv6/conf/swp1/accept_ra=2
-    # sysctl net/ipv6/conf/swp1/accept_ra_from_local=1
+    interface GigabitEthernet0/1
+      ipv6 enable
+      ipv6 address dhcp
 ok: [c2] => 
   msg: |-
     dhcp configuration for c2
     =========================================
-    #!/bin/bash
-    #
-    # Disable IPv6 RA on DHCPv6 client interfaces
-    #
-    echo "Disable IPv6 RA"
-    cat >/tmp/config <<CONFIG
-    interface swp1
-      ipv6 nd suppress-ra
-      no ipv6 nd ra-interval
-    !
-    CONFIG
-    vtysh -f /tmp/config
-    #
-    # Configure DHCP clients on interfaces
-    #
-    set -e
-    #
-    echo "DHCP: set IP addresses on interfaces"
-    cat >/etc/network/interfaces.d/12-dhcp.intf <<CONFIG
-    auto swp1
-    iface swp1 inet6 dhcp
-      mtu 1500
-    CONFIG
-    #
-    echo "DHCP: executing ifup"
-    nohup bash -c 'ifreload -a || ifreload -a' &
-    sysctl net/ipv6/conf/swp1/forwarding=0
-    sysctl net/ipv6/conf/swp1/accept_ra=2
-    # sysctl net/ipv6/conf/swp1/accept_ra_from_local=1
+    interface GigabitEthernet0/1
+      ipv6 enable
+      ipv6 address dhcp
 ok: [server] => 
   msg: |-
     dhcp configuration for server
@@ -458,38 +253,19 @@ ok: [c2]
 ok: [server]
 
 TASK [Deploy dhcp configuration] ***********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for c1, c2
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for server
-
-TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/dhcp/cumulus.j2] ***
-ok: [c1]
-ok: [c2]
-
-TASK [Create local temporary file] *********************************************
-changed: [c1 -> localhost]
-changed: [c2 -> localhost]
-
-TASK [Create dhcp config script in local temporary file] ***********************
-changed: [c1 -> localhost]
-changed: [c2 -> localhost]
-
-TASK [Execute local config script on Cumulus node] *****************************
-changed: [c2]
-changed: [c1]
-
-TASK [Remove temporary file /tmp/ansible.c1.l9u3wstntemp] **********************
-changed: [c1 -> localhost]
-changed: [c2 -> localhost]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for c1, c2, server
 
 TASK [ios_config: deploying dhcp from /home/pipi/net101/tools/netsim/ansible/templates/dhcp/ios.j2] ***
+changed: [c2]
+changed: [c1]
 changed: [server]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-c1                         : ok=28   changed=8    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-c2                         : ok=28   changed=8    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+c1                         : ok=20   changed=2    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+c2                         : ok=20   changed=2    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 server                     : ok=20   changed=2    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 
 

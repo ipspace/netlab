@@ -3,8 +3,8 @@
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [c2]
 ok: [c1]
+ok: [c2]
 ok: [c3]
 ok: [c4]
 ok: [relay]
@@ -12,13 +12,13 @@ ok: [s1]
 ok: [s2]
 
 TASK [Find device readiness script] ********************************************
-ok: [c2]
 ok: [c1]
+ok: [c2]
 ok: [c3]
 ok: [c4]
+ok: [s1]
 ok: [relay]
 ok: [s2]
-ok: [s1]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [relay]
@@ -37,18 +37,18 @@ ok: [c1]
 ok: [c2]
 ok: [c3]
 ok: [c4]
-ok: [relay]
 ok: [s1]
+ok: [relay]
 ok: [s2]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [c1]
 ok: [c2]
-ok: [c3]
 ok: [c4]
+ok: [c3]
 ok: [relay]
-ok: [s1]
 ok: [s2]
+ok: [s1]
 
 TASK [fail] ********************************************************************
 skipping: [relay]
@@ -94,15 +94,15 @@ ok: [c1]
 ok: [c2]
 ok: [c3]
 ok: [c4]
-ok: [s1]
 ok: [relay]
+ok: [s1]
 ok: [s2]
 
 TASK [Find configuration template for initial] *********************************
 ok: [c1]
 ok: [c2]
-ok: [c3]
 ok: [c4]
+ok: [c3]
 ok: [s1]
 ok: [relay]
 ok: [s2]
@@ -117,6 +117,108 @@ skipping: [s1]
 skipping: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [s2] => 
+  msg: |-
+    initial configuration for s2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.3.7/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.3.7/24 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.3.1 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.3.1 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.3.1 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.3.1 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
+ok: [s1] => 
+  msg: |-
+    initial configuration for s1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.2.6/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.2.6/24 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.2.1 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.2.1 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.2.1 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.2.1 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
 ok: [c1] => 
   msg: |-
     initial configuration for c1
@@ -166,6 +268,12 @@ ok: [c1] =>
     #
     ztp --disable
     #
+    #
+  
+    echo "INIT: Configuring system wide default MTU policy"
+    cat > /etc/network/ifupdown2/policy.d/mtu.json <<CONFIG
+    { "address": { "defaults": { "mtu": "1500" } } }
+    CONFIG
     #
     echo "INIT: creating loopback interface"
     #
@@ -226,108 +334,121 @@ ok: [c1] =>
     configure system interface pattern *,!eth0,swp*
     CONFIG
     service lldpd restart
-ok: [s1] => 
+ok: [c3] => 
   msg: |-
-    initial configuration for s1
+    initial configuration for c3
     =========================================
     #!/bin/bash
     #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
     set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
     #
-    # Disable IPv4 and IPv6 forwarding
+    # Create bash profile script
     #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.2.6/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.2.6/24 dev eth1
-    ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.2.0.0/24 2>/dev/null; do
-      : ; done
-    #
-    #
-    echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.2.1 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.2.1 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.2.1 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.2.1 dev eth1 protocol static
-    #
-    # Print the final routing table
-    ip route
-ok: [s2] => 
-  msg: |-
-    initial configuration for s2
-    =========================================
+    cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
     #
-    #  /etc/hosts file is generated as a clab bind.
+    # Build hosts file
     #
-    set -e
+    echo "INIT: setting hostname"
+    hostname c3
+    #
+    #
+    # Build hosts file
+    #
+    #
+    cat <<SCRIPT >/tmp/hosts
+    #
+    # Created by netlab initial
+    #
+    10.0.0.1 relay
+    172.16.0.1 GigabitEthernet2.relay
+    172.16.1.1 GigabitEthernet3.relay
+    172.16.2.1 GigabitEthernet4.relay
+    172.16.3.1 GigabitEthernet5.relay
+    10.0.0.2 c1
+    10.0.0.3 c2
+    10.0.0.4 c3
+    10.0.0.5 c4
+    172.16.2.6 s1 eth1.s1
+    172.16.3.7 s2 eth1.s2
+    SCRIPT
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
+    #
+    # Disable ZTP
+    #
+    ztp --disable
+    #
+    #
   
-    ### One-Shot configuration (non-Ubuntu VM or container)
+    echo "INIT: Configuring system wide default MTU policy"
+    cat > /etc/network/ifupdown2/policy.d/mtu.json <<CONFIG
+    { "address": { "defaults": { "mtu": "1500" } } }
+    CONFIG
     #
-    # Disable IPv4 and IPv6 forwarding
+    echo "INIT: creating loopback interface"
     #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
+    # Create loopback interface entry
     #
-    # Interface addressing, create any bond devices
+    cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
+    auto lo
+    iface lo inet loopback
+      address 10.0.0.4/32
+  
+    CONFIG
     #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.3.7/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.3.7/24 dev eth1
-    ip link set dev eth1 mtu 1500
+    until ifreload -a; do
+      sleep 1
+    done
     #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    echo "INIT: creating other interface"
+    cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
+    auto swp1
+    CONFIG
     #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.2.0.0/24 2>/dev/null; do
-      : ; done
+    echo "INIT: executing ifreload"
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    # For whatever crazy reason, I had to enable IPv6 in containers
     #
     #
-    echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.3.1 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.3.1 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.3.1 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.3.1 dev eth1 protocol static
+    # Enable FRR modules for ['dhcp']
     #
-    # Print the final routing table
-    ip route
+    #
+    # Enable FRR daemons
+    #
+  
+    systemctl enable frr.service
+    systemctl start frr.service
+    systemctl reload frr.service
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    !
+    interface swp1
+    ! no shutdown
+     description c3 -> [c4,relay]
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    #
+    # Enable LLDP
+    #
+    echo "INIT: enabling LLDP"
+    cat <<CONFIG >/etc/lldpd.d/system.conf
+    configure lldp tx-interval 30
+    configure lldp tx-hold 3
+    configure system interface pattern *,!eth0,swp*
+    CONFIG
+    service lldpd restart
 ok: [c2] => 
   msg: |-
     initial configuration for c2
@@ -377,6 +498,12 @@ ok: [c2] =>
     #
     ztp --disable
     #
+    #
+  
+    echo "INIT: Configuring system wide default MTU policy"
+    cat > /etc/network/ifupdown2/policy.d/mtu.json <<CONFIG
+    { "address": { "defaults": { "mtu": "1500" } } }
+    CONFIG
     #
     echo "INIT: creating loopback interface"
     #
@@ -541,6 +668,12 @@ ok: [c4] =>
     ztp --disable
     #
     #
+  
+    echo "INIT: Configuring system wide default MTU policy"
+    cat > /etc/network/ifupdown2/policy.d/mtu.json <<CONFIG
+    { "address": { "defaults": { "mtu": "1500" } } }
+    CONFIG
+    #
     echo "INIT: creating loopback interface"
     #
     # Create loopback interface entry
@@ -600,115 +733,6 @@ ok: [c4] =>
     configure system interface pattern *,!eth0,swp*
     CONFIG
     service lldpd restart
-ok: [c3] => 
-  msg: |-
-    initial configuration for c3
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)#"
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "INIT: setting hostname"
-    hostname c3
-    #
-    #
-    # Build hosts file
-    #
-    #
-    cat <<SCRIPT >/tmp/hosts
-    #
-    # Created by netlab initial
-    #
-    10.0.0.1 relay
-    172.16.0.1 GigabitEthernet2.relay
-    172.16.1.1 GigabitEthernet3.relay
-    172.16.2.1 GigabitEthernet4.relay
-    172.16.3.1 GigabitEthernet5.relay
-    10.0.0.2 c1
-    10.0.0.3 c2
-    10.0.0.4 c3
-    10.0.0.5 c4
-    172.16.2.6 s1 eth1.s1
-    172.16.3.7 s2 eth1.s2
-    SCRIPT
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
-    #
-    # Disable ZTP
-    #
-    ztp --disable
-    #
-    #
-    echo "INIT: creating loopback interface"
-    #
-    # Create loopback interface entry
-    #
-    cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
-    auto lo
-    iface lo inet loopback
-      address 10.0.0.4/32
-  
-    CONFIG
-    #
-    until ifreload -a; do
-      sleep 1
-    done
-    #
-    echo "INIT: creating other interface"
-    cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
-    auto swp1
-    CONFIG
-    #
-    echo "INIT: executing ifreload"
-    until ifreload -a; do
-      sleep 1
-    done
-    #
-    # For whatever crazy reason, I had to enable IPv6 in containers
-    #
-    #
-    # Enable FRR modules for ['dhcp']
-    #
-    #
-    # Enable FRR daemons
-    #
-  
-    systemctl enable frr.service
-    systemctl start frr.service
-    systemctl reload frr.service
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    !
-    interface swp1
-    ! no shutdown
-     description c3 -> [c4,relay]
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    #
-    # Enable LLDP
-    #
-    echo "INIT: enabling LLDP"
-    cat <<CONFIG >/etc/lldpd.d/system.conf
-    configure lldp tx-interval 30
-    configure lldp tx-hold 3
-    configure system interface pattern *,!eth0,swp*
-    CONFIG
-    service lldpd restart
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [c1]
@@ -737,28 +761,28 @@ ok: [c3]
 ok: [c4]
 
 TASK [Create local temporary file] *********************************************
-changed: [c4 -> localhost]
-changed: [c2 -> localhost]
 changed: [c1 -> localhost]
+changed: [c2 -> localhost]
+changed: [c4 -> localhost]
 changed: [c3 -> localhost]
 
 TASK [Create initial config script in local temporary file] ********************
-changed: [c2 -> localhost]
-changed: [c3 -> localhost]
 changed: [c1 -> localhost]
 changed: [c4 -> localhost]
+changed: [c3 -> localhost]
+changed: [c2 -> localhost]
 
 TASK [Execute local config script on Cumulus node] *****************************
-changed: [c2]
 changed: [c1]
 changed: [c3]
 changed: [c4]
+changed: [c2]
 
-TASK [Remove temporary file /tmp/ansible.c1.llf593hxtemp] **********************
-changed: [c2 -> localhost]
+TASK [Remove temporary file /tmp/ansible.c1.hupeazqgtemp] **********************
 changed: [c3 -> localhost]
-changed: [c1 -> localhost]
 changed: [c4 -> localhost]
+changed: [c1 -> localhost]
+changed: [c2 -> localhost]
 
 TASK [Define script filename and determine whether to execute in netns] ********
 ok: [s1]
@@ -769,8 +793,8 @@ changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [s2 -> localhost]
 changed: [s1 -> localhost]
+changed: [s2 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-s1_initial.sh] *********
 skipping: [s1]
@@ -784,7 +808,7 @@ TASK [Container configuration for initial based on /home/pipi/net101/tools/netsi
 changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 
-TASK [Remove temporary file /tmp/s1_initial-gufaejkn.sh] ***********************
+TASK [Remove temporary file /tmp/s1_initial-ffy6kt_h.sh] ***********************
 changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 
@@ -814,8 +838,8 @@ ok: [relay]
 TASK [Find configuration template for dhcp] ************************************
 ok: [c1]
 ok: [c2]
-skipping: [s1]
 ok: [c3]
+skipping: [s1]
 ok: [c4]
 skipping: [s2]
 ok: [relay]
@@ -847,7 +871,6 @@ ok: [c1] =>
     cat >/etc/network/interfaces.d/12-dhcp.intf <<CONFIG
     auto swp1
     iface swp1 inet dhcp
-      mtu 1500
     CONFIG
     #
     echo "DHCP: executing ifup"
@@ -870,34 +893,11 @@ ok: [c2] =>
     cat >/etc/network/interfaces.d/12-dhcp.intf <<CONFIG
     auto swp1
     iface swp1 inet dhcp
-      mtu 1500
     CONFIG
     #
     echo "DHCP: executing ifup"
     nohup bash -c 'ifreload -a || ifreload -a' &
 skipping: [s2]
-ok: [c4] => 
-  msg: |-
-    dhcp configuration for c4
-    =========================================
-    #!/bin/bash
-    #
-    # Disable IPv6 RA on DHCPv6 client interfaces
-    #
-    #
-    # Configure DHCP clients on interfaces
-    #
-    set -e
-    #
-    echo "DHCP: set IP addresses on interfaces"
-    cat >/etc/network/interfaces.d/12-dhcp.intf <<CONFIG
-    auto swp1
-    iface swp1 inet dhcp
-      mtu 1500
-    CONFIG
-    #
-    echo "DHCP: executing ifup"
-    nohup bash -c 'ifreload -a || ifreload -a' &
 ok: [c3] => 
   msg: |-
     dhcp configuration for c3
@@ -915,7 +915,27 @@ ok: [c3] =>
     cat >/etc/network/interfaces.d/12-dhcp.intf <<CONFIG
     auto swp1
     iface swp1 inet dhcp
-      mtu 1500
+    CONFIG
+    #
+    echo "DHCP: executing ifup"
+    nohup bash -c 'ifreload -a || ifreload -a' &
+ok: [c4] => 
+  msg: |-
+    dhcp configuration for c4
+    =========================================
+    #!/bin/bash
+    #
+    # Disable IPv6 RA on DHCPv6 client interfaces
+    #
+    #
+    # Configure DHCP clients on interfaces
+    #
+    set -e
+    #
+    echo "DHCP: set IP addresses on interfaces"
+    cat >/etc/network/interfaces.d/12-dhcp.intf <<CONFIG
+    auto swp1
+    iface swp1 inet dhcp
     CONFIG
     #
     echo "DHCP: executing ifup"
@@ -934,8 +954,8 @@ ok: [c1]
 ok: [c2]
 skipping: [s1]
 skipping: [s2]
-ok: [c3]
 ok: [c4]
+ok: [c3]
 ok: [relay]
 
 TASK [Deploy dhcp configuration] ***********************************************
@@ -952,27 +972,27 @@ ok: [c3]
 
 TASK [Create local temporary file] *********************************************
 changed: [c1 -> localhost]
-changed: [c3 -> localhost]
 changed: [c2 -> localhost]
+changed: [c3 -> localhost]
 changed: [c4 -> localhost]
 
 TASK [Create dhcp config script in local temporary file] ***********************
-changed: [c2 -> localhost]
 changed: [c1 -> localhost]
+changed: [c2 -> localhost]
 changed: [c3 -> localhost]
 changed: [c4 -> localhost]
 
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [c1]
-changed: [c3]
 changed: [c2]
+changed: [c3]
 changed: [c4]
 
-TASK [Remove temporary file /tmp/ansible.c1.4z6s5i4ftemp] **********************
-changed: [c2 -> localhost]
-changed: [c3 -> localhost]
-changed: [c4 -> localhost]
+TASK [Remove temporary file /tmp/ansible.c1.q3bgmch0temp] **********************
 changed: [c1 -> localhost]
+changed: [c3 -> localhost]
+changed: [c2 -> localhost]
+changed: [c4 -> localhost]
 
 TASK [ios_config: deploying dhcp from /home/pipi/net101/tools/netsim/ansible/templates/dhcp/ios.j2] ***
 changed: [relay]
@@ -1029,9 +1049,9 @@ ok: [c4]
 
 TASK [Create local temporary file] *********************************************
 changed: [c1 -> localhost]
-changed: [c2 -> localhost]
 changed: [c3 -> localhost]
 changed: [c4 -> localhost]
+changed: [c2 -> localhost]
 
 TASK [Create bounce config script in local temporary file] *********************
 changed: [c1 -> localhost]
@@ -1040,12 +1060,12 @@ changed: [c3 -> localhost]
 changed: [c4 -> localhost]
 
 TASK [Execute local config script on Cumulus node] *****************************
-changed: [c2]
 changed: [c1]
 changed: [c4]
 changed: [c3]
+changed: [c2]
 
-TASK [Remove temporary file /tmp/ansible.c1.sh7y_owltemp] **********************
+TASK [Remove temporary file /tmp/ansible.c1.5pk2ikz8temp] **********************
 changed: [c1 -> localhost]
 changed: [c2 -> localhost]
 changed: [c3 -> localhost]

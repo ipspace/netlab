@@ -61,8 +61,8 @@ ok: [c1]
 ok: [c2]
 ok: [c3]
 ok: [c4]
-ok: [s2]
 ok: [s1]
+ok: [s2]
 ok: [relay]
 
 TASK [fail] ********************************************************************
@@ -183,6 +183,57 @@ ok: [s1] =>
     #
     # Print the final routing table
     ip route
+ok: [s2] => 
+  msg: |-
+    initial configuration for s2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.3.7/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.3.7/24 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.3.1 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.3.1 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.3.1 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.3.1 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
 ok: [c1] => 
   msg: |-
     initial configuration for c1
@@ -232,6 +283,12 @@ ok: [c1] =>
     #
     ztp --disable
     #
+    #
+  
+    echo "INIT: Configuring system wide default MTU policy"
+    cat > /etc/network/ifupdown2/policy.d/mtu.json <<CONFIG
+    { "address": { "defaults": { "mtu": "1500" } } }
+    CONFIG
     #
     echo "INIT: creating loopback interface"
     #
@@ -342,6 +399,12 @@ ok: [c2] =>
     ztp --disable
     #
     #
+  
+    echo "INIT: Configuring system wide default MTU policy"
+    cat > /etc/network/ifupdown2/policy.d/mtu.json <<CONFIG
+    { "address": { "defaults": { "mtu": "1500" } } }
+    CONFIG
+    #
     echo "INIT: creating loopback interface"
     #
     # Create loopback interface entry
@@ -401,57 +464,6 @@ ok: [c2] =>
     configure system interface pattern *,!eth0,swp*
     CONFIG
     service lldpd restart
-ok: [s2] => 
-  msg: |-
-    initial configuration for s2
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.3.7/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.3.7/24 dev eth1
-    ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.2.0.0/24 2>/dev/null; do
-      : ; done
-    #
-    #
-    echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.3.1 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.3.1 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.3.1 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.3.1 dev eth1 protocol static
-    #
-    # Print the final routing table
-    ip route
 ok: [c3] => 
   msg: |-
     initial configuration for c3
@@ -501,6 +513,12 @@ ok: [c3] =>
     #
     ztp --disable
     #
+    #
+  
+    echo "INIT: Configuring system wide default MTU policy"
+    cat > /etc/network/ifupdown2/policy.d/mtu.json <<CONFIG
+    { "address": { "defaults": { "mtu": "1500" } } }
+    CONFIG
     #
     echo "INIT: creating loopback interface"
     #
@@ -610,6 +628,12 @@ ok: [c4] =>
     #
     ztp --disable
     #
+    #
+  
+    echo "INIT: Configuring system wide default MTU policy"
+    cat > /etc/network/ifupdown2/policy.d/mtu.json <<CONFIG
+    { "address": { "defaults": { "mtu": "1500" } } }
+    CONFIG
     #
     echo "INIT: creating loopback interface"
     #
@@ -751,27 +775,27 @@ ok: [c4]
 
 TASK [Create local temporary file] *********************************************
 changed: [c1 -> localhost]
-changed: [c4 -> localhost]
 changed: [c3 -> localhost]
 changed: [c2 -> localhost]
+changed: [c4 -> localhost]
 
 TASK [Create initial config script in local temporary file] ********************
-changed: [c3 -> localhost]
-changed: [c2 -> localhost]
 changed: [c1 -> localhost]
+changed: [c3 -> localhost]
 changed: [c4 -> localhost]
+changed: [c2 -> localhost]
 
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [c2]
-changed: [c1]
-changed: [c4]
 changed: [c3]
+changed: [c4]
+changed: [c1]
 
-TASK [Remove temporary file /tmp/ansible.c1.8xh5p_e8temp] **********************
-changed: [c1 -> localhost]
+TASK [Remove temporary file /tmp/ansible.c1.gtd51z9btemp] **********************
 changed: [c4 -> localhost]
-changed: [c2 -> localhost]
 changed: [c3 -> localhost]
+changed: [c1 -> localhost]
+changed: [c2 -> localhost]
 
 TASK [Define script filename and determine whether to execute in netns] ********
 ok: [s1]
@@ -782,8 +806,8 @@ changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [s1 -> localhost]
 changed: [s2 -> localhost]
+changed: [s1 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-s1_initial.sh] *********
 skipping: [s1]
@@ -797,7 +821,7 @@ TASK [Container configuration for initial based on /home/pipi/net101/tools/netsi
 changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 
-TASK [Remove temporary file /tmp/s1_initial-10_j0xdy.sh] ***********************
+TASK [Remove temporary file /tmp/s1_initial-4ezek57w.sh] ***********************
 changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 
@@ -833,9 +857,9 @@ ok: [relay]
 TASK [Find configuration template for dhcp] ************************************
 ok: [c1]
 ok: [c2]
-ok: [c3]
-ok: [c4]
 skipping: [s1]
+ok: [c4]
+ok: [c3]
 skipping: [s2]
 ok: [relay]
 
@@ -849,7 +873,6 @@ skipping: [s1]
 skipping: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [s1]
 ok: [c1] => 
   msg: |-
     dhcp configuration for c1
@@ -867,11 +890,11 @@ ok: [c1] =>
     cat >/etc/network/interfaces.d/12-dhcp.intf <<CONFIG
     auto swp1
     iface swp1 inet dhcp
-      mtu 1500
     CONFIG
     #
     echo "DHCP: executing ifup"
     nohup bash -c 'ifreload -a || ifreload -a' &
+skipping: [s1]
 ok: [c2] => 
   msg: |-
     dhcp configuration for c2
@@ -889,7 +912,6 @@ ok: [c2] =>
     cat >/etc/network/interfaces.d/12-dhcp.intf <<CONFIG
     auto swp1
     iface swp1 inet dhcp
-      mtu 1500
     CONFIG
     #
     echo "DHCP: executing ifup"
@@ -912,7 +934,6 @@ ok: [c3] =>
     cat >/etc/network/interfaces.d/12-dhcp.intf <<CONFIG
     auto swp1
     iface swp1 inet dhcp
-      mtu 1500
     CONFIG
     #
     echo "DHCP: executing ifup"
@@ -934,7 +955,6 @@ ok: [c4] =>
     cat >/etc/network/interfaces.d/12-dhcp.intf <<CONFIG
     auto swp1
     iface swp1 inet dhcp
-      mtu 1500
     CONFIG
     #
     echo "DHCP: executing ifup"
@@ -950,10 +970,10 @@ ok: [relay] =>
 
 TASK [Find configuration deployment deploy_script for dhcp] ********************
 ok: [c1]
-ok: [c2]
 skipping: [s1]
-ok: [c3]
+ok: [c2]
 skipping: [s2]
+ok: [c3]
 ok: [c4]
 ok: [relay]
 
@@ -972,25 +992,25 @@ ok: [c4]
 TASK [Create local temporary file] *********************************************
 changed: [c1 -> localhost]
 changed: [c2 -> localhost]
-changed: [c3 -> localhost]
 changed: [c4 -> localhost]
+changed: [c3 -> localhost]
 
 TASK [Create dhcp config script in local temporary file] ***********************
-changed: [c1 -> localhost]
 changed: [c2 -> localhost]
-changed: [c3 -> localhost]
+changed: [c1 -> localhost]
 changed: [c4 -> localhost]
+changed: [c3 -> localhost]
 
 TASK [Execute local config script on Cumulus node] *****************************
-changed: [c3]
 changed: [c1]
 changed: [c2]
+changed: [c3]
 changed: [c4]
 
-TASK [Remove temporary file /tmp/ansible.c1.k3pu5c8ttemp] **********************
+TASK [Remove temporary file /tmp/ansible.c1.hef3r0s6temp] **********************
 changed: [c1 -> localhost]
-changed: [c2 -> localhost]
 changed: [c3 -> localhost]
+changed: [c2 -> localhost]
 changed: [c4 -> localhost]
 
 TASK [ios_config: deploying dhcp from /home/pipi/net101/tools/netsim/ansible/templates/dhcp/ios.j2] ***
@@ -1043,8 +1063,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml
 TASK [Render device configuration from /home/pipi/net101/tools/tests/integration/dhcp/bounce.cumulus.j2] ***
 ok: [c1]
 ok: [c2]
-ok: [c3]
 ok: [c4]
+ok: [c3]
 
 TASK [Create local temporary file] *********************************************
 changed: [c1 -> localhost]
@@ -1053,18 +1073,18 @@ changed: [c3 -> localhost]
 changed: [c4 -> localhost]
 
 TASK [Create bounce config script in local temporary file] *********************
-changed: [c2 -> localhost]
 changed: [c1 -> localhost]
+changed: [c2 -> localhost]
 changed: [c3 -> localhost]
 changed: [c4 -> localhost]
 
 TASK [Execute local config script on Cumulus node] *****************************
-changed: [c4]
 changed: [c1]
-changed: [c3]
 changed: [c2]
+changed: [c3]
+changed: [c4]
 
-TASK [Remove temporary file /tmp/ansible.c1.z9g9z8zytemp] **********************
+TASK [Remove temporary file /tmp/ansible.c1.rezns44qtemp] **********************
 changed: [c1 -> localhost]
 changed: [c2 -> localhost]
 changed: [c3 -> localhost]

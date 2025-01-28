@@ -11,8 +11,8 @@ ok: [relay]
 TASK [Find device readiness script] ********************************************
 ok: [c1]
 ok: [c2]
-ok: [relay]
 ok: [server]
+ok: [relay]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [c1]
@@ -26,8 +26,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for c1,
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [c1]
 ok: [c2]
-ok: [relay]
 ok: [server]
+ok: [relay]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [c1]
@@ -82,8 +82,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for c1,
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [c1]
 ok: [c2]
-ok: [server]
 ok: [relay]
+ok: [server]
 
 TASK [Find configuration template for initial] *********************************
 ok: [c1]
@@ -142,6 +142,12 @@ ok: [c1] =>
     #
     ztp --disable
     #
+    #
+  
+    echo "INIT: Configuring system wide default MTU policy"
+    cat > /etc/network/ifupdown2/policy.d/mtu.json <<CONFIG
+    { "address": { "defaults": { "mtu": "1500" } } }
+    CONFIG
     #
     echo "INIT: creating loopback interface"
     #
@@ -247,6 +253,12 @@ ok: [c2] =>
     ztp --disable
     #
     #
+  
+    echo "INIT: Configuring system wide default MTU policy"
+    cat > /etc/network/ifupdown2/policy.d/mtu.json <<CONFIG
+    { "address": { "defaults": { "mtu": "1500" } } }
+    CONFIG
+    #
     echo "INIT: creating loopback interface"
     #
     # Create loopback interface entry
@@ -306,41 +318,6 @@ ok: [c2] =>
     configure system interface pattern *,!eth0,swp*
     CONFIG
     service lldpd restart
-ok: [server] => 
-  msg: |-
-    initial configuration for server
-    =========================================
-    hostname server
-    !
-    no ip domain lookup
-    !
-    lldp run
-    !
-    ip host c1 10.0.0.2
-    ip host c2 10.0.0.3
-    ip host relay 10.0.0.1 172.16.1.1
-    ip host relay-c_vrf 172.16.0.1
-    !
-    ip routing
-    !
-    !
-    !
-    interface GigabitEthernet1
-     no lldp transmit
-     no lldp receive
-    !
-    interface GigabitEthernet2
-     description server -> relay [stub]
-     ip address 172.16.1.4 255.255.255.0
-     no shutdown
-    !
-    !
-    line vty 0 4
-     exec-timeout 0 0
-    !
-    no banner exec
-    no banner login
-    no banner incoming
 ok: [relay] => 
   msg: |-
     initial configuration for relay
@@ -388,6 +365,41 @@ ok: [relay] =>
      mac-address 52dc.cafe.0102
      no shutdown
     !
+ok: [server] => 
+  msg: |-
+    initial configuration for server
+    =========================================
+    hostname server
+    !
+    no ip domain lookup
+    !
+    lldp run
+    !
+    ip host c1 10.0.0.2
+    ip host c2 10.0.0.3
+    ip host relay 10.0.0.1 172.16.1.1
+    ip host relay-c_vrf 172.16.0.1
+    !
+    ip routing
+    !
+    !
+    !
+    interface GigabitEthernet1
+     no lldp transmit
+     no lldp receive
+    !
+    interface GigabitEthernet2
+     description server -> relay [stub]
+     ip address 172.16.1.4 255.255.255.0
+     no shutdown
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
+    !
+    no banner exec
+    no banner login
+    no banner incoming
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [c1]
@@ -405,18 +417,18 @@ ok: [c1]
 ok: [c2]
 
 TASK [Create local temporary file] *********************************************
-changed: [c1 -> localhost]
 changed: [c2 -> localhost]
+changed: [c1 -> localhost]
 
 TASK [Create initial config script in local temporary file] ********************
-changed: [c2 -> localhost]
 changed: [c1 -> localhost]
+changed: [c2 -> localhost]
 
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [c1]
 changed: [c2]
 
-TASK [Remove temporary file /tmp/ansible.c1.qfibdv5gtemp] **********************
+TASK [Remove temporary file /tmp/ansible.c1.v7hzsrg3temp] **********************
 changed: [c2 -> localhost]
 changed: [c1 -> localhost]
 
@@ -431,8 +443,8 @@ PLAY [Deploy module-specific configurations] ***********************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [c1]
 ok: [c2]
-ok: [relay]
 ok: [server]
+ok: [relay]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for c1, c2, relay, server => (item=vrf)
@@ -483,8 +495,8 @@ ok: [relay]
 TASK [Figure out whether to deploy the module dhcp on current device] **********
 ok: [c1]
 ok: [c2]
-ok: [relay]
 ok: [server]
+ok: [relay]
 
 TASK [Find configuration template for dhcp] ************************************
 ok: [c1]
@@ -516,7 +528,6 @@ ok: [c1] =>
     cat >/etc/network/interfaces.d/12-dhcp.intf <<CONFIG
     auto swp1
     iface swp1 inet dhcp
-      mtu 1500
     CONFIG
     #
     echo "DHCP: executing ifup"
@@ -538,7 +549,6 @@ ok: [c2] =>
     cat >/etc/network/interfaces.d/12-dhcp.intf <<CONFIG
     auto swp1
     iface swp1 inet dhcp
-      mtu 1500
     CONFIG
     #
     echo "DHCP: executing ifup"
@@ -568,8 +578,8 @@ ok: [server] =>
 TASK [Find configuration deployment deploy_script for dhcp] ********************
 ok: [c1]
 ok: [c2]
-ok: [server]
 ok: [relay]
+ok: [server]
 
 TASK [Deploy dhcp configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for c1, c2
@@ -592,7 +602,7 @@ TASK [Execute local config script on Cumulus node] *****************************
 changed: [c1]
 changed: [c2]
 
-TASK [Remove temporary file /tmp/ansible.c1.mmj7wtehtemp] **********************
+TASK [Remove temporary file /tmp/ansible.c1.0hu2e280temp] **********************
 changed: [c1 -> localhost]
 changed: [c2 -> localhost]
 
@@ -650,9 +660,9 @@ TASK [Execute local config script on Cumulus node] *****************************
 changed: [c1]
 changed: [c2]
 
-TASK [Remove temporary file /tmp/ansible.c1.pwh1jfr8temp] **********************
-changed: [c2 -> localhost]
+TASK [Remove temporary file /tmp/ansible.c1.44e6r_o5temp] **********************
 changed: [c1 -> localhost]
+changed: [c2 -> localhost]
 
 PLAY RECAP *********************************************************************
 c1                         : ok=40   changed=12   unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
