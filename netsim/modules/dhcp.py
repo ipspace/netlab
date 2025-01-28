@@ -60,12 +60,20 @@ def check_protocol_support(node: Box, topology: Box) -> bool:
   for intf in node.interfaces:
     if not intf.get('dhcp.server',False):
       continue
-    if not features.dhcp.relay:
+    f_relay = features.dhcp.relay
+    if not f_relay:
       log.error(
-        f'Node {node.name} (device {node.device}) cannot be a DHCP relay',
-        category=log.IncorrectValue,
-        module='dhcp')
+        f'Node {node.name} (device {node.device}) cannot be a DHCP relay (interface {intf.ifname}/{intf.name})',
+        category=log.IncorrectValue)
       OK = False
+
+    if isinstance(f_relay,Box):
+      for af in log.AF_LIST:
+        if af in intf and not af in f_relay:
+          log.error(
+            f'Node {node.name} (device {node.device}) cannot be a DHCP relay for {af} '+\
+            f'(interface {intf.ifname}/{intf.name})',
+            category=log.IncorrectValue)
 
     for srv in intf.dhcp.server:
       if not topology.nodes.get(f'{srv}.dhcp.server',False):
