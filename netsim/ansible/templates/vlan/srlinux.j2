@@ -16,9 +16,19 @@ updates:
 {% if l.type=='vlan_member' or l.vlan.trunk_id is defined %}
    vlan-tagging: True
 {% endif %}
+{% if l.mtu is defined and l.type != 'svi' %}
+   mtu: {{ l.mtu+14 }}
+{% endif %}
 {% if not (l.vlan.trunk_id is defined and l.vlan.native is not defined) %}{# Skip trunk ports without native vlan #}
    subinterface:
    - index: {{ if_index }}
+{% if l.mtu is defined %} # max 9412 for 7220, 9500 for 7250 platforms
+{%   if l.type == 'svi' %}
+     ip-mtu: {{ l.mtu }}
+{%   else %}
+     l2-mtu: {{ l.mtu+14 }}
+{%   endif %}
+{% endif %}
 {%  if l.type in ['vlan_member','lan'] or l.vlan.trunk_id is defined %}
 {#   Untagged native vlan only allows type bridged, routing via irb interface #}
      type: {{ 'routed' if l.vlan.mode|default('irb') == 'route' else 'bridged' }}
