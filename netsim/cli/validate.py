@@ -926,9 +926,9 @@ The validation entry has:
 '''
 def execute_netlab_config(v_entry: Box, topology: Box) -> bool:
   node_str = ",".join(v_entry.nodes)
-  cmd = f'netlab config {v_entry.config.template} --limit {node_str}'
+  cmd = f'netlab config {v_entry.config.template} --limit {node_str}'.split(' ')
   for k,v in v_entry.config.variable.items():
-    cmd += f' -e {k}={v}'
+    cmd += [ '-e', k + '="' + str(v).replace('"','\\"') + '"' ]
   if log.VERBOSE:
     print(f'Executing {cmd}')
   log_info(f'Executing configuration snippet {v_entry.config.template}',topology)
