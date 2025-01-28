@@ -3,7 +3,7 @@
 #
 from box import Box
 
-from . import _Quirks
+from . import _Quirks,report_quirk
 from ..utils import log
 from ..modules import _routing
 
@@ -23,6 +23,23 @@ def check_vrrp_bvi(node: Box, topology: Box) -> None:
       'quirks')
     return
 
+def check_ripng_passive(node: Box, topology: Box) -> None:
+  for intf in _routing.routing_protocol_interfaces(node,'ripv2'):
+    if 'ipv6' in intf and intf.get('ripv2.passive',False):
+      report_quirk(
+        f'Cisco IOS/IOS-XE does not support passive RIPng interfaces - node {node.name} intf {intf.ifname}({intf.name})',
+        node,
+        quirk='ripng.passive',
+        category=Warning)
+
+def common_ios_quirks(node: Box, topology: Box) -> None:
+  mods = node.get('module',[])
+  if 'ospf' in mods:
+    _routing.get_unique_router_ids(node,'ospf',topology)
+
+  if 'ripv2' in mods:
+    check_ripng_passive(node,topology)
+
 class IOS(_Quirks):
 
   @classmethod
@@ -31,5 +48,4 @@ class IOS(_Quirks):
     if 'gateway' in mods:
       check_vrrp_bvi(node,topology)
 
-    if 'ospf' in mods:
-      _routing.get_unique_router_ids(node,'ospf',topology)
+    common_ios_quirks(node,topology)

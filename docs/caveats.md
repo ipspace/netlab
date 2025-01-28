@@ -98,6 +98,7 @@ nodes:
 ## Cisco Catalyst 8000v
 
 * Apart from the VLAN configuration, Catalyst 8000v implementation uses the same configuration templates as CSR 1000v.
+* You cannot use reserved VLANs (1002..1005) on Catalyst 8000v
 * Catalyst 8000v accepts CSR 1000v-based VXLAN configuration, but the validation tests fail. You cannot configure VXLAN on Catalyst 8000v with the current _netlab_ release.
 * MPLS and SR-MPLS require a license that enables the advanced functionality after a reboot. That license is automatically enabled in recent _netlab_ and _vrnetlab_ releases, but you cannot apply it to a running lab; you have to rebuild the Catalyst 8000v Vagrant box or container.
 
@@ -114,13 +115,19 @@ See also [Cisco IOSv](caveats-iosv) SSH, OSPF, RIPng, and BGP caveats.
 (caveats-iosv)=
 ## Cisco IOSv and IOSvL2
 
-* Cisco IOSv release 15.x does not support unnumbered interfaces. Use Cisco CSR 1000v.
+These caveats are common to all Cisco IOS/IOS-XE platforms:
+
 * BGP configuration is optimized for reasonable convergence times under lab conditions. Do not use the same settings in a production network.
-* Multiple OSPFv2 processes on Cisco IOS cannot have the same OSPF router ID. By default, _netlab_ generates the same router ID for global and VRF OSPF processes, resulting in non-fatal configuration errors that Ansible silently ignores.
 * It's impossible to configure RIPv2 on individual subnets on Cisco IOS. RIPv2 might be running on more interfaces than intended. _netlab_ configures those interfaces to be *passive*.
 * Cisco IOS does not support passive interfaces in RIPng.
 * Cisco IOS requires a *default metric* when redistributing routes into RIPv2. The RIPv2 configuration template sets the default metric to the value of the **netlab_ripv2_default_metric** node parameter (default: 5)
+
+These caveats apply only to Cisco IOSv and IOSvL2
+
+* Cisco IOS release 15.x does not support unnumbered interfaces. Use Cisco CSR 1000v.
+* Multiple OSPFv2 processes on Cisco IOS cannot have the same OSPF router ID. By default, _netlab_ generates the same router ID for global and VRF OSPF processes, resulting in non-fatal configuration errors that Ansible silently ignores.
 * You cannot use VLANs 1002 through 1005 with Cisco IOSvL2 image 
+* Cisco IOSv does not support VRRPv3 on BVI interfaces
 
 (cisco-iosv-ssh)=
 ### SSH Access to Cisco IOSv

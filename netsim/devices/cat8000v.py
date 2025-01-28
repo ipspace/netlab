@@ -1,9 +1,7 @@
 #
-# Cisco IOSvL2 quirks
+# Cisco IOS-XE quirks
 #
 from box import Box
-
-from . import _Quirks
 
 from .iosvl2 import check_reserved_vlans
 from .iol import IOSXE as _IOSXE

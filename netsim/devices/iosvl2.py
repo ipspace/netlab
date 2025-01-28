@@ -7,7 +7,7 @@ from ..utils import log
 from ..modules import _routing
 from ..augment import devices
 
-from .iosv import IOS as _IOS
+from .iosv import IOS as _IOS,common_ios_quirks
 
 def check_reserved_vlans(node: Box, topology: Box) -> None:
   for vname,vdata in node.get('vlans',{}).items():
@@ -20,8 +20,5 @@ def check_reserved_vlans(node: Box, topology: Box) -> None:
 class IOSvL2(_IOS):
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
-    super().device_quirks(node,topology)
-    mods = node.get('module',[])
-
-    if 'vlan' in mods:
-      check_reserved_vlans(node,topology)
+    common_ios_quirks(node,topology)
+    check_reserved_vlans(node,topology)
