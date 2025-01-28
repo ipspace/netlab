@@ -67,7 +67,10 @@ def node_adjust_ldp(node: Box, topology: Box, features: Box) -> None:
     if not _routing.external(intf,'ldp'):
       _routing.passive(intf,'ldp',topology)
 
-  _routing.remove_unused_igp(node,'ldp')
+    if 'ldp' in intf:
+      node.ldp.af.ipv4 = True
+
+  _routing.remove_unused_igp(node,'ldp',remove_module=False)
 
 def validate_mpls_bgp_parameter(node: Box, feature: str) -> bool:
   if isinstance(node.mpls[feature],list):

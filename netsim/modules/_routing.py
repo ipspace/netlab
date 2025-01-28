@@ -288,7 +288,7 @@ def remove_unaddressed_intf(node: Box, proto: str) -> None:
 #
 # remove_unused_igp -- remove IGP module if it's not configured on any interface
 #
-def remove_unused_igp(node: Box, proto: str) -> bool:
+def remove_unused_igp(node: Box, proto: str, remove_module: bool = True) -> bool:
   if not any(proto in ifdata for ifdata in node.interfaces):                # Is protocol configured on any non-loopback interface?
     node.pop(proto,None)                                                    # ... no, remove protocol data from node
 
@@ -299,7 +299,10 @@ def remove_unused_igp(node: Box, proto: str) -> bool:
     if proto in vdata:
       return False                                                          # ... OK, we're good
 
-  node.module = [ m for m in node.module if m != proto ]                    # Makes no sense to keep it, remove the config module
+  if not remove_module:                                                     # Did the caller ask us to keep the module
+    return True                                                             # ... module list intact?
+
+  node.module = [ m for m in node.module if m != proto ]                    # Not used, remove the config module
   log.warning(
     text=f'{node.name} does not use {proto} on any non-loopback interface or VRF',
     more_hints=f'It has been removed from the list of modules active on {node.name}',
