@@ -41,7 +41,7 @@ _netlab_ BGP configuration module supports these features:
 * [Route import](routing_import) (redistribution)
 * Changing local autonomous system for individual BGP sessions (*local-as*)
 * Static **router-id** and **cluster-id**
-* Interaction with OSPF or IS-IS (IGP is disabled on external links)
+* Interaction with OSPF or IS-IS ([IGP is disabled on external links](routing_external))
 
 Even more BGP features are implemented in the following plugins:
 
@@ -346,7 +346,7 @@ No additional checks are performed regarding the viability of IPv4 or IPv6 BGP s
 
 The BGP transformation module can set link *role* on links used for EBGP sessions. The link role (when not specified on the link itself) is set to the value of **defaults.bgp.ebgp_role** (default system value: **external**).
 
-**Consequence:** The default settings exclude links with EBGP sessions from IGP processes. See the [Simple BGP Example](bgp_example/simple.md) for more details.
+**Consequence:** The default settings exclude links with EBGP sessions from IGP processes ([more details](routing_external)). See the [Simple BGP Example](bgp_example/simple.md) for more details.
 
 (bgp-community-propagation)=
 ## BGP Communities Propagation
