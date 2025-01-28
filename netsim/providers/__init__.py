@@ -267,7 +267,16 @@ def select_primary_provider(topology: Box) -> None:
 
   # Build a set of all providers used in the topology
   #
-  p_set = { p_default } | { ndata.provider for ndata in topology.nodes.values() if 'provider' in ndata }
+  p_set = { ndata.provider if 'provider' in ndata else p_default for ndata in topology.nodes.values() }
+  if len(p_set) == 1:                             # Single-provider topology
+    p_used = list(p_set)[0]
+    if p_default != p_used:                       # ... but not using the (default) primary provider
+      log.warning(
+        text=f'Topology provider changed from {p_default} to {p_used}. Nodes are not affected',
+        flag='providers.change',
+        module='providers')
+      topology.provider = p_used
+      return
 
   # Now build the list of providers that can be mixed (in relative order)
   p_mix_list = [ x for x in topology.defaults.const.multi_provider if x in p_set ]
