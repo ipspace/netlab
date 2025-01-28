@@ -1,6 +1,10 @@
 Release Notes
 =============
 
+**[Release 1.9.4](release-1.9.4) (2025-01-29)**
+
+Release 1.9.4 includes numerous [bug fixes](bug-fixes-1.9.4) and [fixes in device definitions and configuration templates](release-1.9.4-device-fixes).
+
 **Release 1.9.3-post1 (2025-01-15)**
 
 This release [fixes a few things we broke in 1.9.3](bug-fixes-1.9.3-post1) and [pins the version of `python-box`](https://github.com/ipspace/netlab/issues/1815).
