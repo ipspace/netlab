@@ -72,7 +72,7 @@ A dictionary describing an individual link contains *node names* and *additional
 * **group** -- [link group](link-groups) identifier
 * **linkindex** [R/O] -- link sequence number (starting with one), used to generate internal network names in VirtualBox and default bridge names in libvirt.
 * **members** -- list of links in a [link group](link-groups)
-* **mtu** -- link MTU (see [Changing MTU](#changing-mtu) section for more details)
+* **mtu** -- link MTU (see [Changing MTU](links-mtu) section for more details)
 * **name** -- link name (used for interface description)
 * **pool** -- addressing pool used to assign a prefix to this link. The **pool** attribute is ignored on links with a **prefix** attribute.
 * **prefix** -- [prefix (or a set of prefixes)](links-static-addressing) used on the link. Setting **prefix** to *false* will give you a link without any IP configuration[^NOIP]

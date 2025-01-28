@@ -87,7 +87,7 @@ clab:
     name: et{ifindex}
 ```
 
-Finally, you can specify node attributes that are copied into node data (example: default device MTU) in **node** dictionary. If you want to specify provider-specific node parameters, use **_provider_.node** dictionary. For example, containers requires **clab.kind** attribute, and Arista cEOS requires an extra environment variable:
+Finally, you can specify node attributes that are copied into node data in the **node** dictionary. If you want to specify provider-specific node parameters, use **_provider_.node** dictionary. For example, containers require the **clab.kind** attribute and Arista cEOS requires an extra environment variable:
 
 ```
 interface_name: Ethernet{ifindex}
@@ -99,7 +99,7 @@ clab:
       INTFTYPE: et
 ```
 
-Device parameters file can also include numerous *features*. You'll find feature description in developer documentation for individual modules.
+Device parameters file can also include numerous *features*. You'll find feature descriptions in the developer documentation for individual modules.
 
 After creating the device parameters file, you'll be able to use your device in network topology and use **netlab create** command to create detailed device data and virtualization provider configuration file.
 
@@ -124,8 +124,6 @@ virtualbox:
   image: cisco/csr1000v
 group_vars:
   netlab_device_type: csr
-node:
-  min_mtu: 1500
 features:
   initial:
     ipv4:

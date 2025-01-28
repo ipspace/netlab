@@ -36,6 +36,10 @@ features:
 * **features.initial.ipv4.unnumbered** -- The device supports unnumbered IPv4 interfaces. The IP address of the primary loopback interface should be used as the IPv4 address of those interfaces.
 * **features.initial.ipv6.lla** -- The device supports IPv6 interfaces using just link-local addresses.
 
+```{tip}
+Please note that the MTU used by netlab is always the layer-3 MTU. If your device expects layer-2 MTU configuration, add the size of the layer-2 header to the interface **mtu** variable.
+```
+
 ## Static Configuration
 
 Your device template should start with the static configuration needed to make your device usable. You can configure all relevant parameters in the initial device configuration or include the relevant configuration snippets in the box-building instructions.
