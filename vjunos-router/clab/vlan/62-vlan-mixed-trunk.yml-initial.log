@@ -40,14 +40,14 @@ ok: [s2 -> localhost]
 TASK [Execute local ssh command to check vjunos-router readiness] **************
 FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-router readiness (60 retries left).
 FAILED - RETRYING: [s2 -> localhost]: Execute local ssh command to check vjunos-router readiness (60 retries left).
-FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-router readiness (59 retries left).
 FAILED - RETRYING: [s2 -> localhost]: Execute local ssh command to check vjunos-router readiness (59 retries left).
-FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-router readiness (58 retries left).
+FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-router readiness (59 retries left).
 FAILED - RETRYING: [s2 -> localhost]: Execute local ssh command to check vjunos-router readiness (58 retries left).
-FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-router readiness (57 retries left).
+FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-router readiness (58 retries left).
 FAILED - RETRYING: [s2 -> localhost]: Execute local ssh command to check vjunos-router readiness (57 retries left).
-FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-router readiness (56 retries left).
+FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-router readiness (57 retries left).
 FAILED - RETRYING: [s2 -> localhost]: Execute local ssh command to check vjunos-router readiness (56 retries left).
+FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-router readiness (56 retries left).
 ok: [s1 -> localhost]
 ok: [s2 -> localhost]
 
@@ -80,8 +80,8 @@ ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
-ok: [s1]
 ok: [s2]
+ok: [s1]
 
 TASK [fail] ********************************************************************
 skipping: [h1]
@@ -123,16 +123,16 @@ ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
-ok: [s1]
 ok: [s2]
+ok: [s1]
 
 TASK [Find configuration template for initial] *********************************
 ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
-ok: [s2]
 ok: [s1]
+ok: [s2]
 
 TASK [fail] ********************************************************************
 skipping: [h1]
@@ -177,6 +177,57 @@ ok: [h1] =>
     #
     #
     #
+    #
+    # Print the final routing table
+    ip route
+ok: [h4] => 
+  msg: |-
+    initial configuration for h4
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.3.4/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.3.4/24 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.3.6 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.3.6 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.3.6 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.3.6 dev eth1 protocol static
     #
     # Print the final routing table
     ip route
@@ -268,220 +319,6 @@ ok: [h3] =>
     #
     # Print the final routing table
     ip route
-ok: [h4] => 
-  msg: |-
-    initial configuration for h4
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.3.4/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.3.4/24 dev eth1
-    ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.2.0.0/24 2>/dev/null; do
-      : ; done
-    #
-    #
-    echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.3.6 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.3.6 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.3.6 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.3.6 dev eth1 protocol static
-    #
-    # Print the final routing table
-    ip route
-ok: [s2] => 
-  msg: |-
-    initial configuration for s2
-    =========================================
-    system {
-      host-name s2;
-      static-host-mapping {
-        h1 inet 172.16.0.1;
-        h2 inet 172.16.0.2;
-        h3 inet 172.16.2.3;
-        h4 inet 172.16.3.4;
-        s1 inet 10.0.0.5;
-      }
-    }
-  
-  
-    interfaces {
-  
-  
-  
-  
-      ge-0/0/0.0 {
-        vlan-id 1;
-      }
-  
-  
-  
-  
-  
-  
-  
-  
-  
-      ge-0/0/1 {
-        flexible-vlan-tagging;
-        native-vlan-id 700;
-      }
-  
-      ge-0/0/1.0 {
-        vlan-id 700;
-      }
-  
-  
-  
-  
-  
-  
-  
-      ge-0/0/2 {
-        flexible-vlan-tagging;
-        native-vlan-id 1;
-      }
-  
-      ge-0/0/2.0 {
-        vlan-id 1;
-      }
-  
-  
-  
-  
-  
-  
-  
-  
-      ge-0/0/0 {
-        flexible-vlan-tagging;
-      }
-  
-      ge-0/0/0.701 {
-        vlan-id 701;
-      }
-  
-  
-  
-  
-  
-  
-  
-  
-      ge-0/0/0 {
-        flexible-vlan-tagging;
-      }
-  
-      ge-0/0/0.700 {
-        vlan-id 700;
-      }
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-    }
-    interfaces {
-      ge-0/0/0 {
-        mtu 1522;
-      }
-      ge-0/0/1 {
-        mtu 1522;
-      }
-      ge-0/0/2 {
-        mtu 1522;
-      }
-  
-      lo0.0 {
-  
-          family inet {
-            address 10.0.0.6/32;
-          }
-  
-      }
-      ge-0/0/0.0 {
-        description "s2 -> s1";
-  
-  
-      }
-      ge-0/0/1.0 {
-        description "[Access VLAN red] s2 -> h2";
-  
-  
-      }
-      ge-0/0/2.0 {
-        description "s2 -> h4 [stub]";
-  
-          family inet {
-            address 172.16.3.6/24;
-          }
-  
-      }
-      ge-0/0/0.701 {
-        description "s2 -> s1";
-  
-          family inet {
-            address 10.1.0.2/30;
-          }
-  
-      }
-      ge-0/0/0.700 {
-        description "[SubIf VLAN red] s2 -> s1";
-  
-  
-      }
-      irb.700 {
-        description "VLAN red (700) -> [h1,s1,h2]";
-  
-  
-      }
-    }
-    protocols {
-      lldp {
-        interface fxp0 {
-          disable;
-        }
-        interface all;
-      }
-    }
 ok: [s1] => 
   msg: |-
     initial configuration for s1
@@ -645,14 +482,177 @@ ok: [s1] =>
         interface all;
       }
     }
+ok: [s2] => 
+  msg: |-
+    initial configuration for s2
+    =========================================
+    system {
+      host-name s2;
+      static-host-mapping {
+        h1 inet 172.16.0.1;
+        h2 inet 172.16.0.2;
+        h3 inet 172.16.2.3;
+        h4 inet 172.16.3.4;
+        s1 inet 10.0.0.5;
+      }
+    }
+  
+  
+    interfaces {
+  
+  
+  
+  
+      ge-0/0/0.0 {
+        vlan-id 1;
+      }
+  
+  
+  
+  
+  
+  
+  
+  
+  
+      ge-0/0/1 {
+        flexible-vlan-tagging;
+        native-vlan-id 700;
+      }
+  
+      ge-0/0/1.0 {
+        vlan-id 700;
+      }
+  
+  
+  
+  
+  
+  
+  
+      ge-0/0/2 {
+        flexible-vlan-tagging;
+        native-vlan-id 1;
+      }
+  
+      ge-0/0/2.0 {
+        vlan-id 1;
+      }
+  
+  
+  
+  
+  
+  
+  
+  
+      ge-0/0/0 {
+        flexible-vlan-tagging;
+      }
+  
+      ge-0/0/0.701 {
+        vlan-id 701;
+      }
+  
+  
+  
+  
+  
+  
+  
+  
+      ge-0/0/0 {
+        flexible-vlan-tagging;
+      }
+  
+      ge-0/0/0.700 {
+        vlan-id 700;
+      }
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    }
+    interfaces {
+      ge-0/0/0 {
+        mtu 1522;
+      }
+      ge-0/0/1 {
+        mtu 1522;
+      }
+      ge-0/0/2 {
+        mtu 1522;
+      }
+  
+      lo0.0 {
+  
+          family inet {
+            address 10.0.0.6/32;
+          }
+  
+      }
+      ge-0/0/0.0 {
+        description "s2 -> s1";
+  
+  
+      }
+      ge-0/0/1.0 {
+        description "[Access VLAN red] s2 -> h2";
+  
+  
+      }
+      ge-0/0/2.0 {
+        description "s2 -> h4 [stub]";
+  
+          family inet {
+            address 172.16.3.6/24;
+          }
+  
+      }
+      ge-0/0/0.701 {
+        description "s2 -> s1";
+  
+          family inet {
+            address 10.1.0.2/30;
+          }
+  
+      }
+      ge-0/0/0.700 {
+        description "[SubIf VLAN red] s2 -> s1";
+  
+  
+      }
+      irb.700 {
+        description "VLAN red (700) -> [h1,s1,h2]";
+  
+  
+      }
+    }
+    protocols {
+      lldp {
+        interface fxp0 {
+          disable;
+        }
+        interface all;
+      }
+    }
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
-ok: [s1]
 ok: [s2]
+ok: [s1]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2, h3, h4
@@ -665,15 +665,15 @@ ok: [h3]
 ok: [h4]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
 changed: [h4 -> localhost]
 changed: [h3 -> localhost]
+changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
 changed: [h4 -> localhost]
 changed: [h3 -> localhost]
+changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
@@ -690,15 +690,15 @@ skipping: [h4]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [h1 -> localhost]
-changed: [h3 -> localhost]
 changed: [h2 -> localhost]
 changed: [h4 -> localhost]
+changed: [h3 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-pdlzg7jb.sh] ***********************
-changed: [h1 -> localhost]
-changed: [h4 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-0tnemfvs.sh] ***********************
 changed: [h3 -> localhost]
+changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h4 -> localhost]
 
 TASK [junos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/junos.j2] ***
 changed: [s2]
@@ -814,12 +814,12 @@ TASK [Deploy vlan configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for s1, s2
 
 TASK [junos_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/vjunos-router.j2] ***
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
-ok: [s2]
 ok: [s1]
+ok: [s2]
 
 TASK [Find configuration template for ospf] ************************************
 ok: [s1]

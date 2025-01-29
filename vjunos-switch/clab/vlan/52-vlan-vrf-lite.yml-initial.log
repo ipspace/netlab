@@ -8,8 +8,8 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [r2]
 ok: [h1]
 ok: [h2]
-ok: [h3]
 ok: [h4]
+ok: [h3]
 ok: [h5]
 ok: [r1]
 ok: [r3]
@@ -18,8 +18,8 @@ TASK [Find device readiness script] ********************************************
 ok: [r2]
 ok: [h1]
 ok: [h2]
-ok: [h3]
 ok: [h4]
+ok: [h3]
 ok: [h5]
 ok: [r1]
 ok: [r3]
@@ -54,8 +54,8 @@ FAILED - RETRYING: [r3 -> localhost]: Execute local ssh command to check vjunos-
 FAILED - RETRYING: [r1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (37 retries left).
 FAILED - RETRYING: [r3 -> localhost]: Execute local ssh command to check vjunos-switch readiness (36 retries left).
 FAILED - RETRYING: [r1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (36 retries left).
-ok: [r3 -> localhost]
 ok: [r1 -> localhost]
+ok: [r3 -> localhost]
 
 TASK [Confirm r1 SSH server works] *********************************************
 ok: [r1] => 
@@ -150,8 +150,8 @@ TASK [Find configuration template for initial] *********************************
 ok: [r2]
 ok: [h1]
 ok: [h2]
-ok: [h3]
 ok: [h4]
+ok: [h3]
 ok: [h5]
 ok: [r1]
 ok: [r3]
@@ -218,6 +218,118 @@ ok: [h1] =>
     #
     # Print the final routing table
     ip route
+ok: [r2] => 
+  msg: |-
+    initial configuration for r2
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+    ip link set dev eth2 mtu 1500
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname r2
+    !
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.2/32
+    !
+    interface eth1
+     no shutdown
+     description r2 -> r1
+     ! no ip address
+    !
+    interface eth2
+     no shutdown
+     description r2 -> r3
+     ! no ip address
+    !
+    interface eth1.701
+     no shutdown
+     description r2 -> r1
+     ip address 10.1.0.2/30
+    !
+    interface eth1.700
+     no shutdown
+     description r2 -> r1
+     ip address 10.1.0.6/30
+    !
+    interface eth2.701
+     no shutdown
+     description r2 -> r3
+     ip address 10.1.0.9/30
+    !
+    interface eth2.700
+     no shutdown
+     description r2 -> r3
+     ip address 10.1.0.13/30
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
 ok: [h2] => 
   msg: |-
     initial configuration for h2
@@ -422,120 +534,251 @@ ok: [h5] =>
     #
     # Print the final routing table
     ip route
-ok: [r2] => 
+ok: [r3] => 
   msg: |-
-    initial configuration for r2
+    initial configuration for r3
     =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)# "
-    echo
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
+    system {
+      host-name r3;
+      static-host-mapping {
+        r2 inet 10.0.0.2;
+        h1 inet 172.16.2.4;
+        h2 inet 172.16.3.5;
+        h3 inet 172.16.5.6;
+        h4 inet 172.16.6.7;
+        h5 inet 172.16.4.8;
+        r1 inet 10.0.0.1;
+      }
+    }
   
-    #
-    # Create loopbacks, stub and lag/bond devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
   
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
-    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
   
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
-    ip link set dev eth2 mtu 1500
   
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname r2
-    !
-    vrf mgmt
-     exit-vrf
-    !
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ip address 10.0.0.2/32
-    !
-    interface eth1
-     no shutdown
-     description r2 -> r1
-     ! no ip address
-    !
-    interface eth2
-     no shutdown
-     description r2 -> r3
-     ! no ip address
-    !
-    interface eth1.701
-     no shutdown
-     description r2 -> r1
-     ip address 10.1.0.2/30
-    !
-    interface eth1.700
-     no shutdown
-     description r2 -> r1
-     ip address 10.1.0.6/30
-    !
-    interface eth2.701
-     no shutdown
-     description r2 -> r3
-     ip address 10.1.0.9/30
-    !
-    interface eth2.700
-     no shutdown
-     description r2 -> r3
-     ip address 10.1.0.13/30
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
+  
+  
+  
+  
+    policy-options {
+      community tg_65000_2 members target:65000:2;
+      community tg_65000_1 members target:65000:1;
+    }
+  
+  
+  
+    policy-options {
+      policy-statement vrf-blue-export {
+        term 1 {
+          then {
+            community add tg_65000_2;
+            accept;
+          }
+        }
+      }
+  
+  
+  
+      policy-statement vrf-blue-import {
+        term 1 {
+          from community [ tg_65000_2 ];
+          then accept;
+        }
+        term default {
+          then reject;
+        }
+      }
+      policy-statement vrf-red-export {
+        term 1 {
+          then {
+            community add tg_65000_1;
+            accept;
+          }
+        }
+      }
+  
+  
+  
+      policy-statement vrf-red-import {
+        term 1 {
+          from community [ tg_65000_1 ];
+          then accept;
+        }
+        term default {
+          then reject;
+        }
+      }
+    }
+  
+    routing-instances {
+  
+      blue {
+        instance-type vrf;
+        route-distinguisher 65000:2;
+  
+        vrf-import vrf-blue-import;
+        vrf-export vrf-blue-export;
+  
+        routing-options {
+          auto-export;
+        }
+  
+        interface ge-0/0/2.0;
+        interface ge-0/0/0.701;
+  
+      }
+  
+  
+      red {
+        instance-type vrf;
+        route-distinguisher 65000:1;
+  
+        vrf-import vrf-red-import;
+        vrf-export vrf-red-export;
+  
+        routing-options {
+          auto-export;
+        }
+  
+        interface ge-0/0/1.0;
+        interface ge-0/0/0.700;
+  
+      }
+  
+    }
+    interfaces {
+  
+  
+  
+  
+      ge-0/0/0.0 {
+        vlan-id 1;
+      }
+  
+  
+  
+  
+  
+  
+  
+      ge-0/0/1 {
+        flexible-vlan-tagging;
+        native-vlan-id 1;
+      }
+  
+      ge-0/0/1.0 {
+        vlan-id 1;
+      }
+  
+  
+  
+  
+  
+  
+  
+  
+      ge-0/0/2 {
+        flexible-vlan-tagging;
+        native-vlan-id 1;
+      }
+  
+      ge-0/0/2.0 {
+        vlan-id 1;
+      }
+  
+  
+  
+  
+  
+  
+      ge-0/0/0 {
+        flexible-vlan-tagging;
+      }
+  
+      ge-0/0/0.701 {
+        vlan-id 701;
+      }
+  
+  
+  
+  
+  
+  
+      ge-0/0/0 {
+        flexible-vlan-tagging;
+      }
+  
+      ge-0/0/0.700 {
+        vlan-id 700;
+      }
+  
+  
+  
+  
+  
+    }
+    interfaces {
+      ge-0/0/0 {
+        mtu 1522;
+      }
+      ge-0/0/1 {
+        mtu 1522;
+      }
+      ge-0/0/2 {
+        mtu 1522;
+      }
+  
+      lo0.0 {
+  
+          family inet {
+            address 10.0.0.3/32;
+          }
+  
+      }
+      ge-0/0/0.0 {
+        description "r3 -> r2";
+  
+  
+      }
+      ge-0/0/1.0 {
+        description "r3 -> h2 [stub]";
+  
+          family inet {
+            address 172.16.3.3/24;
+          }
+  
+      }
+      ge-0/0/2.0 {
+        description "r3 -> h4 [stub]";
+  
+          family inet {
+            address 172.16.6.3/24;
+          }
+  
+      }
+      ge-0/0/0.701 {
+        description "r3 -> r2";
+  
+          family inet {
+            address 10.1.0.10/30;
+          }
+  
+      }
+      ge-0/0/0.700 {
+        description "r3 -> r2";
+  
+          family inet {
+            address 10.1.0.14/30;
+          }
+  
+      }
+    }
+    protocols {
+      lldp {
+        interface fxp0 {
+          disable;
+        }
+        interface all;
+      }
+    }
 ok: [r1] => 
   msg: |-
     initial configuration for r1
@@ -809,259 +1052,14 @@ ok: [r1] =>
         interface all;
       }
     }
-ok: [r3] => 
-  msg: |-
-    initial configuration for r3
-    =========================================
-    system {
-      host-name r3;
-      static-host-mapping {
-        r2 inet 10.0.0.2;
-        h1 inet 172.16.2.4;
-        h2 inet 172.16.3.5;
-        h3 inet 172.16.5.6;
-        h4 inet 172.16.6.7;
-        h5 inet 172.16.4.8;
-        r1 inet 10.0.0.1;
-      }
-    }
-  
-  
-  
-  
-  
-  
-  
-  
-    policy-options {
-      community tg_65000_2 members target:65000:2;
-      community tg_65000_1 members target:65000:1;
-    }
-  
-  
-  
-    policy-options {
-      policy-statement vrf-blue-export {
-        term 1 {
-          then {
-            community add tg_65000_2;
-            accept;
-          }
-        }
-      }
-  
-  
-  
-      policy-statement vrf-blue-import {
-        term 1 {
-          from community [ tg_65000_2 ];
-          then accept;
-        }
-        term default {
-          then reject;
-        }
-      }
-      policy-statement vrf-red-export {
-        term 1 {
-          then {
-            community add tg_65000_1;
-            accept;
-          }
-        }
-      }
-  
-  
-  
-      policy-statement vrf-red-import {
-        term 1 {
-          from community [ tg_65000_1 ];
-          then accept;
-        }
-        term default {
-          then reject;
-        }
-      }
-    }
-  
-    routing-instances {
-  
-      blue {
-        instance-type vrf;
-        route-distinguisher 65000:2;
-  
-        vrf-import vrf-blue-import;
-        vrf-export vrf-blue-export;
-  
-        routing-options {
-          auto-export;
-        }
-  
-        interface ge-0/0/2.0;
-        interface ge-0/0/0.701;
-  
-      }
-  
-  
-      red {
-        instance-type vrf;
-        route-distinguisher 65000:1;
-  
-        vrf-import vrf-red-import;
-        vrf-export vrf-red-export;
-  
-        routing-options {
-          auto-export;
-        }
-  
-        interface ge-0/0/1.0;
-        interface ge-0/0/0.700;
-  
-      }
-  
-    }
-    interfaces {
-  
-  
-  
-  
-      ge-0/0/0.0 {
-        vlan-id 1;
-      }
-  
-  
-  
-  
-  
-  
-  
-      ge-0/0/1 {
-        flexible-vlan-tagging;
-        native-vlan-id 1;
-      }
-  
-      ge-0/0/1.0 {
-        vlan-id 1;
-      }
-  
-  
-  
-  
-  
-  
-  
-  
-      ge-0/0/2 {
-        flexible-vlan-tagging;
-        native-vlan-id 1;
-      }
-  
-      ge-0/0/2.0 {
-        vlan-id 1;
-      }
-  
-  
-  
-  
-  
-  
-      ge-0/0/0 {
-        flexible-vlan-tagging;
-      }
-  
-      ge-0/0/0.701 {
-        vlan-id 701;
-      }
-  
-  
-  
-  
-  
-  
-      ge-0/0/0 {
-        flexible-vlan-tagging;
-      }
-  
-      ge-0/0/0.700 {
-        vlan-id 700;
-      }
-  
-  
-  
-  
-  
-    }
-    interfaces {
-      ge-0/0/0 {
-        mtu 1522;
-      }
-      ge-0/0/1 {
-        mtu 1522;
-      }
-      ge-0/0/2 {
-        mtu 1522;
-      }
-  
-      lo0.0 {
-  
-          family inet {
-            address 10.0.0.3/32;
-          }
-  
-      }
-      ge-0/0/0.0 {
-        description "r3 -> r2";
-  
-  
-      }
-      ge-0/0/1.0 {
-        description "r3 -> h2 [stub]";
-  
-          family inet {
-            address 172.16.3.3/24;
-          }
-  
-      }
-      ge-0/0/2.0 {
-        description "r3 -> h4 [stub]";
-  
-          family inet {
-            address 172.16.6.3/24;
-          }
-  
-      }
-      ge-0/0/0.701 {
-        description "r3 -> r2";
-  
-          family inet {
-            address 10.1.0.10/30;
-          }
-  
-      }
-      ge-0/0/0.700 {
-        description "r3 -> r2";
-  
-          family inet {
-            address 10.1.0.14/30;
-          }
-  
-      }
-    }
-    protocols {
-      lldp {
-        interface fxp0 {
-          disable;
-        }
-        interface all;
-      }
-    }
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [r2]
 ok: [h1]
 ok: [h2]
+ok: [h5]
 ok: [h3]
 ok: [h4]
-ok: [h5]
 ok: [r1]
 ok: [r3]
 
@@ -1099,17 +1097,17 @@ ok: [h4]
 ok: [h5]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h4 -> localhost]
-changed: [h5 -> localhost]
 changed: [h2 -> localhost]
-changed: [h1 -> localhost]
+changed: [h5 -> localhost]
+changed: [h4 -> localhost]
 changed: [h3 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 changed: [h5 -> localhost]
 changed: [h4 -> localhost]
-changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
@@ -1127,22 +1125,22 @@ skipping: [h4]
 skipping: [h5]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h1 -> localhost]
-changed: [h3 -> localhost]
 changed: [h2 -> localhost]
-changed: [h5 -> localhost]
+changed: [h1 -> localhost]
 changed: [h4 -> localhost]
+changed: [h3 -> localhost]
+changed: [h5 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-2tyo_g6b.sh] ***********************
-changed: [h3 -> localhost]
-changed: [h4 -> localhost]
-changed: [h5 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-ca8v9dtm.sh] ***********************
 changed: [h1 -> localhost]
+changed: [h3 -> localhost]
 changed: [h2 -> localhost]
+changed: [h5 -> localhost]
+changed: [h4 -> localhost]
 
 TASK [junos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/junos.j2] ***
-changed: [r1]
 changed: [r3]
+changed: [r1]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -1208,6 +1206,7 @@ ok: [r2] =>
       ip link set dev eth2.700 up
     fi
   
+  
     exit 0
 ok: [r3] => 
   msg: |-
@@ -1249,8 +1248,8 @@ skipping: [r2]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [r2]
-ok: [r3]
 ok: [r1]
+ok: [r3]
 
 TASK [Find configuration template for ospf] ************************************
 ok: [r2]
@@ -1263,6 +1262,12 @@ skipping: [r2]
 skipping: [r3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [r2] => 
+  msg: |-
+    ospf configuration for r2
+    =========================================
+    !
+    do write
 ok: [r1] => 
   msg: |-
     ospf configuration for r1
@@ -1271,12 +1276,6 @@ ok: [r3] =>
   msg: |-
     ospf configuration for r3
     =========================================
-ok: [r2] => 
-  msg: |-
-    ospf configuration for r2
-    =========================================
-    !
-    do write
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [r2]
@@ -1650,8 +1649,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for
 
 TASK [junos_config: deploying vrf from /home/pipi/net101/tools/netsim/ansible/templates/vrf/junos.j2] ***
 [WARNING]:  statement not found
-changed: [r1]
 changed: [r3]
+changed: [r1]
 
 TASK [template] ****************************************************************
 changed: [r2]

@@ -33,7 +33,6 @@ FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos
 FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-router readiness (59 retries left).
 FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-router readiness (58 retries left).
 FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-router readiness (57 retries left).
-FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-router readiness (56 retries left).
 ok: [dut -> localhost]
 
 TASK [Confirm dut SSH server works] ********************************************
@@ -55,8 +54,8 @@ ok: [x2]
 ok: [dut]
 
 TASK [Find configuration template for normalize] *******************************
-ok: [x1]
 ok: [x2]
+ok: [x1]
 ok: [dut]
 
 TASK [fail] ********************************************************************
@@ -88,8 +87,8 @@ ok: [x2]
 ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
-ok: [x1]
 ok: [x2]
+ok: [x1]
 ok: [dut]
 
 TASK [fail] ********************************************************************
@@ -98,9 +97,9 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [x2] => 
+ok: [x1] => 
   msg: |-
-    initial configuration for x2
+    initial configuration for x1
     =========================================
     #!/bin/bash
     #
@@ -153,19 +152,17 @@ ok: [x2] =>
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
     #
     cat >/tmp/config <<CONFIG
-    hostname x2
+    hostname x1
     !
     vrf mgmt
      exit-vrf
@@ -174,12 +171,12 @@ ok: [x2] =>
     !
     interface lo
      no shutdown
-     ip address 10.0.0.11/32
+     ip address 10.0.0.10/32
     !
     interface eth1
      no shutdown
-     description x2 -> dut [external]
-     ip address 10.1.0.6/30
+     description x1 -> dut [external]
+     ip address 10.1.0.2/30
     !
     do write
     CONFIG
@@ -290,9 +287,9 @@ ok: [dut] =>
         interface all;
       }
     }
-ok: [x1] => 
+ok: [x2] => 
   msg: |-
-    initial configuration for x1
+    initial configuration for x2
     =========================================
     #!/bin/bash
     #
@@ -345,19 +342,17 @@ ok: [x1] =>
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
     #
     cat >/tmp/config <<CONFIG
-    hostname x1
+    hostname x2
     !
     vrf mgmt
      exit-vrf
@@ -366,12 +361,12 @@ ok: [x1] =>
     !
     interface lo
      no shutdown
-     ip address 10.0.0.10/32
+     ip address 10.0.0.11/32
     !
     interface eth1
      no shutdown
-     description x1 -> dut [external]
-     ip address 10.1.0.2/30
+     description x2 -> dut [external]
+     ip address 10.1.0.6/30
     !
     do write
     CONFIG
@@ -379,9 +374,9 @@ ok: [x1] =>
     exit 0
 
 TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [x2]
 ok: [x1]
 ok: [dut]
+ok: [x2]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for dut
@@ -401,16 +396,16 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
 ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
@@ -419,8 +414,8 @@ skipping: [x2]
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [x1]
 ok: [x2]
+ok: [x1]
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
@@ -428,8 +423,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=vrf)
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
-ok: [x1]
 ok: [x2]
+ok: [x1]
 ok: [dut]
 
 TASK [Find configuration template for bgp] *************************************
@@ -460,7 +455,8 @@ ok: [dut] =>
         term advertise {
           from {
             protocol direct;
-            interface [ lo0.0 ];
+            interface [
+               lo0.0  ];
           }
           then accept;
         }
