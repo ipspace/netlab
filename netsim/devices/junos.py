@@ -48,9 +48,9 @@ def fix_unit_0(node: Box, topology: Box) -> None:
       ifname_split = intf.ifname.split('.')
       intf.junos_interface = ifname_split[0]
       intf.junos_unit = ifname_split[1]
-      if 'vlan' in mods:
+      if 'vlan' in mods and 'vlan' in intf:
         base_vlan_interfaces.append(ifname_split[0])
-  
+
   # add additional vlan parameters.
   if len(base_vlan_interfaces) > 0:
     for intf in node.get('interfaces', []):
