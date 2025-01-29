@@ -56,6 +56,24 @@ def check_pvrst_on_virtual_networks(node:Box, topology: Box) -> None:
         quirk='pvrst_on_virtual_networks',
         node=node)
 
+"""
+check_vrrp - check if VRRP protocol is requested, not supported on virtual network interfaces
+"""
+def check_vrrp_on_virtual_networks(node:Box, topology: Box) -> None:
+  features = devices.get_device_features(node,topology.defaults)
+  if 'virtual-network' in features.vlan.svi_interface_name:
+    err_data = []
+    for intf in node.interfaces:
+      if intf.type == 'svi' and intf.get('gateway.vrrp',None):
+        err_data.append(f'Interface {intf.ifname}')
+
+    if err_data:
+      report_quirk(
+        f'Dell OS10 (node {node.name}) does not support VRRP on virtual networks (used for VLANs)',
+        quirk='vrrp_on_virtual_networks',
+        more_data=err_data,
+        node=node)
+
 class OS10(_Quirks):
 
   @classmethod
@@ -66,9 +84,11 @@ class OS10(_Quirks):
       for vname,vdata in node.get('vrfs',{}).items():
         check_vlan_ospf(node,vdata.get('ospf.interfaces',[]),vname)
     
-    if 'gateway' in mods and 'anycast' in node.get('gateway',{}):
-      check_anycast_gateways(node)
-    
+    if 'gateway' in mods:
+      if 'anycast' in node.get('gateway',{}):
+        check_anycast_gateways(node)
+      if 'vrrp' in node.get('gateway',{}):
+        check_vrrp_on_virtual_networks(node,topology)
     if 'stp' in mods:
       check_pvrst_on_virtual_networks(node,topology)
 
