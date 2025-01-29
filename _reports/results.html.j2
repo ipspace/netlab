@@ -6,7 +6,8 @@
 {% set github_url = "https://github.com/ipspace/netlab/blob/dev/tests/integration/" %}
 {% set data_path = results._path.split('/',2) %}
 <table>
-{% for hdr in ('Device','Provider','Test suite') %}
+{% set hdr_list = ('Subsystem','Test suite') if data_path[0] == 'platform' else ('Device','Provider','Test suite') %}
+{% for hdr in hdr_list %}
 {%   if data_path|length >= loop.index %}
 {%     set url = data_path[0]+"-"+data_path[1]+".html" if loop.index == 2 else "coverage."+data_path[2].replace('/','.')+".html" if loop.index == 3 else "" %}
   <tr>
@@ -79,8 +80,12 @@
     {{ suite_result(t_data,'validate','validation failed',True) }}
   </tr>
 {%   else %}
-{%     set testurl = github_url + data_path[2] + "/" + test + ".yml" %}
+{%     set testurl = (github_url + data_path[2] + "/" + test + ".yml") if data_path|length > 2 else "" %}
 {%     set tname = coverage.get(data_path[-1],{}).get('tests',{}).get(test,'').replace('<br>',' ') %}
+{%     if data_path[0] == 'platform' %}
+{%       set github_url = "https://github.com/ipspace/netlab/blob/dev/tests/platform-integration/" %}
+{%       set testurl = github_url + data_path[1] + "/" + test + ".yml" %}
+{%     endif %}
   <tr>
     <td><a title="{{ tname }}" href="{{ testurl }}">{{ test }}</a></td>
     {{ test_result(test,t_data,'supported','create') }}

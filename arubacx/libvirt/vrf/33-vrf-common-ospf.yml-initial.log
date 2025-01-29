@@ -20,6 +20,45 @@ skipping: [r1]
 skipping: [r2]
 skipping: [srv]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, srv
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [r1]
+ok: [r2]
+ok: [srv]
+ok: [dut]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [r1]
+ok: [r2]
+ok: [srv]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r1]
+skipping: [r2]
+skipping: [srv]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+skipping: [r1]
+skipping: [r2]
+skipping: [srv]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [dut]
+skipping: [r1]
+skipping: [r2]
+skipping: [srv]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [dut]
+skipping: [r1]
+skipping: [r2]
+skipping: [srv]
+
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, srv
 
@@ -34,6 +73,12 @@ ok: [r1]
 ok: [r2]
 ok: [srv]
 ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r1]
+skipping: [r2]
+skipping: [srv]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -87,15 +132,17 @@ ok: [dut] =>
     !
   
   
+  
     interface 1/1/1
         shutdown
         mtu 9198
         vrf attach red
         ip mtu 1500
         description dut -> r1
-        ip address 172.16.0.1/24
+        ip address 10.1.0.1/30
         no shutdown
     !
+  
   
     interface 1/1/2
         shutdown
@@ -103,9 +150,10 @@ ok: [dut] =>
         vrf attach blue
         ip mtu 1500
         description dut -> r2
-        ip address 172.16.1.1/24
+        ip address 10.1.0.5/30
         no shutdown
     !
+  
   
     interface 1/1/3
         shutdown
@@ -113,7 +161,7 @@ ok: [dut] =>
         vrf attach common
         ip mtu 1500
         description dut -> srv
-        ip address 172.16.2.1/24
+        ip address 10.1.0.9/30
         no shutdown
     !
     !
@@ -131,7 +179,8 @@ ok: [r1] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -159,7 +208,7 @@ ok: [r1] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -177,7 +226,8 @@ ok: [r1] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -196,7 +246,7 @@ ok: [r1] =>
     interface eth1
      no shutdown
      description r1 -> dut
-     ip address 172.16.0.2/24
+     ip address 10.1.0.2/30
     !
     do write
     CONFIG
@@ -216,7 +266,8 @@ ok: [r2] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -244,7 +295,7 @@ ok: [r2] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -262,7 +313,8 @@ ok: [r2] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -281,7 +333,7 @@ ok: [r2] =>
     interface eth1
      no shutdown
      description r2 -> dut
-     ip address 172.16.1.3/24
+     ip address 10.1.0.6/30
     !
     do write
     CONFIG
@@ -301,7 +353,8 @@ ok: [srv] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -329,7 +382,7 @@ ok: [srv] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -347,7 +400,8 @@ ok: [srv] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -366,7 +420,7 @@ ok: [srv] =>
     interface eth1
      no shutdown
      description srv -> dut
-     ip address 172.16.2.4/24
+     ip address 10.1.0.10/30
     !
     do write
     CONFIG
@@ -389,9 +443,6 @@ changed: [dut -> localhost]
 TASK [template] ****************************************************************
 changed: [dut -> localhost]
 
-TASK [aoscx_config: set session auto-confirm for initial] **********************
-changed: [dut]
-
 TASK [aoscx_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/arubacx.j2] ***
 changed: [dut]
 
@@ -399,9 +450,7 @@ TASK [file] ********************************************************************
 changed: [dut -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [r2 -> localhost]
 changed: [r1 -> localhost]
-changed: [srv -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [r1]
@@ -422,8 +471,8 @@ ok: [r2]
 ok: [srv]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r1]
 changed: [r2]
+changed: [r1]
 changed: [srv]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -454,6 +503,12 @@ ok: [r1]
 ok: [r2]
 ok: [srv]
 ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r1]
+skipping: [r2]
+skipping: [srv]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -488,34 +543,6 @@ ok: [r1] =>
   
     !
     do write
-ok: [srv] => 
-  msg: |-
-    ospf configuration for srv
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.4
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! srv -> dut
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    do write
 ok: [r2] => 
   msg: |-
     ospf configuration for r2
@@ -544,6 +571,34 @@ ok: [r2] =>
   
     !
     do write
+ok: [srv] => 
+  msg: |-
+    ospf configuration for srv
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.4
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! srv -> dut
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    do write
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [r1]
@@ -561,9 +616,6 @@ changed: [dut -> localhost]
 TASK [template] ****************************************************************
 changed: [dut -> localhost]
 
-TASK [aoscx_config: set session auto-confirm for ospf] *************************
-changed: [dut]
-
 TASK [aoscx_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/arubacx.j2] ***
 ok: [dut]
 
@@ -571,13 +623,13 @@ TASK [file] ********************************************************************
 changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
+changed: [srv]
 changed: [r1]
 changed: [r2]
-changed: [srv]
 
 TASK [set_fact] ****************************************************************
-ok: [r2]
 ok: [r1]
+ok: [r2]
 ok: [srv]
 
 TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
@@ -586,8 +638,8 @@ skipping: [r2]
 skipping: [srv]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [r1]
 changed: [r2]
+changed: [r1]
 changed: [srv]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
@@ -601,6 +653,12 @@ skipping: [r1]
 skipping: [r2]
 skipping: [srv]
 ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r1]
+skipping: [r2]
+skipping: [srv]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r1]
@@ -725,9 +783,6 @@ changed: [dut -> localhost]
 TASK [template] ****************************************************************
 changed: [dut -> localhost]
 
-TASK [aoscx_config: set session auto-confirm for vrf] **************************
-changed: [dut]
-
 TASK [aoscx_config: deploying vrf from /home/pipi/net101/tools/netsim/ansible/templates/vrf/arubacx.j2] ***
 changed: [dut]
 
@@ -738,10 +793,10 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=36   changed=14   unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-r1                         : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-r2                         : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-srv                        : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+dut                        : ok=36   changed=11   unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+r1                         : ok=28   changed=5    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+r2                         : ok=27   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+srv                        : ok=27   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 
 
 

@@ -23,6 +23,62 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/eos-clab.
 TASK [Wait for cEOS SSH daemon to start] ***************************************
 ok: [dut]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, r3, rs
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [r2]
+ok: [r3]
+ok: [rs]
+ok: [dut]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [r2]
+ok: [r3]
+ok: [rs]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r2]
+skipping: [r3]
+skipping: [rs]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [r2]
+skipping: [r3]
+skipping: [rs]
+ok: [dut] => 
+  msg: |-
+    normalize configuration for dut
+    =========================================
+    !
+    interface Ethernet1
+     no switchport
+     mac-address 52dc.cafe.0101
+    !
+    interface Ethernet2
+     no switchport
+     mac-address 52dc.cafe.0102
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [r2]
+skipping: [r3]
+skipping: [rs]
+ok: [dut]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [r2]
+skipping: [r3]
+skipping: [rs]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for dut
+
+TASK [eos_config: deploying normalize from /home/pipi/net101/tools/netsim/ansible/templates/normalize/eos.j2] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [dut]
+
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, r3, rs
 
@@ -37,6 +93,12 @@ ok: [r2]
 ok: [r3]
 ok: [rs]
 ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r2]
+skipping: [r3]
+skipping: [rs]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [r2] => 
@@ -53,7 +115,8 @@ ok: [r2] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -81,7 +144,7 @@ ok: [r2] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -99,7 +162,8 @@ ok: [r2] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -138,7 +202,8 @@ ok: [r3] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -166,7 +231,7 @@ ok: [r3] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -184,7 +249,8 @@ ok: [r3] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -223,7 +289,8 @@ ok: [rs] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -251,7 +318,7 @@ ok: [rs] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -269,7 +336,8 @@ ok: [rs] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -316,24 +384,23 @@ ok: [dut] =>
      no lldp receive
     !
     interface Loopback0
-     no shutdown
      ip address 10.0.0.1/32
     !
     interface Ethernet1
-     no shutdown
      no switchport
      description dut -> [r2,rs] [external]
      ip address 172.16.0.1/24
     !
      mac-address 52dc.cafe.0101
+     no shutdown
     !
     interface Ethernet2
-     no shutdown
      no switchport
      description dut -> r3 [external]
      ip address 10.1.0.1/30
     !
      mac-address 52dc.cafe.0102
+     no shutdown
     !
 
 TASK [Find configuration deployment deploy_script for initial] *****************
@@ -347,15 +414,10 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for r2, r3, rs
 
 TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
-[WARNING]: To ensure idempotency and correct diff the input configuration lines
-should be similar to how they appear if present in the running configuration on
-device including the indentation
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [rs -> localhost]
 changed: [r2 -> localhost]
-changed: [r3 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [r2]
@@ -376,9 +438,9 @@ ok: [r3]
 ok: [rs]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r2]
 changed: [r3]
 changed: [rs]
+changed: [r2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r2]
@@ -407,6 +469,12 @@ ok: [r2]
 ok: [r3]
 ok: [rs]
 ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r2]
+skipping: [r3]
+skipping: [rs]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [r2] => 
@@ -568,9 +636,9 @@ TASK [eos_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/temp
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [rs]
 changed: [r3]
 changed: [r2]
+changed: [rs]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
@@ -583,9 +651,9 @@ skipping: [r3]
 skipping: [rs]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [r3]
-changed: [rs]
 changed: [r2]
+changed: [rs]
+changed: [r3]
 
 PLAY [Deploy custom deployment templates] **************************************
 
@@ -593,8 +661,8 @@ TASK [Run custom configuration deployment scripts] *****************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-custom-config.yml for dut, r2, rs => (item=bgp.session)
 
 TASK [Find configuration template] *********************************************
-ok: [r2]
 ok: [rs]
+ok: [r2]
 ok: [dut]
 
 TASK [fail] ********************************************************************
@@ -603,8 +671,8 @@ skipping: [r2]
 skipping: [rs]
 
 TASK [Check is the configuration template is a file] ***************************
-ok: [dut -> localhost]
 ok: [r2 -> localhost]
+ok: [dut -> localhost]
 ok: [rs -> localhost]
 
 TASK [fail] ********************************************************************
@@ -646,10 +714,10 @@ skipping: [r2]
 skipping: [rs]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=25   changed=3    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
-r2                         : ok=31   changed=7    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-r3                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-rs                         : ok=31   changed=7    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+dut                        : ok=32   changed=4    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+r2                         : ok=34   changed=7    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
+r3                         : ok=25   changed=4    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+rs                         : ok=33   changed=6    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
 
 
 

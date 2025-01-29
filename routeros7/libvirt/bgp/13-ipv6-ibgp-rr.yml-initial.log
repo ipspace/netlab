@@ -4,16 +4,16 @@ PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [r1]
-ok: [rr2]
 ok: [r2]
-ok: [x1]
 ok: [dut]
+ok: [x1]
+ok: [rr2]
 
 TASK [Find device readiness script] ********************************************
 ok: [r1]
 ok: [r2]
-ok: [rr2]
 ok: [x1]
+ok: [rr2]
 ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
@@ -26,22 +26,74 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/routeros7
 TASK [Execute local ssh command to check router readiness] *********************
 skipping: [dut]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, rr2, x1
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [r1]
+ok: [r2]
+ok: [rr2]
+ok: [x1]
+ok: [dut]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [r1]
+ok: [r2]
+ok: [x1]
+ok: [rr2]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r1]
+skipping: [r2]
+skipping: [rr2]
+skipping: [x1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+skipping: [r1]
+skipping: [r2]
+skipping: [rr2]
+skipping: [x1]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [dut]
+skipping: [r1]
+skipping: [r2]
+skipping: [rr2]
+skipping: [x1]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [dut]
+skipping: [r1]
+skipping: [r2]
+skipping: [rr2]
+skipping: [x1]
+
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, rr2, x1
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [r1]
 ok: [r2]
-ok: [rr2]
 ok: [x1]
+ok: [rr2]
 ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
 ok: [r1]
 ok: [r2]
-ok: [x1]
 ok: [rr2]
 ok: [dut]
+ok: [x1]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r1]
+skipping: [r2]
+skipping: [rr2]
+skipping: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -63,7 +115,7 @@ ok: [dut] =>
   
     /interface ethernet set mtu=1500 ether2
   
-    /ipv6 address add interface=ether2 address=2001:db8:2::1/64
+    /ipv6 address add interface=ether2 address=2001:db8:3::1/64
     /ipv6 nd add interface=ether2 advertise-dns=no ra-interval=3s-30s
   
   
@@ -71,7 +123,7 @@ ok: [dut] =>
   
     /interface ethernet set mtu=1500 ether3
   
-    /ipv6 address add interface=ether3 address=2001:db8:2:3::1/64
+    /ipv6 address add interface=ether3 address=2001:db8:3:3::1/64
     /ipv6 nd add interface=ether3 advertise-dns=no ra-interval=3s-30s
   
   
@@ -90,21 +142,11 @@ ok: [r1] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "2001:db8:1:1::1 2001:db8:2::1 2001:db8:2:3::1 dut" >>/tmp/hosts
-    echo "2001:db8:1:a::1 2001:db8:2::a 2001:db8:2:1::a 2001:db8:2:2::a 2001:db8:cafe:1::a r1" >>/tmp/hosts
-    echo "2001:db8:1:3::1 2001:db8:2:2::3 r2" >>/tmp/hosts
-    echo "2001:db8:1:2::1 2001:db8:2:1::2 rr2" >>/tmp/hosts
-    echo "2001:db8:cafe:e::1 2001:db8:2:3::4 x1" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -129,7 +171,7 @@ ok: [r1] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -162,10 +204,11 @@ ok: [r1] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
-    ip link set eth2 mtu 1500
-    ip link set eth3 mtu 1500
-    ip link set eth4 mtu 1500
+    ip link set dev eth1 mtu 1500
+    ip link set dev eth2 mtu 1500
+    ip link set dev eth3 mtu 1500
+    ip link set dev eth4 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -187,7 +230,7 @@ ok: [r1] =>
      no shutdown
      description r1 -> dut
      ! no ip address
-     ipv6 address 2001:db8:2::a/64
+     ipv6 address 2001:db8:3::a/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -195,7 +238,7 @@ ok: [r1] =>
      no shutdown
      description r1 -> rr2
      ! no ip address
-     ipv6 address 2001:db8:2:1::a/64
+     ipv6 address 2001:db8:3:1::a/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -203,13 +246,13 @@ ok: [r1] =>
      no shutdown
      description r1 -> r2
      ! no ip address
-     ipv6 address 2001:db8:2:2::a/64
+     ipv6 address 2001:db8:3:2::a/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
     interface eth4
      no shutdown
-     description r1 -> stub
+     description r1 -> stub [stub]
      ! no ip address
      ipv6 address 2001:db8:cafe:1::a/64
      ipv6 nd ra-interval 5
@@ -233,21 +276,11 @@ ok: [r2] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "2001:db8:1:1::1 2001:db8:2::1 2001:db8:2:3::1 dut" >>/tmp/hosts
-    echo "2001:db8:1:a::1 2001:db8:2::a 2001:db8:2:1::a 2001:db8:2:2::a 2001:db8:cafe:1::a r1" >>/tmp/hosts
-    echo "2001:db8:1:3::1 2001:db8:2:2::3 r2" >>/tmp/hosts
-    echo "2001:db8:1:2::1 2001:db8:2:1::2 rr2" >>/tmp/hosts
-    echo "2001:db8:cafe:e::1 2001:db8:2:3::4 x1" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -272,7 +305,7 @@ ok: [r2] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -293,7 +326,8 @@ ok: [r2] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -315,111 +349,7 @@ ok: [r2] =>
      no shutdown
      description r2 -> r1
      ! no ip address
-     ipv6 address 2001:db8:2:2::3/64
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
-ok: [rr2] => 
-  msg: |-
-    initial configuration for rr2
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)#"
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "2001:db8:1:1::1 2001:db8:2::1 2001:db8:2:3::1 dut" >>/tmp/hosts
-    echo "2001:db8:1:a::1 2001:db8:2::a 2001:db8:2:1::a 2001:db8:2:2::a 2001:db8:cafe:1::a r1" >>/tmp/hosts
-    echo "2001:db8:1:3::1 2001:db8:2:2::3 r2" >>/tmp/hosts
-    echo "2001:db8:1:2::1 2001:db8:2:1::2 rr2" >>/tmp/hosts
-    echo "2001:db8:cafe:e::1 2001:db8:2:3::4 x1" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    #
-    # Create loopbacks and stub devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    sysctl -qw net.ipv6.conf.eth1.autoconf=0
-    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname rr2
-    !
-    vrf mgmt
-     exit-vrf
-    !
-    ipv6 forwarding
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ! no ip address
-     ipv6 address 2001:db8:1:2::1/64
-    !
-    interface eth1
-     no shutdown
-     description rr2 -> r1
-     ! no ip address
-     ipv6 address 2001:db8:2:1::2/64
+     ipv6 address 2001:db8:3:2::3/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -441,21 +371,11 @@ ok: [x1] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "2001:db8:1:1::1 2001:db8:2::1 2001:db8:2:3::1 dut" >>/tmp/hosts
-    echo "2001:db8:1:a::1 2001:db8:2::a 2001:db8:2:1::a 2001:db8:2:2::a 2001:db8:cafe:1::a r1" >>/tmp/hosts
-    echo "2001:db8:1:3::1 2001:db8:2:2::3 r2" >>/tmp/hosts
-    echo "2001:db8:1:2::1 2001:db8:2:1::2 rr2" >>/tmp/hosts
-    echo "2001:db8:cafe:e::1 2001:db8:2:3::4 x1" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -480,7 +400,7 @@ ok: [x1] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -501,7 +421,8 @@ ok: [x1] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -523,7 +444,102 @@ ok: [x1] =>
      no shutdown
      description x1 -> dut [external]
      ! no ip address
-     ipv6 address 2001:db8:2:3::4/64
+     ipv6 address 2001:db8:3:3::4/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
+ok: [rr2] => 
+  msg: |-
+    initial configuration for rr2
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    sysctl -qw net.ipv6.conf.eth1.autoconf=0
+    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
+    ip link set eth1 down
+    ip link set eth1 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+    #
+    # Set Ethernet interface MTU
+    ip link set dev eth1 mtu 1500
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname rr2
+    !
+    vrf mgmt
+     exit-vrf
+    !
+    ipv6 forwarding
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ! no ip address
+     ipv6 address 2001:db8:1:2::1/64
+    !
+    interface eth1
+     no shutdown
+     description rr2 -> r1
+     ! no ip address
+     ipv6 address 2001:db8:3:1::2/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -535,9 +551,9 @@ ok: [x1] =>
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [r1]
 ok: [r2]
+ok: [x1]
 ok: [rr2]
 ok: [dut]
-ok: [x1]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/routeros7.yml for dut
@@ -550,9 +566,6 @@ TASK [Run commands on CHR] *****************************************************
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [r2 -> localhost]
-changed: [x1 -> localhost]
-changed: [rr2 -> localhost]
 changed: [r1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
@@ -565,21 +578,21 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, rr2, x1
 
 TASK [template] ****************************************************************
-changed: [rr2]
 changed: [r2]
+changed: [rr2]
 changed: [x1]
 changed: [r1]
 
 TASK [set_fact] ****************************************************************
-ok: [r1]
 ok: [r2]
+ok: [r1]
 ok: [rr2]
 ok: [x1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+changed: [r2]
 changed: [x1]
 changed: [rr2]
-changed: [r2]
 changed: [r1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -605,15 +618,22 @@ TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [r1]
 ok: [r2]
 ok: [rr2]
-ok: [dut]
 ok: [x1]
+ok: [dut]
 
 TASK [Find configuration template for bgp] *************************************
 ok: [r1]
 ok: [r2]
-ok: [dut]
 ok: [rr2]
 ok: [x1]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r1]
+skipping: [r2]
+skipping: [rr2]
+skipping: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [r1] => 
@@ -642,6 +662,8 @@ ok: [r1] =>
     !
      address-family ipv6 unicast
     !
+  
+    !
       network 2001:db8:1:a::/64
     !
       network 2001:db8:cafe:1::/64
@@ -664,9 +686,9 @@ ok: [r1] =>
     !
     !
     do write
-ok: [rr2] => 
+ok: [r2] => 
   msg: |-
-    bgp configuration for rr2
+    bgp configuration for r2
     =========================================
     !
     router bgp 65000
@@ -678,24 +700,21 @@ ok: [rr2] =>
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
-      bgp router-id 10.0.0.2
-      bgp cluster-id 10.0.0.43
+      bgp router-id 10.0.0.3
     !
       neighbor 2001:db8:1:1::1 remote-as 65000
       neighbor 2001:db8:1:1::1 description dut
       neighbor 2001:db8:1:1::1 update-source lo
     !
-      neighbor 2001:db8:1:a::1 remote-as 65000
-      neighbor 2001:db8:1:a::1 description r1
-      neighbor 2001:db8:1:a::1 update-source lo
-    !
-      neighbor 2001:db8:1:3::1 remote-as 65000
-      neighbor 2001:db8:1:3::1 description r2
-      neighbor 2001:db8:1:3::1 update-source lo
+      neighbor 2001:db8:1:2::1 remote-as 65000
+      neighbor 2001:db8:1:2::1 description rr2
+      neighbor 2001:db8:1:2::1 update-source lo
     !
      address-family ipv6 unicast
     !
-      network 2001:db8:1:2::/64
+  
+    !
+      network 2001:db8:1:3::/64
     !
     !
     !
@@ -706,21 +725,12 @@ ok: [rr2] =>
       neighbor 2001:db8:1:1::1 send-community large
       neighbor 2001:db8:1:1::1 send-community extended
     !
-      neighbor 2001:db8:1:a::1 activate
-      neighbor 2001:db8:1:a::1 next-hop-self
-      neighbor 2001:db8:1:a::1 route-reflector-client
-      no neighbor 2001:db8:1:a::1 send-community all
-      neighbor 2001:db8:1:a::1 send-community standard
-      neighbor 2001:db8:1:a::1 send-community large
-      neighbor 2001:db8:1:a::1 send-community extended
-    !
-      neighbor 2001:db8:1:3::1 activate
-      neighbor 2001:db8:1:3::1 next-hop-self
-      neighbor 2001:db8:1:3::1 route-reflector-client
-      no neighbor 2001:db8:1:3::1 send-community all
-      neighbor 2001:db8:1:3::1 send-community standard
-      neighbor 2001:db8:1:3::1 send-community large
-      neighbor 2001:db8:1:3::1 send-community extended
+      neighbor 2001:db8:1:2::1 activate
+      neighbor 2001:db8:1:2::1 next-hop-self
+      no neighbor 2001:db8:1:2::1 send-community all
+      neighbor 2001:db8:1:2::1 send-community standard
+      neighbor 2001:db8:1:2::1 send-community large
+      neighbor 2001:db8:1:2::1 send-community extended
     !
     !
     !
@@ -781,10 +791,10 @@ ok: [dut] =>
   
   
   
-    /routing/bgp/connection add template=main name=2001_db8_2_3__4 remote.address=2001:db8:2:3::4 remote.as=65101 comment="x1" address-families=ipv6 local.role=ebgp
+    /routing/bgp/connection add template=main name=2001_db8_3_3__4 remote.address=2001:db8:3:3::4 remote.as=65101 comment="x1" address-families=ipv6 local.role=ebgp
   
   
-    /routing/bgp/connection set [/routing/bgp/connection find name=2001_db8_2_3__4] nexthop-choice=force-self
+    /routing/bgp/connection set [/routing/bgp/connection find name=2001_db8_3_3__4] nexthop-choice=force-self
   
   
   
@@ -806,26 +816,28 @@ ok: [x1] =>
   
       bgp router-id 10.0.0.4
     !
-      neighbor 2001:db8:2:3::1 remote-as 65000
-      neighbor 2001:db8:2:3::1 description dut
+      neighbor 2001:db8:3:3::1 remote-as 65000
+      neighbor 2001:db8:3:3::1 description dut
     !
      address-family ipv6 unicast
+    !
+  
     !
       network 2001:db8:cafe:e::/64
     !
     !
     !
-      neighbor 2001:db8:2:3::1 activate
-      no neighbor 2001:db8:2:3::1 send-community all
-      neighbor 2001:db8:2:3::1 send-community standard
-      neighbor 2001:db8:2:3::1 send-community large
+      neighbor 2001:db8:3:3::1 activate
+      no neighbor 2001:db8:3:3::1 send-community all
+      neighbor 2001:db8:3:3::1 send-community standard
+      neighbor 2001:db8:3:3::1 send-community large
     !
     !
     !
     do write
-ok: [r2] => 
+ok: [rr2] => 
   msg: |-
-    bgp configuration for r2
+    bgp configuration for rr2
     =========================================
     !
     router bgp 65000
@@ -837,19 +849,26 @@ ok: [r2] =>
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
-      bgp router-id 10.0.0.3
+      bgp router-id 10.0.0.2
+      bgp cluster-id 10.0.0.43
     !
       neighbor 2001:db8:1:1::1 remote-as 65000
       neighbor 2001:db8:1:1::1 description dut
       neighbor 2001:db8:1:1::1 update-source lo
     !
-      neighbor 2001:db8:1:2::1 remote-as 65000
-      neighbor 2001:db8:1:2::1 description rr2
-      neighbor 2001:db8:1:2::1 update-source lo
+      neighbor 2001:db8:1:a::1 remote-as 65000
+      neighbor 2001:db8:1:a::1 description r1
+      neighbor 2001:db8:1:a::1 update-source lo
+    !
+      neighbor 2001:db8:1:3::1 remote-as 65000
+      neighbor 2001:db8:1:3::1 description r2
+      neighbor 2001:db8:1:3::1 update-source lo
     !
      address-family ipv6 unicast
     !
-      network 2001:db8:1:3::/64
+  
+    !
+      network 2001:db8:1:2::/64
     !
     !
     !
@@ -860,12 +879,21 @@ ok: [r2] =>
       neighbor 2001:db8:1:1::1 send-community large
       neighbor 2001:db8:1:1::1 send-community extended
     !
-      neighbor 2001:db8:1:2::1 activate
-      neighbor 2001:db8:1:2::1 next-hop-self
-      no neighbor 2001:db8:1:2::1 send-community all
-      neighbor 2001:db8:1:2::1 send-community standard
-      neighbor 2001:db8:1:2::1 send-community large
-      neighbor 2001:db8:1:2::1 send-community extended
+      neighbor 2001:db8:1:a::1 activate
+      neighbor 2001:db8:1:a::1 next-hop-self
+      neighbor 2001:db8:1:a::1 route-reflector-client
+      no neighbor 2001:db8:1:a::1 send-community all
+      neighbor 2001:db8:1:a::1 send-community standard
+      neighbor 2001:db8:1:a::1 send-community large
+      neighbor 2001:db8:1:a::1 send-community extended
+    !
+      neighbor 2001:db8:1:3::1 activate
+      neighbor 2001:db8:1:3::1 next-hop-self
+      neighbor 2001:db8:1:3::1 route-reflector-client
+      no neighbor 2001:db8:1:3::1 send-community all
+      neighbor 2001:db8:1:3::1 send-community standard
+      neighbor 2001:db8:1:3::1 send-community large
+      neighbor 2001:db8:1:3::1 send-community extended
     !
     !
     !
@@ -889,10 +917,10 @@ TASK [Run commands on CHR] *****************************************************
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [x1]
+changed: [r2]
 changed: [r1]
 changed: [rr2]
-changed: [r2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -907,9 +935,9 @@ skipping: [rr2]
 skipping: [x1]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [rr2]
 changed: [r1]
 changed: [r2]
+changed: [rr2]
 changed: [x1]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
@@ -925,6 +953,13 @@ ok: [r1]
 ok: [r2]
 ok: [rr2]
 ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r1]
+skipping: [r2]
+skipping: [rr2]
+skipping: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [x1]
@@ -960,6 +995,7 @@ ok: [r1] =>
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
   
+  
     exit
   
     !
@@ -986,31 +1022,6 @@ ok: [r2] =>
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
   
-    exit
-  
-    !
-    do write
-ok: [rr2] => 
-  msg: |-
-    ospf configuration for rr2
-    =========================================
-    !
-    ! OSPFv3 FRR configuration
-    !
-    interface lo
-    !
-     ipv6 ospf6 area 0.0.0.0
-    !
-    interface eth1
-    ! rr2 -> r1
-     ipv6 ospf6 area 0.0.0.0
-     ipv6 ospf6 network point-to-point
-    !
-    !
-    router ospf6
-     ospf6 router-id 10.0.0.2
-     timers lsa min-arrival 100
-     timers throttle spf 10 50 500
   
     exit
   
@@ -1041,6 +1052,33 @@ ok: [dut] =>
   
   
     /routing/ospf/interface-template add area=[/routing ospf area find area-id=0.0.0.0 and instance=default6] interface=ether2 type=ptp
+ok: [rr2] => 
+  msg: |-
+    ospf configuration for rr2
+    =========================================
+    !
+    ! OSPFv3 FRR configuration
+    !
+    interface lo
+    !
+     ipv6 ospf6 area 0.0.0.0
+    !
+    interface eth1
+    ! rr2 -> r1
+     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 network point-to-point
+    !
+    !
+    router ospf6
+     ospf6 router-id 10.0.0.2
+     timers lsa min-arrival 100
+     timers throttle spf 10 50 500
+  
+  
+    exit
+  
+    !
+    do write
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 skipping: [x1]
@@ -1061,14 +1099,14 @@ TASK [Run commands on CHR] *****************************************************
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [r1]
-changed: [r2]
 changed: [rr2]
+changed: [r2]
+changed: [r1]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
-ok: [rr2]
 ok: [r2]
+ok: [rr2]
 
 TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 skipping: [r1]
@@ -1076,19 +1114,19 @@ skipping: [r2]
 skipping: [rr2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+changed: [r1]
 changed: [r2]
 changed: [rr2]
-changed: [r1]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=28   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-r1                         : ok=32   changed=7    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
-r2                         : ok=32   changed=7    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
-rr2                        : ok=32   changed=7    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
-x1                         : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+dut                        : ok=31   changed=3    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+r1                         : ok=35   changed=7    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+r2                         : ok=34   changed=6    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+rr2                        : ok=34   changed=6    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+x1                         : ok=27   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 
 
 

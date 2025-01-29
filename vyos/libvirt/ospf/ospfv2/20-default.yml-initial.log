@@ -20,6 +20,45 @@ skipping: [xf]
 skipping: [probe]
 skipping: [dut_a]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut_c, xf, probe, dut_a
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [dut_c]
+ok: [xf]
+ok: [probe]
+ok: [dut_a]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [dut_c]
+ok: [xf]
+ok: [probe]
+ok: [dut_a]
+
+TASK [fail] ********************************************************************
+skipping: [dut_c]
+skipping: [xf]
+skipping: [probe]
+skipping: [dut_a]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut_c]
+skipping: [xf]
+skipping: [probe]
+skipping: [dut_a]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [dut_c]
+skipping: [xf]
+skipping: [probe]
+skipping: [dut_a]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [dut_c]
+skipping: [xf]
+skipping: [probe]
+skipping: [dut_a]
+
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut_c, xf, probe, dut_a
 
@@ -34,6 +73,12 @@ ok: [dut_c]
 ok: [xf]
 ok: [probe]
 ok: [dut_a]
+
+TASK [fail] ********************************************************************
+skipping: [dut_c]
+skipping: [xf]
+skipping: [probe]
+skipping: [dut_a]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut_c] => 
@@ -60,7 +105,7 @@ ok: [dut_c] =>
     set interfaces ethernet eth1 description 'dut_c -> probe'
   
   
-    set interfaces ethernet eth1 address 172.16.1.2/24
+    set interfaces ethernet eth1 address 10.1.0.6/30
   
   
   
@@ -69,7 +114,7 @@ ok: [dut_c] =>
     set interfaces ethernet eth2 description 'dut_c -> xf [external]'
   
   
-    set interfaces ethernet eth2 address 172.16.2.2/24
+    set interfaces ethernet eth2 address 10.1.0.9/30
   
   
   
@@ -101,20 +146,11 @@ ok: [xf] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 dut_a" >>/tmp/hosts
-    echo "10.0.0.2 172.16.1.2 172.16.2.2 dut_c" >>/tmp/hosts
-    echo "10.0.0.3 172.16.0.3 172.16.1.3 probe" >>/tmp/hosts
-    echo "10.0.0.4 172.16.2.4 xf" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -139,7 +175,7 @@ ok: [xf] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -157,7 +193,8 @@ ok: [xf] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -176,7 +213,7 @@ ok: [xf] =>
     interface eth1
      no shutdown
      description xf -> dut_c [external]
-     ip address 172.16.2.4/24
+     ip address 10.1.0.10/30
     !
     do write
     CONFIG
@@ -196,20 +233,11 @@ ok: [probe] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 dut_a" >>/tmp/hosts
-    echo "10.0.0.2 172.16.1.2 172.16.2.2 dut_c" >>/tmp/hosts
-    echo "10.0.0.3 172.16.0.3 172.16.1.3 probe" >>/tmp/hosts
-    echo "10.0.0.4 172.16.2.4 xf" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -234,7 +262,7 @@ ok: [probe] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -253,8 +281,9 @@ ok: [probe] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
-    ip link set eth2 mtu 1500
+    ip link set dev eth1 mtu 1500
+    ip link set dev eth2 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -273,12 +302,12 @@ ok: [probe] =>
     interface eth1
      no shutdown
      description probe -> dut_a
-     ip address 172.16.0.3/24
+     ip address 10.1.0.1/30
     !
     interface eth2
      no shutdown
      description probe -> dut_c
-     ip address 172.16.1.3/24
+     ip address 10.1.0.5/30
     !
     do write
     CONFIG
@@ -308,7 +337,7 @@ ok: [dut_a] =>
     set interfaces ethernet eth1 description 'dut_a -> probe'
   
   
-    set interfaces ethernet eth1 address 172.16.0.1/24
+    set interfaces ethernet eth1 address 10.1.0.2/30
   
   
   
@@ -354,8 +383,8 @@ ok: [dut_c]
 ok: [dut_a]
 
 TASK [template] ****************************************************************
-changed: [dut_a]
 changed: [dut_c]
+changed: [dut_a]
 
 TASK [execute config-initial.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/vyos.j2] ***
 changed: [dut_a]
@@ -363,7 +392,6 @@ changed: [dut_c]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [xf -> localhost]
-changed: [probe -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [xf]
@@ -412,6 +440,12 @@ skipping: [probe]
 ok: [dut_c]
 ok: [xf]
 
+TASK [fail] ********************************************************************
+skipping: [dut_a]
+skipping: [dut_c]
+skipping: [probe]
+skipping: [xf]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut_a]
 skipping: [probe]
@@ -436,8 +470,8 @@ ok: [dut_c] =>
   
   
   
-    set protocols bgp neighbor 172.16.2.4 remote-as 65100
-    set protocols bgp neighbor 172.16.2.4 description 'xf'
+    set protocols bgp neighbor 10.1.0.10 remote-as 65100
+    set protocols bgp neighbor 10.1.0.10 description 'xf'
   
   
   
@@ -452,11 +486,11 @@ ok: [dut_c] =>
   
   
   
-    set protocols bgp neighbor 172.16.2.4 address-family ipv4-unicast soft-reconfiguration inbound
+    set protocols bgp neighbor 10.1.0.10 address-family ipv4-unicast soft-reconfiguration inbound
   
-    set protocols bgp neighbor 172.16.2.4 address-family ipv4-unicast nexthop-self
+    set protocols bgp neighbor 10.1.0.10 address-family ipv4-unicast nexthop-self
   
-    set protocols bgp neighbor 172.16.2.4 address-family ipv4-unicast disable-send-community extended
+    set protocols bgp neighbor 10.1.0.10 address-family ipv4-unicast disable-send-community extended
   
   
   
@@ -482,19 +516,21 @@ ok: [xf] =>
   
       bgp router-id 10.0.0.4
     !
-      neighbor 172.16.2.2 remote-as 65000
-      neighbor 172.16.2.2 description dut_c
+      neighbor 10.1.0.9 remote-as 65000
+      neighbor 10.1.0.9 description dut_c
     !
      address-family ipv4 unicast
+    !
+  
     !
       network 10.0.0.4/32
     !
     !
     !
-      neighbor 172.16.2.2 activate
-      no neighbor 172.16.2.2 send-community all
-      neighbor 172.16.2.2 send-community standard
-      neighbor 172.16.2.2 send-community large
+      neighbor 10.1.0.9 activate
+      no neighbor 10.1.0.9 send-community all
+      neighbor 10.1.0.9 send-community standard
+      neighbor 10.1.0.9 send-community large
     !
     !
     !
@@ -549,10 +585,16 @@ ok: [probe]
 ok: [xf]
 
 TASK [Find configuration template for ospf] ************************************
-ok: [dut_a]
 skipping: [xf]
+ok: [dut_a]
 ok: [dut_c]
 ok: [probe]
+
+TASK [fail] ********************************************************************
+skipping: [dut_a]
+skipping: [dut_c]
+skipping: [probe]
+skipping: [xf]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [xf]
@@ -657,6 +699,7 @@ ok: [probe] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -729,10 +772,10 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut_a                      : ok=25   changed=4    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
-dut_c                      : ok=33   changed=6    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-probe                      : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-xf                         : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+dut_a                      : ok=28   changed=4    unreachable=0    failed=0    skipped=16   rescued=0    ignored=0   
+dut_c                      : ok=36   changed=6    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
+probe                      : ok=27   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+xf                         : ok=28   changed=5    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 
 
 

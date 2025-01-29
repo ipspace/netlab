@@ -20,6 +20,45 @@ skipping: [xf]
 skipping: [probe]
 skipping: [dut_a]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut_c, xf, probe, dut_a
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [dut_c]
+ok: [xf]
+ok: [probe]
+ok: [dut_a]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [dut_c]
+ok: [xf]
+ok: [probe]
+ok: [dut_a]
+
+TASK [fail] ********************************************************************
+skipping: [dut_c]
+skipping: [xf]
+skipping: [probe]
+skipping: [dut_a]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut_c]
+skipping: [xf]
+skipping: [probe]
+skipping: [dut_a]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [dut_c]
+skipping: [xf]
+skipping: [probe]
+skipping: [dut_a]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [dut_c]
+skipping: [xf]
+skipping: [probe]
+skipping: [dut_a]
+
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut_c, xf, probe, dut_a
 
@@ -34,6 +73,12 @@ ok: [dut_c]
 ok: [xf]
 ok: [probe]
 ok: [dut_a]
+
+TASK [fail] ********************************************************************
+skipping: [dut_c]
+skipping: [xf]
+skipping: [probe]
+skipping: [dut_a]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut_c] => 
@@ -179,7 +224,8 @@ ok: [xf] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -207,7 +253,7 @@ ok: [xf] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -228,7 +274,8 @@ ok: [xf] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -272,7 +319,8 @@ ok: [probe] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -300,7 +348,7 @@ ok: [probe] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -325,8 +373,9 @@ ok: [probe] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
-    ip link set eth2 mtu 1500
+    ip link set dev eth1 mtu 1500
+    ip link set dev eth2 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -380,8 +429,8 @@ ok: [dut_c]
 ok: [dut_a]
 
 TASK [Update SRL initial node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2)] ***
-changed: [dut_c]
 changed: [dut_a]
+changed: [dut_c]
 
 TASK [debug] *******************************************************************
 skipping: [dut_c]
@@ -389,7 +438,6 @@ skipping: [dut_a]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [xf -> localhost]
-changed: [probe -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [xf]
@@ -403,8 +451,8 @@ changed: [probe]
 changed: [xf]
 
 TASK [set_fact] ****************************************************************
-ok: [probe]
 ok: [xf]
+ok: [probe]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [xf]
@@ -419,8 +467,8 @@ PLAY [Deploy module-specific configurations] ***********************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut_a]
 ok: [dut_c]
-ok: [xf]
 ok: [probe]
+ok: [xf]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut_a, dut_c, probe, xf => (item=bgp)
@@ -438,9 +486,50 @@ skipping: [probe]
 ok: [dut_c]
 ok: [xf]
 
+TASK [fail] ********************************************************************
+skipping: [dut_a]
+skipping: [dut_c]
+skipping: [probe]
+skipping: [xf]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut_a]
 skipping: [probe]
+ok: [xf] => 
+  msg: |-
+    bgp configuration for xf
+    =========================================
+    !
+    router bgp 65100
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.4
+    !
+      neighbor 2001:db8:3:2::1 remote-as 65000
+      neighbor 2001:db8:3:2::1 description dut_c
+    !
+     address-family ipv6 unicast
+    !
+  
+    !
+      network 2001:db8:1:4::/64
+    !
+    !
+    !
+      neighbor 2001:db8:3:2::1 activate
+      no neighbor 2001:db8:3:2::1 send-community all
+      neighbor 2001:db8:3:2::1 send-community standard
+      neighbor 2001:db8:3:2::1 send-community large
+    !
+    !
+    !
+    do write
 ok: [dut_c] => 
   msg: |-
     bgp configuration for dut_c
@@ -552,41 +641,6 @@ ok: [dut_c] =>
             admin-state: enable
   
           peer-as: 65100
-ok: [xf] => 
-  msg: |-
-    bgp configuration for xf
-    =========================================
-    !
-    router bgp 65100
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.4
-    !
-      neighbor 2001:db8:3:2::1 remote-as 65000
-      neighbor 2001:db8:3:2::1 description dut_c
-    !
-     address-family ipv6 unicast
-    !
-  
-    !
-      network 2001:db8:1:4::/64
-    !
-    !
-    !
-      neighbor 2001:db8:3:2::1 activate
-      no neighbor 2001:db8:3:2::1 send-community all
-      neighbor 2001:db8:3:2::1 send-community standard
-      neighbor 2001:db8:3:2::1 send-community large
-    !
-    !
-    !
-    do write
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 skipping: [dut_a]
@@ -628,10 +682,16 @@ ok: [probe]
 ok: [xf]
 
 TASK [Find configuration template for ospf] ************************************
-skipping: [xf]
 ok: [dut_a]
+skipping: [xf]
 ok: [dut_c]
 ok: [probe]
+
+TASK [fail] ********************************************************************
+skipping: [dut_a]
+skipping: [dut_c]
+skipping: [probe]
+skipping: [xf]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [xf]
@@ -817,10 +877,10 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut_a                      : ok=21   changed=2    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-dut_c                      : ok=27   changed=3    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-probe                      : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-xf                         : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+dut_a                      : ok=24   changed=2    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
+dut_c                      : ok=30   changed=3    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
+probe                      : ok=27   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+xf                         : ok=28   changed=5    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 
 
 

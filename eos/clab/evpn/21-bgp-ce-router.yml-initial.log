@@ -23,6 +23,62 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/eos-clab.
 TASK [Wait for cEOS SSH daemon to start] ***************************************
 ok: [s1]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, ce1, ce2
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [s2]
+ok: [ce1]
+ok: [ce2]
+ok: [s1]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [s2]
+ok: [ce1]
+ok: [ce2]
+ok: [s1]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
+skipping: [ce1]
+skipping: [ce2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [s2]
+skipping: [ce1]
+skipping: [ce2]
+ok: [s1] => 
+  msg: |-
+    normalize configuration for s1
+    =========================================
+    !
+    interface Ethernet1
+     no switchport
+     mac-address 52dc.cafe.0301
+    !
+    interface Ethernet2
+     no switchport
+     mac-address 52dc.cafe.0302
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [s2]
+skipping: [ce1]
+skipping: [ce2]
+ok: [s1]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [s2]
+skipping: [ce1]
+skipping: [ce2]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for s1
+
+TASK [eos_config: deploying normalize from /home/pipi/net101/tools/netsim/ansible/templates/normalize/eos.j2] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [s1]
+
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, ce1, ce2
 
@@ -37,6 +93,12 @@ ok: [s2]
 ok: [ce1]
 ok: [ce2]
 ok: [s1]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
+skipping: [ce1]
+skipping: [ce2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [s2] => 
@@ -53,7 +115,8 @@ ok: [s2] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -81,7 +144,7 @@ ok: [s2] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -100,8 +163,9 @@ ok: [s2] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1600
-    ip link set eth2 mtu 1500
+    ip link set dev eth1 mtu 1600
+    ip link set dev eth2 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -145,7 +209,8 @@ ok: [ce1] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -173,7 +238,7 @@ ok: [ce1] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -191,7 +256,8 @@ ok: [ce1] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -230,7 +296,8 @@ ok: [ce2] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -258,7 +325,7 @@ ok: [ce2] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -276,7 +343,8 @@ ok: [ce2] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -308,6 +376,7 @@ ok: [s1] =>
     hostname s1
     !
     logging monitor debugging
+    aaa authorization exec default local
     !
     lldp run
     ip routing
@@ -329,26 +398,25 @@ ok: [s1] =>
      no lldp receive
     !
     interface Loopback0
-     no shutdown
      ip address 10.0.0.3/32
     !
     interface Ethernet1
-     no shutdown
      no switchport
      mtu 1600
      description s1 -> s2
      ip address 10.1.0.1/30
     !
      mac-address 52dc.cafe.0301
+     no shutdown
     !
     interface Ethernet2
-     no shutdown
      no switchport
      vrf tenant
      description s1 -> ce1 [external]
      ip address 10.1.0.6/30
     !
      mac-address 52dc.cafe.0302
+     no shutdown
     !
 
 TASK [Find configuration deployment deploy_script for initial] *****************
@@ -362,15 +430,10 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for s2, ce1, ce2
 
 TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
-[WARNING]: To ensure idempotency and correct diff the input configuration lines
-should be similar to how they appear if present in the running configuration on
-device including the indentation
 changed: [s1]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [ce1 -> localhost]
 changed: [s2 -> localhost]
-changed: [ce2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [s2]
@@ -381,19 +444,19 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for s2, ce1, ce2
 
 TASK [template] ****************************************************************
+changed: [s2]
 changed: [ce2]
 changed: [ce1]
-changed: [s2]
 
 TASK [set_fact] ****************************************************************
-ok: [s2]
 ok: [ce1]
+ok: [s2]
 ok: [ce2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+changed: [ce1]
 changed: [s2]
 changed: [ce2]
-changed: [ce1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [s2]
@@ -427,6 +490,12 @@ skipping: [ce1]
 skipping: [ce2]
 ok: [s2]
 ok: [s1]
+
+TASK [fail] ********************************************************************
+skipping: [ce1]
+skipping: [ce2]
+skipping: [s1]
+skipping: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ce1]
@@ -484,6 +553,12 @@ ok: [ce1]
 ok: [ce2]
 ok: [s2]
 ok: [s1]
+
+TASK [fail] ********************************************************************
+skipping: [ce1]
+skipping: [ce2]
+skipping: [s1]
+skipping: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [ce1] => 
@@ -640,9 +715,9 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for s1
 
 TASK [template] ****************************************************************
+changed: [ce2]
 changed: [ce1]
 changed: [s2]
-changed: [ce2]
 
 TASK [set_fact] ****************************************************************
 ok: [ce1]
@@ -655,8 +730,8 @@ skipping: [ce2]
 skipping: [s2]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [ce1]
 changed: [ce2]
+changed: [ce1]
 changed: [s2]
 
 TASK [eos_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/eos.j2] ***
@@ -673,6 +748,12 @@ skipping: [ce1]
 skipping: [ce2]
 ok: [s2]
 ok: [s1]
+
+TASK [fail] ********************************************************************
+skipping: [ce1]
+skipping: [ce2]
+skipping: [s1]
+skipping: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ce1]
@@ -770,6 +851,12 @@ skipping: [ce2]
 ok: [s2]
 ok: [s1]
 
+TASK [fail] ********************************************************************
+skipping: [ce1]
+skipping: [ce2]
+skipping: [s1]
+skipping: [s2]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ce1]
 skipping: [ce2]
@@ -843,7 +930,7 @@ ok: [s1] =>
       neighbor 10.1.0.5 send-community standard large
     !
       address-family ipv4
-      redistribute connected
+        redistribute connected
   
         neighbor 10.1.0.5 activate
 
@@ -885,6 +972,12 @@ skipping: [ce1]
 skipping: [ce2]
 ok: [s2]
 ok: [s1]
+
+TASK [fail] ********************************************************************
+skipping: [ce1]
+skipping: [ce2]
+skipping: [s1]
+skipping: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ce1]
@@ -970,6 +1063,12 @@ skipping: [ce1]
 skipping: [ce2]
 ok: [s2]
 ok: [s1]
+
+TASK [fail] ********************************************************************
+skipping: [ce1]
+skipping: [ce2]
+skipping: [s1]
+skipping: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ce1]
@@ -1062,10 +1161,10 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-ce1                        : ok=33   changed=5    unreachable=0    failed=0    skipped=24   rescued=0    ignored=0   
-ce2                        : ok=33   changed=5    unreachable=0    failed=0    skipped=24   rescued=0    ignored=0   
-s1                         : ok=54   changed=6    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-s2                         : ok=68   changed=15   unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+ce1                        : ok=35   changed=4    unreachable=0    failed=0    skipped=35   rescued=0    ignored=0   
+ce2                        : ok=35   changed=4    unreachable=0    failed=0    skipped=35   rescued=0    ignored=0   
+s1                         : ok=61   changed=7    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+s2                         : ok=71   changed=15   unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
 
 
 

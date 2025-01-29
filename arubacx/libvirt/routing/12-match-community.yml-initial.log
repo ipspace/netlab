@@ -17,6 +17,39 @@ skipping: [dut]
 skipping: [probe]
 skipping: [x1]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [probe]
+ok: [x1]
+ok: [dut]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [probe]
+ok: [x1]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [probe]
+skipping: [x1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+skipping: [probe]
+skipping: [x1]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [dut]
+skipping: [probe]
+skipping: [x1]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [dut]
+skipping: [probe]
+skipping: [x1]
+
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1
 
@@ -29,6 +62,11 @@ TASK [Find configuration template for initial] *********************************
 ok: [probe]
 ok: [x1]
 ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [probe]
+skipping: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -51,19 +89,21 @@ ok: [dut] =>
     !
   
   
+  
     interface 1/1/1
         shutdown
         mtu 9198
         description dut -> probe [external]
-        ip address 172.16.2.1/24
+        ip address 10.1.0.1/30
         no shutdown
     !
+  
   
     interface 1/1/2
         shutdown
         mtu 9198
         description dut -> x1 [external]
-        ip address 172.16.3.1/24
+        ip address 10.1.0.5/30
         no shutdown
     !
     !
@@ -81,7 +121,8 @@ ok: [probe] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -109,7 +150,7 @@ ok: [probe] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -127,7 +168,8 @@ ok: [probe] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -146,7 +188,7 @@ ok: [probe] =>
     interface eth1
      no shutdown
      description probe -> dut [external]
-     ip address 172.16.2.2/24
+     ip address 10.1.0.2/30
     !
     do write
     CONFIG
@@ -166,7 +208,8 @@ ok: [x1] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -194,7 +237,7 @@ ok: [x1] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -212,7 +255,8 @@ ok: [x1] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -231,7 +275,7 @@ ok: [x1] =>
     interface eth1
      no shutdown
      description x1 -> dut [external]
-     ip address 172.16.3.3/24
+     ip address 10.1.0.6/30
     !
     do write
     CONFIG
@@ -253,9 +297,6 @@ changed: [dut -> localhost]
 TASK [template] ****************************************************************
 changed: [dut -> localhost]
 
-TASK [aoscx_config: set session auto-confirm for initial] **********************
-changed: [dut]
-
 TASK [aoscx_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/arubacx.j2] ***
 changed: [dut]
 
@@ -263,7 +304,6 @@ TASK [file] ********************************************************************
 changed: [dut -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [x1 -> localhost]
 changed: [probe -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
@@ -274,16 +314,16 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for probe, x1
 
 TASK [template] ****************************************************************
-changed: [probe]
 changed: [x1]
+changed: [probe]
 
 TASK [set_fact] ****************************************************************
 ok: [probe]
 ok: [x1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [probe]
 changed: [x1]
+changed: [probe]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [probe]
@@ -310,11 +350,17 @@ ok: [probe]
 ok: [x1]
 ok: [dut]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [probe]
+skipping: [x1]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [probe] => 
   msg: |-
     routing configuration for probe
     =========================================
+    !
     !
 ok: [x1] => 
   msg: |-
@@ -336,6 +382,7 @@ ok: [x1] =>
     ip prefix-list pf1-ipv4 seq 10 permit 172.16.0.0/24
     !
     ip prefix-list pf2-ipv4 seq 10 permit 172.16.1.0/24
+    !
 ok: [dut] => 
   msg: |-
     routing configuration for dut
@@ -358,6 +405,10 @@ ok: [dut] =>
     !
     route-map set_med-ipv4 permit seq 30
       set metric 72
+  
+    !
+    ! Static routes
+    !
 
 TASK [Find configuration deployment deploy_script for routing] *****************
 ok: [probe]
@@ -374,9 +425,6 @@ changed: [dut -> localhost]
 TASK [template] ****************************************************************
 changed: [dut -> localhost]
 
-TASK [aoscx_config: set session auto-confirm for routing] **********************
-changed: [dut]
-
 TASK [aoscx_config: deploying routing from /home/pipi/net101/tools/netsim/ansible/templates/routing/arubacx.j2] ***
 changed: [dut]
 
@@ -384,8 +432,8 @@ TASK [file] ********************************************************************
 changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [probe]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [probe]
@@ -409,6 +457,11 @@ ok: [probe]
 ok: [x1]
 ok: [dut]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [probe]
+skipping: [x1]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [probe] => 
   msg: |-
@@ -426,8 +479,8 @@ ok: [probe] =>
   
       bgp router-id 10.0.0.2
     !
-      neighbor 172.16.2.1 remote-as 65000
-      neighbor 172.16.2.1 description dut
+      neighbor 10.1.0.1 remote-as 65000
+      neighbor 10.1.0.1 description dut
     !
      address-family ipv4 unicast
     !
@@ -437,10 +490,10 @@ ok: [probe] =>
     !
     !
     !
-      neighbor 172.16.2.1 activate
-      no neighbor 172.16.2.1 send-community all
-      neighbor 172.16.2.1 send-community standard
-      neighbor 172.16.2.1 send-community large
+      neighbor 10.1.0.1 activate
+      no neighbor 10.1.0.1 send-community all
+      neighbor 10.1.0.1 send-community standard
+      neighbor 10.1.0.1 send-community large
     !
     !
     !
@@ -461,8 +514,8 @@ ok: [x1] =>
   
       bgp router-id 10.0.0.3
     !
-      neighbor 172.16.3.1 remote-as 65000
-      neighbor 172.16.3.1 description dut
+      neighbor 10.1.0.5 remote-as 65000
+      neighbor 10.1.0.5 description dut
     !
      address-family ipv4 unicast
     !
@@ -474,10 +527,10 @@ ok: [x1] =>
       network 172.16.0.0/24
       network 172.16.1.0/24
     !
-      neighbor 172.16.3.1 activate
-      no neighbor 172.16.3.1 send-community all
-      neighbor 172.16.3.1 send-community standard
-      neighbor 172.16.3.1 send-community large
+      neighbor 10.1.0.5 activate
+      no neighbor 10.1.0.5 send-community all
+      neighbor 10.1.0.5 send-community standard
+      neighbor 10.1.0.5 send-community large
     !
     !
     ip route 172.16.0.0/24 Null0
@@ -494,11 +547,11 @@ ok: [dut] =>
       bgp log-neighbor-changes
       timers bgp connect-retry 10
       bgp router-id 10.0.0.1
-      neighbor 172.16.2.2 remote-as 65100
-      neighbor 172.16.2.2 description probe
+      neighbor 10.1.0.2 remote-as 65100
+      neighbor 10.1.0.2 description probe
   
-      neighbor 172.16.3.3 remote-as 65101
-      neighbor 172.16.3.3 description x1
+      neighbor 10.1.0.6 remote-as 65101
+      neighbor 10.1.0.6 description x1
   
     !
       address-family ipv4 unicast
@@ -507,13 +560,13 @@ ok: [dut] =>
         network 10.0.0.1/32
     !
     !
-        neighbor 172.16.2.2 activate
-        neighbor 172.16.2.2 advertisement-interval 1
-        neighbor 172.16.2.2 send-community standard
+        neighbor 10.1.0.2 activate
+        neighbor 10.1.0.2 advertisement-interval 1
+        neighbor 10.1.0.2 send-community standard
   
-        neighbor 172.16.3.3 activate
-        neighbor 172.16.3.3 advertisement-interval 1
-        neighbor 172.16.3.3 send-community standard
+        neighbor 10.1.0.6 activate
+        neighbor 10.1.0.6 advertisement-interval 1
+        neighbor 10.1.0.6 send-community standard
   
     !
 
@@ -532,9 +585,6 @@ changed: [dut -> localhost]
 TASK [template] ****************************************************************
 changed: [dut -> localhost]
 
-TASK [aoscx_config: set session auto-confirm for bgp] **************************
-changed: [dut]
-
 TASK [aoscx_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/arubacx.j2] ***
 changed: [dut]
 
@@ -542,8 +592,8 @@ TASK [file] ********************************************************************
 changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
-changed: [probe]
 changed: [x1]
+changed: [probe]
 
 TASK [set_fact] ****************************************************************
 ok: [probe]
@@ -571,8 +621,8 @@ skipping: [dut]
 skipping: [x1]
 
 TASK [Check is the configuration template is a file] ***************************
-ok: [dut -> localhost]
 ok: [x1 -> localhost]
+ok: [dut -> localhost]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -596,9 +646,6 @@ changed: [dut -> localhost]
 TASK [template] ****************************************************************
 changed: [dut -> localhost]
 
-TASK [aoscx_config: set session auto-confirm for bgp.policy] *******************
-changed: [dut]
-
 TASK [aoscx_config: deploying bgp.policy from /home/pipi/net101/tools/netsim/extra/bgp.policy/arubacx.j2] ***
 changed: [dut]
 
@@ -618,9 +665,9 @@ TASK [run vtysh to import bgp.policy config from /home/pipi/net101/tools/netsim/
 changed: [x1]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=46   changed=20   unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-probe                      : ok=32   changed=7    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
-x1                         : ok=40   changed=9    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+dut                        : ok=45   changed=16   unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
+probe                      : ok=35   changed=7    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+x1                         : ok=42   changed=8    unreachable=0    failed=0    skipped=16   rescued=0    ignored=0   
 
 
 

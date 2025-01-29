@@ -17,8 +17,41 @@ skipping: [x1]
 skipping: [x2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/vptx.yml for dut
 
-TASK [Wait for et-0/0/1 to appear] *********************************************
+TASK [Wait for et-0/0/0 to appear] *********************************************
 ok: [dut]
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for x1, x2, dut
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [x1]
+skipping: [x2]
+skipping: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [x1]
+skipping: [x2]
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [x1]
+skipping: [x2]
+skipping: [dut]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [x1]
+skipping: [x2]
+skipping: [dut]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for x1, x2, dut
@@ -32,6 +65,11 @@ TASK [Find configuration template for initial] *********************************
 ok: [x1]
 ok: [x2]
 ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [x1]
+skipping: [x2]
+skipping: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [x1] => 
@@ -48,19 +86,11 @@ ok: [x1] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 10.42.1.1 10.42.2.1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 172.16.1.2 x1" >>/tmp/hosts
-    echo "10.0.0.3 10.42.1.3 172.16.1.3 x2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -85,7 +115,7 @@ ok: [x1] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -104,8 +134,9 @@ ok: [x1] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
-    ip link set eth2 mtu 1500
+    ip link set dev eth1 mtu 1500
+    ip link set dev eth2 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -124,12 +155,12 @@ ok: [x1] =>
     interface eth1
      no shutdown
      description x1 -> dut
-     ip address 172.16.0.2/24
+     ip address 10.1.0.2/30
     !
     interface eth2
      no shutdown
      description x1 -> x2
-     ip address 172.16.1.2/24
+     ip address 10.1.0.5/30
     !
     do write
     CONFIG
@@ -149,19 +180,11 @@ ok: [x2] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 10.42.1.1 10.42.2.1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 172.16.1.2 x1" >>/tmp/hosts
-    echo "10.0.0.3 10.42.1.3 172.16.1.3 x2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -186,7 +209,7 @@ ok: [x2] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -205,8 +228,9 @@ ok: [x2] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
-    ip link set eth2 mtu 1500
+    ip link set dev eth1 mtu 1500
+    ip link set dev eth2 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -230,7 +254,7 @@ ok: [x2] =>
     interface eth2
      no shutdown
      description x2 -> x1
-     ip address 172.16.1.3/24
+     ip address 10.1.0.6/30
     !
     do write
     CONFIG
@@ -241,11 +265,11 @@ ok: [dut] =>
     initial configuration for dut
     =========================================
     system {
-      host-name dut
-        static-host-mapping {
-            x1 inet 10.0.0.2;
-            x2 inet 10.0.0.3;
-        }
+      host-name dut;
+      static-host-mapping {
+        x1 inet 10.0.0.2;
+        x2 inet 10.0.0.3;
+      }
     }
   
   
@@ -271,7 +295,7 @@ ok: [dut] =>
         description "dut -> x1";
   
           family inet {
-            address 172.16.0.1/24;
+            address 10.1.0.1/30;
           }
   
       }
@@ -284,7 +308,7 @@ ok: [dut] =>
   
       }
       et-0/0/2.0 {
-        description "dut -> stub";
+        description "dut -> stub [stub]";
   
           family inet {
             address 10.42.2.1/24;
@@ -312,7 +336,6 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml f
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [x1 -> localhost]
-changed: [x2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [x1]
@@ -330,8 +353,8 @@ ok: [x1]
 ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
@@ -360,35 +383,44 @@ ok: [x1]
 ok: [x2]
 ok: [dut]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [x1] => 
   msg: |-
     isis configuration for x1
     =========================================
     !
-    router isis Gandalf
-      log-adjacency-changes
-      hostname dynamic
-      is-type level-1
-      metric-style wide
-      lsp-timers gen-interval 1 refresh-interval 900 max-lifetime 1800
-      net 49.0001.0000.0000.0002.00
     !
-    interface lo
-      ip router isis Gandalf
+    !
+    router isis Gandalf
+     log-adjacency-changes
+     hostname dynamic
+     is-type level-1
+     metric-style wide
+     lsp-timers gen-interval 1 refresh-interval 900 max-lifetime 1800
+     net 49.0001.0000.0000.0002.00
+  
     !
     interface eth1
     ! x1 -> dut
-      ip router isis Gandalf
-      isis network point-to-point
-      isis metric 10
+     ip router isis Gandalf
+     isis network point-to-point
+     isis metric 10
     !
     interface eth2
     ! x1 -> x2
-      ip router isis Gandalf
-      isis network point-to-point
-      isis metric 100
+     ip router isis Gandalf
+     isis network point-to-point
+     isis metric 100
     !
+  
+    !
+    interface lo
+     ip router isis Gandalf
     !
     do write
 ok: [x2] => 
@@ -396,29 +428,33 @@ ok: [x2] =>
     isis configuration for x2
     =========================================
     !
-    router isis Gandalf
-      log-adjacency-changes
-      hostname dynamic
-      is-type level-1
-      metric-style wide
-      lsp-timers gen-interval 1 refresh-interval 900 max-lifetime 1800
-      net 49.0001.0000.0000.0003.00
     !
-    interface lo
-      ip router isis Gandalf
+    !
+    router isis Gandalf
+     log-adjacency-changes
+     hostname dynamic
+     is-type level-1
+     metric-style wide
+     lsp-timers gen-interval 1 refresh-interval 900 max-lifetime 1800
+     net 49.0001.0000.0000.0003.00
+  
     !
     interface eth1
     ! x2 -> dut
-      ip router isis Gandalf
-      isis network point-to-point
-      isis metric 100
+     ip router isis Gandalf
+     isis network point-to-point
+     isis metric 100
     !
     interface eth2
     ! x2 -> x1
-      ip router isis Gandalf
-      isis network point-to-point
-      isis metric 100
+     ip router isis Gandalf
+     isis network point-to-point
+     isis metric 100
     !
+  
+    !
+    interface lo
+     ip router isis Gandalf
     !
     do write
 ok: [dut] => 
@@ -430,6 +466,9 @@ ok: [dut] =>
     }
     protocols {
       isis {
+        level 2 disable;
+        level 1 wide-metrics-only;
+        level 2 wide-metrics-only;
         interface lo0.0;
         interface et-0/0/0.0 {
           point-to-point;
@@ -477,8 +516,8 @@ ok: [dut] =>
     }
 
 TASK [Find configuration deployment deploy_script for isis] ********************
-ok: [x2]
 ok: [x1]
+ok: [x2]
 ok: [dut]
 
 TASK [Deploy isis configuration] ***********************************************
@@ -509,9 +548,9 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=19   changed=2    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-x1                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-x2                         : ok=23   changed=5    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+dut                        : ok=22   changed=2    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+x1                         : ok=26   changed=5    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+x2                         : ok=25   changed=4    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
 
 
 

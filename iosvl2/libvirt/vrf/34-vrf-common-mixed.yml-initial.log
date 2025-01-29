@@ -20,6 +20,66 @@ skipping: [srv]
 skipping: [r1]
 skipping: [r2]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, srv, r1, r2
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [srv]
+ok: [r1]
+ok: [r2]
+ok: [dut]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [srv]
+ok: [r1]
+ok: [r2]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [srv]
+skipping: [r1]
+skipping: [r2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [srv]
+skipping: [r1]
+skipping: [r2]
+ok: [dut] => 
+  msg: |-
+    normalize configuration for dut
+    =========================================
+    !
+    interface GigabitEthernet0/1
+     no switchport
+     mac-address 52dc.cafe.0101
+    !
+    interface GigabitEthernet0/2
+     no switchport
+     mac-address 52dc.cafe.0102
+    !
+    interface GigabitEthernet0/3
+     no switchport
+     mac-address 52dc.cafe.0103
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [srv]
+skipping: [r1]
+skipping: [r2]
+ok: [dut]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [srv]
+skipping: [r1]
+skipping: [r2]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
+
+TASK [ios_config: deploying normalize from /home/pipi/net101/tools/netsim/ansible/templates/normalize/iosvl2.j2] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [dut]
+
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, srv, r1, r2
 
@@ -34,6 +94,12 @@ ok: [srv]
 ok: [r1]
 ok: [r2]
 ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [srv]
+skipping: [r1]
+skipping: [r2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [srv] => 
@@ -50,23 +116,11 @@ ok: [srv] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 dut" >>/tmp/hosts
-    echo "172.16.1.1 dut-blue" >>/tmp/hosts
-    echo "172.16.2.1 dut-common" >>/tmp/hosts
-    echo "172.16.0.1 dut-red" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 r1" >>/tmp/hosts
-    echo "10.0.0.3 172.16.1.3 r2" >>/tmp/hosts
-    echo "10.0.0.4 172.16.2.4 srv" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -91,7 +145,7 @@ ok: [srv] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -109,7 +163,8 @@ ok: [srv] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -128,7 +183,7 @@ ok: [srv] =>
     interface eth1
      no shutdown
      description srv -> dut [external]
-     ip address 172.16.2.4/24
+     ip address 10.1.0.10/30
     !
     do write
     CONFIG
@@ -148,23 +203,11 @@ ok: [r1] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 dut" >>/tmp/hosts
-    echo "172.16.1.1 dut-blue" >>/tmp/hosts
-    echo "172.16.2.1 dut-common" >>/tmp/hosts
-    echo "172.16.0.1 dut-red" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 r1" >>/tmp/hosts
-    echo "10.0.0.3 172.16.1.3 r2" >>/tmp/hosts
-    echo "10.0.0.4 172.16.2.4 srv" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -189,7 +232,7 @@ ok: [r1] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -207,7 +250,8 @@ ok: [r1] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -226,7 +270,7 @@ ok: [r1] =>
     interface eth1
      no shutdown
      description r1 -> dut
-     ip address 172.16.0.2/24
+     ip address 10.1.0.2/30
     !
     do write
     CONFIG
@@ -246,23 +290,11 @@ ok: [r2] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 dut" >>/tmp/hosts
-    echo "172.16.1.1 dut-blue" >>/tmp/hosts
-    echo "172.16.2.1 dut-common" >>/tmp/hosts
-    echo "172.16.0.1 dut-red" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 r1" >>/tmp/hosts
-    echo "10.0.0.3 172.16.1.3 r2" >>/tmp/hosts
-    echo "10.0.0.4 172.16.2.4 srv" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -287,7 +319,7 @@ ok: [r2] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -305,7 +337,8 @@ ok: [r2] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -324,7 +357,7 @@ ok: [r2] =>
     interface eth1
      no shutdown
      description r2 -> dut
-     ip address 172.16.1.3/24
+     ip address 10.1.0.6/30
     !
     do write
     CONFIG
@@ -340,12 +373,12 @@ ok: [dut] =>
     !
     lldp run
     !
-    ip host dut-blue 172.16.1.1
-    ip host dut-common 172.16.2.1
-    ip host dut-red 172.16.0.1
-    ip host r1 10.0.0.2 172.16.0.2
-    ip host r2 10.0.0.3 172.16.1.3
-    ip host srv 10.0.0.4 172.16.2.4
+    ip host dut-blue 10.1.0.5
+    ip host dut-common 10.1.0.9
+    ip host dut-red 10.1.0.1
+    ip host r1 10.0.0.2 10.1.0.2
+    ip host r2 10.0.0.3 10.1.0.6
+    ip host srv 10.0.0.4 10.1.0.10
     !
     ip routing
     !
@@ -388,28 +421,32 @@ ok: [dut] =>
      no lldp receive
     !
     interface GigabitEthernet0/1
-     no shutdown
      no switchport
      vrf forwarding red
      description dut -> r1
      mtu 1500
-     ip address 172.16.0.1 255.255.255.0
+     ip address 10.1.0.1 255.255.255.252
+     no shutdown
     !
     interface GigabitEthernet0/2
-     no shutdown
      no switchport
      vrf forwarding blue
      description dut -> r2
      mtu 1500
-     ip address 172.16.1.1 255.255.255.0
+     ip address 10.1.0.5 255.255.255.252
+     no shutdown
     !
     interface GigabitEthernet0/3
-     no shutdown
      no switchport
      vrf forwarding common
      description dut -> srv [external]
      mtu 1500
-     ip address 172.16.2.1 255.255.255.0
+     ip address 10.1.0.9 255.255.255.252
+     no shutdown
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
     !
     no banner exec
     no banner login
@@ -426,14 +463,9 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for srv, r1, r2
 
 TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
-[WARNING]: To ensure idempotency and correct diff the input configuration lines
-should be similar to how they appear if present in the running configuration on
-device including the indentation
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [r1 -> localhost]
-changed: [r2 -> localhost]
 changed: [srv -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
@@ -445,9 +477,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for srv, r1, r2
 
 TASK [template] ****************************************************************
-changed: [srv]
-changed: [r2]
 changed: [r1]
+changed: [r2]
+changed: [srv]
 
 TASK [set_fact] ****************************************************************
 ok: [srv]
@@ -455,9 +487,9 @@ ok: [r1]
 ok: [r2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r2]
-changed: [srv]
 changed: [r1]
+changed: [srv]
+changed: [r2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [srv]
@@ -489,6 +521,12 @@ skipping: [r2]
 ok: [srv]
 ok: [dut]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r1]
+skipping: [r2]
+skipping: [srv]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r1]
 skipping: [r2]
@@ -508,19 +546,21 @@ ok: [srv] =>
   
       bgp router-id 10.0.0.4
     !
-      neighbor 172.16.2.1 remote-as 65000
-      neighbor 172.16.2.1 description dut
+      neighbor 10.1.0.9 remote-as 65000
+      neighbor 10.1.0.9 description dut
     !
      address-family ipv4 unicast
+    !
+  
     !
       network 10.0.0.4/32
     !
     !
     !
-      neighbor 172.16.2.1 activate
-      no neighbor 172.16.2.1 send-community all
-      neighbor 172.16.2.1 send-community standard
-      neighbor 172.16.2.1 send-community large
+      neighbor 10.1.0.9 activate
+      no neighbor 10.1.0.9 send-community all
+      neighbor 10.1.0.9 send-community standard
+      neighbor 10.1.0.9 send-community large
     !
     !
     !
@@ -533,14 +573,15 @@ ok: [dut] =>
     ip bgp-community new-format
     !
     router bgp 65000
-      no bgp default ipv4-unicast
-      bgp update-delay 5
-      bgp nopeerup-delay cold-boot 1
-      bgp nopeerup-delay user-initiated 1
-      bgp router-id 10.0.0.1
+     no bgp default ipv4-unicast
+     bgp update-delay 5
+     bgp nopeerup-delay cold-boot 1
+     bgp nopeerup-delay user-initiated 1
+     bgp router-id 10.0.0.1
     !
      address-family ipv4
       bgp scan-time 5
+  
     !
       network 10.0.0.1 mask 255.255.255.255
   
@@ -587,6 +628,12 @@ ok: [r1]
 ok: [r2]
 ok: [dut]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r1]
+skipping: [r2]
+skipping: [srv]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [srv]
 ok: [r1] => 
@@ -601,6 +648,7 @@ ok: [r1] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
   
     exit
     !
@@ -628,6 +676,7 @@ ok: [r2] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
   
     exit
     !
@@ -690,6 +739,12 @@ skipping: [r2]
 skipping: [srv]
 ok: [dut]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r1]
+skipping: [r2]
+skipping: [srv]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r1]
 skipping: [r2]
@@ -702,36 +757,37 @@ ok: [dut] =>
     router bgp 65000
      address-family ipv4 vrf blue
       bgp router-id 10.0.0.1
-    !
       redistribute connected
       redistribute ospf 101 match internal external
+  
     !
     !
      address-family ipv4 vrf common
       bgp router-id 10.0.0.1
-    !
       redistribute connected
-    !
-    !
-      neighbor 172.16.2.4 remote-as 65100
-      neighbor 172.16.2.4 description srv
   
-      neighbor 172.16.2.4 activate
-      neighbor 172.16.2.4 advertisement-interval 0
-      neighbor 172.16.2.4 send-community standard
+    !
+    !
+      neighbor 10.1.0.10 remote-as 65100
+      neighbor 10.1.0.10 description srv
+  
+      neighbor 10.1.0.10 activate
+      neighbor 10.1.0.10 advertisement-interval 0
+      neighbor 10.1.0.10 send-community standard
   
      address-family ipv4 vrf red
       bgp router-id 10.0.0.1
-    !
       redistribute connected
       redistribute ospf 100 match internal external
+  
     !
     !
     router ospf 101 vrf blue
      router-id 10.100.0.101
   
-     redistribute bgp 65000 subnets
-     redistribute connected subnets
+     redistribute bgp 65000
+     redistribute connected
+  
     !
     interface GigabitEthernet0/2
     ! dut -> r2
@@ -742,8 +798,9 @@ ok: [dut] =>
     router ospf 100 vrf red
      router-id 10.100.0.100
   
-     redistribute bgp 65000 subnets
-     redistribute connected subnets
+     redistribute bgp 65000
+     redistribute connected
+  
     !
     interface GigabitEthernet0/1
     ! dut -> r1
@@ -770,10 +827,10 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=31   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-r1                         : ok=27   changed=5    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
-r2                         : ok=27   changed=5    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
-srv                        : ok=27   changed=5    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+dut                        : ok=38   changed=4    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+r1                         : ok=29   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+r2                         : ok=29   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+srv                        : ok=30   changed=5    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
 
 
 

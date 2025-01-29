@@ -8,8 +8,8 @@ ok: [r2]
 ok: [dut]
 
 TASK [Find device readiness script] ********************************************
-ok: [x1]
 ok: [r2]
+ok: [x1]
 ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
@@ -19,6 +19,56 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/eos-clab.
 
 TASK [Wait for cEOS SSH daemon to start] ***************************************
 ok: [dut]
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, r2
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [x1]
+ok: [r2]
+ok: [dut]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [x1]
+ok: [r2]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [r2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [x1]
+skipping: [r2]
+ok: [dut] => 
+  msg: |-
+    normalize configuration for dut
+    =========================================
+    !
+    interface Ethernet1
+     no switchport
+     mac-address 52dc.cafe.0101
+    !
+    interface Ethernet2
+     no switchport
+     mac-address 52dc.cafe.0102
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [x1]
+skipping: [r2]
+ok: [dut]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [x1]
+skipping: [r2]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for dut
+
+TASK [eos_config: deploying normalize from /home/pipi/net101/tools/netsim/ansible/templates/normalize/eos.j2] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [dut]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, r2
@@ -32,6 +82,11 @@ TASK [Find configuration template for initial] *********************************
 ok: [x1]
 ok: [r2]
 ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [r2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [x1] => 
@@ -48,7 +103,8 @@ ok: [x1] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -76,7 +132,7 @@ ok: [x1] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -107,8 +163,9 @@ ok: [x1] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
-    ip link set eth2 mtu 1500
+    ip link set dev eth1 mtu 1500
+    ip link set dev eth2 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -160,7 +217,8 @@ ok: [r2] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -188,7 +246,7 @@ ok: [r2] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -209,7 +267,8 @@ ok: [r2] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -260,27 +319,26 @@ ok: [dut] =>
      no lldp receive
     !
     interface Loopback0
-     no shutdown
      ipv6 nd ra interval 5
      ipv6 address 2001:db8:1:1::1/64
     !
     interface Ethernet1
-     no shutdown
      no switchport
      description dut -> x1 [external]
      ipv6 nd ra interval 5
      ipv6 address 2001:db8:3::1/64
     !
      mac-address 52dc.cafe.0101
+     no shutdown
     !
     interface Ethernet2
-     no shutdown
      no switchport
      description dut -> r2
      ipv6 nd ra interval 5
      ipv6 address 2001:db8:3:1::1/64
     !
      mac-address 52dc.cafe.0102
+     no shutdown
     !
 
 TASK [Find configuration deployment deploy_script for initial] *****************
@@ -293,13 +351,9 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for x1, r2
 
 TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
-[WARNING]: To ensure idempotency and correct diff the input configuration lines
-should be similar to how they appear if present in the running configuration on
-device including the indentation
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [r2 -> localhost]
 changed: [x1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
@@ -310,8 +364,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, r2
 
 TASK [template] ****************************************************************
-changed: [r2]
 changed: [x1]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -347,6 +401,11 @@ skipping: [r2]
 skipping: [x1]
 ok: [dut]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r2]
+skipping: [x1]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r2]
 skipping: [x1]
@@ -367,6 +426,9 @@ ok: [dut] =>
       seq 10 permit 2001:db8:cafe:42::/64
     !
     ! AS-path access lists
+    !
+    !
+    ! Static routes
     !
 
 TASK [Find configuration deployment deploy_script for routing] *****************
@@ -391,6 +453,11 @@ TASK [Find configuration template for bgp] *************************************
 skipping: [r2]
 ok: [x1]
 ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r2]
+skipping: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r2]
@@ -492,6 +559,11 @@ skipping: [x1]
 ok: [r2]
 ok: [dut]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r2]
+skipping: [x1]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [x1]
 ok: [r2] => 
@@ -575,9 +647,9 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=33   changed=4    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
-r2                         : ok=27   changed=5    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
-x1                         : ok=27   changed=5    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+dut                        : ok=40   changed=5    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
+r2                         : ok=29   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+x1                         : ok=30   changed=5    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
 
 
 

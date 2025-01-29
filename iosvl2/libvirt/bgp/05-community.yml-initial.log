@@ -20,6 +20,62 @@ skipping: [r2]
 skipping: [rc]
 skipping: [x1]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, rc, x1
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [r2]
+ok: [rc]
+ok: [x1]
+ok: [dut]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [r2]
+ok: [rc]
+ok: [x1]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r2]
+skipping: [rc]
+skipping: [x1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [r2]
+skipping: [rc]
+skipping: [x1]
+ok: [dut] => 
+  msg: |-
+    normalize configuration for dut
+    =========================================
+    !
+    interface GigabitEthernet0/1
+     no switchport
+     mac-address 52dc.cafe.0101
+    !
+    interface GigabitEthernet0/2
+     no switchport
+     mac-address 52dc.cafe.0102
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [r2]
+skipping: [rc]
+skipping: [x1]
+ok: [dut]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [r2]
+skipping: [rc]
+skipping: [x1]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
+
+TASK [ios_config: deploying normalize from /home/pipi/net101/tools/netsim/ansible/templates/normalize/iosvl2.j2] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [dut]
+
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, rc, x1
 
@@ -34,6 +90,12 @@ ok: [r2]
 ok: [rc]
 ok: [x1]
 ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r2]
+skipping: [rc]
+skipping: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [r2] => 
@@ -50,20 +112,11 @@ ok: [r2] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 172.16.2.1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 172.16.1.2 r2" >>/tmp/hosts
-    echo "10.0.0.10 172.16.1.10 rc" >>/tmp/hosts
-    echo "10.0.0.3 172.16.2.3 x1" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -88,7 +141,7 @@ ok: [r2] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -107,8 +160,9 @@ ok: [r2] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
-    ip link set eth2 mtu 1500
+    ip link set dev eth1 mtu 1500
+    ip link set dev eth2 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -127,12 +181,12 @@ ok: [r2] =>
     interface eth1
      no shutdown
      description r2 -> dut
-     ip address 172.16.0.2/24
+     ip address 10.1.0.2/30
     !
     interface eth2
      no shutdown
      description r2 -> rc
-     ip address 172.16.1.2/24
+     ip address 10.1.0.5/30
     !
     do write
     CONFIG
@@ -152,20 +206,11 @@ ok: [rc] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 172.16.2.1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 172.16.1.2 r2" >>/tmp/hosts
-    echo "10.0.0.10 172.16.1.10 rc" >>/tmp/hosts
-    echo "10.0.0.3 172.16.2.3 x1" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -190,7 +235,7 @@ ok: [rc] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -208,7 +253,8 @@ ok: [rc] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -227,7 +273,7 @@ ok: [rc] =>
     interface eth1
      no shutdown
      description rc -> r2
-     ip address 172.16.1.10/24
+     ip address 10.1.0.6/30
     !
     do write
     CONFIG
@@ -247,20 +293,11 @@ ok: [x1] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 172.16.2.1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 172.16.1.2 r2" >>/tmp/hosts
-    echo "10.0.0.10 172.16.1.10 rc" >>/tmp/hosts
-    echo "10.0.0.3 172.16.2.3 x1" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -285,7 +322,7 @@ ok: [x1] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -303,7 +340,8 @@ ok: [x1] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -322,7 +360,7 @@ ok: [x1] =>
     interface eth1
      no shutdown
      description x1 -> dut [external]
-     ip address 172.16.2.3/24
+     ip address 10.1.0.10/30
     !
     do write
     CONFIG
@@ -338,9 +376,11 @@ ok: [dut] =>
     !
     lldp run
     !
-    ip host r2 10.0.0.2 172.16.0.2 172.16.1.2
-    ip host rc 10.0.0.10 172.16.1.10
-    ip host x1 10.0.0.3 172.16.2.3
+    ip host r2 10.0.0.2 10.1.0.2 10.1.0.5
+    ip host rc 10.0.0.10 10.1.0.6
+    ip host x1 10.0.0.3 10.1.0.10
+    !
+    ip routing
     !
     !
     interface Loopback0
@@ -351,18 +391,22 @@ ok: [dut] =>
      no lldp receive
     !
     interface GigabitEthernet0/1
-     no shutdown
      no switchport
      description dut -> r2
      mtu 1500
-     ip address 172.16.0.1 255.255.255.0
+     ip address 10.1.0.1 255.255.255.252
+     no shutdown
     !
     interface GigabitEthernet0/2
-     no shutdown
      no switchport
      description dut -> x1 [external]
      mtu 1500
-     ip address 172.16.2.1 255.255.255.0
+     ip address 10.1.0.9 255.255.255.252
+     no shutdown
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
     !
     no banner exec
     no banner login
@@ -379,15 +423,10 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for r2, rc, x1
 
 TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
-[WARNING]: To ensure idempotency and correct diff the input configuration lines
-should be similar to how they appear if present in the running configuration on
-device including the indentation
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [r2 -> localhost]
-changed: [rc -> localhost]
-changed: [x1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [r2]
@@ -398,9 +437,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r2, rc, x1
 
 TASK [template] ****************************************************************
+changed: [rc]
 changed: [r2]
 changed: [x1]
-changed: [rc]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
@@ -408,9 +447,9 @@ ok: [rc]
 ok: [x1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+changed: [rc]
 changed: [x1]
 changed: [r2]
-changed: [rc]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r2]
@@ -441,6 +480,12 @@ ok: [rc]
 ok: [x1]
 ok: [dut]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r2]
+skipping: [rc]
+skipping: [x1]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [r2] => 
   msg: |-
@@ -463,6 +508,8 @@ ok: [r2] =>
       neighbor 10.0.0.1 update-source lo
     !
      address-family ipv4 unicast
+    !
+  
     !
       network 10.0.0.2/32
     !
@@ -500,6 +547,8 @@ ok: [rc] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.10/32
     !
     !
@@ -532,19 +581,21 @@ ok: [x1] =>
   
       bgp router-id 10.0.0.3
     !
-      neighbor 172.16.2.1 remote-as 65000
-      neighbor 172.16.2.1 description dut
+      neighbor 10.1.0.9 remote-as 65000
+      neighbor 10.1.0.9 description dut
     !
      address-family ipv4 unicast
+    !
+  
     !
       network 10.0.0.3/32
     !
     !
     !
-      neighbor 172.16.2.1 activate
-      no neighbor 172.16.2.1 send-community all
-      neighbor 172.16.2.1 send-community standard
-      neighbor 172.16.2.1 send-community large
+      neighbor 10.1.0.9 activate
+      no neighbor 10.1.0.9 send-community all
+      neighbor 10.1.0.9 send-community standard
+      neighbor 10.1.0.9 send-community large
     !
     !
     !
@@ -557,12 +608,12 @@ ok: [dut] =>
     ip bgp-community new-format
     !
     router bgp 65000
-      no bgp default ipv4-unicast
-      bgp update-delay 5
-      bgp nopeerup-delay cold-boot 1
-      bgp nopeerup-delay user-initiated 1
-      bgp router-id 10.0.0.1
-      bgp cluster-id 10.0.0.1
+     no bgp default ipv4-unicast
+     bgp update-delay 5
+     bgp nopeerup-delay cold-boot 1
+     bgp nopeerup-delay user-initiated 1
+     bgp router-id 10.0.0.1
+     bgp cluster-id 10.0.0.1
       neighbor 10.0.0.10 remote-as 65000
       neighbor 10.0.0.10 description rc
       neighbor 10.0.0.10 update-source Loopback0
@@ -571,12 +622,13 @@ ok: [dut] =>
       neighbor 10.0.0.2 description r2
       neighbor 10.0.0.2 update-source Loopback0
   
-      neighbor 172.16.2.3 remote-as 65101
-      neighbor 172.16.2.3 description x1
+      neighbor 10.1.0.10 remote-as 65101
+      neighbor 10.1.0.10 description x1
   
     !
      address-family ipv4
       bgp scan-time 5
+  
     !
       network 10.0.0.1 mask 255.255.255.255
   
@@ -596,9 +648,9 @@ ok: [dut] =>
       neighbor 10.0.0.2 send-community standard
       neighbor 10.0.0.2 send-community extended
   
-      neighbor 172.16.2.3 activate
-      neighbor 172.16.2.3 advertisement-interval 0
-      neighbor 172.16.2.3 send-community standard
+      neighbor 10.1.0.10 activate
+      neighbor 10.1.0.10 advertisement-interval 0
+      neighbor 10.1.0.10 send-community standard
   
     !
 
@@ -617,8 +669,8 @@ changed: [dut]
 
 TASK [template] ****************************************************************
 changed: [rc]
-changed: [x1]
 changed: [r2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
@@ -631,8 +683,8 @@ skipping: [rc]
 skipping: [x1]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [r2]
 changed: [rc]
+changed: [r2]
 changed: [x1]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
@@ -646,6 +698,12 @@ skipping: [x1]
 ok: [r2]
 ok: [rc]
 ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r2]
+skipping: [rc]
+skipping: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [x1]
@@ -661,6 +719,7 @@ ok: [r2] =>
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
   
     exit
     !
@@ -694,6 +753,7 @@ ok: [rc] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -714,6 +774,7 @@ ok: [dut] =>
     =========================================
     router ospf 1
      router-id 10.0.0.1
+  
   
     !
     interface Loopback0
@@ -795,10 +856,10 @@ TASK [run vtysh to import frr-community config from /home/pipi/net101/tools/test
 changed: [rc]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=24   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-r2                         : ok=32   changed=7    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
-rc                         : ok=40   changed=9    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
-x1                         : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+dut                        : ok=31   changed=4    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
+r2                         : ok=35   changed=7    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+rc                         : ok=42   changed=8    unreachable=0    failed=0    skipped=16   rescued=0    ignored=0   
+x1                         : ok=27   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 
 
 

@@ -14,6 +14,33 @@ TASK [Wait for device to become ready] *****************************************
 skipping: [dut]
 skipping: [probe]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [dut]
+ok: [probe]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [dut]
+ok: [probe]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [probe]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+skipping: [probe]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [dut]
+skipping: [probe]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [dut]
+skipping: [probe]
+
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe
 
@@ -24,6 +51,10 @@ ok: [probe]
 TASK [Find configuration template for initial] *********************************
 ok: [dut]
 ok: [probe]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [probe]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [probe] => 
@@ -40,7 +71,8 @@ ok: [probe] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -68,7 +100,7 @@ ok: [probe] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -83,13 +115,12 @@ ok: [probe] =>
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
     ip link set eth1 down
     ip link set eth1 up
+    ip link set dev eth1 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -110,8 +141,8 @@ ok: [probe] =>
     interface eth1
      no shutdown
      description probe -> dut [external]
-     ip address 172.16.0.2/24
-     ipv6 address 2001:db8:2::2/64
+     ip address 10.1.0.2/30
+     ipv6 address 2001:db8:3::2/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -152,12 +183,12 @@ ok: [dut] =>
     #
     10.0.0.1 dut
     2001:db8:1:1::1 dut
-    172.16.0.1 swp1.dut
-    2001:db8:2::1 swp1.dut
+    10.1.0.1 swp1.dut
+    2001:db8:3::1 swp1.dut
     10.0.0.2 probe
     2001:db8:1:2::1 probe
-    172.16.0.2 eth1.probe
-    2001:db8:2::2 eth1.probe
+    10.1.0.2 eth1.probe
+    2001:db8:3::2 eth1.probe
     SCRIPT
     grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
     #
@@ -165,6 +196,12 @@ ok: [dut] =>
     #
     ztp --disable
     #
+    #
+  
+    echo "INIT: Configuring system wide default MTU policy"
+    cat > /etc/network/ifupdown2/policy.d/mtu.json <<CONFIG
+    { "address": { "defaults": { "mtu": "1500" } } }
+    CONFIG
     #
     echo "INIT: creating loopback interface"
     #
@@ -188,12 +225,10 @@ ok: [dut] =>
     auto swp1
   
     iface swp1 inet static
-      mtu 1500
-      address 172.16.0.1/24
+      address 10.1.0.1/30
   
     iface swp1 inet6 static
-      mtu 1500
-      address 2001:db8:2::1/64
+      address 2001:db8:3::1/64
     CONFIG
     #
     echo "INIT: executing ifreload"
@@ -249,17 +284,20 @@ TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for probe
 
-TASK [copy cumulus config to /tmp/config.sh] ***********************************
-changed: [dut]
-
-TASK [set_fact deployed_config] ************************************************
+TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
 ok: [dut]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
+TASK [Create local temporary file] *********************************************
+changed: [dut -> localhost]
+
+TASK [Create initial config script in local temporary file] ********************
+changed: [dut -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
 
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
-skipping: [dut]
+TASK [Remove temporary file /tmp/ansible.dut.zmw5jtcntemp] *********************
+changed: [dut -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [probe -> localhost]
@@ -300,6 +338,10 @@ TASK [Find configuration template for routing] *********************************
 ok: [dut]
 ok: [probe]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [probe]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
   msg: |-
@@ -312,10 +354,12 @@ ok: [dut] =>
     !
     route-map med_42-ipv6 permit 10
       set metric 42
+    !
 ok: [probe] => 
   msg: |-
     routing configuration for probe
     =========================================
+    !
     !
 
 TASK [Find configuration deployment deploy_script for routing] *****************
@@ -326,17 +370,20 @@ TASK [Deploy routing configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for probe
 
-TASK [copy cumulus config to /tmp/config.sh] ***********************************
-changed: [dut]
-
-TASK [set_fact deployed_config] ************************************************
+TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/routing/cumulus.j2] ***
 ok: [dut]
 
-TASK [run /tmp/config.sh to deploy routing config from /home/pipi/net101/tools/netsim/ansible/templates/routing/cumulus.j2] ***
-skipping: [dut]
+TASK [Create local temporary file] *********************************************
+changed: [dut -> localhost]
 
-TASK [run vtysh to import routing config from /home/pipi/net101/tools/netsim/ansible/templates/routing/cumulus.j2] ***
+TASK [Create routing config script in local temporary file] ********************
+changed: [dut -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
+
+TASK [Remove temporary file /tmp/ansible.dut.grr8txjotemp] *********************
+changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
 changed: [probe]
@@ -358,6 +405,10 @@ TASK [Find configuration template for bgp] *************************************
 ok: [dut]
 ok: [probe]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [probe]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
   msg: |-
@@ -375,11 +426,11 @@ ok: [dut] =>
   
       bgp router-id 10.0.0.1
     !
-      neighbor 172.16.0.2 remote-as 65100
-      neighbor 172.16.0.2 description probe
+      neighbor 10.1.0.2 remote-as 65100
+      neighbor 10.1.0.2 description probe
     !
-      neighbor 2001:db8:2::2 remote-as 65100
-      neighbor 2001:db8:2::2 description probe
+      neighbor 2001:db8:3::2 remote-as 65100
+      neighbor 2001:db8:3::2 description probe
     !
      address-family ipv4 unicast
     !
@@ -389,10 +440,10 @@ ok: [dut] =>
     !
     !
     !
-      neighbor 172.16.0.2 activate
-      no neighbor 172.16.0.2 send-community all
-      neighbor 172.16.0.2 send-community standard
-      neighbor 172.16.0.2 send-community large
+      neighbor 10.1.0.2 activate
+      no neighbor 10.1.0.2 send-community all
+      neighbor 10.1.0.2 send-community standard
+      neighbor 10.1.0.2 send-community large
     !
      address-family ipv6 unicast
     !
@@ -402,10 +453,10 @@ ok: [dut] =>
     !
     !
     !
-      neighbor 2001:db8:2::2 activate
-      no neighbor 2001:db8:2::2 send-community all
-      neighbor 2001:db8:2::2 send-community standard
-      neighbor 2001:db8:2::2 send-community large
+      neighbor 2001:db8:3::2 activate
+      no neighbor 2001:db8:3::2 send-community all
+      neighbor 2001:db8:3::2 send-community standard
+      neighbor 2001:db8:3::2 send-community large
     !
     !
     !
@@ -426,11 +477,11 @@ ok: [probe] =>
   
       bgp router-id 10.0.0.2
     !
-      neighbor 172.16.0.1 remote-as 65000
-      neighbor 172.16.0.1 description dut
+      neighbor 10.1.0.1 remote-as 65000
+      neighbor 10.1.0.1 description dut
     !
-      neighbor 2001:db8:2::1 remote-as 65000
-      neighbor 2001:db8:2::1 description dut
+      neighbor 2001:db8:3::1 remote-as 65000
+      neighbor 2001:db8:3::1 description dut
     !
      address-family ipv4 unicast
     !
@@ -440,10 +491,10 @@ ok: [probe] =>
     !
     !
     !
-      neighbor 172.16.0.1 activate
-      no neighbor 172.16.0.1 send-community all
-      neighbor 172.16.0.1 send-community standard
-      neighbor 172.16.0.1 send-community large
+      neighbor 10.1.0.1 activate
+      no neighbor 10.1.0.1 send-community all
+      neighbor 10.1.0.1 send-community standard
+      neighbor 10.1.0.1 send-community large
     !
      address-family ipv6 unicast
     !
@@ -453,10 +504,10 @@ ok: [probe] =>
     !
     !
     !
-      neighbor 2001:db8:2::1 activate
-      no neighbor 2001:db8:2::1 send-community all
-      neighbor 2001:db8:2::1 send-community standard
-      neighbor 2001:db8:2::1 send-community large
+      neighbor 2001:db8:3::1 activate
+      no neighbor 2001:db8:3::1 send-community all
+      neighbor 2001:db8:3::1 send-community standard
+      neighbor 2001:db8:3::1 send-community large
     !
     !
     !
@@ -470,17 +521,20 @@ TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for probe
 
-TASK [copy cumulus config to /tmp/config.sh] ***********************************
-changed: [dut]
-
-TASK [set_fact deployed_config] ************************************************
+TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/bgp/cumulus.j2] ***
 ok: [dut]
 
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/cumulus.j2] ***
-skipping: [dut]
+TASK [Create local temporary file] *********************************************
+changed: [dut -> localhost]
 
-TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/cumulus.j2] ***
+TASK [Create bgp config script in local temporary file] ************************
+changed: [dut -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
+
+TASK [Remove temporary file /tmp/ansible.dut.2etvltpotemp] *********************
+changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
 changed: [probe]
@@ -520,21 +574,24 @@ ok: [dut]
 TASK [Run the configuration deployment script] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
 
-TASK [copy cumulus config to /tmp/config.sh] ***********************************
-changed: [dut]
-
-TASK [set_fact deployed_config] ************************************************
+TASK [Render device configuration from /home/pipi/net101/tools/netsim/extra/bgp.policy/cumulus.j2] ***
 ok: [dut]
 
-TASK [run /tmp/config.sh to deploy bgp.policy config from /home/pipi/net101/tools/netsim/extra/bgp.policy/cumulus.j2] ***
-skipping: [dut]
+TASK [Create local temporary file] *********************************************
+changed: [dut -> localhost]
 
-TASK [run vtysh to import bgp.policy config from /home/pipi/net101/tools/netsim/extra/bgp.policy/cumulus.j2] ***
+TASK [Create bgp.policy config script in local temporary file] *****************
+changed: [dut -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
 
+TASK [Remove temporary file /tmp/ansible.dut.4zdgrgxptemp] *********************
+changed: [dut -> localhost]
+
 PLAY RECAP *********************************************************************
-dut                        : ok=38   changed=8    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-probe                      : ok=32   changed=7    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
+dut                        : ok=49   changed=16   unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
+probe                      : ok=35   changed=7    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
 
 
 

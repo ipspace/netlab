@@ -20,6 +20,45 @@ skipping: [probe]
 skipping: [x1]
 skipping: [x2]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1, x2
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [dut]
+ok: [probe]
+ok: [x1]
+ok: [x2]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [dut]
+ok: [probe]
+ok: [x1]
+ok: [x2]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [probe]
+skipping: [x1]
+skipping: [x2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+skipping: [probe]
+skipping: [x1]
+skipping: [x2]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [dut]
+skipping: [probe]
+skipping: [x1]
+skipping: [x2]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [dut]
+skipping: [probe]
+skipping: [x1]
+skipping: [x2]
+
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1, x2
 
@@ -34,6 +73,12 @@ ok: [dut]
 ok: [probe]
 ok: [x1]
 ok: [x2]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [probe]
+skipping: [x1]
+skipping: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -83,9 +128,9 @@ ok: [dut] =>
     set interfaces ethernet eth3 description 'dut -> probe'
   
   
-    set interfaces ethernet eth3 address 172.16.0.1/24
+    set interfaces ethernet eth3 address 10.1.0.1/30
   
-    set interfaces ethernet eth3 address 2001:db8:2::1/64;
+    set interfaces ethernet eth3 address 2001:db8:3::1/64;
   
   
   
@@ -119,20 +164,11 @@ ok: [probe] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 2001:db8:1:1::1 2001:db8:2::1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 2001:db8:1:2::1 2001:db8:2::2 probe" >>/tmp/hosts
-    echo "172.42.42.1 2001:db8:cafe:42::1 x1" >>/tmp/hosts
-    echo "172.42.43.1 2001:db8:cafe:43::1 x2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -157,7 +193,7 @@ ok: [probe] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -178,7 +214,8 @@ ok: [probe] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -199,8 +236,8 @@ ok: [probe] =>
     interface eth1
      no shutdown
      description probe -> dut
-     ip address 172.16.0.2/24
-     ipv6 address 2001:db8:2::2/64
+     ip address 10.1.0.2/30
+     ipv6 address 2001:db8:3::2/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -222,20 +259,11 @@ ok: [x1] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 2001:db8:1:1::1 2001:db8:2::1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 2001:db8:1:2::1 2001:db8:2::2 probe" >>/tmp/hosts
-    echo "172.42.42.1 2001:db8:cafe:42::1 x1" >>/tmp/hosts
-    echo "172.42.43.1 2001:db8:cafe:43::1 x2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -260,7 +288,7 @@ ok: [x1] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -281,7 +309,8 @@ ok: [x1] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -324,20 +353,11 @@ ok: [x2] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 2001:db8:1:1::1 2001:db8:2::1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 2001:db8:1:2::1 2001:db8:2::2 probe" >>/tmp/hosts
-    echo "172.42.42.1 2001:db8:cafe:42::1 x1" >>/tmp/hosts
-    echo "172.42.43.1 2001:db8:cafe:43::1 x2" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -362,7 +382,7 @@ ok: [x2] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -383,7 +403,8 @@ ok: [x2] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -443,8 +464,6 @@ changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [probe -> localhost]
-changed: [x1 -> localhost]
-changed: [x2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [probe]
@@ -455,9 +474,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for probe, x1, x2
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
 changed: [probe]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [probe]
@@ -466,8 +485,8 @@ ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [x1]
-changed: [x2]
 changed: [probe]
+changed: [x2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [probe]
@@ -497,6 +516,12 @@ TASK [Find configuration template for routing] *********************************
 skipping: [probe]
 skipping: [x1]
 ok: [dut]
+skipping: [x2]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [probe]
+skipping: [x1]
 skipping: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -600,6 +625,12 @@ ok: [dut]
 ok: [probe]
 ok: [x1]
 ok: [x2]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [probe]
+skipping: [x1]
+skipping: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -763,6 +794,8 @@ ok: [probe] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.2/32
     !
     !
@@ -775,6 +808,8 @@ ok: [probe] =>
       neighbor 10.0.0.1 send-community extended
     !
      address-family ipv6 unicast
+    !
+  
     !
       network 2001:db8:1:2::/64
     !
@@ -814,6 +849,8 @@ ok: [x1] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 172.42.42.0/24
     !
     !
@@ -824,6 +861,8 @@ ok: [x1] =>
       neighbor eth1 send-community large
     !
      address-family ipv6 unicast
+    !
+  
     !
       network 2001:db8:cafe:42::/64
     !
@@ -861,6 +900,8 @@ ok: [x2] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 172.42.43.0/24
     !
     !
@@ -871,6 +912,8 @@ ok: [x2] =>
       neighbor eth1 send-community large
     !
      address-family ipv6 unicast
+    !
+  
     !
       network 2001:db8:cafe:43::/64
     !
@@ -941,9 +984,15 @@ ok: [x2]
 
 TASK [Find configuration template for ospf] ************************************
 skipping: [x1]
-ok: [dut]
 skipping: [x2]
+ok: [dut]
 ok: [probe]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [probe]
+skipping: [x1]
+skipping: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [x1]
@@ -1010,6 +1059,7 @@ ok: [probe] =>
      timers throttle lsa all 100
      timers lsa min-arrival 100
   
+  
     exit
     !
     interface lo
@@ -1039,6 +1089,7 @@ ok: [probe] =>
      ospf6 router-id 10.0.0.2
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
+  
   
     exit
   
@@ -1132,10 +1183,10 @@ TASK [execute config-bgp.policy.sh to deploy bgp.policy config from /home/pipi/n
 changed: [dut]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=52   changed=10   unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
-probe                      : ok=34   changed=7    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
-x1                         : ok=27   changed=5    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
-x2                         : ok=27   changed=5    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+dut                        : ok=55   changed=10   unreachable=0    failed=0    skipped=22   rescued=0    ignored=0   
+probe                      : ok=37   changed=7    unreachable=0    failed=0    skipped=17   rescued=0    ignored=0   
+x1                         : ok=29   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+x2                         : ok=29   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
 
 
 

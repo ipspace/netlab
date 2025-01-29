@@ -4,11 +4,11 @@ PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [h1]
-ok: [h2]
-ok: [h4]
-ok: [h3]
 ok: [s1]
+ok: [h2]
+ok: [h3]
 ok: [s2]
+ok: [h4]
 
 TASK [Find device readiness script] ********************************************
 ok: [h1]
@@ -26,24 +26,83 @@ skipping: [h2]
 skipping: [h3]
 skipping: [h4]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, h1, h2, h3, h4
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [h1]
+ok: [h2]
+ok: [h3]
+ok: [s1]
+ok: [h4]
+ok: [s2]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [h1]
+ok: [h2]
+ok: [h4]
+ok: [s1]
+ok: [h3]
+ok: [s2]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [s1]
+skipping: [s2]
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [s1]
+skipping: [s2]
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [s1]
+skipping: [s2]
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, h1, h2, h3, h4
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [h1]
 ok: [h2]
-ok: [s1]
 ok: [h3]
 ok: [h4]
+ok: [s1]
 ok: [s2]
 
 TASK [Find configuration template for initial] *********************************
 ok: [h1]
+ok: [h2]
+ok: [h4]
+ok: [h3]
 ok: [s1]
 ok: [s2]
-ok: [h2]
-ok: [h3]
-ok: [h4]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [s1] => 
@@ -88,6 +147,7 @@ ok: [s1] =>
     !
   
   
+  
     interface 1/1/1
         shutdown
         mtu 9198
@@ -97,17 +157,22 @@ ok: [s1] =>
         no shutdown
     !
   
+  
     interface 1/1/2
         shutdown
         mtu 9198
+        description [Access VLAN red] s1 -> h1
         no shutdown
     !
+  
   
     interface 1/1/3
         shutdown
         mtu 9198
+        description [Access VLAN green] s1 -> h3
         no shutdown
     !
+  
   
     interface vlan1000
         vrf attach tenant
@@ -115,11 +180,13 @@ ok: [s1] =>
         ip address 172.16.0.1/24
     !
   
+  
     interface vlan1002
         vrf attach tenant
         description VLAN green (1002) -> [h3] [stub]
         ip address 172.16.2.1/24
     !
+  
   
     interface vlan1001
         vrf attach tenant
@@ -169,6 +236,7 @@ ok: [s2] =>
     !
   
   
+  
     interface 1/1/1
         shutdown
         mtu 9198
@@ -178,17 +246,22 @@ ok: [s2] =>
         no shutdown
     !
   
+  
     interface 1/1/2
         shutdown
         mtu 9198
+        description [Access VLAN blue] s2 -> h2
         no shutdown
     !
+  
   
     interface 1/1/3
         shutdown
         mtu 9198
+        description [Access VLAN purple] s2 -> h4
         no shutdown
     !
+  
   
     interface vlan1001
         vrf attach tenant
@@ -196,11 +269,13 @@ ok: [s2] =>
         ip address 172.16.1.2/24
     !
   
+  
     interface vlan1003
         vrf attach tenant
         description VLAN purple (1003) -> [h4] [stub]
         ip address 172.16.3.2/24
     !
+  
   
     interface vlan1000
         vrf attach tenant
@@ -297,7 +372,7 @@ ok: [h4] =>
   
     # Loopback addressing
   
-    # Interface addressing
+    # Interface addressing and bonds, including any static routes
     cat <<SCRIPT > /etc/netplan/03-eth-eth1.yaml
     network:
       version: 2
@@ -306,146 +381,15 @@ ok: [h4] =>
         eth1:
           addresses:
             - 172.16.3.6/24
-    SCRIPT
-  
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    cat <<SCRIPT > /etc/netplan/04-routes-eth1.yaml
-    network:
-      version: 2
-      renderer: networkd
-      ethernets:
-        eth1:
           routes:
-            - to: 172.16.0.0/16
-              via: 172.16.3.2
-            - to: 10.0.0.0/24
-              via: 172.16.3.2
-            - to: 10.1.0.0/16
-              via: 172.16.3.2
-            - to: 10.2.0.0/24
-              via: 172.16.3.2
-    SCRIPT
-  
-    echo -n 'Starting netplan generate ' && date
-    netplan generate
-    echo -n 'Starting netplan apply ' && date
-    nohup netplan apply &
-ok: [h1] => 
-  msg: |-
-    initial configuration for h1
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)$ "
-    SCRIPT
-    hostname h1
-    #
-    # Build hosts file
-    #
-    #
-    cat <<SCRIPT >/tmp/hosts
-    #
-    # Created by netlab initial
-    #
-    10.0.0.1 s1
-    10.1.0.1 1-1-1.s1
-    172.16.0.1 vlan1000.tenant.s1
-    172.16.2.1 vlan1002.tenant.s1
-    172.16.1.1 vlan1001.tenant.s1
-    10.0.0.2 s2
-    10.1.0.2 1-1-1.s2
-    172.16.1.2 vlan1001.tenant.s2
-    172.16.3.2 vlan1003.tenant.s2
-    172.16.0.2 vlan1000.tenant.s2
-    172.16.0.3 h1 eth1.h1
-    172.16.1.4 h2 eth1.h2
-    172.16.2.5 h3 eth1.h3
-    172.16.3.6 h4 eth1.h4
-    SCRIPT
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
-    # It seems on the Vagrant box for ubuntu 20.04, DNS Servers are hardcoded as 4.2.2.1 & Co.
-    # This is annoying on a network with filtered DNS.
-    # DNSMasq server used for giving out DHCP addresses on the management network is able to act as a DNS Server.
-    # Let's use that.
-    #
-    # (Overwrite netplan config to remove DNS stuff)
-    echo -n 'Starting initial config ' && date
-    cat <<SCRIPT >/etc/netplan/01-netcfg.yaml
-    network:
-      version: 2
-      renderer: networkd
-      ethernets:
-        eth0:
-          dhcp4: true
-          dhcp6: false
-          optional: true
-    SCRIPT
-    netplan apply
-  
-    # (Overwrite resolved config to remove DNS stuff)
-    cat <<SCRIPT > /etc/systemd/resolved.conf
-    [Resolve]
-    DNS=
-    FallbackDNS=
-    Domains=
-    DNSOverTLS=no
-    Cache=yes
-    DNSStubListener=yes
-    SCRIPT
-  
-    systemctl restart systemd-resolved
-  
-    # Set persistent hostname
-    hostnamectl set-hostname h1
-  
-    NEED_APT_UPDATE=YES
-  
-    # Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA
-    #
-    cat <<SCRIPT > /etc/sysctl.d/10-netsim.conf
-    net.ipv4.ip_forward=0
-    net.ipv6.conf.all.forwarding=0
-  
-  
-    SCRIPT
-    sysctl -p /etc/sysctl.d/10-netsim.conf
-  
-    # Loopback addressing
-  
-    # Interface addressing
-    cat <<SCRIPT > /etc/netplan/03-eth-eth1.yaml
-    network:
-      version: 2
-      renderer: networkd
-      ethernets:
-        eth1:
-          addresses:
-            - 172.16.0.3/24
-    SCRIPT
-  
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    cat <<SCRIPT > /etc/netplan/04-routes-eth1.yaml
-    network:
-      version: 2
-      renderer: networkd
-      ethernets:
-        eth1:
-          routes:
-            - to: 172.16.0.0/16
-              via: 172.16.0.1
-            - to: 10.0.0.0/24
-              via: 172.16.0.1
-            - to: 10.1.0.0/16
-              via: 172.16.0.1
-            - to: 10.2.0.0/24
-              via: 172.16.0.1
+          - to: 172.16.0.0/16
+            via: 172.16.3.2
+          - to: 10.0.0.0/24
+            via: 172.16.3.2
+          - to: 10.1.0.0/16
+            via: 172.16.3.2
+          - to: 10.2.0.0/24
+            via: 172.16.3.2
     SCRIPT
   
     echo -n 'Starting netplan generate ' && date
@@ -541,7 +485,7 @@ ok: [h3] =>
   
     # Loopback addressing
   
-    # Interface addressing
+    # Interface addressing and bonds, including any static routes
     cat <<SCRIPT > /etc/netplan/03-eth-eth1.yaml
     network:
       version: 2
@@ -550,24 +494,128 @@ ok: [h3] =>
         eth1:
           addresses:
             - 172.16.2.5/24
+          routes:
+          - to: 172.16.0.0/16
+            via: 172.16.2.1
+          - to: 10.0.0.0/24
+            via: 172.16.2.1
+          - to: 10.1.0.0/16
+            via: 172.16.2.1
+          - to: 10.2.0.0/24
+            via: 172.16.2.1
     SCRIPT
   
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    cat <<SCRIPT > /etc/netplan/04-routes-eth1.yaml
+    echo -n 'Starting netplan generate ' && date
+    netplan generate
+    echo -n 'Starting netplan apply ' && date
+    nohup netplan apply &
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)$ "
+    SCRIPT
+    hostname h1
+    #
+    # Build hosts file
+    #
+    #
+    cat <<SCRIPT >/tmp/hosts
+    #
+    # Created by netlab initial
+    #
+    10.0.0.1 s1
+    10.1.0.1 1-1-1.s1
+    172.16.0.1 vlan1000.tenant.s1
+    172.16.2.1 vlan1002.tenant.s1
+    172.16.1.1 vlan1001.tenant.s1
+    10.0.0.2 s2
+    10.1.0.2 1-1-1.s2
+    172.16.1.2 vlan1001.tenant.s2
+    172.16.3.2 vlan1003.tenant.s2
+    172.16.0.2 vlan1000.tenant.s2
+    172.16.0.3 h1 eth1.h1
+    172.16.1.4 h2 eth1.h2
+    172.16.2.5 h3 eth1.h3
+    172.16.3.6 h4 eth1.h4
+    SCRIPT
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
+    # It seems on the Vagrant box for ubuntu 20.04, DNS Servers are hardcoded as 4.2.2.1 & Co.
+    # This is annoying on a network with filtered DNS.
+    # DNSMasq server used for giving out DHCP addresses on the management network is able to act as a DNS Server.
+    # Let's use that.
+    #
+    # (Overwrite netplan config to remove DNS stuff)
+    echo -n 'Starting initial config ' && date
+    cat <<SCRIPT >/etc/netplan/01-netcfg.yaml
+    network:
+      version: 2
+      renderer: networkd
+      ethernets:
+        eth0:
+          dhcp4: true
+          dhcp6: false
+          optional: true
+    SCRIPT
+    netplan apply
+  
+    # (Overwrite resolved config to remove DNS stuff)
+    cat <<SCRIPT > /etc/systemd/resolved.conf
+    [Resolve]
+    DNS=
+    FallbackDNS=
+    Domains=
+    DNSOverTLS=no
+    Cache=yes
+    DNSStubListener=yes
+    SCRIPT
+  
+    systemctl restart systemd-resolved
+  
+    # Set persistent hostname
+    hostnamectl set-hostname h1
+  
+    NEED_APT_UPDATE=YES
+  
+    # Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA
+    #
+    cat <<SCRIPT > /etc/sysctl.d/10-netsim.conf
+    net.ipv4.ip_forward=0
+    net.ipv6.conf.all.forwarding=0
+  
+  
+    SCRIPT
+    sysctl -p /etc/sysctl.d/10-netsim.conf
+  
+    # Loopback addressing
+  
+    # Interface addressing and bonds, including any static routes
+    cat <<SCRIPT > /etc/netplan/03-eth-eth1.yaml
     network:
       version: 2
       renderer: networkd
       ethernets:
         eth1:
+          addresses:
+            - 172.16.0.3/24
           routes:
-            - to: 172.16.0.0/16
-              via: 172.16.2.1
-            - to: 10.0.0.0/24
-              via: 172.16.2.1
-            - to: 10.1.0.0/16
-              via: 172.16.2.1
-            - to: 10.2.0.0/24
-              via: 172.16.2.1
+          - to: 172.16.0.0/16
+            via: 172.16.0.1
+          - to: 10.0.0.0/24
+            via: 172.16.0.1
+          - to: 10.1.0.0/16
+            via: 172.16.0.1
+          - to: 10.2.0.0/24
+            via: 172.16.0.1
     SCRIPT
   
     echo -n 'Starting netplan generate ' && date
@@ -663,7 +711,7 @@ ok: [h2] =>
   
     # Loopback addressing
   
-    # Interface addressing
+    # Interface addressing and bonds, including any static routes
     cat <<SCRIPT > /etc/netplan/03-eth-eth1.yaml
     network:
       version: 2
@@ -672,24 +720,15 @@ ok: [h2] =>
         eth1:
           addresses:
             - 172.16.1.4/24
-    SCRIPT
-  
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    cat <<SCRIPT > /etc/netplan/04-routes-eth1.yaml
-    network:
-      version: 2
-      renderer: networkd
-      ethernets:
-        eth1:
           routes:
-            - to: 172.16.0.0/16
-              via: 172.16.1.2
-            - to: 10.0.0.0/24
-              via: 172.16.1.2
-            - to: 10.1.0.0/16
-              via: 172.16.1.2
-            - to: 10.2.0.0/24
-              via: 172.16.1.2
+          - to: 172.16.0.0/16
+            via: 172.16.1.2
+          - to: 10.0.0.0/24
+            via: 172.16.1.2
+          - to: 10.1.0.0/16
+            via: 172.16.1.2
+          - to: 10.2.0.0/24
+            via: 172.16.1.2
     SCRIPT
   
     echo -n 'Starting netplan generate ' && date
@@ -698,12 +737,12 @@ ok: [h2] =>
     nohup netplan apply &
 
 TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [s1]
 ok: [h1]
-ok: [h4]
-ok: [s2]
 ok: [h2]
+ok: [h4]
 ok: [h3]
+ok: [s1]
+ok: [s2]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for s1, s2
@@ -714,32 +753,28 @@ changed: [s2 -> localhost]
 changed: [s1 -> localhost]
 
 TASK [template] ****************************************************************
-changed: [s1 -> localhost]
 changed: [s2 -> localhost]
-
-TASK [aoscx_config: set session auto-confirm for initial] **********************
-changed: [s1]
-changed: [s2]
+changed: [s1 -> localhost]
 
 TASK [aoscx_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/arubacx.j2] ***
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [file] ********************************************************************
 changed: [s2 -> localhost]
 changed: [s1 -> localhost]
 
 TASK [template] ****************************************************************
+changed: [h1]
 changed: [h3]
 changed: [h4]
-changed: [h1]
 changed: [h2]
 
 TASK [Execute /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux.j2] ***
-changed: [h3]
-changed: [h4]
-changed: [h2]
 changed: [h1]
+changed: [h4]
+changed: [h3]
+changed: [h2]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -762,6 +797,10 @@ ok: [s2]
 TASK [Find configuration template for vlan] ************************************
 ok: [s1]
 ok: [s2]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [s1] => 
@@ -818,10 +857,6 @@ TASK [template] ****************************************************************
 changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 
-TASK [aoscx_config: set session auto-confirm for vlan] *************************
-changed: [s1]
-changed: [s2]
-
 TASK [aoscx_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/arubacx.j2] ***
 changed: [s1]
 changed: [s2]
@@ -837,6 +872,10 @@ ok: [s2]
 TASK [Find configuration template for bgp] *************************************
 ok: [s1]
 ok: [s2]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [s1] => 
@@ -906,12 +945,8 @@ changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 
 TASK [template] ****************************************************************
-changed: [s1 -> localhost]
 changed: [s2 -> localhost]
-
-TASK [aoscx_config: set session auto-confirm for bgp] **************************
-changed: [s1]
-changed: [s2]
+changed: [s1 -> localhost]
 
 TASK [aoscx_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/arubacx.j2] ***
 changed: [s2]
@@ -928,6 +963,10 @@ ok: [s2]
 TASK [Find configuration template for ospf] ************************************
 ok: [s1]
 ok: [s2]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [s1] => 
@@ -994,13 +1033,9 @@ TASK [template] ****************************************************************
 changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 
-TASK [aoscx_config: set session auto-confirm for ospf] *************************
-changed: [s1]
-changed: [s2]
-
 TASK [aoscx_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/arubacx.j2] ***
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [file] ********************************************************************
 changed: [s1 -> localhost]
@@ -1013,6 +1048,10 @@ ok: [s2]
 TASK [Find configuration template for vrf] *************************************
 ok: [s1]
 ok: [s2]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [s1] => 
@@ -1129,10 +1168,6 @@ TASK [template] ****************************************************************
 changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 
-TASK [aoscx_config: set session auto-confirm for vrf] **************************
-changed: [s1]
-changed: [s2]
-
 TASK [aoscx_config: deploying vrf from /home/pipi/net101/tools/netsim/ansible/templates/vrf/arubacx.j2] ***
 changed: [s2]
 changed: [s1]
@@ -1148,6 +1183,10 @@ ok: [s2]
 TASK [Find configuration template for vxlan] ***********************************
 ok: [s1]
 ok: [s2]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [s1] => 
@@ -1187,16 +1226,12 @@ changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 
 TASK [template] ****************************************************************
-changed: [s1 -> localhost]
 changed: [s2 -> localhost]
-
-TASK [aoscx_config: set session auto-confirm for vxlan] ************************
-changed: [s2]
-changed: [s1]
+changed: [s1 -> localhost]
 
 TASK [aoscx_config: deploying vxlan from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/arubacx.j2] ***
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [file] ********************************************************************
 changed: [s1 -> localhost]
@@ -1209,6 +1244,10 @@ ok: [s2]
 TASK [Find configuration template for evpn] ************************************
 ok: [s1]
 ok: [s2]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [s1] => 
@@ -1295,10 +1334,6 @@ TASK [template] ****************************************************************
 changed: [s2 -> localhost]
 changed: [s1 -> localhost]
 
-TASK [aoscx_config: set session auto-confirm for evpn] *************************
-changed: [s2]
-changed: [s1]
-
 TASK [aoscx_config: deploying evpn from /home/pipi/net101/tools/netsim/ansible/templates/evpn/arubacx.j2] ***
 changed: [s1]
 changed: [s2]
@@ -1311,12 +1346,12 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=10   changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-h2                         : ok=10   changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-h3                         : ok=10   changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-h4                         : ok=10   changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-s1                         : ok=80   changed=35   unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-s2                         : ok=80   changed=35   unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h1                         : ok=13   changed=2    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+h2                         : ok=13   changed=2    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+h3                         : ok=13   changed=2    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+h4                         : ok=13   changed=2    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+s1                         : ok=76   changed=28   unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+s2                         : ok=76   changed=28   unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
 
 
 

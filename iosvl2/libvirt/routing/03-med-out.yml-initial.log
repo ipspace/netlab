@@ -14,6 +14,46 @@ TASK [Wait for device to become ready] *****************************************
 skipping: [dut]
 skipping: [probe]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [probe]
+ok: [dut]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [probe]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [probe]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [probe]
+ok: [dut] => 
+  msg: |-
+    normalize configuration for dut
+    =========================================
+    !
+    interface GigabitEthernet0/1
+     no switchport
+     mac-address 52dc.cafe.0101
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [probe]
+ok: [dut]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [probe]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
+
+TASK [ios_config: deploying normalize from /home/pipi/net101/tools/netsim/ansible/templates/normalize/iosvl2.j2] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [dut]
+
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe
 
@@ -24,6 +64,10 @@ ok: [dut]
 TASK [Find configuration template for initial] *********************************
 ok: [probe]
 ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [probe]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [probe] => 
@@ -40,18 +84,11 @@ ok: [probe] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "10.0.0.1 172.16.0.1 2001:db8:1:1::1 2001:db8:2::1 dut" >>/tmp/hosts
-    echo "10.0.0.2 172.16.0.2 2001:db8:1:2::1 2001:db8:2::2 probe" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -76,7 +113,7 @@ ok: [probe] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -97,7 +134,8 @@ ok: [probe] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -118,8 +156,8 @@ ok: [probe] =>
     interface eth1
      no shutdown
      description probe -> dut [external]
-     ip address 172.16.0.2/24
-     ipv6 address 2001:db8:2::2/64
+     ip address 10.1.0.2/30
+     ipv6 address 2001:db8:3::2/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -137,7 +175,9 @@ ok: [dut] =>
     !
     lldp run
     !
-    ip host probe 10.0.0.2 172.16.0.2
+    ip host probe 10.0.0.2 10.1.0.2
+    !
+    ip routing
     !
     ipv6 unicast-routing
     !
@@ -151,11 +191,15 @@ ok: [dut] =>
      no lldp receive
     !
     interface GigabitEthernet0/1
-     no shutdown
      no switchport
      description dut -> probe [external]
-     ip address 172.16.0.1 255.255.255.0
-     ipv6 address 2001:DB8:2::1/64
+     ip address 10.1.0.1 255.255.255.252
+     ipv6 address 2001:DB8:3::1/64
+     no shutdown
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
     !
     no banner exec
     no banner login
@@ -170,9 +214,6 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for probe
 
 TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
-[WARNING]: To ensure idempotency and correct diff the input configuration lines
-should be similar to how they appear if present in the running configuration on
-device including the indentation
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
@@ -214,11 +255,16 @@ TASK [Find configuration template for routing] *********************************
 ok: [probe]
 ok: [dut]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [probe]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [probe] => 
   msg: |-
     routing configuration for probe
     =========================================
+    !
     !
 ok: [dut] => 
   msg: |-
@@ -234,6 +280,9 @@ ok: [dut] =>
   
     !
     ! AS-path access lists
+    !
+    !
+    ! Static routes
     !
 
 TASK [Find configuration deployment deploy_script for routing] *****************
@@ -267,6 +316,10 @@ TASK [Find configuration template for bgp] *************************************
 ok: [probe]
 ok: [dut]
 
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [probe]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [probe] => 
   msg: |-
@@ -284,33 +337,37 @@ ok: [probe] =>
   
       bgp router-id 10.0.0.2
     !
-      neighbor 172.16.0.1 remote-as 65000
-      neighbor 172.16.0.1 description dut
+      neighbor 10.1.0.1 remote-as 65000
+      neighbor 10.1.0.1 description dut
     !
-      neighbor 2001:db8:2::1 remote-as 65000
-      neighbor 2001:db8:2::1 description dut
+      neighbor 2001:db8:3::1 remote-as 65000
+      neighbor 2001:db8:3::1 description dut
     !
      address-family ipv4 unicast
+    !
+  
     !
       network 10.0.0.2/32
     !
     !
     !
-      neighbor 172.16.0.1 activate
-      no neighbor 172.16.0.1 send-community all
-      neighbor 172.16.0.1 send-community standard
-      neighbor 172.16.0.1 send-community large
+      neighbor 10.1.0.1 activate
+      no neighbor 10.1.0.1 send-community all
+      neighbor 10.1.0.1 send-community standard
+      neighbor 10.1.0.1 send-community large
     !
      address-family ipv6 unicast
+    !
+  
     !
       network 2001:db8:1:2::/64
     !
     !
     !
-      neighbor 2001:db8:2::1 activate
-      no neighbor 2001:db8:2::1 send-community all
-      neighbor 2001:db8:2::1 send-community standard
-      neighbor 2001:db8:2::1 send-community large
+      neighbor 2001:db8:3::1 activate
+      no neighbor 2001:db8:3::1 send-community all
+      neighbor 2001:db8:3::1 send-community standard
+      neighbor 2001:db8:3::1 send-community large
     !
     !
     !
@@ -323,39 +380,41 @@ ok: [dut] =>
     ip bgp-community new-format
     !
     router bgp 65000
-      no bgp default ipv4-unicast
-      bgp update-delay 5
-      bgp nopeerup-delay cold-boot 1
-      bgp nopeerup-delay user-initiated 1
-      bgp router-id 10.0.0.1
-      neighbor 172.16.0.2 remote-as 65100
-      neighbor 172.16.0.2 description probe
+     no bgp default ipv4-unicast
+     bgp update-delay 5
+     bgp nopeerup-delay cold-boot 1
+     bgp nopeerup-delay user-initiated 1
+     bgp router-id 10.0.0.1
+      neighbor 10.1.0.2 remote-as 65100
+      neighbor 10.1.0.2 description probe
   
-      neighbor 2001:db8:2::2 remote-as 65100
-      neighbor 2001:db8:2::2 description probe
+      neighbor 2001:db8:3::2 remote-as 65100
+      neighbor 2001:db8:3::2 description probe
   
     !
      address-family ipv4
       bgp scan-time 5
+  
     !
       network 10.0.0.1 mask 255.255.255.255
   
     !
     !
-      neighbor 172.16.0.2 activate
-      neighbor 172.16.0.2 advertisement-interval 0
-      neighbor 172.16.0.2 send-community standard
+      neighbor 10.1.0.2 activate
+      neighbor 10.1.0.2 advertisement-interval 0
+      neighbor 10.1.0.2 send-community standard
   
      address-family ipv6
       bgp scan-time 5
+  
     !
       network 2001:db8:1:1::/64
   
     !
     !
-      neighbor 2001:db8:2::2 activate
-      neighbor 2001:db8:2::2 advertisement-interval 0
-      neighbor 2001:db8:2::2 send-community standard
+      neighbor 2001:db8:3::2 activate
+      neighbor 2001:db8:3::2 advertisement-interval 0
+      neighbor 2001:db8:3::2 send-community standard
   
     !
 
@@ -412,8 +471,8 @@ TASK [ios_config: deploying bgp.policy from /home/pipi/net101/tools/netsim/extra
 changed: [dut]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=30   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-probe                      : ok=32   changed=7    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
+dut                        : ok=37   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+probe                      : ok=35   changed=7    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
 
 
 

@@ -26,6 +26,57 @@ skipping: [h2]
 skipping: [h3]
 skipping: [h4]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, h1, h2, h3, h4
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [s1]
+ok: [s2]
+ok: [h1]
+ok: [h2]
+ok: [h3]
+ok: [h4]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [s1]
+ok: [s2]
+ok: [h1]
+ok: [h2]
+ok: [h3]
+ok: [h4]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [s1]
+skipping: [s2]
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [s1]
+skipping: [s2]
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [s1]
+skipping: [s2]
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, h1, h2, h3, h4
 
@@ -41,9 +92,17 @@ TASK [Find configuration template for initial] *********************************
 ok: [s1]
 ok: [s2]
 ok: [h1]
-ok: [h2]
 ok: [h3]
+ok: [h2]
 ok: [h4]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [s1] => 
@@ -68,25 +127,42 @@ ok: [s1] =>
     #
     echo "INIT: setting hostname"
     hostname s1
-    echo "INIT: creating /etc/hosts"
-    awk '/127.0.1.1/,/^$/' /etc/hosts >/tmp/hosts
-    echo "127.0.0.1 s1" >>/tmp/hosts
-    echo "172.16.0.3 h1" >>/tmp/hosts
-    echo "172.16.1.4 h2" >>/tmp/hosts
-    echo "172.16.2.5 h3" >>/tmp/hosts
-    echo "172.16.3.6 h4" >>/tmp/hosts
-    echo "172.16.0.1 172.16.2.1 172.16.1.1 s1-tenant" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.2 s2" >>/tmp/hosts
-    echo "172.16.1.2 172.16.3.2 172.16.0.2 s2-tenant" >>/tmp/hosts
-    cat /etc/hosts | awk '/localhost/,/^$/' >/tmp/hosts-start
-    mv /tmp/hosts-start /etc/hosts
-    sort /tmp/hosts|uniq >>/etc/hosts
     #
+    #
+    # Build hosts file
+    #
+    #
+    cat <<SCRIPT >/tmp/hosts
+    #
+    # Created by netlab initial
+    #
+    10.0.0.1 s1
+    10.1.0.1 swp1.s1
+    172.16.0.1 vlan1000.tenant.s1
+    172.16.2.1 vlan1002.tenant.s1
+    172.16.1.1 vlan1001.tenant.s1
+    10.0.0.2 s2
+    10.1.0.2 swp1.s2
+    172.16.1.2 vlan1001.tenant.s2
+    172.16.3.2 vlan1003.tenant.s2
+    172.16.0.2 vlan1000.tenant.s2
+    172.16.0.3 h1 eth1.h1
+    172.16.1.4 h2 eth1.h2
+    172.16.2.5 h3 eth1.h3
+    172.16.3.6 h4 eth1.h4
+    SCRIPT
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
     #
     # Disable ZTP
     #
     ztp --disable
     #
+    #
+  
+    echo "INIT: Configuring system wide default MTU policy"
+    cat > /etc/network/ifupdown2/policy.d/mtu.json <<CONFIG
+    { "address": { "defaults": { "mtu": "1500" } } }
+    CONFIG
     #
     echo "INIT: creating loopback interface"
     #
@@ -112,6 +188,18 @@ ok: [s1] =>
       address 10.1.0.1/30
     auto swp2
     auto swp3
+    auto vlan1000
+  
+    iface vlan1000 inet static
+      address 172.16.0.1/24
+    auto vlan1002
+  
+    iface vlan1002 inet static
+      address 172.16.2.1/24
+    auto vlan1001
+  
+    iface vlan1001 inet static
+      address 172.16.1.1/24
     CONFIG
     #
     echo "INIT: executing ifreload"
@@ -143,177 +231,26 @@ ok: [s1] =>
     interface swp1
     ! no shutdown
      description s1 -> s2
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
     !
     interface swp2
     ! no shutdown
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
+     description [Access VLAN red] s1 -> h1
     !
     interface swp3
     ! no shutdown
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
+     description [Access VLAN green] s1 -> h3
     !
     interface vlan1000
     ! no shutdown
      description VLAN red (1000) -> [h1,s2]
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
     !
     interface vlan1002
     ! no shutdown
      description VLAN green (1002) -> [h3] [stub]
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
     !
     interface vlan1001
     ! no shutdown
      description VLAN blue (1001) -> [h2,s2]
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    #
-    # Enable LLDP
-    #
-    echo "INIT: enabling LLDP"
-    cat <<CONFIG >/etc/lldpd.d/system.conf
-    configure lldp tx-interval 30
-    configure lldp tx-hold 3
-    configure system interface pattern *,!eth0,swp*
-    CONFIG
-    service lldpd restart
-ok: [s2] => 
-  msg: |-
-    initial configuration for s2
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)#"
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "INIT: setting hostname"
-    hostname s2
-    echo "INIT: creating /etc/hosts"
-    awk '/127.0.1.1/,/^$/' /etc/hosts >/tmp/hosts
-    echo "127.0.0.1 s2" >>/tmp/hosts
-    echo "172.16.0.3 h1" >>/tmp/hosts
-    echo "172.16.1.4 h2" >>/tmp/hosts
-    echo "172.16.2.5 h3" >>/tmp/hosts
-    echo "172.16.3.6 h4" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.1 s1" >>/tmp/hosts
-    echo "172.16.0.1 172.16.2.1 172.16.1.1 s1-tenant" >>/tmp/hosts
-    echo "172.16.1.2 172.16.3.2 172.16.0.2 s2-tenant" >>/tmp/hosts
-    cat /etc/hosts | awk '/localhost/,/^$/' >/tmp/hosts-start
-    mv /tmp/hosts-start /etc/hosts
-    sort /tmp/hosts|uniq >>/etc/hosts
-    #
-    #
-    # Disable ZTP
-    #
-    ztp --disable
-    #
-    #
-    echo "INIT: creating loopback interface"
-    #
-    # Create loopback interface entry
-    #
-    cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
-    auto lo
-    iface lo inet loopback
-      address 10.0.0.2/32
-  
-    CONFIG
-    #
-    until ifreload -a; do
-      sleep 1
-    done
-    #
-    echo "INIT: creating other interface"
-    cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
-    auto swp1
-  
-    iface swp1 inet static
-      mtu 1600
-      address 10.1.0.2/30
-    auto swp2
-    auto swp3
-    CONFIG
-    #
-    echo "INIT: executing ifreload"
-    until ifreload -a; do
-      sleep 1
-    done
-    #
-    # For whatever crazy reason, I had to enable IPv6 in containers
-    #
-    #
-    # Enable FRR modules for ['vlan', 'bgp', 'ospf', 'vrf', 'vxlan', 'evpn']
-    #
-    #
-    # Enable FRR daemons
-    #
-    echo "bgpd=yes" >>/etc/frr/daemons
-    echo "ospfd=yes" >>/etc/frr/daemons
-    echo "ospf6d=yes" >>/etc/frr/daemons
-    echo "bgpd=yes" >>/etc/frr/daemons
-  
-    systemctl enable frr.service
-    systemctl start frr.service
-    systemctl reload frr.service
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    !
-    interface swp1
-    ! no shutdown
-     description s2 -> s1
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    interface swp2
-    ! no shutdown
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    interface swp3
-    ! no shutdown
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    interface vlan1001
-    ! no shutdown
-     description VLAN blue (1001) -> [s1,h2]
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    interface vlan1003
-    ! no shutdown
-     description VLAN purple (1003) -> [h4] [stub]
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    interface vlan1000
-    ! no shutdown
-     description VLAN red (1000) -> [h1,s1]
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
     !
     do write
     CONFIG
@@ -343,23 +280,29 @@ ok: [h1] =>
     #
     export PS1="\h(bash)$ "
     SCRIPT
+    hostname h1
     #
     # Build hosts file
     #
-    hostname h1
     #
     cat <<SCRIPT >/tmp/hosts
     #
     # Created by netlab initial
     #
-    172.16.0.3 h1
-    172.16.1.4 h2
-    172.16.2.5 h3
-    172.16.3.6 h4
-    10.0.0.1 10.1.0.1 s1
-    172.16.0.1 172.16.2.1 172.16.1.1 s1-tenant
-    10.0.0.2 10.1.0.2 s2
-    172.16.1.2 172.16.3.2 172.16.0.2 s2-tenant
+    10.0.0.1 s1
+    10.1.0.1 swp1.s1
+    172.16.0.1 vlan1000.tenant.s1
+    172.16.2.1 vlan1002.tenant.s1
+    172.16.1.1 vlan1001.tenant.s1
+    10.0.0.2 s2
+    10.1.0.2 swp1.s2
+    172.16.1.2 vlan1001.tenant.s2
+    172.16.3.2 vlan1003.tenant.s2
+    172.16.0.2 vlan1000.tenant.s2
+    172.16.0.3 h1 eth1.h1
+    172.16.1.4 h2 eth1.h2
+    172.16.2.5 h3 eth1.h3
+    172.16.3.6 h4 eth1.h4
     SCRIPT
     grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
     # It seems on the Vagrant box for ubuntu 20.04, DNS Servers are hardcoded as 4.2.2.1 & Co.
@@ -411,7 +354,7 @@ ok: [h1] =>
   
     # Loopback addressing
   
-    # Interface addressing
+    # Interface addressing and bonds, including any static routes
     cat <<SCRIPT > /etc/netplan/03-eth-eth1.yaml
     network:
       version: 2
@@ -420,33 +363,24 @@ ok: [h1] =>
         eth1:
           addresses:
             - 172.16.0.3/24
-    SCRIPT
-  
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    cat <<SCRIPT > /etc/netplan/04-routes-eth1.yaml
-    network:
-      version: 2
-      renderer: networkd
-      ethernets:
-        eth1:
           routes:
-            - to: 172.16.0.0/16
-              via: 172.16.0.1
-            - to: 10.0.0.0/24
-              via: 172.16.0.1
-            - to: 10.1.0.0/16
-              via: 172.16.0.1
-            - to: 10.2.0.0/24
-              via: 172.16.0.1
+          - to: 172.16.0.0/16
+            via: 172.16.0.1
+          - to: 10.0.0.0/24
+            via: 172.16.0.1
+          - to: 10.1.0.0/16
+            via: 172.16.0.1
+          - to: 10.2.0.0/24
+            via: 172.16.0.1
     SCRIPT
   
     echo -n 'Starting netplan generate ' && date
     netplan generate
     echo -n 'Starting netplan apply ' && date
     nohup netplan apply &
-ok: [h2] => 
+ok: [s2] => 
   msg: |-
-    initial configuration for h2
+    initial configuration for s2
     =========================================
     #!/bin/bash
     #
@@ -457,109 +391,153 @@ ok: [h2] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)$ "
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
     SCRIPT
     #
     # Build hosts file
     #
-    hostname h2
+    echo "INIT: setting hostname"
+    hostname s2
+    #
+    #
+    # Build hosts file
+    #
     #
     cat <<SCRIPT >/tmp/hosts
     #
     # Created by netlab initial
     #
-    172.16.0.3 h1
-    172.16.1.4 h2
-    172.16.2.5 h3
-    172.16.3.6 h4
-    10.0.0.1 10.1.0.1 s1
-    172.16.0.1 172.16.2.1 172.16.1.1 s1-tenant
-    10.0.0.2 10.1.0.2 s2
-    172.16.1.2 172.16.3.2 172.16.0.2 s2-tenant
+    10.0.0.1 s1
+    10.1.0.1 swp1.s1
+    172.16.0.1 vlan1000.tenant.s1
+    172.16.2.1 vlan1002.tenant.s1
+    172.16.1.1 vlan1001.tenant.s1
+    10.0.0.2 s2
+    10.1.0.2 swp1.s2
+    172.16.1.2 vlan1001.tenant.s2
+    172.16.3.2 vlan1003.tenant.s2
+    172.16.0.2 vlan1000.tenant.s2
+    172.16.0.3 h1 eth1.h1
+    172.16.1.4 h2 eth1.h2
+    172.16.2.5 h3 eth1.h3
+    172.16.3.6 h4 eth1.h4
     SCRIPT
     grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
-    # It seems on the Vagrant box for ubuntu 20.04, DNS Servers are hardcoded as 4.2.2.1 & Co.
-    # This is annoying on a network with filtered DNS.
-    # DNSMasq server used for giving out DHCP addresses on the management network is able to act as a DNS Server.
-    # Let's use that.
     #
-    # (Overwrite netplan config to remove DNS stuff)
-    echo -n 'Starting initial config ' && date
-    cat <<SCRIPT >/etc/netplan/01-netcfg.yaml
-    network:
-      version: 2
-      renderer: networkd
-      ethernets:
-        eth0:
-          dhcp4: true
-          dhcp6: false
-          optional: true
-    SCRIPT
-    netplan apply
-  
-    # (Overwrite resolved config to remove DNS stuff)
-    cat <<SCRIPT > /etc/systemd/resolved.conf
-    [Resolve]
-    DNS=
-    FallbackDNS=
-    Domains=
-    DNSOverTLS=no
-    Cache=yes
-    DNSStubListener=yes
-    SCRIPT
-  
-    systemctl restart systemd-resolved
-  
-    # Set persistent hostname
-    hostnamectl set-hostname h2
-  
-    NEED_APT_UPDATE=YES
-  
-    # Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA
+    # Disable ZTP
     #
-    cat <<SCRIPT > /etc/sysctl.d/10-netsim.conf
-    net.ipv4.ip_forward=0
-    net.ipv6.conf.all.forwarding=0
+    ztp --disable
+    #
+    #
   
+    echo "INIT: Configuring system wide default MTU policy"
+    cat > /etc/network/ifupdown2/policy.d/mtu.json <<CONFIG
+    { "address": { "defaults": { "mtu": "1500" } } }
+    CONFIG
+    #
+    echo "INIT: creating loopback interface"
+    #
+    # Create loopback interface entry
+    #
+    cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
+    auto lo
+    iface lo inet loopback
+      address 10.0.0.2/32
   
-    SCRIPT
-    sysctl -p /etc/sysctl.d/10-netsim.conf
+    CONFIG
+    #
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    echo "INIT: creating other interface"
+    cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
+    auto swp1
   
-    # Loopback addressing
+    iface swp1 inet static
+      mtu 1600
+      address 10.1.0.2/30
+    auto swp2
+    auto swp3
+    auto vlan1001
   
-    # Interface addressing
-    cat <<SCRIPT > /etc/netplan/03-eth-eth1.yaml
-    network:
-      version: 2
-      renderer: networkd
-      ethernets:
-        eth1:
-          addresses:
-            - 172.16.1.4/24
-    SCRIPT
+    iface vlan1001 inet static
+      address 172.16.1.2/24
+    auto vlan1003
   
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    cat <<SCRIPT > /etc/netplan/04-routes-eth1.yaml
-    network:
-      version: 2
-      renderer: networkd
-      ethernets:
-        eth1:
-          routes:
-            - to: 172.16.0.0/16
-              via: 172.16.1.2
-            - to: 10.0.0.0/24
-              via: 172.16.1.2
-            - to: 10.1.0.0/16
-              via: 172.16.1.2
-            - to: 10.2.0.0/24
-              via: 172.16.1.2
-    SCRIPT
+    iface vlan1003 inet static
+      address 172.16.3.2/24
+    auto vlan1000
   
-    echo -n 'Starting netplan generate ' && date
-    netplan generate
-    echo -n 'Starting netplan apply ' && date
-    nohup netplan apply &
+    iface vlan1000 inet static
+      address 172.16.0.2/24
+    CONFIG
+    #
+    echo "INIT: executing ifreload"
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    # For whatever crazy reason, I had to enable IPv6 in containers
+    #
+    #
+    # Enable FRR modules for ['vlan', 'bgp', 'ospf', 'vrf', 'vxlan', 'evpn']
+    #
+    #
+    # Enable FRR daemons
+    #
+    echo "bgpd=yes" >>/etc/frr/daemons
+    echo "ospfd=yes" >>/etc/frr/daemons
+    echo "ospf6d=yes" >>/etc/frr/daemons
+    echo "bgpd=yes" >>/etc/frr/daemons
+  
+    systemctl enable frr.service
+    systemctl start frr.service
+    systemctl reload frr.service
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    !
+    interface swp1
+    ! no shutdown
+     description s2 -> s1
+    !
+    interface swp2
+    ! no shutdown
+     description [Access VLAN blue] s2 -> h2
+    !
+    interface swp3
+    ! no shutdown
+     description [Access VLAN purple] s2 -> h4
+    !
+    interface vlan1001
+    ! no shutdown
+     description VLAN blue (1001) -> [s1,h2]
+    !
+    interface vlan1003
+    ! no shutdown
+     description VLAN purple (1003) -> [h4] [stub]
+    !
+    interface vlan1000
+    ! no shutdown
+     description VLAN red (1000) -> [h1,s1]
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    #
+    # Enable LLDP
+    #
+    echo "INIT: enabling LLDP"
+    cat <<CONFIG >/etc/lldpd.d/system.conf
+    configure lldp tx-interval 30
+    configure lldp tx-hold 3
+    configure system interface pattern *,!eth0,swp*
+    CONFIG
+    service lldpd restart
 ok: [h3] => 
   msg: |-
     initial configuration for h3
@@ -575,23 +553,29 @@ ok: [h3] =>
     #
     export PS1="\h(bash)$ "
     SCRIPT
+    hostname h3
     #
     # Build hosts file
     #
-    hostname h3
     #
     cat <<SCRIPT >/tmp/hosts
     #
     # Created by netlab initial
     #
-    172.16.0.3 h1
-    172.16.1.4 h2
-    172.16.2.5 h3
-    172.16.3.6 h4
-    10.0.0.1 10.1.0.1 s1
-    172.16.0.1 172.16.2.1 172.16.1.1 s1-tenant
-    10.0.0.2 10.1.0.2 s2
-    172.16.1.2 172.16.3.2 172.16.0.2 s2-tenant
+    10.0.0.1 s1
+    10.1.0.1 swp1.s1
+    172.16.0.1 vlan1000.tenant.s1
+    172.16.2.1 vlan1002.tenant.s1
+    172.16.1.1 vlan1001.tenant.s1
+    10.0.0.2 s2
+    10.1.0.2 swp1.s2
+    172.16.1.2 vlan1001.tenant.s2
+    172.16.3.2 vlan1003.tenant.s2
+    172.16.0.2 vlan1000.tenant.s2
+    172.16.0.3 h1 eth1.h1
+    172.16.1.4 h2 eth1.h2
+    172.16.2.5 h3 eth1.h3
+    172.16.3.6 h4 eth1.h4
     SCRIPT
     grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
     # It seems on the Vagrant box for ubuntu 20.04, DNS Servers are hardcoded as 4.2.2.1 & Co.
@@ -643,7 +627,7 @@ ok: [h3] =>
   
     # Loopback addressing
   
-    # Interface addressing
+    # Interface addressing and bonds, including any static routes
     cat <<SCRIPT > /etc/netplan/03-eth-eth1.yaml
     network:
       version: 2
@@ -652,24 +636,128 @@ ok: [h3] =>
         eth1:
           addresses:
             - 172.16.2.5/24
+          routes:
+          - to: 172.16.0.0/16
+            via: 172.16.2.1
+          - to: 10.0.0.0/24
+            via: 172.16.2.1
+          - to: 10.1.0.0/16
+            via: 172.16.2.1
+          - to: 10.2.0.0/24
+            via: 172.16.2.1
     SCRIPT
   
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    cat <<SCRIPT > /etc/netplan/04-routes-eth1.yaml
+    echo -n 'Starting netplan generate ' && date
+    netplan generate
+    echo -n 'Starting netplan apply ' && date
+    nohup netplan apply &
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)$ "
+    SCRIPT
+    hostname h2
+    #
+    # Build hosts file
+    #
+    #
+    cat <<SCRIPT >/tmp/hosts
+    #
+    # Created by netlab initial
+    #
+    10.0.0.1 s1
+    10.1.0.1 swp1.s1
+    172.16.0.1 vlan1000.tenant.s1
+    172.16.2.1 vlan1002.tenant.s1
+    172.16.1.1 vlan1001.tenant.s1
+    10.0.0.2 s2
+    10.1.0.2 swp1.s2
+    172.16.1.2 vlan1001.tenant.s2
+    172.16.3.2 vlan1003.tenant.s2
+    172.16.0.2 vlan1000.tenant.s2
+    172.16.0.3 h1 eth1.h1
+    172.16.1.4 h2 eth1.h2
+    172.16.2.5 h3 eth1.h3
+    172.16.3.6 h4 eth1.h4
+    SCRIPT
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
+    # It seems on the Vagrant box for ubuntu 20.04, DNS Servers are hardcoded as 4.2.2.1 & Co.
+    # This is annoying on a network with filtered DNS.
+    # DNSMasq server used for giving out DHCP addresses on the management network is able to act as a DNS Server.
+    # Let's use that.
+    #
+    # (Overwrite netplan config to remove DNS stuff)
+    echo -n 'Starting initial config ' && date
+    cat <<SCRIPT >/etc/netplan/01-netcfg.yaml
+    network:
+      version: 2
+      renderer: networkd
+      ethernets:
+        eth0:
+          dhcp4: true
+          dhcp6: false
+          optional: true
+    SCRIPT
+    netplan apply
+  
+    # (Overwrite resolved config to remove DNS stuff)
+    cat <<SCRIPT > /etc/systemd/resolved.conf
+    [Resolve]
+    DNS=
+    FallbackDNS=
+    Domains=
+    DNSOverTLS=no
+    Cache=yes
+    DNSStubListener=yes
+    SCRIPT
+  
+    systemctl restart systemd-resolved
+  
+    # Set persistent hostname
+    hostnamectl set-hostname h2
+  
+    NEED_APT_UPDATE=YES
+  
+    # Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA
+    #
+    cat <<SCRIPT > /etc/sysctl.d/10-netsim.conf
+    net.ipv4.ip_forward=0
+    net.ipv6.conf.all.forwarding=0
+  
+  
+    SCRIPT
+    sysctl -p /etc/sysctl.d/10-netsim.conf
+  
+    # Loopback addressing
+  
+    # Interface addressing and bonds, including any static routes
+    cat <<SCRIPT > /etc/netplan/03-eth-eth1.yaml
     network:
       version: 2
       renderer: networkd
       ethernets:
         eth1:
+          addresses:
+            - 172.16.1.4/24
           routes:
-            - to: 172.16.0.0/16
-              via: 172.16.2.1
-            - to: 10.0.0.0/24
-              via: 172.16.2.1
-            - to: 10.1.0.0/16
-              via: 172.16.2.1
-            - to: 10.2.0.0/24
-              via: 172.16.2.1
+          - to: 172.16.0.0/16
+            via: 172.16.1.2
+          - to: 10.0.0.0/24
+            via: 172.16.1.2
+          - to: 10.1.0.0/16
+            via: 172.16.1.2
+          - to: 10.2.0.0/24
+            via: 172.16.1.2
     SCRIPT
   
     echo -n 'Starting netplan generate ' && date
@@ -691,23 +779,29 @@ ok: [h4] =>
     #
     export PS1="\h(bash)$ "
     SCRIPT
+    hostname h4
     #
     # Build hosts file
     #
-    hostname h4
     #
     cat <<SCRIPT >/tmp/hosts
     #
     # Created by netlab initial
     #
-    172.16.0.3 h1
-    172.16.1.4 h2
-    172.16.2.5 h3
-    172.16.3.6 h4
-    10.0.0.1 10.1.0.1 s1
-    172.16.0.1 172.16.2.1 172.16.1.1 s1-tenant
-    10.0.0.2 10.1.0.2 s2
-    172.16.1.2 172.16.3.2 172.16.0.2 s2-tenant
+    10.0.0.1 s1
+    10.1.0.1 swp1.s1
+    172.16.0.1 vlan1000.tenant.s1
+    172.16.2.1 vlan1002.tenant.s1
+    172.16.1.1 vlan1001.tenant.s1
+    10.0.0.2 s2
+    10.1.0.2 swp1.s2
+    172.16.1.2 vlan1001.tenant.s2
+    172.16.3.2 vlan1003.tenant.s2
+    172.16.0.2 vlan1000.tenant.s2
+    172.16.0.3 h1 eth1.h1
+    172.16.1.4 h2 eth1.h2
+    172.16.2.5 h3 eth1.h3
+    172.16.3.6 h4 eth1.h4
     SCRIPT
     grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
     # It seems on the Vagrant box for ubuntu 20.04, DNS Servers are hardcoded as 4.2.2.1 & Co.
@@ -759,7 +853,7 @@ ok: [h4] =>
   
     # Loopback addressing
   
-    # Interface addressing
+    # Interface addressing and bonds, including any static routes
     cat <<SCRIPT > /etc/netplan/03-eth-eth1.yaml
     network:
       version: 2
@@ -768,24 +862,15 @@ ok: [h4] =>
         eth1:
           addresses:
             - 172.16.3.6/24
-    SCRIPT
-  
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    cat <<SCRIPT > /etc/netplan/04-routes-eth1.yaml
-    network:
-      version: 2
-      renderer: networkd
-      ethernets:
-        eth1:
           routes:
-            - to: 172.16.0.0/16
-              via: 172.16.3.2
-            - to: 10.0.0.0/24
-              via: 172.16.3.2
-            - to: 10.1.0.0/16
-              via: 172.16.3.2
-            - to: 10.2.0.0/24
-              via: 172.16.3.2
+          - to: 172.16.0.0/16
+            via: 172.16.3.2
+          - to: 10.0.0.0/24
+            via: 172.16.3.2
+          - to: 10.1.0.0/16
+            via: 172.16.3.2
+          - to: 10.2.0.0/24
+            via: 172.16.3.2
     SCRIPT
   
     echo -n 'Starting netplan generate ' && date
@@ -805,26 +890,30 @@ TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for s1, s2
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux.yml for h1, h2, h3, h4
 
-TASK [copy cumulus config to /tmp/config.sh] ***********************************
-changed: [s2]
-changed: [s1]
-
-TASK [set_fact deployed_config] ************************************************
+TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
 ok: [s1]
 ok: [s2]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
+TASK [Create local temporary file] *********************************************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
+
+TASK [Create initial config script in local temporary file] ********************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
 changed: [s1]
 changed: [s2]
 
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
-skipping: [s1]
-skipping: [s2]
+TASK [Remove temporary file /tmp/ansible.s1.mukldwlqtemp] **********************
+changed: [s2 -> localhost]
+changed: [s1 -> localhost]
 
 TASK [template] ****************************************************************
-changed: [h3]
-changed: [h2]
 changed: [h4]
+changed: [h2]
+changed: [h3]
 changed: [h1]
 
 TASK [Execute /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux.j2] ***
@@ -855,6 +944,10 @@ TASK [Find configuration template for vlan] ************************************
 ok: [s1]
 ok: [s2]
 
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [s1] => 
   msg: |-
@@ -864,16 +957,13 @@ ok: [s1] =>
     #
     set -e # Exit immediately when any command fails
     #
-    #
     # Create multi-vlan bridge, specify VLANs, and attach interfaces to it
     #
     cat >/etc/network/interfaces.d/50-bridge.intf <<CONFIG
     auto bridge
     iface bridge
         bridge-vlan-aware yes
-        bridge-vids 1001
-        bridge-vids 1002
-        bridge-vids 1000
+        bridge-vids 1000,1001,1002
         bridge-ports swp2
         bridge-ports swp3
     CONFIG
@@ -887,20 +977,14 @@ ok: [s1] =>
         bridge-access 1002
     auto vlan1000
     iface vlan1000
-        address 172.16.0.1/24
-  
         vlan-id 1000
         vlan-raw-device bridge
     auto vlan1002
     iface vlan1002
-        address 172.16.2.1/24
-  
         vlan-id 1002
         vlan-raw-device bridge
     auto vlan1001
     iface vlan1001
-        address 172.16.1.1/24
-  
         vlan-id 1001
         vlan-raw-device bridge
     CONFIG
@@ -913,16 +997,13 @@ ok: [s2] =>
     #
     set -e # Exit immediately when any command fails
     #
-    #
     # Create multi-vlan bridge, specify VLANs, and attach interfaces to it
     #
     cat >/etc/network/interfaces.d/50-bridge.intf <<CONFIG
     auto bridge
     iface bridge
         bridge-vlan-aware yes
-        bridge-vids 1001
-        bridge-vids 1003
-        bridge-vids 1000
+        bridge-vids 1000,1001,1003
         bridge-ports swp2
         bridge-ports swp3
     CONFIG
@@ -936,20 +1017,14 @@ ok: [s2] =>
         bridge-access 1003
     auto vlan1001
     iface vlan1001
-        address 172.16.1.2/24
-  
         vlan-id 1001
         vlan-raw-device bridge
     auto vlan1003
     iface vlan1003
-        address 172.16.3.2/24
-  
         vlan-id 1003
         vlan-raw-device bridge
     auto vlan1000
     iface vlan1000
-        address 172.16.0.2/24
-  
         vlan-id 1000
         vlan-raw-device bridge
     CONFIG
@@ -962,21 +1037,25 @@ ok: [s2]
 TASK [Deploy vlan configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for s1, s2
 
-TASK [copy cumulus config to /tmp/config.sh] ***********************************
-changed: [s2]
-changed: [s1]
-
-TASK [set_fact deployed_config] ************************************************
+TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/vlan/cumulus.j2] ***
 ok: [s1]
 ok: [s2]
 
-TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/cumulus.j2] ***
-changed: [s2]
-changed: [s1]
+TASK [Create local temporary file] *********************************************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
 
-TASK [run vtysh to import vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/cumulus.j2] ***
-skipping: [s1]
-skipping: [s2]
+TASK [Create vlan config script in local temporary file] ***********************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
+changed: [s1]
+changed: [s2]
+
+TASK [Remove temporary file /tmp/ansible.s1.e7l4waq8temp] **********************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [s1]
@@ -985,6 +1064,10 @@ ok: [s2]
 TASK [Find configuration template for bgp] *************************************
 ok: [s1]
 ok: [s2]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [s1] => 
@@ -1008,6 +1091,8 @@ ok: [s1] =>
       neighbor 10.0.0.2 update-source lo
     !
      address-family ipv4 unicast
+    !
+  
     !
       network 10.0.0.1/32
     !
@@ -1045,6 +1130,8 @@ ok: [s2] =>
     !
      address-family ipv4 unicast
     !
+  
+    !
       network 10.0.0.2/32
     !
     !
@@ -1067,21 +1154,25 @@ ok: [s2]
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for s1, s2
 
-TASK [copy cumulus config to /tmp/config.sh] ***********************************
-changed: [s2]
-changed: [s1]
-
-TASK [set_fact deployed_config] ************************************************
+TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/bgp/cumulus.j2] ***
 ok: [s1]
 ok: [s2]
 
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/cumulus.j2] ***
-skipping: [s1]
-skipping: [s2]
+TASK [Create local temporary file] *********************************************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
 
-TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/cumulus.j2] ***
+TASK [Create bgp config script in local temporary file] ************************
+changed: [s2 -> localhost]
+changed: [s1 -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
 changed: [s2]
 changed: [s1]
+
+TASK [Remove temporary file /tmp/ansible.s1.ra2fbgx2temp] **********************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [s1]
@@ -1091,16 +1182,23 @@ TASK [Find configuration template for ospf] ************************************
 ok: [s1]
 ok: [s2]
 
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [s1] => 
   msg: |-
     ospf configuration for s1
     =========================================
+    !
     router ospf
      ospf router-id 10.0.0.1
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
+  
     !
     interface lo
      ip ospf area 0.0.0.0
@@ -1116,11 +1214,14 @@ ok: [s2] =>
   msg: |-
     ospf configuration for s2
     =========================================
+    !
     router ospf
      ospf router-id 10.0.0.2
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
+  
+  
     !
     interface lo
      ip ospf area 0.0.0.0
@@ -1140,21 +1241,25 @@ ok: [s2]
 TASK [Deploy ospf configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for s1, s2
 
-TASK [copy cumulus config to /tmp/config.sh] ***********************************
-changed: [s1]
-changed: [s2]
-
-TASK [set_fact deployed_config] ************************************************
+TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/ospf/cumulus.j2] ***
 ok: [s1]
 ok: [s2]
 
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/cumulus.j2] ***
-skipping: [s1]
-skipping: [s2]
+TASK [Create local temporary file] *********************************************
+changed: [s2 -> localhost]
+changed: [s1 -> localhost]
 
-TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/cumulus.j2] ***
+TASK [Create ospf config script in local temporary file] ***********************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
 changed: [s1]
 changed: [s2]
+
+TASK [Remove temporary file /tmp/ansible.s1.6g46432itemp] **********************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [s1]
@@ -1163,6 +1268,10 @@ ok: [s2]
 TASK [Find configuration template for vrf] *************************************
 ok: [s1]
 ok: [s2]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [s1] => 
@@ -1205,9 +1314,9 @@ ok: [s1] =>
      no bgp default ipv4-unicast
      bgp router-id 10.0.0.1
      address-family ipv4 unicast
-    !
       redistribute connected
       redistribute ospf
+  
       label vpn export auto
       export vpn
       import vpn
@@ -1228,6 +1337,7 @@ ok: [s1] =>
   
      redistribute bgp
      redistribute connected
+  
     exit
     !
     interface vlan1000
@@ -1291,9 +1401,9 @@ ok: [s2] =>
      no bgp default ipv4-unicast
      bgp router-id 10.0.0.2
      address-family ipv4 unicast
-    !
       redistribute connected
       redistribute ospf
+  
       label vpn export auto
       export vpn
       import vpn
@@ -1314,6 +1424,7 @@ ok: [s2] =>
   
      redistribute bgp
      redistribute connected
+  
     exit
     !
     interface vlan1001
@@ -1345,21 +1456,25 @@ ok: [s2]
 TASK [Deploy vrf configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for s1, s2
 
-TASK [copy cumulus config to /tmp/config.sh] ***********************************
-changed: [s1]
-changed: [s2]
-
-TASK [set_fact deployed_config] ************************************************
+TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/vrf/cumulus.j2] ***
 ok: [s1]
 ok: [s2]
 
-TASK [run /tmp/config.sh to deploy vrf config from /home/pipi/net101/tools/netsim/ansible/templates/vrf/cumulus.j2] ***
-changed: [s2]
-changed: [s1]
+TASK [Create local temporary file] *********************************************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
 
-TASK [run vtysh to import vrf config from /home/pipi/net101/tools/netsim/ansible/templates/vrf/cumulus.j2] ***
-skipping: [s1]
-skipping: [s2]
+TASK [Create vrf config script in local temporary file] ************************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
+changed: [s1]
+changed: [s2]
+
+TASK [Remove temporary file /tmp/ansible.s1.qtzn0lgrtemp] **********************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
 
 TASK [Figure out whether to deploy the module vxlan on current device] *********
 ok: [s1]
@@ -1368,6 +1483,10 @@ ok: [s2]
 TASK [Find configuration template for vxlan] ***********************************
 ok: [s1]
 ok: [s2]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [s1] => 
@@ -1450,21 +1569,25 @@ ok: [s2]
 TASK [Deploy vxlan configuration] **********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for s1, s2
 
-TASK [copy cumulus config to /tmp/config.sh] ***********************************
-changed: [s2]
-changed: [s1]
-
-TASK [set_fact deployed_config] ************************************************
+TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/cumulus.j2] ***
 ok: [s1]
 ok: [s2]
 
-TASK [run /tmp/config.sh to deploy vxlan config from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/cumulus.j2] ***
+TASK [Create local temporary file] *********************************************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
+
+TASK [Create vxlan config script in local temporary file] **********************
+changed: [s2 -> localhost]
+changed: [s1 -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
 changed: [s1]
 changed: [s2]
 
-TASK [run vtysh to import vxlan config from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/cumulus.j2] ***
-skipping: [s1]
-skipping: [s2]
+TASK [Remove temporary file /tmp/ansible.s1.2kf_goyctemp] **********************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
 
 TASK [Figure out whether to deploy the module evpn on current device] **********
 ok: [s1]
@@ -1473,6 +1596,10 @@ ok: [s2]
 TASK [Find configuration template for evpn] ************************************
 ok: [s1]
 ok: [s2]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [s1] => 
@@ -1577,32 +1704,36 @@ ok: [s2]
 TASK [Deploy evpn configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for s1, s2
 
-TASK [copy cumulus config to /tmp/config.sh] ***********************************
-changed: [s2]
-changed: [s1]
-
-TASK [set_fact deployed_config] ************************************************
+TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/evpn/cumulus.j2] ***
 ok: [s1]
 ok: [s2]
 
-TASK [run /tmp/config.sh to deploy evpn config from /home/pipi/net101/tools/netsim/ansible/templates/evpn/cumulus.j2] ***
+TASK [Create local temporary file] *********************************************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
+
+TASK [Create evpn config script in local temporary file] ***********************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
 changed: [s1]
 changed: [s2]
 
-TASK [run vtysh to import evpn config from /home/pipi/net101/tools/netsim/ansible/templates/evpn/cumulus.j2] ***
-skipping: [s1]
-skipping: [s2]
+TASK [Remove temporary file /tmp/ansible.s1.xkvx0mkwtemp] **********************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=10   changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-h2                         : ok=10   changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-h3                         : ok=10   changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-h4                         : ok=10   changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-s1                         : ok=66   changed=14   unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-s2                         : ok=66   changed=14   unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+h1                         : ok=13   changed=2    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+h2                         : ok=13   changed=2    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+h3                         : ok=13   changed=2    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+h4                         : ok=13   changed=2    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+s1                         : ok=83   changed=28   unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+s2                         : ok=83   changed=28   unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
 
 
 

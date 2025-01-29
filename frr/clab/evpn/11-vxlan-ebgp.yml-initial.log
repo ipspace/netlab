@@ -23,6 +23,51 @@ skipping: [l2]
 skipping: [h1]
 skipping: [h2]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for spine, l1, l2, h1, h2
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [spine]
+ok: [l1]
+ok: [l2]
+ok: [h1]
+ok: [h2]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [spine]
+ok: [l1]
+ok: [l2]
+ok: [h1]
+ok: [h2]
+
+TASK [fail] ********************************************************************
+skipping: [spine]
+skipping: [l1]
+skipping: [l2]
+skipping: [h1]
+skipping: [h2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [spine]
+skipping: [l1]
+skipping: [l2]
+skipping: [h1]
+skipping: [h2]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [spine]
+skipping: [l1]
+skipping: [l2]
+skipping: [h1]
+skipping: [h2]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [spine]
+skipping: [l1]
+skipping: [l2]
+skipping: [h1]
+skipping: [h2]
+
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for spine, l1, l2, h1, h2
 
@@ -37,10 +82,54 @@ TASK [Find configuration template for initial] *********************************
 ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [h2]
 ok: [h1]
+ok: [h2]
+
+TASK [fail] ********************************************************************
+skipping: [spine]
+skipping: [l1]
+skipping: [l2]
+skipping: [h1]
+skipping: [h2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.31.1.5/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.31.1.5/24 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    #
+    #
+    # Print the final routing table
+    ip route
 ok: [spine] => 
   msg: |-
     initial configuration for spine
@@ -55,21 +144,11 @@ ok: [spine] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "172.31.1.4 h1" >>/tmp/hosts
-    echo "172.31.1.5 h2" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.1 l1" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.5 l2" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.2 10.1.0.6 spine" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -94,7 +173,7 @@ ok: [spine] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -113,8 +192,9 @@ ok: [spine] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1600
-    ip link set eth2 mtu 1600
+    ip link set dev eth1 mtu 1600
+    ip link set dev eth2 mtu 1600
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -144,6 +224,43 @@ ok: [spine] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.31.1.4/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.31.1.4/24 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    #
+    #
+    # Print the final routing table
+    ip route
 ok: [l1] => 
   msg: |-
     initial configuration for l1
@@ -158,21 +275,11 @@ ok: [l1] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "172.31.1.4 h1" >>/tmp/hosts
-    echo "172.31.1.5 h2" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.1 l1" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.5 l2" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.2 10.1.0.6 spine" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -197,7 +304,7 @@ ok: [l1] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -216,8 +323,9 @@ ok: [l1] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1600
-    ip link set eth2 mtu 1500
+    ip link set dev eth1 mtu 1600
+    ip link set dev eth2 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -240,6 +348,7 @@ ok: [l1] =>
     !
     interface eth2
      no shutdown
+     description [Access VLAN red] l1 -> h1
      ! no ip address
     !
     interface vlan1000
@@ -265,21 +374,11 @@ ok: [l2] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "# Created by netlab initial" >>/tmp/hosts
-    echo "172.31.1.4 h1" >>/tmp/hosts
-    echo "172.31.1.5 h2" >>/tmp/hosts
-    echo "10.0.0.2 10.1.0.1 l1" >>/tmp/hosts
-    echo "10.0.0.3 10.1.0.5 l2" >>/tmp/hosts
-    echo "10.0.0.1 10.1.0.2 10.1.0.6 spine" >>/tmp/hosts
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts|sort >>/etc/hosts
-  
     #
     # Get the current next hop for the default route
     #
@@ -304,7 +403,7 @@ ok: [l2] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -323,8 +422,9 @@ ok: [l2] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1600
-    ip link set eth2 mtu 1500
+    ip link set dev eth1 mtu 1600
+    ip link set dev eth2 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -347,6 +447,7 @@ ok: [l2] =>
     !
     interface eth2
      no shutdown
+     description [Access VLAN red] l2 -> h2
      ! no ip address
     !
     interface vlan1000
@@ -358,94 +459,20 @@ ok: [l2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [h1] => 
-  msg: |-
-    initial configuration for h1
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.31.1.4/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.31.1.4/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    #
-    # Print the final routing table
-    ip route
-ok: [h2] => 
-  msg: |-
-    initial configuration for h2
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.31.1.5/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.31.1.5/24 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    #
-    # Print the final routing table
-    ip route
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for spine, l1, l2
-included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for h1, h2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [l2 -> localhost]
 changed: [spine -> localhost]
-changed: [l1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [spine]
@@ -456,9 +483,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for spine, l1, l2
 
 TASK [template] ****************************************************************
-changed: [l2]
 changed: [l1]
 changed: [spine]
+changed: [l2]
 
 TASK [set_fact] ****************************************************************
 ok: [spine]
@@ -475,19 +502,31 @@ skipping: [spine]
 skipping: [l1]
 skipping: [l2]
 
-TASK [set_fact] ****************************************************************
+TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
 ok: [h2]
 
-TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+TASK [Create a temporary file for the rendered script] *************************
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-UOkJpJew-h1.sh] **********
+TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+changed: [h2 -> localhost]
+changed: [h1 -> localhost]
+
+TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
+skipping: [h1]
+skipping: [h2]
+
+TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+skipping: [h1]
+skipping: [h2]
+
+TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [file] ********************************************************************
+TASK [Remove temporary file /tmp/h1_initial-za0qpq85.sh] ***********************
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
@@ -514,6 +553,11 @@ skipping: [spine]
 ok: [l1]
 ok: [l2]
 
+TASK [fail] ********************************************************************
+skipping: [l1]
+skipping: [l2]
+skipping: [spine]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [spine]
 ok: [l1] => 
@@ -526,6 +570,8 @@ ok: [l1] =>
     #
     if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
       brctl addbr vlan1000
+  
+  
       ip link set dev vlan1000 up
       ip addr flush dev vlan1000
     fi
@@ -542,6 +588,8 @@ ok: [l2] =>
     #
     if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
       brctl addbr vlan1000
+  
+  
       ip link set dev vlan1000 up
       ip addr flush dev vlan1000
     fi
@@ -584,6 +632,11 @@ ok: [l1]
 ok: [l2]
 ok: [spine]
 
+TASK [fail] ********************************************************************
+skipping: [l1]
+skipping: [l2]
+skipping: [spine]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [l1] => 
   msg: |-
@@ -605,6 +658,8 @@ ok: [l1] =>
       neighbor 10.1.0.2 description spine
     !
      address-family ipv4 unicast
+    !
+  
     !
       network 10.0.0.2/32
     !
@@ -639,6 +694,8 @@ ok: [l2] =>
       neighbor 10.1.0.6 description spine
     !
      address-family ipv4 unicast
+    !
+  
     !
       network 10.0.0.3/32
     !
@@ -676,6 +733,8 @@ ok: [spine] =>
       neighbor 10.1.0.5 description l2
     !
      address-family ipv4 unicast
+    !
+  
     !
       network 10.0.0.1/32
     !
@@ -721,8 +780,8 @@ skipping: [l2]
 skipping: [spine]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [l2]
 changed: [l1]
+changed: [l2]
 changed: [spine]
 
 TASK [Figure out whether to deploy the module vxlan on current device] *********
@@ -734,6 +793,11 @@ TASK [Find configuration template for vxlan] ***********************************
 skipping: [spine]
 ok: [l1]
 ok: [l2]
+
+TASK [fail] ********************************************************************
+skipping: [l1]
+skipping: [l2]
+skipping: [spine]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [spine]
@@ -845,6 +909,11 @@ ok: [l1]
 ok: [l2]
 ok: [spine]
 
+TASK [fail] ********************************************************************
+skipping: [l1]
+skipping: [l2]
+skipping: [spine]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [l1] => 
   msg: |-
@@ -938,8 +1007,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for
 
 TASK [template] ****************************************************************
 changed: [spine]
-changed: [l2]
 changed: [l1]
+changed: [l2]
 
 TASK [set_fact] ****************************************************************
 ok: [l1]
@@ -960,11 +1029,11 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-l1                         : ok=50   changed=11   unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-l2                         : ok=50   changed=11   unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-spine                      : ok=36   changed=7    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
+h1                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+h2                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+l1                         : ok=52   changed=10   unreachable=0    failed=0    skipped=16   rescued=0    ignored=0   
+l2                         : ok=52   changed=10   unreachable=0    failed=0    skipped=16   rescued=0    ignored=0   
+spine                      : ok=39   changed=7    unreachable=0    failed=0    skipped=22   rescued=0    ignored=0   
 
 
 

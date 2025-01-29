@@ -29,6 +29,57 @@ TASK [Execute local ssh command to check router readiness] *********************
 skipping: [s1]
 skipping: [s2]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, h3, h4, s1, s2
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [h1]
+ok: [h2]
+ok: [h3]
+ok: [h4]
+ok: [s1]
+ok: [s2]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [h1]
+ok: [h2]
+ok: [h3]
+ok: [h4]
+ok: [s1]
+ok: [s2]
+
+TASK [fail] ********************************************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+skipping: [s1]
+skipping: [s2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+skipping: [s1]
+skipping: [s2]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+skipping: [s1]
+skipping: [s2]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+skipping: [s1]
+skipping: [s2]
+
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, h3, h4, s1, s2
 
@@ -45,8 +96,16 @@ ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
-ok: [s2]
 ok: [s1]
+ok: [s2]
+
+TASK [fail] ********************************************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+skipping: [s1]
+skipping: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [h1] => 
@@ -62,6 +121,7 @@ ok: [h1] =>
     #  /etc/hosts file is generated as a clab bind.
     #
     set -e
+  
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
     # Disable IPv4 and IPv6 forwarding
@@ -69,41 +129,33 @@ ok: [h1] =>
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
     #
-    # Interface addressing
+    # Interface addressing, create any bond devices
     #
     ip link set dev eth1 up
     set +e
     ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.0.1/24 dev eth1
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
     #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
     #
-    # lan prefix: 172.16.0.0/16 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 172.16.0.0/16 2>/dev/null
-    set -e
-    ip route add 172.16.0.0/16 via 172.16.0.5
-    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.0.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.0.0.0/24 via 172.16.0.5
-    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.0.0/24
-    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.1.0.0/16 2>/dev/null
-    set -e
-    ip route add 10.1.0.0/16 via 172.16.0.5
-    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
-    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.2.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.2.0.0/24 via 172.16.0.5
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.0.5 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.0.5 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.0.5 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.0.5 dev eth1 protocol static
     #
     # Print the final routing table
     ip route
@@ -120,6 +172,7 @@ ok: [h2] =>
     #  /etc/hosts file is generated as a clab bind.
     #
     set -e
+  
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
     # Disable IPv4 and IPv6 forwarding
@@ -127,41 +180,33 @@ ok: [h2] =>
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
     #
-    # Interface addressing
+    # Interface addressing, create any bond devices
     #
     ip link set dev eth1 up
     set +e
     ip addr del 172.16.0.2/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.0.2/24 dev eth1
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
     #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
     #
-    # lan prefix: 172.16.0.0/16 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 172.16.0.0/16 2>/dev/null
-    set -e
-    ip route add 172.16.0.0/16 via 172.16.0.6
-    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.0.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.0.0.0/24 via 172.16.0.6
-    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.0.0/24
-    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.1.0.0/16 2>/dev/null
-    set -e
-    ip route add 10.1.0.0/16 via 172.16.0.6
-    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
-    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.2.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.2.0.0/24 via 172.16.0.6
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.0.6 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.0.6 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.0.6 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.0.6 dev eth1 protocol static
     #
     # Print the final routing table
     ip route
@@ -178,6 +223,7 @@ ok: [h3] =>
     #  /etc/hosts file is generated as a clab bind.
     #
     set -e
+  
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
     # Disable IPv4 and IPv6 forwarding
@@ -185,41 +231,33 @@ ok: [h3] =>
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
     #
-    # Interface addressing
+    # Interface addressing, create any bond devices
     #
     ip link set dev eth1 up
     set +e
     ip addr del 172.16.1.3/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.1.3/24 dev eth1
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
     #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
     #
-    # lan prefix: 172.16.0.0/16 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 172.16.0.0/16 2>/dev/null
-    set -e
-    ip route add 172.16.0.0/16 via 172.16.1.5
-    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 10.0.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.0.0.0/24 via 172.16.1.5
-    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.1.0/24
-    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 10.1.0.0/16 2>/dev/null
-    set -e
-    ip route add 10.1.0.0/16 via 172.16.1.5
-    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
-    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 10.2.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.2.0.0/24 via 172.16.1.5
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.1.5 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.1.5 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.1.5 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.1.5 dev eth1 protocol static
     #
     # Print the final routing table
     ip route
@@ -236,6 +274,7 @@ ok: [h4] =>
     #  /etc/hosts file is generated as a clab bind.
     #
     set -e
+  
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
     # Disable IPv4 and IPv6 forwarding
@@ -243,93 +282,36 @@ ok: [h4] =>
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
     #
-    # Interface addressing
+    # Interface addressing, create any bond devices
     #
     ip link set dev eth1 up
     set +e
     ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.1.4/24 dev eth1
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
     #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
     #
-    # lan prefix: 172.16.0.0/16 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 172.16.0.0/16 2>/dev/null
-    set -e
-    ip route add 172.16.0.0/16 via 172.16.1.6
-    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 10.0.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.0.0.0/24 via 172.16.1.6
-    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.1.0/24
-    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 10.1.0.0/16 2>/dev/null
-    set -e
-    ip route add 10.1.0.0/16 via 172.16.1.6
-    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
-    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 10.2.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.2.0.0/24 via 172.16.1.6
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.1.6 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.1.6 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.1.6 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.1.6 dev eth1 protocol static
     #
     # Print the final routing table
     ip route
-ok: [s1] => 
-  msg: |-
-    initial configuration for s1
-    =========================================
-  
-    /system identity set name="s1"
-  
-    /interface bridge add name=loopback protocol-mode=none
-  
-  
-    /ip address add interface=loopback address=10.0.0.5/32
-  
-  
-    /interface/bridge/add name=switch vlan-filtering=yes comment="Global Switch Bridge"
-  
-    /interface/vlan/add name=vlan1001 vlan-id=1001 interface=switch
-    /interface/vlan/add name=vlan1000 vlan-id=1000 interface=switch
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-    /interface ethernet set comment="VLAN red (1000) -> [s2,h1,h2]" vlan1000
-  
-  
-    /ip address add interface=vlan1000 address=172.16.0.5/24
-    /ip address set [find where interface=vlan1000] comment="VLAN red (1000) -> [s2,h1,h2]"
-  
-  
-    /interface ethernet set comment="VLAN blue (1001) -> [h3,s2,h4]" vlan1001
-  
-  
-    /ip address add interface=vlan1001 address=172.16.1.5/24
-    /ip address set [find where interface=vlan1001] comment="VLAN blue (1001) -> [h3,s2,h4]"
-  
-  
-    /ip neighbor discovery-settings set discover-interface-list=all
 ok: [s2] => 
   msg: |-
     initial configuration for s2
@@ -345,37 +327,92 @@ ok: [s2] =>
   
     /interface/bridge/add name=switch vlan-filtering=yes comment="Global Switch Bridge"
   
-    /interface/vlan/add name=vlan1001 vlan-id=1001 interface=switch
-    /interface/vlan/add name=vlan1000 vlan-id=1000 interface=switch
+    /interface/vlan/add name=vlan701 vlan-id=701 interface=switch
+    /interface/vlan/add name=vlan700 vlan-id=700 interface=switch
   
   
   
   
   
+    /interface ethernet set comment="s2 -> s1" ether2
+  
+  
+  
+  
+    /interface ethernet set comment="[Access VLAN red] s2 -> h2" ether3
+  
+  
+  
+  
+    /interface ethernet set comment="[Access VLAN blue] s2 -> h4" ether4
+  
+  
+  
+  
+    /interface ethernet set comment="VLAN red (700) -> [s1,h1,h2]" vlan700
+  
+  
+    /ip address add interface=vlan700 address=172.16.0.6/24
+    /ip address set [find where interface=vlan700] comment="VLAN red (700) -> [s1,h1,h2]"
+  
+  
+    /interface ethernet set comment="VLAN blue (701) -> [h3,s1,h4]" vlan701
+  
+  
+    /ip address add interface=vlan701 address=172.16.1.6/24
+    /ip address set [find where interface=vlan701] comment="VLAN blue (701) -> [h3,s1,h4]"
+  
+  
+    /ip neighbor discovery-settings set discover-interface-list=all
+ok: [s1] => 
+  msg: |-
+    initial configuration for s1
+    =========================================
+  
+    /system identity set name="s1"
+  
+    /interface bridge add name=loopback protocol-mode=none
+  
+  
+    /ip address add interface=loopback address=10.0.0.5/32
+  
+  
+    /interface/bridge/add name=switch vlan-filtering=yes comment="Global Switch Bridge"
+  
+    /interface/vlan/add name=vlan701 vlan-id=701 interface=switch
+    /interface/vlan/add name=vlan700 vlan-id=700 interface=switch
   
   
   
   
   
+    /interface ethernet set comment="s1 -> s2" ether2
   
   
   
   
+    /interface ethernet set comment="[Access VLAN red] s1 -> h1" ether3
   
   
   
-    /interface ethernet set comment="VLAN red (1000) -> [s1,h1,h2]" vlan1000
+  
+    /interface ethernet set comment="[Access VLAN blue] s1 -> h3" ether4
   
   
-    /ip address add interface=vlan1000 address=172.16.0.6/24
-    /ip address set [find where interface=vlan1000] comment="VLAN red (1000) -> [s1,h1,h2]"
   
   
-    /interface ethernet set comment="VLAN blue (1001) -> [h3,s1,h4]" vlan1001
+    /interface ethernet set comment="VLAN red (700) -> [s2,h1,h2]" vlan700
   
   
-    /ip address add interface=vlan1001 address=172.16.1.6/24
-    /ip address set [find where interface=vlan1001] comment="VLAN blue (1001) -> [h3,s1,h4]"
+    /ip address add interface=vlan700 address=172.16.0.5/24
+    /ip address set [find where interface=vlan700] comment="VLAN red (700) -> [s2,h1,h2]"
+  
+  
+    /interface ethernet set comment="VLAN blue (701) -> [h3,s2,h4]" vlan701
+  
+  
+    /ip address add interface=vlan701 address=172.16.1.5/24
+    /ip address set [find where interface=vlan701] comment="VLAN blue (701) -> [h3,s2,h4]"
   
   
     /ip neighbor discovery-settings set discover-interface-list=all
@@ -389,40 +426,58 @@ ok: [s2]
 ok: [s1]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for h1, h2, h3, h4
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2, h3, h4
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/routeros7.yml for s1, s2
 
-TASK [set_fact] ****************************************************************
+TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
 
-TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+TASK [Create a temporary file for the rendered script] *************************
+changed: [h3 -> localhost]
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h4 -> localhost]
+
+TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+changed: [h1 -> localhost]
+changed: [h4 -> localhost]
+changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-IYlsFtNi-h1.sh] **********
-changed: [h1 -> localhost]
-changed: [h2 -> localhost]
-changed: [h4 -> localhost]
-changed: [h3 -> localhost]
+TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
 
-TASK [file] ********************************************************************
+TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+
+TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [h4 -> localhost]
+changed: [h1 -> localhost]
 changed: [h3 -> localhost]
 changed: [h2 -> localhost]
+
+TASK [Remove temporary file /tmp/h1_initial-l0bjmx_j.sh] ***********************
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+changed: [h3 -> localhost]
+changed: [h4 -> localhost]
 
 TASK [load initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/routeros7.j2] ***
 ok: [s1]
 ok: [s2]
 
 TASK [Run commands on CHR] *****************************************************
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -441,6 +496,10 @@ TASK [Find configuration template for vlan] ************************************
 ok: [s1]
 ok: [s2]
 
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [s1] => 
   msg: |-
@@ -448,58 +507,58 @@ ok: [s1] =>
     =========================================
   
   
-    /interface/bridge/vlan add bridge=switch vlan-ids=1001 tagged=switch
-    /interface/bridge/vlan add bridge=switch vlan-ids=1000 tagged=switch
+    /interface/bridge/vlan add bridge=switch vlan-ids=701 tagged=switch
+    /interface/bridge/vlan add bridge=switch vlan-ids=700 tagged=switch
   
   
-    /interface/bridge/port add bridge=switch interface=ether2 pvid=1000
+    /interface/bridge/port add bridge=switch interface=ether2 pvid=700
   
-    /interface/bridge/vlan set untagged=([get value-name=untagged [find vlan-ids=1000]],"ether2") [find vlan-ids=1000]
-  
-  
-    /interface/bridge/vlan set tagged=([get value-name=tagged [find vlan-ids=1000]],"ether2") [find vlan-ids=1000]
-    /interface/bridge/vlan set tagged=([get value-name=tagged [find vlan-ids=1001]],"ether2") [find vlan-ids=1001]
+    /interface/bridge/vlan set untagged=([get value-name=untagged [find vlan-ids=700]],"ether2") [find vlan-ids=700]
   
   
-    /interface/bridge/port add bridge=switch interface=ether3 pvid=1000
-  
-    /interface/bridge/vlan set untagged=([get value-name=untagged [find vlan-ids=1000]],"ether3") [find vlan-ids=1000]
-  
+    /interface/bridge/vlan set tagged=([get value-name=tagged [find vlan-ids=700]],"ether2") [find vlan-ids=700]
+    /interface/bridge/vlan set tagged=([get value-name=tagged [find vlan-ids=701]],"ether2") [find vlan-ids=701]
   
   
+    /interface/bridge/port add bridge=switch interface=ether3 pvid=700
   
-    /interface/bridge/port add bridge=switch interface=ether4 pvid=1001
+    /interface/bridge/vlan set untagged=([get value-name=untagged [find vlan-ids=700]],"ether3") [find vlan-ids=700]
   
-    /interface/bridge/vlan set untagged=([get value-name=untagged [find vlan-ids=1001]],"ether4") [find vlan-ids=1001]
+  
+  
+  
+    /interface/bridge/port add bridge=switch interface=ether4 pvid=701
+  
+    /interface/bridge/vlan set untagged=([get value-name=untagged [find vlan-ids=701]],"ether4") [find vlan-ids=701]
 ok: [s2] => 
   msg: |-
     vlan configuration for s2
     =========================================
   
   
-    /interface/bridge/vlan add bridge=switch vlan-ids=1001 tagged=switch
-    /interface/bridge/vlan add bridge=switch vlan-ids=1000 tagged=switch
+    /interface/bridge/vlan add bridge=switch vlan-ids=701 tagged=switch
+    /interface/bridge/vlan add bridge=switch vlan-ids=700 tagged=switch
   
   
-    /interface/bridge/port add bridge=switch interface=ether2 pvid=1000
+    /interface/bridge/port add bridge=switch interface=ether2 pvid=700
   
-    /interface/bridge/vlan set untagged=([get value-name=untagged [find vlan-ids=1000]],"ether2") [find vlan-ids=1000]
-  
-  
-    /interface/bridge/vlan set tagged=([get value-name=tagged [find vlan-ids=1000]],"ether2") [find vlan-ids=1000]
-    /interface/bridge/vlan set tagged=([get value-name=tagged [find vlan-ids=1001]],"ether2") [find vlan-ids=1001]
+    /interface/bridge/vlan set untagged=([get value-name=untagged [find vlan-ids=700]],"ether2") [find vlan-ids=700]
   
   
-    /interface/bridge/port add bridge=switch interface=ether3 pvid=1000
-  
-    /interface/bridge/vlan set untagged=([get value-name=untagged [find vlan-ids=1000]],"ether3") [find vlan-ids=1000]
-  
+    /interface/bridge/vlan set tagged=([get value-name=tagged [find vlan-ids=700]],"ether2") [find vlan-ids=700]
+    /interface/bridge/vlan set tagged=([get value-name=tagged [find vlan-ids=701]],"ether2") [find vlan-ids=701]
   
   
+    /interface/bridge/port add bridge=switch interface=ether3 pvid=700
   
-    /interface/bridge/port add bridge=switch interface=ether4 pvid=1001
+    /interface/bridge/vlan set untagged=([get value-name=untagged [find vlan-ids=700]],"ether3") [find vlan-ids=700]
   
-    /interface/bridge/vlan set untagged=([get value-name=untagged [find vlan-ids=1001]],"ether4") [find vlan-ids=1001]
+  
+  
+  
+    /interface/bridge/port add bridge=switch interface=ether4 pvid=701
+  
+    /interface/bridge/vlan set untagged=([get value-name=untagged [find vlan-ids=701]],"ether4") [find vlan-ids=701]
 
 TASK [Find configuration deployment deploy_script for vlan] ********************
 ok: [s1]
@@ -520,12 +579,12 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-h3                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-h4                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-s1                         : ok=20   changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-s2                         : ok=20   changed=2    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
+h1                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+h2                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+h3                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+h4                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+s1                         : ok=23   changed=2    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+s2                         : ok=23   changed=2    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 
 
 

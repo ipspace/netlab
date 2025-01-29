@@ -20,6 +20,45 @@ skipping: [xf]
 skipping: [dut_a]
 skipping: [probe]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut_c, xf, dut_a, probe
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [xf]
+ok: [probe]
+ok: [dut_c]
+ok: [dut_a]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [xf]
+ok: [probe]
+ok: [dut_c]
+ok: [dut_a]
+
+TASK [fail] ********************************************************************
+skipping: [dut_c]
+skipping: [xf]
+skipping: [dut_a]
+skipping: [probe]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut_c]
+skipping: [xf]
+skipping: [dut_a]
+skipping: [probe]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [dut_c]
+skipping: [xf]
+skipping: [dut_a]
+skipping: [probe]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [dut_c]
+skipping: [xf]
+skipping: [dut_a]
+skipping: [probe]
+
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut_c, xf, dut_a, probe
 
@@ -34,6 +73,12 @@ ok: [xf]
 ok: [probe]
 ok: [dut_c]
 ok: [dut_a]
+
+TASK [fail] ********************************************************************
+skipping: [dut_c]
+skipping: [xf]
+skipping: [dut_a]
+skipping: [probe]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [xf] => 
@@ -50,7 +95,8 @@ ok: [xf] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -78,7 +124,7 @@ ok: [xf] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -96,7 +142,8 @@ ok: [xf] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
+    ip link set dev eth1 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -115,49 +162,12 @@ ok: [xf] =>
     interface eth1
      no shutdown
      description xf -> dut_c [external]
-     ip address 172.16.2.4/24
+     ip address 10.1.0.10/30
     !
     do write
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [dut_c] => 
-  msg: |-
-    initial configuration for dut_c
-    =========================================
-    hostname dut_c
-    !
-    no ip domain lookup
-    !
-    lldp run
-    !
-    ip host dut_a 10.0.0.1 172.16.0.1
-    ip host probe 10.0.0.3 172.16.0.3 172.16.1.3
-    ip host xf 10.0.0.4 172.16.2.4
-    !
-    ip routing
-    !
-    !
-    interface Loopback0
-     ip address 10.0.0.2 255.255.255.255
-    !
-    interface GigabitEthernet1
-     no lldp transmit
-     no lldp receive
-    !
-    interface GigabitEthernet2
-     no shutdown
-     description dut_c -> probe
-     ip address 172.16.1.2 255.255.255.0
-    !
-    interface GigabitEthernet3
-     no shutdown
-     description dut_c -> xf [external]
-     ip address 172.16.2.2 255.255.255.0
-    !
-    no banner exec
-    no banner login
-    no banner incoming
 ok: [probe] => 
   msg: |-
     initial configuration for probe
@@ -172,7 +182,8 @@ ok: [probe] =>
     cat <<SCRIPT >/root/.bash_profile
     #!/bin/bash
     #
-    export PS1="\h(bash)#"
+    export PS1="\h(bash)# "
+    echo
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
@@ -200,7 +211,7 @@ ok: [probe] =>
     #
   
     #
-    # Create loopbacks and stub devices
+    # Create loopbacks, stub and lag/bond devices
     #
     if [ ! -e /sys/class/net/lo ]; then
       if [ ! -e /sys/devices/virtual/net/lo ]; then
@@ -219,8 +230,9 @@ ok: [probe] =>
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
     #
     # Set Ethernet interface MTU
-    ip link set eth1 mtu 1500
-    ip link set eth2 mtu 1500
+    ip link set dev eth1 mtu 1500
+    ip link set dev eth2 mtu 1500
+  
     #
     # Rest of initial configuration done through VTYSH
     #
@@ -239,12 +251,12 @@ ok: [probe] =>
     interface eth1
      no shutdown
      description probe -> dut_a
-     ip address 172.16.0.3/24
+     ip address 10.1.0.1/30
     !
     interface eth2
      no shutdown
      description probe -> dut_c
-     ip address 172.16.1.3/24
+     ip address 10.1.0.5/30
     !
     do write
     CONFIG
@@ -260,9 +272,9 @@ ok: [dut_a] =>
     !
     lldp run
     !
-    ip host dut_c 10.0.0.2 172.16.1.2 172.16.2.2
-    ip host probe 10.0.0.3 172.16.0.3 172.16.1.3
-    ip host xf 10.0.0.4 172.16.2.4
+    ip host dut_c 10.0.0.2 10.1.0.6 10.1.0.9
+    ip host probe 10.0.0.3 10.1.0.1 10.1.0.5
+    ip host xf 10.0.0.4 10.1.0.10
     !
     ip routing
     !
@@ -275,19 +287,64 @@ ok: [dut_a] =>
      no lldp receive
     !
     interface GigabitEthernet2
-     no shutdown
      description dut_a -> probe
-     ip address 172.16.0.1 255.255.255.0
+     ip address 10.1.0.2 255.255.255.252
+     no shutdown
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
+    !
+    no banner exec
+    no banner login
+    no banner incoming
+ok: [dut_c] => 
+  msg: |-
+    initial configuration for dut_c
+    =========================================
+    hostname dut_c
+    !
+    no ip domain lookup
+    !
+    lldp run
+    !
+    ip host dut_a 10.0.0.1 10.1.0.2
+    ip host probe 10.0.0.3 10.1.0.1 10.1.0.5
+    ip host xf 10.0.0.4 10.1.0.10
+    !
+    ip routing
+    !
+    !
+    interface Loopback0
+     ip address 10.0.0.2 255.255.255.255
+    !
+    interface GigabitEthernet1
+     no lldp transmit
+     no lldp receive
+    !
+    interface GigabitEthernet2
+     description dut_c -> probe
+     ip address 10.1.0.6 255.255.255.252
+     no shutdown
+    !
+    interface GigabitEthernet3
+     description dut_c -> xf [external]
+     ip address 10.1.0.9 255.255.255.252
+     no shutdown
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
     !
     no banner exec
     no banner login
     no banner incoming
 
 TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [probe]
 ok: [xf]
-ok: [dut_c]
+ok: [probe]
 ok: [dut_a]
+ok: [dut_c]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut_c, dut_a
@@ -301,7 +358,6 @@ changed: [dut_a]
 changed: [dut_c]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [probe -> localhost]
 changed: [xf -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
@@ -312,16 +368,16 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for xf, probe
 
 TASK [template] ****************************************************************
-changed: [xf]
 changed: [probe]
+changed: [xf]
 
 TASK [set_fact] ****************************************************************
-ok: [xf]
 ok: [probe]
+ok: [xf]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [xf]
 changed: [probe]
+changed: [xf]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [xf]
@@ -351,6 +407,12 @@ skipping: [probe]
 ok: [xf]
 ok: [dut_c]
 
+TASK [fail] ********************************************************************
+skipping: [dut_a]
+skipping: [dut_c]
+skipping: [probe]
+skipping: [xf]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut_a]
 skipping: [probe]
@@ -370,8 +432,8 @@ ok: [xf] =>
   
       bgp router-id 10.0.0.4
     !
-      neighbor 172.16.2.2 remote-as 65000
-      neighbor 172.16.2.2 description dut_c
+      neighbor 10.1.0.9 remote-as 65000
+      neighbor 10.1.0.9 description dut_c
     !
      address-family ipv4 unicast
     !
@@ -381,10 +443,10 @@ ok: [xf] =>
     !
     !
     !
-      neighbor 172.16.2.2 activate
-      no neighbor 172.16.2.2 send-community all
-      neighbor 172.16.2.2 send-community standard
-      neighbor 172.16.2.2 send-community large
+      neighbor 10.1.0.9 activate
+      no neighbor 10.1.0.9 send-community all
+      neighbor 10.1.0.9 send-community standard
+      neighbor 10.1.0.9 send-community large
     !
     !
     !
@@ -402,8 +464,8 @@ ok: [dut_c] =>
      bgp nopeerup-delay cold-boot 1
      bgp nopeerup-delay user-initiated 1
      bgp router-id 10.0.0.2
-      neighbor 172.16.2.4 remote-as 65100
-      neighbor 172.16.2.4 description xf
+      neighbor 10.1.0.10 remote-as 65100
+      neighbor 10.1.0.10 description xf
   
     !
      address-family ipv4
@@ -414,9 +476,9 @@ ok: [dut_c] =>
   
     !
     !
-      neighbor 172.16.2.4 activate
-      neighbor 172.16.2.4 advertisement-interval 0
-      neighbor 172.16.2.4 send-community standard
+      neighbor 10.1.0.10 activate
+      neighbor 10.1.0.10 advertisement-interval 0
+      neighbor 10.1.0.10 send-community standard
   
     !
 
@@ -459,8 +521,48 @@ ok: [probe]
 ok: [dut_a]
 ok: [dut_c]
 
+TASK [fail] ********************************************************************
+skipping: [dut_a]
+skipping: [dut_c]
+skipping: [probe]
+skipping: [xf]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [xf]
+ok: [probe] => 
+  msg: |-
+    ospf configuration for probe
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.3
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! probe -> dut_a
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    interface eth2
+    ! probe -> dut_c
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+     ip ospf cost 10
+    !
+  
+    !
+    do write
 ok: [dut_a] => 
   msg: |-
     ospf configuration for dut_a
@@ -500,40 +602,6 @@ ok: [dut_c] =>
      ip ospf network point-to-point
      ip ospf cost 10
     !
-ok: [probe] => 
-  msg: |-
-    ospf configuration for probe
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.3
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! probe -> dut_a
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-    interface eth2
-    ! probe -> dut_c
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-     ip ospf cost 10
-    !
-  
-    !
-    do write
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 skipping: [xf]
@@ -566,10 +634,10 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut_a                      : ok=19   changed=2    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
-dut_c                      : ok=24   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-probe                      : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-xf                         : ok=25   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+dut_a                      : ok=22   changed=2    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+dut_c                      : ok=27   changed=3    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+probe                      : ok=27   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+xf                         : ok=28   changed=5    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 
 
 

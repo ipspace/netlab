@@ -28,6 +28,11 @@ def tests_parse(args: typing.List[str]) -> argparse.Namespace:
     action='store',
     help='Limit tests to a single device')
   parser.add_argument(
+    '-g','--group',
+    dest='group',
+    action='store',
+    help='Run tests on a group of devices')
+  parser.add_argument(
     '-x','--exclude',
     dest='exclude',
     action='store',
@@ -65,7 +70,19 @@ def check_valid_tests(setup: Box, t_list: list) -> None:
     if test not in setup.tests.keys():
       log.fatal(f'Unknown integration test {test}',module='tests')
 
+def select_group(setup: Box, args: argparse.Namespace) -> None:
+  if args.group not in setup.groups:
+    log.fatal(f'Invalid group {args.group}, valid groups are {",".join(setup.groups.keys())}')
+
+  setup.netlab = setup.groups[args.group].netlab
+  args.device = ",".join(setup.groups[args.group].devices)
+  if 'workdir' in setup.params:
+    setup.params.workdir += f'/{args.group}'
+
 def prune_setup(setup: Box, args: argparse.Namespace) -> None:
+  if args.group:
+    select_group(setup,args)
+
   if not args.all and not args.device:
     log.fatal('You have to specify the devices to test, using either --device or --all flag',module='tests')
 
@@ -77,7 +94,7 @@ def prune_setup(setup: Box, args: argparse.Namespace) -> None:
 
     setup.devices = { k:v for k,v in setup.devices.items() if k in i_devices }
 
-  elif args.exclude:
+  if args.exclude:
     x_devices = args.exclude.split(',')
     setup.devices = { k:v for k,v in setup.devices.items() if k not in x_devices }
 
@@ -163,7 +180,8 @@ def run_single_test(
 
   os.environ['NETLAB_DEVICE'] = device
   os.environ['NETLAB_PROVIDER'] = provider
-  os.environ[f'NETLAB_DEVICES_{device}_PROVIDER'] = provider          # Force device-specific provider
+  if not setup.get(f'devices.{device}.{provider}.daemon',False):      # Force device-specific provider
+    os.environ[f'NETLAB_DEVICES_{device}_PROVIDER'] = provider        # ... but not for daemons
   os.environ['NETLAB_GROUPS_ALL_VARS_NETLAB__SHOW__CONFIG'] = 'True'  # Enable configuration display
   for nl_param in setup.netlab.keys():
     ev = 'NETLAB_' + nl_param.upper()
