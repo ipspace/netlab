@@ -167,6 +167,57 @@ ok: [h2] =>
     #
     # Print the final routing table
     ip route
+ok: [h3] => 
+  msg: |-
+    initial configuration for h3
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.1.3/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.1.3/24 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.1.5 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.1.5 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.1.5 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.1.5 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
 ok: [h4] => 
   msg: |-
     initial configuration for h4
@@ -226,6 +277,12 @@ ok: [s1] =>
     - set:
         system:
           hostname: s1
+          config:
+            snippet:
+              system-mtu:
+                file: /etc/network/ifupdown2/policy.d/mtu.json
+                content: |
+                  { "address": { "defaults": { "mtu": "1500" } } }
         interface:
           eth0:
             ip:
@@ -236,7 +293,6 @@ ok: [s1] =>
           swp1:
             type: swp
             link:
-              mtu: 1500
               state:
                 up : {}
             description: "[Access VLAN red] s1 -> h1"
@@ -244,7 +300,6 @@ ok: [s1] =>
           swp2:
             type: swp
             link:
-              mtu: 1500
               state:
                 up : {}
             description: "[Access VLAN red] s1 -> h2"
@@ -252,7 +307,6 @@ ok: [s1] =>
           swp3:
             type: swp
             link:
-              mtu: 1500
               state:
                 up : {}
             description: "[Access VLAN blue] s1 -> h3"
@@ -260,7 +314,6 @@ ok: [s1] =>
           swp4:
             type: swp
             link:
-              mtu: 1500
               state:
                 up : {}
             description: "[Access VLAN green] s1 -> h4"
@@ -308,64 +361,13 @@ ok: [s1] =>
                 10.0.0.5/32: {}
               ipv6:
                 enable: off
-ok: [h3] => 
-  msg: |-
-    initial configuration for h3
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.1.3/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.1.3/24 dev eth1
-    ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.2.0.0/24 2>/dev/null; do
-      : ; done
-    #
-    #
-    echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.1.5 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.1.5 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.1.5 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.1.5 dev eth1 protocol static
-    #
-    # Print the final routing table
-    ip route
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [s1]
 ok: [h1]
 ok: [h2]
-ok: [h4]
 ok: [h3]
+ok: [h4]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for s1
@@ -397,15 +399,15 @@ ok: [h4]
 
 TASK [Create a temporary file for the rendered script] *************************
 changed: [h2 -> localhost]
-changed: [h4 -> localhost]
 changed: [h1 -> localhost]
+changed: [h4 -> localhost]
 changed: [h3 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
-changed: [h4 -> localhost]
-changed: [h2 -> localhost]
 changed: [h3 -> localhost]
+changed: [h2 -> localhost]
+changed: [h4 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -425,11 +427,11 @@ changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-smpmmi8g.sh] ***********************
-changed: [h1 -> localhost]
-changed: [h4 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-lwohmsvv.sh] ***********************
 changed: [h3 -> localhost]
+changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h4 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
