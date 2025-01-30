@@ -12,40 +12,34 @@
 {%  elif i.type|default("") == "stub" %}
         description: Stub interface
 {%  endif %}
-{%  if i.ipv4 is defined or i.ipv6 is defined %}
         ip:
 {%    if i.ipv4 is defined or (i.ipv6 is string and i.ipv6|ipv6) %}
           address:
-{%    endif %}
-{%    if i.ipv4 is defined %}
-{%      if i.ipv4 == True %}
-            {{ loopback.ipv4 }}: {}
-{%      else %}
-            {{ i.ipv4 }}: {}
+{%      if i.ipv4 is defined %}
+            {{ (loopback if i.ipv4 == True else i).ipv4 }}: {}
 {%      endif %}
-{%    endif %}
-{%    if i.ipv6 is defined %}
 {%      if i.ipv6 is string and i.ipv6|ipv6 %}
             {{ i.ipv6 }}: {}
 {%      endif %}
+{%    endif %}
           ipv6:
+{%    if i.ipv6 is defined %}
             forward: on
-{%        if 'ipv6' not in i.dhcp.client|default({}) %}
+{%      if 'ipv6' not in i.dhcp.client|default({}) %}
           neighbor-discovery:
             enable: on
             router-advertisement:
               enable: on
               interval: 5000
-{%        endif %}
+{%      endif %}
 {%    else %}
-          ipv6:
             enable: off
 {%    endif %}            
-{%  elif i.type=='lag' %}
+{%    if i.type=='lag' %}
         bridge:
           domain:
             br_default: {}
-{%  endif %}
+{%    endif %}
 {% endmacro %}
 
 - set:
