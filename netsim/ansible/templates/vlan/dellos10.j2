@@ -13,21 +13,16 @@ interface vlan {{ vlan.id }}
 {% for ifdata in interfaces if ifdata.vlan is defined %}
 !
 interface {{ ifdata.ifname }}
-{%   if ifdata.vlan.access_id is defined %}
- switchport mode access
- switchport access vlan {{ ifdata.vlan.access_id }}
-{%   endif %}
 {%   if ifdata.vlan.trunk_id is defined %}
  switchport mode trunk
-
-{%     set vid_list = [] %}
-{%     for vid in ifdata.vlan.trunk_id if vid != ifdata.vlan.access_id|default(0) %}
-{{       vid_list.append(vid) }}
-{%     endfor %}
-
- switchport trunk allowed vlan {{ vid_list|join(",") }}
-{%     if ifdata.vlan.native is defined %}
- switchport access vlan {{ ifdata.vlan.access_id }}
+{%     if ifdata.vlan.native is defined or 1 in ifdata.vlan.trunk_id %}
+ switchport access vlan {{ ifdata.vlan.access_id|default(1) }}
+{%     else %}
+ no switchport access vlan
 {%     endif %}
+ switchport trunk allowed vlan {{ ifdata.vlan.trunk_id|difference([ifdata.vlan.access_id|default(1)])|join(",") }}
+{%   elif ifdata.vlan.access_id is defined %}
+ switchport mode access
+ switchport access vlan {{ ifdata.vlan.access_id }}
 {%   endif %}
 {% endfor +%}
