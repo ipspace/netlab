@@ -7,6 +7,7 @@ message: |
   * h1 and h2 should be able to ping each other
   * h3 and h4 should be able to ping each other
   * h1 should not be able to reach h3
+  * h5 should not be able to reach h6 over its untagged native vlan
 
   Please note it might take a while for the lab to work due to
   STP learning phase
@@ -14,7 +15,7 @@ message: |
 groups:
   _auto_create: True
   hosts:
-    members: [ h1, h2, h3, h4 ]
+    members: [ h1, h2, h3, h4, h5, h6 ]
     device: linux
     provider: clab
   switches:
@@ -32,6 +33,12 @@ vlans:
     prefix:
       ipv4: 172.31.1.0/24
     links: [ s1-h3, s2-h4 ]
+  untagged: # Untagged links to test that device isn't passing the default VLAN on the trunk
+    id: 1
+    mode: bridge
+    prefix:
+      ipv4: 172.31.1.0/24
+    links: [ s1-h5, s2-h6 ]
 
 links:
 - s1:
@@ -55,3 +62,7 @@ validate:
     description: Ping-based reachability test between blue and red VLANs
     nodes: [ h1 ]
     plugin: ping('h3',expect='fail')
+  untagged_vlan:
+    description: Ping-based reachability test on untagged VLAN
+    nodes: [ h5 ]
+    plugin: ping('h6',expect='fail')
