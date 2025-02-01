@@ -218,6 +218,111 @@ ok: [h3] =>
     #
     # Print the final routing table
     ip route
+ok: [s1] => 
+  msg: |-
+    initial configuration for s1
+    =========================================
+  
+    - set:
+        system:
+          hostname: s1
+          config:
+            snippet:
+              system-mtu:
+                file: /etc/network/ifupdown2/policy.d/mtu.json
+                content: |
+                  { "address": { "defaults": { "mtu": "1500" } } }
+        interface:
+          eth0:
+            ip:
+              vrf: mgmt
+              address:
+                dhcp: {}
+            type: eth
+          swp1:
+            type: swp
+            link:
+              state:
+                up : {}
+            description: "[Access VLAN red] s1 -> h1"
+            ip:
+              ipv6:
+                enable: off
+  
+          swp2:
+            type: swp
+            link:
+              state:
+                up : {}
+            description: "[Access VLAN red] s1 -> h2"
+            ip:
+              ipv6:
+                enable: off
+  
+          swp3:
+            type: swp
+            link:
+              state:
+                up : {}
+            description: "[Access VLAN blue] s1 -> h3"
+            ip:
+              ipv6:
+                enable: off
+  
+          swp4:
+            type: swp
+            link:
+              state:
+                up : {}
+            description: "[Access VLAN green] s1 -> h4"
+            ip:
+              ipv6:
+                enable: off
+  
+          vlan700:
+            type: svi
+            link:
+              state:
+                up : {}
+            description: "VLAN red (700) -> [h1,h2] [stub]"
+            ip:
+              ipv6:
+                enable: off
+  
+          vlan701:
+            type: svi
+            link:
+              state:
+                up : {}
+            description: "VLAN blue (701) -> [h3] [stub]"
+            ip:
+              address:
+                172.16.1.5/24: {}
+              ipv6:
+                enable: off
+  
+          vlan702:
+            type: svi
+            link:
+              state:
+                up : {}
+            description: "VLAN green (702) -> [h4] [stub]"
+            ip:
+              address:
+                172.16.2.5/24: {}
+              ipv6:
+                enable: off
+  
+  
+    - set:
+        interface:
+          lo:
+            type: loopback
+            ip:
+              address:
+                10.0.0.5/32: {}
+              ipv6:
+                enable: off
 ok: [h4] => 
   msg: |-
     initial configuration for h4
@@ -269,98 +374,6 @@ ok: [h4] =>
     #
     # Print the final routing table
     ip route
-ok: [s1] => 
-  msg: |-
-    initial configuration for s1
-    =========================================
-  
-    - set:
-        system:
-          hostname: s1
-          config:
-            snippet:
-              system-mtu:
-                file: /etc/network/ifupdown2/policy.d/mtu.json
-                content: |
-                  { "address": { "defaults": { "mtu": "1500" } } }
-        interface:
-          eth0:
-            ip:
-              vrf: mgmt
-              address:
-                dhcp: {}
-            type: eth
-          swp1:
-            type: swp
-            link:
-              state:
-                up : {}
-            description: "[Access VLAN red] s1 -> h1"
-  
-          swp2:
-            type: swp
-            link:
-              state:
-                up : {}
-            description: "[Access VLAN red] s1 -> h2"
-  
-          swp3:
-            type: swp
-            link:
-              state:
-                up : {}
-            description: "[Access VLAN blue] s1 -> h3"
-  
-          swp4:
-            type: swp
-            link:
-              state:
-                up : {}
-            description: "[Access VLAN green] s1 -> h4"
-  
-          vlan700:
-            type: svi
-            link:
-              state:
-                up : {}
-            description: "VLAN red (700) -> [h1,h2] [stub]"
-  
-          vlan701:
-            type: svi
-            link:
-              state:
-                up : {}
-            description: "VLAN blue (701) -> [h3] [stub]"
-            ip:
-              address:
-                172.16.1.5/24: {}
-              ipv6:
-                enable: off
-  
-  
-          vlan702:
-            type: svi
-            link:
-              state:
-                up : {}
-            description: "VLAN green (702) -> [h4] [stub]"
-            ip:
-              address:
-                172.16.2.5/24: {}
-              ipv6:
-                enable: off
-  
-  
-  
-    - set:
-        interface:
-          lo:
-            type: loopback
-            ip:
-              address:
-                10.0.0.5/32: {}
-              ipv6:
-                enable: off
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [s1]
@@ -404,8 +417,8 @@ changed: [h4 -> localhost]
 changed: [h3 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
 changed: [h3 -> localhost]
+changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h4 -> localhost]
 
@@ -424,14 +437,14 @@ skipping: [h4]
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
-changed: [h3 -> localhost]
 changed: [h4 -> localhost]
+changed: [h3 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-lwohmsvv.sh] ***********************
-changed: [h3 -> localhost]
-changed: [h1 -> localhost]
-changed: [h2 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-ecm0a7o2.sh] ***********************
 changed: [h4 -> localhost]
+changed: [h1 -> localhost]
+changed: [h3 -> localhost]
+changed: [h2 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -459,8 +472,9 @@ ok: [s1] =>
         bridge:
           domain:
             br_default:
-              mac-address: "08:4f:c2:a9:00:05" # The default 'auto' setting picks the same MAC for multiple instances!
-              untagged: 1
+              type: vlan-aware
+              mac-address: "08:4f:c2:a9:00:05" # The default 'auto' setting reads the MAC from the EEPROM, which is the same for all instances
+              untagged: none
               vlan:
                 '701': {}
                 '702': {}
