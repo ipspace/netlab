@@ -1,33 +1,36 @@
-{% if vlans is defined %}
-{%  for vname,vdata in vlans.items() %}
-{%   if loop.first %}
 - set:
     bridge:
       domain:
         br_default:
+{% set native_vlans = interfaces|selectattr('_vlan_native','defined')|map(attribute='_vlan_native')|list %}
+          untagged: {{ vlans[native_vlans|first].id if native_vlans else 'none' }}
+{% if vlans is defined %}
+{%   for vname,vdata in vlans.items() if vname not in native_vlans and vdata.mode!='route' %}
+{%     if loop.first %}
           vlan:
-{%   endif %}
+{%     endif %}
             '{{ vdata.id }}': {}
-{%  endfor %}
+{%   endfor %}
 {% endif %}
 
 {# Note: interface.xyz.vlan is only used for SVI interfaces in case of multiple bridges #}
 
-{% for i in interfaces if i.vlan is defined and (i.virtual_interface is not defined or i.type=="lag") %}
-{%   if loop.first %}
+{% for i in interfaces if i.vlan.access_id is defined and 
+                          (i.virtual_interface is not defined or i.type in ["vlan_member","lag"]) and
+                          (i.vlan.get('mode',"")!='route' or i._vlan_native is defined) %}
+- set:
     interface:
-{%   endif %}
-     {{ i.ifname }}:
+     {{ i.parent_ifname if i.type=='vlan_member' else i.ifname }}:
        bridge:
          domain:
            br_default:
-{%   if i.vlan.trunk_id is defined +%}
+{%   if i.type=='vlan_member' %}
              vlan:
-{%     for v in i.vlan.trunk_id|sort %}
-               '{{ v }}': {}
-{%     endfor %}
-             untagged: {{ i.vlan.access_id if 'native' in i.vlan else 'none' }}
-{%   elif i.vlan.access_id is defined %}
+               '{{ i.vlan.access_id }}': {}
+{%     if i._vlan_native is defined %}
+             untagged: {{ i.vlan.access_id }}
+{%     endif %}
+{%   else %}
              access: {{ i.vlan.access_id }}
 {%   endif %}
 {% endfor %}
