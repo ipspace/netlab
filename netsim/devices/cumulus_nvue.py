@@ -139,6 +139,32 @@ def nvue_check_ospf_passive_in_vrf(node: Box) -> None:
       more_data=err_data,
       node=node)
 
+"""
+In case of multiple loopbacks, merges OSPF settings into 1 if compatible; else throws an error
+"""
+def nvue_merge_ospf_loopbacks(node: Box) -> None:
+  err_data = []
+  for i in node.get('interfaces',[]):
+    if i.type!='loopback' or 'ospf' not in i:
+      continue
+    if 'ospf' in node.loopback and 'vrf' not in i:
+      if i.ospf == node.loopback.ospf or (i.ospf == node.loopback.ospf+{'passive': False}):
+        i.pop('ospf',None)
+        report_quirk(
+          f'Node {node.name} uses a secondary loopback with OSPF { i.ifname }, merged with primary loopback',
+          quirk='loopback_merge_ospf',
+          category=Warning,
+          node=node)
+        continue
+    err_data.append(f'Secondary loopback {i.ifname}')
+
+  if err_data:
+    report_quirk(
+      f'Node {node.name} uses secondary loopback(s) with OSPF configuration that differs from the primary loopback, or is in a VRF',
+      quirk='secondary_loopback_ospf',
+      more_data=err_data,
+      node=node)
+
 class Cumulus_Nvue(_Quirks):
 
   @classmethod
