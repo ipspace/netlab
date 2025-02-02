@@ -68,13 +68,15 @@ def nvue_check_ospf_passive_in_vrf(node: Box) -> None:
   err_data = []
   for vrf,vdata in node.get('vrfs',{}).items():
     for i in vdata.get('ospf.interfaces',[]):
-      if 'passive' in i.ospf:
-        err_data.append(f'Interface {i.ifname} inside VRF {i.vrf} using OSPF passive')
+      if 'passive' in i.ospf and i.ospf.passive is True:
+        err_data.append(f'Interface {i.ifname} inside VRF {i.vrf} using ospf.passive=True')
+        i.ospf.passive = False
 
   if err_data:
     report_quirk(
-      f'Node {node.name} uses passive OSPF interfaces inside a VRF, which NVUE does not support',
+      f'Node {node.name} uses passive OSPF interfaces inside a VRF, which NVUE does not support; auto-converted to False',
       quirk='vrf_ospf_passive',
+      category=Warning,
       more_data=err_data,
       node=node)
 
