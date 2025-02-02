@@ -59,6 +59,25 @@ def nvue_check_ospfv3(node: Box) -> None:
       module='ospf',
       hint='ospfv3')
 
+"""
+Checks whether this node uses OSPF passive interfaces inside a vrf. NVUE does not support these correctly, because the scripts
+at /usr/lib/python3/dist-packages/nos/funits/cue_frr_v1/templates/frr_ospf_intf.conf.j2 use 'passive-interface' instead of
+'ip ospf passive' at the interface level (which is VRF aware)
+"""
+def nvue_check_ospf_passive_in_vrf(node: Box) -> None:
+  err_data = []
+  for vrf,vdata in node.get('vrfs',{}).items():
+    for i in vdata.get('ospf.interfaces',[]):
+      if 'passive' in i.ospf:
+        err_data.append(f'Interface {i.ifname} inside VRF {i.vrf} using OSPF passive')
+
+  if err_data:
+    report_quirk(
+      f'Node {node.name} uses passive OSPF interfaces inside a VRF, which NVUE does not support',
+      quirk='vrf_ospf_passive',
+      more_data=err_data,
+      node=node)
+
 class Cumulus_Nvue(_Quirks):
 
   @classmethod
@@ -68,6 +87,7 @@ class Cumulus_Nvue(_Quirks):
     if 'ospf' in mods:
       if 'vrfs' in node:
         check_ospf_vrf_default(node)
+        nvue_check_ospf_passive_in_vrf(node)
       nvue_check_ospfv3(node)
 
     # NVUE specific quirks
