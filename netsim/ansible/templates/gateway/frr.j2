@@ -2,6 +2,8 @@
 #
 set -e # Exit immediately when any command fails
 #
+sysctl -w net.ipv6.conf.all.enhanced_dad=0
+sysctl -w net.ipv6.conf.default.enhanced_dad=0
 {% for intf in interfaces if intf.gateway.protocol|default('none') == 'vrrp' %}
 {%   for afm in ['ipv4','ipv6'] if afm in intf.gateway %}
 {%     set v_if = 'vrrp%s-%s-%s'|format('6' if afm == 'ipv6' else '',intf.ifindex,intf.gateway.vrrp.group) %}
@@ -29,13 +31,17 @@ if [ ! -e /sys/class/net/{{ v_if }} ]; then
 {%   for afm in ['ipv4','ipv6'] if afm in intf.gateway %}
   ip addr add {{ intf.gateway[afm] }} dev {{ v_if }} metric 1024
 {%   endfor %}
-  sysctl -w net.ipv6.conf.all.enhanced_dad=0
-  sysctl -w net.ipv6.conf.default.enhanced_dad=0
+{%   if 'ipv4' in intf.gateway %}
   sysctl -w net.ipv4.conf.{{ intf.ifname }}.arp_announce=1
   sysctl -w net.ipv4.conf.{{ intf.ifname }}.arp_ignore=2
+{%   endif %}
+{%   if 'ipv6' in intf.gateway %}
   sysctl -w net.ipv6.conf.{{ v_if }}.enhanced_dad=0
   sysctl -w net.ipv6.conf.{{ v_if }}.accept_dad=0
   sysctl -w net.ipv6.conf.{{ v_if }}.dad_transmits=0
+{%   else %}
+  sysctl -w net.ipv6.conf.{{ v_if }}.disable_ipv6=1
+{%   endif %}
   ip link set dev {{ v_if }} up
 fi
 {% endfor %}
