@@ -1,6 +1,10 @@
 Release Notes
 =============
 
+**Release 1.9.4-post1 (2025-02-03)**
+
+This release fixes [a convoluted bug triggered by Arista EOS internal VLAN allocation](bug-fixes-1.9.4-post1) and [a few quirks in the configuration templates](release-1.9.4-post-1-device-fixes).
+
 **[Release 1.9.4](release-1.9.4) (2025-01-29)**
 
 Release 1.9.4 includes numerous [bug fixes](bug-fixes-1.9.4) and [fixes in device definitions and configuration templates](release-1.9.4-device-fixes).
