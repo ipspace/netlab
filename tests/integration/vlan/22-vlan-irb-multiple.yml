@@ -3,7 +3,11 @@ message: |
   The device under test is a layer-3 switch bridging VLANs
   between ports and having an IP address in each VLAN
 
-  All hosts should be able to ping each other
+  All hosts should be able to ping each other using both IPv4 and IPv6
+
+addressing:
+  lan:
+    ipv6: 2001:db8:1::/48
 
 groups:
   _auto_create: True
@@ -30,3 +34,16 @@ validate:
     wait_msg: Waiting for STP to enable the ports
     nodes: [ h1, h2, h3 ]
     plugin: ping('h4')
+  ra:
+    description: Check RA-generated default route
+    wait: 30
+    wait_msg: Waiting for RA message to generate the default route
+    nodes: [ h1, h2, h3, h4 ]
+    plugin: default6()
+    stop_on_error: True
+  ping6:
+    description: IPv6 ping H1,H2,H3 => H4
+    wait: 10
+    wait_msg: Wait for IPv6 interfaces to become operational
+    nodes: [ h1, h2, h3 ]
+    plugin: ping(nodes.h4.interfaces[0].ipv6,af='ipv6')
