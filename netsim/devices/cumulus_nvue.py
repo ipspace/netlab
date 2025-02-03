@@ -57,7 +57,7 @@ def nvue_check_ospfv3(node: Box) -> None:
     log.error(f"Node '{node.name}' uses OSPFv3 which cannot be configured through Cumulus NVUE; use a regular 'cumulus' node instead",
       category=log.FatalError,
       module='ospf',
-      hint='ospfv3')   
+      hint='ospfv3')
 
 """
 In case of multiple loopbacks, merges OSPF settings into 1 if compatible; else throws an error
