@@ -1,6 +1,11 @@
 {% macro decl_interface(i) %}
+{%  if '_cumulus_native_ifname' not in i %}
       {{ i.ifname }}:
-        type: {{ 'svi' if i.type in ['svi','vlan_member'] else 'bond' if i.type=='lag' else 'swp' }}
+        type: {{ 'svi' if i.type=='svi' else 'sub' if i.type=='vlan_member' else 'bond' if i.type=='lag' else 'swp' }}
+{%  else %}
+      {{ i._cumulus_native_ifname }}:
+        type: sub
+{%  endif %}
         link:
 {%  if i.mtu is defined %}
           mtu: {{ i.mtu }}
@@ -64,7 +69,8 @@
           address:
             dhcp: {}
         type: eth
-{% for l in interfaces|default([]) if l.type !='loopback' %}
+{% for l in interfaces|default([]) if l.type not in ['loopback','vlan_member'] 
+                                  or (l.type=='vlan_member' and (l.ipv4 is defined or l.ipv6 is defined)) %}
 {{      decl_interface(l) }}
 {% endfor %}
 

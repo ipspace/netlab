@@ -57,7 +57,7 @@ def nvue_check_ospfv3(node: Box) -> None:
     log.error(f"Node '{node.name}' uses OSPFv3 which cannot be configured through Cumulus NVUE; use a regular 'cumulus' node instead",
       category=log.FatalError,
       module='ospf',
-      hint='ospfv3')
+      hint='ospfv3')   
 
 """
 Checks whether this node uses OSPF passive interfaces inside a vrf. NVUE does not support these correctly, because the scripts
