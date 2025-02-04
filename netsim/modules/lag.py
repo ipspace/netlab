@@ -419,11 +419,11 @@ class LAG(_Module):
         intf.type = intf.pop('_type')
 
   """
-  module_post_link_transform - remove temporary 'virtual_lag' links
+  module_post_transform - remove temporary 'virtual_lag' links
   """
-  def module_post_link_transform(self, topology: Box) -> None:
+  def module_post_transform(self, topology: Box) -> None:
     if log.debug_active('lag'):
-      print(f'LAG module_post_link_transform: Cleanup "virtual_lag" links')
+      print(f'LAG module_post_transform: Cleanup "virtual_lag" links')
     topology.links = [ link for link in topology.links if '_virtual_lag' not in link ]
 
   """
