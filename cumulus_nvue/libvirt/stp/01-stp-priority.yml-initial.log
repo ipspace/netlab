@@ -37,7 +37,7 @@ ok: [x1] =>
     =========================================
     !
     interface Ethernet1
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0201
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
@@ -78,6 +78,12 @@ ok: [dut] =>
     - set:
         system:
           hostname: dut
+          config:
+            snippet:
+              system-mtu:
+                file: /etc/network/ifupdown2/policy.d/mtu.json
+                content: |
+                  { "address": { "defaults": { "mtu": "1500" } } }
         interface:
           eth0:
             ip:
@@ -88,10 +94,12 @@ ok: [dut] =>
           swp1:
             type: swp
             link:
-              mtu: 1500
               state:
                 up : {}
             description: "[Access VLAN red] dut -> x1"
+            ip:
+              ipv6:
+                enable: off
   
           vlan42:
             type: svi
@@ -99,6 +107,9 @@ ok: [dut] =>
               state:
                 up : {}
             description: "VLAN red (42) -> [x1]"
+            ip:
+              ipv6:
+                enable: off
   
   
     - set:
@@ -203,8 +214,9 @@ ok: [dut] =>
         bridge:
           domain:
             br_default:
-              mac-address: "08:4f:c2:a9:00:01" # The default 'auto' setting picks the same MAC for multiple instances!
-              untagged: 1
+              type: vlan-aware
+              mac-address: "08:4f:c2:a9:00:01" # The default 'auto' setting reads the MAC from the EEPROM, which is the same for all instances
+              untagged: none
               vlan:
                 '42': {}
   
@@ -285,8 +297,6 @@ ok: [dut] =>
                 state:
                   up: {}
                 priority: 4096
-  
-    # When using PVRST, NVidia recommends to increase from default 2000 pps
 ok: [x1] => 
   msg: |-
     stp configuration for x1

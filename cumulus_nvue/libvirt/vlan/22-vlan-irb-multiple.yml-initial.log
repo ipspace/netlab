@@ -82,8 +82,8 @@ TASK [Find configuration template for initial] *********************************
 ok: [s1]
 ok: [h1]
 ok: [h2]
-ok: [h4]
 ok: [h3]
+ok: [h4]
 
 TASK [fail] ********************************************************************
 skipping: [s1]
@@ -121,6 +121,11 @@ ok: [h1] =>
     ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.0.1/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:1::1/64 dev eth1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:1::1/64 dev eth1
     ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
@@ -172,6 +177,11 @@ ok: [h2] =>
     ip addr del 172.16.0.2/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.0.2/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:1::2/64 dev eth1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:1::2/64 dev eth1
     ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
@@ -223,6 +233,11 @@ ok: [h3] =>
     ip addr del 172.16.1.3/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.1.3/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:1:1::3/64 dev eth1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:1:1::3/64 dev eth1
     ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
@@ -316,8 +331,14 @@ ok: [s1] =>
             ip:
               address:
                 172.16.0.5/24: {}
+                2001:db8:1::5/64: {}
               ipv6:
-                enable: off
+                forward: on
+              neighbor-discovery:
+                enable: on
+                router-advertisement:
+                  enable: on
+                  interval: 5000
   
           vlan701:
             type: svi
@@ -328,8 +349,14 @@ ok: [s1] =>
             ip:
               address:
                 172.16.1.5/24: {}
+                2001:db8:1:1::5/64: {}
               ipv6:
-                enable: off
+                forward: on
+              neighbor-discovery:
+                enable: on
+                router-advertisement:
+                  enable: on
+                  interval: 5000
   
   
     - set:
@@ -369,6 +396,11 @@ ok: [h4] =>
     ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.1.4/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:1:1::4/64 dev eth1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:1:1::4/64 dev eth1
     ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
@@ -429,9 +461,9 @@ ok: [h3]
 ok: [h4]
 
 TASK [Create a temporary file for the rendered script] *************************
+changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h4 -> localhost]
-changed: [h1 -> localhost]
 changed: [h3 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
@@ -453,15 +485,15 @@ skipping: [h3]
 skipping: [h4]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
-changed: [h3 -> localhost]
-changed: [h4 -> localhost]
-
-TASK [Remove temporary file /tmp/h1_initial-9jl0rnuu.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h4 -> localhost]
 changed: [h3 -> localhost]
+
+TASK [Remove temporary file /tmp/h1_initial-da6_5gj5.sh] ***********************
+changed: [h3 -> localhost]
+changed: [h1 -> localhost]
+changed: [h4 -> localhost]
 changed: [h2 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
@@ -559,5 +591,5 @@ s1                         : ok=29   changed=6    unreachable=0    failed=0    s
 The device under test is a layer-3 switch bridging VLANs
 between ports and having an IP address in each VLAN
 
-All hosts should be able to ping each other
+All hosts should be able to ping each other using both IPv4 and IPv6
 
