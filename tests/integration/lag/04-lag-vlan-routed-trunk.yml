@@ -1,0 +1,35 @@
+message: |
+  The device under test is a router connected with a routed VLAN trunk on a LAG to
+  another router. Hosts should be able to ping each other.
+
+  On routers, this case tests routed subinterfaces on a port-channel interface
+groups:
+  _auto_create: true
+  hosts:
+    members: [h1, h2]
+    device: linux
+    provider: clab
+  routers:
+    members: [dut, xr]
+    module: [lag, vlan, ospf]
+    vlan.mode: route
+  probe:
+    members: [xr]
+    device: frr
+
+vlans:
+  v1:
+    links: [dut-h1, xr-h2]
+
+links:
+- vlan.trunk: [v1]
+  lag:
+    members: [dut-xr, dut-xr]
+
+validate:
+  ping_v1:
+    description: Pinging H2 from H1 on VLAN v1
+    nodes: [h1]
+    wait_msg: Waiting for STP to enable the ports
+    wait: 45
+    plugin: ping('h2')
