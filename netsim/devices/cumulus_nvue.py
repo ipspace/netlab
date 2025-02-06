@@ -91,6 +91,7 @@ def nvue_create_native_subifs(node: Box, topology: Box) -> None:
           i.pop(att,None)
 
         node.interfaces.append(native_subif)
+        i.subif_index = i.subif_index + 1
         break
 
 """
