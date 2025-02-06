@@ -14,7 +14,7 @@ You can assign a static prefix to a link with a **prefix** link attribute and a 
 * **lan** pool: IPv4 and IPv6 addresses used for all links apart from P2P or stub links ([more details](links-default-pools)).
 * **p2p** pool: IPv4 and IPv6 addresses used on point-to-point links between two routers.
 * **router_id** pool is used to allocate BGP router IDs in IPv6-only networks.
-* **l2only** pool has no IPv4 or IPv6 addresses. You can use it to create L2-only links. See [layer-2-only pools](#layer-2-only-pools) and *[Using l2only Address Pool](example/addressing-tutorial.md#layer-2-only-links-using-l2only-address-pool)* for details.
+* **l2only** pool has no IPv4 or IPv6 addresses. You can use it to create L2-only links. See [layer-2-only pools](address-l2only) and *[Using l2only Address Pool](addr-example-l2only)* for details.
 * **vrf_loopback** pool: IPv4 and IPv6 prefixes used on optional VRF loopback interfaces.
 
 You can specify additional address pools, and [use them with the **pool** link attribute](links-custom-pools).
@@ -118,9 +118,16 @@ You can create unnumbered interfaces in two ways:
 
 For more details, see *[Unnumbered Interface Example](#unnumbered-interface-example)* below.
 
+(address-l2only)=
 ## Layer-2-only Pools
 
 An address pool with no attributes is a layer-2-only pool. Links using such a pool have no IPv4/IPv6 prefix, and interfaces attached to such links get no IPv4/IPv6 address assigned from the on-link prefix.
+
+```{warning}
+Creating an interface with no IPv4/IPv6 addresses does not imply a bridged interface. Use the [VLAN module](module-vlan) if you want to do bridging across multiple interfaces.
+
+A reasonable use case for the **‌l2only** pool is a custom layer-2 functionality implemented in [your own configuration template](custom-config). You can also try to use it to implement CLNS-only IS-IS networks ;)
+```
 
 *netlab* has predefined **l2only** pool that you can use to create layer-2-only links, for example: 
 
