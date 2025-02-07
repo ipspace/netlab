@@ -4,23 +4,23 @@ PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [h1]
+ok: [s1]
 ok: [s2]
 ok: [x1]
-ok: [s1]
 
 TASK [Find device readiness script] ********************************************
 ok: [h1]
 ok: [s1]
-ok: [s2]
 ok: [x1]
+ok: [s2]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [h1]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/eos-clab.yml for s1, s2, x1
 
 TASK [Wait for cEOS SSH daemon to start] ***************************************
-ok: [s2]
 ok: [s1]
+ok: [s2]
 ok: [x1]
 
 TASK [Normalize config on bridge-like devices] *********************************
@@ -35,8 +35,8 @@ ok: [x1]
 TASK [Find configuration template for normalize] *******************************
 ok: [h1]
 ok: [s1]
-ok: [x1]
 ok: [s2]
+ok: [x1]
 
 TASK [fail] ********************************************************************
 skipping: [s1]
@@ -52,40 +52,40 @@ ok: [s1] =>
     =========================================
     !
     interface Ethernet1
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0201
     !
     interface Ethernet2
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0202
-ok: [x1] => 
-  msg: |-
-    normalize configuration for x1
-    =========================================
-    !
-    interface Ethernet1
-     no switchport
-     mac-address 52dc.cafe.0401
-    !
-    interface Ethernet2
-     no switchport
-     mac-address 52dc.cafe.0402
-    !
-    interface Ethernet3
-     no switchport
-     mac-address 52dc.cafe.0403
 ok: [s2] => 
   msg: |-
     normalize configuration for s2
     =========================================
     !
     interface Ethernet1
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0301
     !
     interface Ethernet2
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0302
+ok: [x1] => 
+  msg: |-
+    normalize configuration for x1
+    =========================================
+    !
+    interface Ethernet1
+     shutdown
+     mac-address 52dc.cafe.0401
+    !
+    interface Ethernet2
+     shutdown
+     mac-address 52dc.cafe.0402
+    !
+    interface Ethernet3
+     shutdown
+     mac-address 52dc.cafe.0403
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
 skipping: [h1]
@@ -101,8 +101,8 @@ TASK [eos_config: deploying normalize from /home/pipi/net101/tools/netsim/ansibl
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
 should be similar to how they appear if present in the running configuration on
 device including the indentation
-changed: [s2]
 changed: [s1]
+changed: [s2]
 changed: [x1]
 
 TASK [Deploy initial configuration] ********************************************
@@ -210,6 +210,7 @@ ok: [s1] =>
      no shutdown
     !
     interface port-channel1
+     no switchport
      description [Access VLAN red] s1 -> [x1,s2]
     !
     interface Ethernet2
@@ -255,6 +256,7 @@ ok: [s2] =>
      no shutdown
     !
     interface port-channel1
+     no switchport
      description [Access VLAN red] s2 -> [x1,s1]
     !
     interface Ethernet2
@@ -293,6 +295,7 @@ ok: [x1] =>
      ip address 10.0.0.4/32
     !
     interface port-channel1
+     no switchport
      description [Access VLAN red] x1 -> [s1,s2]
     !
     interface Ethernet1
@@ -332,8 +335,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1
 
 TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
-changed: [s2]
 changed: [s1]
+changed: [s2]
 changed: [x1]
 
 TASK [Define script filename and determine whether to execute in netns] ********
@@ -354,7 +357,7 @@ skipping: [h1]
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [h1 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-q688lfjk.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-bk82d_a0.sh] ***********************
 changed: [h1 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
@@ -514,13 +517,13 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for
 
 TASK [eos_config: deploying lag from /home/pipi/net101/tools/netsim/ansible/templates/lag/eos.j2] ***
 changed: [x1]
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [s1]
-ok: [x1]
 ok: [s2]
+ok: [x1]
 
 TASK [Find configuration template for vlan] ************************************
 ok: [s1]
@@ -536,6 +539,20 @@ TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [s1] => 
   msg: |-
     vlan configuration for s1
+    =========================================
+    vlan 1000
+     name red
+    !
+  
+    !
+    interface port-channel1
+     switchport
+     switchport access vlan 1000
+    !
+    interface Vlan1000
+ok: [s2] => 
+  msg: |-
+    vlan configuration for s2
     =========================================
     vlan 1000
      name red
@@ -565,20 +582,6 @@ ok: [x1] =>
      switchport access vlan 1000
     !
     interface Vlan1000
-ok: [s2] => 
-  msg: |-
-    vlan configuration for s2
-    =========================================
-    vlan 1000
-     name red
-    !
-  
-    !
-    interface port-channel1
-     switchport
-     switchport access vlan 1000
-    !
-    interface Vlan1000
 
 TASK [Find configuration deployment deploy_script for vlan] ********************
 ok: [s1]
@@ -589,8 +592,8 @@ TASK [Deploy vlan configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for s1, s2, x1
 
 TASK [eos_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/eos.j2] ***
-changed: [s2]
 changed: [s1]
+changed: [s2]
 changed: [x1]
 
 TASK [Figure out whether to deploy the module gateway on current device] *******
