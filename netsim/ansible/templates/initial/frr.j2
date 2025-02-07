@@ -92,17 +92,17 @@ fi
 
 # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
 #
-{% for l in interfaces if l.type in ['lan','p2p','stub','lag','bond'] %}
-{%   if l.ipv6 is not defined %}
-sysctl -qw net.ipv6.conf.{{ l.ifname }}.disable_ipv6=1
+{% for i in interfaces if i.type in ['lan','p2p','stub','lag','bond'] %}
+{%   if i.ipv6 is not defined %}
+sysctl -qw net.ipv6.conf.{{ i.ifname }}.disable_ipv6=1
 {%   elif role|default('router') != 'host' %}
-sysctl -qw net.ipv6.conf.{{ l.ifname }}.autoconf=0
-sysctl -qw net.ipv6.conf.{{ l.ifname }}.accept_ra=0
-ip link set {{ l.ifname }} down
-ip link set {{ l.ifname }} up
+sysctl -qw net.ipv6.conf.{{ i.ifname }}.autoconf=0
+sysctl -qw net.ipv6.conf.{{ i.ifname }}.accept_ra=0
+ip link set {{ i.ifname }} down
+ip link set {{ i.ifname }} up
 {%   endif %}
-{%   if l.mtu is defined %}
-ip link set dev {{ l.ifname }} mtu {{ l.mtu }}
+{%   if i.mtu is defined %}
+ip link set dev {{ i.ifname }} mtu {{ i.mtu }}
 {%   endif %}
 {% endfor %}
 
@@ -127,30 +127,30 @@ ipv6 forwarding
 {% set frr_defaults = netlab_frr_defaults|default('datacenter') %}
 frr defaults {{ frr_defaults }}
 !
-{% for l in netlab_interfaces %}
-interface {{ l.ifname }}
+{% for i in netlab_interfaces %}
+interface {{ i.ifname }}
  no shutdown
-{% if l.name is defined %}
- description {{ l.name }}{{ " ["+l.role+"]" if l.role is defined else "" }}
-{% elif l.type|default("") == "stub" %}
+{% if i.name is defined %}
+ description {{ i.name }}{{ " ["+i.role+"]" if i.role is defined else "" }}
+{% elif i.type|default("") == "stub" %}
  description Stub interface
 {% endif %}
-{% if l.ipv4 is defined and (l.ipv4 is string or l._parent_ipv4 is defined) %}
- ip address {{ l.ipv4 if l.ipv4 is string else l._parent_ipv4 }}
+{% if i.ipv4 is defined and (i.ipv4 is string or i._parent_ipv4 is defined) %}
+ ip address {{ i.ipv4 if i.ipv4 is string else i._parent_ipv4 }}
 {% else %}
  ! no ip address
 {% endif %}
-{% if l.ipv6 is defined %}
-{%  if l.ipv6 is string and l.ipv6|ipv6 %}
- ipv6 address {{ l.ipv6 }}
+{% if i.ipv6 is defined %}
+{%  if i.ipv6 is string and i.ipv6|ipv6 %}
+ ipv6 address {{ i.ipv6 }}
 {%  endif %}
-{%  if l.type != 'loopback' %}
+{%  if i.type != 'loopback' %}
  ipv6 nd ra-interval 5
  no ipv6 nd suppress-ra
 {%  endif %}
 {% endif %}
-{% if l.bandwidth is defined %}
- bandwidth {{ l.bandwidth  }}
+{% if i.bandwidth is defined %}
+ bandwidth {{ i.bandwidth  }}
 {% endif %}
 !
 {% endfor %}
