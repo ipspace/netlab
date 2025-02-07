@@ -9,6 +9,8 @@ message: |
 
 module: [ ospf, vlan ]
 
+defaults.vlan.start_vlan_id: 500
+
 vlans:
   ospf_1:
     links: [ dut-x1 ]
@@ -17,12 +19,15 @@ vlans:
     mtu: 1280
     links: [ dut-x2 ]
     ospf.network_type: point-to-point
+  ospf_3:
+    mtu: 1320
+    ospf.network_type: point-to-point
 
 groups:
   probe:
-    device: eos
+    device: frr
     provider: clab
-    members: [ x1, x2 ]
+    members: [ x1, x2, x3 ]
 
 nodes:
   dut:
@@ -30,6 +35,12 @@ nodes:
   x1:
     mtu: 1400
   x2:
+  x3:
+
+links:
+- dut:
+  x3:
+  vlan.trunk: [ ospf_3 ]
 
 defaults.devices.vjunos-router.netlab_validate.adj.wait: 120
 
@@ -38,5 +49,5 @@ validate:
     description: Check OSPF adjacencies
     wait_msg: Waiting for OSPF adjacency process to complete
     wait: 60
-    nodes: [ x1, x2 ]
+    nodes: [ x1, x2, x3 ]
     plugin: ospf6_neighbor(nodes.dut.ospf.router_id)
