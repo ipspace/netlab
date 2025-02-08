@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 #
 import sys
-import typing
-import argparse
-from box import Box
 
 import _reports.remap
 from netsim import __version__

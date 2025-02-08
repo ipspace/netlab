@@ -11,6 +11,11 @@ def parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespace,typing.List
   parser = argparse.ArgumentParser(
     description='Created error reports from automated integration tests')
   parser.add_argument(
+    '--warning',
+    dest='warning',
+    action='store_true',
+    help='Display warnings as well as failures')
+  parser.add_argument(
     '--rerun',
     dest='rerun',
     action='store_true',
@@ -91,7 +96,7 @@ def print_report(path: str, fail_step: str) -> None:
 def check_test_result(path: str, results: Box, args: argparse.Namespace) -> bool:
   fail_step = None
   for k in results.keys():
-    if results[k] is False:
+    if results[k] is False or (results[k] == 'warning' and args.warning):
       if k in ['create','supported']:
         continue
       if k == 'validate' and 'caveat' in results:
