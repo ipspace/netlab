@@ -55,6 +55,8 @@ def show_module_features(settings: Box, args: argparse.Namespace,dev_list: list)
         value = ",".join(value)
       elif isinstance(value,Box):
         value = ",".join(value.keys())
+      else:
+        value = str(value)
 
       if value:
         has_feature = True
