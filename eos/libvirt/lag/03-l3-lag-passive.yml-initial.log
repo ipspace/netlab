@@ -13,12 +13,9 @@ ok: [x1]
 ok: [x2]
 
 TASK [Wait for device to become ready] *****************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/eos-clab.yml for dut, x1, x2
-
-TASK [Wait for cEOS SSH daemon to start] ***************************************
-ok: [x2]
-ok: [x1]
-ok: [dut]
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
 
 TASK [Normalize config on bridge-like devices] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
@@ -135,7 +132,7 @@ ok: [x1] =>
     ip host dut 10.0.0.1 172.16.0.1 172.16.1.1
     ip host x2 10.0.0.3 172.16.1.3
     !
-    interface Management0
+    interface Management1
      no lldp transmit
      no lldp receive
     !
@@ -180,7 +177,7 @@ ok: [dut] =>
     ip host x1 10.0.0.2 172.16.0.2
     ip host x2 10.0.0.3 172.16.1.3
     !
-    interface Management0
+    interface Management1
      no lldp transmit
      no lldp receive
     !
@@ -247,7 +244,7 @@ ok: [x2] =>
     ip host dut 10.0.0.1 172.16.0.1 172.16.1.1
     ip host x1 10.0.0.2 172.16.0.2
     !
-    interface Management0
+    interface Management1
      no lldp transmit
      no lldp receive
     !
@@ -294,8 +291,8 @@ PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
-ok: [x1]
 ok: [x2]
+ok: [x1]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=lag)
@@ -308,9 +305,9 @@ ok: [x1]
 ok: [x2]
 
 TASK [Find configuration template for lag] *************************************
-ok: [x2]
-ok: [x1]
 ok: [dut]
+ok: [x1]
+ok: [x2]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -318,6 +315,24 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [x1] => 
+  msg: |-
+    lag configuration for x1
+    =========================================
+  
+    interface port-channel1
+     description [Access VLAN red] x1 -> dut
+    !
+    !
+    interface Ethernet1
+     description x1 -> dut in channel-group 1
+     channel-group 1 mode active
+     lacp timer fast
+    !
+    interface Ethernet2
+     description x1 -> dut in channel-group 1
+     channel-group 1 mode active
+     lacp timer fast
 ok: [dut] => 
   msg: |-
     lag configuration for dut
@@ -349,24 +364,6 @@ ok: [dut] =>
      description dut -> x2 in channel-group 2
      channel-group 2 mode passive
      lacp timer fast
-ok: [x1] => 
-  msg: |-
-    lag configuration for x1
-    =========================================
-  
-    interface port-channel1
-     description [Access VLAN red] x1 -> dut
-    !
-    !
-    interface Ethernet1
-     description x1 -> dut in channel-group 1
-     channel-group 1 mode active
-     lacp timer fast
-    !
-    interface Ethernet2
-     description x1 -> dut in channel-group 1
-     channel-group 1 mode active
-     lacp timer fast
 ok: [x2] => 
   msg: |-
     lag configuration for x2
@@ -395,8 +392,8 @@ TASK [Deploy lag configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for dut, x1, x2
 
 TASK [eos_config: deploying lag from /home/pipi/net101/tools/netsim/ansible/templates/lag/eos.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 changed: [dut]
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
@@ -415,6 +412,20 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [x1] => 
+  msg: |-
+    vlan configuration for x1
+    =========================================
+    vlan 1000
+     name red
+    !
+  
+    !
+    interface port-channel1
+     switchport
+     switchport access vlan 1000
+    !
+    interface Vlan1000
 ok: [dut] => 
   msg: |-
     vlan configuration for dut
@@ -438,20 +449,6 @@ ok: [dut] =>
     interface Vlan1000
     !
     interface Vlan1001
-ok: [x1] => 
-  msg: |-
-    vlan configuration for x1
-    =========================================
-    vlan 1000
-     name red
-    !
-  
-    !
-    interface port-channel1
-     switchport
-     switchport access vlan 1000
-    !
-    interface Vlan1000
 ok: [x2] => 
   msg: |-
     vlan configuration for x2
@@ -476,8 +473,8 @@ TASK [Deploy vlan configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for dut, x1, x2
 
 TASK [eos_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/eos.j2] ***
-changed: [x1]
 changed: [x2]
+changed: [x1]
 changed: [dut]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
@@ -594,9 +591,9 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=40   changed=5    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
-x1                         : ok=40   changed=5    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
-x2                         : ok=40   changed=5    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
+dut                        : ok=38   changed=5    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+x1                         : ok=38   changed=5    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+x2                         : ok=38   changed=5    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
 
 
 
