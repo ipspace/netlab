@@ -13,11 +13,11 @@ ok: [r1]
 ok: [r3]
 
 TASK [Find device readiness script] ********************************************
-ok: [r2]
 ok: [h1]
+ok: [r2]
 ok: [h2]
-ok: [h4]
 ok: [h3]
+ok: [h4]
 ok: [h5]
 ok: [r1]
 ok: [r3]
@@ -38,20 +38,20 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for r2,
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [r2]
 ok: [h1]
-ok: [h3]
 ok: [h2]
+ok: [h3]
 ok: [h4]
 ok: [h5]
 ok: [r1]
 ok: [r3]
 
 TASK [Find configuration template for normalize] *******************************
-ok: [r2]
 ok: [h1]
-ok: [h5]
+ok: [r2]
 ok: [h2]
-ok: [h4]
 ok: [h3]
+ok: [h4]
+ok: [h5]
 ok: [r1]
 ok: [r3]
 
@@ -111,9 +111,9 @@ ok: [r3]
 TASK [Find configuration template for initial] *********************************
 ok: [r2]
 ok: [h1]
-ok: [h3]
 ok: [h2]
 ok: [h4]
+ok: [h3]
 ok: [h5]
 ok: [r1]
 ok: [r3]
@@ -180,6 +180,118 @@ ok: [h1] =>
     #
     # Print the final routing table
     ip route
+ok: [r2] => 
+  msg: |-
+    initial configuration for r2
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+    ip link set dev eth2 mtu 1500
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname r2
+    !
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.2/32
+    !
+    interface eth1
+     no shutdown
+     description r2 -> r1
+     ! no ip address
+    !
+    interface eth2
+     no shutdown
+     description r2 -> r3
+     ! no ip address
+    !
+    interface eth1.701
+     no shutdown
+     description r2 -> r1
+     ip address 10.1.0.2/30
+    !
+    interface eth1.700
+     no shutdown
+     description r2 -> r1
+     ip address 10.1.0.6/30
+    !
+    interface eth2.701
+     no shutdown
+     description r2 -> r3
+     ip address 10.1.0.9/30
+    !
+    interface eth2.700
+     no shutdown
+     description r2 -> r3
+     ip address 10.1.0.13/30
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
 ok: [h2] => 
   msg: |-
     initial configuration for h2
@@ -333,120 +445,6 @@ ok: [h4] =>
     #
     # Print the final routing table
     ip route
-ok: [r2] => 
-  msg: |-
-    initial configuration for r2
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)# "
-    echo
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    #
-    # Create loopbacks, stub and lag/bond devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
-    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
-    ip link set dev eth2 mtu 1500
-  
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname r2
-    !
-    vrf mgmt
-     exit-vrf
-    !
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ip address 10.0.0.2/32
-    !
-    interface eth1
-     no shutdown
-     description r2 -> r1
-     ! no ip address
-    !
-    interface eth2
-     no shutdown
-     description r2 -> r3
-     ! no ip address
-    !
-    interface eth1.701
-     no shutdown
-     description r2 -> r1
-     ip address 10.1.0.2/30
-    !
-    interface eth1.700
-     no shutdown
-     description r2 -> r1
-     ip address 10.1.0.6/30
-    !
-    interface eth2.701
-     no shutdown
-     description r2 -> r3
-     ip address 10.1.0.9/30
-    !
-    interface eth2.700
-     no shutdown
-     description r2 -> r3
-     ip address 10.1.0.13/30
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
 ok: [h5] => 
   msg: |-
     initial configuration for h5
@@ -498,6 +496,97 @@ ok: [h5] =>
     #
     # Print the final routing table
     ip route
+ok: [r3] => 
+  msg: |-
+    initial configuration for r3
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+  
+    configure
+    set system host-name 'r3'
+  
+    set vrf name blue table 101
+    set vrf name red table 100
+  
+    set interfaces bridge br0 description 'Global Switch Bridge'
+    set interfaces bridge br0 enable-vlan
+  
+  
+    set interfaces dummy dum0 address 10.0.0.3/32
+  
+  
+  
+    set interfaces ethernet eth1 description 'r3 -> r2'
+  
+    set interfaces ethernet eth1 mtu 1500
+  
+  
+  
+  
+  
+  
+    set interfaces ethernet eth2 description 'r3 -> h2 [stub]'
+  
+    set interfaces ethernet eth2 mtu 1500
+  
+    set interfaces ethernet eth2 address 172.16.3.3/24
+  
+  
+    set interfaces ethernet eth2 vrf red
+  
+  
+  
+    set interfaces ethernet eth3 description 'r3 -> h4 [stub]'
+  
+    set interfaces ethernet eth3 mtu 1500
+  
+    set interfaces ethernet eth3 address 172.16.6.3/24
+  
+  
+    set interfaces ethernet eth3 vrf blue
+  
+  
+  
+    set interfaces ethernet eth1 vif 701 description 'r3 -> r2'
+  
+  
+    set interfaces ethernet eth1 vif 701 address 10.1.0.10/30
+  
+  
+    set interfaces ethernet eth1 vif 701 vrf blue
+  
+  
+  
+    set interfaces ethernet eth1 vif 700 description 'r3 -> r2'
+  
+  
+    set interfaces ethernet eth1 vif 700 address 10.1.0.14/30
+  
+  
+    set interfaces ethernet eth1 vif 700 vrf red
+  
+  
+    set service lldp interface all
+    set service lldp interface eth0 disable
+  
+  
+    set service ssh
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
+  
+    # Restart FRR to pick up the new hostname
+    sudo service frr restart
 ok: [r1] => 
   msg: |-
     initial configuration for r1
@@ -600,106 +689,15 @@ ok: [r1] =>
   
     # Restart FRR to pick up the new hostname
     sudo service frr restart
-ok: [r3] => 
-  msg: |-
-    initial configuration for r3
-    =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
-  
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-    fi
-  
-    # Configuration items start here
-  
-    configure
-    set system host-name 'r3'
-  
-    set vrf name blue table 101
-    set vrf name red table 100
-  
-    set interfaces bridge br0 description 'Global Switch Bridge'
-    set interfaces bridge br0 enable-vlan
-  
-  
-    set interfaces dummy dum0 address 10.0.0.3/32
-  
-  
-  
-    set interfaces ethernet eth1 description 'r3 -> r2'
-  
-    set interfaces ethernet eth1 mtu 1500
-  
-  
-  
-  
-  
-  
-    set interfaces ethernet eth2 description 'r3 -> h2 [stub]'
-  
-    set interfaces ethernet eth2 mtu 1500
-  
-    set interfaces ethernet eth2 address 172.16.3.3/24
-  
-  
-    set interfaces ethernet eth2 vrf red
-  
-  
-  
-    set interfaces ethernet eth3 description 'r3 -> h4 [stub]'
-  
-    set interfaces ethernet eth3 mtu 1500
-  
-    set interfaces ethernet eth3 address 172.16.6.3/24
-  
-  
-    set interfaces ethernet eth3 vrf blue
-  
-  
-  
-    set interfaces ethernet eth1 vif 701 description 'r3 -> r2'
-  
-  
-    set interfaces ethernet eth1 vif 701 address 10.1.0.10/30
-  
-  
-    set interfaces ethernet eth1 vif 701 vrf blue
-  
-  
-  
-    set interfaces ethernet eth1 vif 700 description 'r3 -> r2'
-  
-  
-    set interfaces ethernet eth1 vif 700 address 10.1.0.14/30
-  
-  
-    set interfaces ethernet eth1 vif 700 vrf red
-  
-  
-    set service lldp interface all
-    set service lldp interface eth0 disable
-  
-  
-    set service ssh
-  
-    # Commit, save and exit from subshell
-  
-    commit
-    save
-    exit
-  
-    # Restart FRR to pick up the new hostname
-    sudo service frr restart
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [r2]
 ok: [h1]
 ok: [h2]
 ok: [h3]
+ok: [r1]
 ok: [h4]
 ok: [h5]
-ok: [r1]
 ok: [r3]
 
 TASK [Deploy initial configuration] ********************************************
@@ -736,18 +734,18 @@ ok: [h4]
 ok: [h5]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h2 -> localhost]
-changed: [h4 -> localhost]
 changed: [h1 -> localhost]
 changed: [h5 -> localhost]
+changed: [h2 -> localhost]
+changed: [h4 -> localhost]
 changed: [h3 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
-changed: [h4 -> localhost]
-changed: [h5 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
+changed: [h4 -> localhost]
+changed: [h5 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -766,24 +764,24 @@ skipping: [h5]
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [h1 -> localhost]
 changed: [h3 -> localhost]
-changed: [h2 -> localhost]
 changed: [h4 -> localhost]
 changed: [h5 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-shf7l6xa.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-nrrcin18.sh] ***********************
 changed: [h5 -> localhost]
+changed: [h1 -> localhost]
 changed: [h4 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
-changed: [h1 -> localhost]
 
 TASK [wait_for_connection] *****************************************************
-ok: [r3]
 ok: [r1]
+ok: [r3]
 
 TASK [wait_for] ****************************************************************
-ok: [r1]
 ok: [r3]
+ok: [r1]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -794,8 +792,8 @@ ok: [r1]
 ok: [r3]
 
 TASK [template] ****************************************************************
-changed: [r1]
 changed: [r3]
+changed: [r1]
 
 TASK [execute config-initial.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/vyos.j2] ***
 changed: [r3]
@@ -894,6 +892,7 @@ ok: [r2] =>
       ip link set dev eth2.700 up
     fi
   
+  
     exit 0
 
 TASK [Find configuration deployment deploy_script for vlan] ********************
@@ -922,8 +921,8 @@ ok: [r1]
 ok: [r3]
 
 TASK [template] ****************************************************************
-changed: [r1]
 changed: [r3]
+changed: [r1]
 
 TASK [execute config-vlan.sh to deploy vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/vyos.j2] ***
 changed: [r3]
@@ -1333,8 +1332,8 @@ ok: [r1]
 ok: [r3]
 
 TASK [template] ****************************************************************
-changed: [r3]
 changed: [r1]
+changed: [r3]
 
 TASK [execute config-vrf.sh to deploy vrf config from /home/pipi/net101/tools/netsim/ansible/templates/vrf/vyos.j2] ***
 changed: [r3]
