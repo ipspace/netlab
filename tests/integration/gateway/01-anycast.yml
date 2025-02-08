@@ -53,6 +53,11 @@ links:
   prefix: target
 
 validate:
+  x1_gw_down:
+    description: Shut down the anycast GW on X1, so it cannot respond
+    nodes: [ x1 ]
+    devices: [ frr ]
+    exec: ip link set varp-40000 down
   ping_h1_v4:
     description: IPv4 ping H2 from H1
     wait: 40
@@ -87,3 +92,10 @@ validate:
     exec: arp -n {{ interfaces[0].gateway.ipv4|ipaddr('address') }}
     valid: |
       '02:00:ca:fe:c0:01' in stdout
+  nd:
+    description: Check the IPv6 ND entry for the anycast gateway
+    nodes: [ h1 ]
+    devices: [ frr ]
+    exec: ip -6 neighbor get {{ interfaces[0].gateway.ipv6|ipaddr('address') }} dev eth1
+    valid: |
+      '02:00:ca:fe:c0:01' in stdout and 'REACHABLE' in stdout
