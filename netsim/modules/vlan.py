@@ -981,7 +981,6 @@ def rename_vlan_subinterfaces(node: Box, topology: Box) -> None:
   if 'switch' in features.vlan.model:                             # No need for VLAN subinterfaces, remove non-routed vlan_member interfaces
     node.interfaces = [ intf for intf in node.interfaces \
                           if intf.type != 'vlan_member' or intf.vlan.get('mode','') == 'route' ]
-    subif_name = features.vlan.routed_subif_name                  # Just in case: try to get interface name pattern for routed subinterface
 
   has_vlan_loopbacks = False
   for intf in node.interfaces:                                    # Now loop over remaining vlan_member interfaces
