@@ -1043,7 +1043,7 @@ def rename_vlan_subinterfaces(node: Box, topology: Box) -> None:
       remove_vlan_from_trunk(parent_intf,intf.vlan.access_id)
 
   if has_vlan_loopbacks:
-    node.interfaces = [ intf for intf in node.interfaces if intf.parentindex != 'loopback']
+    node.interfaces = [ intf for intf in node.interfaces if intf.get('parentindex',None) != 'loopback']
 
 """
 If we have a routed native VLAN, and there are no other bridged VLANs left
