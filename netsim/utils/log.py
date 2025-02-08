@@ -286,19 +286,24 @@ Print a warning. The arguments are similar to the 'error' function apart from:
 * The 'flag' argument specifies a defaults setting to check. If it includes a dot, it's
   assumed to be a global warning (under defaults.warnings), otherwise it's a module-level
   warning (under defaults._module_.warnings).
+
+Returns 'true' if the warning/error was printed
 """
 def warning(*,
       text: str,
       module: typing.Optional[str] = None,
       flag: typing.Optional[str] = None,
-      **kwargs: typing.Any) -> None:
+      **kwargs: typing.Any) -> bool:
 
   global _HINTS_CACHE
 
   module = get_calling_module(module)
+  if 'category' not in kwargs:
+    kwargs['category'] = Warning
+
   if flag is None:
-    error(text,category=Warning,module=module,**kwargs)
-    return
+    error(text,module=module,**kwargs)
+    return True
 
   if flag.startswith('defaults.'):
     pass
@@ -311,11 +316,13 @@ def warning(*,
   topology = global_vars.get_topology()
   flag_value = topology[flag] if topology is not None else True
   if flag_value is False:
-    return
+    return False
 
   # Add the 'this is how you disable this warning' hint
   #
-  q_hint = f'Set {flag} to False to hide this warning'                    # The 'disable me' hint
+  q_dis  = 'hide this warning' if kwargs['category'] is Warning else 'disable this error'
+
+  q_hint = f'Set {flag} to False to {q_dis}'                              # The 'disable me' hint
   c_hint = kwargs.get('more_hints',None)                                  # The caller hint
   if c_hint in _HINTS_CACHE:                                              # Was the caller hint already displayed?
     c_hint = None
@@ -333,9 +340,11 @@ def warning(*,
     if q_hint:                                                            # If we managed to squeeze in our hint...
       _HINTS_CACHE.append(q_hint)                                         # ... make sure we don't do it twice
 
-  error(text,category=Warning,module=module,**kwargs)                     # And finally, generate the warning
+  error(text,module=module,**kwargs)                                      # And finally, generate the warning
   if c_hint:                                                              # ... and add the caller hint (if any)
     _HINTS_CACHE.append(c_hint)                                           # ... to the displayed hints
+
+  return True
 
 """
 Print informational message. The arguments are similar to the ones used in 'error' function

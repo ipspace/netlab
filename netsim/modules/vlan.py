@@ -392,10 +392,13 @@ def validate_trunk_vlan_list(link: Box) -> bool:
       if vname == o_intf.vlan.get('native',None) and needs_native:    # But maybe we found a native VLAN that someone needs?
         continue
 
-      log.error(
-        f'VLAN {vname} used by node {o_intf.node} on {link._linkname} is not used by any other node on that link',
-        log.IncorrectValue,
-        'vlan')
+      log.warning(
+        text=f'VLAN {vname} used by node {o_intf.node} on {link._linkname} is not ' +\
+              'used by any other node on that link',
+        category=log.IncorrectValue,
+        module='vlan',
+        flag='trunk_mismatch')
+
       has_error = True
 
   return not has_error
