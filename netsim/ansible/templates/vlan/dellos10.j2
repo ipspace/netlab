@@ -12,17 +12,31 @@ interface vlan {{ vlan.id }}
 {%   endfor %}
 {% endif %}
 !
+
+{# Check if the platform default vlan 1 is used as tagged on a trunk - if so, change the default #}
+{% for ifdata in interfaces if 1 in ifdata.vlan.trunk_id|default([]) %}
+{%   if loop.first %}
+{%     set used_vlans = vlans.values()|map(attribute='id')|list|sort %}
+{%     set new_default = 4093 if 4093 not in used_vlans else used_vlans|last + 1 %}
+interface vlan {{ new_default }}
+ description "New default internal untagged vlan, instead of platform default 1"
+!
+default vlan-id {{ new_default }}
+{%   endif %}
+{% endfor %}
+
 {% for ifdata in interfaces if ifdata.vlan is defined %}
 !
 interface {{ ifdata.ifname }}
 {%   if ifdata.vlan.trunk_id is defined %}
+{%     set native_vlan = ifdata.vlan.access_id if ifdata.vlan.native is defined else None %}
  switchport mode trunk
-{%     if ifdata.vlan.native is defined or 1 in ifdata.vlan.trunk_id %}
- switchport access vlan {{ ifdata.vlan.access_id|default(1) }}
+{%     if native_vlan %}
+ switchport access vlan {{ native_vlan }}
 {%     else %}
  no switchport access vlan
 {%     endif %}
- switchport trunk allowed vlan {{ ifdata.vlan.trunk_id|difference([ifdata.vlan.access_id|default(1)])|join(",") }}
+ switchport trunk allowed vlan {{ ifdata.vlan.trunk_id|difference([native_vlan])|sort|join(",") }}
 {%   elif ifdata.vlan.access_id is defined %}
  switchport mode access
  switchport access vlan {{ ifdata.vlan.access_id }}
