@@ -1,0 +1,75 @@
+---
+message: |
+  The topology tests whether the device deals correctly with VLAN 1
+  in a vlan.trunk:
+
+  * As a native VLAN
+  * As a regular (tagged) VLAN
+  * In a trunk where another VLAN is a native VLAN
+
+  All r* hosts should be able to ping each other and all d* hosts should
+  be able to ping each other.
+
+  Please note it might take a while for the lab to work due to
+  STP learning phase
+
+groups:
+  _auto_create: True
+  switches:
+    members: [ s1, s2, s3, s4 ]
+    module: [ vlan ]
+  hosts:
+    members: [ r1, r2, r3, r4, d1, d2, d3, d4 ]
+    device: linux
+    provider: clab
+  probes:
+    members: [ s2, s3, s4 ]
+    device: frr
+
+nodes:
+  s1:
+    id: 1
+
+vlans:
+  red:
+    mode: bridge
+    prefix:
+      ipv4: 172.31.1.0/24
+    links: [ s1-r1, s2-r2, s3-r3, s4-r4 ]
+  vlan_1:
+    id: 1
+    mode: irb
+    prefix:
+      ipv4: 172.31.1.0/24
+    links: [ s1-d1, s2-d2, s3-d3, s4-d4 ]
+
+links:
+- s1:
+  s2:
+  vlan.trunk: [ red, vlan_1 ]             # Both VLANs are tagged
+- s1:
+  s3:
+  vlan.trunk: [ red, vlan_1 ]
+  vlan.native: vlan_1                     # VLAN 1 is untagged
+- s1:
+  s4:
+  vlan.trunk: [ red, vlan_1 ]
+  vlan.native: red                        # VLAN 1 is tagged, VLAN red is untagged
+
+validate:
+  ping_red:
+    description: Ping-based reachability test in VLAN red
+    wait: 45
+    wait_msg: Waiting for STP to enable the ports
+    nodes: [ r2, r3, r4 ]
+    plugin: ping('r1')
+  ping_vlan_1:
+    description: Ping-based reachability test in VLAN 1
+    wait: 15
+    wait_msg: Waiting for STP to enable the ports
+    nodes: [ d2, d3, d4 ]
+    plugin: ping('d1')
+  ping_irb_1:
+    description: Ping VLAN 1 interface on S1
+    nodes: [ d1, d2, d3, d4 ]
+    plugin: ping('172.31.1.1')
