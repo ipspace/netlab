@@ -154,20 +154,21 @@ def report_quirk(text: str, node: Box, quirk: str, **kwargs: typing.Any) -> None
     if not q_state:
       return
   
-  # Add the 'this is how you disable this quirk' hint
-  #
-  q_hint = f'Set {q_path} to False to disable this check'
-  if 'more_hints' in kwargs and isinstance(kwargs['more_hints'],list):
-    kwargs['more_hints'].append(q_hint)
-  else:
-    kwargs['more_hints'] = [ q_hint ]
-
   # Set category and module if they're not specified
   #
   if 'category' not in kwargs:
     kwargs['category'] = log.IncorrectValue
   if 'module' not in kwargs:
     kwargs['module'] = node.device
+
+  # Add the 'this is how you disable this quirk' hint
+  #
+  q_disable = 'hide this warning' if kwargs['category'] is Warning else 'disable this check'
+  q_hint = f'Set {q_path} to False to {q_disable}'
+  if 'more_hints' in kwargs and isinstance(kwargs['more_hints'],list):
+    kwargs['more_hints'].append(q_hint)
+  else:
+    kwargs['more_hints'] = [ q_hint ]
 
   # Now hope for the best ;)
   log.error(text,**kwargs)
