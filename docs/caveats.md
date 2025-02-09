@@ -192,8 +192,12 @@ ansible-galaxy collection install git+https://github.com/jmussmann/ansible_colle
 * Nexus OS release 10.1 requires 8 GB of RAM and will fail with a cryptic message claiming it's running on unsupported hardware when it doesn't have enough memory.
 * Nexus OS release 10.2 requires at least 10 GB of RAM and crashes when you try to run it as an 8 GB VM.
 * To change the default amount of memory used by a **nxos** device, set the **defaults.devices.nxos.memory** parameter (in MB)[^DD]
+* Nexus OS cannot use VLANs above 3966[^NXOM]
+* Nexus OS cannot configure tagged VLAN 1 in a trunk. VLAN 3967 is used as a fake native VLAN on interfaces that have tagged VLAN 1 in a trunk.
 
 [^DD]: See [](topology/hierarchy.md) for an in-depth explanation of why attributes with hierarchical names work in *netlab*
+
+[^NXOM]: The platform limit is 3967. _netlab_ uses another VLAN as fake native VLAN.
 
 (caveats-cumulus)=
 ## Cumulus Linux
