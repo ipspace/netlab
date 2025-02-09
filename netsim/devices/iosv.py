@@ -23,6 +23,9 @@ def check_vrrp_bvi(node: Box, topology: Box) -> None:
       'quirks')
     return
 
+'''
+IOS does not support passive interfaces with RIPng
+'''
 def check_ripng_passive(node: Box, topology: Box) -> None:
   for intf in _routing.routing_protocol_interfaces(node,'ripv2'):
     if 'ipv6' in intf and intf.get('ripv2.passive',False):
@@ -31,6 +34,20 @@ def check_ripng_passive(node: Box, topology: Box) -> None:
         node,
         quirk='ripng.passive',
         category=Warning)
+
+'''
+IOSv (classic) does not implement VLAN 1 in a trunk correctly
+'''
+def vlan_1_subinterface(node: Box, topology: Box) -> None:
+  for intf in node.interfaces:
+    if intf.type != 'vlan_member' or intf.get('vlan.access_id',None) != 1:
+      continue
+    report_quirk(
+      f'Cisco IOS fails to configure VLAN 1 in a trunk ' +\
+      f'(node {node.name} {intf.ifname})',
+      node,
+      quirk='vlan.trunk_1',
+      category=log.IncorrectValue)
 
 def common_ios_quirks(node: Box, topology: Box) -> None:
   mods = node.get('module',[])
@@ -47,5 +64,7 @@ class IOS(_Quirks):
     mods = node.get('module',[])
     if 'gateway' in mods:
       check_vrrp_bvi(node,topology)
+    if 'vlan' in mods:
+      vlan_1_subinterface(node,topology)
 
     common_ios_quirks(node,topology)

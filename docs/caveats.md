@@ -128,6 +128,8 @@ These caveats apply only to Cisco IOSv and IOSvL2
 * Multiple OSPFv2 processes on Cisco IOS cannot have the same OSPF router ID. By default, _netlab_ generates the same router ID for global and VRF OSPF processes, resulting in non-fatal configuration errors that Ansible silently ignores.
 * You cannot use VLANs 1002 through 1005 with Cisco IOSvL2 image 
 * Cisco IOSv does not support VRRPv3 on BVI interfaces
+* Cisco IOSv cannot use tagged VLAN 1 in a trunk
+* Cisco IOSvL2 cannot configure tagged VLAN 1 in a trunk. Internal VLAN 1002 is used as a fake native VLAN on interfaces that have tagged VLAN 1 in a trunk.
 
 (cisco-iosv-ssh)=
 ### SSH Access to Cisco IOSv
@@ -152,7 +154,8 @@ Additionally, you might have to execute `sudo update-crypto-policies --set LEGAC
 
 * The Cisco IOL and IOL L2 images work only as containers created with Roman Dodin's fork of [vrnetlab](https://github.com/hellt/vrnetlab/).
 * You need Containerlab 0.59.0 or greater to run these images.
-* You cannot use VLANs 1002 through 1005 with Cisco IOL layer-2 image
+* You cannot use VLANs 1002 through 1005 with the Cisco IOL layer-2 image
+* Cisco IOL layer-2 image cannot configure tagged VLAN 1 in a trunk. Internal VLAN 1002 is used as a fake native VLAN on interfaces that have tagged VLAN 1 in a trunk.
 
 See also [common Cisco IOS](caveats-iosv) caveats.
 
