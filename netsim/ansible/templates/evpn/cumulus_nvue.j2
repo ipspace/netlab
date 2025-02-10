@@ -1,1 +1,51 @@
-# Configure EVPN RTs    
+---
+- set:
+    vrf:
+      default:
+        router:
+          bgp:
+            address-family:
+              l2vpn-evpn:
+                enable: on
+{% for n in bgp.neighbors if n.evpn|default(False) %}
+{%   if loop.first %}
+            neighbor:
+{%   endif %}
+{%   for af in ['ipv4','ipv6'] if af in n %}
+{%     set peer = n[af] if n[af] is string else n.local_if|default('?') %}
+              {{ peer }}:
+                address-family:
+                  l2vpn-evpn:
+                    enable: on
+                    soft-reconfiguration: on
+{%     if bgp.rr|default('') and not n.rr|default('') %}
+                    route-reflector-client: on
+{%     endif %}
+{%   endfor %}
+{% endfor %}
+
+- set:
+    evpn:
+      enable: on
+      # dad                    Duplicate Address Detection (DAD) configuration parameters
+      # mac-vrf-soo            EVPN MAC VRF Site-of-Origin VPN extended community in ASN:NN or IP-ADDRESS:NN format.
+      # multihoming            Multihoming global configuration parameters
+      # route-advertise        Route advertising
+      route-advertise:
+        nexthop-setting: {{ 'shared-ip-mac' if lag.mlag.vtep is defined else 'system-ip-mac' }}
+        svi-ip: on
+      # vni                    VNI
+
+{% for vlan in (vlans|default({})).values() if 'vni' in vlan and 'evpn' in vlan %}
+{%   if loop.first %}
+      vni:
+{%   endif %}
+        '{{ vlan.vni }}':
+          rd: {{ vlan.evpn.rd }} # not 'auto'
+          route-target:
+            export:
+              '{{ vlan.evpn.export[0] }}': {}
+            import:
+              '{{ vlan.evpn.import[0] }}': {}
+{% endfor %}
+
