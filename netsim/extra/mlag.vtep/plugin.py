@@ -43,14 +43,14 @@ def post_transform(topology: Box) -> None:
         for i in peers:
           node = topology.nodes[i.node]
           features = devices.get_device_features(node,topology.defaults)
-          if not features.get('lag.mlag.vtep',None):
+          if not features.get('lag.mlag_vtep',None):
             log.error(f'Node {node.name}({node.device}) is not supported by the mlag.vtep plugin',
                       log.IncorrectValue,_config_name)
             continue
           if 'vtep' in node.vxlan and node.get('lag.mlag.vtep',None) is not False:
             node.lag.mlag.vtep = change_ip[ node.vxlan.vtep ] = str(vtep_a.network)
 
-            if 'vtep_needs_script' in features.lag.mlag:
+            if 'mlag_vtep_needs_script' in features.lag:
               api.node_config(node,_config_name)     # Remember that we have to do extra configuration
 
               # On Cumulus, the source interface remains the unicast IP
