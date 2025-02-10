@@ -11,10 +11,12 @@ router vrrp enable
 {% for intf in interfaces if intf.gateway.protocol is defined %}
 
 interface {{ intf.ifname }}
-{%   if intf.gateway.protocol == 'anycast' and 'ipv4' in intf.gateway and gateway.anycast.mac is defined %}
-{% set anycast_mac = '{}{}:{}{}:{}{}:{}{}:{}{}:{}{}'.format(*gateway.anycast.mac|replace('.', '')) %}
- active-gateway ip mac {{ anycast_mac }}
- active-gateway ip {{ intf.gateway.ipv4|ipaddr('address') }}
+{%   if intf.gateway.protocol == 'anycast' %}
+{%     for af in 'ipv4','ipv6' if af in intf.gateway %}
+{%       set cmd_af = 'ip' if af == 'ipv4' else af %}
+ active-gateway {{ cmd_af }} mac {{ gateway.anycast.mac|hwaddr('linux') }}
+ active-gateway {{ cmd_af }} {{ intf.gateway[af]|ipaddr('address') }}
+{%     endfor %}
 {%   endif %}
 
 
