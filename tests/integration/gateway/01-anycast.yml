@@ -11,7 +11,7 @@ defaults.interfaces.mtu: 1500
 vlans:
   edge:
     gateway: True
-    links: [ h1-dut, dut-x1 ]
+    links: [ h1-dut, dut-x1, x1-h2 ]
     prefix:
       ipv4: 172.16.33.0/24
       ipv6: 2001:db8:cafe:33::/64
@@ -19,12 +19,21 @@ vlans:
 groups:
   probes:
     provider: clab
-    members: [ h1, x1 ]
+    members: [ h1, h2, x1 ]
     device: frr
+  probe_hosts:
+    members: [ h1, h2 ]
+    module: [ routing ]
+    role: host
+    routing.static:
+    - prefix: target
+      nexthop:
+        ipv4: 172.16.33.42
+        ipv6: "2001:db8:cafe:33::2a"
   hosts:
     device: linux
     provider: clab
-    members: [ h2 ]
+    members: [ th ]
 
 gateway.protocol: anycast
 gateway.id: 42
@@ -35,51 +44,65 @@ prefix:
     ipv4: 172.16.44.0/24
     ipv6: 2001:db8:cafe:44::/64
 
-nodes:
-  dut:
-  x1:
-  h1:
-    module: [ routing ]
-    role: host
-    routing.static:
-    - prefix: target
-      nexthop:
-        ipv4: 172.16.33.42
-        ipv6: "2001:db8:cafe:33::2a"
-  h2:
+nodes: [ dut, x1, h1, h2, th ]
 
 links:
-- interfaces: [ dut, x1, h2 ]
+- interfaces: [ dut, x1, th ]
   prefix: target
 
 validate:
+  x1_gw_down:
+    description: Shut down IPv6 on the X1 anycast interface so it cannot respond to ND requests
+    nodes: [ x1 ]
+    devices: [ frr ]
+    exec: sysctl -w net.ipv6.conf.varp-40000.disable_ipv6=1
   ping_h1_v4:
-    description: IPv4 ping H2 from H1
+    description: IPv4 ping target from H1/H2
     wait: 40
     wait_msg: Waiting for STP to enable VLAN ports
-    nodes: [ h1 ]
-    plugin: ping('h2',af='ipv4')
+    nodes: [ h1, h2 ]
+    plugin: ping('th',af='ipv4')
   ping_h1_v6:
     level: warning
-    description: IPv6 ping H2 from H1
+    description: IPv6 ping target from H1/H2
     wait: 3
     wait_msg: Waiting for ping to work
     nodes: [ h1 ]
-    plugin: ping('h2',af='ipv6')
-  ping_dup:
-    description: Check for duplicate packets
+    plugin: ping('th',af='ipv6')
+  nd:
+    description: Check the IPv6 ND entry for the anycast gateway
     nodes: [ h1 ]
     devices: [ frr ]
-    exec: ping -4 h2 -c 2
+    level: warning
+    exec: ip -6 neighbor get {{ interfaces[0].gateway.ipv6|ipaddr('address') }} dev eth1
+    valid: |
+      '02:00:ca:fe:c0:01' in stdout
+  x1_gw_up:
+    description: Reenable IPv6 on X1 anycast interface
+    nodes: [ x1 ]
+    devices: [ frr ]
+    exec: sysctl -w net.ipv6.conf.varp-40000.disable_ipv6=0
+  ping_dup:
+    description: Check for duplicate packets
+    nodes: [ h1, h2 ]
+    devices: [ frr ]
+    exec: ping -4 th -c 2
     valid: |
       'DUP' not in stdout
   trace_h1:
-    description: Traceroute H1-H3 (should go over DUT)
+    description: Traceroute H1-TH (should go over DUT not X1)
     nodes: [ h1 ]
     devices: [ frr ]
-    exec: traceroute -4 -w 1 -q 2 h2
+    exec: traceroute -4 -w 1 -q 2 th
     valid: |
-      'h2' in stdout and 'x1' not in stdout
+      'th' in stdout and 'x1' not in stdout
+  trace_h2:
+    description: Traceroute H2-TH (should go over X1 not DUT)
+    nodes: [ h2 ]
+    devices: [ frr ]
+    exec: traceroute -4 -w 1 -q 2 th
+    valid: |
+      'th' in stdout and 'dut' not in stdout
   arp:
     description: Check the ARP entry for the anycast gateway
     nodes: [ h1 ]
