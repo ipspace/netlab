@@ -1,10 +1,11 @@
 ---
 message: |
-  The devices under test are 2 mlag pairs of VLAN-to-VXLAN bridges between two access VLANs
+  The devices under test are an mlag pair of VLAN-to-VXLAN bridges between two access VLANs
   and two VXLAN VNIs. Both VLANs are using the same IP prefix to identify
   potential inter-VLAN leaking.
 
-  The first pair uses the mlag.vtep plugin to provision an anycast MLAG VTEP across both.
+  The pair uses the mlag.vtep plugin to provision an anycast MLAG VTEP across both, such that
+  both devices are equivalent from the perspective of the 3rd VTEP (FRR)
 
   * h1,h2 and h3,h4 should be able to ping each other
   * h1 should not be able to reach h3 or h4
@@ -12,75 +13,78 @@ message: |
   Please note it might take a while for the lab to work due to
   STP learning phase
 
-defaults.devices.dellos10:
-  warnings.svi_ospf: False
-  features.vlan.svi_interface_name: vlan{vlan}
-
 plugin: [ mlag.vtep ]
-
-stp.protocol: pvrst
 
 groups:
   _auto_create: True
+  lag_hosts:
+    members: [ h1, h3 ]
+    module: [ lag ]
+    device: linux
+    # provider: clab, use Same provider as MLAG devices for LACP to work
+
   hosts:
-    members: [ h1, h2, h3, h4 ]
+    members: [ h2, h4, h5 ]
     device: linux
     provider: clab
-  switches:
-    members: [ s1, s2, s3, s4 ]
-    module: [ vlan, vxlan, ospf, lag, stp ] # Requires STP to block massive loop
-    mtu: 1600
 
-nodes:
-  s1:
-    device: cumulus_nvue
-    #lag.mlag.vtep: False
-  s2:
-    device: cumulus_nvue
-    #lag.mlag.vtep: False
+  switches:
+    members: [ dut_a, dut_b ]
+    module: [ vlan, vxlan, ospf, lag ]
+
+  probes:
+    members: [ xs ]
+    module: [ vlan, vxlan, ospf ]
+    device: frr
+    provider: clab
 
 vlans:
-  ospf_vxlan:
-    mode: irb  # 'route' would be better, but Dell OS10 templates don't support it yet
   red:
     mode: bridge
     prefix:
       ipv4: 172.31.1.0/24
-    links: [ s1-h1, s4-h2 ]
+    links: [ xs-h2, dut_a-h5 ] # h5 is single connected
   blue:
     mode: bridge
     prefix:
       ipv4: 172.31.1.0/24
-    links: [ s2-h3, s3-h4 ]
+    links: [ xs-h4 ]
 
 vxlan.vlans: [ red, blue ]
 
 links:
 - lag:
-    members: [ s1-s2 ]
+    members: [ dut_a-dut_b ]
     mlag.peergroup: True
+
 - lag:
-    members: [ s3-s4 ]
-    mlag.peergroup: True
+    members: [ h1-dut_a, h1-dut_b ]
+  vlan.access: red
 - lag:
-    members:
-    - s1-s3
-    - s1-s4
-    - s2-s3
-    - s2-s4
-  vlan.trunk: [ ospf_vxlan ] # 'red' and 'blue' are passed as VXLAN (vlan.access doesn't work)
+    members: [ h3-dut_a, h3-dut_b ]
+  vlan.access: blue
+
+- xs-dut_a
+- xs-dut_b
 
 validate:
+  no_dut_a_route:
+    description: Remove route via VTEP A
+    nodes: [ xs ]
+    devices: [ frr ]
+    exec: ip route replace {{ vxlan.vtep_list[0] }}/32 via {{ interfaces[1].neighbors[0].ipv4|ipaddr('address') }} dev {{ interfaces[1].ifname }}
+  adj:
+    description: Check OSPF adjacency with DUT_B
+    wait_msg: Waiting for OSPF adjacency process to complete
+    wait: 50
+    nodes: [ xs ]
+    plugin: ospf_neighbor(nodes.dut_b.ospf.router_id)
   ping_red:
     description: Ping-based reachability test in VLAN red
-    wait_msg: Waiting for OSFP and STP to wake up
-    wait: 50
-    nodes: [ h1 ]
+    nodes: [ h1, h5 ]
     plugin: ping('h2')
   ping_blue:
     description: Ping-based reachability test in VLAN blue
-    wait_msg: We might have to wait a bit longer
-    wait: 10
     nodes: [ h3 ]
     plugin: ping('h4')
   inter_vlan:
