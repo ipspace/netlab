@@ -52,10 +52,10 @@ The regular loopback pool is passed as a secondary source to allocate from, shou
 
 ### Elaborate example
 
-The integration tests contain an elaborate multi-vendor example topology, under `integration/mlag.vtep/01-vxlan-bridging.yml`. This topology presents a culmination of *Netlab* features, showcasing multi-vendor:
-* VLANs (mixed trunk with regular native VLAN and overlay VLANs)
+The integration tests contain an example topology, under `integration/mlag.vtep/01-vxlan-bridging.yml`. This topology presents a combination of *Netlab* features, showcasing multi-vendor:
+* VLAN bridging
 * OSPFv2
 * static VXLAN
-* MLAG (2:2) with LACP signalled port-channels
-* STP with PVRST (to prevent loops on the native VLAN)
-* this new `mlag.vtep` plugin
+* MLAG to Linux hosts with LACP signalled port-channels
+* MLAG orphan hosts (single connected)
+* this new `mlag.vtep` plugin for logical VTEP redundancy
