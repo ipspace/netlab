@@ -44,7 +44,9 @@ def post_transform(topology: Box) -> None:
           node = topology.nodes[i.node]
           features = devices.get_device_features(node,topology.defaults)
           if not features.get('lag.mlag.vtep',None):
-            log.error(f'Node {node.name}({node.device}) is not supported by the mlag.vtep plugin',log.IncorrectValue,_config_name)
+            log.error(f'Node {node.name}({node.device}) is not supported by the mlag.vtep plugin',
+                      log.IncorrectValue,_config_name)
+            continue
           if 'vtep' in node.vxlan and node.get('lag.mlag.vtep',None) is not False:
             node.lag.mlag.vtep = change_ip[ node.vxlan.vtep ] = str(vtep_a.network)
 
