@@ -49,3 +49,31 @@
               '{{ vlan.evpn.import[0] }}': {}
 {% endfor %}
 
+{# L3 VRF EVPN handling #}
+{% if vrfs is defined %}
+{%   for vname,vdata in vrfs.items() if 'evpn' in vdata %}
+- set:
+   vrf:   
+     {{ vname }}:
+       evpn:
+         enable: on
+         vlan: auto
+{%     if vdata.evpn.transit_vni is defined %}
+         vni: 
+           '{{ vdata.evpn.transit_vni }}': {}
+{%     endif %}
+       router:
+         bgp:
+           autonomous-system: {{ vdata.as|default(bgp.as) }}
+           enable: on
+           rd: {{ vdata.rd }}
+           route-export:
+             to-evpn:
+               route-target:
+                 auto: {}
+           route-import:
+             from-evpn:
+               route-target:
+                 auto: {}
+{%   endfor %}
+{% endif %}
