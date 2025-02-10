@@ -1,21 +1,25 @@
 ---
 message: |
-  The devices under test are an mlag pair of VLAN-to-VXLAN bridges providing two access VLANs
-  and two VXLAN VNIs, using static VXLAN tunnels. Both VLANs are using the same IP prefix to identify
+  The devices under test are an mlag pair of VLAN-to-VXLAN bridges between two access VLANs
+  and two VXLAN VNIs. Both VLANs are using the same IP prefix to identify
   potential inter-VLAN leaking.
 
   The pair uses the mlag.vtep plugin to provision an anycast MLAG VTEP across both, such that
   both devices are equivalent from the perspective of the 3rd VTEP (FRR)
 
+  This example uses BGP EVPN as the control plane for VXLAN
+
   * h1,h2 and h3,h4 should be able to ping each other
   * h1 should not be able to reach h3 or h4
 
   Please note it might take a while for the lab to work due to
-  STP learning phase and/or OSPF peering delays
+  STP learning phase
 
 plugin: [ mlag.vtep ]
 
 defaults.device: eos
+
+bgp.as: 65000
 
 groups:
   _auto_create: True
@@ -32,11 +36,11 @@ groups:
 
   switches:
     members: [ dut_a, dut_b ]
-    module: [ vlan, vxlan, ospf, lag ]
+    module: [ vlan, vxlan, ospf, lag, bgp, evpn ]
 
   probes:
     members: [ xs ]
-    module: [ vlan, vxlan, ospf ]
+    module: [ vlan, vxlan, ospf, bgp, evpn ]
     device: frr
     provider: clab
 
@@ -75,7 +79,7 @@ validate:
     nodes: [ xs ]
     devices: [ frr ]
     exec: >
-      ip route replace {{ vxlan.vtep_list[0] }}/32 via
+      ip route replace 10.101.101.1/32 via
       {{ interfaces[1].neighbors[0].ipv4|ipaddr('address') }} dev {{ interfaces[1].ifname }}
   adj:
     description: Check OSPF adjacency with DUT_B

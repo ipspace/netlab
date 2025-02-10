@@ -39,7 +39,7 @@ nodes:
     lag.mlag.vtep: False
 ```
 
-The MLAG VTEP should work for both static VXLAN and EVPN signalled VXLAN topologies, though to date it has only been tested with static VXLAN configs.
+The MLAG VTEP works for both static VXLAN and EVPN signalled topologies.
 
 ### Customizing the address allocation pool
 
