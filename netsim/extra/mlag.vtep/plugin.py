@@ -40,7 +40,6 @@ def pre_link_transform(topology: Box) -> None:
           vtep_loopback.interfaces = [ { 'node': node_name, 'ipv4': str(vtep_a.network)+"/32" } ]
           vtep_loopback._linkname = f"MLAG VTEP VXLAN interface shared between {' - '.join(peers)}"
           vtep_loopback.vxlan.vtep = True
-          vtep_loopback.linkindex = len(topology.links)+1
           topology.links.append(vtep_loopback)
 
       if log.debug_active('links'):                 # pragma: no cover (debugging)
