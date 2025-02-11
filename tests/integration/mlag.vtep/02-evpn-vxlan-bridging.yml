@@ -1,0 +1,102 @@
+---
+message: |
+  The devices under test are an mlag pair of VLAN-to-VXLAN bridges between two access VLANs
+  and two VXLAN VNIs. Both VLANs are using the same IP prefix to identify
+  potential inter-VLAN leaking.
+
+  The pair uses the mlag.vtep plugin to provision an anycast MLAG VTEP across both, such that
+  both devices are equivalent from the perspective of the 3rd VTEP (FRR)
+
+  This example uses BGP EVPN as the control plane for VXLAN
+
+  * h1,h2 and h3,h4 should be able to ping each other
+  * h1 should not be able to reach h3 or h4
+
+  Please note it might take a while for the lab to work due to
+  STP learning phase
+
+plugin: [ mlag.vtep ]
+
+defaults.device: eos
+
+bgp.as: 65000
+
+groups:
+  _auto_create: True
+  lag_hosts:
+    members: [ h1, h3 ]
+    module: [ lag ]
+    device: linux
+    # provider: clab, use Same provider as MLAG devices for LACP to work
+
+  hosts:
+    members: [ h2, h4, h5 ]
+    device: linux
+    provider: clab
+
+  switches:
+    members: [ dut_a, dut_b ]
+    module: [ vlan, vxlan, ospf, lag, bgp, evpn ]
+
+  probes:
+    members: [ xs ]
+    module: [ vlan, vxlan, ospf, bgp, evpn ]
+    device: frr
+    provider: clab
+
+vlans:
+  red:
+    mode: bridge
+    prefix:
+      ipv4: 172.31.1.0/24
+    links: [ xs-h2, dut_a-h5 ] # h5 is single connected
+  blue:
+    mode: bridge
+    prefix:
+      ipv4: 172.31.1.0/24
+    links: [ xs-h4 ]
+
+vxlan.vlans: [ red, blue ]
+
+links:
+- lag:
+    members: [ dut_a-dut_b ]
+    mlag.peergroup: True
+
+- lag:
+    members: [ h1-dut_a, h1-dut_b ]
+  vlan.access: red
+- lag:
+    members: [ h3-dut_a, h3-dut_b ]
+  vlan.access: blue
+
+- xs-dut_a
+- xs-dut_b
+
+validate:
+  no_dut_a_route:
+    description: Remove route via VTEP A
+    nodes: [ xs ]
+    devices: [ frr ]
+    exec: >
+      ip route replace 10.101.101.1/32 via
+      {{ interfaces[1].neighbors[0].ipv4|ipaddr('address') }} dev {{ interfaces[1].ifname }}
+  adj:
+    description: Check OSPF adjacency with DUT_B
+    wait_msg: Waiting for OSPF adjacency process to complete
+    wait: 50
+    nodes: [ xs ]
+    plugin: ospf_neighbor(nodes.dut_b.ospf.router_id)
+  ping_red:
+    description: Ping-based reachability test in VLAN red
+    nodes: [ h1, h5 ]
+    plugin: ping('h2')
+  ping_blue:
+    description: Ping-based reachability test in VLAN blue
+    nodes: [ h3 ]
+    plugin: ping('h4')
+  inter_vlan:
+    description: Ping-based reachability test between blue and red VLANs
+    nodes: [ h1 ]
+    devices: [ linux ]
+    plugin: ping('h4',expect='fail')
