@@ -7,16 +7,8 @@ Conceptually, VXLAN redundancy requires the allocation of a shared logical VTEP 
 
 ## Supported platforms
 
-This plugin supports the following devices (that also support both VXLAN and MLAG)
-
-| Operating system   | Supports MLAG and VXLAN | Supported by mlag.vtep plugin |
-| ------------------ | ----------------------- | ----------------------------- |
-| Arista EOS         |           ✅            |              ✅               |
-| Aruba AOS-CX       |           ✅            |              ❌               |
-| Cumulus Linux 4.x  |           ❌            |              ❌               |
-| Cumulus 5.x (NVUE) |           ✅            |              ✅               |
-| Dell OS10          |           ✅            |              ✅               |
-| FRR                |           ❌            |              ❌               |
+This plugin supports any devices that support both VXLAN and MLAG; it creates an extra loopback interface with 
+`vxlan.vtep` set to `True`. It is up to the device config templates to render this into a functional VTEP.
 
 ```eval_rst
 .. contents:: Table of Contents
@@ -43,12 +35,12 @@ The MLAG VTEP works for both static VXLAN and EVPN signalled topologies.
 
 ### Customizing the address allocation pool
 
-By default, the plugin configures a pool for `10.101.101.0/24` to allocate its /32 IPs from (1 per MLAG pair). If desired, this configuration can be changed:
+By default, the plugin configures a "mlag_vtep" pool for `10.101.101.0/24` to allocate its /32 IPs from (1 per MLAG pair). If desired, this configuration can be changed:
 ```
-defaults.mlag.vtep.address_pool: 10.99.99.0/24
+addressing.mlag_vtep.ipv4: 10.99.99.0/24
 ```
 
-The regular loopback pool is passed as a secondary source to allocate from, should the first pool run out.
+The regular "vrf_loopback" pool is passed as a secondary source to allocate from, should the first pool run out.
 
 ### Elaborate example
 
