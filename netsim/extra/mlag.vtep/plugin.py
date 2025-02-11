@@ -21,7 +21,7 @@ def pre_link_transform(topology: Box) -> None:
       'vxlan and/or lag module is not loaded.',
       log.IncorrectValue,
       _config_name)
-  
+
   # Find nodes that participate in MLAG and have VXLAN enabled, and add an extra VTEP loopback
   for l in list(topology.get('links',[])):
     if not l.get('lag.mlag.peergroup'):             # Is this an MLAG peerlink?
@@ -43,3 +43,6 @@ def pre_link_transform(topology: Box) -> None:
           vtep_loopback.vxlan._mlag = True
           vtep_loopback.linkindex = len(topology.links)+1
           topology.links.append(vtep_loopback)
+
+      if log.debug_active('links'):                 # pragma: no cover (debugging)
+        print(f'\nmlag.vtep Create VTEP loopback link for {node_name}: {vtep_loopback}')
