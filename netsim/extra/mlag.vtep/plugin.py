@@ -36,9 +36,10 @@ def pre_link_transform(topology: Box) -> None:
         continue                                    # Skip nodes for which the plugin is disabled
       if 'vxlan' in node.module:
           vtep_loopback = data.get_empty_box()
-          vtep_loopback.type = 'loopback'
+          vtep_loopback.type = 'loopback'           # Assign same static IP to both nodes
           vtep_loopback.interfaces = [ { 'node': node_name, 'ipv4': str(vtep_a.network)+"/32" } ]
           vtep_loopback._linkname = f"MLAG VTEP VXLAN interface shared between {' - '.join(peers)}"
           vtep_loopback.vxlan.vtep = True
+          vtep_loopback.vxlan._mlag = True
           vtep_loopback.linkindex = len(topology.links)+1
           topology.links.append(vtep_loopback)
