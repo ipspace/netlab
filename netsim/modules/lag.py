@@ -211,7 +211,7 @@ def create_lag_interfaces(link: Box, mlag_pairs: dict, topology: Box) -> None:
         node_ifs = [ i for i in m.interfaces if i.node==node ]
         if not node_ifs:                                        # ...in which <node> is involved
           continue
-        new_atts = m + node_ifs[0]
+        new_atts = m + node_ifs[0]                              # Take first one
         ifatts = ifatts + { k:v for k,v in new_atts.items() if k not in skip_atts }
 
       if len(group)==2:                                         # M-side of mlag?
@@ -369,7 +369,8 @@ class LAG(_Module):
     mlag_pairs: typing.Dict[str,str] = {}
     for link in list(topology.links):                                   # Make a copy, may get modified
       if 'lag' in link:
-        process_lag_link(link,mlag_pairs,topology)                      # Update mlag pairs map
+        if not process_lag_link(link,mlag_pairs,topology):              # Update mlag pairs map
+          return
 
     for link in list(topology.links):                                   # Make a copy, may get modified
       if '_virtual_lag' in link:
