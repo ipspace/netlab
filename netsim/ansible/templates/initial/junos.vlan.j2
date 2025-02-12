@@ -46,12 +46,14 @@ interfaces {
 {%   elif l.junos_interface != 'irb' and l.junos_unit == '0' and l._vlan_master is defined and 'vlan' not in l %}
 {#
 # in this case unit 0 is still present, but not handling any real vlan traffic (no vlan definition apart from _vlan_master)
-# --> we need to force a vlan id in any case on the sub unit 0, so let's put 1
+# --> we need to force a vlan id in any case on the sub unit 0, so let's put **an unused VLAN ID**
 #   'flexible-vlan-tagging' - VLAN-ID must be specified on tagged ethernet interfaces
 #}
+{% set used_vlans = vlans.values()|map(attribute='id')|list %}
+{% set internal_vlan = range(1,4094)|difference(used_vlans)|last %}
 
   {{ l.junos_interface }}.0 {
-    vlan-id 1;
+    vlan-id {{ internal_vlan }};
   }
 
 {%   endif %}
