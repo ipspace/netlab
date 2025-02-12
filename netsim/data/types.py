@@ -614,9 +614,7 @@ def check_named_prefix(value: str) -> typing.Optional[dict]:
   return None
 
 """
-Testing for IPv4 and IPv6 addresses is nasty, as netaddr module happily mixes IPv4 and IPv6
-
-Both tests recognize these use cases:
+Common IP address validation functionality. Both tests recognize these use cases:
 
 * 'interface' -- an IP prefix that can be used on an interface.
   Allows int (subnet offset) and bool (unnumbered/LLA)
@@ -702,6 +700,9 @@ def common_addr_parse(
 
   return { '_valid': True }
 
+'''
+IPv4 validation -- use the common code, allowing int values and named prefixes
+'''
 @type_test()
 def must_be_ipv4(value: typing.Any, use: str, named: bool = False) -> dict:
 
@@ -719,6 +720,9 @@ def must_be_ipv4(value: typing.Any, use: str, named: bool = False) -> dict:
             xform_int=transform_to_ipaddr,
             xform_pfx=prefix_to_ipv4)
 
+'''
+IPv6 validation -- use the common code, but without int values or named prefixes
+'''
 @type_test()
 def must_be_ipv6(value: typing.Any, use: str) -> dict:
   return common_addr_parse(
