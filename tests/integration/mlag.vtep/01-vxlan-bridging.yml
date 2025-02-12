@@ -1,32 +1,37 @@
 ---
 message: |
-  The devices under test are an mlag pair of VLAN-to-VXLAN bridges providing two access VLANs
-  and two VXLAN VNIs, using static VXLAN tunnels. Both VLANs are using the same IP prefix to identify
-  potential inter-VLAN leaking.
+  The devices under test are an MLAG pair of VLAN-to-VXLAN bridges providing two
+  access VLANs and two VXLAN VNIs using static VXLAN tunnels. Both VLANs are
+  using the same IP prefix to identify potential inter-VLAN leaking.
 
-  The pair uses the mlag.vtep plugin to provision an anycast MLAG VTEP across both, such that
-  both devices are equivalent from the perspective of the 3rd VTEP (FRR)
+  The pair uses the mlag.vtep plugin to provision an anycast MLAG VTEP across
+  both, such that both devices are equivalent from the perspective of the 3rd
+  VTEP (FRR).
 
-  * h1,h2 and h3,h4 should be able to ping each other
-  * h1 should not be able to reach h3 or h4
+  Each VLAN has four hosts attached to it:
 
-  Please note it might take a while for the lab to work due to
-  STP learning phase and/or OSPF peering delays
+  * xl -- a host using LAG attached to dut_a and dut_b
+  * x1 -- an orphan host attached to dut_a
+  * x2 -- an orphan host attached to dut_b
+  * xr -- a host attached to remote VTEP
+
+  All hosts within a single VLAN should be able to ping each other.
+
+  Please note it might take a while for the lab to work due to STP learning
+  phase and/or OSPF peering delays
 
 plugin: [ mlag.vtep ]
-
-defaults.device: eos
 
 groups:
   _auto_create: True
   lag_hosts:
-    members: [ h1, h3 ]
+    members: [ rl, bl ]
     module: [ lag ]
     device: linux
     # provider: clab, use Same provider as MLAG devices for LACP to work
 
   hosts:
-    members: [ h2, h4, h5 ]
+    members: [ r1, r2, rr, b1, b2, br ]
     device: linux
     provider: clab
 
@@ -45,54 +50,54 @@ vlans:
     mode: bridge
     prefix:
       ipv4: 172.31.1.0/24
-    links: [ xs-h2, dut_a-h5 ] # h5 is single connected
+    links: [ xs-rr, dut_a-r1, dut_b-r2 ]      # Single-connected hosts
   blue:
     mode: bridge
     prefix:
       ipv4: 172.31.1.0/24
-    links: [ xs-h4 ]
+    links: [ xs-br, dut_a-b1, dut_b-b2 ]      # Single-connected hosts
 
 vxlan.vlans: [ red, blue ]
 
 links:
-- lag:
-    members: [ dut_a-dut_b ]
-    mlag.peergroup: True
-
-- lag:
-    members: [ h1-dut_a, h1-dut_b ]
-  vlan.access: red
-- lag:
-    members: [ h3-dut_a, h3-dut_b ]
-  vlan.access: blue
-
-- xs-dut_a
-- xs-dut_b
+  mlag:
+  - lag:                                      # Peer link DUT_A - DUT_B
+      members: [ dut_a-dut_b ]
+      mlag.peergroup: True
+  edge:
+  - lag:                                      # Host in red VLAN dual-attached to DUT_A and DUT_B
+      members: [ rl-dut_a, rl-dut_b ]
+    vlan.access: red
+  - lag:                                      # Host in blue VLAN dual-attached to DUT_A and DUT_B
+      members: [ bl-dut_a, bl-dut_b ]
+    vlan.access: blue
+  core:                                       # Core links
+  - xs-dut_a
+  - xs-dut_b
 
 validate:
-  no_dut_a_route:
-    description: Remove route via VTEP A
+  adj_a:
+    description: Check OSPF adjacency with DUT_A
+    wait_msg: Waiting for OSPF adjacency process to complete
+    wait: 30
     nodes: [ xs ]
-    devices: [ frr ]
-    exec: >
-      ip route replace {{ vxlan.vtep_list[0] }}/32 via
-      {{ interfaces[1].neighbors[0].ipv4|ipaddr('address') }} dev {{ interfaces[1].ifname }}
-  adj:
+    plugin: ospf_neighbor(nodes.dut_a.ospf.router_id)
+  adj_b:
     description: Check OSPF adjacency with DUT_B
     wait_msg: Waiting for OSPF adjacency process to complete
-    wait: 50
+    wait: 30
     nodes: [ xs ]
     plugin: ospf_neighbor(nodes.dut_b.ospf.router_id)
   ping_red:
     description: Ping-based reachability test in VLAN red
-    nodes: [ h1, h5 ]
-    plugin: ping('h2')
+    nodes: [ rl, r1, r2 ]
+    plugin: ping('rr')
   ping_blue:
     description: Ping-based reachability test in VLAN blue
-    nodes: [ h3 ]
-    plugin: ping('h4')
+    nodes: [ bl, b1, b2 ]
+    plugin: ping('br')
   inter_vlan:
     description: Ping-based reachability test between blue and red VLANs
-    nodes: [ h1 ]
+    nodes: [ rl ]
     devices: [ linux ]
-    plugin: ping('h4',expect='fail')
+    plugin: ping('br',expect='fail')
