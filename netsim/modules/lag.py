@@ -202,10 +202,10 @@ def create_lag_interfaces(link: Box, mlag_pairs: dict, topology: Box) -> None:
 
   skip_atts = list(topology.defaults.lag.attributes.lag_no_propagate)
   link.interfaces = []                                          # Build interface list for lag link
-  for group in (A, B):
+  for group in (A,B):
     bond = data.get_empty_box()                                 # Track possibly different lag.ifindex for each side
     bond.lag.ifindex = link.get('lag.ifindex',None)
-    for node in group:
+    for node in sorted(list(group)):                            # Use deterministic ordering
       ifatts = data.get_box({ 'node': node, '_type': 'lag', 'lag': {} })  # use '_type', not 'type' (!)
       for m in members:                                         # Collect attributes from member links
         node_ifs = [ i for i in m.interfaces if i.node==node ]
