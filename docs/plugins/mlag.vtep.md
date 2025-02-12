@@ -1,14 +1,9 @@
 (plugin-mlag-vtep)=
-# Combining MLAG redundancy with VXLAN VTEP functionality
+# Combining MLAG Redundancy with VXLAN VTEP Functionality
 
 VXLAN enables L3 forwarding of L2 network traffic, and MLAG provides network state synchronization to support redundant active-active connectivity. Some designs require the combination of both, i.e. VXLAN endpoints with redundancy such that single device failures do not lead to broken network overlay paths.
 
-Conceptually, VXLAN redundancy requires the allocation of a shared logical VTEP IP address that is common across both MLAG peers. This enables both peers to send and receive VXLAN packets transparently, and if one fails the other can take over. This plugin coordinates the allocation of this logical anycast IP for MLAG peers, across multiple vendors.
-
-## Supported platforms
-
-This plugin supports any devices that support both VXLAN and MLAG; it creates an extra loopback interface with 
-`vxlan.vtep` set to `True`. It is up to the device config templates to render this into a functional VTEP.
+Conceptually, VXLAN redundancy requires allocating a shared logical VTEP IP address that is common across both MLAG peers. This enables both peers to send and receive VXLAN packets transparently; if one fails, the other can take over. This plugin coordinates the allocation of this logical anycast IP for MLAG peers, across multiple vendors.
 
 ```eval_rst
 .. contents:: Table of Contents
@@ -17,14 +12,21 @@ This plugin supports any devices that support both VXLAN and MLAG; it creates an
    :backlinks: none
 ```
 
+## Supported Platforms
+
+This plugin works with any device that supports VXLAN and MLAG; it creates an extra loopback interface with 
+`vxlan.vtep` set to `True`. It is up to the device configuration templates to render this into a functional VTEP.
+
 ## Using the Plugin
 
-The plugin is enabled by simply including it in the toplogy:
+To use the plugin, add it to the **plugin** list in the lab topology:
+
 ```
 plugin: [ ...., mlag.vtep ]
 ```
 
 At that point, anycast MLAG VTEPs are automatically enabled for any MLAG pair of devices in the topology. If this is not desired, the plugin can be disabled on a per-node level:
+
 ```
 nodes:
   node_without_mlag_vtep:
@@ -33,21 +35,21 @@ nodes:
 
 The MLAG VTEP works for both static VXLAN and EVPN signalled topologies.
 
-### Customizing the address allocation pool
+## Customizing the Address Allocation Pool
 
 By default, the plugin configures a "mlag_vtep" pool for `10.101.101.0/24` to allocate its /32 IPs from (1 per MLAG pair). If desired, this configuration can be changed:
 ```
 addressing.mlag_vtep.ipv4: 10.99.99.0/24
 ```
 
-The regular "vrf_loopback" pool is passed as a secondary source to allocate from, should the first pool run out.
+## Sample Topologies
 
-### Elaborate example
+The _netlab_ integration tests include anycast VTEP on an MLAG pair using VXLAN ingress replication and EVPN control plane. 
 
-The integration tests contain an example topology, under `integration/mlag.vtep/01-vxlan-bridging.yml`. This topology presents a combination of *Netlab* features, showcasing multi-vendor:
-* VLAN bridging
-* OSPFv2
-* static VXLAN
-* MLAG to Linux hosts with LACP signalled port-channels
-* MLAG orphan hosts (single connected)
-* this new `mlag.vtep` plugin for logical VTEP redundancy
+Both lab topologies use:
+
+* VXLAN transport of bridged VLANs
+* Linux hosts dual-attached to the MLAG pair
+* Single-attached (orphan) Linux hosts
+* OSPFv2 as the core routing protocol and IBGP as the EVPN control-plane protocol
+* Multi-vendor VXLAN and EVPN implementation
