@@ -9,7 +9,7 @@ LAG is currently supported on these platforms:
 | Operating system      | LACP | Static | Passive<br>LACP | MLAG
 | --------------------- |:--:|:--:|:--:|:---:|
 | Arista EOS [❗](caveats-eos) | ✅ | ✅ | ✅ | ✅ |
-| Aruba AOS-CX          | ✅ | ✅ | ✅ | ✅ |
+| Aruba AOS-CX [❗](caveats-aruba) | ✅ | ✅ | ✅ | ✅ |
 | Cumulus Linux 4.x     | ✅ | ✅ | ❌  | ❌ |
 | Cumulus 5.x (NVUE)    | ✅ | ✅ | ❌  | ✅ |
 | Dell OS10             | ✅ | ✅ | ✅  | ✅ |
