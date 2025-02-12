@@ -140,15 +140,25 @@ def node_set_vtep(node: Box, topology: Box) -> bool:
 #
 def build_vtep_list(vlan: Box, node: str, nodes: typing.List[str], topology: Box) -> list:
   vlan.vtep_list = []                                               # Start with an emtpy VTEP list
+  local_vtep = topology.nodes[node].vxlan.vtep
+
   for n in nodes:
     if n == node:                                                   # Skip own node
       continue
     ndata = topology.nodes[n]
     if not 'vlans' in ndata:                                        # No VLANs on remote node, skip it
       continue
+    remote_vtep = ndata.get('vxlan.vtep',None)                      # Get remote VTEP
+    if remote_vtep is None:                                         # Remote node not using VXLAN?
+      continue
+    if remote_vtep == local_vtep:                                   # Skip anycast VTEP equal to local node
+      continue
+    if remote_vtep in vlan.vtep_list:                               # Remote anycast VTEP already in VTEP list?
+      continue
+
     vni_match = filter(lambda x: x.get('vni',None) == vlan.vni,ndata.vlans.values())
     if list(vni_match):                                             # Is there a VLAN with matching VNI on remote node?
-      vlan.vtep_list.append(ndata.vxlan.vtep)                       # ... if so, add remote VTEP to VLAN flood list
+      vlan.vtep_list.append(remote_vtep)                            # ... if so, add remote VTEP to VLAN flood list
 
   return_value = vlan.vtep_list                                     # We'll return whatever we built
   if not vlan.vtep_list:                                            # ... but will remove empty VTEP list from VLAN data
