@@ -137,7 +137,7 @@ def set_lag_ifindex(bond: Box, intf: Box, topology: Box) -> bool:
   features = devices.get_device_features(_n,topology.defaults)
   if 'reserved_ifindex_range' in features.lag:                 # Exclude any reserved port channel IDs
     if intf_lag_ifindex in features.lag.reserved_ifindex_range:
-      log.error(f'Selected lag.ifindex({intf_lag_ifindex}) on {laglink._linkname} overlaps with device specific reserved range ' +
+      log.error(f'Selected lag.ifindex({intf_lag_ifindex}) conflicts with device specific reserved range ' +
                 f'{features.lag.reserved_ifindex_range} for node {_n.name} ({_n.device})',
         category=log.IncorrectValue,
         module='lag')
@@ -366,7 +366,7 @@ class LAG(_Module):
     populate_lag_id_set(topology)
     populate_peerlink_id_set(topology)
 
-    mlag_pairs: Typing.dict[str,str] = {}
+    mlag_pairs: typing.Dict[str,str] = {}
     for link in list(topology.links):                                   # Make a copy, may get modified
       if 'lag' in link:
         process_lag_link(link,mlag_pairs,topology)                      # Update mlag pairs map
