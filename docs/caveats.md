@@ -49,6 +49,7 @@ nodes:
 * The limitations of the Aruba AOS-CX Simulator can be found [here](https://feature-navigator.arubanetworks.com/), selecting *CX Simulator* as platform.
 * It seems that the Aruba AOS-CX Simulator cannot generate ICMP Fragmentation-Needed messages.
 * Inter-VRF static routes are supported only for IPv4.
+* With MC-LAG (VSX), it seems the virtual dataplane has some problems in case of LAG member link failure.
 
 ### VRF and L3VPN Caveats
 
