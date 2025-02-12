@@ -4,6 +4,7 @@
 
 import typing,typing_extensions,types
 import functools
+import ipaddress
 import netaddr
 import re
 import textwrap
@@ -612,38 +613,69 @@ def check_named_prefix(value: str) -> typing.Optional[dict]:
       return { '_valid': True, '_transform': transform_named_prefix }
   return None
 
-#
-# Testing for IPv4 and IPv6 addresses is nasty, as netaddr module happily mixes IPv4 and IPv6
-#
-@type_test()
-def must_be_ipv4(value: typing.Any, use: str, named: bool = False) -> dict:
+"""
+Common IP address validation functionality. Both tests recognize these use cases:
 
-  def transform_to_ipaddr(value: int) -> str:
-    return str(netaddr.IPAddress(value))
+* 'interface' -- an IP prefix that can be used on an interface.
+  Allows int (subnet offset) and bool (unnumbered/LLA)
+* 'host_prefix' -- an IP address with a prefix length. A subset of 'interface'.
+* 'address' -- a pure IP address. Typical use case: next hops for static routes
+* 'id' -- identifier that can be an IP address or an int
+* 'subnet_prefix' -- an IP prefix that can be used on a subnet, including bool (unnum/LLA).
+  Host bits must be zero, and it cannot be in the multicast range.
+* 'prefix' -- any IP prefix, including multicast prefixes. Use case: prefix lists
 
-  def prefix_to_ipv4(value: str) -> str:
-    topology = global_vars.get_topology()
-    return '' if topology is None else topology.get('prefix',{})[value].ipv4
+Valid types per use case:
 
-  if isinstance(value,bool):                                          # bool values are valid only on interfaces
-    if use not in ('interface','prefix'):
-      return { '_value' : 'an IPv4 address (boolean value is valid only on an interface)' }
+Use case      | str (w/) | str (no/) | bool | int |
+--------------+----------+-----------+------+-----+
+address       |          |    OK     |      |     |
+prefix        |    OK    |           |      |     |
+host_prefix   |    OK    |           |      |     |
+interface     |    OK    |    OK     |  OK  | OK  |
+subnet_prefix |    OK    |           |  OK  |     |
+id            |          |    OK     |      | OK  |
+--------------+----------+-----------+------+-----+
+
+Furthermore, we can use 'named' prefixes in some scenarios.
+"""
+
+def common_addr_parse(
+      value: typing.Any,
+      use: str,
+      named: bool,
+      af: str,
+      net_parse: typing.Callable,
+      addr_parse: typing.Callable,
+      xform_int: typing.Optional[typing.Callable] = None,
+      xform_pfx: typing.Optional[typing.Callable] = None) -> dict:
+
+  def check_int_value(value: int, xform_int: typing.Optional[typing.Callable]) -> dict:
+    if value < 0 or value > 2**32-1:
+      return { '_value': f'an {af} address or an integer between 0 and 2**32' }
+    else:
+      if xform_int is not None:
+        return { '_valid': True, '_transform': xform_int }
+      else:
+        return { '_valid': True }
+
+  if isinstance(value,bool):                      # bool values are valid only on interfaces and subnets
+    if use not in ('interface','subnet_prefix'):
+      return { '_value' : f'an {af} address (boolean value is valid only on an interface)' }
     else:
       return { '_valid': True }
 
-  if isinstance(value,int):                                           # integer values are valid only as IDs (OSPF area)
-    if use not in ('id','interface'):
-      return { '_value': 'an IPv4 prefix (integer value is only valid as a 32-bit ID)' }
-    if value < 0 or value > 2**32-1:
-      return { '_value': 'an IPv4 address or an integer between 0 and 2**32' }
-    if use == 'id':
-      return { '_valid': True, '_transform': transform_to_ipaddr }
-    return { '_valid': True }
+  if isinstance(value,int):                       # integer values are valid only as interface offsts or IDs (OSPF area)
+    if use == 'id' and af == 'IPv4':
+      return check_int_value(value,xform_int)
+    if use != 'interface':
+      return { '_value': f'an {af} address or prefix (integer value is only valid as interface offset or a 32-bit ID)' }
+    return check_int_value(value,None)
 
   if not isinstance(value,str):
-    return { '_type': 'IPv4 prefix' if use == 'prefix' else 'IPv4 address' }
+    return { '_type': f'{af} prefix' if 'prefix' in use else f'{af} address' }
 
-  if named:                                                           # Check whether we can use a named prefix
+  if named and xform_pfx is not None:             # Check whether we can use a named prefix
     topology = global_vars.get_topology()
     if topology is not None:
       from ..augment import addressing
@@ -651,64 +683,52 @@ def must_be_ipv4(value: typing.Any, use: str, named: bool = False) -> dict:
       if value in pfxs:
         addressing.evaluate_named_prefix(topology,value)
         if 'ipv4' in pfxs[value]:
-          return { '_valid': True, '_transform': prefix_to_ipv4 }
+          return { '_valid': True, '_transform': xform_pfx }
 
-  if '/' in value:
-    if use == 'id':                                                   # IDs should not have a prefix
-      return { '_value': 'IPv4 address (not prefix)' }
-  else:
-    if use == 'prefix':                                               # prefix must have a /
-      return { '_value': 'IPv4 prefix' }
+  if use in ['id','address'] or (use in ['interface'] and '/' not in value):
+    try:
+      addr_parse(value)
+    except Exception as Ex:
+      return { '_value': f'{af} address ({Ex})' }
+
+    return { '_valid': True }
 
   try:
-    parse = netaddr.IPNetwork(value)                                  # now let's check if we have a valid address
-  except Exception as ex:
-    return { '_value': ("IPv4 " + ("address or " if use != 'prefix' else "") + "prefix") }
-
-  try:                                                                # ... and finally we have to check it's a true IPv4 address
-    parse.ipv4()
-    if parse.is_ipv4_mapped():
-      return { '_value': "IP address in IPv4 format" }
-  except Exception as ex:
-    return { '_value': "IPv4 address/prefix" }
+    net_parse(value,strict=use not in ['interface','host_prefix'])
+  except Exception as Ex:
+    return { '_value': f'{af} prefix ({Ex})' }
 
   return { '_valid': True }
 
+'''
+IPv4 validation -- use the common code, allowing int values and named prefixes
+'''
+@type_test()
+def must_be_ipv4(value: typing.Any, use: str, named: bool = False) -> dict:
+
+  def transform_to_ipaddr(value: int) -> str:
+    return str(ipaddress.IPv4Address(value))
+
+  def prefix_to_ipv4(value: str) -> str:
+    topology = global_vars.get_topology()
+    return '' if topology is None else topology.get('prefix',{})[value].ipv4
+
+  return common_addr_parse(
+            value=value,use=use,named=named,af='IPv4',
+            net_parse=ipaddress.IPv4Network,
+            addr_parse=ipaddress.IPv4Address,
+            xform_int=transform_to_ipaddr,
+            xform_pfx=prefix_to_ipv4)
+
+'''
+IPv6 validation -- use the common code, but without int values or named prefixes
+'''
 @type_test()
 def must_be_ipv6(value: typing.Any, use: str) -> dict:
-  if isinstance(value,bool):                                          # bool values are valid only on interfaces
-    if use not in ('interface','prefix'):
-      return { '_value': 'an IPv6 address (boolean value is valid only on an interface)' }
-    else:
-      return { '_valid': True }
-
-  if isinstance(value,int):                                           # integer values are valid only as IDs (OSPF area)
-    if use not in ('interface'):
-      return { '_value': 'NWT: an IPv6 prefix (integer value is only valid as an inteface offset)' }
-    return { '_valid': True }
-
-  if not isinstance(value,str):
-    return { '_type': 'IPv6 prefix' if use == 'prefix' else 'IPv6 address' }
-
-  if not '/' in value:
-    if use == 'prefix':                                               # prefix must have a /
-      return { '_value': 'IPv6 prefix (not an address)' }
-
-  try:
-    parse = netaddr.IPNetwork(value)                                  # now let's check if we have a valid address
-  except Exception as ex:
-    return { '_value': "IPv6 " + ("address or " if use != 'prefix' else "") + "prefix" }
-
-  if parse.is_ipv4_mapped():                                          # This is really an IPv4 address, but it looks like IPv6, so OK
-    return { '_valid': True }
-
-  try:                                                                # ... and finally we have to check it's a true IPv6 address
-    parse.ipv4()
-    return { '_value': "IPv6 (not an IPv4) address" }                 # If we could get IPv4 address out of it, it clearly is not
-  except Exception as ex:
-    pass
-
-  return { '_valid': True }
+  return common_addr_parse(
+            value=value,use=use,named=False,af='IPv6',
+            net_parse=ipaddress.IPv6Network,
+            addr_parse=ipaddress.IPv6Address)
 
 @type_test()
 def must_be_prefix_str(value: typing.Any) -> dict:
