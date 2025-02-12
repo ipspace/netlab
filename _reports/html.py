@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 #
 import os
+import sys
 import typing
 import argparse
 from box import Box
@@ -19,6 +20,15 @@ def parse(args: typing.List[str]) -> argparse.Namespace:
 
   return parser.parse_args(args)
 
+def set_format_tags(data: Box) -> None:
+  for v in data.get('results',{}).values():
+    if not isinstance(v,Box):
+      continue
+    if '_timestamp' in v:
+      data._columns.timestamp = True
+    if '_version' in v:
+      data._columns.version = True
+
 def create_html_page(
       args: argparse.Namespace,
       j2: str,
@@ -26,6 +36,7 @@ def create_html_page(
       output_fname: str,
       output_dir: str = '_html' ) -> None:
   j2_path = os.path.abspath(os.path.dirname('__file__')) + '/_reports'
+  set_format_tags(data)
   body = templates.render_template(data=data,j2_file=j2,extra_path=['_reports'])
   templates.write_template(
     in_folder=j2_path,j2='page.html.j2',
