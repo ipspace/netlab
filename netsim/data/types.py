@@ -631,12 +631,12 @@ Valid types per use case:
 
 Use case      | str (w/) | str (no/) | bool | int |
 --------------+----------+-----------+------+-----+
-interface     |    OK    |    OK     |  OK  | OK  |
-host_prefix   |    OK    |           |      |     |
 address       |          |    OK     |      |     |
-id            |          |    OK     |      | OK  |
-subnet_prefix |    OK    |           |  OK  |     |
 prefix        |    OK    |           |      |     |
+host_prefix   |    OK    |           |      |     |
+interface     |    OK    |    OK     |  OK  | OK  |
+subnet_prefix |    OK    |           |  OK  |     |
+id            |          |    OK     |      | OK  |
 --------------+----------+-----------+------+-----+
 
 Furthermore, we can use 'named' prefixes in some scenarios.
@@ -725,40 +725,6 @@ def must_be_ipv6(value: typing.Any, use: str) -> dict:
             value=value,use=use,named=False,af='IPv6',
             net_parse=ipaddress.IPv6Network,
             addr_parse=ipaddress.IPv6Address)
-
-  if isinstance(value,bool):                                          # bool values are valid only on interfaces
-    if use not in ('interface','prefix'):
-      return { '_value': 'an IPv6 address (boolean value is valid only on an interface)' }
-    else:
-      return { '_valid': True }
-
-  if isinstance(value,int):                                           # integer values are valid only as IDs (OSPF area)
-    if use not in ('interface'):
-      return { '_value': 'NWT: an IPv6 prefix (integer value is only valid as an inteface offset)' }
-    return { '_valid': True }
-
-  if not isinstance(value,str):
-    return { '_type': 'IPv6 prefix' if use == 'prefix' else 'IPv6 address' }
-
-  if not '/' in value:
-    if use == 'prefix':                                               # prefix must have a /
-      return { '_value': 'IPv6 prefix (not an address)' }
-
-  try:
-    parse = netaddr.IPNetwork(value)                                  # now let's check if we have a valid address
-  except Exception as ex:
-    return { '_value': "IPv6 " + ("address or " if use != 'prefix' else "") + "prefix" }
-
-  if parse.is_ipv4_mapped():                                          # This is really an IPv4 address, but it looks like IPv6, so OK
-    return { '_valid': True }
-
-  try:                                                                # ... and finally we have to check it's a true IPv6 address
-    parse.ipv4()
-    return { '_value': "IPv6 (not an IPv4) address" }                 # If we could get IPv4 address out of it, it clearly is not
-  except Exception as ex:
-    pass
-
-  return { '_valid': True }
 
 @type_test()
 def must_be_prefix_str(value: typing.Any) -> dict:
