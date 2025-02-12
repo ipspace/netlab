@@ -23,5 +23,6 @@ Want to know how _netlab_ works behind the scenes? These documents might give yo
    vlan-interface-attributes.md
    quirks.md
    tests.md
+   integration-tests.md
    clab-netns.md
 ```

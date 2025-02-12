@@ -61,8 +61,8 @@ Automated CI/CD tests will check your expected test results, and we'll have a di
 
 ## Integration Tests
 
-Integration tests are run by hand; it's too much hassle to set up an automated test environment with vendor boxes/containers/license files. The latest results are available at [https://tests.netlab.tools/](https://tests.netlab.tools/).
+[Integration tests](integration-testing) are run by hand; it's too much hassle to set up an automated test environment with vendor boxes/containers/license files. The latest results are available at [https://tests.netlab.tools/](https://tests.netlab.tools/).
 
-The test topologies are stored in the `tests/integration` directory. If you're adding new device features or changing device configuration templates, please run the relevant tests before submitting a PR.
+The test topologies are stored in the `tests/integration` directory. If you're adding new device features or changing device configuration templates, please [run the relevant tests](integration-test-suite) before submitting a PR.
 
-Most integration tests include automated validation. The easiest way to use it is to run the `netlab up _test_scenario_ --validate` command.
+Most integration tests include automated validation. The easiest way to use it is to [run](integration-test-single) the `netlab up _test_scenario_ --validate` command.
