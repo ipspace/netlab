@@ -111,7 +111,8 @@ def set_lag_ifindex(laglink: Box, intf: Box, is_mside: bool, topology: Box) -> b
   link_lag_ifindex = laglink.get('lag.ifindex',None)
   _n = topology.nodes[intf.node]
   next_ifindex = _n.get('_lag_ifindex',None)
-  print(f"set_lag_ifindex(is_mside={is_mside}) link_lag_ifindex={link_lag_ifindex} intf_lag_ifindex={intf_lag_ifindex} next_ifindex={next_ifindex} ")
+  
+  # print(f"set_lag_ifindex(is_mside={is_mside}) link_lag_ifindex={link_lag_ifindex} intf_lag_ifindex={intf_lag_ifindex} next_ifindex={next_ifindex} ")
   if intf_lag_ifindex is None:
     if link_lag_ifindex is None:
       if is_mside:                                             # For M: side we need matching lag.ifindex
