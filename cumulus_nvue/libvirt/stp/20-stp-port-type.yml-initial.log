@@ -32,17 +32,17 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [dut]
 ok: [h1]
-ok: [h3]
 ok: [h2]
+ok: [h3]
 ok: [h4]
 ok: [x1]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [dut]
 ok: [h1]
+ok: [h3]
 ok: [h2]
 ok: [h4]
-ok: [h3]
 ok: [x1]
 
 TASK [fail] ********************************************************************
@@ -65,7 +65,7 @@ ok: [x1] =>
     =========================================
     !
     interface Ethernet1
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0101
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
@@ -96,8 +96,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
 ok: [h1]
-ok: [h2]
 ok: [h3]
+ok: [h2]
 ok: [h4]
 ok: [x1]
 
@@ -155,92 +155,43 @@ ok: [h1] =>
     #
     # Print the final routing table
     ip route
-ok: [dut] => 
+ok: [h3] => 
   msg: |-
-    initial configuration for dut
+    initial configuration for h3
     =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
   
-    - set:
-        system:
-          hostname: dut
-        interface:
-          eth0:
-            ip:
-              vrf: mgmt
-              address:
-                dhcp: {}
-            type: eth
-          swp1:
-            type: swp
-            link:
-              mtu: 1500
-              state:
-                up : {}
-            description: "dut -> x1"
-  
-          swp2:
-            type: swp
-            link:
-              mtu: 1500
-              state:
-                up : {}
-            description: "[Access VLAN red] dut -> h1"
-  
-          swp3:
-            type: swp
-            link:
-              mtu: 1500
-              state:
-                up : {}
-            description: "[Access VLAN red] dut -> h2"
-  
-          swp4:
-            type: swp
-            link:
-              mtu: 1500
-              state:
-                up : {}
-            description: "[Access VLAN red] dut -> h3"
-  
-          swp5:
-            type: swp
-            link:
-              mtu: 1500
-              state:
-                up : {}
-            description: "[Access VLAN green] dut -> h4"
-  
-          vlan1000:
-            type: svi
-            link:
-              state:
-                up : {}
-            description: "VLAN red (1000) -> [x1,h1,h2,h3]"
-  
-          vlan1002:
-            type: svi
-            link:
-              state:
-                up : {}
-            description: "VLAN green (1002) -> [h4] [stub]"
-  
-          vlan1001:
-            type: svi
-            link:
-              state:
-                up : {}
-            description: "VLAN blue (1001) -> [x1]"
-  
-  
-    - set:
-        interface:
-          lo:
-            type: loopback
-            ip:
-              address:
-                10.0.0.6/32: {}
-              ipv6:
-                enable: off
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.4/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.4/24 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    #
+    #
+    # Print the final routing table
+    ip route
 ok: [h4] => 
   msg: |-
     initial configuration for h4
@@ -315,43 +266,117 @@ ok: [h2] =>
     #
     # Print the final routing table
     ip route
-ok: [h3] => 
+ok: [dut] => 
   msg: |-
-    initial configuration for h3
+    initial configuration for dut
     =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
   
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.0.4/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.0.4/24 dev eth1
-    ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    #
-    #
-    #
-    # Print the final routing table
-    ip route
+    - set:
+        system:
+          hostname: dut
+          config:
+            snippet:
+              system-mtu:
+                file: /etc/network/ifupdown2/policy.d/mtu.json
+                content: |
+                  { "address": { "defaults": { "mtu": "1500" } } }
+        interface:
+          eth0:
+            ip:
+              vrf: mgmt
+              address:
+                dhcp: {}
+            type: eth
+          swp1:
+            type: swp
+            link:
+              state:
+                up : {}
+            description: "dut -> x1"
+            ip:
+              ipv6:
+                enable: off
+  
+          swp2:
+            type: swp
+            link:
+              state:
+                up : {}
+            description: "[Access VLAN red] dut -> h1"
+            ip:
+              ipv6:
+                enable: off
+  
+          swp3:
+            type: swp
+            link:
+              state:
+                up : {}
+            description: "[Access VLAN red] dut -> h2"
+            ip:
+              ipv6:
+                enable: off
+  
+          swp4:
+            type: swp
+            link:
+              state:
+                up : {}
+            description: "[Access VLAN red] dut -> h3"
+            ip:
+              ipv6:
+                enable: off
+  
+          swp5:
+            type: swp
+            link:
+              state:
+                up : {}
+            description: "[Access VLAN green] dut -> h4"
+            ip:
+              ipv6:
+                enable: off
+  
+          vlan1000:
+            type: svi
+            link:
+              state:
+                up : {}
+            description: "VLAN red (1000) -> [x1,h1,h2,h3]"
+            ip:
+              ipv6:
+                enable: off
+  
+          vlan1002:
+            type: svi
+            link:
+              state:
+                up : {}
+            description: "VLAN green (1002) -> [h4] [stub]"
+            ip:
+              ipv6:
+                enable: off
+  
+          vlan1001:
+            type: svi
+            link:
+              state:
+                up : {}
+            description: "VLAN blue (1001) -> [x1]"
+            ip:
+              ipv6:
+                enable: off
+  
+  
+    - set:
+        interface:
+          lo:
+            type: loopback
+            ip:
+              address:
+                10.0.0.6/32: {}
+              ipv6:
+                enable: off
 ok: [x1] => 
   msg: |-
     initial configuration for x1
@@ -433,10 +458,10 @@ ok: [h3]
 ok: [h4]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h4 -> localhost]
 changed: [h1 -> localhost]
-changed: [h3 -> localhost]
 changed: [h2 -> localhost]
+changed: [h4 -> localhost]
+changed: [h3 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
@@ -457,16 +482,16 @@ skipping: [h3]
 skipping: [h4]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-ke8a7koa.sh] ***********************
-changed: [h2 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-stcai3uj.sh] ***********************
 changed: [h1 -> localhost]
-changed: [h4 -> localhost]
+changed: [h2 -> localhost]
 changed: [h3 -> localhost]
+changed: [h4 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -499,8 +524,9 @@ ok: [dut] =>
         bridge:
           domain:
             br_default:
-              mac-address: "08:4f:c2:a9:00:06" # The default 'auto' setting picks the same MAC for multiple instances!
-              untagged: 1
+              type: vlan-aware
+              mac-address: "08:4f:c2:a9:00:06" # The default 'auto' setting reads the MAC from the EEPROM, which is the same for all instances
+              untagged: none
               vlan:
                 '1001': {}
                 '1002': {}
@@ -512,9 +538,11 @@ ok: [dut] =>
            bridge:
              domain:
                br_default:
+  
                  vlan:
                    '1000': {}
                    '1001': {}
+                 untagged: none
          swp2:
            bridge:
              domain:
@@ -611,7 +639,6 @@ ok: [dut] =>
                 state:
                   up: {}
   
-    # When using PVRST, NVidia recommends to increase from default 2000 pps
         interface:
           swp1:
             bridge:

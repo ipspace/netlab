@@ -9,23 +9,23 @@ ok: [x2]
 
 TASK [Find device readiness script] ********************************************
 ok: [dut]
-ok: [x2]
 ok: [x1]
+ok: [x2]
 
 TASK [Wait for device to become ready] *****************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/eos-clab.yml for dut, x1, x2
 
 TASK [Wait for cEOS SSH daemon to start] ***************************************
-ok: [dut]
-ok: [x1]
 ok: [x2]
+ok: [x1]
+ok: [dut]
 
 TASK [Normalize config on bridge-like devices] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
-ok: [x1]
 ok: [dut]
+ok: [x1]
 ok: [x2]
 
 TASK [Find configuration template for normalize] *******************************
@@ -45,19 +45,19 @@ ok: [dut] =>
     =========================================
     !
     interface Ethernet1
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0101
     !
     interface Ethernet2
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0102
     !
     interface Ethernet3
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0103
     !
     interface Ethernet4
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0104
 ok: [x1] => 
   msg: |-
@@ -65,11 +65,11 @@ ok: [x1] =>
     =========================================
     !
     interface Ethernet1
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0201
     !
     interface Ethernet2
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0202
 ok: [x2] => 
   msg: |-
@@ -77,17 +77,17 @@ ok: [x2] =>
     =========================================
     !
     interface Ethernet1
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0301
     !
     interface Ethernet2
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0302
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [dut]
-ok: [x2]
 ok: [x1]
+ok: [x2]
 
 TASK [Deploy normalize configuration] ******************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for dut, x1, x2
@@ -119,6 +119,51 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [x1] => 
+  msg: |-
+    initial configuration for x1
+    =========================================
+    hostname x1
+    !
+    logging monitor debugging
+    aaa authorization exec default local
+    !
+    lldp run
+    ip routing
+    !
+    !
+    ip host dut 10.0.0.1 172.16.0.1 172.16.1.1
+    ip host x2 10.0.0.3 172.16.1.3
+    !
+    interface Management0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     ip address 10.0.0.2/32
+    !
+    interface port-channel1
+     no switchport
+     description [Access VLAN red] x1 -> dut
+    !
+    interface Ethernet1
+     no switchport
+     description x1 -> dut
+    !
+     mac-address 52dc.cafe.0201
+     no shutdown
+    !
+    interface Ethernet2
+     no switchport
+     description x1 -> dut
+    !
+     mac-address 52dc.cafe.0202
+     no shutdown
+    !
+    interface Vlan1000
+     description VLAN red (1000) -> [dut]
+     ip address 172.16.0.2/24
+    !
 ok: [dut] => 
   msg: |-
     initial configuration for dut
@@ -143,9 +188,11 @@ ok: [dut] =>
      ip address 10.0.0.1/32
     !
     interface port-channel1
+     no switchport
      description [Access VLAN red] dut -> x1
     !
     interface port-channel2
+     no switchport
      description [Access VLAN blue] dut -> x2
     !
     interface Ethernet1
@@ -184,50 +231,6 @@ ok: [dut] =>
      description VLAN blue (1001) -> [x2]
      ip address 172.16.1.1/24
     !
-ok: [x1] => 
-  msg: |-
-    initial configuration for x1
-    =========================================
-    hostname x1
-    !
-    logging monitor debugging
-    aaa authorization exec default local
-    !
-    lldp run
-    ip routing
-    !
-    !
-    ip host dut 10.0.0.1 172.16.0.1 172.16.1.1
-    ip host x2 10.0.0.3 172.16.1.3
-    !
-    interface Management0
-     no lldp transmit
-     no lldp receive
-    !
-    interface Loopback0
-     ip address 10.0.0.2/32
-    !
-    interface port-channel1
-     description [Access VLAN red] x1 -> dut
-    !
-    interface Ethernet1
-     no switchport
-     description x1 -> dut
-    !
-     mac-address 52dc.cafe.0201
-     no shutdown
-    !
-    interface Ethernet2
-     no switchport
-     description x1 -> dut
-    !
-     mac-address 52dc.cafe.0202
-     no shutdown
-    !
-    interface Vlan1000
-     description VLAN red (1000) -> [dut]
-     ip address 172.16.0.2/24
-    !
 ok: [x2] => 
   msg: |-
     initial configuration for x2
@@ -252,6 +255,7 @@ ok: [x2] =>
      ip address 10.0.0.3/32
     !
     interface port-channel1
+     no switchport
      description [Access VLAN blue] x2 -> dut
     !
     interface Ethernet1
@@ -282,8 +286,8 @@ TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for dut, x1, x2
 
 TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 changed: [dut]
 
 PLAY [Deploy module-specific configurations] ***********************************
@@ -304,9 +308,9 @@ ok: [x1]
 ok: [x2]
 
 TASK [Find configuration template for lag] *************************************
-ok: [dut]
 ok: [x2]
 ok: [x1]
+ok: [dut]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -411,20 +415,6 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [x1] => 
-  msg: |-
-    vlan configuration for x1
-    =========================================
-    vlan 1000
-     name red
-    !
-  
-    !
-    interface port-channel1
-     switchport
-     switchport access vlan 1000
-    !
-    interface Vlan1000
 ok: [dut] => 
   msg: |-
     vlan configuration for dut
@@ -448,6 +438,20 @@ ok: [dut] =>
     interface Vlan1000
     !
     interface Vlan1001
+ok: [x1] => 
+  msg: |-
+    vlan configuration for x1
+    =========================================
+    vlan 1000
+     name red
+    !
+  
+    !
+    interface port-channel1
+     switchport
+     switchport access vlan 1000
+    !
+    interface Vlan1000
 ok: [x2] => 
   msg: |-
     vlan configuration for x2
@@ -472,8 +476,8 @@ TASK [Deploy vlan configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for dut, x1, x2
 
 TASK [eos_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/eos.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 changed: [dut]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
@@ -492,31 +496,6 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [x1] => 
-  msg: |-
-    ospf configuration for x1
-    =========================================
-    !
-    ! OSPFv2 configuration
-    !
-    router ospf 1
-     router-id 10.0.0.2
-     interface unnumbered hello mask tx 0.0.0.0
-     timers spf delay initial 100 200 500
-     timers lsa rx min interval 100
-     timers lsa tx delay initial 100 200 500
-  
-  
-    !
-    interface Loopback0
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface Vlan1000
-    ! VLAN red (1000) -> [dut]
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
 ok: [dut] => 
   msg: |-
     ospf configuration for dut
@@ -544,6 +523,31 @@ ok: [dut] =>
     !
     interface Vlan1001
     ! VLAN blue (1001) -> [x2]
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+ok: [x1] => 
+  msg: |-
+    ospf configuration for x1
+    =========================================
+    !
+    ! OSPFv2 configuration
+    !
+    router ospf 1
+     router-id 10.0.0.2
+     interface unnumbered hello mask tx 0.0.0.0
+     timers spf delay initial 100 200 500
+     timers lsa rx min interval 100
+     timers lsa tx delay initial 100 200 500
+  
+  
+    !
+    interface Loopback0
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface Vlan1000
+    ! VLAN red (1000) -> [dut]
      ip ospf area 0.0.0.0
      ip ospf network point-to-point
     !
@@ -582,8 +586,8 @@ TASK [Deploy ospf configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for dut, x1, x2
 
 TASK [eos_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/eos.j2] ***
-changed: [x1]
 changed: [x2]
+changed: [x1]
 changed: [dut]
 
 PLAY [Deploy custom deployment templates] **************************************

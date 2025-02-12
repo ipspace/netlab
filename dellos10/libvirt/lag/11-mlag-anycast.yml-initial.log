@@ -51,15 +51,15 @@ ok: [x1] =>
     =========================================
     !
     interface Ethernet1
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0401
     !
     interface Ethernet2
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0402
     !
     interface Ethernet3
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0403
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
@@ -153,52 +153,6 @@ ok: [h1] =>
     #
     # Print the final routing table
     ip route
-ok: [s2] => 
-  msg: |-
-    initial configuration for s2
-    =========================================
-    hostname s2
-    !
-    lldp enable
-    !
-    !
-    ip host s1 10.0.0.2
-    ip host x1 10.0.0.4
-    !
-    !
-    default mtu 1532
-    !
-    interface loopback0
-     ip address 10.0.0.3/32
-     no ipv6 enable
-    !
-    interface mgmt1/1/1
-     no lldp transmit
-     no lldp receive
-    !
-    interface ethernet1/1/1
-     no shutdown
-     no switchport
-     mtu 1532
-     description "s2 -> s1"
-    !
-    interface port-channel1
-     no shutdown
-     mtu 1532
-     description "[Access VLAN red] s2 -> [x1\\,s1]"
-    !
-    interface ethernet1/1/2
-     no shutdown
-     no switchport
-     mtu 1532
-     description "s2 -> x1"
-    !
-    interface virtual-network1000
-     no shutdown
-     description "VLAN red (1000) -> [x1\\,s1\\,h1]"
-     ip address 172.16.42.3/24
-     no ipv6 enable
-    !
 ok: [s1] => 
   msg: |-
     initial configuration for s1
@@ -225,24 +179,64 @@ ok: [s1] =>
     interface ethernet1/1/1
      no shutdown
      no switchport
-     mtu 1532
      description "s1 -> s2"
     !
     interface port-channel1
      no shutdown
-     mtu 1532
      description "[Access VLAN red] s1 -> [x1\\,s2]"
     !
     interface ethernet1/1/2
      no shutdown
      no switchport
-     mtu 1532
      description "s1 -> x1"
     !
     interface virtual-network1000
      no shutdown
      description "VLAN red (1000) -> [x1\\,s2\\,h1]"
      ip address 172.16.42.2/24
+     no ipv6 enable
+    !
+ok: [s2] => 
+  msg: |-
+    initial configuration for s2
+    =========================================
+    hostname s2
+    !
+    lldp enable
+    !
+    !
+    ip host s1 10.0.0.2
+    ip host x1 10.0.0.4
+    !
+    !
+    default mtu 1532
+    !
+    interface loopback0
+     ip address 10.0.0.3/32
+     no ipv6 enable
+    !
+    interface mgmt1/1/1
+     no lldp transmit
+     no lldp receive
+    !
+    interface ethernet1/1/1
+     no shutdown
+     no switchport
+     description "s2 -> s1"
+    !
+    interface port-channel1
+     no shutdown
+     description "[Access VLAN red] s2 -> [x1\\,s1]"
+    !
+    interface ethernet1/1/2
+     no shutdown
+     no switchport
+     description "s2 -> x1"
+    !
+    interface virtual-network1000
+     no shutdown
+     description "VLAN red (1000) -> [x1\\,s1\\,h1]"
+     ip address 172.16.42.3/24
      no ipv6 enable
     !
 ok: [x1] => 
@@ -338,7 +332,7 @@ skipping: [h1]
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [h1 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-xsz8415r.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-euk486cr.sh] ***********************
 changed: [h1 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
@@ -387,26 +381,6 @@ ok: [x1] =>
      description x1 -> s2 in channel-group 1
      channel-group 1 mode active
      lacp timer fast
-ok: [s1] => 
-  msg: |-
-    lag configuration for s1
-    =========================================
-    ! OS10 internally uses port-channel 1000 and VLAN 4094 for VLT
-    vlt-domain 1
-     backup destination 10.0.0.3
-     vlt-mac 02:00:01:a9:00:01
-     delay-restore 30
-     discovery-interface ethernet1/1/1
-  
-    interface port-channel1
-     description "[Access VLAN red] s1 -> [x1\\,s2] in vlt-port-channel 1"
-     vlt-port-channel 1
-    !
-    interface ethernet1/1/2
-     description "s1 -> x1 in channel-group 1"
-     channel-group 1 mode active
-     lacp rate fast
-    !
 ok: [s2] => 
   msg: |-
     lag configuration for s2
@@ -427,6 +401,26 @@ ok: [s2] =>
      channel-group 1 mode active
      lacp rate fast
     !
+ok: [s1] => 
+  msg: |-
+    lag configuration for s1
+    =========================================
+    ! OS10 internally uses port-channel 1000 and VLAN 4094 for VLT
+    vlt-domain 1
+     backup destination 10.0.0.3
+     vlt-mac 02:00:01:a9:00:01
+     delay-restore 30
+     discovery-interface ethernet1/1/1
+  
+    interface port-channel1
+     description "[Access VLAN red] s1 -> [x1\\,s2] in vlt-port-channel 1"
+     vlt-port-channel 1
+    !
+    interface ethernet1/1/2
+     description "s1 -> x1 in channel-group 1"
+     channel-group 1 mode active
+     lacp rate fast
+    !
 
 TASK [Find configuration deployment deploy_script for lag] *********************
 ok: [s1]
@@ -442,8 +436,8 @@ skipping: [s1]
 skipping: [s2]
 
 TASK [dellos10_config: deploying lag from /home/pipi/net101/tools/netsim/ansible/templates/lag/dellos10.j2] ***
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [eos_config: deploying lag from /home/pipi/net101/tools/netsim/ansible/templates/lag/eos.j2] ***
 changed: [x1]
@@ -470,11 +464,13 @@ ok: [s1] =>
     =========================================
     ! First of all, create association VLAN<->Virtual-Network
     virtual-network 1000
-      exit
+     exit
+    clear virtual-network 1000 counters
+    !
     interface vlan 1000
-      description "VLAN red"
-      virtual-network 1000
-      exit
+     description "VLAN red"
+     virtual-network 1000
+     exit
     !
     !
     interface port-channel1
@@ -488,11 +484,13 @@ ok: [s2] =>
     =========================================
     ! First of all, create association VLAN<->Virtual-Network
     virtual-network 1000
-      exit
+     exit
+    clear virtual-network 1000 counters
+    !
     interface vlan 1000
-      description "VLAN red"
-      virtual-network 1000
-      exit
+     description "VLAN red"
+     virtual-network 1000
+     exit
     !
     !
     interface port-channel1
@@ -591,8 +589,8 @@ skipping: [s1]
 skipping: [s2]
 
 TASK [dellos10_config: deploying gateway from /home/pipi/net101/tools/netsim/ansible/templates/gateway/dellos10.j2] ***
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched

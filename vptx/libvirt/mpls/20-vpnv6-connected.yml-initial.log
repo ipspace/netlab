@@ -18,9 +18,9 @@ ok: [dut]
 ok: [p2]
 ok: [h1]
 ok: [h2]
-ok: [h4]
-ok: [pe2]
 ok: [h3]
+ok: [pe2]
+ok: [h4]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [p1]
@@ -43,23 +43,23 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [p1]
-ok: [h1]
 ok: [p2]
 ok: [dut]
+ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [pe2]
 ok: [h4]
 
 TASK [Find configuration template for normalize] *******************************
-ok: [p1]
-ok: [h1]
 ok: [dut]
+ok: [p1]
 ok: [p2]
-ok: [h2]
-ok: [pe2]
-ok: [h4]
+ok: [h1]
 ok: [h3]
+ok: [h2]
+ok: [h4]
+ok: [pe2]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -85,15 +85,15 @@ ok: [pe2] =>
     =========================================
     !
     interface Ethernet1
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0601
     !
     interface Ethernet2
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0602
     !
     interface Ethernet3
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0603
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
@@ -140,10 +140,10 @@ ok: [p1]
 ok: [p2]
 ok: [h1]
 ok: [dut]
-ok: [h3]
 ok: [h2]
-ok: [h4]
+ok: [h3]
 ok: [pe2]
+ok: [h4]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -156,6 +156,44 @@ skipping: [h3]
 skipping: [h4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [h4] => 
+  msg: |-
+    initial configuration for h4
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:42:3::4/64 dev eth1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:42:3::4/64 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    #
+    #
+    # Print the final routing table
+    ip route
 ok: [h1] => 
   msg: |-
     initial configuration for h1
@@ -315,44 +353,6 @@ ok: [h2] =>
     ip -6 addr del 2001:db8:42:1::2/64 dev eth1 2>/dev/null
     set -e
     ip -6 addr add 2001:db8:42:1::2/64 dev eth1
-    ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    #
-    #
-    #
-    # Print the final routing table
-    ip route
-ok: [h4] => 
-  msg: |-
-    initial configuration for h4
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
-    set +e
-    ip -6 addr del 2001:db8:42:3::4/64 dev eth1 2>/dev/null
-    set -e
-    ip -6 addr add 2001:db8:42:3::4/64 dev eth1
     ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
@@ -719,10 +719,10 @@ ok: [p1]
 ok: [dut]
 ok: [p2]
 ok: [h1]
-ok: [h4]
-ok: [pe2]
-ok: [h2]
 ok: [h3]
+ok: [h4]
+ok: [h2]
+ok: [pe2]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for dut
@@ -747,8 +747,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for p1, p2
 
 TASK [template] ****************************************************************
-changed: [p1]
 changed: [p2]
+changed: [p1]
 
 TASK [set_fact] ****************************************************************
 ok: [p1]
@@ -769,15 +769,15 @@ ok: [h3]
 ok: [h4]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h4 -> localhost]
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
+changed: [h1 -> localhost]
+changed: [h4 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
+changed: [h1 -> localhost]
 changed: [h4 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
@@ -793,16 +793,16 @@ skipping: [h3]
 skipping: [h4]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h3 -> localhost]
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-4annts7t.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-md6a34j5.sh] ***********************
 changed: [h2 -> localhost]
-changed: [h1 -> localhost]
 changed: [h4 -> localhost]
 changed: [h3 -> localhost]
+changed: [h1 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -964,9 +964,9 @@ ok: [dut]
 ok: [pe2]
 
 TASK [Find configuration template for ospf] ************************************
+ok: [p2]
 ok: [p1]
 ok: [dut]
-ok: [p2]
 ok: [pe2]
 
 TASK [fail] ********************************************************************
@@ -1000,39 +1000,6 @@ ok: [dut] =>
         }
       }
     }
-ok: [p1] => 
-  msg: |-
-    ospf configuration for p1
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.7
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! p1 -> dut
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-    interface eth2
-    ! p1 -> p2
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    do write
 ok: [p2] => 
   msg: |-
     ospf configuration for p2
@@ -1060,6 +1027,39 @@ ok: [p2] =>
     !
     interface eth2
     ! p2 -> pe2
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    do write
+ok: [p1] => 
+  msg: |-
+    ospf configuration for p1
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.7
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! p1 -> dut
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    interface eth2
+    ! p1 -> p2
      ip ospf area 0.0.0.0
      ip ospf network point-to-point
     !
@@ -1094,8 +1094,8 @@ ok: [pe2] =>
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [p1]
-ok: [p2]
 ok: [dut]
+ok: [p2]
 ok: [pe2]
 
 TASK [Deploy ospf configuration] ***********************************************
@@ -1107,8 +1107,8 @@ TASK [junos_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/t
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [p1]
 changed: [p2]
+changed: [p1]
 
 TASK [set_fact] ****************************************************************
 ok: [p1]
@@ -1304,8 +1304,8 @@ TASK [junos_config: deploying mpls from /home/pipi/net101/tools/netsim/ansible/t
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [p2]
 changed: [p1]
+changed: [p2]
 
 TASK [set_fact] ****************************************************************
 ok: [p1]
@@ -1323,8 +1323,8 @@ TASK [eos_config: deploying mpls from /home/pipi/net101/tools/netsim/ansible/tem
 changed: [pe2]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
-ok: [p2]
 ok: [p1]
+ok: [p2]
 ok: [dut]
 ok: [pe2]
 

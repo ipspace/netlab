@@ -5,85 +5,192 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
 ok: [h1]
-ok: [x1]
 ok: [h2]
+ok: [x1]
+ok: [th]
 
 TASK [Find device readiness script] ********************************************
 ok: [dut]
 ok: [h1]
-ok: [x1]
 ok: [h2]
+ok: [x1]
+ok: [th]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [dut]
 skipping: [h1]
-skipping: [x1]
 skipping: [h2]
+skipping: [x1]
+skipping: [th]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, h1, x1, h2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, h1, h2, x1, th
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [dut]
 ok: [h1]
-ok: [x1]
 ok: [h2]
+ok: [x1]
+ok: [th]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [dut]
 ok: [h1]
-ok: [x1]
 ok: [h2]
+ok: [x1]
+ok: [th]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
 skipping: [h1]
-skipping: [x1]
 skipping: [h2]
+skipping: [x1]
+skipping: [th]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
 skipping: [h1]
-skipping: [x1]
 skipping: [h2]
+skipping: [x1]
+skipping: [th]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
 skipping: [dut]
 skipping: [h1]
-skipping: [x1]
 skipping: [h2]
+skipping: [x1]
+skipping: [th]
 
 TASK [Deploy normalize configuration] ******************************************
 skipping: [dut]
 skipping: [h1]
-skipping: [x1]
 skipping: [h2]
+skipping: [x1]
+skipping: [th]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, h1, x1, h2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, h1, h2, x1, th
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
 ok: [h1]
-ok: [x1]
 ok: [h2]
+ok: [x1]
+ok: [th]
 
 TASK [Find configuration template for initial] *********************************
 ok: [dut]
 ok: [h1]
-ok: [x1]
 ok: [h2]
+ok: [x1]
+ok: [th]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
 skipping: [h1]
-skipping: [x1]
 skipping: [h2]
+skipping: [x1]
+skipping: [th]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [h2] => 
+ok: [dut] => 
   msg: |-
-    initial configuration for h2
+    initial configuration for dut
+    =========================================
+  
+    - set:
+        system:
+          hostname: dut
+          config:
+            snippet:
+              system-mtu:
+                file: /etc/network/ifupdown2/policy.d/mtu.json
+                content: |
+                  { "address": { "defaults": { "mtu": "1500" } } }
+        bridge:
+          domain:
+            br_default:
+              type: vlan-aware
+              # The default 'auto' setting reads the EEPROM to pick the same MAC for all instances!
+              mac-address: "08:4f:c2:a9:00:01"
+              untagged: 1
+  
+        interface:
+          eth0:
+            ip:
+              vrf: mgmt
+              address:
+                dhcp: {}
+            type: eth
+          swp1:
+            type: swp
+            link:
+              state:
+                up : {}
+            description: "dut -> [x1,th]"
+            ip:
+              address:
+                172.16.44.1/24: {}
+                2001:db8:cafe:44::1/64: {}
+              ipv6:
+                forward: on
+              neighbor-discovery:
+                enable: on
+                router-advertisement:
+                  enable: on
+                  interval: 5000
+  
+          swp2:
+            type: swp
+            link:
+              state:
+                up : {}
+            description: "[Access VLAN edge] dut -> h1"
+            ip:
+              ipv6:
+                enable: off
+  
+          swp3:
+            type: swp
+            link:
+              state:
+                up : {}
+            description: "[Access VLAN edge] dut -> x1"
+            ip:
+              ipv6:
+                enable: off
+  
+          vlan1000:
+            type: svi
+            link:
+              state:
+                up : {}
+            description: "VLAN edge (1000) -> [h1,x1,h2]"
+            ip:
+              address:
+                172.16.33.1/24: {}
+                2001:db8:cafe:33::1/64: {}
+              ipv6:
+                forward: on
+              neighbor-discovery:
+                enable: on
+                router-advertisement:
+                  enable: on
+                  interval: 5000
+  
+  
+    - set:
+        interface:
+          lo:
+            type: loopback
+            ip:
+              address:
+                10.0.0.1/32: {}
+              ipv6:
+                enable: off
+ok: [th] => 
+  msg: |-
+    initial configuration for th
     =========================================
     #!/bin/bash
     #
@@ -106,14 +213,14 @@ ok: [h2] =>
     #
     ip link set dev eth1 up
     set +e
-    ip addr del 172.16.44.4/24 dev eth1 2>/dev/null
+    ip addr del 172.16.44.5/24 dev eth1 2>/dev/null
     set -e
-    ip addr add 172.16.44.4/24 dev eth1
+    ip addr add 172.16.44.5/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
     set +e
-    ip -6 addr del 2001:db8:cafe:44::4/64 dev eth1 2>/dev/null
+    ip -6 addr del 2001:db8:cafe:44::5/64 dev eth1 2>/dev/null
     set -e
-    ip -6 addr add 2001:db8:cafe:44::4/64 dev eth1
+    ip -6 addr add 2001:db8:cafe:44::5/64 dev eth1
     ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
@@ -137,86 +244,6 @@ ok: [h2] =>
     #
     # Print the final routing table
     ip route
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-  
-    - set:
-        system:
-          hostname: dut
-        interface:
-          eth0:
-            ip:
-              vrf: mgmt
-              address:
-                dhcp: {}
-            type: eth
-          swp1:
-            type: swp
-            link:
-              mtu: 1500
-              state:
-                up : {}
-            description: "dut -> [x1,h2]"
-            ip:
-              address:
-                172.16.44.1/24: {}
-                2001:db8:cafe:44::1/64: {}
-              ipv6:
-                forward: on
-              neighbor-discovery:
-                enable: on
-                router-advertisement:
-                  enable: on
-                  interval: 5000
-  
-  
-          swp2:
-            type: swp
-            link:
-              mtu: 1500
-              state:
-                up : {}
-            description: "[Access VLAN edge] dut -> h1"
-  
-          swp3:
-            type: swp
-            link:
-              mtu: 1500
-              state:
-                up : {}
-            description: "[Access VLAN edge] dut -> x1"
-  
-          vlan1000:
-            type: svi
-            link:
-              state:
-                up : {}
-            description: "VLAN edge (1000) -> [h1,x1]"
-            ip:
-              address:
-                172.16.33.1/24: {}
-                2001:db8:cafe:33::1/64: {}
-              ipv6:
-                forward: on
-              neighbor-discovery:
-                enable: on
-                router-advertisement:
-                  enable: on
-                  interval: 5000
-  
-  
-  
-    - set:
-        interface:
-          lo:
-            type: loopback
-            ip:
-              address:
-                10.0.0.1/32: {}
-              ipv6:
-                enable: off
 ok: [h1] => 
   msg: |-
     initial configuration for h1
@@ -265,13 +292,11 @@ ok: [h1] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set dev eth1 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -287,9 +312,87 @@ ok: [h1] =>
     !
     interface eth1
      no shutdown
-     description h1 -> [dut,x1]
+     description h1 -> [dut,x1,h2]
      ip address 172.16.33.3/24
      ipv6 address 2001:db8:cafe:33::3/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set dev eth1 mtu 1500
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname h2
+    !
+    vrf mgmt
+     exit-vrf
+    !
+    ipv6 forwarding
+    frr defaults datacenter
+    !
+    interface eth1
+     no shutdown
+     description h2 -> [h1,dut,x1]
+     ip address 172.16.33.4/24
+     ipv6 address 2001:db8:cafe:33::4/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -355,15 +458,15 @@ ok: [x1] =>
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
     ip link set eth1 down
     ip link set eth1 up
+    ip link set dev eth1 mtu 1500
     sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+    ip link set dev eth2 mtu 1500
+    sysctl -qw net.ipv6.conf.eth3.disable_ipv6=1
+    ip link set dev eth3 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
-    ip link set dev eth2 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -383,7 +486,7 @@ ok: [x1] =>
     !
     interface eth1
      no shutdown
-     description x1 -> [dut,h2]
+     description x1 -> [dut,th]
      ip address 172.16.44.2/24
      ipv6 address 2001:db8:cafe:44::2/64
      ipv6 nd ra-interval 5
@@ -394,9 +497,14 @@ ok: [x1] =>
      description [Access VLAN edge] x1 -> dut
      ! no ip address
     !
+    interface eth3
+     no shutdown
+     description [Access VLAN edge] x1 -> h2
+     ! no ip address
+    !
     interface vlan1000
      no shutdown
-     description VLAN edge (1000) -> [h1,dut]
+     description VLAN edge (1000) -> [h1,dut,h2]
      ip address 172.16.33.2/24
      ipv6 address 2001:db8:cafe:33::2/64
      ipv6 nd ra-interval 5
@@ -410,13 +518,14 @@ ok: [x1] =>
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [dut]
 ok: [h1]
-ok: [x1]
 ok: [h2]
+ok: [x1]
+ok: [th]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for h1, x1
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for h1, h2, x1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for th
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
@@ -441,73 +550,82 @@ changed: [h1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [h1]
+skipping: [h2]
 skipping: [x1]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for h1, x1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for h1, h2, x1
 
 TASK [template] ****************************************************************
 changed: [h1]
 changed: [x1]
+changed: [h2]
 
 TASK [set_fact] ****************************************************************
 ok: [h1]
+ok: [h2]
 ok: [x1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x1]
 changed: [h1]
+changed: [h2]
+changed: [x1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [h1]
+skipping: [h2]
 skipping: [x1]
 
 TASK [Define script filename and determine whether to execute in netns] ********
-ok: [h2]
+ok: [th]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h2 -> localhost]
+changed: [th -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
+changed: [th -> localhost]
 
-TASK [Copy script into running container at /tmp/config-h2_initial.sh] *********
-skipping: [h2]
+TASK [Copy script into running container at /tmp/config-th_initial.sh] *********
+skipping: [th]
 
-TASK [Execute /tmp/config-h2_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-skipping: [h2]
+TASK [Execute /tmp/config-th_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+skipping: [th]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h2 -> localhost]
+changed: [th -> localhost]
 
-TASK [Remove temporary file /tmp/h2_initial-in3qrkge.sh] ***********************
-changed: [h2 -> localhost]
+TASK [Remove temporary file /tmp/th_initial-csn5swj2.sh] ***********************
+changed: [th -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
 ok: [h1]
+ok: [h2]
 ok: [x1]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, h1, x1 => (item=routing)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, h1, x1 => (item=vlan)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, h1, x1 => (item=gateway)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, h1, h2, x1 => (item=routing)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, h1, h2, x1 => (item=vlan)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, h1, h2, x1 => (item=gateway)
 
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [dut]
 ok: [h1]
+ok: [h2]
 ok: [x1]
 
 TASK [Find configuration template for routing] *********************************
 skipping: [dut]
 skipping: [x1]
 ok: [h1]
+ok: [h2]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
 skipping: [h1]
+skipping: [h2]
 skipping: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -525,46 +643,67 @@ ok: [h1] =>
     !
     ip route 172.16.44.0/24 172.16.33.42 eth1
     ipv6 route 2001:db8:cafe:44::/64 2001:db8:cafe:33::2a eth1
+ok: [h2] => 
+  msg: |-
+    routing configuration for h2
+    =========================================
+    !
+    !
+    !
+    !
+    ! Global static routes
+    !
+    ip route 172.16.44.0/24 172.16.33.42 eth1
+    ipv6 route 2001:db8:cafe:44::/64 2001:db8:cafe:33::2a eth1
 
 TASK [Find configuration deployment deploy_script for routing] *****************
 skipping: [dut]
 skipping: [x1]
 ok: [h1]
+ok: [h2]
 
 TASK [Deploy routing configuration] ********************************************
 skipping: [dut]
 skipping: [x1]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for h1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for h1, h2
 
 TASK [template] ****************************************************************
+changed: [h2]
 changed: [h1]
 
 TASK [set_fact] ****************************************************************
 ok: [h1]
+ok: [h2]
 
 TASK [run /tmp/config.sh to deploy routing config from /home/pipi/net101/tools/netsim/ansible/templates/routing/frr.j2] ***
 skipping: [h1]
+skipping: [h2]
 
 TASK [run vtysh to import routing config from /home/pipi/net101/tools/netsim/ansible/templates/routing/frr.j2] ***
 changed: [h1]
+changed: [h2]
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [dut]
 ok: [h1]
+ok: [h2]
 ok: [x1]
 
 TASK [Find configuration template for vlan] ************************************
 skipping: [h1]
+skipping: [h2]
 ok: [dut]
 ok: [x1]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
 skipping: [h1]
+skipping: [h2]
 skipping: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
+skipping: [h2]
 ok: [dut] => 
   msg: |-
     vlan configuration for dut
@@ -573,8 +712,6 @@ ok: [dut] =>
         bridge:
           domain:
             br_default:
-              mac-address: "08:4f:c2:a9:00:01" # The default 'auto' setting picks the same MAC for multiple instances!
-              untagged: 1
               vlan:
                 '1000': {}
   
@@ -600,24 +737,30 @@ ok: [x1] =>
     #
     if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
       brctl addbr vlan1000
+      ip link set dev vlan1000 address 52:dc:ca:fd:02:00
   
-  
-      ip link set dev vlan1000 up
+      ip link set dev vlan1000 mtu 1500
       ip addr flush dev vlan1000
       ip addr add 172.16.33.2/24 dev vlan1000
+      sysctl -w net.ipv6.conf.vlan1000.addr_gen_mode=3
       ip addr add 2001:db8:cafe:33::2/64 dev vlan1000
     fi
   
     brctl addif vlan1000 eth2
+    brctl addif vlan1000 eth3
+  
+    ip link set dev vlan1000 up
     exit 0
 
 TASK [Find configuration deployment deploy_script for vlan] ********************
 skipping: [h1]
+skipping: [h2]
 ok: [dut]
 ok: [x1]
 
 TASK [Deploy vlan configuration] ***********************************************
 skipping: [h1]
+skipping: [h2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1
 
@@ -654,20 +797,24 @@ skipping: [x1]
 TASK [Figure out whether to deploy the module gateway on current device] *******
 ok: [dut]
 ok: [h1]
+ok: [h2]
 ok: [x1]
 
 TASK [Find configuration template for gateway] *********************************
 skipping: [h1]
+skipping: [h2]
 ok: [dut]
 ok: [x1]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
 skipping: [h1]
+skipping: [h2]
 skipping: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
+skipping: [h2]
 ok: [dut] => 
   msg: |-
     gateway configuration for dut
@@ -697,13 +844,19 @@ ok: [x1] =>
     #
     set -e # Exit immediately when any command fails
     #
+    sysctl -w net.ipv6.conf.all.enhanced_dad=0
+    sysctl -w net.ipv6.conf.default.enhanced_dad=0
     if [ ! -e /sys/class/net/varp-40000 ]; then
       ip link add varp-40000 link vlan1000 type macvlan mode private
       ip link set dev varp-40000 address 02:00:ca:fe:c0:01
+      bridge fdb replace 02:00:ca:fe:c0:01 dev vlan1000 self
       ip addr add 172.16.33.42/24 dev varp-40000 metric 1024
       ip addr add 2001:db8:cafe:33::2a/64 dev varp-40000 metric 1024
       sysctl -w net.ipv4.conf.vlan1000.arp_announce=1
       sysctl -w net.ipv4.conf.vlan1000.arp_ignore=2
+      sysctl -w net.ipv6.conf.varp-40000.enhanced_dad=0
+      sysctl -w net.ipv6.conf.varp-40000.accept_dad=0
+      sysctl -w net.ipv6.conf.varp-40000.dad_transmits=0
       ip link set dev varp-40000 up
     fi
     #!/bin/bash
@@ -714,11 +867,13 @@ ok: [x1] =>
 
 TASK [Find configuration deployment deploy_script for gateway] *****************
 skipping: [h1]
+skipping: [h2]
 ok: [dut]
 ok: [x1]
 
 TASK [Deploy gateway configuration] ********************************************
 skipping: [h1]
+skipping: [h2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1
 
@@ -758,7 +913,8 @@ skipping: no hosts matched
 PLAY RECAP *********************************************************************
 dut                        : ok=42   changed=9    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 h1                         : ok=30   changed=5    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
-h2                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+h2                         : ok=29   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+th                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
 x1                         : ok=36   changed=6    unreachable=0    failed=0    skipped=17   rescued=0    ignored=0   
 
 

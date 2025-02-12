@@ -49,8 +49,8 @@ ok: [dut]
 ok: [xr]
 
 TASK [Find configuration template for initial] *********************************
-ok: [dut]
 ok: [xr]
+ok: [dut]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -65,6 +65,20 @@ ok: [dut] =>
     - set:
         system:
           hostname: dut
+          config:
+            snippet:
+              system-mtu:
+                file: /etc/network/ifupdown2/policy.d/mtu.json
+                content: |
+                  { "address": { "defaults": { "mtu": "1500" } } }
+        bridge:
+          domain:
+            br_default:
+              type: vlan-aware
+              # The default 'auto' setting reads the EEPROM to pick the same MAC for all instances!
+              mac-address: "08:4f:c2:a9:00:01"
+              untagged: 1
+  
         interface:
           eth0:
             ip:
@@ -75,7 +89,6 @@ ok: [dut] =>
           bond1:
             type: bond
             link:
-              mtu: 1500
               state:
                 up : {}
             description: "dut -> xr"
@@ -85,22 +98,25 @@ ok: [dut] =>
               ipv6:
                 enable: off
   
-  
           swp1:
             type: swp
             link:
-              mtu: 1500
               state:
                 down : {}
             description: "dut -> xr"
+            ip:
+              ipv6:
+                enable: off
   
           swp2:
             type: swp
             link:
-              mtu: 1500
               state:
                 down : {}
             description: "dut -> xr"
+            ip:
+              ipv6:
+                enable: off
   
   
     - set:
@@ -239,17 +255,15 @@ ok: [xr] =>
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
     sysctl -qw net.ipv6.conf.bond1.disable_ipv6=1
+    ip link set dev bond1 mtu 1500
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
     sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+    ip link set dev eth2 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev bond1 mtu 1500
-    ip link set dev eth1 mtu 1500
-    ip link set dev eth2 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -380,8 +394,6 @@ ok: [dut] =>
               state:
                 up: {}
           bond1:
-            link:
-              mtu: 1500
             bond:
               member:
                 swp1: {}

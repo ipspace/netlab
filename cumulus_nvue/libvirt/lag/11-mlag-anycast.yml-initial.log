@@ -51,15 +51,15 @@ ok: [x1] =>
     =========================================
     !
     interface Ethernet1
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0401
     !
     interface Ethernet2
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0402
     !
     interface Ethernet3
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0403
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
@@ -161,6 +161,12 @@ ok: [s1] =>
     - set:
         system:
           hostname: s1
+          config:
+            snippet:
+              system-mtu:
+                file: /etc/network/ifupdown2/policy.d/mtu.json
+                content: |
+                  { "address": { "defaults": { "mtu": "1500" } } }
         interface:
           eth0:
             ip:
@@ -171,18 +177,22 @@ ok: [s1] =>
           swp1:
             type: swp
             link:
-              mtu: 1500
               state:
                 up : {}
             description: "s1 -> s2"
+            ip:
+              ipv6:
+                enable: off
   
           bond1:
             type: bond
             link:
-              mtu: 1500
               state:
                 up : {}
             description: "[Access VLAN red] s1 -> [x1,s2]"
+            ip:
+              ipv6:
+                enable: off
             bridge:
               domain:
                 br_default: {}
@@ -190,10 +200,12 @@ ok: [s1] =>
           swp2:
             type: swp
             link:
-              mtu: 1500
               state:
                 down : {}
             description: "s1 -> x1"
+            ip:
+              ipv6:
+                enable: off
   
           vlan1000:
             type: svi
@@ -206,7 +218,6 @@ ok: [s1] =>
                 172.16.42.2/24: {}
               ipv6:
                 enable: off
-  
   
   
     - set:
@@ -226,6 +237,12 @@ ok: [s2] =>
     - set:
         system:
           hostname: s2
+          config:
+            snippet:
+              system-mtu:
+                file: /etc/network/ifupdown2/policy.d/mtu.json
+                content: |
+                  { "address": { "defaults": { "mtu": "1500" } } }
         interface:
           eth0:
             ip:
@@ -236,18 +253,22 @@ ok: [s2] =>
           swp1:
             type: swp
             link:
-              mtu: 1500
               state:
                 up : {}
             description: "s2 -> s1"
+            ip:
+              ipv6:
+                enable: off
   
           bond1:
             type: bond
             link:
-              mtu: 1500
               state:
                 up : {}
             description: "[Access VLAN red] s2 -> [x1,s1]"
+            ip:
+              ipv6:
+                enable: off
             bridge:
               domain:
                 br_default: {}
@@ -255,10 +276,12 @@ ok: [s2] =>
           swp2:
             type: swp
             link:
-              mtu: 1500
               state:
                 down : {}
             description: "s2 -> x1"
+            ip:
+              ipv6:
+                enable: off
   
           vlan1000:
             type: svi
@@ -271,7 +294,6 @@ ok: [s2] =>
                 172.16.42.3/24: {}
               ipv6:
                 enable: off
-  
   
   
     - set:
@@ -352,8 +374,8 @@ ok: [s1]
 ok: [s2]
 
 TASK [copy the cumulus nvue YAML initial config file to switch (generated from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus_nvue.j2)] ***
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [Wait for nvued to start] *************************************************
 ok: [s2]
@@ -364,8 +386,8 @@ ok: [s1]
 ok: [s2]
 
 TASK [execute on cumulus: 'nv config patch' for initial config] ****************
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [execute on cumulus: 'nv config apply -y' for initial config] *************
 changed: [s1]
@@ -392,7 +414,7 @@ skipping: [h1]
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [h1 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-v2j9jijb.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-o1ro6_3a.sh] ***********************
 changed: [h1 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
@@ -453,8 +475,6 @@ ok: [s1] =>
               state:
                 up: {}
           bond1:
-            link:
-              mtu: 1500
             bond:
               mlag:
                 enable: on
@@ -491,8 +511,6 @@ ok: [s2] =>
               state:
                 up: {}
           bond1:
-            link:
-              mtu: 1500
             bond:
               mlag:
                 enable: on
@@ -548,8 +566,8 @@ changed: [s1]
 changed: [s2]
 
 TASK [execute on cumulus: 'nv config apply -y' for lag config] *****************
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [eos_config: deploying lag from /home/pipi/net101/tools/netsim/ansible/templates/lag/eos.j2] ***
 changed: [x1]
@@ -578,8 +596,9 @@ ok: [s1] =>
         bridge:
           domain:
             br_default:
-              mac-address: "08:4f:c2:a9:00:02" # The default 'auto' setting picks the same MAC for multiple instances!
-              untagged: 1
+              type: vlan-aware
+              mac-address: "08:4f:c2:a9:00:02" # The default 'auto' setting reads the MAC from the EEPROM, which is the same for all instances
+              untagged: none
               vlan:
                 '1000': {}
   
@@ -598,8 +617,9 @@ ok: [s2] =>
         bridge:
           domain:
             br_default:
-              mac-address: "08:4f:c2:a9:00:03" # The default 'auto' setting picks the same MAC for multiple instances!
-              untagged: 1
+              type: vlan-aware
+              mac-address: "08:4f:c2:a9:00:03" # The default 'auto' setting reads the MAC from the EEPROM, which is the same for all instances
+              untagged: none
               vlan:
                 '1000': {}
   
@@ -671,8 +691,8 @@ ok: [s2]
 ok: [x1]
 
 TASK [Find configuration template for gateway] *********************************
-ok: [s1]
 skipping: [x1]
+ok: [s1]
 ok: [s2]
 
 TASK [fail] ********************************************************************
@@ -737,8 +757,8 @@ ok: [s1]
 ok: [s2]
 
 TASK [copy the cumulus nvue YAML gateway config file to switch (generated from /home/pipi/net101/tools/netsim/ansible/templates/gateway/cumulus_nvue.j2)] ***
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [Wait for nvued to start] *************************************************
 skipping: [s1]
@@ -749,8 +769,8 @@ ok: [s1]
 ok: [s2]
 
 TASK [execute on cumulus: 'nv config patch' for gateway config] ****************
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [execute on cumulus: 'nv config apply -y' for gateway config] *************
 changed: [s1]

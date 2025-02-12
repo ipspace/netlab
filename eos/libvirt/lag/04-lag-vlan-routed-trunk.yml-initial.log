@@ -1,0 +1,768 @@
+[WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [xr]
+ok: [h1]
+ok: [h2]
+ok: [dut]
+
+TASK [Find device readiness script] ********************************************
+ok: [xr]
+ok: [h1]
+ok: [h2]
+ok: [dut]
+
+TASK [Wait for device to become ready] *****************************************
+skipping: [dut]
+skipping: [xr]
+skipping: [h1]
+skipping: [h2]
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, xr, h1, h2
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [xr]
+ok: [h1]
+ok: [h2]
+ok: [dut]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [xr]
+ok: [h1]
+ok: [h2]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [xr]
+skipping: [h1]
+skipping: [h2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [xr]
+skipping: [h1]
+skipping: [h2]
+ok: [dut] => 
+  msg: |-
+    normalize configuration for dut
+    =========================================
+    !
+    interface Ethernet1
+     shutdown
+     mac-address 52dc.cafe.0301
+    !
+    interface Ethernet2
+     shutdown
+     mac-address 52dc.cafe.0302
+    !
+    interface Ethernet3
+     shutdown
+     mac-address 52dc.cafe.0303
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+skipping: [xr]
+skipping: [h1]
+skipping: [h2]
+ok: [dut]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [xr]
+skipping: [h1]
+skipping: [h2]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for dut
+
+TASK [eos_config: deploying normalize from /home/pipi/net101/tools/netsim/ansible/templates/normalize/eos.j2] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [dut]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, xr, h1, h2
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [xr]
+ok: [h1]
+ok: [h2]
+ok: [dut]
+
+TASK [Find configuration template for initial] *********************************
+ok: [xr]
+ok: [h1]
+ok: [h2]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [xr]
+skipping: [h1]
+skipping: [h2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.1.1/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.1.1/24 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.1.3 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.1.3 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.1.3 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.1.3 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.2.2/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.2.2/24 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.2.4 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.2.4 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.2.4 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.2.4 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
+ok: [xr] => 
+  msg: |-
+    initial configuration for xr
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    cat <<SCRIPT >.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)$ "
+    export PATH=$PATH:/usr/sbin
+    echo
+    echo "Use sudo vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Build hosts file
+    #
+    #
+    cat <<SCRIPT >/tmp/hosts
+    #
+    # Created by netlab initial
+    #
+    10.0.0.3 dut
+    172.16.1.3 Ethernet3.dut
+    10.1.0.1 port-channel1.1.dut
+    10.0.0.4 xr
+    172.16.2.4 eth3.xr
+    10.1.0.2 bond1.1000.xr
+    172.16.1.1 h1 eth1.h1
+    172.16.2.2 h2 eth1.h2
+    SCRIPT
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
+    #
+    # Configure system defaults on Ubuntu
+    #
+    hostnamectl set-hostname xr
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    APT_INSTALL=
+    #
+    if which curl; then
+      echo "Package curl already installed"
+    else
+      APT_INSTALL="$APT_INSTALL curl"
+    fi
+    #
+    if which gpg; then
+      echo "Package gnupg already installed"
+    else
+      APT_INSTALL="$APT_INSTALL gnupg"
+    fi
+    #
+    if which bridge; then
+      echo "Package iproute2 already installed"
+    else
+      APT_INSTALL="$APT_INSTALL iproute2"
+    fi
+    #
+    # APT_INSTALL always starts with a blank, so we can't just check if it's empty
+    # The following hack turns a string that contains only whitespaces into
+    # an empty string and removes leading whitespaces
+    #
+    APT_INSTALL=`echo $APT_INSTALL`
+    if [ -n "$APT_INSTALL" ]; then
+      echo "Installing packages $APT_INSTALL"
+      apt-get update -qq && apt-get install -qq $APT_INSTALL
+    fi
+    #
+    # Install FRR on a Ubuntu VM if needed
+    #
+    if which /usr/lib/frr/frrinit.sh; then
+      echo "FRR already installed, skipping installation"
+    else
+      curl -s https://deb.frrouting.org/frr/keys.asc >/etc/apt/trusted.gpg.d/frr.asc
+      FRRVER="frr-stable"
+      echo deb https://deb.frrouting.org/frr $(lsb_release -s -c) $FRRVER > /etc/apt/sources.list.d/frr.list
+      apt-get update -qq && apt-get install -qq frr frr-pythontools bridge-utils ethtool
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+    #
+    # Enable FRR daemons
+    #
+    echo "ospfd=yes" >>/etc/frr/daemons
+    echo "ospf6d=yes" >>/etc/frr/daemons
+  
+    /usr/lib/frr/frrinit.sh restart
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+    if [ ! -e /sys/class/net/bond1 ]; then
+      if [ ! -e /sys/devices/virtual/net/bond1 ]; then
+    #
+    # Make sure 'bonding' module is loaded
+    #
+    if [ ! -e /sys/module/bonding ]; then
+    modprobe bonding miimon=100 mode=802.3ad lacp_rate=fast
+    fi
+    if [ ! -e /sys/class/net/bond1 ]; then
+    ip link add dev bond1 type bond mode 802.3ad lacp_rate fast
+    fi
+  
+        ip link set dev bond1 up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    sysctl -qw net.ipv6.conf.bond1.disable_ipv6=1
+    ip link set dev bond1 mtu 1500
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+    ip link set dev eth2 mtu 1500
+    sysctl -qw net.ipv6.conf.eth3.disable_ipv6=1
+    ip link set dev eth3 mtu 1500
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname xr
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.4/32
+    !
+    interface bond1
+     no shutdown
+     description xr -> dut
+     ! no ip address
+    !
+    interface eth1
+     no shutdown
+     description xr -> dut
+     ! no ip address
+    !
+    interface eth2
+     no shutdown
+     description xr -> dut
+     ! no ip address
+    !
+    interface eth3
+     no shutdown
+     description xr -> h2 [stub]
+     ip address 172.16.2.4/24
+    !
+    interface bond1.1000
+     no shutdown
+     description xr -> dut
+     ip address 10.1.0.2/30
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    hostname dut
+    !
+    logging monitor debugging
+    aaa authorization exec default local
+    !
+    lldp run
+    ip routing
+    !
+    !
+    ip host h1 172.16.1.1
+    ip host h2 172.16.2.2
+    ip host xr 10.0.0.4 172.16.2.4 10.1.0.2
+    !
+    interface Management1
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     ip address 10.0.0.3/32
+    !
+    interface port-channel1
+     no switchport
+     description dut -> xr
+    !
+    interface Ethernet1
+     no switchport
+     description dut -> xr
+    !
+     mac-address 52dc.cafe.0301
+     no shutdown
+    !
+    interface Ethernet2
+     no switchport
+     description dut -> xr
+    !
+     mac-address 52dc.cafe.0302
+     no shutdown
+    !
+    interface Ethernet3
+     no switchport
+     description dut -> h1 [stub]
+     ip address 172.16.1.3/24
+    !
+     mac-address 52dc.cafe.0303
+     no shutdown
+    !
+    interface port-channel1.1
+     description dut -> xr
+     ip address 10.1.0.1/30
+    !
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [xr]
+ok: [h1]
+ok: [h2]
+ok: [dut]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for xr
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
+
+TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
+changed: [dut]
+
+TASK [template] ****************************************************************
+changed: [xr]
+
+TASK [set_fact] ****************************************************************
+ok: [xr]
+
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+changed: [xr]
+
+TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+skipping: [xr]
+
+TASK [Define script filename and determine whether to execute in netns] ********
+ok: [h1]
+ok: [h2]
+
+TASK [Create a temporary file for the rendered script] *************************
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
+skipping: [h1]
+skipping: [h2]
+
+TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+skipping: [h1]
+skipping: [h2]
+
+TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
+changed: [h2 -> localhost]
+changed: [h1 -> localhost]
+
+TASK [Remove temporary file /tmp/h1_initial-yuv8z1v7.sh] ***********************
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [xr]
+ok: [dut]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, xr => (item=lag)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, xr => (item=vlan)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, xr => (item=ospf)
+
+TASK [Figure out whether to deploy the module lag on current device] ***********
+ok: [xr]
+ok: [dut]
+
+TASK [Find configuration template for lag] *************************************
+ok: [xr]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [xr]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [xr] => 
+  msg: |-
+    lag configuration for xr
+    =========================================
+    #!/bin/bash
+    #
+    set -e # Exit immediately when any command fails
+    #
+    # Bond devices are created by 'initial' module - add members
+    #
+    ethtool -s eth1 autoneg off speed 1000 duplex full
+    ip link set dev eth1 down
+    ip link set dev eth1 master bond1
+    ip link set dev eth1 up
+    ethtool -s eth2 autoneg off speed 1000 duplex full
+    ip link set dev eth2 down
+    ip link set dev eth2 master bond1
+    ip link set dev eth2 up
+    ip link set dev bond1 up
+    exit 0
+ok: [dut] => 
+  msg: |-
+    lag configuration for dut
+    =========================================
+  
+    interface port-channel1
+     description dut -> xr
+    !
+    !
+    interface Ethernet1
+     description dut -> xr in channel-group 1
+     channel-group 1 mode active
+     lacp timer fast
+    !
+    interface Ethernet2
+     description dut -> xr in channel-group 1
+     channel-group 1 mode active
+     lacp timer fast
+
+TASK [Find configuration deployment deploy_script for lag] *********************
+ok: [xr]
+ok: [dut]
+
+TASK [Deploy lag configuration] ************************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for xr
+
+TASK [eos_config: deploying lag from /home/pipi/net101/tools/netsim/ansible/templates/lag/eos.j2] ***
+changed: [dut]
+
+TASK [template] ****************************************************************
+changed: [xr]
+
+TASK [set_fact] ****************************************************************
+ok: [xr]
+
+TASK [run /tmp/config.sh to deploy lag config from /home/pipi/net101/tools/netsim/ansible/templates/lag/frr.j2] ***
+changed: [xr]
+
+TASK [run vtysh to import lag config from /home/pipi/net101/tools/netsim/ansible/templates/lag/frr.j2] ***
+skipping: [xr]
+
+TASK [Figure out whether to deploy the module vlan on current device] **********
+ok: [xr]
+ok: [dut]
+
+TASK [Find configuration template for vlan] ************************************
+ok: [xr]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [xr]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [xr] => 
+  msg: |-
+    vlan configuration for xr
+    =========================================
+    #!/bin/bash
+    #
+    set -e # Exit immediately when any command fails
+    #
+    if [ ! -e /sys/devices/virtual/net/bond1.1000 ]; then
+      ip link add link bond1 name bond1.1000 type vlan id 1000
+      ip link set dev bond1.1000 up
+    fi
+  
+  
+    exit 0
+ok: [dut] => 
+  msg: |-
+    vlan configuration for dut
+    =========================================
+    vlan 1000
+     name v1
+    !
+  
+    !
+    interface Ethernet3
+    !
+    interface port-channel1.1
+     encapsulation dot1q vlan 1000
+
+TASK [Find configuration deployment deploy_script for vlan] ********************
+ok: [xr]
+ok: [dut]
+
+TASK [Deploy vlan configuration] ***********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for xr
+
+TASK [eos_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/eos.j2] ***
+changed: [dut]
+
+TASK [template] ****************************************************************
+changed: [xr]
+
+TASK [set_fact] ****************************************************************
+ok: [xr]
+
+TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
+changed: [xr]
+
+TASK [run vtysh to import vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
+skipping: [xr]
+
+TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [xr]
+ok: [dut]
+
+TASK [Find configuration template for ospf] ************************************
+ok: [xr]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [xr]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [xr] => 
+  msg: |-
+    ospf configuration for xr
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.4
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth3
+    ! xr -> h2
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+     ip ospf passive
+    !
+    interface bond1.1000
+    ! xr -> dut
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    do write
+ok: [dut] => 
+  msg: |-
+    ospf configuration for dut
+    =========================================
+    !
+    ! OSPFv2 configuration
+    !
+    router ospf 1
+     router-id 10.0.0.3
+     interface unnumbered hello mask tx 0.0.0.0
+     timers spf delay initial 100 200 500
+     timers lsa rx min interval 100
+     timers lsa tx delay initial 100 200 500
+  
+  
+     passive-interface Ethernet3
+    !
+    interface Loopback0
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface Ethernet3
+    ! dut -> h1
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    interface port-channel1.1
+    ! dut -> xr
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+ok: [xr]
+ok: [dut]
+
+TASK [Deploy ospf configuration] ***********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for xr
+
+TASK [eos_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/eos.j2] ***
+changed: [dut]
+
+TASK [template] ****************************************************************
+changed: [xr]
+
+TASK [set_fact] ****************************************************************
+ok: [xr]
+
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+skipping: [xr]
+
+TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+changed: [xr]
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+dut                        : ok=38   changed=5    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+h1                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+h2                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+xr                         : ok=42   changed=8    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
+
+
+
+The device under test is a router connected with a routed VLAN trunk on a LAG to
+another router. Hosts should be able to ping each other.
+
+On routers, this case tests routed subinterfaces on a port-channel interface
+

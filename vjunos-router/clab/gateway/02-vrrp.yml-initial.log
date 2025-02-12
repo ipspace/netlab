@@ -110,6 +110,58 @@ skipping: [h2]
 skipping: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.44.4/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.44.4/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:cafe:44::4/64 dev eth1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:cafe:44::4/64 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.33.0/24 2>/dev/null; do
+      : ; done
+    #
+    set +e
+    echo Removing existing IPv6 routes
+    while ip route del 2001:db8:cafe:33::/64 2>/dev/null; do
+      : ; done
+    #
+    echo Adding direct static routes
+    ip route add 172.16.33.0/24 via 172.16.44.1 dev eth1 protocol static
+    ip route add 2001:db8:cafe:33::/64 via 2001:db8:cafe:44::1 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
 ok: [h1] => 
   msg: |-
     initial configuration for h1
@@ -267,58 +319,6 @@ ok: [r2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [h2] => 
-  msg: |-
-    initial configuration for h2
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.44.4/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.44.4/24 dev eth1
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
-    set +e
-    ip -6 addr del 2001:db8:cafe:44::4/64 dev eth1 2>/dev/null
-    set -e
-    ip -6 addr add 2001:db8:cafe:44::4/64 dev eth1
-    ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.33.0/24 2>/dev/null; do
-      : ; done
-    #
-    set +e
-    echo Removing existing IPv6 routes
-    while ip route del 2001:db8:cafe:33::/64 2>/dev/null; do
-      : ; done
-    #
-    echo Adding direct static routes
-    ip route add 172.16.33.0/24 via 172.16.44.1 dev eth1 protocol static
-    ip route add 2001:db8:cafe:33::/64 via 2001:db8:cafe:44::1 dev eth1 protocol static
-    #
-    # Print the final routing table
-    ip route
 ok: [dut] => 
   msg: |-
     initial configuration for dut
@@ -425,8 +425,8 @@ changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -440,7 +440,7 @@ TASK [Container configuration for initial based on /home/pipi/net101/tools/netsi
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-hr_9zs_y.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-vcybg4fc.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -518,6 +518,8 @@ ok: [r2] =>
     #
     set -e # Exit immediately when any command fails
     #
+    sysctl -w net.ipv6.conf.all.enhanced_dad=0
+    sysctl -w net.ipv6.conf.default.enhanced_dad=0
     if [ ! -e /sys/class/net/vrrp-1-217 ]; then
       ip link add vrrp-1-217 link eth1 type macvlan mode bridge
       ip link set dev vrrp-1-217 address 00:00:5e:00:01:d9 addrgenmode none
@@ -550,8 +552,8 @@ ok: [r2] =>
 TASK [Find configuration deployment deploy_script for gateway] *****************
 skipping: [h1]
 skipping: [h2]
-ok: [dut]
 ok: [r2]
+ok: [dut]
 
 TASK [Deploy gateway configuration] ********************************************
 skipping: [h1]
@@ -595,9 +597,9 @@ skipping: [r2]
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
 skipping: [r2]
-ok: [h2] => 
+ok: [h1] => 
   msg: |-
-    routing configuration for h2
+    routing configuration for h1
     =========================================
     #!/bin/bash
     #
@@ -605,9 +607,9 @@ ok: [h2] =>
     echo
     #
     ip route
-ok: [h1] => 
+ok: [h2] => 
   msg: |-
-    routing configuration for h1
+    routing configuration for h2
     =========================================
     #!/bin/bash
     #
@@ -619,8 +621,8 @@ ok: [h1] =>
 TASK [Find configuration deployment deploy_script for routing] *****************
 skipping: [dut]
 skipping: [r2]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 
 TASK [Deploy routing configuration] ********************************************
 skipping: [dut]
@@ -636,12 +638,12 @@ changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux.j2] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Execute /tmp/config-h1_routing.sh to deploy routing config based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux.j2] ***
 changed: [h1]
@@ -651,7 +653,7 @@ TASK [Container configuration for routing based on /home/pipi/net101/tools/netsi
 skipping: [h1]
 skipping: [h2]
 
-TASK [Remove temporary file /tmp/h1_routing-_5x3mwms.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-j60450b8.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 

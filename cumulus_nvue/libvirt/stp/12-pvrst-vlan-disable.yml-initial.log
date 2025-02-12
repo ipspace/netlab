@@ -43,11 +43,11 @@ ok: [x1] =>
     =========================================
     !
     interface Ethernet1
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0301
     !
     interface Ethernet2
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0302
 ok: [x2] => 
   msg: |-
@@ -55,11 +55,11 @@ ok: [x2] =>
     =========================================
     !
     interface Ethernet1
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0201
     !
     interface Ethernet2
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0202
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
@@ -75,8 +75,8 @@ TASK [eos_config: deploying normalize from /home/pipi/net101/tools/netsim/ansibl
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
 should be similar to how they appear if present in the running configuration on
 device including the indentation
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
@@ -105,6 +105,12 @@ ok: [dut] =>
     - set:
         system:
           hostname: dut
+          config:
+            snippet:
+              system-mtu:
+                file: /etc/network/ifupdown2/policy.d/mtu.json
+                content: |
+                  { "address": { "defaults": { "mtu": "1500" } } }
         interface:
           eth0:
             ip:
@@ -115,18 +121,22 @@ ok: [dut] =>
           swp1:
             type: swp
             link:
-              mtu: 1500
               state:
                 up : {}
             description: "dut -> x1"
+            ip:
+              ipv6:
+                enable: off
   
           swp2:
             type: swp
             link:
-              mtu: 1500
               state:
                 up : {}
             description: "dut -> x2"
+            ip:
+              ipv6:
+                enable: off
   
           vlan76:
             type: svi
@@ -134,6 +144,9 @@ ok: [dut] =>
               state:
                 up : {}
             description: "VLAN blue (76) -> [x1,x2]"
+            ip:
+              ipv6:
+                enable: off
   
           vlan42:
             type: svi
@@ -141,6 +154,9 @@ ok: [dut] =>
               state:
                 up : {}
             description: "VLAN red (42) -> [x1,x2]"
+            ip:
+              ipv6:
+                enable: off
   
   
     - set:
@@ -267,15 +283,15 @@ TASK [execute on cumulus: 'nv config apply -y' for initial config] *************
 changed: [dut]
 
 TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
-ok: [x1]
 ok: [x2]
+ok: [x1]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=vlan)
@@ -305,8 +321,9 @@ ok: [dut] =>
         bridge:
           domain:
             br_default:
-              mac-address: "08:4f:c2:a9:00:01" # The default 'auto' setting picks the same MAC for multiple instances!
-              untagged: 1
+              type: vlan-aware
+              mac-address: "08:4f:c2:a9:00:01" # The default 'auto' setting reads the MAC from the EEPROM, which is the same for all instances
+              untagged: none
               vlan:
                 '76': {}
                 '42': {}
@@ -317,16 +334,20 @@ ok: [dut] =>
            bridge:
              domain:
                br_default:
+  
                  vlan:
                    '42': {}
                    '76': {}
+                 untagged: none
          swp2:
            bridge:
              domain:
                br_default:
+  
                  vlan:
                    '42': {}
                    '76': {}
+                 untagged: none
 ok: [x1] => 
   msg: |-
     vlan configuration for x1
@@ -406,8 +427,8 @@ TASK [execute on cumulus: 'nv config apply -y' for vlan config] ****************
 changed: [dut]
 
 TASK [eos_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/eos.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [Figure out whether to deploy the module stp on current device] ***********
 ok: [dut]
@@ -441,16 +462,6 @@ ok: [dut] =>
                 vlan:
                  '76':
                    bridge-priority: 4096
-                 '42':
-                   bridge-priority: 4096
-  
-    # When using PVRST, NVidia recommends to increase from default 2000 pps
-        system:
-          control-plane:
-            policer:
-              rpvst:
-                burst: 7200
-                rate: 7200
 ok: [x1] => 
   msg: |-
     stp configuration for x1

@@ -86,6 +86,8 @@ skipping: [x1]
 skipping: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+[WARNING]: The value 'True' is not a valid IP address or network, passing this
+value to ipaddr filter might result in breaking change in future.
 ok: [x1] => 
   msg: |-
     initial configuration for x1
@@ -144,13 +146,11 @@ ok: [x1] =>
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
     ip link set eth1 down
     ip link set eth1 up
+    ip link set dev eth1 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -209,7 +209,8 @@ ok: [dut] =>
       ge-0/0/0.0 {
         description "dut -> x1";
   
-          family inet6;
+          family inet6 {
+          }
   
       }
       ge-0/0/1.0 {
@@ -289,33 +290,6 @@ skipping: [dut]
 skipping: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [x1] => 
-  msg: |-
-    ospf configuration for x1
-    =========================================
-    !
-    ! OSPFv3 FRR configuration
-    !
-    interface lo
-    !
-     ipv6 ospf6 area 0.0.0.0
-    !
-    interface eth1
-    ! x1 -> dut
-     ipv6 ospf6 area 0.0.0.0
-     ipv6 ospf6 network point-to-point
-    !
-    !
-    router ospf6
-     ospf6 router-id 10.0.0.2
-     timers lsa min-arrival 100
-     timers throttle spf 10 50 500
-  
-  
-    exit
-  
-    !
-    do write
 ok: [dut] => 
   msg: |-
     ospf configuration for dut
@@ -345,6 +319,33 @@ ok: [dut] =>
         }
       }
     }
+ok: [x1] => 
+  msg: |-
+    ospf configuration for x1
+    =========================================
+    !
+    ! OSPFv3 FRR configuration
+    !
+    interface lo
+    !
+     ipv6 ospf6 area 0.0.0.0
+    !
+    interface eth1
+    ! x1 -> dut
+     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 network point-to-point
+    !
+    !
+    router ospf6
+     ospf6 router-id 10.0.0.2
+     timers lsa min-arrival 100
+     timers throttle spf 10 50 500
+  
+  
+    exit
+  
+    !
+    do write
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [x1]
