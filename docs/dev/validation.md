@@ -413,9 +413,14 @@ ospf:
 
 **ipv4** and **ipv6** validators have a mandatory **use** parameter that can take the following values:
 
-* **interface** -- an IP address specified on an interface. It can take a True/False value and does not have to include a prefix length.
-* **prefix** -- an IP prefix. It can take a True/False value and must include prefix length/subnet mask.
-* **id** (IPv4 only) -- an IPv4 address or an integer. Use **id** for parameters like OSPF areas, BGP cluster IDs, or router IDs.
+* **address** -- an IP address without a subnet mask
+* **prefix** -- an IP prefix without the host bits.
+* **host_prefix** -- a host IP address with a prefix length. It must include the host bits unless the prefix length is /31 or /32 for IPv4 or /127 or /128 for IPv6.
+* **interface** -- an IP address specified on an interface. It can take an integer (offset within subnet), True (unnumbered) or False (disabled) value and does not have to include a prefix length. The missing prefix length is taken from the link IP prefix.
+* **subnet_prefix** -- an IP prefix that must include prefix length/subnet mask. It can take a True (unnumbered) or False (disabled) value.
+* **id** (IPv4 only) -- an IPv4 address or a 32-bit unsigned integer. Use **id** for parameters like OSPF areas, BGP cluster IDs, or router IDs.
+
+The **ipv4** validator recognizes an additional **named** parameter. When set to **true**, the value of the attribute can be a [named prefix](named-prefixes).
 
 (dev-valid-special-keys)=
 ## Special Attribute Dictionary Keys
