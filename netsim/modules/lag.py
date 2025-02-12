@@ -111,6 +111,7 @@ def set_lag_ifindex(laglink: Box, intf: Box, is_mside: bool, topology: Box) -> b
   link_lag_ifindex = laglink.get('lag.ifindex',None)
   _n = topology.nodes[intf.node]
   next_ifindex = _n.get('_lag_ifindex',None)
+  print(f"set_lag_ifindex(is_mside={is_mside}) link_lag_ifindex={link_lag_ifindex} intf_lag_ifindex={intf_lag_ifindex} next_ifindex={next_ifindex} ")
   if intf_lag_ifindex is None:
     if link_lag_ifindex is None:
       if is_mside:                                             # For M: side we need matching lag.ifindex
@@ -127,8 +128,8 @@ def set_lag_ifindex(laglink: Box, intf: Box, is_mside: bool, topology: Box) -> b
       if is_mside:
         laglink.lag.ifindex = next_ifindex                     # Override the unacceptable link value
     _n._lag_ifindex = link_lag_ifindex + 1                     # Track next ifindex to assign, per node
-    intf_lag_ifindex = link_lag_ifindex
-  elif link_lag_ifindex is None:
+    intf.lag.ifindex = intf_lag_ifindex = link_lag_ifindex
+  elif link_lag_ifindex is None or is_mside:
     laglink.lag.ifindex = link_lag_ifindex = intf_lag_ifindex
 
   features = devices.get_device_features(_n,topology.defaults)
@@ -144,27 +145,24 @@ def set_lag_ifindex(laglink: Box, intf: Box, is_mside: bool, topology: Box) -> b
 """
 split_dual_mlag_link - Split dual-mlag pairs into 2 virtual lag links, one for each side
 """
-def split_dual_mlag_link(link: Box, topology: Box) -> None:
+def split_dual_mlag_link(link: Box, topology: Box) -> Box:
   first_pair : typing.Set[str] = set()
   other_pair : typing.Set[str] = set()
   for i in link.interfaces:
     if i.node not in first_pair and i.node not in other_pair:
       first_pair.add( i.node )
       other_pair = other_pair | set(i._peers)
+    i.pop('_peers',None)                                 # Remove internal _peers attribute
   _p1 = '+'.join(sorted(list(first_pair)))
   _p2 = '+'.join(sorted(list(other_pair)))
-
-  def no_peer(i: Box) -> Box:
-    i.pop('_peers',None)                                 # Remove internal _peers attribute
-    return i
 
   split_copy = data.get_box(link)                        # Make a copy
   split_copy.linkindex = len(topology.links)+1           # Update its link index
   split_copy._linkname = split_copy._linkname + "-2"     # Assign unique name
   split_copy.name = f"Back-2-back MLAG {_p2} -> {_p1}"
-  split_copy.interfaces = [ no_peer(i) for i in link.interfaces if i.node not in first_pair ]
+  split_copy.interfaces = [ i for i in link.interfaces if i.node not in first_pair ]
 
-  topology.links[link.linkindex-1].interfaces = [ no_peer(i) for i in link.interfaces if i.node in first_pair ]
+  topology.links[link.linkindex-1].interfaces = [ i for i in link.interfaces if i.node in first_pair ]
   topology.links[link.linkindex-1].name = f"Back-2-back MLAG { _p1} -> {_p2}"
 
   for l in topology.links:                               # Update lag interfaces with correct parent linkindex
@@ -176,6 +174,7 @@ def split_dual_mlag_link(link: Box, topology: Box) -> None:
     print(f'LAG split_dual_mlag_link -> adding split link {split_copy}')
     print(f'LAG split_dual_mlag_link -> remaining link {topology.links[link.linkindex-1]}')
   topology.links.append(split_copy)
+  return split_copy
 
 """
 create_lag_member_links -- expand lag.members for link l and create physical p2p links
@@ -252,14 +251,12 @@ def create_lag_interfaces(l: Box, topology: Box) -> None:
       node_ifs = [ i for i in m.interfaces if i.node==node ]
       if not node_ifs:                            # ...in which <node> is involved
         continue
-      ifatts = ifatts + { k:v for k,v in m.items() if k not in skip_atts } + node_ifs[0]
+      new_atts = m + node_ifs[0]
+      ifatts = ifatts + { k:v for k,v in new_atts.items() if k not in skip_atts }
       if dual_mlag:
         new_peer = [ i.node for i in m.interfaces if i.node!=node ]
         ifatts._peers = ifatts.get('_peers',[]) + new_peer
 
-    is_mside = is_mlag and node!=one_side         # Set flag if this node is the M: side
-    if not set_lag_ifindex(l,ifatts,is_mside,topology):
-      return
     if node==one_side:
       if not check_lag_config(node,l._linkname,topology):
         return
@@ -273,7 +270,14 @@ def create_lag_interfaces(l: Box, topology: Box) -> None:
     l.interfaces.append( ifatts )
 
   if dual_mlag:                                   # After creating interfaces, check if we need to split them
-    split_dual_mlag_link(l,topology)
+    l2 = split_dual_mlag_link(l,topology)
+    for i in l2.interfaces:
+      if not set_lag_ifindex(l2,i,True,topology): # Do this *after* splitting
+        return
+  for i in l.interfaces:
+    is_mside = is_mlag and i.node!=one_side       # Set flag if this node is the M: side
+    if not set_lag_ifindex(l,i,is_mside,topology):
+      return
 
 """
 create_peer_links -- creates and configures physical link(s) for given peer link
