@@ -168,10 +168,12 @@ def print_more_hints(
     if strings.rich_err_color:
       if h_first:                                           # First hint line on color-capable TTY: print hint header
         strings.print_colored_text(strings.pad_err_code(h_name,indent),h_color,stderr=True)
-        print(line,file=sys.stderr)
+        print(strings.wrap_error_message(line,indent),file=sys.stderr)
         h_first = False
       else:
-        print(" "*indent+line,file=sys.stderr)                  # Otherwise print another line indented to align with the previous one
+        print(
+          " "*indent+strings.wrap_error_message(line,indent),
+          file=sys.stderr)                                  # Otherwise print another line indented to align with the previous one
     else:
       print(f"... {line}",file=sys.stderr)                  # Teletype/file, just print the line
 
@@ -236,7 +238,7 @@ def error(
         err_color_map.get(err_code,'yellow'),
         stderr=True)
       mod_txt = f'{module}: ' if module else ''                     # Skip module header if it's explicitly set to empty
-      print(f'{mod_txt}{text}',file=sys.stderr)
+      print(strings.wrap_error_message(f'{mod_txt}{text}',indent),file=sys.stderr)
     else:
       print(err_line,file=sys.stderr)
 

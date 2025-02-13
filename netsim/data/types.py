@@ -201,7 +201,7 @@ def check_valid_values(
     log.error(
       text=f'attribute {path} has invalid value(s): {value}',
       more_hints=[
-        f'valid values are: {",".join(expected)}',
+        f'valid values are: {", ".join(expected)}',
         attr_help(module,data_name)],
       category=log.IncorrectValue,
       module=module or 'topology')
