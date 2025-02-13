@@ -60,6 +60,14 @@ def wrap_text_into_lines(
   
   return lines
 
+def wrap_error_message(err: str, indent: int) -> str:
+  global rich_err_width
+  return "\n".join(wrap_text_into_lines(
+    err,
+    width=min(rich_err_width - indent,100),
+    first_line='',
+    next_line = ' ' * indent))
+
 """
 Given a string, generate the traditional "extra data" printout:
 
