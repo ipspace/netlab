@@ -238,13 +238,11 @@ ok: [ros] =>
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1600
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1600
   
     #
     # Rest of initial configuration done through VTYSH
@@ -335,17 +333,15 @@ ok: [s1] =>
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1600
     sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+    ip link set dev eth2 mtu 1500
     sysctl -qw net.ipv6.conf.eth3.disable_ipv6=1
+    ip link set dev eth3 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1600
-    ip link set dev eth2 mtu 1500
-    ip link set dev eth3 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -413,8 +409,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for ros, s1
 
 TASK [template] ****************************************************************
-changed: [s1]
 changed: [ros]
+changed: [s1]
 
 TASK [set_fact] ****************************************************************
 ok: [ros]
@@ -433,12 +429,12 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -449,10 +445,10 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-z__mtqsr.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-xdrz4uhv.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -491,21 +487,24 @@ ok: [ros] =>
     #
     if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
       brctl addbr vlan1000
+      ip link set dev vlan1000 address 52:dc:ca:fd:02:00
   
-  
-      ip link set dev vlan1000 up
+      ip link set dev vlan1000 mtu 1500
       ip addr flush dev vlan1000
       ip addr add 172.16.0.2/24 dev vlan1000
     fi
     if [ ! -e /sys/devices/virtual/net/vlan1001 ]; then
       brctl addbr vlan1001
+      ip link set dev vlan1001 address 52:dc:ca:fd:02:01
   
-  
-      ip link set dev vlan1001 up
+      ip link set dev vlan1001 mtu 1500
       ip addr flush dev vlan1001
       ip addr add 172.16.1.2/24 dev vlan1001
     fi
   
+  
+    ip link set dev vlan1000 up
+    ip link set dev vlan1001 up
     exit 0
 ok: [s1] => 
   msg: |-
@@ -517,21 +516,22 @@ ok: [s1] =>
     #
     if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
       brctl addbr vlan1000
+      ip link set dev vlan1000 address 52:dc:ca:fd:01:00
   
-  
-      ip link set dev vlan1000 up
       ip addr flush dev vlan1000
     fi
     if [ ! -e /sys/devices/virtual/net/vlan1001 ]; then
       brctl addbr vlan1001
+      ip link set dev vlan1001 address 52:dc:ca:fd:01:01
   
-  
-      ip link set dev vlan1001 up
       ip addr flush dev vlan1001
     fi
   
     brctl addif vlan1000 eth2
     brctl addif vlan1001 eth3
+  
+    ip link set dev vlan1000 up
+    ip link set dev vlan1001 up
     exit 0
 
 TASK [Find configuration deployment deploy_script for vlan] ********************
@@ -542,16 +542,16 @@ TASK [Deploy vlan configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for ros, s1
 
 TASK [template] ****************************************************************
-changed: [s1]
 changed: [ros]
+changed: [s1]
 
 TASK [set_fact] ****************************************************************
 ok: [ros]
 ok: [s1]
 
 TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
-changed: [s1]
 changed: [ros]
+changed: [s1]
 
 TASK [run vtysh to import vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
 skipping: [ros]
@@ -635,8 +635,8 @@ TASK [Deploy ospf configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for ros, s1
 
 TASK [template] ****************************************************************
-changed: [s1]
 changed: [ros]
+changed: [s1]
 
 TASK [set_fact] ****************************************************************
 ok: [ros]
@@ -647,8 +647,8 @@ skipping: [ros]
 skipping: [s1]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [s1]
 changed: [ros]
+changed: [s1]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [ros]
@@ -869,16 +869,16 @@ TASK [Deploy vxlan configuration] **********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for ros, s1
 
 TASK [template] ****************************************************************
-changed: [s1]
 changed: [ros]
+changed: [s1]
 
 TASK [set_fact] ****************************************************************
 ok: [ros]
 ok: [s1]
 
 TASK [run /tmp/config.sh to deploy vxlan config from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/frr.j2] ***
-changed: [ros]
 changed: [s1]
+changed: [ros]
 
 TASK [run vtysh to import vxlan config from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/frr.j2] ***
 skipping: [ros]

@@ -93,44 +93,6 @@ skipping: [h3]
 skipping: [h4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [h1] => 
-  msg: |-
-    initial configuration for h1
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
-    set +e
-    ip -6 addr del 2001:db8:2::1/64 dev eth1 2>/dev/null
-    set -e
-    ip -6 addr add 2001:db8:2::1/64 dev eth1
-    ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    #
-    #
-    #
-    # Print the final routing table
-    ip route
 ok: [h2] => 
   msg: |-
     initial configuration for h2
@@ -160,6 +122,44 @@ ok: [h2] =>
     ip -6 addr del 2001:db8:2:1::2/64 dev eth1 2>/dev/null
     set -e
     ip -6 addr add 2001:db8:2:1::2/64 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    #
+    #
+    # Print the final routing table
+    ip route
+ok: [h3] => 
+  msg: |-
+    initial configuration for h3
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:2:2::3/64 dev eth1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:2:2::3/64 dev eth1
     ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
@@ -207,9 +207,9 @@ ok: [h4] =>
     #
     # Print the final routing table
     ip route
-ok: [h3] => 
+ok: [h1] => 
   msg: |-
-    initial configuration for h3
+    initial configuration for h1
     =========================================
     #!/bin/bash
     #
@@ -233,9 +233,9 @@ ok: [h3] =>
     ip link set dev eth1 up
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
     set +e
-    ip -6 addr del 2001:db8:2:2::3/64 dev eth1 2>/dev/null
+    ip -6 addr del 2001:db8:2::1/64 dev eth1 2>/dev/null
     set -e
-    ip -6 addr add 2001:db8:2:2::3/64 dev eth1
+    ip -6 addr add 2001:db8:2::1/64 dev eth1
     ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
@@ -315,28 +315,26 @@ ok: [dut] =>
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
     ip link set eth1 down
     ip link set eth1 up
+    ip link set dev eth1 mtu 1500
     sysctl -qw net.ipv6.conf.eth2.autoconf=0
     sysctl -qw net.ipv6.conf.eth2.accept_ra=0
     ip link set eth2 down
     ip link set eth2 up
+    ip link set dev eth2 mtu 1500
     sysctl -qw net.ipv6.conf.eth3.autoconf=0
     sysctl -qw net.ipv6.conf.eth3.accept_ra=0
     ip link set eth3 down
     ip link set eth3 up
+    ip link set dev eth3 mtu 1500
     sysctl -qw net.ipv6.conf.eth4.autoconf=0
     sysctl -qw net.ipv6.conf.eth4.accept_ra=0
     ip link set eth4 down
     ip link set eth4 up
+    ip link set dev eth4 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
-    ip link set dev eth2 mtu 1500
-    ip link set dev eth3 mtu 1500
-    ip link set dev eth4 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -443,16 +441,16 @@ ok: [h3]
 ok: [h4]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h3 -> localhost]
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
-changed: [h2 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -472,10 +470,10 @@ changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-8nm4si4e.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-saiiay50.sh] ***********************
 changed: [h1 -> localhost]
-changed: [h2 -> localhost]
 changed: [h3 -> localhost]
+changed: [h2 -> localhost]
 changed: [h4 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************

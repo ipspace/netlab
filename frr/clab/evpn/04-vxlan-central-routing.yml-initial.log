@@ -16,8 +16,8 @@ ok: [l1]
 ok: [l2]
 ok: [spine]
 ok: [h1]
-ok: [h2]
 ok: [h3]
+ok: [h2]
 ok: [h4]
 
 TASK [Wait for device to become ready] *****************************************
@@ -46,8 +46,8 @@ ok: [l1]
 ok: [l2]
 ok: [spine]
 ok: [h1]
-ok: [h2]
 ok: [h3]
+ok: [h2]
 ok: [h4]
 
 TASK [fail] ********************************************************************
@@ -223,17 +223,15 @@ ok: [l1] =>
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1600
     sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+    ip link set dev eth2 mtu 1500
     sysctl -qw net.ipv6.conf.eth3.disable_ipv6=1
+    ip link set dev eth3 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1600
-    ip link set dev eth2 mtu 1500
-    ip link set dev eth3 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -334,17 +332,15 @@ ok: [l2] =>
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1600
     sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+    ip link set dev eth2 mtu 1500
     sysctl -qw net.ipv6.conf.eth3.disable_ipv6=1
+    ip link set dev eth3 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1600
-    ip link set dev eth2 mtu 1500
-    ip link set dev eth3 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -441,57 +437,6 @@ ok: [h1] =>
     #
     # Print the final routing table
     ip route
-ok: [h2] => 
-  msg: |-
-    initial configuration for h2
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.0.2/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.0.2/24 dev eth1
-    ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.2.0.0/24 2>/dev/null; do
-      : ; done
-    #
-    #
-    echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.0.7 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.0.7 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.0.7 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.0.7 dev eth1 protocol static
-    #
-    # Print the final routing table
-    ip route
 ok: [spine] => 
   msg: |-
     initial configuration for spine
@@ -547,15 +492,13 @@ ok: [spine] =>
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1600
     sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+    ip link set dev eth2 mtu 1600
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1600
-    ip link set dev eth2 mtu 1600
   
     #
     # Rest of initial configuration done through VTYSH
@@ -596,6 +539,57 @@ ok: [spine] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.2/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.2/24 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.0.7 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.0.7 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.0.7 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.0.7 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
 ok: [h4] => 
   msg: |-
     initial configuration for h4
@@ -653,9 +647,9 @@ ok: [l1]
 ok: [l2]
 ok: [spine]
 ok: [h1]
+ok: [h2]
 ok: [h3]
 ok: [h4]
-ok: [h2]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for l1, l2, spine
@@ -673,8 +667,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for l1, l2, spine
 
 TASK [template] ****************************************************************
-changed: [l2]
 changed: [l1]
+changed: [l2]
 changed: [spine]
 
 TASK [set_fact] ****************************************************************
@@ -684,8 +678,8 @@ ok: [spine]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [l1]
-changed: [l2]
 changed: [spine]
+changed: [l2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [l1]
@@ -699,10 +693,10 @@ ok: [h3]
 ok: [h4]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h3 -> localhost]
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h4 -> localhost]
+changed: [h3 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
@@ -728,11 +722,11 @@ changed: [h1 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-xqg79gox.sh] ***********************
-changed: [h3 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-xz84kv1e.sh] ***********************
 changed: [h4 -> localhost]
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+changed: [h3 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -756,8 +750,8 @@ ok: [spine]
 
 TASK [Find configuration template for vlan] ************************************
 ok: [l1]
-ok: [spine]
 ok: [l2]
+ok: [spine]
 
 TASK [fail] ********************************************************************
 skipping: [l1]
@@ -775,21 +769,22 @@ ok: [l1] =>
     #
     if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
       brctl addbr vlan1000
+      ip link set dev vlan1000 address 52:dc:ca:fd:05:00
   
-  
-      ip link set dev vlan1000 up
       ip addr flush dev vlan1000
     fi
     if [ ! -e /sys/devices/virtual/net/vlan1001 ]; then
       brctl addbr vlan1001
+      ip link set dev vlan1001 address 52:dc:ca:fd:05:01
   
-  
-      ip link set dev vlan1001 up
       ip addr flush dev vlan1001
     fi
   
     brctl addif vlan1000 eth2
     brctl addif vlan1001 eth3
+  
+    ip link set dev vlan1000 up
+    ip link set dev vlan1001 up
     exit 0
 ok: [l2] => 
   msg: |-
@@ -801,21 +796,22 @@ ok: [l2] =>
     #
     if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
       brctl addbr vlan1000
+      ip link set dev vlan1000 address 52:dc:ca:fd:06:00
   
-  
-      ip link set dev vlan1000 up
       ip addr flush dev vlan1000
     fi
     if [ ! -e /sys/devices/virtual/net/vlan1001 ]; then
       brctl addbr vlan1001
+      ip link set dev vlan1001 address 52:dc:ca:fd:06:01
   
-  
-      ip link set dev vlan1001 up
       ip addr flush dev vlan1001
     fi
   
     brctl addif vlan1000 eth2
     brctl addif vlan1001 eth3
+  
+    ip link set dev vlan1000 up
+    ip link set dev vlan1001 up
     exit 0
 ok: [spine] => 
   msg: |-
@@ -827,21 +823,24 @@ ok: [spine] =>
     #
     if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
       brctl addbr vlan1000
+      ip link set dev vlan1000 address 52:dc:ca:fd:07:00
   
-  
-      ip link set dev vlan1000 up
+      ip link set dev vlan1000 mtu 1500
       ip addr flush dev vlan1000
       ip addr add 172.16.0.7/24 dev vlan1000
     fi
     if [ ! -e /sys/devices/virtual/net/vlan1001 ]; then
       brctl addbr vlan1001
+      ip link set dev vlan1001 address 52:dc:ca:fd:07:01
   
-  
-      ip link set dev vlan1001 up
+      ip link set dev vlan1001 mtu 1500
       ip addr flush dev vlan1001
       ip addr add 172.16.1.7/24 dev vlan1001
     fi
   
+  
+    ip link set dev vlan1000 up
+    ip link set dev vlan1001 up
     exit 0
 
 TASK [Find configuration deployment deploy_script for vlan] ********************
@@ -864,8 +863,8 @@ ok: [spine]
 
 TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
 changed: [l1]
-changed: [l2]
 changed: [spine]
+changed: [l2]
 
 TASK [run vtysh to import vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
 skipping: [l1]
@@ -1026,8 +1025,8 @@ TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l1, l2, spine
 
 TASK [template] ****************************************************************
-changed: [l2]
 changed: [l1]
+changed: [l2]
 changed: [spine]
 
 TASK [set_fact] ****************************************************************
@@ -1161,8 +1160,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for
 
 TASK [template] ****************************************************************
 changed: [l2]
-changed: [l1]
 changed: [spine]
+changed: [l1]
 
 TASK [set_fact] ****************************************************************
 ok: [l1]
@@ -1342,9 +1341,9 @@ ok: [l2]
 ok: [spine]
 
 TASK [run /tmp/config.sh to deploy vrf config from /home/pipi/net101/tools/netsim/ansible/templates/vrf/frr.j2] ***
-changed: [spine]
-changed: [l2]
 changed: [l1]
+changed: [l2]
+changed: [spine]
 
 TASK [run vtysh to import vrf config from /home/pipi/net101/tools/netsim/ansible/templates/vrf/frr.j2] ***
 skipping: [l1]
@@ -1542,9 +1541,9 @@ TASK [Deploy vxlan configuration] **********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l1, l2, spine
 
 TASK [template] ****************************************************************
-changed: [spine]
 changed: [l1]
 changed: [l2]
+changed: [spine]
 
 TASK [set_fact] ****************************************************************
 ok: [l1]
@@ -1552,9 +1551,9 @@ ok: [l2]
 ok: [spine]
 
 TASK [run /tmp/config.sh to deploy vxlan config from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/frr.j2] ***
-changed: [l2]
-changed: [l1]
 changed: [spine]
+changed: [l1]
+changed: [l2]
 
 TASK [run vtysh to import vxlan config from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/frr.j2] ***
 skipping: [l1]
@@ -1691,8 +1690,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for
 
 TASK [template] ****************************************************************
 changed: [l2]
-changed: [spine]
 changed: [l1]
+changed: [spine]
 
 TASK [set_fact] ****************************************************************
 ok: [l1]

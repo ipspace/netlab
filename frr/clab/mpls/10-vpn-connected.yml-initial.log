@@ -102,8 +102,8 @@ TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
 ok: [pe2]
 ok: [p1]
-ok: [h1]
 ok: [p2]
+ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
@@ -113,8 +113,8 @@ ok: [dut]
 ok: [pe2]
 ok: [p1]
 ok: [p2]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 ok: [h3]
 ok: [h4]
 
@@ -286,17 +286,15 @@ ok: [dut] =>
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
     sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+    ip link set dev eth2 mtu 1500
     sysctl -qw net.ipv6.conf.eth3.disable_ipv6=1
+    ip link set dev eth3 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
-    ip link set dev eth2 mtu 1500
-    ip link set dev eth3 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -332,6 +330,57 @@ ok: [dut] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [h3] => 
+  msg: |-
+    initial configuration for h3
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.2.3/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.2.3/24 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.2.5 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.2.5 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.2.5 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.2.5 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
 ok: [pe2] => 
   msg: |-
     initial configuration for pe2
@@ -387,17 +436,15 @@ ok: [pe2] =>
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
     sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+    ip link set dev eth2 mtu 1500
     sysctl -qw net.ipv6.conf.eth3.disable_ipv6=1
+    ip link set dev eth3 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
-    ip link set dev eth2 mtu 1500
-    ip link set dev eth3 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -433,57 +480,6 @@ ok: [pe2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [h4] => 
-  msg: |-
-    initial configuration for h4
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.3.4/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.3.4/24 dev eth1
-    ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.2.0.0/24 2>/dev/null; do
-      : ; done
-    #
-    #
-    echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.3.6 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.3.6 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.3.6 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.3.6 dev eth1 protocol static
-    #
-    # Print the final routing table
-    ip route
 ok: [p1] => 
   msg: |-
     initial configuration for p1
@@ -539,15 +535,13 @@ ok: [p1] =>
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
     sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+    ip link set dev eth2 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
-    ip link set dev eth2 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -578,9 +572,9 @@ ok: [p1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [h3] => 
+ok: [h4] => 
   msg: |-
-    initial configuration for h3
+    initial configuration for h4
     =========================================
     #!/bin/bash
     #
@@ -603,9 +597,9 @@ ok: [h3] =>
     #
     ip link set dev eth1 up
     set +e
-    ip addr del 172.16.2.3/24 dev eth1 2>/dev/null
+    ip addr del 172.16.3.4/24 dev eth1 2>/dev/null
     set -e
-    ip addr add 172.16.2.3/24 dev eth1
+    ip addr add 172.16.3.4/24 dev eth1
     ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
@@ -622,10 +616,10 @@ ok: [h3] =>
     #
     #
     echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.2.5 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.2.5 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.2.5 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.2.5 dev eth1 protocol static
+    ip route add 172.16.0.0/16 via 172.16.3.6 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.3.6 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.3.6 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.3.6 dev eth1 protocol static
     #
     # Print the final routing table
     ip route
@@ -684,15 +678,13 @@ ok: [p2] =>
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
     sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+    ip link set dev eth2 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
-    ip link set dev eth2 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -731,8 +723,8 @@ ok: [p1]
 ok: [p2]
 ok: [h1]
 ok: [h2]
-ok: [h3]
 ok: [h4]
+ok: [h3]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for dut, pe2, p1, p2
@@ -752,9 +744,9 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for
 
 TASK [template] ****************************************************************
 changed: [pe2]
-changed: [dut]
 changed: [p2]
 changed: [p1]
+changed: [dut]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
@@ -764,9 +756,9 @@ ok: [p2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [pe2]
-changed: [p2]
-changed: [p1]
 changed: [dut]
+changed: [p1]
+changed: [p2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [dut]
@@ -781,15 +773,15 @@ ok: [h3]
 ok: [h4]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
-changed: [h3 -> localhost]
 changed: [h4 -> localhost]
+changed: [h1 -> localhost]
+changed: [h3 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
-changed: [h3 -> localhost]
 changed: [h1 -> localhost]
+changed: [h3 -> localhost]
+changed: [h2 -> localhost]
 changed: [h4 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
@@ -810,10 +802,10 @@ changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-9781jmi0.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-0541bf79.sh] ***********************
 changed: [h2 -> localhost]
-changed: [h4 -> localhost]
 changed: [h3 -> localhost]
+changed: [h4 -> localhost]
 changed: [h1 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
@@ -952,8 +944,8 @@ skipping: [dut]
 skipping: [pe2]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [dut]
 changed: [pe2]
+changed: [dut]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [dut]
@@ -1107,10 +1099,10 @@ TASK [Deploy ospf configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for dut, p1, p2, pe2
 
 TASK [template] ****************************************************************
-changed: [p2]
-changed: [p1]
 changed: [dut]
+changed: [p2]
 changed: [pe2]
+changed: [p1]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
@@ -1125,9 +1117,9 @@ skipping: [p2]
 skipping: [pe2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [dut]
 changed: [p2]
 changed: [p1]
+changed: [dut]
 changed: [pe2]
 
 TASK [Figure out whether to deploy the module mpls on current device] **********
@@ -1302,10 +1294,10 @@ TASK [Deploy mpls configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for dut, p1, p2, pe2
 
 TASK [template] ****************************************************************
-changed: [dut]
-changed: [p2]
 changed: [p1]
+changed: [dut]
 changed: [pe2]
+changed: [p2]
 
 TASK [set_fact] ****************************************************************
 ok: [p1]
@@ -1314,9 +1306,9 @@ ok: [p2]
 ok: [pe2]
 
 TASK [run /tmp/config.sh to deploy mpls config from /home/pipi/net101/tools/netsim/ansible/templates/mpls/frr.j2] ***
-changed: [p2]
 changed: [p1]
 changed: [dut]
+changed: [p2]
 changed: [pe2]
 
 TASK [run vtysh to import mpls config from /home/pipi/net101/tools/netsim/ansible/templates/mpls/frr.j2] ***
@@ -1501,8 +1493,8 @@ skipping: [p2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for dut, pe2
 
 TASK [template] ****************************************************************
-changed: [pe2]
 changed: [dut]
+changed: [pe2]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
@@ -1531,5 +1523,10 @@ pe2                        : ok=52   changed=10   unreachable=0    failed=0    s
 
 
 
-The tested device (DUT) is a PE-router running MPLS/VPN with two VRFs. The Linux hosts are attached directly to the PE-router.
-The PE-router has to run OSPF and LDP with a P-router and exchange VPNv4 routes with another PE-router. The connected subnets must be redistributed into VPNv4 AF for the end-to-end connectivity test to work.
+The tested device (DUT) is a PE-router running MPLS/VPN with two VRFs. The
+Linux hosts are attached directly to the PE-router.
+
+The PE-router has to run OSPF and LDP with a P-router and exchange VPNv4
+routes with another PE-router. The connected subnets must be redistributed
+into VPNv4 AF for the end-to-end connectivity test to work.
+
