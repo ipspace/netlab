@@ -2,7 +2,7 @@
 # Data validation routines
 #
 
-import typing,typing_extensions,types
+import typing,typing_extensions
 import functools
 import ipaddress
 import netaddr
@@ -743,21 +743,14 @@ def must_be_prefix_str(value: typing.Any) -> dict:
     return { '_type': 'IPv4 or IPv6 prefix' }
 
   try:
-    parse = netaddr.IPNetwork(value)                                  # now let's check if we have a valid address
+    parse = ipaddress.ip_network(value)                              # now let's check if we have a valid prefix
   except Exception as ex:
-    return check_named_prefix(value) or { '_value': "IPv4, IPv6, or named prefix" }
+    return check_named_prefix(value) or { '_value': f"IPv4, IPv6, or named prefix" }
 
-  if parse.network != parse.ip:
-    return { '_value': "IPv4 or IPv6 prefix without the host bits" }
-
-  try:                                                                # ... and finally we have to check it's a true IPv4 address
-    parse.ipv4()
-    if not parse.is_ipv4_mapped():
-      return { '_valid': True, '_transform': transform_to_ipv4 }
-  except Exception as ex:
-    pass
-
-  return { '_valid': True, '_transform': transform_to_ipv6 }
+  if isinstance(parse,ipaddress.IPv4Network):
+    return { '_valid': True, '_transform': transform_to_ipv4 }
+  else:
+    return { '_valid': True, '_transform': transform_to_ipv6 }
 
 @type_test()
 def must_be_named_pfx(value: typing.Any) -> dict:
@@ -832,9 +825,7 @@ def must_be_rd(value: typing.Any) -> dict:
     rdt_parsed = int(rdt)
   except Exception as ex:
     try:
-      if '/' in rdt:
-        return { '_value': "route distinguisher in asn:id or ip:id format" }
-      netaddr.IPNetwork(rdt)
+      ipaddress.IPv4Address(rdt)
     except Exception as ex:
       return { '_value': "an RD in asn:id or ip:id format where asn is an integer or ip is an IPv4 address" }
 

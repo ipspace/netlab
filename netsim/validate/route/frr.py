@@ -5,7 +5,7 @@ FRR routing table validation routines
 from box import Box
 import typing
 from netsim.data import global_vars
-from .._common import get_pure_prefix
+from netsim.utils import routing as _rp_utils
 
 def show_rt_prefix(pfx: str, af: str = 'ipv4', proto: str = '', **kwargs: typing.Any) -> str:
   if af == 'ipv4':
@@ -28,7 +28,7 @@ def valid_rt_prefix(
   if not isinstance(pfx,str):
     raise Exception(f'Prefix {pfx} is not a string')
 
-  pfx = get_pure_prefix(pfx)
+  pfx = _rp_utils.get_prefix(pfx)
 
   if not pfx in _result:
     result_text = f'The prefix {pfx} is not in {af} routing table'

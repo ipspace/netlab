@@ -1,4 +1,3 @@
-
 """
 Routing Protocol utility functions:
 
@@ -10,7 +9,6 @@ Routing Protocol utility functions:
 
 from box import Box
 import typing
-import netaddr
 
 from ..utils import log, routing as _rp_utils
 from ..augment import addressing,devices
@@ -201,7 +199,7 @@ def get_router_id_prefix(node: Box, proto: str, pools: Box, use_id: bool = True)
 def router_id(node: Box, proto: str, pools: Box) -> None:
   if 'router_id' in node.get(proto,{}):       # User-configured per-protocol router ID, get out of here
     try:
-      node[proto].router_id = str(netaddr.IPAddress(node[proto].router_id).ipv4())
+      node[proto].router_id = _rp_utils.get_address(node[proto].router_id)
     except Exception as ex:
       log.error(
         f'{proto} router_id "{node[proto].router_id}" specified on node {node.name} is not an IPv4 address',
@@ -211,7 +209,7 @@ def router_id(node: Box, proto: str, pools: Box) -> None:
 
   if 'router_id' in node:                     # Node has a configured router ID, copy it and get out
     try:
-      node.router_id = str(netaddr.IPAddress(node.router_id).ipv4())
+      node.router_id = _rp_utils.get_address(node[proto].router_id)
       node[proto].router_id = node.router_id
     except Exception as ex:
       log.error(
@@ -221,14 +219,14 @@ def router_id(node: Box, proto: str, pools: Box) -> None:
     return
 
   if 'ipv4' in node.get('loopback',{}):       # Do we have IPv4 address on the loopback? If so, use it as router ID
-    node[proto].router_id = str(netaddr.IPNetwork(node.loopback.ipv4).ip)
+    node[proto].router_id = _rp_utils.get_intf_address(node.loopback.ipv4)
     return
 
   pfx = get_router_id_prefix(node,proto,pools)
   if not pfx:
     return
 
-  node.router_id = str(netaddr.IPNetwork(pfx['ipv4']).ip)
+  node.router_id = _rp_utils.get_intf_address(pfx['ipv4'])
   node[proto].router_id = node.router_id
 
 #
@@ -457,7 +455,7 @@ def get_unique_router_ids(node: Box, proto: str, topology: Box) -> None:
       rid_pfx = get_router_id_prefix(node,proto,topology.pools,use_id=False)
       if not rid_pfx:
         break
-      router_id = str(netaddr.IPNetwork(rid_pfx['ipv4']).ip)
+      router_id = _rp_utils.get_intf_address(rid_pfx['ipv4'])
       if router_id not in rid_blacklist:                    # ... until it's not in the blacklist
         break
 

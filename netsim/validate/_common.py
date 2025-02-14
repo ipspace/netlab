@@ -4,8 +4,7 @@ Common BGP validation code -- utility functions and such
 
 from box import Box,BoxList
 import typing
-import netaddr
-from ..utils import log
+from ..utils import log,routing as _rp_utils
 
 # Find neighbor IP address from neighbor name
 def get_bgp_neighbor_id(ngb: list, n_id: str, af: str) -> typing.Union[bool, str]:
@@ -17,14 +16,6 @@ def get_bgp_neighbor_id(ngb: list, n_id: str, af: str) -> typing.Union[bool, str
     return n[af]
   
   raise Exception(f'Cannot find the {af} address of the neighbor {n_id}')
-
-def get_pure_prefix(pfx: str) -> str:
-  pfx_net = netaddr.IPNetwork(pfx)
-  pfx = f'{pfx_net.network}/{pfx_net.prefixlen}'
-  return pfx
-
-def get_address(pfx: str) -> str:
-  return pfx.split('/')[0]
 
 def report_state(exit_msg: str, OK: bool) -> typing.NoReturn:
   if OK:
@@ -61,7 +52,7 @@ def run_prefix_checks(
       names: dict,
       **rest: typing.Any) -> str:
   
-  pfx = get_pure_prefix(pfx)
+  pfx = _rp_utils.get_prefix(pfx)
   data = check_for_prefix(pfx=pfx,lookup=lookup,data=data,table=table,state=state)
 
   keys = list(checks.keys())

@@ -5,7 +5,6 @@ import typing
 
 import re
 from box import Box
-import netaddr
 
 from . import _Module,_routing
 from .. import data
@@ -13,7 +12,7 @@ from ..data import global_vars
 from ..data.types import must_be_int,must_be_list,must_be_asn
 from ..data.validate import validate_item
 from ..augment import devices
-from ..utils import log
+from ..utils import log, routing as _rp_utils
 
 def check_bgp_parameters(node: Box, topology: Box) -> None:
   if not "bgp" in node:  # pragma: no cover (should have been tested and reported by the caller)
@@ -109,7 +108,7 @@ def bgp_neighbor(n: Box, intf: Box, ctype: str, sessions: Box, extra_data: typin
         if isinstance(intf[af],bool):
           ngb[af] = intf[af]
         else:
-          ngb[af] = str(netaddr.IPNetwork(intf[af]).ip)
+          ngb[af] = _rp_utils.get_intf_address(intf[af])
 
   return ngb if af_count > 0 else None
 
@@ -393,14 +392,6 @@ def build_bgp_rr_clusters(topology: Box) -> None:
     for n in rrlist:
       if not 'rr_cluster_id' in n.bgp:
         n.bgp.rr_cluster_id = rr_cluster_id or n.bgp.router_id
-      elif n.bgp.rr_cluster_id:
-        try:
-          n.bgp.rr_cluster_id = str(netaddr.IPAddress(n.bgp.rr_cluster_id).ipv4())
-        except Exception as ex:
-          log.error(
-            f'BGP cluster ID {n.bgp.rr_cluster_id} configured on node {n.name} cannot be converted into an IPv4 address',
-            log.IncorrectValue,
-            'bgp')
 
 """
 build_bgp_sessions: create BGP session data structure

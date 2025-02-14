@@ -7,7 +7,7 @@ Import BGP checks
 from box import Box
 from netsim.validate.bgp.eos import *
 from netsim.validate.ospf.eos import *
-from netsim.validate._common import get_address
+from netsim.utils import routing as _rp_utils
 
 def exec_ping(
       host: str,
@@ -17,10 +17,10 @@ def exec_ping(
       pkt_len: typing.Optional[int] = None,
       **kwargs: typing.Any) -> str:
 
-  host = get_address(host)
+  host = _rp_utils.try_intf_address(host)
   cmd = 'enable\nping ' + ('ip' if af is None or af == 'ipv4' else af) + ' ' + host
   if src:
-    cmd += f' source {get_address(src)}'
+    cmd += f' source {_rp_utils.try_intf_address(src)}'
 
   if pkt_len:
     cmd += f' size {pkt_len}'
@@ -39,9 +39,9 @@ def valid_ping(
       expect: typing.Optional[str] = None) -> str:
   _result = global_vars.get_result_dict('_result')
 
-  msg = f'Ping to {af + " " if af else ""}{get_address(host)}'
+  msg = f'Ping to {af + " " if af else ""}{_rp_utils.try_intf_address(host)}'
   if src:
-    msg += f' from {get_address(src)}'
+    msg += f' from {_rp_utils.try_intf_address(host)}'
   if pkt_len:
     msg += f' size {pkt_len}'
 

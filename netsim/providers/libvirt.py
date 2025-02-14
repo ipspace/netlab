@@ -10,7 +10,7 @@ import typing
 from box import Box
 import pathlib
 import tempfile
-import netaddr
+import ipaddress,netaddr
 import argparse
 
 from ..data import types,get_empty_box,get_box
@@ -38,8 +38,8 @@ Replacements have to match single quotes (in XML) to ensure we don't replace par
 """
 
 def replace_xml_mgmt_subnet(xml: str, mgmt: Box, m_subnet: str) -> str:
-  o_net = netaddr.IPNetwork(m_subnet)
-  d_net = netaddr.IPNetwork(mgmt.ipv4)
+  o_net = ipaddress.IPv4Network(m_subnet)
+  d_net = ipaddress.IPv4Network(mgmt.ipv4)
 
   xml = xml.replace(f"'{o_net.netmask}'",f"'{d_net.netmask}'")
   for offset in [1,2]:
@@ -62,7 +62,7 @@ def replace_xml_mgmt_subnet(xml: str, mgmt: Box, m_subnet: str) -> str:
     xml = xml.replace(f"'{o_addr}'",f"'{d_net[d_start]}'")
 
   eui = netaddr.EUI(mgmt.mac)
-  while d_start < min(d_net.size,256) - 2:
+  while d_start < min(d_net.num_addresses,256) - 2:
     eui[5] = mac_cnt
     xstring = f"<host mac='{str(eui).replace('-',':')}' ip='{d_net[d_start]}'/>\n<!--more-->"
     xml = xml.replace("<!--more-->",xstring)

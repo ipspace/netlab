@@ -4,9 +4,8 @@ FRR IS-IS validation routines
 
 import typing
 from box import Box
-import netaddr
-
 from netsim.data import global_vars
+from netsim.utils import routing as _rp_utils
 
 def show_isis_neighbor(id: str, **kwargs: typing.Any) -> str:
   return f'isis neighbor {id} json'
@@ -76,8 +75,7 @@ def valid_isis_prefix(
 
   _result = global_vars.get_result_dict('_result')
 
-  pfx_net = netaddr.IPNetwork(pfx)
-  pfx = f'{pfx_net.network}/{pfx_net.prefixlen}'
+  pfx = _rp_utils.get_prefix(pfx)
 
   for isa in _result:
     l_id = f'level-{level}'

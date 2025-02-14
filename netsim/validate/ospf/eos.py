@@ -4,9 +4,9 @@ FRR OSPFv2 validation routines
 
 from box import Box
 import typing
+import ipaddress
 from netsim.data import global_vars
 from netsim.utils import log
-import netaddr
 from .. import _common
 from . import OSPF_PREFIX_NAMES
 
@@ -27,7 +27,7 @@ def get_ospf_neighbor_data(data: Box, *, id: str, proto: str, vrf: str = 'defaul
 
 def show_ospf_neighbor(id: str, present: bool = True, vrf: str = 'default') -> str:
   try:
-    netaddr.IPAddress(id)
+    ipaddress.IPv4Address(id)
   except:
     raise Exception(f'OSPF router ID {id} is not a valid IP address')
   return f'ip ospf neighbor {id} vrf {vrf} | json'
@@ -56,7 +56,7 @@ def valid_ospf_neighbor(
 
 def show_ospf6_neighbor(id: str, present: bool = True, vrf: str = 'default', **kwargs: typing.Any) -> str:
   try:
-    netaddr.IPAddress(id)
+    ipaddress.IPv4Address(id)
   except:
     raise Exception(f'OSPFv3 router ID {id} is not a valid IP address')
   return f'ipv6 ospf neighbor {id} vrf {vrf} | json'
