@@ -16,9 +16,10 @@ from box import Box
 
 from netsim import __version__
 from netsim.utils import log,read as _read
-from netsim.cli import parser_add_verbose
+from netsim.cli import parser_add_verbose,external_commands
 from netsim.utils import files as _files, strings as _strings
 from netsim.data import get_empty_box
+from netsim import providers
 
 def test_parse(args: typing.List[str], topology: Box) -> argparse.Namespace:
   parser = argparse.ArgumentParser(
@@ -133,6 +134,29 @@ def check_device_provider(args: argparse.Namespace, topology: Box) -> None:
 
   log.exit_on_error()
 
+def get_device_image(topology: Box) -> typing.Optional[str]:
+  provider = os.environ.get('NETLAB_PROVIDER')
+  device = os.environ.get('NETLAB_DEVICE')
+  image = topology.get(f'defaults.devices.{device}.{provider}.image',None) or \
+          topology.get(f'defaults.devices.{device}.image',None)
+
+  if image is None:
+    return None
+
+  if ':' in image or provider != 'libvirt':
+    return image
+
+  box_printout = external_commands.run_command(             # Get the list of Vagrant boxes
+                  ['vagrant', 'box', 'list'],
+                  check_result=True, ignore_errors=True, return_stdout=True, run_always=True)
+  box_list = box_printout.split('\n') if isinstance(box_printout,str) else []
+  box_list = [ box for box in box_list if box.startswith(image+' ') and 'libvirt' in box ]
+  if not box_list:
+    return image
+
+  box = sorted(box_list)[-1]
+  return box.split(' ')[0]+":"+box.split('(')[-1].split(' ')[-1].replace(')','')
+
 def open_stream(
       test: str,
       stream: typing.Optional[str],
@@ -175,7 +199,8 @@ RESULTS: Box = get_empty_box()
 def log_result(
       test: str,
       stage: typing.Optional[str] = None, 
-      result: typing.Union[bool,str] = False) -> None:
+      result: typing.Union[bool,str] = False,
+      image: typing.Optional[str] = None) -> None:
   global RESULTS
 
   test = os.path.basename(test).split('.')[0]
@@ -185,6 +210,8 @@ def log_result(
     RESULTS[test][stage] = result
     RESULTS[test]._version = __version__
     RESULTS[test]._timestamp = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+    if image:
+      RESULTS[test]._image = image
 
 def print_fail(step: str, fail_status: str = "FAIL", fail_color: str = "bright_red") -> None:
   _strings.print_colored_text(f"{step}({fail_status})",color=fail_color)
@@ -222,7 +249,7 @@ def run_test(test: str, args: argparse.Namespace,first: bool) -> None:
 
   if execute(f"netlab up --snapshot --no-config",args,test=test,log="up",err="up").returncode == 0:
     print("up(ok)",end=" ",flush=True)
-    log_result(test,'up',True)
+    log_result(test,'up',True,image=args.image)
   else:
     print_fail("up")
     log_result(test,'up',False)
@@ -279,6 +306,7 @@ def main() -> None:
   topology = load_system_defaults()
   args = test_parse(sys.argv[1:],topology)
   check_device_provider(args,topology)
+  args.image = get_device_image(topology)
   args.limit = (args.limit or args.redo or "[0-9]") + "*.yml"
   args.steps = os.environ.get('NETLAB_INTEGRATION_STEPS',None) or args.steps
   log_clean = bool(args.redo)
