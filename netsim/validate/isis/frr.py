@@ -63,8 +63,8 @@ def show_isis_prefix(pfx: str, level: str = '2', **kwargs: typing.Any) -> str:
   return f'isis route level-{level} json'
 
 def check_prefix_cost(pfx: str, cost: int, p_info: Box) -> None:
-  if p_info.Metric != cost:
-    raise Exception(f'Invalid cost for prefix {pfx}: expected {cost} found {p_info.Metric}')
+  if p_info.metric != cost:
+    raise Exception(f'Invalid cost for prefix {pfx}: expected {cost} found {p_info.metric}')
 
 def valid_isis_prefix(
       pfx: str,
@@ -87,7 +87,7 @@ def valid_isis_prefix(
     pfx_list = info[af]
 
     for p_info in pfx_list:
-      if p_info.Prefix == pfx:
+      if p_info.prefix == pfx:
         if not present:
           raise Exception(f'{af} prefix {pfx} should not be in level-{level} IS-IS database')
         if cost is not None:
