@@ -79,8 +79,8 @@ ok: [x1]
 ok: [th]
 
 TASK [Find configuration template for initial] *********************************
-ok: [h1]
 ok: [dut]
+ok: [h1]
 ok: [h2]
 ok: [x1]
 ok: [th]
@@ -93,120 +93,62 @@ skipping: [x1]
 skipping: [th]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [dut] => 
+ok: [th] => 
   msg: |-
-    initial configuration for dut
+    initial configuration for th
     =========================================
     #!/bin/bash
     #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
     set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)# "
-    echo
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
   
+    ### One-Shot configuration (non-Ubuntu VM or container)
     #
-    # Create loopbacks, stub and lag/bond devices
+    # Disable IPv4 and IPv6 forwarding
     #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
     #
-    sysctl -qw net.ipv6.conf.eth1.autoconf=0
-    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.44.5/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.44.5/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:cafe:44::5/64 dev eth1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:cafe:44::5/64 dev eth1
     ip link set dev eth1 mtu 1500
-    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
-    ip link set dev eth2 mtu 1500
-    sysctl -qw net.ipv6.conf.eth3.disable_ipv6=1
-    ip link set dev eth3 mtu 1500
-  
     #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-  
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
-    # Rest of initial configuration done through VTYSH
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
     #
-    cat >/tmp/config <<CONFIG
-    hostname dut
-    !
-    vrf mgmt
-     exit-vrf
-    !
-    ipv6 forwarding
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ip address 10.0.0.1/32
-    !
-    interface eth1
-     no shutdown
-     description dut -> [x1,th]
-     ip address 172.16.44.1/24
-     ipv6 address 2001:db8:cafe:44::1/64
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    interface eth2
-     no shutdown
-     description [Access VLAN edge] dut -> h1
-     ! no ip address
-    !
-    interface eth3
-     no shutdown
-     description [Access VLAN edge] dut -> x1
-     ! no ip address
-    !
-    interface vlan1000
-     no shutdown
-     description VLAN edge (1000) -> [h1,x1,h2]
-     ip address 172.16.33.1/24
-     ipv6 address 2001:db8:cafe:33::1/64
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.44.1 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.44.1 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.44.1 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.44.1 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
 ok: [h1] => 
   msg: |-
     initial configuration for h1
@@ -363,62 +305,120 @@ ok: [h2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [th] => 
+ok: [dut] => 
   msg: |-
-    initial configuration for th
+    initial configuration for dut
     =========================================
     #!/bin/bash
     #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
     set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
   
-    ### One-Shot configuration (non-Ubuntu VM or container)
     #
-    # Disable IPv4 and IPv6 forwarding
+    # Create loopbacks, stub and lag/bond devices
     #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.44.5/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.44.5/24 dev eth1
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
-    set +e
-    ip -6 addr del 2001:db8:cafe:44::5/64 dev eth1 2>/dev/null
-    set -e
-    ip -6 addr add 2001:db8:cafe:44::5/64 dev eth1
+    sysctl -qw net.ipv6.conf.eth1.autoconf=0
+    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
+    ip link set eth1 down
+    ip link set eth1 up
     ip link set dev eth1 mtu 1500
+    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+    ip link set dev eth2 mtu 1500
+    sysctl -qw net.ipv6.conf.eth3.disable_ipv6=1
+    ip link set dev eth3 mtu 1500
+  
     #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
     #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.2.0.0/24 2>/dev/null; do
-      : ; done
+    # Rest of initial configuration done through VTYSH
     #
-    #
-    echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.44.1 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.44.1 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.44.1 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.44.1 dev eth1 protocol static
-    #
-    # Print the final routing table
-    ip route
+    cat >/tmp/config <<CONFIG
+    hostname dut
+    !
+    vrf mgmt
+     exit-vrf
+    !
+    ipv6 forwarding
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.1/32
+    !
+    interface eth1
+     no shutdown
+     description dut -> [x1,th]
+     ip address 172.16.44.1/24
+     ipv6 address 2001:db8:cafe:44::1/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    interface eth2
+     no shutdown
+     description [Access VLAN edge] dut -> h1
+     ! no ip address
+    !
+    interface eth3
+     no shutdown
+     description [Access VLAN edge] dut -> x1
+     ! no ip address
+    !
+    interface vlan1000
+     no shutdown
+     description VLAN edge (1000) -> [h1,x1,h2]
+     ip address 172.16.33.1/24
+     ipv6 address 2001:db8:cafe:33::1/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
 ok: [x1] => 
   msg: |-
     initial configuration for x1
@@ -558,10 +558,10 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for dut, h1, h2, x1
 
 TASK [template] ****************************************************************
-changed: [h2]
-changed: [x1]
-changed: [dut]
 changed: [h1]
+changed: [dut]
+changed: [x1]
+changed: [h2]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
@@ -571,8 +571,8 @@ ok: [x1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [h1]
-changed: [dut]
 changed: [h2]
+changed: [dut]
 changed: [x1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -599,7 +599,7 @@ skipping: [th]
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [th -> localhost]
 
-TASK [Remove temporary file /tmp/th_initial-tkfn1750.sh] ***********************
+TASK [Remove temporary file /tmp/th_initial-351e3oky.sh] ***********************
 changed: [th -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
@@ -685,14 +685,14 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [run vtysh to import routing config from /home/pipi/net101/tools/netsim/ansible/templates/routing/frr.j2] ***
-changed: [h1]
 changed: [h2]
+changed: [h1]
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [dut]
 ok: [h1]
-ok: [h2]
 ok: [x1]
+ok: [h2]
 
 TASK [Find configuration template for vlan] ************************************
 skipping: [h1]

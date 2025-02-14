@@ -14,8 +14,8 @@ TASK [Find device readiness script] ********************************************
 ok: [pe1]
 ok: [pe2]
 ok: [dut]
-ok: [h1]
 ok: [p2]
+ok: [h1]
 ok: [h2]
 
 TASK [Wait for device to become ready] *****************************************
@@ -33,8 +33,8 @@ TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [pe1]
 ok: [pe2]
 ok: [dut]
-ok: [h1]
 ok: [p2]
+ok: [h1]
 ok: [h2]
 
 TASK [Find configuration template for normalize] *******************************
@@ -105,6 +105,44 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:2:1::2/64 dev eth1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:2:1::2/64 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    #
+    #
+    # Print the final routing table
+    ip route
 ok: [pe1] => 
   msg: |-
     initial configuration for pe1
@@ -457,44 +495,6 @@ ok: [dut] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [h2] => 
-  msg: |-
-    initial configuration for h2
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
-    set +e
-    ip -6 addr del 2001:db8:2:1::2/64 dev eth1 2>/dev/null
-    set -e
-    ip -6 addr add 2001:db8:2:1::2/64 dev eth1
-    ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    #
-    #
-    #
-    # Print the final routing table
-    ip route
 ok: [p2] => 
   msg: |-
     initial configuration for p2
@@ -625,10 +625,10 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for pe1, pe2, dut, p2
 
 TASK [template] ****************************************************************
-changed: [p2]
 changed: [dut]
-changed: [pe1]
 changed: [pe2]
+changed: [pe1]
+changed: [p2]
 
 TASK [set_fact] ****************************************************************
 ok: [pe1]
@@ -637,9 +637,9 @@ ok: [dut]
 ok: [p2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [dut]
-changed: [pe2]
 changed: [pe1]
+changed: [pe2]
+changed: [dut]
 changed: [p2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -653,8 +653,8 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h2 -> localhost]
@@ -672,9 +672,9 @@ TASK [Container configuration for initial based on /home/pipi/net101/tools/netsi
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-22kpijoc.sh] ***********************
-changed: [h2 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-1f7r8hq8.sh] ***********************
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -1010,10 +1010,10 @@ TASK [Deploy isis configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for dut, p2, pe1, pe2
 
 TASK [template] ****************************************************************
-changed: [pe2]
 changed: [dut]
-changed: [p2]
 changed: [pe1]
+changed: [pe2]
+changed: [p2]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
@@ -1157,10 +1157,10 @@ TASK [Deploy sr configuration] *************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for dut, p2, pe1, pe2
 
 TASK [template] ****************************************************************
-changed: [p2]
-changed: [dut]
 changed: [pe1]
 changed: [pe2]
+changed: [dut]
+changed: [p2]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
@@ -1169,10 +1169,10 @@ ok: [pe1]
 ok: [pe2]
 
 TASK [run /tmp/config.sh to deploy sr config from /home/pipi/net101/tools/netsim/ansible/templates/sr/frr.j2] ***
-changed: [dut]
-changed: [pe1]
 changed: [p2]
+changed: [pe1]
 changed: [pe2]
+changed: [dut]
 
 TASK [run vtysh to import sr config from /home/pipi/net101/tools/netsim/ansible/templates/sr/frr.j2] ***
 skipping: [dut]

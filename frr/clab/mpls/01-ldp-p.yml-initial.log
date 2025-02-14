@@ -92,8 +92,8 @@ TASK [Find configuration template for initial] *********************************
 ok: [pe1]
 ok: [pe2]
 ok: [dut]
-ok: [h1]
 ok: [p2]
+ok: [h1]
 ok: [h2]
 
 TASK [fail] ********************************************************************
@@ -581,8 +581,8 @@ ok: [pe1]
 ok: [pe2]
 ok: [dut]
 ok: [p2]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for pe1, pe2, dut, p2
@@ -601,10 +601,10 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for pe1, pe2, dut, p2
 
 TASK [template] ****************************************************************
-changed: [dut]
+changed: [p2]
 changed: [pe2]
 changed: [pe1]
-changed: [p2]
+changed: [dut]
 
 TASK [set_fact] ****************************************************************
 ok: [pe1]
@@ -613,9 +613,9 @@ ok: [dut]
 ok: [p2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+changed: [pe1]
 changed: [dut]
 changed: [pe2]
-changed: [pe1]
 changed: [p2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -633,8 +633,8 @@ changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -645,12 +645,12 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-yfryfckg.sh] ***********************
-changed: [h2 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-0kt4y79x.sh] ***********************
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -785,8 +785,8 @@ skipping: [pe1]
 skipping: [pe2]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [pe1]
 changed: [pe2]
+changed: [pe1]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [dut]
@@ -940,10 +940,10 @@ TASK [Deploy ospf configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for dut, p2, pe1, pe2
 
 TASK [template] ****************************************************************
-changed: [pe2]
 changed: [pe1]
-changed: [dut]
 changed: [p2]
+changed: [dut]
+changed: [pe2]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
@@ -958,10 +958,10 @@ skipping: [pe1]
 skipping: [pe2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [pe2]
-changed: [p2]
-changed: [pe1]
 changed: [dut]
+changed: [pe1]
+changed: [p2]
+changed: [pe2]
 
 TASK [Figure out whether to deploy the module mpls on current device] **********
 ok: [dut]
@@ -972,8 +972,8 @@ ok: [pe2]
 TASK [Find configuration template for mpls] ************************************
 ok: [dut]
 ok: [p2]
-ok: [pe2]
 ok: [pe1]
+ok: [pe2]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -982,27 +982,24 @@ skipping: [pe1]
 skipping: [pe2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [dut] => 
+ok: [pe1] => 
   msg: |-
-    mpls configuration for dut
+    mpls configuration for pe1
     =========================================
     #!/bin/bash
   
     set -e
   
     sysctl -w net.mpls.platform_labels=1048575
-    sysctl -w net.mpls.conf.eth1.input=1
     sysctl -w net.mpls.conf.eth2.input=1
   
     cat >/tmp/config <<CONFIG
     !
     mpls ldp
-      router-id 10.0.0.5
+      router-id 10.0.0.3
       dual-stack transport-connection prefer ipv4
       address-family ipv4
-        discovery transport-address 10.0.0.5
-        interface eth1
-        exit
+        discovery transport-address 10.0.0.3
         interface eth2
         exit
       exit
@@ -1048,6 +1045,39 @@ ok: [p2] =>
     vtysh -f /tmp/config
   
     exit 0
+ok: [dut] => 
+  msg: |-
+    mpls configuration for dut
+    =========================================
+    #!/bin/bash
+  
+    set -e
+  
+    sysctl -w net.mpls.platform_labels=1048575
+    sysctl -w net.mpls.conf.eth1.input=1
+    sysctl -w net.mpls.conf.eth2.input=1
+  
+    cat >/tmp/config <<CONFIG
+    !
+    mpls ldp
+      router-id 10.0.0.5
+      dual-stack transport-connection prefer ipv4
+      address-family ipv4
+        discovery transport-address 10.0.0.5
+        interface eth1
+        exit
+        interface eth2
+        exit
+      exit
+      address-family ipv6
+      exit
+    !
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+  
+    exit 0
 ok: [pe2] => 
   msg: |-
     mpls configuration for pe2
@@ -1078,50 +1108,20 @@ ok: [pe2] =>
     vtysh -f /tmp/config
   
     exit 0
-ok: [pe1] => 
-  msg: |-
-    mpls configuration for pe1
-    =========================================
-    #!/bin/bash
-  
-    set -e
-  
-    sysctl -w net.mpls.platform_labels=1048575
-    sysctl -w net.mpls.conf.eth2.input=1
-  
-    cat >/tmp/config <<CONFIG
-    !
-    mpls ldp
-      router-id 10.0.0.3
-      dual-stack transport-connection prefer ipv4
-      address-family ipv4
-        discovery transport-address 10.0.0.3
-        interface eth2
-        exit
-      exit
-      address-family ipv6
-      exit
-    !
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-  
-    exit 0
 
 TASK [Find configuration deployment deploy_script for mpls] ********************
 ok: [dut]
 ok: [p2]
-ok: [pe2]
 ok: [pe1]
+ok: [pe2]
 
 TASK [Deploy mpls configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for dut, p2, pe1, pe2
 
 TASK [template] ****************************************************************
-changed: [p2]
 changed: [dut]
 changed: [pe1]
+changed: [p2]
 changed: [pe2]
 
 TASK [set_fact] ****************************************************************
@@ -1132,9 +1132,9 @@ ok: [pe2]
 
 TASK [run /tmp/config.sh to deploy mpls config from /home/pipi/net101/tools/netsim/ansible/templates/mpls/frr.j2] ***
 changed: [p2]
-changed: [dut]
 changed: [pe1]
 changed: [pe2]
+changed: [dut]
 
 TASK [run vtysh to import mpls config from /home/pipi/net101/tools/netsim/ansible/templates/mpls/frr.j2] ***
 skipping: [dut]
