@@ -7,7 +7,9 @@
 
 ```text
 $ netlab validate -h
-usage: netlab inspect [-h] [-v] [--snapshot [SNAPSHOT]] [--list] [--node NODES] [tests ...]
+usage: netlab inspect [-h] [-v] [-q] [--list] [--node NODES] [--skip-wait] [-e]
+                      [--dump {result} [{result} ...]] [-i INSTANCE]
+                      [tests ...]
 
 Inspect data structures in transformed lab topology
 
@@ -17,12 +19,15 @@ positional arguments:
 options:
   -h, --help            show this help message and exit
   -v, --verbose         Verbose logging (add multiple flags for increased verbosity)
-  --snapshot [SNAPSHOT]
-                        Transformed topology snapshot file
+  -q, --quiet           Report only major errors
   --list                List validation tests
   --node NODES          Execute validation tests only on selected node(s)
   --skip-wait           Skip the waiting period
   -e, --error-only      Display only validation errors (on stderr)
+  --dump {result} [{result} ...]
+                        Dump additional information during validation process
+  -i INSTANCE, --instance INSTANCE
+                        Specify lab instance to validate
 ```
 
 The **netlab validate** command returns the overall test results in its exit code:

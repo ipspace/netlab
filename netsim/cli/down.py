@@ -12,8 +12,8 @@ import os
 import sys
 from box import Box
 
-from . import external_commands, set_dry_run, is_dry_run
-from . import lab_status_change,fs_cleanup,load_snapshot,parser_add_snapshot
+from . import external_commands,set_dry_run,is_dry_run
+from . import lab_status_change,fs_cleanup,load_snapshot,parser_lab_location,change_lab_instance
 from .. import providers
 from ..utils import status,strings,log,read as _read
 from .up import provider_probes
@@ -42,16 +42,11 @@ def down_parse(args: typing.List[str]) -> argparse.Namespace:
     action='store_true',
     help='Print the commands that would be executed, but do not execute them')
   parser.add_argument(
-    '-i','--instance',
-    dest='instance',
-    action='store',
-    help='Specify lab instance to shut down')
-  parser.add_argument(
     '--force',
     dest='force',
     action='count', default = 0,
     help='Force shutdown or cleanup (use at your own risk)')
-  parser_add_snapshot(parser,hide=True)
+  parser_lab_location(parser,instance=True,action='shut down')
 
   return parser.parse_args(args)
 
@@ -171,41 +166,12 @@ def stop_all(topology: Box, args: argparse.Namespace) -> None:
     if not args.force:
       sys.exit(1)
 
-"""
-Find a lab instance and change directory so the rest of the shutdown
-process works from that directory
-"""
-def change_lab_instance(instance: typing.Union[int,str]) -> None:
-  topology = _read.system_defaults()
-  lab_states = status.read_status(topology)
-  try:                                                      # Maybe the instance is an integer?
-    instance = int(instance)
-  except:
-    pass
-
-  if not instance in lab_states:
-    log.fatal(f'Unknown instance {instance}, use "netlab status --all" to display running instances')
-
-  target_dir = lab_states[instance].dir
-  try:
-    os.chdir(target_dir)
-  except Exception as ex:
-    log.fatal(f'Cannot change directory to {target_dir}: {str(ex)}')
-  
-  log.status_green('CHANGED','')
-  print(f'Current directory changed to {target_dir}, continuing the shutdown process')
-
 def run(cli_args: typing.List[str]) -> None:
   args = down_parse(cli_args)
   set_dry_run(args)
   log.set_logging_flags(args)
-  if args.instance:
-    change_lab_instance(args.instance)
 
   topology = load_snapshot(args,ghosts=False)
-  log.status_success()
-  print(f"Read transformed lab topology from snapshot file {args.snapshot}")
-
   mismatch = lab_dir_mismatch(topology,args)
 
   probes_OK = True

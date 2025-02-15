@@ -19,7 +19,7 @@ class LogLevel(IntEnum):
 
 from box import Box
 
-from . import external_commands, set_dry_run, error_and_exit
+from . import external_commands, set_dry_run, error_and_exit, parser_lab_location
 
 from . import load_snapshot, parser_add_verbose
 from ..outputs import common as outputs_common
@@ -40,14 +40,6 @@ def connect_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespace, ty
     action='store_true',
     help='Print the commands that would be executed, but do not execute them')
   parser.add_argument(
-    '--snapshot',
-    dest='snapshot',
-    action='store',
-    nargs='?',
-    default='netlab.snapshot.yml',
-    const='netlab.snapshot.yml',
-    help='Transformed topology snapshot file')
-  parser.add_argument(
     dest='host', action='store',
     help='Device or tool to connect to')
   parser.add_argument(
@@ -56,6 +48,7 @@ def connect_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespace, ty
     action='store',
     nargs='+',
     help='Show command to execute on the device')
+  parser_lab_location(parser,instance=True,action='connect to')
 
   return parser.parse_known_args(args)
 

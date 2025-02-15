@@ -7,7 +7,7 @@ import typing
 import os
 import argparse
 
-from . import common_parse_args,get_message,load_snapshot,lab_status_change,parser_add_snapshot
+from . import common_parse_args,get_message,load_snapshot,lab_status_change,parser_lab_location
 from . import external_commands
 from . import ansible
 from ..utils import log,status as _status
@@ -52,12 +52,14 @@ def initial_config_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namesp
     '--no-message',
     dest='no_message', action='store_true',
     help=argparse.SUPPRESS)
-  parser_add_snapshot(parser,hide=True)
+  parser_lab_location(parser,instance=True,i_used=True,action='configure')
 
   return parser.parse_known_args(args)
 
 def run_initial(cli_args: typing.List[str]) -> None:
   (args,rest) = initial_config_parse(cli_args)
+  if args.output:
+    rest = ['-e',f'config_dir="{os.path.abspath(args.output)}"' ] + rest
 
   topology = load_snapshot(args)
 
@@ -83,9 +85,6 @@ def run_initial(cli_args: typing.List[str]) -> None:
   if args.custom:
     deploy_parts.append("custom")
     rest = ['-t','custom'] + rest
-
-  if args.output:
-    rest = ['-e',f'config_dir="{os.path.abspath(args.output)}"' ] + rest
 
   if args.fast or os.environ.get('NETLAB_FAST_CONFIG',None):
     rest = ['-e','netlab_strategy=free'] + rest

@@ -9,7 +9,7 @@ import os
 import glob
 from box import Box
 
-from . import parser_add_verbose,parser_add_snapshot,load_snapshot
+from . import parser_add_verbose,parser_lab_location,load_snapshot
 from .external_commands import set_ansible_flags
 from . import ansible
 from ..utils import log
@@ -30,8 +30,8 @@ def custom_config_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespa
   parser.add_argument(
     dest='template', action='store',
     help='Configuration template or a directory with templates')
-  parser_add_snapshot(parser,hide=True)
   parser_add_verbose(parser)
+  parser_lab_location(parser,instance=True,action='configure')
 
   return parser.parse_known_args(args)
 

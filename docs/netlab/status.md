@@ -9,20 +9,20 @@ This command uses the *netlab* status file (default: `~/.netlab/status.yml`) to 
 
 ```
 $ netlab status -h
-usage: netlab status [-h] [-i INSTANCE] [-l] [--cleanup] [--reset] [--all] [-v] [-q]
+usage: netlab status [-h] [-l] [--cleanup] [--reset] [--all] [-v] [-q] [-i INSTANCE]
 
 Display lab status
 
 options:
   -h, --help            show this help message and exit
-  -i INSTANCE, --instance INSTANCE
-                        Display or cleanup specific lab instance(s)
   -l, --log             Display the lab instance event log
   --cleanup             Cleanup the current or specified lab instance
   --reset               Reset the lab instance tracking system
   --all                 Display an overview of all lab instance(s)
   -v, --verbose         Verbose logging (add multiple flags for increased verbosity)
   -q, --quiet           Report only major errors
+  -i INSTANCE, --instance INSTANCE
+                        Specify lab instance to inspect
 ```
 
 * **netlab status** displays the status and workload (VMs or containers) of the current or selected lab instance.

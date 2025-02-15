@@ -10,7 +10,9 @@ You will have to install [Graphviz](https://graphviz.org/download/) or [D2](http
 ## Usage
 
 ```text
-usage: netlab graph [-h] [--snapshot [SNAPSHOT]] [-t {topology,bgp}] [-e {graphviz,d2}] [output]
+usage: netlab graph [-h] [-t {topology,bgp}] [-e {graphviz,d2}] [-i INSTANCE]
+                    [--snapshot [SNAPSHOT]]
+                    [output]
 
 Create a graph description in Graphviz or D2 format
 
@@ -19,12 +21,18 @@ positional arguments:
 
 options:
   -h, --help            show this help message and exit
-  --snapshot [SNAPSHOT]
-                        Transformed topology snapshot file
   -t {topology,bgp}, --type {topology,bgp}
                         Graph type
   -e {graphviz,d2}, --engine {graphviz,d2}
                         Graphing engine
+  -i INSTANCE, --instance INSTANCE
+                        Specify lab instance to create a graph from
+  --snapshot [SNAPSHOT]
+                        Transformed topology snapshot file
+```
+
+```{tip}
+When executed with the `--instance` option, **‌netlab graph** creates the graph description file in the lab directory.
 ```
 
 ## Examples

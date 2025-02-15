@@ -10,7 +10,7 @@ import argparse
 
 from box import Box,BoxList
 
-from . import load_snapshot,_nodeset
+from . import load_snapshot,_nodeset,parser_lab_location,parser_add_verbose
 from ..outputs import _TopologyOutput
 from ..outputs import common as outputs_common
 from ..utils import strings,log
@@ -24,14 +24,6 @@ def inspect_parse(args: typing.List[str]) -> argparse.Namespace:
   parser = argparse.ArgumentParser(
     prog="netlab inspect",
     description='Inspect data structures in transformed lab topology')
-  parser.add_argument(
-    '--snapshot',
-    dest='snapshot',
-    action='store',
-    nargs='?',
-    default='netlab.snapshot.yml',
-    const='netlab.snapshot.yml',
-    help='Transformed topology snapshot file')
   parser.add_argument(
     '--node',
     dest='node', action='store',
@@ -50,6 +42,8 @@ def inspect_parse(args: typing.List[str]) -> argparse.Namespace:
     dest='expr', action='store',
     nargs='?',
     help='Data selection expression')
+  parser_add_verbose(parser,verbose=False)
+  parser_lab_location(parser,instance=True,snapshot=True,action='inspect')
 
   return parser.parse_args(args)
 
