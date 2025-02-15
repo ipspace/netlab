@@ -6,11 +6,11 @@
 # * Static routes
 #
 import typing, re
-import netaddr
+import ipaddress
 from box import Box,BoxList
 
 from . import _Module,_routing,_dataplane,get_effective_module_attribute
-from ..utils import log,strings
+from ..utils import log, routing as _rp_utils
 from .. import data
 from ..data import global_vars,get_box
 from ..data.types import must_be_list
@@ -625,10 +625,9 @@ def extract_af_info(addr: Box, keep_prefix: bool = True) -> Box:
     if isinstance(addr[af],bool):
       result[af] = addr[af]
     elif keep_prefix:                         # Do we need a prefix?
-      net = netaddr.IPNetwork(addr[af])       # Use IPNetwork to extract network and prefix
-      result[af] = str(net.network) + '/' + str(net.prefixlen)
+      result[af] = _rp_utils.get_prefix(addr[af])
     else:                                     # We need just the host part
-      result[af] = addr[af].split('/')[0]     # ... and it's simpler to use a split ;)
+      result[af] = _rp_utils.get_intf_address(addr[af])
 
   return result
 
@@ -790,15 +789,21 @@ def resolve_nexthop_intf(sr_data: Box, node: Box, topology: Box) -> Box:
     if af not in sr_data:
       continue
 
-    nh_addr = netaddr.IPAddress(nh[af])
-    for intf in node.interfaces:
-      if af not in intf or not isinstance(intf[af],str):
+    nh_addr = ipaddress.ip_interface(nh[af])
+    nh_net  = nh_addr.network
+    for intf in node.interfaces:                            # Try to find the next-hop interfaces
+      if af not in intf or not isinstance(intf[af],str):    # Interface does not have an address in target AF
         continue
-      if intf.get('vrf',None) != nh_vrf:
-        continue
-      if nh_addr not in netaddr.IPNetwork(intf[af]):
+      if intf.get('vrf',None) != nh_vrf:                    # Interface is in the wrong VRF
         continue
 
+      # Move on if the next hop does not belong to the interface subnet
+      #
+      if not nh_net.subnet_of(ipaddress.ip_interface(intf[af]).network):      # type: ignore[arg-type]
+        continue
+
+      # Otherwise append the direct next-hop information to the nhlist
+      #
       nh_data = data.get_box({ af: nh[af], 'intf': intf.ifname })
       if 'vrf' in sr_data.nexthop:
         nh_data.vrf = sr_data.nexthop.vrf

@@ -52,6 +52,7 @@ import sys
 import typing
 import types
 
+import ipaddress
 import netaddr
 from box import Box
 
@@ -65,7 +66,7 @@ def normalize_prefix(pfx: typing.Union[str,Box]) -> Box:
   # Normalize IP addr strings, e.g. 2001:001::/48 becomes 2001:1::/48
   def normalize_ip(ip:typing.Union[str,bool]) -> typing.Union[str,bool]:
     try:
-      return str(netaddr.IPNetwork(ip)) if isinstance(ip,str) else ip
+      return str(ipaddress.ip_network(ip)) if isinstance(ip,str) else ip
     except Exception as ex:
       log.error(
         f'Cannot parse address prefix: {ex}',
@@ -152,14 +153,12 @@ def validate_pools(addrs: Box, topology: Box) -> None:
       if k in pfx:
         if not isinstance(pfx[k],bool):
           try:
-            network = netaddr.IPNetwork(pfx[k])
-            if str(network.cidr) != pfx[k]:
-              log.error( f"pool '{pool}' is using an invalid prefix {pfx[k]} with host bits set ({str(network.cidr)})",
-                            category=log.IncorrectValue, module='addressing')
+            network = ipaddress.ip_network(pfx[k])
             addrs[pool][k+'_pfx'] = network
-          except:
+          except Exception as Ex:
             log.error(
-              "%s prefix %s in addressing pool '%s' is invalid (%s)" % (k,pfx[k],pool,sys.exc_info()[1]),
+              f"{k} prefix {pfx[k]} in addressing pool '{pool}' is invalid",
+              more_data=str(Ex),
               category=log.IncorrectValue,
               module='addressing')
             continue
@@ -221,7 +220,7 @@ def create_pool_generators(addrs: Box, no_copy_list: list) -> Box:
       if "_pfx" in key:
         af   = key.replace('_pfx','')
         plen = pfx['prefix'] if af == 'ipv4' else pfx.get('prefix6',64)
-        gen[pool][af] = data.subnet(plen)
+        gen[pool][af] = data.subnets(new_prefix=plen)
         if (af == 'ipv4' and plen == 32) or (af == 'ipv6' and plen >= 127) or (pool == 'loopback'):
           next(gen[pool][af])
       elif not key in no_copy_list:
@@ -239,7 +238,7 @@ def get_pool(pools: Box, pool_list: typing.List[str]) -> typing.Optional[str]:
     module='addressing')                       # pragma: no cover (impossible to get here due to built-in default pools)
   return None                                  # pragma: no cover
 
-def get_nth_subnet(n: int, subnet: netaddr.IPNetwork.subnet, cache_list: list) -> netaddr.IPNetwork:
+def get_nth_subnet(n: int, subnet: types.GeneratorType, cache_list: list) -> ipaddress._BaseNetwork:
   while len(cache_list) < n:
     cache_list.append(next(subnet))
   return cache_list[n-1]
@@ -253,7 +252,7 @@ def get_pool_prefix(pools: Box, p: str, n: typing.Optional[int] = None) -> Box:
       prefixes[af] = pools[p][af]
       continue
 
-    subnet_cache = 'cache_%s' % af
+    subnet_cache = f'cache_{af}'
     if n:                                                             # Allocating a specific prefix or IP address from a subnet
       if not subnet_cache in pools[p]:                                # Set up a cache to speed up things
         pools[p][subnet_cache] = []
@@ -365,9 +364,13 @@ def parse_prefix(prefix: typing.Union[str,Box],path: str = 'links') -> Box:
       evaluate_named_prefix(topology,prefix)
       return topology.prefix[prefix]
     try:
-      return get_box({ 'ipv4' : netaddr.IPNetwork(prefix) })
+      return get_box({ 'ipv4' : ipaddress.IPv4Network(prefix) })
     except Exception as ex:
-      log.error(f'Cannot parse {prefix} used in {path} as an IPv4 prefix',log.IncorrectValue,'addressing')
+      log.error(
+        f'Cannot parse {prefix} used in {path} as an IPv4 prefix',
+        more_data=str(ex),
+        category=log.IncorrectValue,
+        module='addressing')
       return empty_box
 
   if not isinstance(prefix,Box):                      # pragma: no cover
@@ -394,7 +397,7 @@ def parse_prefix(prefix: typing.Union[str,Box],path: str = 'links') -> Box:
       continue
 
     try:
-      prefix_list[af] = netaddr.IPNetwork(pfx)
+      prefix_list[af] = ipaddress.ip_network(pfx)
     except Exception as ex:
       log.error(
         f'Cannot parse {af} prefix: {prefix} used in {path}',
@@ -402,15 +405,9 @@ def parse_prefix(prefix: typing.Union[str,Box],path: str = 'links') -> Box:
         category=log.IncorrectValue,
         module='addressing')
       return empty_box
-    if str(prefix_list[af]) != str(prefix_list[af].cidr):
-      log.error(
-        f'{af} prefix used in {path} contains host bits: {prefix}',
-        category=log.IncorrectValue,
-        module='addressing')    
 
   return prefix_list
 
-def get_addr_mask(pfx: netaddr.IPNetwork, host: int) -> str:
-  host_ip = netaddr.IPNetwork(pfx[host])
-  host_ip.prefixlen = pfx.prefixlen
-  return str(host_ip)
+def get_nth_ip_from_prefix(pfx: typing.Union[str,ipaddress._BaseNetwork], host: int) -> str:
+  net = ipaddress.ip_network(pfx) if isinstance(pfx,str) else pfx
+  return f'{str(net[host])}/{net.prefixlen}'

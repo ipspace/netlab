@@ -2,7 +2,7 @@
 # VRF module
 #
 import typing, re
-import netaddr
+import ipaddress
 from box import Box
 
 from . import _Module,_routing,_dataplane,get_effective_module_attribute,remove_module
@@ -75,7 +75,7 @@ def parse_rdrt_value(value: str) -> typing.Optional[typing.List[typing.Union[int
     return [int(asn),int(vid)]
   except Exception as ex:
     try:
-      netaddr.IPNetwork(asn)
+      ipaddress.IPv4Address(asn)
       return [asn,int(vid)]
     except Exception as ex:
       return None
@@ -349,7 +349,7 @@ def vrf_loopbacks(node : Box, topology: Box) -> None:
 
     for af in vrfaddr:
       if af == 'ipv6':
-        ifdata[af] = addressing.get_addr_mask(vrfaddr[af],1)
+        ifdata[af] = addressing.get_nth_ip_from_prefix(vrfaddr[af],1)
       else:
         ifdata[af] = str(vrfaddr[af])
       vrfaddr[af] = str(ifdata[af])                                         # Save string copy in vrfaddr, we need it later

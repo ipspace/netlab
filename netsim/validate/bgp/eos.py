@@ -5,7 +5,7 @@ Arista EOS BGP validation routines
 from box import Box,BoxList
 import typing
 from netsim.data import global_vars
-from netsim.utils import log
+from netsim.utils import log, routing as _rp_utils
 from .. import _common
 from . import BGP_PREFIX_NAMES,check_community_kw
 
@@ -208,7 +208,7 @@ BGP prefix validation function:
 * Use the run_prefix_checks framework for validation
 """
 def show_bgp_prefix(pfx: str, af: str = 'ipv4', **kwargs: typing.Any) -> str:
-  pfx = _common.get_pure_prefix(pfx)
+  pfx = _rp_utils.get_prefix(pfx)
   return f"bgp {af} unicast {pfx} | json"
 
 def valid_bgp_prefix(
