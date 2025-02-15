@@ -202,20 +202,22 @@ def router_id(node: Box, proto: str, pools: Box) -> None:
       node[proto].router_id = _rp_utils.get_address(node[proto].router_id)
     except Exception as ex:
       log.error(
-        f'{proto} router_id "{node[proto].router_id}" specified on node {node.name} is not an IPv4 address',
-        log.IncorrectValue,
-        proto)
+        f'{proto} router_id "{node[proto].router_id}" specified for {proto} on node {node.name} is not an IPv4 address',
+        more_data=str(ex),
+        category=log.IncorrectValue,
+        module=proto)
     return
 
   if 'router_id' in node:                     # Node has a configured router ID, copy it and get out
     try:
-      node.router_id = _rp_utils.get_address(node[proto].router_id)
+      node.router_id = _rp_utils.get_address(node.router_id)
       node[proto].router_id = node.router_id
     except Exception as ex:
       log.error(
         f'router_id "{node.router_id}" specified on node {node.name} is not an IPv4 address',
-        log.IncorrectValue,
-        proto)
+        more_data=str(ex),
+        category=log.IncorrectValue,
+        module=proto)
     return
 
   if 'ipv4' in node.get('loopback',{}):       # Do we have IPv4 address on the loopback? If so, use it as router ID
