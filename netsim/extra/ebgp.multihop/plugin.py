@@ -1,5 +1,5 @@
 from box import Box
-import netaddr
+import ipaddress
 
 from netsim.utils import log,routing as _bgp
 from netsim.modules import vrf
@@ -177,7 +177,7 @@ def fix_vrf_loopbacks(ndata: Box, topology: Box) -> None:
       for af in ('ipv4','ipv6'):                                # Now copy remote VRF loopback IPv4/IPv6 address
         ngb.pop(af)                                             # ... into neighbor data
         if af in lb:                                            # ... removing whatever might have come from the
-          ngb[af] = str(netaddr.IPNetwork(lb[af]).ip)           # ... global loopback
+          ngb[af] = str(ipaddress.ip_interface(lb[af]).ip)      # ... global loopback
 
     if '_src_vrf' in ngb:                                       # Is out endpoint in a VRF?
       if not isinstance(features.bgp.multihop,Box) or features.bgp.multihop.vrf is not True:

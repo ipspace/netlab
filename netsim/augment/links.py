@@ -4,7 +4,7 @@
 #
 import typing
 
-import netaddr
+import ipaddress
 from box import Box
 
 # Related modules
@@ -373,7 +373,7 @@ def set_fhrp_gateway(link: Box, pfx_list: Box, nodes: Box, link_path: str) -> No
       continue
 
     try:                                                              # Now try to get N-th IP address on that link
-      link.gateway[af] = get_nth_ip_from_prefix(netaddr.IPNetwork(link.prefix[af]),link.gateway.id)
+      link.gateway[af] = addressing.get_nth_ip_from_prefix(link.prefix[af],link.gateway.id)
       fhrp_assigned = True
     except Exception as ex:
       log.error(
@@ -468,15 +468,15 @@ Get IPAM policy for link/prefix
 
 Return 'error' if the prefix size is too small
 """
-def get_prefix_IPAM_policy(link: Box, pfx: typing.Union[netaddr.IPNetwork,bool], ndict: Box) -> str:
+def get_prefix_IPAM_policy(link: Box, pfx: typing.Union[ipaddress._BaseNetwork,bool], ndict: Box) -> str:
   if isinstance(pfx,bool):
     return 'unnumbered'
 
   gwid = get_gateway_id(link) or 0                                    # Get link gateway ID (if set) --- must be int for min to work
   if link.type == 'p2p' and not gwid:                                 # P2P allocation policy cannot be used with default gateway
-    return 'p2p' if pfx.first != pfx.last else 'error'
+    return 'p2p' if pfx.num_addresses > 1 else 'error'
 
-  pfx_size = pfx.last - pfx.first + 1
+  pfx_size = pfx.num_addresses
   add_extra_ip = 0
   subtract_reserved_ip = -2
 
@@ -502,19 +502,6 @@ def get_prefix_IPAM_policy(link: Box, pfx: typing.Union[netaddr.IPNetwork,bool],
   return 'error'
 
 """
-Get Nth IP address in a prefix returned as a nice string with a subnet mask
-
-*** WARNING *** WARNING *** WARNING ***
-
-Parent must catch the exception as we don't know what error text to display
-"""
-
-def get_nth_ip_from_prefix(pfx: netaddr.IPNetwork, n_id: int) -> str:
-  node_addr = netaddr.IPNetwork(pfx[n_id])
-  node_addr.prefixlen = pfx.prefixlen
-  return str(node_addr)
-
-"""
 check_interface_host_bits: Check whether the IP addresses on an interface have host bits. The check is disabled
 for special prefixes (IPv4: /31, /32, IPv6: /127, /128)
 """
@@ -533,8 +520,8 @@ def check_interface_host_bits(intf: Box, node: Box, link: typing.Optional[Box] =
       continue
     if not isinstance(intf[af],str):            # Skip unnumbered interfaces
       continue
-    pfx = netaddr.IPNetwork(intf[af])
-    if pfx[0].is_multicast():
+    pfx = ipaddress.ip_interface(intf[af])
+    if pfx.ip.is_multicast:
       log.error(
         f'Interfaces cannot have multicast {af} addresses ({intf[af]} on {node.name}/{intf_name})',
         log.IncorrectValue,
@@ -542,10 +529,10 @@ def check_interface_host_bits(intf: Box, node: Box, link: typing.Optional[Box] =
       OK = False
       continue
 
-    if pfx.last <= pfx.first + 1:               # Are we dealing with special prefix (loopback or /31)
+    if pfx.network.num_addresses <= 2:          # Are we dealing with special prefix (loopback or /31)
       continue                                  # ... then it's OK not to have host bits
 
-    if str(pfx) == str(pfx.cidr):               # Does the IP address have host bits -- is it different from its CIDR subnet?
+    if pfx.ip == pfx.network.network_address:   # Does the IP address have host bits -- is it different from its CIDR subnet?
       log.error(
         f'Address {intf[af]} on node {node.name}/{intf_name} does not contain host bits',
         log.IncorrectValue,
@@ -553,7 +540,7 @@ def check_interface_host_bits(intf: Box, node: Box, link: typing.Optional[Box] =
       OK = False
       continue
 
-    if str(pfx[-1]) == str(pfx.ip) and af == 'ipv4':
+    if pfx.ip == pfx.network.broadcast_address:
       log.error(
         f'Address {intf[af]} on node {node.name}/{intf_name} is a subnet broadcast address',
         log.IncorrectValue,
@@ -566,7 +553,7 @@ def check_interface_host_bits(intf: Box, node: Box, link: typing.Optional[Box] =
 """
 Set an interface address based on the link prefix and interface sequential number (could be node.id or counter)
 """
-def set_interface_address(intf: Box, af: str, pfx: netaddr.IPNetwork, node_id: int) -> bool:
+def set_interface_address(intf: Box, af: str, pfx: ipaddress._BaseNetwork, node_id: int) -> bool:
   if af in intf:                                # Check static interface addresses
     if isinstance(intf[af],bool):               # unnumbered or unaddressed node, leave it alone
       return True
@@ -575,22 +562,23 @@ def set_interface_address(intf: Box, af: str, pfx: netaddr.IPNetwork, node_id: i
       node_id = intf[af]
     elif isinstance(intf[af],str):              # static address specified on the interface
       try:
-        intf_pfx = netaddr.IPNetwork(intf[af])  # Try to parse the interface IP address
-        if not '/' in intf[af]:
-          intf_pfx.prefixlen = pfx.prefixlen    # If it lacks a prefix, add link prefix
+        if '/' not in intf[af]:                 # Add link prefix if needed
+          intf[af] += f'/{pfx.prefixlen}'
+        intf_pfx = ipaddress.ip_interface(intf[af])
         intf[af] = str(intf_pfx)                # ... and save modified/validated interface IP address
       except Exception as ex:
         log.error(
-          f'Cannot parse {af} address {intf.af} for node {intf.node}\n'+strings.extra_data_printout(str(ex)),
-          log.IncorrectValue,
-          'links')
+          f'Cannot parse {af} address {intf.af} for node {intf.node}',
+          more_data=str(ex),
+          category=log.IncorrectValue,
+          module='links')
         return False
 
       return True                               # Further checks done in check_interface_host_bits
 
   # No static interface address, or static address specified as relative node_id
   try:
-    intf[af] = get_nth_ip_from_prefix(pfx,node_id)
+    intf[af] = addressing.get_nth_ip_from_prefix(pfx,node_id)
     return True
   except Exception as ex:
     log.error(
@@ -625,8 +613,8 @@ def IPAM_unnumbered(link: Box, af: str, pfx: typing.Optional[bool], ndict: Box) 
 
   return OK
 
-def IPAM_sequential(link: Box, af: str, pfx: netaddr.IPNetwork, ndict: Box) -> bool:
-  start = 1 if pfx.last != pfx.first + 1 else 0
+def IPAM_sequential(link: Box, af: str, pfx: ipaddress._BaseNetwork, ndict: Box) -> bool:
+  start = 1 if pfx.num_addresses > 2 else 0
   gwid = get_gateway_id(link)
   OK = True
   for count,intf in enumerate(link.interfaces):
@@ -636,25 +624,25 @@ def IPAM_sequential(link: Box, af: str, pfx: netaddr.IPNetwork, ndict: Box) -> b
 
   return OK
 
-def IPAM_p2p(link: Box, af: str, pfx: netaddr.IPNetwork, ndict: Box) -> bool:
-  start = 1 if pfx.last != pfx.first + 1 else 0
+def IPAM_p2p(link: Box, af: str, pfx: ipaddress._BaseNetwork, ndict: Box) -> bool:
+  start = 1 if pfx.num_addresses > 2 else 0
   OK = True
   for count,intf in enumerate(sorted(link.interfaces, key=lambda intf: intf.node)):
     OK = set_interface_address(intf,af,pfx,count+start) and OK
 
   return OK
 
-def IPAM_id_based(link: Box, af: str, pfx: netaddr.IPNetwork, ndict: Box) -> bool:
+def IPAM_id_based(link: Box, af: str, pfx: ipaddress._BaseNetwork, ndict: Box) -> bool:
   OK = True
   for intf in link.interfaces:
     OK = set_interface_address(intf,af,pfx,ndict[intf.node].id) and OK
 
   return OK
 
-def IPAM_loopback(link: Box, af: str, pfx: netaddr.IPNetwork, ndict: Box) -> bool:
+def IPAM_loopback(link: Box, af: str, pfx: ipaddress._BaseNetwork, ndict: Box) -> bool:
   for intf in link.interfaces:
-    pfx.prefixlen = 128 if ':' in str(pfx) else 32
-    intf[af] = str(pfx)
+    prefixlen = 128 if af == 'ipv6' else 32
+    intf[af] = f'{str(pfx.network_address)}/{prefixlen}'
 
   return True
 
@@ -699,14 +687,13 @@ def assign_interface_addresses(link: Box, addr_pools: Box, ndict: Box, defaults:
       pfx_net = pfx_list[af]
     else:
       try:                                            # Parse the AF prefix
-        pfx_net = netaddr.IPNetwork(pfx_list[af])
+        pfx_net = ipaddress.ip_network(pfx_list[af])
       except Exception as ex:                         # Report an error and move on if it cannot be parsed
         log.error(
-          f'Cannot parse {af} prefix {pfx_list[af]} on {link._linkname}\n' + \
-            strings.extra_data_printout(f'{ex}') + '\n' + \
-            strings.extra_data_printout(f'{link}'),
-          log.IncorrectValue,
-          'links')
+          f'Cannot parse {af} prefix {pfx_list[af]} on {link._linkname}',
+          more_data=[ str(ex), str(link) ],
+          category=log.IncorrectValue,
+          module='links')
         error = True
         continue
 

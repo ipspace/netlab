@@ -3,10 +3,9 @@
 #
 import typing
 from box import Box
-import netaddr
 
 from . import _Module,get_effective_module_attribute,_dataplane
-from ..utils import log,strings
+from ..utils import log,routing as _rp_utils
 from .. import data
 from ..data.validate import must_be_int,must_be_string
 from ..augment import addressing,devices
@@ -108,30 +107,27 @@ def node_set_vtep(node: Box, topology: Box) -> bool:
       break
 
   if topology.defaults.vxlan.use_v6_vtep:
+    vtep_af = 'ipv6'
     features = devices.get_device_features(node,topology.defaults)
     if not features.get('vxlan.vtep6'):
       log.error(
         f'Device {node.device} (node {node.name}) does not support VXLAN over IPv6',
         log.IncorrectValue,
         'vxlan')
-    if 'ipv6' not in vtep_interface:
-      log.error(
-        f'You want to use IPv6 VTEP -- VXLAN module needs an IPv6 address on loopback interface of {node.name}',
-        log.IncorrectValue,
-        'vxlan')
       return False
+  else:
+    vtep_af = 'ipv4'
 
-  if not 'ipv4' in vtep_interface and not topology.defaults.vxlan.use_v6_vtep:
+  if not vtep_af in vtep_interface:
     log.error(
-      f'VXLAN module needs an IPv4 address on loopback interface of {node.name}',
-      log.IncorrectValue,
-      'vxlan')
+      f'VXLAN module needs an {vtep_af.upper()} address on interface {loopback_name} of {node.name}',
+      category=log.IncorrectValue,
+      module='vxlan')
     return False
 
-  vtep_ip = ""
-  vtep_af = 'ipv6' if topology.vxlan.use_v6_vtep else 'ipv4'
-  vtep_ip = vtep_interface[vtep_af]
-  node.vxlan.vtep = str(netaddr.IPNetwork(vtep_ip).ip)              # ... and convert IPv4(v6) prefix into an IPv4(v6) address
+  # Save VTEP IP address (from the selected VTEP interface) and VTEP interface name
+  #
+  node.vxlan.vtep = _rp_utils.get_intf_address(vtep_interface[vtep_af])
   node.vxlan.vtep_interface = loopback_name
   return True
 

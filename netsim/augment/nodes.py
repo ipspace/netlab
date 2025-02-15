@@ -360,7 +360,7 @@ def loopback_interface(n: Box, pools: Box, topology: Box) -> None:
         if prefix_list[af].prefixlen == 128:
           n.loopback[af] = str(prefix_list[af])
         else:
-          n.loopback[af] = addressing.get_addr_mask(prefix_list[af],1)
+          n.loopback[af] = addressing.get_nth_ip_from_prefix(prefix_list[af],1)
       else:
         n.loopback[af] = str(prefix_list[af])
       n.af[af] = True

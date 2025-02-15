@@ -1,4 +1,4 @@
-import typing, netaddr
+import typing
 from box import Box
 from netsim import utils,data
 

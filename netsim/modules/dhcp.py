@@ -3,10 +3,9 @@
 #
 import typing
 from box import Box
-import netaddr
 
 from . import _Module,_routing
-from ..utils import log, strings
+from ..utils import log, strings, routing as _rp_utils
 from .. import data
 from ..augment import devices
 
@@ -168,7 +167,7 @@ def build_topology_dhcp_pools(topology: Box) -> None:
       #
       for af in log.AF_LIST:
         if af in intf and isinstance(intf[af],str):
-          data.append_to_list(pools[pid].excluded,af,str(netaddr.IPNetwork(intf[af]).ip))
+          data.append_to_list(pools[pid].excluded,af,_rp_utils.get_intf_address(intf[af]))
 
   for link in topology.get('links',[]):                     # Iterate over lab topology links
     if not link.get('dhcp.subnet'):                         # dhcp.subnet is set if there's at least one DHCP client on the link
@@ -203,7 +202,7 @@ def build_topology_dhcp_pools(topology: Box) -> None:
         pools[pid][af] = af_pfx                             # New pool, add prefix
 
       if af in link.get('gateway',{}):                      # Save default gateway if present
-        pools[pid].gateway[af] = str(netaddr.IPNetwork(link.gateway[af]).ip)
+        pools[pid].gateway[af] = _rp_utils.get_intf_address(link.gateway[af])
 
       for intf in link.get('interfaces',[]):                # Now iterate over the interfaces attached to the link
         if af not in intf:                                  # Irrelevant interface, move on
@@ -220,7 +219,7 @@ def build_topology_dhcp_pools(topology: Box) -> None:
           continue                                          # Ignore IP addresses of DHCP clients
 
         # Append non-DHCP addresses to the excluded list
-        data.append_to_list(pools[pid].excluded,af,str(netaddr.IPNetwork(intf[af]).ip))        
+        data.append_to_list(pools[pid].excluded,af,_rp_utils.get_intf_address(intf[af]))
 
   topology.dhcp.pools = []                                  # Finally, convert pool data into a list of pools
   for pname,pdata in pools.items():                         # Iterate over collected pools
@@ -284,7 +283,7 @@ def set_dhcp_relay(intf: Box, n_name: str, topology: Box) -> None:
       # We have a usable address on the DHCP server control-plane interface.
       # Add it to the DHCP relay targets
       #
-      intf.dhcp.relay[af].append(str(netaddr.IPNetwork(cp_intf[af]).ip))
+      intf.dhcp.relay[af].append(_rp_utils.get_intf_address(cp_intf[af]))
 
 '''
 check_dynamic_routing -- check whether a node uses routing protocols on a DHCP interface

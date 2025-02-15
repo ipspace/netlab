@@ -2,10 +2,35 @@
 # BGP neighbor traversal utilities
 #
 
+import typing
+import ipaddress
+
 from box import Box
 from . import log
 from ..augment import devices
-import typing
+
+# Return IP address from int, address, or prefix
+#
+def get_ipv4_address(addr: typing.Union[str,int]) -> str:
+  return str(ipaddress.IPv4Interface(addr).ip)
+
+def get_intf_address(addr: typing.Union[str,int]) -> str:
+  return str(ipaddress.ip_interface(addr).ip)
+
+def get_address(addr: str) -> str:
+  return str(ipaddress.ip_address(addr))
+
+def get_prefix(addr: str) -> str:
+  return str(ipaddress.ip_interface(addr).network)
+
+# try_intf_address is used when validation functions need an IP address from an
+# interface address. The target address could be hostname, so we only try our best
+#
+def try_intf_address(addr: str) -> str:
+  try:
+    return get_intf_address(addr)
+  except:
+    return addr
 
 # Return all global and optionaly VRF neighbors
 #

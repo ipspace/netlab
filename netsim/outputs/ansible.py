@@ -6,13 +6,12 @@ import typing
 import yaml
 import os
 from box import Box
-import netaddr
 
 from . import _TopologyOutput,check_writeable
 from ..augment import nodes
 from ..augment import devices
 from ..augment import plugin
-from ..utils import templates,strings,log
+from ..utils import templates,strings,log,routing as _rp_utils
 from ..utils import files as _files
 from ..data import global_vars,append_to_list
 
@@ -81,8 +80,10 @@ def get_host_addresses(topology: Box) -> Box:
     if 'loopback' in node:                                  # Create a list of all usable interfaces
       intf_list = [ node.loopback ] + node.interfaces       # ... starting with loopback
       for af in ['ipv4','ipv6']:
+        # If the loopback interface has the desired address, extract IP address from the CIDR prefix
+        #
         if af in node.loopback and isinstance(node.loopback[af],str):
-          lb = str(netaddr.IPNetwork(node.loopback[af]).ip) # Extract IP address from the CIDR prefix
+          lb = _rp_utils.get_intf_address(node.loopback[af])
           append_to_list(hosts[name],'loopback',lb)
 
     for intf in intf_list:                                  # Now iterate over interfaces
@@ -91,7 +92,7 @@ def get_host_addresses(topology: Box) -> Box:
         if not isinstance(intf.get(af,False),str):          # Is the IP address a string (= usable IP address)?
           continue
       
-        addr = str(netaddr.IPNetwork(intf[af]).ip)          # Extract IP address from the CIDR prefix
+        addr = _rp_utils.get_intf_address(intf[af])         # Extract IP address from the CIDR prefix
         append_to_list(hosts[h_name],af,addr)               # ... and append it to the list of usable IP addresses
 
   global_vars.set('hosts',hosts)                            # Cache the hosts dictionary
