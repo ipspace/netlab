@@ -106,6 +106,18 @@ def nvue_merge_ospf_loopbacks(node: Box) -> None:
       more_data=err_data,
       node=node)
 
+"""
+In case of shared MLAG VTEP, marks the VTEP such that the correct configuration can be applied
+"""
+def mark_shared_mlag_vtep(node: Box, topology: Box) -> None:
+  local_vtep = node.get('vxlan.vtep',None)
+  if not local_vtep:
+    return
+  for n in topology.nodes.values():
+    if n!=node and n.get('vxlan.vtep',None)==local_vtep:
+      node.vxlan._shared_vtep = n.name
+      return
+
 class Cumulus_Nvue(_Quirks):
 
   @classmethod
@@ -125,6 +137,9 @@ class Cumulus_Nvue(_Quirks):
     
     if 'vrf' in mods:
       nvue_check_vrf_route_leaking(node)
+
+    if 'vxlan' in mods:
+      mark_shared_mlag_vtep(node,topology)
 
     if devices.get_provider(node,topology) == 'clab':
       log.error(
