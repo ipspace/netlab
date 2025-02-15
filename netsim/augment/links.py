@@ -641,7 +641,7 @@ def IPAM_id_based(link: Box, af: str, pfx: ipaddress._BaseNetwork, ndict: Box) -
 
 def IPAM_loopback(link: Box, af: str, pfx: ipaddress._BaseNetwork, ndict: Box) -> bool:
   for intf in link.interfaces:
-    prefixlen = 128 if ':' in str(pfx) else 32
+    prefixlen = 128 if af == 'ipv6' else 32
     intf[af] = f'{str(pfx.network_address)}/{prefixlen}'
 
   return True
