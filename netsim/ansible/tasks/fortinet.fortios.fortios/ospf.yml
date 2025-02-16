@@ -8,36 +8,61 @@
       auto_cost_ref_bandwidth: "{{ ospf.reference_bandwidth | default(omit) }}"
       router_id: "{{ ospf.router_id }}"
 
-- name: Configure OSPF on loopback
-  fortinet.fortios.fortios_router_ospf:
-    vdom: "{{ vdom }}"
-    router_ospf:
-      ospf_interface:
+- name: Add loopback0 to OSPF interfaces list
+  vars:
+    ospf_interface:
       - name: "loopback0"
         interface: "loopback0"
+        cost: "{{ interface.ospf.cost | default(omit) }}"
+  set_fact:
+    ospf_interfaces: "{{ ospf_interface }}"
 
-- name: Configure OSPF on non p2p interfaces
-  fortinet.fortios.fortios_router_ospf:
-    vdom: "{{ vdom }}"
-    router_ospf:
-      ospf_interface:
-      - name: "{{ interface.ifname }}"
-        interface: "{{ interface.ifname }}"
+- name: Add non p2p interfaces to OSPF interfaces list
+  vars:
+    ospf_interface:
+    - name: "{{ interface.ifname }}"
+      interface: "{{ interface.ifname }}"
+      cost: "{{ interface.ospf.cost | default(omit) }}"
+  set_fact:
+    ospf_interfaces: "{{ ospf_interfaces + ospf_interface }}"
   with_items: "{{ interfaces }}"
   when: interface.type != "p2p" and not (interface.role is defined and interface.role == "external")
   loop_control:
     loop_var: interface
 
-- name: Configure OSPF on p2p interfaces
-  fortinet.fortios.fortios_router_ospf:
-    vdom: "{{ vdom }}"
-    router_ospf:
-      ospf_interface:
+- name: Add p2p interfaces to OSPF interfaces list
+  vars:
+    ospf_interface:
       - name: "{{ interface.ifname }}"
         interface: "{{ interface.ifname }}"
         network_type: "point-to-point"
+        cost: "{{ interface.ospf.cost | default(omit) }}"
+  set_fact:
+    ospf_interfaces: "{{ ospf_interfaces + ospf_interface }}"
   with_items: "{{ interfaces }}"
   when: interface.type == "p2p" and not (interface.role is defined and interface.role == "external")
+  loop_control:
+    loop_var: interface
+
+- name: Configure OSPF on interfaces
+  fortinet.fortios.fortios_router_ospf:
+    vdom: "{{ vdom }}"
+    router_ospf:
+      ospf_interface: "{{ ospf_interfaces }}"
+
+- name: Create passive interfaces list
+  set_fact:
+    passive_interfaces: []
+
+- name: Add passive interfaces to OSPF passive interfaces list
+  vars:
+    passive_interface:
+      - name: "{{ interface.ifname }}"
+  set_fact:
+    passive_interfaces: "{{ passive_interfaces | default([]) + passive_interface }}"
+  with_items: "{{ interfaces }}"
+  # yamllint disable-line rule:line-length
+  when: (interface.type is defined and interface.type == "stub") or (interface.role is defined and interface.role in ["stub","passive"])
   loop_control:
     loop_var: interface
 
@@ -45,26 +70,7 @@
   fortinet.fortios.fortios_router_ospf:
     vdom: "{{ vdom }}"
     router_ospf:
-      passive_interface:
-      - name: "{{ interface.ifname }}"
-        interface: "{{ interface.ifname }}"
-  with_items: "{{ interfaces }}"
-  # yamllint disable-line rule:line-length
-  when: (interface.type is defined and interface.type == "stub") or (interface.role is defined and interface.role in ["stub","passive"])
-  loop_control:
-    loop_var: interface
-
-- name: Configure OSPF interface cost
-  fortinet.fortios.fortios_router_ospf:
-    vdom: "{{ vdom }}"
-    router_ospf:
-      ospf_interface:
-      - name: "{{ interface.ifname }}"
-        cost: "{{ interface.ospf.cost }}"
-  with_items: "{{ interfaces }}"
-  when: interface.ospf.cost is defined
-  loop_control:
-    loop_var: interface
+      passive_interface: "{{ passive_interfaces }}"
 
 - name: Configure OSPF network statement
   fortinet.fortios.fortios_router_ospf:
