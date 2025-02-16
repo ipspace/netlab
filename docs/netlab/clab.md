@@ -19,15 +19,15 @@ You can use this command only after starting a *containerlab*-only lab topology 
 You can use the tar archive created by **netlab clab tarball** to recreate the lab in a *containerlab* environment without installing *netlab*.
 
 ```
+$ netlab clab tarball -h
 usage: netlab clab tarball [-h] [-v] [-q] [--config [OUTPUT]] [--cleanup] tarball
 
-Create a ready-to-use tarball containing containerlab configuration file and startup
-configs
+Create a tar archive from the current clab/device configuration
 
 positional arguments:
   tarball            Destination tarball (.tar.gz will be added if needed)
 
-optional arguments:
+options:
   -h, --help         show this help message and exit
   -v, --verbose      Verbose logging
   -q, --quiet        Run Ansible playbook and tar with minimum output
@@ -45,7 +45,7 @@ _netlab_ package includes *Dockerfiles* for several well-known routing daemons. 
 $ netlab clab build -h
 usage: netlab clab build [-h] [-l] [-t TAG] [image]
 
-Build a Docker container image for a routing daemon
+Build a routing daemon Docker container
 
 positional arguments:
   image              Routing daemon name
@@ -63,14 +63,15 @@ For example, use `netlab clab build bird` to build the **netlab/bird:latest** co
 To list the available *Dockerfiles*, use the **netlab clab build --list** command:
 
 ```
-$ netlab clab build --list
+$ netlab clab build -l
 
 The 'netlab build' command can be used to build the following container images
 
-┏━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ daemon ┃ default tag        ┃ description                                    ┃
-┡━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ bird   │ netlab/bird:latest │ BIRD Internet Routing Daemon (bird.network.cz) │
-└────────┴────────────────────┴────────────────────────────────────────────────┘
+┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ daemon  ┃ default tag           ┃ description                                    ┃
+┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ bird    │ netlab/bird:latest    │ BIRD Internet Routing Daemon (bird.network.cz) │
+│ dnsmasq │ netlab/dnsmasq:latest │ dnsmasq DHCP server                            │
+└─────────┴───────────────────────┴────────────────────────────────────────────────┘
 ```
 

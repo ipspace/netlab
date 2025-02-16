@@ -15,25 +15,55 @@ import shutil
 from box import Box
 
 from ..utils import files as _files, log, strings, read as _read
-from . import external_commands
+from . import external_commands,subcommand_usage
 from . import collect
 from . import fs_cleanup
-from .clab_actions import clab_usage
-from .clab_actions.build import clab_build
-from .clab_actions.tarball import clab_tarball
+from .clab_actions import tarball as _tarball
+from .clab_actions import build as _build
+
+clab_dispatch: dict = {
+  'tarball': {
+    'exec':  _tarball.clab_tarball,
+    'parser': _tarball.tarball_parser,
+    'description': 'Create a tar archive from the current clab/device configuration'
+  },
+  'build': {
+    'exec':  _build.clab_build,
+    'parser': _build.build_parser,
+    'description': 'Build a routing daemon Docker container'
+  },
+}
+
+def clab_parse(args: typing.List[str]) -> argparse.Namespace:
+  global clab_dispatch
+
+  parser = argparse.ArgumentParser(
+    prog="netlab clab",
+    description='Containerlab utilities',
+    epilog="Use 'netlab clab subcommand -h' to get subcommand usage guidelines")
+  subparsers = parser.add_subparsers(
+                  title='netlab clab subcommands',
+                  dest='command',
+                  required=True)
+  for cmd,dispatch in clab_dispatch.items():
+    cmd_parser = subparsers.add_parser(
+      cmd,
+      prog=f'netlab clab {cmd}',
+      description=dispatch.get('description',None))
+
+    cmd_parser.set_defaults(execute=dispatch['exec'])
+    dispatch['parser'](cmd_parser)
+
+  return parser.parse_args(args)
 
 def run(cli_args: typing.List[str]) -> None:
   settings = _read.read_yaml('package:topology-defaults.yml')
-  if not cli_args:
-    clab_usage()
-    return
-
   if not settings:
     log.fatal("Cannot read the system defaults","clab")
 
-  if cli_args[0] == 'tarball':
-    clab_tarball(cli_args[1:],settings)
-  elif cli_args[0] == 'build':
-    clab_build(cli_args[1:],settings)
-  else:
-    clab_usage()
+  if not cli_args:
+    subcommand_usage(clab_dispatch)
+    return
+
+  args = clab_parse(cli_args)
+  args.execute(args,settings)
