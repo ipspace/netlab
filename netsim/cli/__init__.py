@@ -16,7 +16,7 @@ from box import Box
 from . import usage
 from .. import augment
 from .. import __version__
-from ..utils import status as _status, log, read as _read
+from ..utils import log, strings, status as _status, read as _read
 from ..data import global_vars
 
 DRY_RUN: bool = False
@@ -63,6 +63,38 @@ def parser_add_snapshot(parser: argparse.ArgumentParser, hide: bool = False) -> 
     default='netlab.snapshot.yml',
     const='netlab.snapshot.yml',
     help=argparse.SUPPRESS if hide else 'Transformed topology snapshot file')
+
+def parser_subcommands(parser: argparse.ArgumentParser, sc_dict: dict) -> None:
+  subparsers = parser.add_subparsers(
+                  title='netlab clab subcommands',
+                  dest='command',
+                  required=True)
+  for cmd,dispatch in sc_dict.items():
+    cmd_parser = subparsers.add_parser(
+      cmd,
+      prog=f'netlab clab {cmd}',
+      description=dispatch.get('description',None))
+
+    cmd_parser.set_defaults(execute=dispatch['exec'])
+    dispatch['parser'](cmd_parser)
+
+def subcommand_usage(sc_dict: dict) -> None:
+  global NETLAB_COMMAND
+  print(f"""Usage:
+
+    netlab {NETLAB_COMMAND} <action> <parameters>
+
+The 'netlab {NETLAB_COMMAND}' command can execute the following actions:
+""")
+  d_indent = max([ len(k) for k in sc_dict.keys() ]) + 4
+  for k,v in sc_dict.items():
+    d_text = ' ' + k + ' '*(d_indent-len(k)-1) + v.get('description','???')
+    for line in strings.wrap_text_into_lines(d_text,next_line=' '*d_indent):
+      print(line)
+
+  print(f"""
+Use 'netlab {NETLAB_COMMAND} <action> --help' to get action-specific help
+""")
 
 def topology_parse_args() -> argparse.ArgumentParser:
   parser = argparse.ArgumentParser(description='Common topology arguments',add_help=False)
