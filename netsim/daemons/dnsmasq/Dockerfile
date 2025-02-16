@@ -8,4 +8,4 @@ RUN apt-get update && apt-get install -y iputils-ping net-tools dnsmasq
 
 WORKDIR /root
 
-CMD /usr/sbin/dnsmasq -R -C /etc/dnsmasq.conf --no-daemon
+CMD [ "/usr/sbin/dnsmasq", "-R", "-C", "/etc/dnsmasq.conf", "--no-daemon" ]
