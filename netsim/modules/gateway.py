@@ -63,7 +63,7 @@ def cleanup_unicast_ip(node: Box) -> None:
 
 #
 # Default settings copied onto individual links have parameters for every known FHRP protocol.
-# We don't need those parameters on every interface -- this function cleans up unusud gateway protocol
+# We don't need those parameters on every interface -- this function cleans up unused gateway protocol
 # parameters from interfaces and returns a list of active protocols so we know what to clean on the
 # node level.
 
@@ -80,7 +80,9 @@ def cleanup_intf_protocol_parameters(node: Box, topology: Box) -> list:
       active_proto.append(gw_proto)
 
     for k in list(intf.gateway):                                      # Now iterate over all keywords in interface gateway settings
-      if k != gw_proto and k in proto_list:                           # ... found FHRP protocol that is NOT the active protocol
+      if k not in proto_list:                                         # Skip attributes like 'protocol', 'ipv4', ...
+        continue
+      if k != gw_proto:                                               # ... found FHRP protocol that is NOT the active protocol
         intf.gateway.pop(k,None)                                      # ... useless, pop it
       elif k in node.get('gateway'):                                  # Do we have node-level parameters for this protocol?
         intf.gateway[k] = node.gateway[k] + intf.gateway[k]           # ... copy them to all interfaces
