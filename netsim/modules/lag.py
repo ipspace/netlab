@@ -76,7 +76,11 @@ def check_mlag_support(node: str, linkname: str, topology: Box) -> bool:
   return True
 
 """
-normalized_members - builds a normalized list of lag member links, checking various conditions
+normalized_members - builds a normalized list of lag member links. It also checks that:
+
+* No lag attributes are set on the lag member link apart from lag.ifindex
+* The lag link is a P2P link (it has exactly two interfaces)
+* The lag link connects two different nodes
 """
 def normalized_members(l: Box, topology: Box, peerlink: bool = False) -> list:
   members = []                                      # Build normalized list of members
@@ -188,10 +192,11 @@ def create_lag_interfaces(link: Box, mlag_pairs: dict, topology: Box) -> None:
       A.add(b)
       B.add(a)
     else:
-      log.error(f'Unsupported configuration of members on LAG link {link._linkname}, must consist of ' +
-               'either 2, 3 or 4 different nodes connected as 1:1, 1:2 or 2:2',
-                category=log.IncorrectValue,
-                module='lag')
+      log.error(
+        f'Unsupported configuration of members on LAG link {link._linkname}',
+        more_hints='A LAG/MLAG link must consist of 2, 3 or 4 different nodes connected as 1:1, 1:2 or 2:2',
+        category=log.IncorrectValue,
+        module='lag')
       return
 
   if log.debug_active('lag'):
@@ -229,7 +234,7 @@ def create_lag_interfaces(link: Box, mlag_pairs: dict, topology: Box) -> None:
       link.interfaces.append( ifatts )
 
 """
-create_peer_links -- creates and configures physical link(s) for given peer link
+create_peer_links: creates and configures physical link(s) for given peer link from peer link's lag.members
 """
 def create_peer_links(l: Box, mlag_pairs: dict, topology: Box) -> bool:
 
@@ -280,12 +285,14 @@ def create_peer_links(l: Box, mlag_pairs: dict, topology: Box) -> bool:
   return True
 
 """
-process_lag_link - process link with 'lag' attribute to create links for lag.members
-                   Returns True if no errors
+process_lag_link: during the module pre-transform phase, process a link with
+'lag' attribute to create links for lag.members
+
+Returns True if no errors
 """
 def process_lag_link(link: Box, mlag_pairs: dict, topology: Box) -> bool:
   if not 'members' in link.lag:
-    log.error(f'must define "lag.members" on LAG link {link._linkname}',
+    log.error(f"Link {link._linkname} has 'lag' attribute but no 'lag.members'",
       category=log.IncorrectAttr,
       module='lag')
     return False
