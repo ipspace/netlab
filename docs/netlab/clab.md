@@ -4,6 +4,7 @@
 
 * **tarball** -- [creates a tar archive](netlab-clab-tarball) that can recreate the lab in a vanilla *containerlab* environment without *netlab*.
 * **build** -- [builds a Docker container](netlab-clab-build) for a routing daemon. You can use such containers (together with user-defined configuration files) as images for Linux devices running under _containerlab_.
+* **cleanup** -- [removes running containers and prunes Docker system resources](netlab-clab-cleanup). You can use this command to recover from unexpected netlab- or containerlab failures.
 
 (netlab-clab-tarball)=
 ## Building a Containerlab Distribution
@@ -75,3 +76,20 @@ The 'netlab build' command can be used to build the following container images
 └─────────┴───────────────────────┴────────────────────────────────────────────────┘
 ```
 
+(netlab-clab-cleanup)=
+## Docker Cleanup
+
+Containerlab might refuse to bring down a lab when it encounters containers in an unexpected state, preventing **netlab down** to bring down a container-based lab. Alternatively, forcing a lab shutdown with **netlab down --force** might result in dangling containers or Docker networks.
+
+The easiest way to recover from these situations is to manually clean up the Docker containers and related objects. The **netlab clab cleanup** provides a convenient wrapper around the **docker kill** and **docker system prune** command.
+
+```text
+$ netlab clab cleanup -h
+usage: netlab clab cleanup [-h] [-f]
+
+Remove running containers and Docker networks
+
+options:
+  -h, --help   show this help message and exit
+  -f, --force  Perform the cleanup without asking for confirmation
+```
