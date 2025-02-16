@@ -15,11 +15,12 @@ import shutil
 from box import Box
 
 from ..utils import files as _files, log, strings, read as _read
-from . import external_commands,subcommand_usage
+from . import external_commands,parser_subcommands,subcommand_usage
 from . import collect
 from . import fs_cleanup
 from .clab_actions import tarball as _tarball
 from .clab_actions import build as _build
+from .clab_actions import cleanup as _cleanup
 
 clab_dispatch: dict = {
   'tarball': {
@@ -32,6 +33,11 @@ clab_dispatch: dict = {
     'parser': _build.build_parser,
     'description': 'Build a routing daemon Docker container'
   },
+  'cleanup': {
+    'exec': _cleanup.clab_cleanup,
+    'parser': _cleanup.cleanup_parser,
+    'description': 'Remove running containers and Docker networks'
+  }
 }
 
 def clab_parse(args: typing.List[str]) -> argparse.Namespace:
@@ -41,18 +47,7 @@ def clab_parse(args: typing.List[str]) -> argparse.Namespace:
     prog="netlab clab",
     description='Containerlab utilities',
     epilog="Use 'netlab clab subcommand -h' to get subcommand usage guidelines")
-  subparsers = parser.add_subparsers(
-                  title='netlab clab subcommands',
-                  dest='command',
-                  required=True)
-  for cmd,dispatch in clab_dispatch.items():
-    cmd_parser = subparsers.add_parser(
-      cmd,
-      prog=f'netlab clab {cmd}',
-      description=dispatch.get('description',None))
-
-    cmd_parser.set_defaults(execute=dispatch['exec'])
-    dispatch['parser'](cmd_parser)
+  parser_subcommands(parser,clab_dispatch)
 
   return parser.parse_args(args)
 
