@@ -15,10 +15,7 @@ from .. import external_commands
 from .. import collect
 from .. import fs_cleanup
 
-def tarball_parse(args: typing.List[str], settings: Box) -> argparse.Namespace:
-  parser = argparse.ArgumentParser(
-    prog='netlab clab tarball',
-    description='Create a ready-to-use tarball containing containerlab configuration file and startup configs')
+def tarball_parser(parser: argparse.ArgumentParser) -> None:
   parser.add_argument(
     '-v','--verbose',
     dest='verbose',
@@ -47,7 +44,6 @@ def tarball_parse(args: typing.List[str], settings: Box) -> argparse.Namespace:
     action='store',
     type=argparse.FileType('w'),
     help='Destination tarball (.tar.gz will be added if needed)')
-  return parser.parse_args(args)
 
 def find_config_file(n: str, cfglist: typing.List[str]) -> typing.Optional[str]:
   for fname in cfglist:
@@ -85,9 +81,7 @@ def clab_config_adjust(infile: str, outfile: str, configs: str) -> None:
 
   _files.create_file_from_text(outfile,final_clab_yml)
 
-def clab_tarball(cli_args: typing.List[str], settings: Box) -> None:
-  args = tarball_parse(cli_args,settings)
-
+def clab_tarball(args: argparse.Namespace, settings: Box) -> None:
   if not os.path.exists('clab.yml'):
     log.fatal('Containerlab configuration file clab.yml not found, aborting...')
 

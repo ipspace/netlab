@@ -16,10 +16,7 @@ from .. import external_commands
 from .. import collect
 from .. import fs_cleanup
 
-def build_parse(args: typing.List[str], settings: Box) -> argparse.Namespace:
-  parser = argparse.ArgumentParser(
-    prog='netlab clab build',
-    description='Build a Docker container image for a routing daemon')
+def build_parser(parser: argparse.ArgumentParser) -> None:
   parser.add_argument(
     '-l','--list',
     dest='list',
@@ -37,7 +34,6 @@ def build_parse(args: typing.List[str], settings: Box) -> argparse.Namespace:
     action='store',
     nargs='?',
     help='Routing daemon name')
-  return parser.parse_args(args)
 
 def get_dockerfiles() -> dict:
   d_path = _files.get_traversable_path('package:daemons')
@@ -122,8 +118,7 @@ The 'netlab build' command can be used to build the following container images
 """)
   strings.print_table(['daemon','default tag','description'],rows,inter_row_line=False)
 
-def clab_build(cli_args: typing.List[str], settings: Box) -> None:
-  args = build_parse(cli_args,settings)
+def clab_build(args: argparse.Namespace, settings: Box) -> None:
   if args.list:
     list_dockerfiles()
     return
