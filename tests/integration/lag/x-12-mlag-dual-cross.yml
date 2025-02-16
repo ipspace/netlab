@@ -1,0 +1,52 @@
+message: |
+  The devices under test are an MLAG pair connected to an MLAG pair of Arista EOS switches. The
+  Arista EOS switches should have a working MLAG, and the attached hosts should be
+  able to ping each other.
+
+groups:
+  _auto_create: true
+  switches:
+    members: [ s1, s2 ]
+    module: [ lag, vlan ]
+  probes:
+    members: [ x1, x2 ]
+    module: [ lag, vlan ]
+    device: eos
+  hosts:
+    members: [ h1, h2, h3, h4 ]
+    device: linux
+    provider: clab
+
+vlans:
+  red:
+    links: [ h1-x1, h2-s1, h3-s2, h4-x2 ]
+
+links:
+- lag:
+    members: [s1-s2]
+    mlag.peergroup: true
+- lag:
+    members: [x1-x2]
+    mlag.peergroup: true
+- lag.members: [ x1-s1, x1-s2, x2-s1, x2-s2 ]
+  vlan.access: red
+
+validate:
+  lag:
+    description: Check LAG ports on X1 and X2
+    wait: 30
+    wait_msg: Waiting for LAG to start
+    nodes: [ x1, x2 ]
+    devices: [ eos ]
+    pass: The LAG is active
+    fail: X1/2 cannot establish a LAG with both switches in MLAG pair
+    show: port-channel | json
+    valid: >-
+      len(portChannels['Port-Channel1'].activePorts) == 4
+
+  ping:
+    description: End-to-end connectivity test
+    nodes: [ h2, h3, h4 ]
+    wait_msg: Waiting for STP to enable the ports
+    wait: 45
+    plugin: ping('h1')
