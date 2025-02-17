@@ -125,6 +125,17 @@ To delete an old version of a Vagrant box, use a procedure similar to the one de
 
 The new Vagrant box will be copied into the *libvirt* storage pool the next time you use the affected device in your lab.
 
+### Fixing Password Expiration ("The configured shell is invalid")
+
+Some boxes come with a default 180 day password expiration for the *vagrant* account. This typically shows up as "An error occurred" during boot, followed by "The configured shell (config.ssh.shell) is invalid and unable
+to properly execute commands.". The root cause is likely password expiration for the *vagrant* account, ~180 days after the box was created (we have seen this for Cumulus VX boxes for example).
+
+To fix this (on Ubuntu):
+1. Install GuestFS tools: ```sudo apt install guestfs-tools```
+2. Find out where Vagrant put its .qcow2 disk image: ```virsh vol-list --pool default```
+3. Disable password expiration for the image: ```sudo virt-customize --run-command "chage -M -1 vagrant" -a [qcow2-path]```
+   where \[qcow2-path\] is the full path for the disk image, for example ```/var/lib/libvirt/images/CumulusCommunity-VAGRANTSLASH-cumulus-vx_vagrant_box_image_5.10.0_box.img```
+
 (libvirt-network)=
 ## Libvirt Networking
 
