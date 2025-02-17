@@ -1,0 +1,88 @@
+---
+- name: Configure global attributes
+  fortinet.fortios.fortios_system_global:
+    vdom: "{{ vdom }}"
+    system_global:
+      hostname: '{{ inventory_hostname.replace("_","-") }}'
+
+- name: Turn off LLDP on management interface
+  fortinet.fortios.fortios_system_interface:
+    vdom: "{{ vdom }}"
+    state: "present"
+    system_interface:
+      interface: "port1"
+      lldp_reception: "disable"
+      lldp_transmission: "disable"
+      name: "port1"
+
+- name: Configure loopback interface
+  fortinet.fortios.fortios_system_interface:
+    vdom: "{{ vdom }}"
+    state: "present"
+    system_interface:
+      interface: "loopback0"
+      ip: "{{ loopback.ipv4 | default(omit) }}"
+      name: "loopback0"
+      type: "loopback"
+      vdom: "{{ vdom }}"
+  when: loopback is defined
+
+- name: Configure loopback description
+  fortinet.fortios.fortios_system_interface:
+    vdom: "{{ vdom }}"
+    system_interface:
+      alias: '{{ loopback.name.replace(">","-") }}'
+      interface: "loopback0"
+      name: "loopback0"
+      vdom: "{{ vdom }}"
+  when: loopback.name is defined
+
+- name: Configure loopback ipv6 address
+  fortinet.fortios.fortios_system_interface:
+    vdom: "{{ vdom }}"
+    state: "present"
+    system_interface:
+      interface: "loopback0"
+      ipv6:
+        ip6_address: "{{ loopback.ipv6 }}"
+        ip6_mode: "static"
+      name: "loopback0"
+      vdom: "{{ vdom }}"
+  when: loopback.ipv6 is defined
+
+- name: Configure physical interfaces
+  fortinet.fortios.fortios_system_interface:
+    vdom: "{{ vdom }}"
+    state: "present"
+    system_interface:
+      alias: '{{ interface.name.replace(">","-") | default(omit) }}'
+      estimated_upstream_bandwidth: "{{ interface.bandwidth | default(omit) }}"
+      estimated_downstream_bandwidth: "{{ interface.bandwidth | default(omit) }}"
+      interface: "{{ interface.ifname }}"
+      ip: "{{ interface.ipv4 | default(omit) }}"
+      lldp_reception: "enable"
+      lldp_transmission: "enable"
+      mode: "static"
+      name: "{{ interface.ifname }}"
+      macaddr: "52:dc:ca:fe:{{ id }}:{{ interface.ifindex }}"
+      type: "physical"
+      vdom: "{{ vdom }}"
+  with_items: "{{ interfaces }}"
+  loop_control:
+    loop_var: interface
+
+- name: Configure interface ipv6 addresses
+  fortinet.fortios.fortios_system_interface:
+    vdom: "{{ vdom }}"
+    state: "present"
+    system_interface:
+      interface: "{{ interface.ifname }}"
+      ipv6:
+        ip6_address: "{{ interface.ipv6 }}"
+        ip6_mode: "static"
+      name: "{{ interface.ifname }}"
+      vdom: "{{ vdom }}"
+  with_items: "{{ interfaces }}"
+  when: interface.ipv6 is defined
+  loop_control:
+    loop_var: interface

@@ -42,11 +42,13 @@
   - when: config_template
     block:
     - name: "Print deployed configuration when running in verbose mode"
+      vars:
+       _path: "{{ config_template or paths[0]+'/missing.j2' }}"
       debug:
         msg: |
           {{ config_module }} configuration for {{ inventory_hostname }}
           =========================================
-          {{ lookup('template',config_template or paths[0]+'/missing.j2') }}
+          {{ lookup('template' if '.yml' not in _path else 'file',_path) }}
       when: (ansible_verbosity or netlab_show_config|default(False)) and config_template
 
     - name: "Find configuration deployment deploy_script for {{ config_module }}"
