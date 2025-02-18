@@ -84,7 +84,7 @@ These documents contain box-building recipes using the **netlab libvirt** utilit
 * [Cisco Nexus OS](nxos.md)
 * [Cumulus Linux 5.x](cumulus_nvue.md)
 * [Dell OS10](dellos10.md) by [Stefano Sasso](http://stefano.dscnet.org)
-* [Fortinet FortiOS](https://blog.petecrocker.com/post/fortinet_vagrant_libvirt/) by [Pete Crocker](https://blog.petecrocker.com/about/)
+* [Fortinet FortiOS](fortios.md) (based on the [work](https://blog.petecrocker.com/post/fortinet_vagrant_libvirt/) by [Pete Crocker](https://blog.petecrocker.com/about/))
 * [Juniper vPTX](vptx.md)
 * [Juniper vSRX 3.0](vsrx.md)
 * [Mikrotik RouterOS 7](routeros7.md) - based on the original [Mikrotik RouterOS](http://stefano.dscnet.org/a/mikrotik_vagrant/) by [Stefano Sasso](http://stefano.dscnet.org)
@@ -302,6 +302,7 @@ providers.libvirt.probe: []
    cat8000v.md
    csr.md
    cumulus_nvue.md
+   fortios.md
    iosv.md
    iosvl2.md
    iosxr.md

@@ -258,16 +258,21 @@ Netlab enables VRRPv3 by default on Dell OS10, overriding any platform defaults.
 * You have to build the *dnsmasq* container image with the **netlab clab build dnsmasq** command.
 
 (caveats-fortios)=
-## Fortinet FortiOS
+## Fortinet FortiOS 6.x/7.0
 
-We're not testing Fortinet implementation as part of the regular integration tests; the configuration scripts might be outdated and might not work with recent Fortinet software releases. A _netlab_ user reported he got Fortinet devices running with the following software releases:
+* FortiOS VM images have a default 15-day evaluation license. The VM has [limited capabilities](https://docs.fortinet.com/document/fortigate-private-cloud/7.2.0/kvm-administration-guide/504166/fortigate-vm-evaluation-license) without a license file. It will work for 15 days from the first boot, at which point you must install a license file or recreate the vagrant box completely from scratch.
+* _netlab_ configures Fortinet devices with API calls using username/password authentication. The last FortiGate images known to work with that restriction are software releases 7.0.x and 7.2.0. Later releases block API calls without a permanent evaluation license and require token-based authentication once API starts to work.
+* Use a recent version of Ansible and **fortinet.fortios** Ansible Galaxy collection (version 2.3.6 or later)
+* To troubleshoot API authentication, log into the FortiOS VM with **netlab connect** or **vagrant ssh** and enable HTTP debugging with the following commands:
 
-* Fortios v7.0.15 (Vagrant box built with [this recipe](https://github.com/mweisel/fortigate-vagrant-libvirt))
-* Ansible 9.6.1 (Ansible core 2.16.7)
-* **fortinet.fortios** Ansible Galaxy collection version 2.3.6
+```
+diag debug enable
+diag debug application httpsd -1
+```
 
-```{tip}
-*FortiOS* VM images have a default 15-day evaluation license. The VM has [limited capabilities](https://docs.fortinet.com/document/fortigate-private-cloud/6.0.0/fortigate-vm-on-kvm/504166/fortigate-vm-virtual-appliance-evaluation-license) without a license file. It will work for 15 days from the first boot, at which point you must install a license file or recreate the vagrant box completely from scratch.
+```{warning}
+* **‌fortinet.fortios** collection throws ridiculous errors when the API authentication fails.
+* We're not testing Fortinet implementation as part of the regular integration tests; the configuration scripts might be outdated. If you encounter a problem, please open an issue.
 ```
 
 ### OSPF Caveats

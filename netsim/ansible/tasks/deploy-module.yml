@@ -39,7 +39,15 @@
         {{ netlab_device_type|default(ansible_network_os) }}
     when: not config_template and not (netlab_skip_missing_template|default(False))
 
-  - when: config_template
+  - name: "Find configuration deployment deploy_script for {{ config_module }}"
+    set_fact:
+      deploy_script: "{{ lookup('first_found',params,errors='ignore') }}"
+    vars:
+      params:
+        paths: "{{ paths_deploy.dirs }}"
+        files: "{{ paths_deploy.files }}"
+
+  - when: config_template or netlab_config_tasks|default(False)
     block:
     - name: "Print deployed configuration when running in verbose mode"
       debug:
@@ -48,14 +56,6 @@
           =========================================
           {{ lookup('template',config_template or paths[0]+'/missing.j2') }}
       when: (ansible_verbosity or netlab_show_config|default(False)) and config_template
-
-    - name: "Find configuration deployment deploy_script for {{ config_module }}"
-      set_fact:
-        deploy_script: "{{ lookup('first_found',params,errors='ignore') }}"
-      vars:
-        params:
-          paths: "{{ paths_deploy.dirs }}"
-          files: "{{ paths_deploy.files }}"
 
     - name: "Deploy {{ config_module }} configuration"
       include_tasks: "{{ deploy_script }}"
