@@ -74,7 +74,7 @@ nodes:
 6. Find out where Vagrant put the base box volume: ```virsh vol-list --pool default|grep CumulusCommunity```, for example:
 
 ```text
-$ virsh vol-livirsh vol-list --pool default|grep
+$ virsh vol-list --pool default|grep
  CumulusCommunity-VAGRANTSLASH-cumulus-vx_vagrant_box_image_5.10.0_box.img   /var/lib/libvirt/images/CumulusCommunity-VAGRANTSLASH-cumulus-vx_vagrant_box_image_5.10.0_box.img
  CumulusCommunity-VAGRANTSLASH-cumulus-vx_vagrant_box_image_5.9.2_box.img    /var/lib/libvirt/images/CumulusCommunity-VAGRANTSLASH-cumulus-vx_vagrant_box_image_5.9.2_box.img
 ```
