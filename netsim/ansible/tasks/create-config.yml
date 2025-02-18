@@ -14,15 +14,33 @@
         paths: "{{ paths }}"
         files: "{{ paths_t_files.files }}"
 
-  - name: Throw an error message if we can't find the configuration template
-    fail:
-      msg: >
-        Missing {{ config_module }} configuration template for device
-        {{ netlab_device_type|default(ansible_network_os) }}/{{ ansible_network_os }}
-    when: not config_template
-
-  - name: Create {{ config_module }} configuration
-    template:
-      src: "{{ config_template }}"
-      dest: "{{config_dir}}/{{inventory_hostname}}.{{item}}.cfg"
+  - block:
+    - name: Create {{ config_module }} configuration
+      template:
+        src: "{{ config_template }}"
+        dest: "{{config_dir}}/{{inventory_hostname}}.{{item}}.cfg"
     when: config_template
+
+  - block:
+    - name: Throw an error message if we can't find the configuration template
+      fail:
+        msg: >
+          Missing {{ config_module }} configuration template for device
+          {{ netlab_device_type|default(ansible_network_os) }}/{{ ansible_network_os }}
+      when: not netlab_skip_missing_template|default(False)
+
+    - name: "Find configuration deployment deploy_script for {{ config_module }}"
+      set_fact:
+        deploy_script: "{{ lookup('first_found',params,errors='ignore') }}"
+      vars:
+        params:
+          paths: "{{ paths_deploy.dirs }}"
+          files: "{{ paths_deploy.files }}"
+
+    - name: Save {{ config_module }} configuration task list
+      copy:
+        src: "{{ deploy_script }}"
+        dest: "{{config_dir}}/{{inventory_hostname}}.{{item}}.yml"
+      when: deploy_script
+
+    when: not config_template
