@@ -1,0 +1,41 @@
+{% macro ospf_intf(intf) %}
+- name: {{ intf.ifname }}
+  interface: {{ intf.ifname }}
+{%   if intf.ospf.network_type|default('') == 'point-to-point' %}
+  network_type: "point-to-point"
+{%   endif %}
+{%   if intf.ospf.cost is defined %}
+  cost: {{ intf.ospf.cost }}
+{%   endif %}
+{% endmacro %}
+---
+router_id: "{{ ospf.router_id }}"
+{% if ospf.reference_bandwidth is defined %}
+auto_cost_ref_bandwidth: "{{ ospf.reference_bandwidth }}"
+{% endif %}
+
+{% for intf in netlab_interfaces if 'ospf' in intf and not ospf.passive|default(False) %}
+{%   if loop.first %}
+ospf_interface:
+{%   endif %}
+{{     ospf_intf(intf) }}
+{% endfor %}
+
+{% for intf in netlab_interfaces if 'ospf' in intf and ospf.passive|default(False) %}
+{%   if loop.first %}
+passive_interface:
+{%   endif %}
+{{     ospf_intf(intf) }}
+{% endfor %}
+
+area:
+{% for area in netlab_interfaces|map(attribute='ospf.area',default='')|unique if area %}
+- id: "{{ area }}"
+{% endfor %}
+
+network:
+{% for intf in netlab_interfaces if intf.ospf.area is defined %}
+- area: {{ intf.ospf.area }}
+  id: {{ intf.ifindex|default(0) }}
+  prefix: {{ intf.ipv4|ipaddr('subnet') }}
+{% endfor %}

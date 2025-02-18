@@ -205,6 +205,7 @@ ansible-galaxy collection install git+https://github.com/jmussmann/ansible_colle
 
 * The Cumulus VX 4.4.0 Vagrant box for VirtualBox is broken. *netlab* is using Cumulus VX 4.3.0 with *virtualbox* virtualization provider.
 * The Cumulus VX 4.x uses Python version 3.7, which recent versions of Ansible refuse to work with. The permanent fix is coming in release 1.9.3. Until then, use the **frrouting** device or [Cumulus VX 5.x image](caveats-cumulus-5x).
+* Both Cumulus VX 4.x and 5.x use relatively old versions of FRR (7.5 on 4.x, 8.4.3 on 5.x). One issue that was observed is that these older versions don't support OSPF passive interfaces inside VRFs (the config in the FRR template is silently ignored)
 
 _netlab_ uses the VLAN-aware bridge paradigm to configure VLANs on Cumulus Linux. That decision results in the following restrictions:
 
@@ -226,8 +227,6 @@ See also [other FRRouting caveats](caveats-frr).
 
 You could configure Cumulus Linux 5.x with configuration templates developed for Cumulus Linux 4.4 (use device type **cumulus** and specify desired device image), or with NVUE.
 
-NVUE has several shortcomings that prevent *netlab* from configuring basic designs like IBGP on top of IGP. Don't be surprised if the labs that work with **cumulus** device don't work with **cumulus_nvue** device, and please create a GitHub issue whenever you find a glitch. We'd love to know (at least) what doesn't work as expected.
-
 (caveats-cumulus-5x)=
 To run Cumulus Linux 5.x with **cumulus** device type, set the following default values in [lab topology](defaults-topology) or one of the [defaults files](defaults-user-file):
 
@@ -239,6 +238,7 @@ defaults.devices.cumulus.libvirt.memory: 2048
 Other caveats:
 
 * The default MTU value is 1500 to match the implementation defaults from other vendors and enable things like seamless OSPF peering.
+* Older Cumulus Linux releases (up to at least 5.9.2) do not support asymmetrical IRB over VXLAN.
 * *netlab* uses Cumulus VX 5.3 containers created by Michael Kashin and downloaded from his Docker Hub account. These containers are severely out-of-date, are not tested in our integration tests, and might not work as expected.
 
 (caveats-os10)=
@@ -258,16 +258,21 @@ Netlab enables VRRPv3 by default on Dell OS10, overriding any platform defaults.
 * You have to build the *dnsmasq* container image with the **netlab clab build dnsmasq** command.
 
 (caveats-fortios)=
-## Fortinet FortiOS
+## Fortinet FortiOS 6.x/7.0
 
-We're not testing Fortinet implementation as part of the regular integration tests; the configuration scripts might be outdated and might not work with recent Fortinet software releases. A _netlab_ user reported he got Fortinet devices running with the following software releases:
+* FortiOS VM images have a default 15-day evaluation license. The VM has [limited capabilities](https://docs.fortinet.com/document/fortigate-private-cloud/7.2.0/kvm-administration-guide/504166/fortigate-vm-evaluation-license) without a license file. It will work for 15 days from the first boot, at which point you must install a license file or recreate the vagrant box completely from scratch.
+* _netlab_ configures Fortinet devices with API calls using username/password authentication. The last FortiGate images known to work with that restriction are software releases 7.0.x and 7.2.0. Later releases block API calls without a permanent evaluation license and require token-based authentication once API starts to work.
+* Use a recent version of Ansible and **fortinet.fortios** Ansible Galaxy collection (version 2.3.6 or later)
+* To troubleshoot API authentication, log into the FortiOS VM with **netlab connect** or **vagrant ssh** and enable HTTP debugging with the following commands:
 
-* Fortios v7.0.15 (Vagrant box built with [this recipe](https://github.com/mweisel/fortigate-vagrant-libvirt))
-* Ansible 9.6.1 (Ansible core 2.16.7)
-* **fortinet.fortios** Ansible Galaxy collection version 2.3.6
+```
+diag debug enable
+diag debug application httpsd -1
+```
 
-```{tip}
-*FortiOS* VM images have a default 15-day evaluation license. The VM has [limited capabilities](https://docs.fortinet.com/document/fortigate-private-cloud/6.0.0/fortigate-vm-on-kvm/504166/fortigate-vm-virtual-appliance-evaluation-license) without a license file. It will work for 15 days from the first boot, at which point you must install a license file or recreate the vagrant box completely from scratch.
+```{warning}
+* **‌fortinet.fortios** collection throws ridiculous errors when the API authentication fails.
+* We're not testing Fortinet implementation as part of the regular integration tests; the configuration scripts might be outdated. If you encounter a problem, please open an issue.
 ```
 
 ### OSPF Caveats

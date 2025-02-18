@@ -1,9 +1,18 @@
 (dev-config-deploy)=
 # Deploying Device Configurations
 
-*netlab* Ansible playbooks deploy configurations through device-specific task lists and templates. When adding a new device type, you'll have to create either a generic _deploy configuration_ task list and a bunch of configuration templates or a task list for every module supported by the device (plus the initial configuration templates).
+*netlab* Ansible playbooks deploy configurations through device-specific task lists and templates. When adding a new device type, you'll have to create either:
 
-You can also mix and match the two approaches. For example, you could have a generic *deploy configuration* task list but use a separate list of tasks for the initial configuration.
+* A generic _deploy configuration_ task list and a bunch of configuration templates
+* A task list for every module supported by the device plus the associated initial configuration templates.
+* A task list that uses Ansible modules to configure the device.
+
+You can also mix and match the approaches. For example, you could have a generic *deploy configuration* task list but use a separate list of tasks for the initial configuration.
+
+However, if you want to use a configuration task list without related configuration templates, you must set these device group variables:
+
+* Set **netlab_skip_missing_template** to **False** to prevent "_missing template_" failures in Ansible playbooks.
+* Set **netlab_config_tasks** to **True** to execute deployment tasks even Ansible cannot find the configuration templates.
 
 (dev-config-deploy-paths)=
 ## Configuration Deployment Search Paths
@@ -51,6 +60,12 @@ The custom configuration could be deployed via a dedicated task list or a generi
 | **paths.deploy.tasks_generic** | Generic configuration deployment task lists<br>(used to deploy custom configuration) |
 
 If the deployment playbook cannot find a dedicated deployment tasklist, it uses the default tasklist that [depends on the device type and virtualization provider](deploy-task-list).
+
+```{warning}
+You must have a deployment task list **‌and** a dummy configuration template in the custom configuration directory if you want to use an Ansible task list to deploy a custom configuration change.
+
+For example, the custom configuration directory MUST contain `deploy.fortinet.fortios.fortios.yml` and (potentially empty) `fortinet.fortios.fortios.j2` files to deploy custom configuration on Fortinet devices.
+```
 
 (deploy-ansible-variables)=
 ## Ansible Variables
