@@ -45,6 +45,7 @@ You have to use the following box names when installing or building the Vagrant 
 | Cisco IOSvL2           | cisco/iosvl2                |
 | Cisco IOS XR           | cisco/iosxr                 |
 | Cisco Nexus 9300v      | cisco/nexus9300v            |
+| Cumulus VX 5.0 (NVUE)  | CumulusCommunity/cumulus-vx |
 | Dell OS10              | dell/os10                   |
 | Fortinet FortiOS       | fortinet/fortios            |
 | Juniper vPTX (vJunos EVO) | juniper/vptx             |
@@ -59,7 +60,6 @@ The following Vagrant boxes are automatically downloaded from Vagrant Cloud when
 | Virtual network device | Vagrant box name   |
 |------------------------|--------------------|
 | Cumulus VX             | CumulusCommunity/cumulus-vx:4.4.0 |
-| Cumulus VX 5.0 (NVUE)            | CumulusCommunity/cumulus-vx:5.0.1 |
 | Generic Linux          | generic/ubuntu2004 |
 | VyOS                   | vyos/current       |
 
@@ -82,6 +82,7 @@ These documents contain box-building recipes using the **netlab libvirt** utilit
 * Cisco [IOSv](iosv.md) and [IOSvL2](iosvl2.md)
 * [Cisco IOS XR](iosxr.md)
 * [Cisco Nexus OS](nxos.md)
+* [Cumulus Linux 5.x](cumulus_nvue.md)
 * [Dell OS10](dellos10.md) by [Stefano Sasso](http://stefano.dscnet.org)
 * [Fortinet FortiOS](https://blog.petecrocker.com/post/fortinet_vagrant_libvirt/) by [Pete Crocker](https://blog.petecrocker.com/about/)
 * [Juniper vPTX](vptx.md)
@@ -107,6 +108,7 @@ The following node parameters influence the VM configuration created by *vagrant
 
 [^UUID]: In other words, you're on your own. After starting a lab, you can get a valid VM UUID with **virsh dumpxml _vm_name_|grep uuid** command (use **netlab status** to display the VM name).
 
+(libvirt-box-replace)=
 ### Replacing Vagrant Boxes
 
 If you want to rebuild and install a Vagrant box with the same version number, you must manually remove the old box. You must also delete the corresponding volume (disk image) from the *libvirt* storage pool (the *vagrant-libvirt* plugin installs new boxes but does not clean up the old ones).
@@ -124,17 +126,6 @@ To delete an old version of a Vagrant box, use a procedure similar to the one de
 [^DP]: *libvirt* environment created with the **netlab install libvirt** installation script uses the *default* storage pool. A custom installation might use a different storage pool name.
 
 The new Vagrant box will be copied into the *libvirt* storage pool the next time you use the affected device in your lab.
-
-### Fixing Password Expiration ("The configured shell is invalid")
-
-Some boxes come with a default 180 day password expiration for the *vagrant* account. This typically shows up as "An error occurred" during boot, followed by "The configured shell (config.ssh.shell) is invalid and unable
-to properly execute commands.". The root cause is likely password expiration for the *vagrant* account, ~180 days after the box was created (we have seen this for Cumulus VX boxes for example).
-
-To fix this (on Ubuntu):
-1. Install GuestFS tools: ```sudo apt install guestfs-tools```
-2. Find out where Vagrant put its .qcow2 disk image: ```virsh vol-list --pool default```
-3. Disable password expiration for the image: ```sudo virt-customize --run-command "chage -M -1 vagrant" -a [qcow2-path]```
-   where \[qcow2-path\] is the full path for the disk image, for example ```/var/lib/libvirt/images/CumulusCommunity-VAGRANTSLASH-cumulus-vx_vagrant_box_image_5.10.0_box.img```
 
 (libvirt-network)=
 ## Libvirt Networking
@@ -310,6 +301,7 @@ providers.libvirt.probe: []
    asav.md
    cat8000v.md
    csr.md
+   cumulus_nvue.md
    iosv.md
    iosvl2.md
    iosxr.md
