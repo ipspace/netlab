@@ -33,10 +33,11 @@ ip community-list {{ c_value.type }} {{ c_name }} {{ c_line.action }} {{ c_line.
 {% for sr_data in routing.static|default([]) %}
 {%   set cmd_vrf = 'vrf ' + sr_data.vrf + ' ' if 'vrf' in sr_data else '' %}
 {%   set cmd_intf = sr_data.nexthop.intf + ' ' if 'intf' in sr_data.nexthop else '' %}
+{%   set leak_global = ' global' if sr_data.nexthop.vrf is defined and sr_data.nexthop.vrf is none else '' %}
 {%   if 'ipv4' in sr_data %}
 ip route {{ cmd_vrf }}{{ 
     sr_data.ipv4|ipaddr('network') }} {{
-    sr_data.ipv4|ipaddr('netmask') }} {{ cmd_intf }}{{ sr_data.nexthop.ipv4 }}
+    sr_data.ipv4|ipaddr('netmask') }} {{ cmd_intf }}{{ sr_data.nexthop.ipv4 }}{{ leak_global }}
 {%   endif %}
 {%   if 'ipv6' in sr_data %}
 {%   set e_vrf = ' nexthop-vrf '+(sr_data.nexthop.vrf or 'default') if 'vrf' in sr_data.nexthop else '' %}
