@@ -30,13 +30,10 @@ ip link set {{ br_name }} master {{ vrf }}
 {% endif %}
 {% endmacro %}
 
-# Determine max MTU used on interfaces, to configure VXLAN interface
-{% set max_mtu = ([1500]+interfaces|selectattr('mtu','defined')|map(attribute='mtu'))|max %}
-
 # Create L3 VNIs with bridges and add to correct vrf table
 {% if vrfs is defined %}
 {% for vname,vdata in vrfs.items() if 'evpn' in vdata and vdata.evpn.transit_vni is defined %}
-{{ create_vxlan_interface(vdata.evpn.transit_vni, "tvni-"+vdata.vrfidx|string,vname,max_mtu) }}
+{{ create_vxlan_interface(vdata.evpn.transit_vni, "tvni-"+vdata.vrfidx|string,vname,mtu) }}
 {% endfor %}
 {% endif %}
 
@@ -44,7 +41,7 @@ ip link set {{ br_name }} master {{ vrf }}
 {%   for vname in vxlan.vlans if vlans[vname].vni is defined %}
 {%     set vlan = vlans[vname] %}
 # Create VXLAN L2 interface per vni
-{{ create_vxlan_interface(vlan.vni, "vlan" + vlan.id|string,None,max_mtu) }}
+{{ create_vxlan_interface(vlan.vni, "vlan" + vlan.id|string,None,vlan.mtu|default(mtu)) }}
 {%     if vlan.vtep_list is defined %}
 {%       for remote_vtep in vlan.vtep_list %}
 bridge fdb append 00:00:00:00:00:00 dev vxlan{{vlan.vni}} dst {{ remote_vtep }}
