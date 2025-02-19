@@ -29,10 +29,13 @@
       enable: on
       # dad                    Duplicate Address Detection (DAD) configuration parameters
       # mac-vrf-soo            EVPN MAC VRF Site-of-Origin VPN extended community in ASN:NN or IP-ADDRESS:NN format.
+{% if vxlan._shared_vtep is defined %}
+      mac-vrf-soo: {{ vxlan.vtep }}:{{ interfaces|json_query('[*].lag.mlag.peergroup')|first }}
+{% endif %}
       # multihoming            Multihoming global configuration parameters
       # route-advertise        Route advertising
       route-advertise:
-        nexthop-setting: {{ 'shared-ip-mac' if lag.mlag.vtep is defined else 'system-ip-mac' }}
+        nexthop-setting: {{ 'shared-ip-mac' if vxlan._shared_vtep is defined else 'system-ip-mac' }}
         svi-ip: on
       # vni                    VNI
 
@@ -48,6 +51,17 @@
             import:
               '{{ vlan.evpn.import[0] }}': {}
 {% endfor %}
+
+{% if vxlan.flooding|default("") == "evpn" %}
+- set:
+    nve:
+      vxlan:
+        mac-learning: off
+        flooding:
+          enable: on
+          head-end-replication: 
+            evpn: {}
+{% endif %}
 
 {# L3 VRF EVPN handling #}
 {% if vrfs is defined %}
@@ -70,10 +84,23 @@
            route-export:
              to-evpn:
                route-target:
-                 auto: {}
+                 {{ vdata.export[0] }}: {}
            route-import:
              from-evpn:
                route-target:
-                 auto: {}
+                 {{ vdata.import[0] }}: {}
+{%     for _af in ['ipv4','ipv6'] if _af in vdata.af %}
+{%       if loop.first %}
+           address-family:
+{%       endif %}
+             {{ _af }}-unicast:
+               enable: on
+               redistribute:
+                 connected:
+                   enable: on
+               route-export:
+                 to-evpn:
+                   enable: on
+{%     endfor %}
 {%   endfor %}
 {% endif %}
