@@ -1,27 +1,3 @@
-{% for vname in vxlan.vlans if vlans[vname].vni is defined %}
-{%   set vlan = vlans[vname] %}
-{%   if loop.first %}
-- set:
-    bridge:
-      domain:
-        br_default:
-          vlan:
-{%   endif %}
-            '{{ vlan.id }}':
-              vni:
-{%   if vlan.vtep_list|default([]) %}
-                '{{ vlan.vni }}':
-                  flooding:
-                    enable: on
-                    head-end-replication:
-{%     for remote_vtep in vlan.vtep_list %}
-                      {{ remote_vtep }}: {}
-{%     endfor %}
-{%   else %}
-                '{{ vlan.vni }}': {}
-{%   endif %}
-{% endfor %}
-{% if vxlan.vlans is defined %}
 - set:
     nve:
       vxlan:
@@ -33,4 +9,29 @@
 {%   endif %}
         source:
           address: {{ vxlan.vtep }}
+
+{% if vxlan.vlans is defined %}
+{%   for vname in vxlan.vlans if vlans[vname].vni is defined %}
+{%     set vlan = vlans[vname] %}
+{%     if loop.first %}
+- set:
+    bridge:
+      domain:
+        br_default:
+          vlan:
+{%     endif %}
+            '{{ vlan.id }}':
+              vni:
+{%     if vlan.vtep_list|default([]) %}
+                '{{ vlan.vni }}':
+                  flooding:
+                    enable: on
+                    head-end-replication:
+{%       for remote_vtep in vlan.vtep_list %}
+                      {{ remote_vtep }}: {}
+{%       endfor %}
+{%     else %}
+                '{{ vlan.vni }}': {}
+{%     endif %}
+{%   endfor %}
 {% endif %}
