@@ -205,7 +205,7 @@ ansible-galaxy collection install git+https://github.com/jmussmann/ansible_colle
 
 * The Cumulus VX 4.4.0 Vagrant box for VirtualBox is broken. *netlab* is using Cumulus VX 4.3.0 with *virtualbox* virtualization provider.
 * The Cumulus VX 4.x uses Python version 3.7, which recent versions of Ansible refuse to work with. The permanent fix is coming in release 1.9.3. Until then, use the **frrouting** device or [Cumulus VX 5.x image](caveats-cumulus-5x).
-* Both Cumulus VX 4.x and 5.x use relatively old versions of FRR (7.5 on 4.x, 8.4.3 on 5.x). One issue that was observed, is that these older versions don't support OSPF passive interfaces inside VRFs (the config in the FRR template is silently ignored)
+* Both Cumulus VX 4.x and 5.x use relatively old versions of FRR (7.5 on 4.x, 8.4.3 on 5.x). One issue that was observed is that these older versions don't support OSPF passive interfaces inside VRFs (the config in the FRR template is silently ignored)
 
 _netlab_ uses the VLAN-aware bridge paradigm to configure VLANs on Cumulus Linux. That decision results in the following restrictions:
 
