@@ -83,7 +83,7 @@ The following features are only supported on a subset of platforms:
 | BIRD                     |  ✅ |  ✅ |  ❌  |  ❌  |
 | Cisco IOS/IOS XE[^18v]   |  ✅ |  ✅ |  ✅ |  ✅ |
 | Cumulus Linux 4.x        |  ✅ |  ✅ |  ✅ |  ✅ |
-| Cumulus Linux 5.x (NVUE) |  ✅ |  ✅ |  ❌ |  ❌ |
+| Cumulus Linux 5.x (NVUE) |  ✅ |  ✅ |  ✅ |  ❌ |
 | Dell OS10                |  ✅ |  ❌  |  ❌  |  ❌  |
 | FRR                      |  ✅ |  ✅ |  ✅ |  ✅ |
 | Nokia SR Linux           |  ✅ |  ✅ |  ✅ [❗](caveats-srlinux) |  ✅ |
