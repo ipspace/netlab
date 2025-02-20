@@ -1,0 +1,121 @@
+---
+- set:
+    vrf:
+      default:
+        router:
+          bgp:
+            address-family:
+              l2vpn-evpn:
+                enable: on
+{% for _af in ['ipv4','ipv6'] if _af in bgp %}
+              {{ _af }}-unicast:
+                route-export:
+                  to-evpn:
+{# Currently has no effect due to BUG #}
+                    enable: on
+{% endfor %}
+{% for n in bgp.neighbors if n.evpn|default(False) %}
+{%   if loop.first %}
+            neighbor:
+{%   endif %}
+{%   for af in ['ipv4','ipv6'] if af in n %}
+{%     set peer = n[af] if n[af] is string else n.local_if|default('?') %}
+              {{ peer }}:
+                address-family:
+                  l2vpn-evpn:
+                    enable: on
+                    soft-reconfiguration: on
+{%     if bgp.rr|default('') and not n.rr|default('') %}
+                    route-reflector-client: on
+{%     endif %}
+{%   endfor %}
+{% endfor %}
+
+{# Workaround for an omission in NVUE that causes route-export to-evpn in the default VRF to fail #}
+- set:
+    system:
+      config:
+        snippet:
+          frr.conf: |
+            router bgp {{ bgp.as }}
+              address-family l2vpn evpn
+{% for _af in ['ipv4','ipv6'] if _af in bgp %}
+                advertise {{ _af }} unicast
+{% endfor %}
+
+- set:
+    evpn:
+      enable: on
+      # dad                    Duplicate Address Detection (DAD) configuration parameters
+      # mac-vrf-soo            EVPN MAC VRF Site-of-Origin VPN extended community in ASN:NN or IP-ADDRESS:NN format.
+{% if vxlan._shared_vtep is defined %}
+      mac-vrf-soo: {{ vxlan.vtep }}:{{ interfaces|json_query('[*].lag.mlag.peergroup')|first }}
+{% endif %}
+      # multihoming            Multihoming global configuration parameters
+      # route-advertise        Route advertising
+      route-advertise:
+        nexthop-setting: {{ 'shared-ip-mac' if vxlan._shared_vtep is defined else 'system-ip-mac' }}
+        svi-ip: on
+      # vni                    VNI
+
+{% for vlan in (vlans|default({})).values() if 'vni' in vlan and 'evpn' in vlan %}
+{%   if loop.first %}
+      vni:
+{%   endif %}
+        '{{ vlan.vni }}':
+          rd: {{ vlan.evpn.rd }} # not 'auto'
+          route-target:
+            export:
+              '{{ vlan.evpn.export[0] }}': {}
+            import:
+              '{{ vlan.evpn.import[0] }}': {}
+{% endfor %}
+
+{% if vxlan.flooding|default("") == "evpn" %}
+- set:
+    nve:
+      vxlan:
+        mac-learning: off
+        flooding:
+          enable: on
+          head-end-replication: 
+            evpn: {}
+{% endif %}
+
+{# L3 VRF EVPN handling #}
+{% if vrfs is defined %}
+{%   for vname,vdata in vrfs.items() if vname in evpn.vrfs|default([]) %}
+- set:
+   vrf:   
+     {{ vname }}:
+       evpn:
+         enable: on
+         vlan: auto
+{%     if vdata.evpn.transit_vni is defined %}
+         vni: 
+           '{{ vdata.evpn.transit_vni }}': {}
+{%     endif %}
+       router:
+         bgp:
+           autonomous-system: {{ vdata.as|default(bgp.as) }}
+           enable: on
+           rd: {{ vdata.rd }}
+           route-export:
+             to-evpn:
+               route-target:
+                 {{ vdata.export[0] }}: {}
+           route-import:
+             from-evpn:
+               route-target:
+                 {{ vdata.import[0] }}: {}
+{%     for _af in ['ipv4','ipv6'] if _af in vdata.af %}
+{%       if loop.first %}
+           address-family:
+{%       endif %}
+             {{ _af }}-unicast:
+               route-export:
+                 to-evpn:
+                   enable: on
+{%     endfor %}
+{%   endfor %}
+{% endif %}
