@@ -26,7 +26,8 @@ The following table describes per-platform support of individual EVPN/VXLAN feat
 | Arista EOS         | ✅  | ✅  | ✅  | ✅  |
 | Aruba AOS-CX       | ✅  |  ❌  |  ✅  | ✅[❗](caveats-aruba)  |
 | Cisco Nexus OS     | ✅  |  ❌  | ✅  | ✅  |
-| Cumulus Linux      | ✅  |  ❌  | ✅  | ✅  |
+| Cumulus Linux 4.x  | ✅  |  ❌  | ✅  | ✅  |
+| Cumulus 5.x (NVUE) | ✅  |  ❌  | ✅ |  ✅ |
 | Dell OS 10         | ✅  |  ❌  | ✅  | ✅  |
 | FRR                | ✅  |  ❌  | ✅  | ✅  |
 | Nokia SR Linux     | ✅  |  ✅ | ✅  | ✅  |
@@ -57,7 +58,8 @@ EVPN module supports IBGP- and EBGP-based EVPN:
 | Arista EOS         | ✅  | ✅  | ✅  | ✅  |
 | Aruba AOS-CX       | ✅  | ✅  | ❌   | ❌   |
 | Cisco Nexus OS     | ✅  | ✅  | ✅  | ❌   |
-| Cumulus Linux      | ✅  | ✅  | ✅  | ✅  |
+| Cumulus Linux 4.x  | ✅  | ✅  | ✅  | ✅  |
+| Cumulus 5.x (NVUE) | ✅  | ✅  | ✅  | ✅  |
 | Dell OS 10 [❗](caveats-os10) | ✅  | ✅  | ✅  | ✅  |
 | FRR                | ✅  | ✅  | ✅  | ✅  |
 | Nokia SR Linux     | ✅  | ✅  |  ❌  |  ❌  |
@@ -74,7 +76,8 @@ With additional nerd knobs ([more details](evpn-weird-designs)), it's possible t
 | Arista EOS         | ✅  | ✅  |
 | Aruba AOS-CX       | ✅  | ❌   |
 | Cisco Nexus OS     | ❌   | ❌   |
-| Cumulus Linux      | ✅  | ✅  |
+| Cumulus Linux 4.x  | ✅  | ✅  |
+| Cumulus 5.x (NVUE) | ✅  | ✅  |
 | Dell OS 10         | ✅  | ❌   |
 | FRR                | ✅  | ✅  |
 | Nokia SR Linux     | ✅  | ❌   |
@@ -88,7 +91,8 @@ Most EVPN/VXLAN implementations support only IPv4 VXLAN transport; some can run 
 | Arista EOS         | ✅  | ❌   |
 | Aruba AOS-CX       | ✅  | ❌   |
 | Cisco Nexus OS     | ✅  | ❌   |
-| Cumulus Linux      | ✅  | ❌   |
+| Cumulus Linux 4.x  | ✅  | ❌   |
+| Cumulus 5.x (NVUE) | ✅  | ❌   |
 | Dell OS 10         | ✅  | ❌   |
 | FRR                | ✅  | ✅  |
 | Nokia SR Linux     | ✅  | ❌   |
