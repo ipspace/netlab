@@ -17,7 +17,7 @@
 
 {% for i in interfaces if i.vlan.access_id is defined and 
                           (i.virtual_interface is not defined or i.type in ["vlan_member","lag"]) and
-                          (i.vlan.get('mode',"")!='route' or i._vlan_native is defined) %}
+                          (i.vlan.get('mode',"")!='route' or i.vlan.native is defined) %}
 - set:
     interface:
      {{ i.parent_ifname if i.type=='vlan_member' else i.ifname }}:
@@ -27,7 +27,8 @@
 {%   if i.type=='vlan_member' %}
              vlan:
                '{{ i.vlan.access_id }}': {}
-             untagged: {{ i.vlan.access_id if i._vlan_native is defined else 'none' }}
+{%   elif i.subif_index is defined %}
+             untagged: {{ i.vlan.access_id if i.vlan.native is defined else 'none' }}
 {%   else %}
              access: {{ i.vlan.access_id }}
 {%   endif %}
