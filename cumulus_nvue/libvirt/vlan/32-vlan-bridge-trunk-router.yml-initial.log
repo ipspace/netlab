@@ -1,4 +1,5 @@
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+[WARNING]: Found variable using reserved name: hosts
 
 PLAY [Deploy initial device configuration] *************************************
 
@@ -13,8 +14,8 @@ TASK [Find device readiness script] ********************************************
 ok: [s1]
 ok: [s2]
 ok: [r1]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [s1]
@@ -24,7 +25,7 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, r1, h1, h2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2, r1, h1, h2
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [s1]
@@ -47,14 +48,14 @@ skipping: [r1]
 skipping: [h1]
 skipping: [h2]
 
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [s1]
-skipping: [s2]
-skipping: [r1]
-skipping: [h1]
-skipping: [h2]
-
 TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [s1]
+ok: [s2]
+ok: [r1]
+ok: [h2]
+ok: [h1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [s1]
 skipping: [s2]
 skipping: [r1]
@@ -69,7 +70,7 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, r1, h1, h2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2, r1, h1, h2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [s1]
@@ -82,8 +83,8 @@ TASK [Find configuration template for initial] *********************************
 ok: [s1]
 ok: [s2]
 ok: [r1]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 
 TASK [fail] ********************************************************************
 skipping: [s1]
@@ -92,10 +93,17 @@ skipping: [r1]
 skipping: [h1]
 skipping: [h2]
 
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [s1]
+ok: [s2]
+ok: [r1]
+ok: [h1]
+ok: [h2]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [h1] => 
+ok: [h2] => 
   msg: |-
-    initial configuration for h1
+    initial configuration for h2
     =========================================
     #!/bin/bash
     #
@@ -118,9 +126,9 @@ ok: [h1] =>
     #
     ip link set dev eth1 up
     set +e
-    ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
+    ip addr del 172.16.1.2/24 dev eth1 2>/dev/null
     set -e
-    ip addr add 172.16.0.1/24 dev eth1
+    ip addr add 172.16.1.2/24 dev eth1
     ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
@@ -137,10 +145,10 @@ ok: [h1] =>
     #
     #
     echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.0.5 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.0.5 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.0.5 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.0.5 dev eth1 protocol static
+    ip route add 172.16.0.0/16 via 172.16.1.5 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.1.5 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.1.5 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.1.5 dev eth1 protocol static
     #
     # Print the final routing table
     ip route
@@ -158,6 +166,14 @@ ok: [s1] =>
                 file: /etc/network/ifupdown2/policy.d/mtu.json
                 content: |
                   { "address": { "defaults": { "mtu": "1500" } } }
+        bridge:
+          domain:
+            br_default:
+              type: vlan-aware
+              # The default 'auto' setting reads the EEPROM to pick the same MAC for all instances!
+              mac-address: "08:4f:c2:a9:00:03"
+              untagged: 1
+  
         interface:
           eth0:
             ip:
@@ -239,6 +255,14 @@ ok: [s2] =>
                 file: /etc/network/ifupdown2/policy.d/mtu.json
                 content: |
                   { "address": { "defaults": { "mtu": "1500" } } }
+        bridge:
+          domain:
+            br_default:
+              type: vlan-aware
+              # The default 'auto' setting reads the EEPROM to pick the same MAC for all instances!
+              mac-address: "08:4f:c2:a9:00:04"
+              untagged: 1
+  
         interface:
           eth0:
             ip:
@@ -306,9 +330,9 @@ ok: [s2] =>
                 10.0.0.4/32: {}
               ipv6:
                 enable: off
-ok: [h2] => 
+ok: [h1] => 
   msg: |-
-    initial configuration for h2
+    initial configuration for h1
     =========================================
     #!/bin/bash
     #
@@ -331,9 +355,9 @@ ok: [h2] =>
     #
     ip link set dev eth1 up
     set +e
-    ip addr del 172.16.1.2/24 dev eth1 2>/dev/null
+    ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
     set -e
-    ip addr add 172.16.1.2/24 dev eth1
+    ip addr add 172.16.0.1/24 dev eth1
     ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
@@ -350,10 +374,10 @@ ok: [h2] =>
     #
     #
     echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.1.5 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.1.5 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.1.5 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.1.5 dev eth1 protocol static
+    ip route add 172.16.0.0/16 via 172.16.0.5 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.0.5 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.0.5 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.0.5 dev eth1 protocol static
     #
     # Print the final routing table
     ip route
@@ -450,37 +474,30 @@ ok: [r1] =>
     vtysh -f /tmp/config
     exit 0
 
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [s1]
-ok: [s2]
-ok: [r1]
-ok: [h2]
-ok: [h1]
-
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for s1, s2
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for r1
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for s1, s2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for r1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
 
 TASK [set_fact] ****************************************************************
 ok: [s1]
 ok: [s2]
 
-TASK [copy the cumulus nvue YAML initial config file to switch (generated from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus_nvue.j2)] ***
+TASK [copy the cumulus nvue YAML initial config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/initial/cumulus_nvue.j2)] ***
 changed: [s2]
 changed: [s1]
 
 TASK [Wait for nvued to start] *************************************************
-ok: [s1]
 ok: [s2]
+ok: [s1]
 
 TASK [set_fact] ****************************************************************
 ok: [s1]
 ok: [s2]
 
 TASK [execute on cumulus: 'nv config patch' for initial config] ****************
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [execute on cumulus: 'nv config apply -y' for initial config] *************
 changed: [s1]
@@ -493,7 +510,7 @@ TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [r1]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for r1
 
 TASK [template] ****************************************************************
 changed: [r1]
@@ -501,10 +518,10 @@ changed: [r1]
 TASK [set_fact] ****************************************************************
 ok: [r1]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [r1]
 
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r1]
 
 TASK [Define script filename and determine whether to execute in netns] ********
@@ -515,7 +532,7 @@ TASK [Create a temporary file for the rendered script] *************************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
@@ -523,15 +540,15 @@ TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
 skipping: [h2]
 
-TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 skipping: [h1]
 skipping: [h2]
 
-TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
+TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-bw_1v5o0.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-z199nnyl.sh] ***********************
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
@@ -542,7 +559,7 @@ ok: [s1]
 ok: [s2]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=vlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=vlan)
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [s1]
@@ -556,6 +573,10 @@ TASK [fail] ********************************************************************
 skipping: [s1]
 skipping: [s2]
 
+TASK [Find configuration deployment deploy_script for vlan] ********************
+ok: [s1]
+ok: [s2]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [s1] => 
   msg: |-
@@ -565,34 +586,42 @@ ok: [s1] =>
         bridge:
           domain:
             br_default:
-              type: vlan-aware
-              mac-address: "08:4f:c2:a9:00:03" # The default 'auto' setting reads the MAC from the EEPROM, which is the same for all instances
               untagged: none
               vlan:
                 '701': {}
                 '700': {}
   
   
+    - set:
         interface:
-         swp1:
-           bridge:
-             domain:
-               br_default:
-  
-                 vlan:
-                   '700': {}
-                   '701': {}
-                 untagged: none
          swp2:
            bridge:
              domain:
                br_default:
                  access: 700
+    - set:
+        interface:
          swp3:
            bridge:
              domain:
                br_default:
                  access: 701
+    - set:
+        interface:
+         swp1:
+           bridge:
+             domain:
+               br_default:
+                 vlan:
+                   '701': {}
+    - set:
+        interface:
+         swp1:
+           bridge:
+             domain:
+               br_default:
+                 vlan:
+                   '700': {}
 ok: [s2] => 
   msg: |-
     vlan configuration for s2
@@ -601,47 +630,51 @@ ok: [s2] =>
         bridge:
           domain:
             br_default:
-              type: vlan-aware
-              mac-address: "08:4f:c2:a9:00:04" # The default 'auto' setting reads the MAC from the EEPROM, which is the same for all instances
               untagged: none
               vlan:
                 '701': {}
                 '700': {}
   
   
+    - set:
         interface:
-         swp1:
-           bridge:
-             domain:
-               br_default:
-  
-                 vlan:
-                   '700': {}
-                   '701': {}
-                 untagged: none
          swp2:
            bridge:
              domain:
                br_default:
                  access: 700
+    - set:
+        interface:
          swp3:
            bridge:
              domain:
                br_default:
                  access: 701
-
-TASK [Find configuration deployment deploy_script for vlan] ********************
-ok: [s1]
-ok: [s2]
+    - set:
+        interface:
+         swp1:
+           bridge:
+             domain:
+               br_default:
+                 vlan:
+                   '701': {}
+    - set:
+        interface:
+         swp1:
+           bridge:
+             domain:
+               br_default:
+                 vlan:
+                   '700': {}
 
 TASK [Deploy vlan configuration] ***********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for s1, s2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for s1, s2
 
 TASK [set_fact] ****************************************************************
 ok: [s1]
 ok: [s2]
 
-TASK [copy the cumulus nvue YAML vlan config file to switch (generated from /home/pipi/net101/tools/netsim/ansible/templates/vlan/cumulus_nvue.j2)] ***
+TASK [copy the cumulus nvue YAML vlan config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/cumulus_nvue.j2)] ***
 changed: [s2]
 changed: [s1]
 
@@ -658,18 +691,18 @@ changed: [s2]
 changed: [s1]
 
 TASK [execute on cumulus: 'nv config apply -y' for vlan config] ****************
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-h2                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-r1                         : ok=16   changed=3    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-s1                         : ok=29   changed=6    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-s2                         : ok=29   changed=6    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+h1                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+h2                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+r1                         : ok=17   changed=3    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+s1                         : ok=30   changed=6    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+s2                         : ok=30   changed=6    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 
 
 
