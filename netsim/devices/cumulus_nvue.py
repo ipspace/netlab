@@ -69,10 +69,12 @@ def nvue_create_native_subifs(node: Box, topology: Box) -> None:
     if '_vlan_native' not in i:
       continue
     native_vlan = topology.vlans[ i._vlan_native ]
+    if native_vlan.get('mode',None)!='route':                   # Look for routed native VLAN
+      continue
     for j in list(node.interfaces):
       if j.get('parent_ifindex',None)!=i.ifindex:
         continue
-      if j.get('vlan.mode','irb') in ['bridge','irb']:               # Are we dealing with a mixed trunk?
+      if j.get('vlan.mode','irb') in ['bridge','irb']:          # Are we dealing with a mixed trunk?
         native_subif = data.get_empty_box()
         native_subif.ifname = f'{i.ifname}.{ native_vlan.id }'
         native_subif.name = f'[SubIf native VLAN {i._vlan_native}] ' + i.name
@@ -92,6 +94,12 @@ def nvue_create_native_subifs(node: Box, topology: Box) -> None:
 
         node.interfaces.append(native_subif)
         i.subif_index = i.subif_index + 1
+        report_quirk(
+          f'Node {node.name} uses a mixed trunk with a routed native VLAN; created sub-interface for native VLAN {i._vlan_native}',
+          quirk='native_subif_on_mixed_trunk',
+          category=Warning,
+          more_data=native_subif,
+          node=node)
         break
 
 """
