@@ -27,7 +27,7 @@ The following table describes per-platform support of individual EVPN/VXLAN feat
 | Aruba AOS-CX       | ✅  |  ❌  |  ✅  | ✅[❗](caveats-aruba)  |
 | Cisco Nexus OS     | ✅  |  ❌  | ✅  | ✅  |
 | Cumulus Linux 4.x  | ✅  |  ❌  | ✅  | ✅  |
-| Cumulus 5.x (NVUE) | ✅  |  ❌  | ✅ |  ✅ |
+| Cumulus 5.x (NVUE) | ✅  |  ❌  | ✅ |  ❌ |
 | Dell OS 10         | ✅  |  ❌  | ✅  | ✅  |
 | FRR                | ✅  |  ❌  | ✅  | ✅  |
 | Nokia SR Linux     | ✅  |  ✅ | ✅  | ✅  |
