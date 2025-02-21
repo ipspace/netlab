@@ -37,7 +37,7 @@ Replace management IP subnet in vagrant-libvirt XML template:
 Replacements have to match single quotes (in XML) to ensure we don't replace partial IP addresses
 """
 
-def replace_xml_mgmt_subnet(xml: str, mgmt: Box, m_subnet: str) -> str:
+def replace_xml_mgmt_subnet(topology: Box, xml: str, mgmt: Box, m_subnet: str) -> str:
   o_net = ipaddress.IPv4Network(m_subnet)
   d_net = ipaddress.IPv4Network(mgmt.ipv4)
 
@@ -47,13 +47,11 @@ def replace_xml_mgmt_subnet(xml: str, mgmt: Box, m_subnet: str) -> str:
 
   o_start = 100
   d_start = mgmt.start
-  mac_cnt = 0
 
   xml = xml.replace(f"'{o_net[o_start - 1]}'",f"'{d_net[d_start - 1]}'")
-  while True:                                                         # Replace predefined static DHCP bindings
+  while True:                               # Replace predefined static DHCP bindings, if any
     o_start += 1
     d_start += 1
-    mac_cnt += 1
     o_addr = str(o_net[o_start])
 
     if not o_addr in xml:
@@ -61,13 +59,9 @@ def replace_xml_mgmt_subnet(xml: str, mgmt: Box, m_subnet: str) -> str:
 
     xml = xml.replace(f"'{o_addr}'",f"'{d_net[d_start]}'")
 
-  eui = netaddr.EUI(mgmt.mac)
-  while d_start < min(d_net.num_addresses,256) - 2:
-    eui[5] = mac_cnt
-    xstring = f"<host mac='{str(eui).replace('-',':')}' ip='{d_net[d_start]}'/>\n<!--more-->"
+  for name,node in topology.nodes.items():  # Add <mac,ip> mapping for each node
+    xstring = f"<host mac='{node.mgmt.mac}' ip='{node.mgmt.ipv4}'/>\n<!--more-->"
     xml = xml.replace("<!--more-->",xstring)
-    d_start += 1
-    mac_cnt += 1
 
   return xml
 
@@ -106,7 +100,7 @@ def create_network_template(topology: Box) -> str:
   if mgmt._bridge:
     xml = xml.replace(LIBVIRT_MANAGEMENT_BRIDGE_NAME,mgmt._bridge)
 
-  xml = replace_xml_mgmt_subnet(xml,mgmt,LIBVIRT_MANAGEMENT_SUBNET)
+  xml = replace_xml_mgmt_subnet(topology,xml,mgmt,LIBVIRT_MANAGEMENT_SUBNET)
 
   with tempfile.NamedTemporaryFile(mode='w',delete=False) as tfile:
     tfile.write(xml)

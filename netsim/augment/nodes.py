@@ -95,6 +95,9 @@ def validate(topology: Box) -> None:
       ignored=['_','netlab_','ansible_'],             # Ignore attributes starting with _, netlab_ or ansible_
       extra_attributes=extra)                         # Allow provider- and tool-specific settings
 
+"""
+Sets missing management interface names and MAC, IPv4, and IPv6 addresses from the mgmt pool
+"""
 def augment_mgmt_if(node: Box, defaults: Box, addrs: typing.Optional[Box]) -> None:
   if 'ifname' not in node.mgmt:
     mgmt_if = devices.get_device_attribute(node,'mgmt_if',defaults)
@@ -111,6 +114,19 @@ def augment_mgmt_if(node: Box, defaults: Box, addrs: typing.Optional[Box]) -> No
       mgmt_if = utils.strings.eval_format(ifname_format,{'ifindex': ifindex_offset - 1 })
 
     node.mgmt.ifname = mgmt_if
+
+  if 'mac' in node.mgmt:                          # Check static management MAC address
+    try:
+      node.mgmt.mac = netaddr.EUI(node.mgmt.mac).format(netaddr.mac_unix_expanded)
+    except Exception as Ex:
+      log.error(
+        f'Incorrect management MAC address {node.mgmt.mac} on node {node.name}',
+        more_hints=str(Ex),
+        category=log.IncorrectValue,
+        module='nodes')
+  elif addrs and addrs.mac_eui:                   # ... or assign one from the pool
+    addrs.mac_eui[5] = node.id
+    node.mgmt.mac = addrs.mac_eui.format(netaddr.mac_unix_expanded)
 
   # If the mgmt ipaddress is statically set (IPv4/IPv6)
   # skip the address set
@@ -143,15 +159,30 @@ def augment_mgmt_if(node: Box, defaults: Box, addrs: typing.Optional[Box]) -> No
         log.IncorrectValue,
         'nodes')
 
-  if addrs.mac_eui and not 'mac' in node.mgmt:                        # Finally, assign management MAC address
-    addrs.mac_eui[5] = node.id
-    node.mgmt.mac = addrs.mac_eui.format(netaddr.mac_unix_expanded)
-
   if not 'ipv4' in node.mgmt and not 'ipv6' in node.mgmt:             # Final check: did we get a usable management address?
     log.error(
       f'Node {node.name} does not have a usable management IP addresss',
       log.MissingValue,
       'nodes')
+
+"""
+Check duplicate management MAC/IPv4/IPv6 addresses
+"""
+def check_duplicate_mgmt_addr(topology: Box) -> None:
+  used_addr: dict = {}
+  for af in ['ipv4','ipv6','mac']:
+    used_addr[af] = {}
+    for nname,ndata in topology.nodes.items():
+      n_addr = ndata.get(f'mgmt.{af}',None)
+      if n_addr is None:
+        continue
+      if n_addr in used_addr[af]:
+        log.error(
+          f'Duplicate management {af} address {n_addr} on {nname} and {used_addr[af][n_addr]}',
+          category=log.IncorrectValue,
+          module='nodes')
+      else:
+        used_addr[af][n_addr] = nname
 
 """
 Add device data to nodes
@@ -410,6 +441,8 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
 
     augment_mgmt_if(n,defaults,topology.addressing.mgmt)
     providers.execute_node("augment_node_data",n,topology)
+
+  check_duplicate_mgmt_addr(topology)
 
 '''
 Create the default static route list from pool prefixes
