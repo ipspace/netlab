@@ -9,7 +9,7 @@ import argparse
 import shutil
 import subprocess
 
-from . import fs_cleanup,parser_add_snapshot,load_snapshot
+from . import fs_cleanup,parser_lab_location,load_snapshot
 from . import ansible
 from . import external_commands
 from ..utils import log
@@ -17,7 +17,7 @@ from ..utils import log
 #
 # CLI parser for 'netlab collect' command
 #
-def initial_config_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespace, typing.List[str]]:
+def collect_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespace, typing.List[str]]:
   parser = argparse.ArgumentParser(
     prog="netlab collect",
     description='Collect device configurations',
@@ -50,7 +50,7 @@ def initial_config_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namesp
     dest='cleanup',
     action='store_true',
     help='Clean up config directory and modified configuration file after creating tarball')
-  parser_add_snapshot(parser,hide=True)
+  parser_lab_location(parser,instance=True,action='collect configuration from')
 
   return parser.parse_known_args(args)
 
@@ -60,7 +60,8 @@ def get_tarball_file(tarball: str) -> str:
   return tarball
 
 def run(cli_args: typing.List[str]) -> None:
-  (args,rest) = initial_config_parse(cli_args)
+  run_dir = os.getcwd()
+  (args,rest) = collect_parse(cli_args)
   log.set_logging_flags(args)
 
   topology = load_snapshot(args)
@@ -71,6 +72,7 @@ def run(cli_args: typing.List[str]) -> None:
   except Exception as ex:
     log.fatal(f"Cannot create output directory {args.output}: {ex}")
 
+  print(f"cwd: {os.getcwd()} output: {args.output}")
   if args.verbose:
     rest = ['-v'] + rest
 
@@ -88,9 +90,14 @@ def run(cli_args: typing.List[str]) -> None:
   ansible.playbook('collect-configs.ansible',rest)
 
   if args.tar:
+    if os.getcwd() != run_dir:
+      log.status_green('CHANGED','')
+      print(f'Changing current directory back to {run_dir}')
+      os.chdir(run_dir)
+
     tarball = get_tarball_file(args.tar)
     if not args.quiet:
-      external_commands.print_step(2,"Creating tarball",spacing = True)
+      external_commands.print_step(2,"Creating tarball {args.tar}",spacing = True)
     try:
       subprocess.check_call(['tar','cfz' if args.quiet else 'cvfz',tarball,args.output])
     except Exception as ex:

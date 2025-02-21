@@ -33,29 +33,37 @@ Jinja2 templates are used together with **_device_\_config** Ansible modules to 
 ## Usage
 
 ```text
-usage: netlab initial [--log] [-q] [-v] [-i] [-m [MODULE]] [-c]  [--ready] [--fast] [-o [OUTPUT]]
+$ netlab initial -h
+usage: netlab initial [-h] [--log] [-v] [-q] [-i] [-m [MODULE]] [-c] [--ready] [--fast]
+                      [-o [OUTPUT]] [--instance INSTANCE]
 
 Initial device configurations
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   --log                 Enable basic logging
+  -v, --verbose         Verbose logging (add multiple flags for increased verbosity)
   -q, --quiet           Report only major errors
-  -v, --verbose         Verbose logging
   -i, --initial         Deploy just the initial configuration
   -m [MODULE], --module [MODULE]
-                        Deploy module-specific configuration (optionally including a 
+                        Deploy module-specific configuration (optionally including a
                         list of modules separated by commas)
-  -c, --custom          Deploy custom configuration templates (specified in "config" 
+  -c, --custom          Deploy custom configuration templates (specified in "config"
                         group or node attribute)
   --ready               Wait for devices to become ready
-  --fast                Use "free" strategy in Ansible playbook for faster
-                        configuration deployment
+  --fast                Use "free" strategy in Ansible playbook for faster configuration
+                        deployment
   -o [OUTPUT], --output [OUTPUT]
                         Create a directory with initial configurations instead of
-                        deploying them
+                        deploying them (default output directory: config)
+  --instance INSTANCE   Specify lab instance to configure
 
 All other arguments are passed directly to ansible-playbook
+```
+
+```{tip}
+* While most **‌netlab** commands accept the `-i` option to specify the lab instance, you have to use the `--instance` option with **‌netlab initial**.
+* When executed with the `--instance` option, **‌netlab initial -o** switches to the lab directory to execute the Ansible playbook, but stores the results within the directory from which it was executed.
 ```
 
 ## Wait for Devices to Become Ready

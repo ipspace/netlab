@@ -12,8 +12,7 @@ You cannot capture traffic on point-to-point links between *‌libvirt* virtual 
 The **netlab capture** command takes two parameters: the node you want to perform packet capture on and the interface name within that node.
 
 ```text
-$ netlab capture -h
-usage: netlab capture [-h] [--snapshot [SNAPSHOT]] node [intf]
+usage: netlab capture [-h] [-i INSTANCE] node [intf]
 
 Start a packet capture on the specified node/interface
 
@@ -23,8 +22,8 @@ positional arguments:
 
 options:
   -h, --help            show this help message and exit
-  --snapshot [SNAPSHOT]
-                        Transformed topology snapshot file
+  -i INSTANCE, --instance INSTANCE
+                        Specify lab instance to capture traffic in
 
 All other arguments are passed directly to the packet-capturing utility
 ```

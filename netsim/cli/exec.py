@@ -13,7 +13,7 @@ from enum import IntEnum
 from box import Box
 
 from . import external_commands, set_dry_run
-from . import load_snapshot, _nodeset, parser_add_verbose
+from . import load_snapshot, _nodeset, parser_add_verbose, parser_lab_location
 from .connect import quote_list, docker_connect, ssh_connect, connect_to_node,\
   LogLevel, get_log_level
 
@@ -36,16 +36,10 @@ def exec_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespace, typin
       action='store_true',
       help='Print the hosts and the commands that would be executed on them, but do not execute them')
   parser.add_argument(
-      '--snapshot',
-      dest='snapshot',
-      action='store',
-      nargs='?',
-      default='netlab.snapshot.yml',
-      const='netlab.snapshot.yml',
-      help='Transformed topology snapshot file')
-  parser.add_argument(
       dest='node', action='store',
       help='Node(s) to run command on')
+  parser_lab_location(parser,instance=True,action='execute commands in')
+
   return parser.parse_known_args(args)
       
 def run(cli_args: typing.List[str]) -> None:

@@ -36,11 +36,13 @@ def parser_add_debug(parser: argparse.ArgumentParser) -> None:
 
 # Some CLI utilities might use the 'verbose' flag without other common arguments
 #
-def parser_add_verbose(parser: argparse.ArgumentParser) -> None:
-  parser.add_argument('-v','--verbose', dest='verbose', action='count', default = 0,
-                  help='Verbose logging (add multiple flags for increased verbosity)')
-  parser.add_argument('-q','--quiet', dest='quiet', action='store_true',
-                  help='Report only major errors')
+def parser_add_verbose(parser: argparse.ArgumentParser, verbose: bool = True, quiet: bool = True) -> None:
+  if verbose:
+    parser.add_argument('-v','--verbose', dest='verbose', action='count', default = 0,
+                    help='Verbose logging (add multiple flags for increased verbosity)')
+  if quiet:
+    parser.add_argument('-q','--quiet', dest='quiet', action='store_true',
+                    help='Report only major errors')
 
 def common_parse_args(debugging: bool = False) -> argparse.ArgumentParser:
   parser = argparse.ArgumentParser(description='Common argument parsing',add_help=False)
@@ -54,15 +56,34 @@ def common_parse_args(debugging: bool = False) -> argparse.ArgumentParser:
 
   return parser
 
-def parser_add_snapshot(parser: argparse.ArgumentParser, hide: bool = False) -> None:
-  parser.add_argument(
-    '--snapshot',
-    dest='snapshot',
-    action='store',
-    nargs='?',
-    default='netlab.snapshot.yml',
-    const='netlab.snapshot.yml',
-    help=argparse.SUPPRESS if hide else 'Transformed topology snapshot file')
+'''
+Add --snapshot or --instance parameter, optionally hiding 'snapshot' from the help message
+'''
+def parser_lab_location(
+      parser: argparse.ArgumentParser,
+      snapshot: bool = False,
+      instance: bool = False,
+      i_used: bool = False,
+      hide: bool = False,
+      action: str = 'work on') -> None:
+  i_flags = ['--instance']
+  if not i_used:
+    i_flags = ['-i'] + i_flags
+  if instance:
+    parser.add_argument(
+      *i_flags,
+      dest='instance',
+      action='store',
+      help=argparse.SUPPRESS if hide else f'Specify lab instance to {action}')
+  if snapshot:
+    parser.add_argument(
+      '--snapshot',
+      dest='snapshot',
+      action='store',
+      nargs='?',
+      default='netlab.snapshot.yml',
+      const='netlab.snapshot.yml',
+      help=argparse.SUPPRESS if hide else 'Transformed topology snapshot file')
 
 def parser_subcommands(parser: argparse.ArgumentParser, sc_dict: dict) -> None:
   subparsers = parser.add_subparsers(
@@ -160,15 +181,54 @@ def load_topology(args: typing.Union[argparse.Namespace,Box]) -> Box:
   log.exit_on_error()
   return topology
 
+"""
+Find a lab instance and change directory so the rest of the shutdown
+process works from that directory
+"""
+def change_lab_instance(instance: typing.Union[int,str], quiet: bool = False) -> None:
+  topology = _read.system_defaults()
+  lab_states = _status.read_status(topology)
+  try:                                                      # Maybe the instance is an integer?
+    instance = int(instance)
+  except:
+    pass
+
+  if not instance in lab_states:
+    error_and_exit(
+      f'Unknown instance {instance}',
+      more_hints=[ "Use 'netlab status --all' to display running instances" ])
+
+  target_dir = lab_states[instance].dir
+  try:
+    os.chdir(target_dir)
+  except Exception as ex:
+    log.fatal(f'Cannot change directory to {target_dir}: {str(ex)}')
+  
+  if not quiet:
+    log.status_green('CHANGED','')
+    print(f'Selected instance {instance}, current directory changed to {target_dir}')
+
 # Snapshot loading code -- loads the specified snapshot file and checks its modification date
 #
 def load_snapshot(args: typing.Union[argparse.Namespace,Box],ghosts: bool = True) -> Box:
-  if not os.path.isfile(args.snapshot):
-    print(f"The topology snapshot file {args.snapshot} does not exist.\n"+
-          "Looks like no lab was started from this directory")
+  if 'instance' in args and args.instance:
+    change_lab_instance(args.instance,args.quiet if 'quiet' in args else False)
+  
+  snapshot = 'netlab.snapshot.yml'
+  if 'snapshot' in args and args.snapshot and args.snapshot != snapshot:
+    snapshot = args.snapshot
+    if 'quiet' not in args or not args.quiet:
+      log.info(f'Using lab snapshot file {args.snapshot}')
+
+  if not os.path.isfile(snapshot):
+    error_and_exit(
+      f"The topology snapshot file {snapshot} does not exist",
+      more_hints=[
+          "Looks like no lab was started from this directory",
+          "Use 'netlab status --all' to display labs running on this system"])
     sys.exit(1)
 
-  topology = _read.read_yaml(filename=args.snapshot)
+  topology = _read.read_yaml(filename=snapshot)
   if topology is None:
     print(f"Cannot read the topology snapshot file {args.snapshot}")
     sys.exit(1)
@@ -177,7 +237,7 @@ def load_snapshot(args: typing.Union[argparse.Namespace,Box],ghosts: bool = True
     topology = augment.nodes.ghost_buster(topology)
 
   global_vars.init(topology)
-  check_modified_source(args.snapshot,topology)
+  check_modified_source(snapshot,topology)
   return topology
 
 def check_modified_source(snapshot: str, topology: typing.Optional[Box] = None) -> None:

@@ -6,7 +6,7 @@
 import typing
 import argparse
 
-from . import load_snapshot
+from . import load_snapshot,parser_lab_location
 from ..outputs import _TopologyOutput
 from ..utils import strings,log
 
@@ -17,14 +17,6 @@ def graph_parse(args: typing.List[str]) -> argparse.Namespace:
   parser = argparse.ArgumentParser(
     prog="netlab graph",
     description='Create a graph description in Graphviz or D2 format')
-  parser.add_argument(
-    '--snapshot',
-    dest='snapshot',
-    action='store',
-    nargs='?',
-    default='netlab.snapshot.yml',
-    const='netlab.snapshot.yml',
-    help='Transformed topology snapshot file')
   parser.add_argument(
     '-t','--type',
     dest='g_type', action='store',
@@ -41,6 +33,7 @@ def graph_parse(args: typing.List[str]) -> argparse.Namespace:
     nargs='?',
     help='Optional: Output file name')
 
+  parser_lab_location(parser,instance=True,snapshot=True,action='create a graph from')
   return parser.parse_args(args)
 
 def run(cli_args: typing.List[str]) -> None:

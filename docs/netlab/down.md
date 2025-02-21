@@ -8,7 +8,8 @@ This command uses the lab topology or the snapshot file created by **netlab up**
 ## Usage
 
 ```
-usage: netlab down [-h] [-v] [--cleanup] [--dry-run] [-i INSTANCE] [--force] [--snapshot [SNAPSHOT]]
+$ netlab down -h
+usage: netlab down [-h] [-v] [--cleanup] [--dry-run] [--force] [-i INSTANCE]
 
 Destroy the virtual lab
 
@@ -16,16 +17,17 @@ options:
   -h, --help            show this help message and exit
   -v, --verbose         Verbose logging (where applicable)
   --cleanup             Remove all configuration files created by netlab create
-  --dry-run             Print the commands that would be executed, but do not execute them
+  --dry-run             Print the commands that would be executed, but do not execute
+                        them
+  --force               Force shutdown or cleanup (use at your own risk)
   -i INSTANCE, --instance INSTANCE
                         Specify lab instance to shut down
-  --force               Force shutdown or cleanup (use at your own risk)
 ```
 
 Notes:
 
 * **netlab down** needs transformed topology data to find the virtualization provider and link (bridge) names.
-* **netlab down** reads the transformed topology from `netlab.snapshot.yml` file created by **netlab up** or **netlab create**. You can specify a different snapshot file name, but you really should not.
+* **netlab down** reads the transformed topology from `netlab.snapshot.yml` file created by **netlab up** or **netlab create**.
 * With the `--instance` flag, you can shut down a lab instance running in a different directory. Use the `netlab status --all` command to display all running instances.
 * Use the `--cleanup` flag to delete all Ansible-, Vagrant- or containerlab-related configuration files.
 * Use the `--force` flag with the `--cleanup` flag if you want to clean up the directory even when the virtualization provider fails during the shutdown process.

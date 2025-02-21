@@ -16,17 +16,12 @@ from ..outputs import common as outputs_common
 from ..data import get_empty_box
 from .. import providers
 
-from . import parser_add_verbose
+from . import parser_add_verbose,parser_lab_location
 
 def status_parse(args: typing.List[str]) -> argparse.Namespace:
   parser = argparse.ArgumentParser(
     prog='netlab status',
     description='Display lab status')
-  parser.add_argument(
-    '-i','--instance',
-    dest='instance',
-    action='store',
-    help='Display or cleanup specific lab instance(s)')
   parser.add_argument(
     '-l','--log',
     dest='log',
@@ -48,6 +43,7 @@ def status_parse(args: typing.List[str]) -> argparse.Namespace:
     action='store_true',
     help='Display an overview of all lab instance(s)')
   parser_add_verbose(parser)
+  parser_lab_location(parser,instance=True,action='inspect')
   return parser.parse_args(args)
 
 Lab_Instance_ID = typing.Union[str,int]

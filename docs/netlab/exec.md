@@ -6,21 +6,22 @@
 ## Usage
 
 ```text
-usage: netlab exec [-h] [-v] [-q] [--dry-run] [--snapshot [SNAPSHOT]]                      
-                      node
+$ netlab exec -h
+usage: netlab exec [-h] [-v] [-q] [--dry-run] [-i INSTANCE] node
 
-Executes a command on one or more network devices
+Run a command on one or more network devices
 
 positional arguments:
-  node                  Device(s) to execute the command on
+  node                  Node(s) to run command on
 
 options:
   -h, --help            show this help message and exit
-  -v, --verbose         Verbose logging
-  -q, --quiet           No logging
-  --dry-run             Print the commands that would be executed, but do not execute them
-  --snapshot [SNAPSHOT]
-                        Transformed topology snapshot file
+  -v, --verbose         Verbose logging (add multiple flags for increased verbosity)
+  -q, --quiet           Report only major errors
+  --dry-run             Print the hosts and the commands that would be executed on them,
+                        but do not execute them
+  -i INSTANCE, --instance INSTANCE
+                        Specify lab instance to execute commands in
 
 The rest of the arguments are passed to SSH or docker exec command
 ```

@@ -6,7 +6,9 @@ The **netlab report** command creates a report from the transformed lab topology
 ## Usage
 
 ```text
-usage: netlab report [-h] [--snapshot [SNAPSHOT]] [--node NODE] report [output]
+$ netlab report -h
+usage: netlab report [-h] [--node NODE] [-i INSTANCE] [--snapshot [SNAPSHOT]]
+                     report [output]
 
 Create a report from the transformed lab topology data
 
@@ -16,9 +18,11 @@ positional arguments:
 
 options:
   -h, --help            show this help message and exit
+  --node NODE           Limit the report to selected node(s)
+  -i INSTANCE, --instance INSTANCE
+                        Specify lab instance to report on
   --snapshot [SNAPSHOT]
                         Transformed topology snapshot file
-  --node NODE           Limit the report to selected node(s)
 ```
 
 ```{tip}

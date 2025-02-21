@@ -12,8 +12,10 @@ When selecting data from an individual node, _netlab_ adds group variables to no
 ## Usage
 
 ```text
-usage: netlab inspect [-h] [--snapshot [SNAPSHOT]] [--node NODE] 
-                      [--all] [--format {yaml,json}] [expr]
+$ netlab inspect -h
+usage: netlab inspect [-h] [--node NODE] [--all] [--format {yaml,json}] [-q]
+                      [-i INSTANCE] [--snapshot [SNAPSHOT]]
+                      [expr]
 
 Inspect data structures in transformed lab topology
 
@@ -22,11 +24,14 @@ positional arguments:
 
 options:
   -h, --help            show this help message and exit
-  --snapshot [SNAPSHOT]
-                        Transformed topology snapshot file
   --node NODE           Display data for selected node(s)
   --all                 Add global Ansible variables to node data
   --format {yaml,json}  Select data presentation format
+  -q, --quiet           Report only major errors
+  -i INSTANCE, --instance INSTANCE
+                        Specify lab instance to inspect
+  --snapshot [SNAPSHOT]
+                        Transformed topology snapshot file
 ```
 
 ## Topology Inspection Examples

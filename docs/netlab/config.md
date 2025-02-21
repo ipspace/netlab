@@ -5,23 +5,23 @@
 
 You have to use **netlab config** on a running lab. If you want to try out the configuration templates without starting the lab,  add the [**config** attribute](custom-config) to node data and run **netlab create** (to create the Ansible inventory) followed by **[netlab initial -c -o](netlab-initial)** to create the configuration files.
 
-```
-
 ## Usage
 
 ```text
-usage: netlab config [-h] [-r] [-v] [-q] template
+usage: netlab config [-h] [-r] [-v] [-q] [-i INSTANCE] template
 
 Deploy custom configuration template
 
 positional arguments:
-  template       Configuration template or a directory with templates
+  template              Configuration template or a directory with templates
 
 options:
-  -h, --help     show this help message and exit
-  -r, --reload   Reload saved device configurations
-  -v, --verbose  Verbose logging (add multiple flags for increased verbosity)
-  -q, --quiet    Report only major errors
+  -h, --help            show this help message and exit
+  -r, --reload          Reload saved device configurations
+  -v, --verbose         Verbose logging (add multiple flags for increased verbosity)
+  -q, --quiet           Report only major errors
+  -i INSTANCE, --instance INSTANCE
+                        Specify lab instance to configure
 
 All other arguments are passed directly to ansible-playbook
 ```
@@ -33,6 +33,10 @@ The configuration template specified in the **netlab config** command can be a J
 When you specify a directory name, the **netlab config** command tries to find the configuration template for individual lab devices using node name, `netlab_device_type`, and `ansible_network_os` Ansible variables, allowing you to create a set of templates to deploy the same functionality to lab devices running different network operating systems.
 
 See [](custom-config), [](netlab-initial-custom) and [](dev-find-custom) for more details.
+
+```{tip}
+When executed with the `-i` option, **‌netlab config** expects the configuration template file or directory to be within the lab directory.
+```
 
 ## Limiting the Scope of Configuration Deployments
 
@@ -51,4 +55,4 @@ After that, it treats the saved device configurations as custom templates and us
 
 To display device configurations within the Ansible playbook without deploying them, use `-v --tags test` parameters after the template name. 
 
-The `-v` flag will trigger a debugging printout, and the bogus `test` flag will skip the actual configuration deployment.
+The `-v` flag triggers a debugging printout, and the bogus `test` flag skips the configuration deployment.

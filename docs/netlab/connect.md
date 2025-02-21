@@ -6,9 +6,8 @@
 ## Usage
 
 ```text
-usage: netlab connect [-h] [-v] [-q] [--dry-run] [--snapshot [SNAPSHOT]]
-                      [-s SHOW [SHOW ...]]
-                      host
+$ netlab connect -h
+usage: netlab connect [-h] [-v] [-q] [--dry-run] [-s SHOW [SHOW ...]] [-i INSTANCE] host
 
 Connect to a network device or an external tool
 
@@ -17,13 +16,14 @@ positional arguments:
 
 options:
   -h, --help            show this help message and exit
-  -v, --verbose         Verbose logging
-  -q, --quiet           No logging
-  --dry-run             Print the commands that would be executed, but do not execute them
-  --snapshot [SNAPSHOT]
-                        Transformed topology snapshot file
+  -v, --verbose         Verbose logging (add multiple flags for increased verbosity)
+  -q, --quiet           Report only major errors
+  --dry-run             Print the commands that would be executed, but do not execute
+                        them
   -s SHOW [SHOW ...], --show SHOW [SHOW ...]
                         Show command to execute on the device
+  -i INSTANCE, --instance INSTANCE
+                        Specify lab instance to connect to
 
 The rest of the arguments are passed to SSH or docker exec command
 ```

@@ -7,7 +7,7 @@ import sys
 import typing
 import argparse
 
-from . import load_snapshot,_nodeset,external_commands,error_and_exit
+from . import load_snapshot,_nodeset,external_commands,error_and_exit,parser_lab_location
 from .. import providers
 from ..augment import devices
 from ..utils import strings,log
@@ -21,20 +21,13 @@ def capture_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespace, ty
     description='Start a packet capture on the specified node/interface',
     epilog='All other arguments are passed directly to the packet-capturing utility')
   parser.add_argument(
-    '--snapshot',
-    dest='snapshot',
-    action='store',
-    nargs='?',
-    default='netlab.snapshot.yml',
-    const='netlab.snapshot.yml',
-    help='Transformed topology snapshot file')
-  parser.add_argument(
     dest='node', action='store',
     help='Node on which you want to capture traffic')
   parser.add_argument(
     dest='intf', action='store',
     nargs='?',
     help='Interface on which you want to capture traffic')
+  parser_lab_location(parser,instance=True,action='capture traffic in')
 
   return parser.parse_known_args(args)
 

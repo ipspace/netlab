@@ -6,7 +6,7 @@
 import typing
 import argparse
 
-from . import load_snapshot,_nodeset
+from . import load_snapshot,_nodeset,parser_lab_location,parser_add_verbose
 from ..outputs import _TopologyOutput, common as outputs_common
 from ..utils import strings,log
 
@@ -18,14 +18,6 @@ def report_parse(args: typing.List[str]) -> argparse.Namespace:
     prog="netlab report",
     description='Create a report from the transformed lab topology data')
   parser.add_argument(
-    '--snapshot',
-    dest='snapshot',
-    action='store',
-    nargs='?',
-    default='netlab.snapshot.yml',
-    const='netlab.snapshot.yml',
-    help='Transformed topology snapshot file')
-  parser.add_argument(
     '--node',
     dest='node', action='store',
     help='Limit the report to selected node(s)')
@@ -36,6 +28,8 @@ def report_parse(args: typing.List[str]) -> argparse.Namespace:
     dest='output', action='store',
     nargs='?',
     help='Output file name (default: stdout)')
+  parser_add_verbose(parser,verbose=False)
+  parser_lab_location(parser,instance=True,snapshot=True,action='report on')
 
   return parser.parse_args(args)
 

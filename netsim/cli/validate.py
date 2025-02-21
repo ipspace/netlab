@@ -14,7 +14,7 @@ import traceback
 
 from box import Box,BoxList
 
-from . import load_snapshot, parser_add_debug, parser_add_verbose, external_commands
+from . import load_snapshot, parser_add_debug, parser_add_verbose, external_commands, parser_lab_location
 from ..utils import log, templates, strings, status as _status, files as _files
 from ..data import global_vars,get_box
 from ..augment import devices
@@ -30,14 +30,6 @@ def validate_parse(args: typing.List[str]) -> argparse.Namespace:
     description='Inspect data structures in transformed lab topology')
   parser_add_debug(parser)                                # Add debugging options
   parser_add_verbose(parser)                              # ... and verbosity flag
-  parser.add_argument(
-    '--snapshot',
-    dest='snapshot',
-    action='store',
-    nargs='?',
-    default='netlab.snapshot.yml',
-    const='netlab.snapshot.yml',
-    help='Transformed topology snapshot file')
   parser.add_argument(
     '--list',
     dest='list',
@@ -70,6 +62,7 @@ def validate_parse(args: typing.List[str]) -> argparse.Namespace:
     dest='tests', action='store',
     nargs='*',
     help='Validation test(s) to execute (default: all)')
+  parser_lab_location(parser,instance=True,action='validate')
 
   return parser.parse_args(args)
 
