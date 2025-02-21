@@ -140,9 +140,7 @@ In multi-provider topologies, set the **uplink** parameter only for the primary 
 
 *netlab* assigns an IPv4 (and optionally IPv6) address to the management interface of each container regardless of whether the container supports SSH access. That IPv4/IPv6 address is used by *containerlab* to configure the first container interface.
 
-You can change a device management interface's IPv4/IPv6 address with the **mgmt.ipv4**/**mgmt.ipv6** node parameter, but be aware that nobody checks whether your change will result in overlapping IP addresses.
-
-It's much better to use the **addressing.mgmt** pool **ipv4**/**ipv6**/**start** parameters to adjust the address range used for management IP addresses and rely on *netlab* to assign management IP addresses to containers based on [device node ID](node-augment).
+You can change a device management interface's IPv4/IPv6 address with the **mgmt.ipv4**/**mgmt.ipv6** node parameter. However, it is recommended to use the **addressing.mgmt** pool **ipv4**/**ipv6**/**start** parameters to adjust the address range used for management IP addresses and rely on *netlab* to assign management IP addresses to containers based on [device node ID](node-augment).
 
 (clab-port-forwarding)=
 ### Port Forwarding
