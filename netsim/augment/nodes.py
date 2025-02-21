@@ -125,7 +125,7 @@ def augment_mgmt_if(node: Box, defaults: Box, addrs: typing.Optional[Box]) -> No
         category=log.IncorrectValue,
         module='nodes')
   elif addrs and addrs.mac_eui:                   # ... or assign one from the pool
-    addrs.mac_eui[5] = node.id
+    addrs.mac_eui[3] = node.id                    # ... using a difference in the 4th octet, not the last one #1954
     node.mgmt.mac = addrs.mac_eui.format(netaddr.mac_unix_expanded)
 
   # If the mgmt ipaddress is statically set (IPv4/IPv6)
