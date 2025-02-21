@@ -96,10 +96,9 @@ def nvue_create_native_subifs(node: Box, topology: Box) -> None:
         node.interfaces.append(native_subif)
         i.subif_index = i.subif_index + 1
         report_quirk(
-          f'Node {node.name} uses a mixed trunk with a routed native VLAN; created sub-interface for native VLAN {i._vlan_native}',
+          f'Node {node.name} uses a mixed trunk with a routed native VLAN; created sub-interface for native VLAN {native_vlan.id}',
           quirk='native_subif_on_mixed_trunk',
           category=Warning,
-          more_data=native_subif,
           node=node)
         break
 
@@ -166,9 +165,9 @@ def mark_shared_mlag_vtep(node: Box, topology: Box) -> None:
 NVUE derives the "Base MAC Address" from mgmt.mac, using only the first 5 octets. This means that MACs which differ
 only in the last octet lead to duplicate MAC addresses.
 
-This quirk rewrites mgmt.mac such that it differs in the 4th octet too
+This quirk rewrites node.mgmt.mac such that it differs in the 4th octet too
 """
-def nvue_rewrite_mgmt_mac(node: Box):
+def nvue_rewrite_mgmt_mac(node: Box) -> None:
   mac = netaddr.EUI(node.mgmt.mac,dialect=netaddr.mac_unix_expanded)
   mac[3] = node.id                 # Make sure it differs in the 4th octet
   node.mgmt.mac = str(mac)
