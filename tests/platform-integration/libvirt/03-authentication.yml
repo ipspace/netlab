@@ -1,0 +1,35 @@
+message: |
+  The test checks different combinations of Vagrant user authentication:
+
+  * SSH password + SSH private key (default)
+  * SSH password only
+  * SSH private key only
+
+  Ansible access is checked during the configuration phase, netlab access
+  during the validation phase
+
+provider: libvirt
+defaults.device: frr
+module: [ ospf ]
+ospf.timers.hello: 1
+
+nodes:
+  r1:                                 # password + private key
+  r2:
+    ansible_ssh_private_key_file:     # No private key file
+  r3:
+    ansible_ssh_pass:                 # No password
+  r4:
+    ansible_ssh_pass:
+    netlab_quick_start: True          # Combination of no password + no install
+
+links: [ r1-r2, r2-r3, r2-r4 ]
+
+validate:
+  adj_r2:
+    plugin: ospf_neighbor(nodes.r2.ospf.router_id)
+    wait: 15
+    nodes: [ r1, r3, r4 ]
+  adj_r1:
+    plugin: ospf_neighbor(nodes.r1.ospf.router_id)
+    nodes: [ r2 ]

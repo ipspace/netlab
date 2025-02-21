@@ -23,7 +23,7 @@ from . import external_commands, set_dry_run, error_and_exit, parser_lab_locatio
 
 from . import load_snapshot, parser_add_verbose
 from ..outputs import common as outputs_common
-from ..utils import strings, log
+from ..utils import strings, log, templates
 
 #
 # CLI parser for 'netlab initial' command
@@ -98,6 +98,10 @@ def ssh_connect(
 
   if data.ansible_ssh_pass:
     c_args = ['sshpass','-p',data.ansible_ssh_pass ] + c_args
+
+  if data.ansible_ssh_private_key_file:
+    data.inventory_hostname = data.host
+    c_args.extend(['-i', templates.render_template(data,j2_text=data.ansible_ssh_private_key_file)])
 
   if data.ansible_port:
     c_args.extend(['-p',str(data.ansible_port)])
