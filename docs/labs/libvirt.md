@@ -208,13 +208,9 @@ You can change the parameters of the management network in the **addressing.mgmt
 
 The only way to assign a management IP address to a network device started as a virtual machine is through DHCP, and *vagrant*, together with *libvirt* (and *dnsmasq*), provides a seamless implementation.
 
-*netlab* creates static DHCP mappings in the management network ([see above](libvirt-mgmt)) and asks *vagrant-libvirt* to set the MAC address of the VM management interface to a well-known value, ensuring that each VM gets the expected management IP address assigned by *netlab* based on the [device node ID](node-augment) and the **[start](address-pool-specs)** parameter of the [**mgmt** address pool](../addressing.md).
+*netlab* creates static DHCP mappings in the management network ([see above](libvirt-mgmt)) and asks *vagrant-libvirt* to set the MAC address of the VM management interface to a well-known value, ensuring that each VM gets the expected management IP address and MAC assigned by *netlab* based on the [device node ID](node-augment) and the **[start](address-pool-specs)** parameter of the [**mgmt** address pool](../addressing.md).
 
-To have fixed management IP addresses for your virtual machines  (for example, to be accessed from an external management tool):
-
-* Change the **addressing.mgmt** parameters
-* Set node **id** parameters to the desired values
-* Let *netlab* do the rest of the work.
+To have fixed management IP addresses for your virtual machines (for example, to be accessed from an external management tool or to match an existing deployment), you can change a device management interface's IPv4/IPv6 address with the **mgmt.ipv4**/**mgmt.ipv6** node parameters. However, it is recommended to use the auto-generated IPs which are guaranteed to not overlap.
 
 (libvirt-port-forwarding)=
 ### Port Forwarding
