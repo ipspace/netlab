@@ -8,6 +8,8 @@ from . import _Quirks, report_quirk
 from .cumulus import check_ospf_vrf_default
 from ..utils import log
 from ..augment import devices
+from .. import data
+import netaddr
 
 def nvue_check_stp_features(node: Box, topology: Box) -> None:
   err_data = []
@@ -58,6 +60,47 @@ def nvue_check_ospfv3(node: Box) -> None:
       category=log.FatalError,
       module='ospf',
       hint='ospfv3')
+
+"""
+Checks for mixed trunk interfaces with native vlan, and creates a separate subinterface (vlan_member) for the native VLAN.
+This is needed because the parent interface gets added to the VLAN-aware bridge, with the native vlan set as 'untagged'
+"""
+def nvue_create_native_subifs(node: Box, topology: Box) -> None:
+  for i in list(node.interfaces):
+    if '_vlan_native' not in i:
+      continue
+    native_vlan = topology.vlans[ i._vlan_native ]
+    if native_vlan.get('mode',None)!='route':                   # Look for routed native VLAN
+      continue
+    for j in list(node.interfaces):
+      if j.get('parent_ifindex',None)!=i.ifindex:
+        continue
+      if j.get('vlan.mode','irb') in ['bridge','irb']:          # Are we dealing with a mixed trunk?
+        native_subif = data.get_empty_box()
+        native_subif.ifname = f'{i.ifname}.{ native_vlan.id }'
+        native_subif.name = f'[SubIf native VLAN {i._vlan_native}] ' + i.name
+        native_subif.parent_ifindex = i.ifindex
+        native_subif.parent_ifname = i.ifname
+        native_subif.type = "vlan_member"
+        native_subif.virtual_interface = True
+        native_subif.ifindex = len(node.interfaces) + 1
+        native_subif.vlan.name = i._vlan_native
+        native_subif.vlan.access_id = native_vlan.id
+        native_subif.vlan.mode = 'route'
+
+        skip = [ 'bridge_group','subif_index','linkindex' ] + list(native_subif.keys())
+        for att,value in { k:v for k,v in i.items() if k not in skip }.items():
+          native_subif[att] = value
+          i.pop(att,None)
+
+        node.interfaces.append(native_subif)
+        i.subif_index = i.subif_index + 1
+        report_quirk(
+          f'Node {node.name} uses a mixed trunk with a routed native VLAN; created sub-interface for native VLAN {native_vlan.id}',
+          quirk='native_subif_on_mixed_trunk',
+          category=Warning,
+          node=node)
+        break
 
 """
 Checks whether this node uses OSPF passive interfaces inside a vrf. NVUE does not support these correctly, because the scripts
@@ -118,6 +161,17 @@ def mark_shared_mlag_vtep(node: Box, topology: Box) -> None:
       node.vxlan._shared_vtep = n.name
       return
 
+"""
+NVUE derives the "Base MAC Address" from mgmt.mac, using only the first 5 octets. This means that MACs which differ
+only in the last octet lead to duplicate MAC addresses.
+
+This quirk rewrites node.mgmt.mac such that it differs in the 4th octet too
+"""
+def nvue_rewrite_mgmt_mac(node: Box) -> None:
+  mac = netaddr.EUI(node.mgmt.mac,dialect=netaddr.mac_unix_expanded)
+  mac[3] = node.id                 # Make sure it differs in the 4th octet
+  node.mgmt.mac = str(mac)
+
 class Cumulus_Nvue(_Quirks):
 
   @classmethod
@@ -140,6 +194,8 @@ class Cumulus_Nvue(_Quirks):
 
     if 'vxlan' in mods:
       mark_shared_mlag_vtep(node,topology)
+    nvue_create_native_subifs(node,topology)
+    nvue_rewrite_mgmt_mac(node)
 
     if devices.get_provider(node,topology) == 'clab':
       log.error(

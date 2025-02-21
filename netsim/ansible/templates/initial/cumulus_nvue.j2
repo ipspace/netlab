@@ -1,6 +1,6 @@
 {% macro decl_interface(i) %}
       {{ i.ifname }}:
-        type: {{ 'svi' if i.type=='svi' else 'bond' if i.type=='lag' else 'swp' }}
+        type: {{ 'svi' if i.type=='svi' else 'sub' if i.type=='vlan_member' else 'bond' if i.type=='lag' else 'swp' }}
         link:
 {%  if i.mtu is defined %}
           mtu: {{ i.mtu }}
@@ -49,13 +49,6 @@
             content: |
               { "address": { "defaults": { "mtu": "{{ mtu }}" } } }
 {% endif %}
-    bridge:
-      domain:
-        br_default:
-          type: vlan-aware
-          # The default 'auto' setting reads the EEPROM to pick the same MAC for all instances!
-          mac-address: "{{ '08:4f:c2:a9:00:%02x' | format(id) }}" 
-          untagged: 1
 
     interface:
       eth0:
@@ -64,8 +57,10 @@
           address:
             dhcp: {}
         type: eth
-{% for l in interfaces|default([]) if l.type!='loopback' %}
-{{      decl_interface(l) }}
+{# Avoid creating L2-only sub interfaces #}
+{% for l in interfaces|default([]) if l.type not in ['loopback','vlan_member']
+                                  or (l.type=='vlan_member' and ('ipv4' in l or 'ipv6' in l)) %}
+{{   decl_interface(l) }}
 {% endfor %}
 
 {% for lb in netlab_interfaces if lb.type=='loopback' and lb.vrf is not defined %}
