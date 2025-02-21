@@ -204,13 +204,13 @@ You can change the parameters of the management network in the **addressing.mgmt
 * **netlab up** uses XML definition in `templates/provider/libvirt/vagrant-libvirt.xml` within the Python package directory ([source file](https://github.com/ipspace/netlab/blob/master/netsim/templates/provider/libvirt/vagrant-libvirt.xml)) to create the management network. If you'd like to change the management network parameters, create a custom XML definition in the `libvirt/vagrant-libvirt.xml` file in the current directory, `~/.netlab` directory, or `/etc/netlab` directory.
 * If you want to use an existing libvirt network as the management network, make sure it has the same static DHCP mappings as the management network created by the **netlab up** command.
 
-### VM Management IP Addresses
+### VM Management IPv4 Addresses
 
-The only way to assign a management IP address to a network device started as a virtual machine is through DHCP, and *vagrant*, together with *libvirt* (and *dnsmasq*), provides a seamless implementation.
+The only way to assign a management IPv4 address to a network device started as a virtual machine is through DHCP, and *vagrant*, together with *libvirt* (and *dnsmasq*), provides a seamless implementation. IPv6 management addresses do not work as most Vagrant boxes do not use DHCPv6.
 
-*netlab* creates static DHCP mappings in the management network ([see above](libvirt-mgmt)) and asks *vagrant-libvirt* to set the MAC address of the VM management interface to a well-known value, ensuring that each VM gets the expected management IP address and MAC assigned by *netlab* based on the [device node ID](node-augment) and the **[start](address-pool-specs)** parameter of the [**mgmt** address pool](../addressing.md).
+*netlab* creates static DHCP mappings in the management network ([see above](libvirt-mgmt)) and asks *vagrant-libvirt* to set the MAC address of the VM management interface to a well-known value, ensuring that each VM gets the expected management IPv4- and MAC address assigned by *netlab* based on the [device node ID](node-augment) and the **[start](address-pool-specs)** parameter of the [**mgmt** address pool](../addressing.md).
 
-To have fixed management IP addresses for your virtual machines (for example, to be accessed from an external management tool or to match an existing deployment), you can change a device management interface's IPv4/IPv6 address with the **mgmt.ipv4**/**mgmt.ipv6** node parameters. However, it is recommended to use the auto-generated IPs which are guaranteed to not overlap.
+You can change the IPv4 address of a device's management interface with the **mgmt.ipv4** node parameters to have fixed management IPv4 addresses for your virtual machines (for example, to be accessed from an external management tool or to match an existing deployment). However, it is recommended to use the auto-generated IPs, which are guaranteed to not overlap.
 
 (libvirt-port-forwarding)=
 ### Port Forwarding
