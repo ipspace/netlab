@@ -1,0 +1,31 @@
+message: |
+  Tests VMs with custom management IP and MAC addresses and checks that netlab
+  can successfully configure them.
+
+provider: libvirt
+defaults.device: frr
+module: [ ospf ]
+ospf.timers.hello: 1
+defaults.multilab.change.addressing.mgmt.ipv4: '192.42.42.0/24'
+addressing.mgmt.ipv4: '192.42.42.0/24'
+
+nodes:
+  r1:
+    mgmt:
+      mac: 0A:4F:A9:01:00:00
+      ipv4: 192.42.42.110
+  r2:
+    mgmt:
+      ipv4: 192.42.42.207
+
+  r3:
+    mgmt:
+      mac: 0A:4F:A9:42:00:42
+
+links: [ r1-r2, r1-r3 ]
+
+validate:
+  adj:
+    plugin: ospf_neighbor(nodes.r1.ospf.router_id)
+    wait: 15
+    nodes: [ r2, r3 ]
