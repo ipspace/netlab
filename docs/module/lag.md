@@ -82,7 +82,14 @@ The above diagram illustrates the three supported topologies:
 * 2:2 dual MLAG between 2 pairs of nodes (4 nodes in total)
 
 MLAG related parameters:
-* **lag.mlag.mac**: Used at node or interface level to configure the MAC address for the peer link. *Netlab* can auto-generate this, so it usually is not necessary to set this
+
+Global:
+* **lag.mlag.peer.backup_ip**: Property to use for resolving the peer's backup IP, default *loopback.ipv4* (which may require an IGP to be running). Can also be set to *mgmt.ipv4* (which may use a mgmt VRF on some platforms). Other values such as *interfaces[3].ipv4* could theoretically be used, though note that such addresses are assumed to reside in the default VRF - no attempt is made to determine or verify which VRF they are in
+
+Node/interface level:
+* **lag.mlag.mac**: Used at node or interface level to configure the MAC address for the peer link. *Netlab* can auto-generate this, so it is usually not necessary to set this
+
+Link level:
 * **lag.mlag.peergroup**: This parameter configures a unique peer group ID for the pair of MLAG switches. Can be set to *True* for auto-id generation or an integer (that must be globally unique)
 
 A simple example:
