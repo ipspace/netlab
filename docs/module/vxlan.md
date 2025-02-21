@@ -29,7 +29,8 @@ The following table describes per-platform support of individual VXLAN features:
 | Aruba AOS-CX       | ✅  | ✅  |  ❌  |
 | Cisco CSR 1000v    | ✅  | ✅  |  ❌  |
 | Cisco Nexus OS     | ✅  | ✅  |  ❌  |
-| Cumulus Linux      | ✅  | ✅  |  ❌  |
+| Cumulus Linux 4.x  | ✅  | ✅  |  ❌  |
+| Cumulus 5.x (NVUE) | ✅  | ✅  |  ❌  |
 | Dell OS10          | ✅  | ✅  |  ❌  |
 | FRR                | ✅  | ✅  | ✅  |
 | Nokia SR Linux     | ✅ [❗](caveats-srlinux)  |  ❌  |  ❌  |
