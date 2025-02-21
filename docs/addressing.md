@@ -68,7 +68,7 @@ Each address pool specification is a dictionary of address pools. Individual add
 * **unnumbered** -- unnumbered address pool. Interfaces attached to nodes based on this address pool will have IPv4 and/or IPv6 enabled based on the protocols enabled on node's loopback interface.
 * **prefix** -- IPv4 subnet allocation size.
 * **prefix6** -- Optional IPv6 subnet allocation size. *netlab* creates /64 IPv6 subnets when the **prefix6** address pool parameter is not specified.
-* **start** -- first subnet or first IP address offset. Used primarily with **loopback** pools to ensure the first address assignment gets the x.x.x.1/32 IP address, and with **mgmt** pool to specify the first management IP address.
+* **start** -- first subnet or first IP address offset (minimum: 0). Used primarily with **loopback** pools to ensure the first address assignment gets the x.x.x.1/32 IP address, and with **mgmt** pool to specify the first management IP address.
 * **allocation** -- [address allocation policy](addressing-tutorial-lan-links) (`id_based`, `sequential`, `p2p` or `loopback`).
 
 **Notes:**
@@ -101,7 +101,7 @@ addressing:
 * LAN IP addresses are assigned from 172.16.0.0/16 CIDR block. Subnet prefix is /24 (see *notes* above for details).
 * P2P IP addresses are /30 subnets from 10.1.0.0/16 CIDR block.
 * Management IP addresses are assigned from 192.168.121.0/24 CIDR block. The first IP address is 192.168.121.101 (*start* offset plus node ID)
-* MAC addresses of management interfaces start with 08-4F-A9. The last byte of the MAC address is the node ID.
+* MAC addresses of management interfaces start with 08-4F-A9. The fourth byte of the MAC address is the node ID (to ensure sufficient diversity; some platforms use the management MAC to derive other auto-generated MACs)
 
 (addressing-unnumbered)=
 ## Unnumbered Interface Support
