@@ -161,17 +161,6 @@ def mark_shared_mlag_vtep(node: Box, topology: Box) -> None:
       node.vxlan._shared_vtep = n.name
       return
 
-"""
-NVUE derives the "Base MAC Address" from mgmt.mac, using only the first 5 octets. This means that MACs which differ
-only in the last octet lead to duplicate MAC addresses.
-
-This quirk rewrites node.mgmt.mac such that it differs in the 4th octet too
-"""
-def nvue_rewrite_mgmt_mac(node: Box) -> None:
-  mac = netaddr.EUI(node.mgmt.mac,dialect=netaddr.mac_unix_expanded)
-  mac[3] = node.id                 # Make sure it differs in the 4th octet
-  node.mgmt.mac = str(mac)
-
 class Cumulus_Nvue(_Quirks):
 
   @classmethod
@@ -195,7 +184,6 @@ class Cumulus_Nvue(_Quirks):
     if 'vxlan' in mods:
       mark_shared_mlag_vtep(node,topology)
     nvue_create_native_subifs(node,topology)
-    nvue_rewrite_mgmt_mac(node)
 
     if devices.get_provider(node,topology) == 'clab':
       log.error(
