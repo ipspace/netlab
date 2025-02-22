@@ -110,7 +110,8 @@ The plugin implements AS-path-mangling nerd knobs for the following platforms:
 | Cisco IOSv/IOSvL2   |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
 | Cisco IOS-XE[^18v]  |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
 | Cisco Nexus OS      |  ✅  |  ✅  |  ✅  |   ❌  |   ❌  |
-| Cumulus Linux       |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
+| Cumulus Linux 4.x   |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
+| Cumulus 5.x (NVUE)  |  ✅  |  ❌  |  ❌  |  ❌  |  ❌  |
 | FRR                 |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
 | Junos[^Junos]       |   ❌  |  ✅  |   ❌  |   ❌  |   ❌  |
 | Mikrotik RouterOS 7 |  ✅  |  ✅  |   ❌  |   ❌  |   ❌  |
