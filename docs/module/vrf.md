@@ -46,7 +46,7 @@ These platforms support routing protocols in VRFs:
 | Cisco IOS XE[^18v]    | ✅ [❗](caveats-csr) | ✅  | ✅  | ✅  | ✅  |
 | Cisco Nexus OS        | ✅  |  ❌  | ✅  |
 | Cumulus Linux 4.x     | ✅  |  ❌  | ✅  | ✅  | ✅  |
-| Cumulus 5.x (NVUE)    | ✅  |  ❌  | ❌  | ❌  | ❌  |
+| Cumulus 5.x (NVUE)    | ✅  |  ❌  | ✅  | ❌  | ❌  |
 | Dell OS10             | ✅  |  ❌  | ✅  |
 | FRR [❗](caveats-frr) | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Junos[^Junos]         | ✅  | ✅  | ✅  |
