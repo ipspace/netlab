@@ -1,0 +1,24 @@
+{% macro ebgp_config(vrf,vrf_bgp) -%}
+{%   for n in vrf_bgp.neighbors if n.multihop is defined %}
+{%     if loop.first %}
+- set:
+    vrf:
+      {{ vrf }}:
+        router:
+          bgp:
+            neighbor:
+{%     endif %}
+{%     for a in ['ipv4','ipv6'] if a in n and n[a] is string %}
+              {{ n[a] }}:
+                multihop-ttl: {{ n.multihop }}
+{%     endfor %}
+{%   endfor %}
+{% endmacro %}
+---
+{{ ebgp_config('default',bgp) }}
+
+{% if vrfs is defined %}
+{%   for vname,vdata in vrfs.items() if vdata.bgp is defined and vdata.bgp.neighbors is defined %}
+{{ ebgp_config(vname,vdata.bgp) }}
+{%   endfor %}
+{% endif %}
