@@ -16,7 +16,7 @@ import argparse
 from ..data import types,get_empty_box,get_box
 from ..utils import log,strings,linuxbridge
 from ..utils import files as _files
-from . import _Provider
+from . import _Provider,validate_mgmt_ip
 from ..augment import devices
 from ..augment.links import get_link_by_index
 from ..cli import is_dry_run,external_commands
@@ -263,7 +263,7 @@ def create_vagrant_batches(topology: Box) -> None:
 class Libvirt(_Provider):
 
   """
-  post_transform hook: mark multi-provider links as LAN links
+  pre_transform hook: mark multi-provider links as LAN links
   """
   def pre_transform(self, topology: Box) -> None:
     if not 'links' in topology:
@@ -295,6 +295,7 @@ class Libvirt(_Provider):
   def node_post_transform(self, node: Box, topology: Box) -> None:
     if node.get('_set_ifindex'):
       pad_node_interfaces(node,topology)
+    validate_mgmt_ip(node,required=True,v4only=True,provider='libvirt',mgmt=topology.addressing.mgmt)
 
   def transform_node_images(self, topology: Box) -> None:
     self.node_image_version(topology)

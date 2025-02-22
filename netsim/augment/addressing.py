@@ -198,9 +198,9 @@ def validate_pools(addrs: Box, topology: Box) -> None:
               module='addressing')
 
     if 'ipv6' in pfx and 'ipv6_pfx' in pfx:
-      if pfx.ipv6_pfx.prefixlen > 56:
+      if pfx.ipv6_pfx.prefixlen > 56 and pool != 'mgmt':
         log.error(
-          "Error in '%s' addressing pool: IPv6 pool prefix cannot be longer than /56" % pool,
+          f"Error in '{pool}' addressing pool: IPv6 pool prefix cannot be longer than /56",
           category=log.IncorrectValue,
           module='addressing')
 

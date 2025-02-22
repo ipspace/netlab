@@ -10,6 +10,7 @@ import subprocess
 import os
 import typing
 import pathlib
+import ipaddress
 
 # Related modules
 from box import Box
@@ -378,7 +379,6 @@ def get_forwarded_ports(node: Box, topology: Box) -> list:
 """
 validate_images -- check the images used by individual nodes against provider image repo
 """
-
 def validate_images(topology: Box) -> None:
   p_cache: dict = {}
 
@@ -386,3 +386,41 @@ def validate_images(topology: Box) -> None:
     execute_node('validate_node_image',n_data,topology)
 
   log.exit_on_error()
+
+"""
+validate_mgmt_ip -- Validate management IP addresses
+"""
+def validate_mgmt_ip(
+      node: Box,
+      provider: str,
+      mgmt: Box,
+      required: bool = False,
+      v4only: bool = False) -> None:
+
+  valid_af = ['ipv4'] if v4only else ['ipv4','ipv6']
+  n_mgmt = node.mgmt
+  node_af = [ n_af for n_af in n_mgmt.keys() if n_af in valid_af ]
+  if not node_af and required:
+    log.error(
+      f'Node {node.name} must have {" or ".join(valid_af)} management address',
+      category=log.MissingValue,
+      module=provider)
+
+  if not mgmt:
+    return
+
+  for af in ['ipv4','ipv6']:
+    if af not in n_mgmt:
+      continue
+    m_addr = ipaddress.ip_interface(n_mgmt[af])
+    pfx = mgmt.get(f'{af}_pfx',None)
+    if pfx is None:
+      log.error(
+        f'Node {node.name} has an {af} management address, but the mgmt pool does not have an {af} prefix',
+        category=log.IncorrectValue,
+        module=provider)
+    elif not m_addr.network.subnet_of(pfx):
+      log.error(
+        f'Management {af} address of node {node.name} ({n_mgmt[af]}) is not part of the management subnet',
+        category=log.IncorrectValue,
+        module=provider)
