@@ -1,15 +1,6 @@
 {% if _vagrant_scripts.frr is not defined %}
 {%   set _vagrant_scripts.frr = True %}
 
-    $frr_script = <<-SCRIPT
-echo "Setting password for user Vagrant"
-echo vagrant:{{ n.ansible_ssh_pass }} | chpasswd
-
-echo "Enabling SSH password authentication"
-sed -i -e "s#PasswordAuthentication no#PasswordAuthentication yes#" /etc/ssh/sshd_config
-service sshd restart
-    SCRIPT
-
     $frr_install_script = <<-SCRIPT
 set -e
 if which /usr/lib/frr/frrinit.sh; then
@@ -36,7 +27,15 @@ fi
       domain.memory = 1024
     end
 
-    # Run debian-specific provisioning script
+    # Run debian-specific provisioning script.
     #
-    {{ name }}.vm.provision :shell, :inline => $frr_script{% 
+    # Password change has to be inline as the password might be different for each VM
+    #
+    $frr_password = <<-SCRIPT
+{% if n.ansible_ssh_pass|default(False) %}
+{%   include '_debian_vagrant_password.j2' +%}
+{% endif +%}
+    SCRIPT
+
+    {{ name }}.vm.provision :shell, :inline => $frr_password{%
       if not (n.netlab_quick_start|default(False)) %} + $frr_install_script {% endif +%}
