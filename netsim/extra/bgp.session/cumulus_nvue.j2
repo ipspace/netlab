@@ -1,0 +1,42 @@
+---
+{% macro ebgp_neighbor(n) -%}
+aspath:
+  allow-my-asn:
+    enable: {{ 'on' if n.allowas_in|default(False) else 'off' }}
+{%   if n.allowas_in|default(0) > 0 %}
+    occurrences: {{ n.allowas_in }}
+{%   endif %}
+{% endmacro %}
+
+{% macro ebgp_config(vrf,vrf_bgp) -%}
+{%   for n in vrf_bgp.neighbors %}
+{%     if loop.first %}
+- set:
+    vrf:
+      {{ vrf }}:
+        router:
+          bgp:
+            neighbor:
+{%     endif %}
+{%     for a in ['ipv4','ipv6','local_if'] if a in n and n[a] is string %}
+              {{ n[a] }}:
+                address-family:
+{%       for af in ['ipv4','ipv6'] if af in vrf_bgp %}
+                  {{ af }}-unicast:
+{{         ebgp_neighbor(n)|indent(20,first=True) }}
+{%       endfor %}
+{%       if 'evpn' in n %}
+                  l2vpn-evpn:
+{{         ebgp_neighbor(n)|indent(20,first=True) }}
+{%       endif %}
+{%     endfor %}
+{%   endfor %}
+{% endmacro %}
+
+{{ ebgp_config('default',bgp) }}
+
+{% if vrfs is defined %}
+{%   for vname,vdata in vrfs.items() if vdata.bgp is defined and vdata.bgp.neighbors is defined %}
+{{ ebgp_config(vname,vdata.bgp) }}
+{%   endfor %}
+{% endif %}
