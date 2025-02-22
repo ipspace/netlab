@@ -7,7 +7,7 @@ from box import Box
 import pathlib
 import argparse
 
-from . import _Provider,get_forwarded_ports
+from . import _Provider,get_forwarded_ports,validate_mgmt_ip
 from ..utils import log, strings, linuxbridge
 from ..data import filemaps, get_empty_box, append_to_list
 from ..data.types import must_be_dict
@@ -183,6 +183,7 @@ class Containerlab(_Provider):
   def node_post_transform(self, node: Box, topology: Box) -> None:
     add_daemon_filemaps(node,topology)
     normalize_clab_filemaps(node)
+    validate_mgmt_ip(node,required=True,provider='clab',mgmt=topology.addressing.mgmt)
 
     self.create_extra_files_mappings(node,topology)
 
