@@ -83,7 +83,7 @@ The above diagram illustrates the three supported topologies:
 
 MLAG related parameters:
 
-Global:
+Device features:
 * **lag.mlag.peer.backup_ip**: Property to use for resolving the peer's backup IP, default *loopback.ipv4* (which may require an IGP to be running). Can also be set to *mgmt.ipv4* (which may use a mgmt VRF on some platforms). Other values such as *interfaces[3].ipv4* could theoretically be used, though note that such addresses are assumed to reside in the default VRF - no attempt is made to determine or verify which VRF they are in
 
 Node/interface level:
