@@ -73,7 +73,7 @@ _netlab_ implements links between containers and virtual machines with Linux bri
 (lag-mlag)=
 ## Multi-chassis Link Aggregation (MLAG)
 
-For platforms that support it, link-level redundancy can be provided by creating multiple links to different switches. The switches have an internal *peer link* to synchronize the state related to the link aggregation, allowing them to present a single consistent network interface to the connected system.
+For platforms that support it, link-level redundancy can be provided by creating multiple links to different switches. The switches have an internal *peer link* to synchronize the state related to the link aggregation, allowing them to present a consistent network interface to the connected system.
 ![image](lag-topologies.png)
 
 The above diagram illustrates the three supported topologies:
@@ -82,7 +82,11 @@ The above diagram illustrates the three supported topologies:
 * 2:2 dual MLAG between 2 pairs of nodes (4 nodes in total)
 
 MLAG related parameters:
-* **lag.mlag.mac**: Used at node or interface level to configure the MAC address for the peer link. *Netlab* can auto-generate this, so it usually is not necessary to set this
+
+Node/interface level:
+* **lag.mlag.mac**: Used at node or interface level to configure the MAC address for the peer link. *Netlab* can auto-generate this, so it is usually not necessary to set this
+
+Link level:
 * **lag.mlag.peergroup**: This parameter configures a unique peer group ID for the pair of MLAG switches. Can be set to *True* for auto-id generation or an integer (that must be globally unique)
 
 A simple example:
@@ -106,3 +110,16 @@ links:
 - lag:
     members: [s1-s2]     # Note that multiple physical links are allowed here
     mlag.peergroup: True # (also) used to derive a unique MAC address for this group of MLAG peers
+```
+
+### Advanced MLAG Parameters
+
+The **lag.mlag.peer.backup_ip** _device feature_ specifies a property from the node data model that should be used to determine the MLAG peer's backup IP address (the IP address an MLAG node tries to reach when resolving a split-brain scenario). This parameter is part of the device features and can be changed only for a device type, not individual nodes.
+
+The default value is `loopback.ipv4` (the loopback interface's IPv4 address), which may require an IGP between the MLAG peers. Another interesting value of this parameter is `mgmt.ipv4` (the management IPv4 address). Other values such as *interfaces[3].ipv4* could theoretically be used, though note that such addresses are assumed to reside in the default VRF - no attempt is made to determine or verify which VRF they are in.
+
+For example, to use the management IPv4 address as the MLAG backup IP on Cumulus Linux using NVUE (device `cumulus_nvue`), set the following value in your [lab topology](defaults-topology), [user defaults](defaults-user-file), or [system defaults](defaults-locations):
+
+```
+defaults.devices.cumulus_nvue.features.lag.mlag.peer.backup_ip: mgmt.ipv4
+```
