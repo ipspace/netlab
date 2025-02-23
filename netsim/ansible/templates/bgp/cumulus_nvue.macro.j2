@@ -55,6 +55,10 @@
               {{ n.local_if }}:
                 type: unnumbered
                 remote-as: {{ n.as }}
+{%       if n.ipv4_rfc8950|default(False) %}
+                capabilities:
+                  extended-nexthop: on
+{%       endif %}
                 address-family:
                   ipv4-unicast:
                     enable: {{ 'on' if n.ipv4_rfc8950|default(False) else 'off' }}
@@ -68,6 +72,10 @@
 {%     for af in ('ipv4','ipv6') if af in n and n[af] is string %}
               {{ n[af] }}:
                 description: "{{ n.name }}"
+{%       if af=='ipv6' and n.ipv4_rfc8950|default(False) %}
+                capabilities:
+                  extended-nexthop: on
+{%       endif %}
 {%       if n._source_ifname is defined %}
                 update-source: {{ n._source_ifname }}
 {%       endif %}
@@ -85,7 +93,7 @@
 {#     NVUE cannot turn off default IPv4 activation, so we have to implement a fix for IPv6 #}
 {%       if af == 'ipv6' %}
                   ipv4-unicast:
-                    enable: off
+                    enable: {{ 'on' if n.ipv4_rfc8950|default(False) else 'off' }}
 {%       endif %}
                   {{ af }}-unicast:
                     enable: {{ 'on' if 'activate' not in n or n.activate[af]|default(False) else 'off' }}
