@@ -83,8 +83,8 @@ TASK [Find configuration template for initial] *********************************
 ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 
 TASK [fail] ********************************************************************
 skipping: [spine]
@@ -97,47 +97,10 @@ TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [h2] => 
-  msg: |-
-    initial configuration for h2
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.31.1.5/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.31.1.5/24 dev eth1
-    ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    #
-    #
-    #
-    # Print the final routing table
-    ip route
 ok: [spine] => 
   msg: |-
     initial configuration for spine
@@ -206,6 +169,43 @@ ok: [spine] =>
                 10.0.0.1/32: {}
               ipv6:
                 enable: off
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.31.1.5/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.31.1.5/24 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    #
+    #
+    # Print the final routing table
+    ip route
 ok: [l1] => 
   msg: |-
     initial configuration for l1
@@ -426,8 +426,8 @@ ok: [spine]
 ok: [l1]
 
 TASK [copy the cumulus nvue YAML initial config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/initial/cumulus_nvue.j2)] ***
-changed: [l1]
 changed: [spine]
+changed: [l1]
 
 TASK [Wait for nvued to start] *************************************************
 ok: [l1]
@@ -442,8 +442,8 @@ changed: [l1]
 changed: [spine]
 
 TASK [execute on cumulus: 'nv config apply -y' for initial config] *************
-changed: [spine]
 changed: [l1]
+changed: [spine]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [l2 -> localhost]
@@ -471,12 +471,12 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -490,9 +490,9 @@ TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/a
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-i_6l9x2d.sh] ***********************
-changed: [h1 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-qujni15a.sh] ***********************
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -622,44 +622,10 @@ skipping: [spine]
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [l1]
-ok: [l2]
 ok: [spine]
+ok: [l2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [l1] => 
-  msg: |-
-    bgp configuration for l1
-    =========================================
-  
-    - set:
-        router:
-          bgp:
-            enable: on
-        vrf:
-          default:
-            router:
-              bgp:
-                address-family:
-                  ipv4-unicast:
-                    enable: on
-  
-                    network:
-                      10.0.0.2/32: {}
-                autonomous-system: 65201
-                neighbor:
-                  swp1:
-                    type: unnumbered
-                    remote-as: 65100
-                    address-family:
-                      ipv4-unicast:
-                        enable: on
-                        community-advertise:
-                          extended: on
-                      ipv6-unicast:
-                        enable: off
-                        community-advertise:
-                          extended: on
-                router-id: 10.0.0.2
 ok: [l2] => 
   msg: |-
     bgp configuration for l2
@@ -696,30 +662,65 @@ ok: [l2] =>
     !
     !
     do write
-ok: [spine] => 
+ok: [l1] => 
   msg: |-
-    bgp configuration for spine
+    bgp configuration for l1
     =========================================
-  
+    ---
     - set:
-        router:
-          bgp:
-            enable: on
         vrf:
           default:
             router:
               bgp:
+                enable: on
+                autonomous-system: 65201
+                router-id: 10.0.0.2
+                address-family:
+                  ipv4-unicast:
+                    enable: on
+  
+                    network:
+                      10.0.0.2/32: {}
+                neighbor:
+                  swp1:
+                    type: unnumbered
+                    remote-as: 65100
+                    capabilities:
+                      extended-nexthop: on
+                    address-family:
+                      ipv4-unicast:
+                        enable: on
+                        community-advertise:
+                          extended: on
+                      ipv6-unicast:
+                        enable: off
+                        community-advertise:
+                          extended: on
+ok: [spine] => 
+  msg: |-
+    bgp configuration for spine
+    =========================================
+    ---
+    - set:
+        vrf:
+          default:
+            router:
+              bgp:
+                enable: on
+                autonomous-system: 65100
+                router-id: 10.0.0.1
                 address-family:
                   ipv4-unicast:
                     enable: on
   
                     network:
                       10.0.0.1/32: {}
-                autonomous-system: 65100
                 neighbor:
                   swp1:
                     type: unnumbered
                     remote-as: 65201
+                    capabilities:
+                      extended-nexthop: on
                     address-family:
                       ipv4-unicast:
                         enable: on
@@ -732,6 +733,8 @@ ok: [spine] =>
                   swp2:
                     type: unnumbered
                     remote-as: 65202
+                    capabilities:
+                      extended-nexthop: on
                     address-family:
                       ipv4-unicast:
                         enable: on
@@ -741,7 +744,6 @@ ok: [spine] =>
                         enable: off
                         community-advertise:
                           extended: on
-                router-id: 10.0.0.1
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for l1, spine
@@ -752,8 +754,8 @@ ok: [l1]
 ok: [spine]
 
 TASK [copy the cumulus nvue YAML bgp config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/cumulus_nvue.j2)] ***
-changed: [spine]
 changed: [l1]
+changed: [spine]
 
 TASK [Wait for nvued to start] *************************************************
 skipping: [l1]
@@ -768,8 +770,8 @@ changed: [spine]
 changed: [l1]
 
 TASK [execute on cumulus: 'nv config apply -y' for bgp config] *****************
-changed: [spine]
 changed: [l1]
+changed: [spine]
 
 TASK [template] ****************************************************************
 changed: [l2]

@@ -442,9 +442,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for s2, ce1, ce2
 
 TASK [template] ****************************************************************
-changed: [ce2]
-changed: [ce1]
 changed: [s2]
+changed: [ce1]
+changed: [ce2]
 
 TASK [set_fact] ****************************************************************
 ok: [s2]
@@ -452,9 +452,9 @@ ok: [ce1]
 ok: [ce2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+changed: [ce1]
 changed: [s2]
 changed: [ce2]
-changed: [ce1]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [s2]
@@ -504,6 +504,10 @@ ok: [s2]
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ce1]
 skipping: [ce2]
+ok: [s1] => 
+  msg: |-
+    vlan configuration for s1
+    =========================================
 ok: [s2] => 
   msg: |-
     vlan configuration for s2
@@ -515,10 +519,6 @@ ok: [s2] =>
   
   
     exit 0
-ok: [s1] => 
-  msg: |-
-    vlan configuration for s1
-    =========================================
 
 TASK [Deploy vlan configuration] ***********************************************
 skipping: [ce1]
@@ -587,22 +587,21 @@ ok: [s1] =>
   msg: |-
     bgp configuration for s1
     =========================================
-  
+    ---
     - set:
-        router:
-          bgp:
-            enable: on
         vrf:
           default:
             router:
               bgp:
+                enable: on
+                autonomous-system: 65000
+                router-id: 10.0.0.3
                 address-family:
                   ipv4-unicast:
                     enable: on
   
                     network:
                       10.0.0.3/32: {}
-                autonomous-system: 65000
                 neighbor:
                   10.0.0.4:
                     description: "s2"
@@ -616,8 +615,6 @@ ok: [s1] =>
                           regular: on
                           extended: on
                           large: off
-  
-                router-id: 10.0.0.3
 ok: [s2] => 
   msg: |-
     bgp configuration for s2
@@ -838,9 +835,9 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for ce
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for s1
 
 TASK [template] ****************************************************************
+changed: [ce1]
 changed: [ce2]
 changed: [s2]
-changed: [ce1]
 
 TASK [set_fact] ****************************************************************
 ok: [ce1]
@@ -933,6 +930,25 @@ ok: [s1] =>
                 area: 0.0.0.0
                 network-type: point-to-point
   
+  
+  
+  
+    - set:
+        vrf:
+          tenant:
+            router:
+              bgp:
+                enable: on
+                autonomous-system: 65000
+                router-id: 10.0.0.3
+                address-family:
+                  ipv4-unicast:
+                    enable: on
+                    redistribute:
+                      connected:
+                        enable: on
+                      ospf:
+                        enable: on
   
   
   
@@ -1293,8 +1309,6 @@ ok: [s1] =>
                '5042': {}
            router:
              bgp:
-               autonomous-system: 65000
-               enable: on
                rd: 65000:1
                route-export:
                  to-evpn:
@@ -1308,12 +1322,6 @@ ok: [s1] =>
                  ipv4-unicast:
                    route-export:
                      to-evpn:
-                       enable: on
-                   enable: on
-                   redistribute:
-                     connected:
-                       enable: on
-                     ospf:
                        enable: on
 
 TASK [Deploy evpn configuration] ***********************************************

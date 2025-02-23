@@ -1,4 +1,5 @@
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+[WARNING]: Found variable using reserved name: hosts
 
 PLAY [Deploy initial device configuration] *************************************
 
@@ -13,8 +14,8 @@ TASK [Find device readiness script] ********************************************
 ok: [rtr]
 ok: [h1]
 ok: [h2]
-ok: [h3]
 ok: [h4]
+ok: [h3]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [rtr]
@@ -24,7 +25,7 @@ skipping: [h3]
 skipping: [h4]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for rtr, h1, h2, h3, h4
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for rtr, h1, h2, h3, h4
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [rtr]
@@ -47,14 +48,14 @@ skipping: [h2]
 skipping: [h3]
 skipping: [h4]
 
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [rtr]
-skipping: [h1]
-skipping: [h2]
-skipping: [h3]
-skipping: [h4]
-
 TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [rtr]
+ok: [h1]
+ok: [h2]
+ok: [h3]
+ok: [h4]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [rtr]
 skipping: [h1]
 skipping: [h2]
@@ -69,7 +70,7 @@ skipping: [h3]
 skipping: [h4]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for rtr, h1, h2, h3, h4
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for rtr, h1, h2, h3, h4
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [rtr]
@@ -82,8 +83,8 @@ TASK [Find configuration template for initial] *********************************
 ok: [rtr]
 ok: [h1]
 ok: [h2]
-ok: [h3]
 ok: [h4]
+ok: [h3]
 
 TASK [fail] ********************************************************************
 skipping: [rtr]
@@ -91,6 +92,13 @@ skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [rtr]
+ok: [h1]
+ok: [h2]
+ok: [h3]
+ok: [h4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [h1] => 
@@ -169,6 +177,105 @@ ok: [h2] =>
     #
     # Print the final routing table
     ip route
+ok: [rtr] => 
+  msg: |-
+    initial configuration for rtr
+    =========================================
+  
+    - set:
+        system:
+          hostname: rtr
+          config:
+            snippet:
+              system-mtu:
+                file: /etc/network/ifupdown2/policy.d/mtu.json
+                content: |
+                  { "address": { "defaults": { "mtu": "1500" } } }
+  
+        interface:
+          eth0:
+            ip:
+              vrf: mgmt
+              address:
+                dhcp: {}
+            type: eth
+          swp1:
+            type: swp
+            link:
+              state:
+                up : {}
+            description: "rtr -> h1 [stub]"
+            ip:
+              address:
+                2001:db8:2::5/64: {}
+              ipv6:
+                forward: on
+              neighbor-discovery:
+                enable: on
+                router-advertisement:
+                  enable: on
+                  interval: 5000
+  
+          swp2:
+            type: swp
+            link:
+              state:
+                up : {}
+            description: "rtr -> h3 [stub]"
+            ip:
+              address:
+                2001:db8:2:1::5/64: {}
+              ipv6:
+                forward: on
+              neighbor-discovery:
+                enable: on
+                router-advertisement:
+                  enable: on
+                  interval: 5000
+  
+          swp3:
+            type: swp
+            link:
+              state:
+                up : {}
+            description: "rtr -> h2 [stub]"
+            ip:
+              address:
+                2001:db8:2:2::5/64: {}
+              ipv6:
+                forward: on
+              neighbor-discovery:
+                enable: on
+                router-advertisement:
+                  enable: on
+                  interval: 5000
+  
+          swp4:
+            type: swp
+            link:
+              state:
+                up : {}
+            description: "rtr -> h4 [stub]"
+            ip:
+              address:
+                2001:db8:2:3::5/64: {}
+              ipv6:
+                forward: on
+              neighbor-discovery:
+                enable: on
+                router-advertisement:
+                  enable: on
+                  interval: 5000
+  
+  
+    - set:
+        interface:
+          lo:
+            type: loopback
+            ip:
+              address:
+                127.0.0.1/8: {}
+                2001:db8:1:5::1/64: {}
 ok: [h4] => 
   msg: |-
     initial configuration for h4
@@ -245,124 +352,15 @@ ok: [h3] =>
     #
     # Print the final routing table
     ip route
-ok: [rtr] => 
-  msg: |-
-    initial configuration for rtr
-    =========================================
-  
-    - set:
-        system:
-          hostname: rtr
-          config:
-            snippet:
-              system-mtu:
-                file: /etc/network/ifupdown2/policy.d/mtu.json
-                content: |
-                  { "address": { "defaults": { "mtu": "1500" } } }
-        interface:
-          eth0:
-            ip:
-              vrf: mgmt
-              address:
-                dhcp: {}
-            type: eth
-          swp1:
-            type: swp
-            link:
-              state:
-                up : {}
-            description: "rtr -> h1 [stub]"
-            ip:
-              address:
-                2001:db8:2::5/64: {}
-              ipv6:
-                forward: on
-              neighbor-discovery:
-                enable: on
-                router-advertisement:
-                  enable: on
-                  interval: 5000
-  
-  
-          swp2:
-            type: swp
-            link:
-              state:
-                up : {}
-            description: "rtr -> h3 [stub]"
-            ip:
-              address:
-                2001:db8:2:1::5/64: {}
-              ipv6:
-                forward: on
-              neighbor-discovery:
-                enable: on
-                router-advertisement:
-                  enable: on
-                  interval: 5000
-  
-  
-          swp3:
-            type: swp
-            link:
-              state:
-                up : {}
-            description: "rtr -> h2 [stub]"
-            ip:
-              address:
-                2001:db8:2:2::5/64: {}
-              ipv6:
-                forward: on
-              neighbor-discovery:
-                enable: on
-                router-advertisement:
-                  enable: on
-                  interval: 5000
-  
-  
-          swp4:
-            type: swp
-            link:
-              state:
-                up : {}
-            description: "rtr -> h4 [stub]"
-            ip:
-              address:
-                2001:db8:2:3::5/64: {}
-              ipv6:
-                forward: on
-              neighbor-discovery:
-                enable: on
-                router-advertisement:
-                  enable: on
-                  interval: 5000
-  
-  
-  
-    - set:
-        interface:
-          lo:
-            type: loopback
-            ip:
-              address:
-                127.0.0.1/8: {}
-                2001:db8:1:5::1/64: {}
-
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [rtr]
-ok: [h1]
-ok: [h2]
-ok: [h4]
-ok: [h3]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for rtr
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2, h3, h4
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for rtr
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2, h3, h4
 
 TASK [set_fact] ****************************************************************
 ok: [rtr]
 
-TASK [copy the cumulus nvue YAML initial config file to switch (generated from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus_nvue.j2)] ***
+TASK [copy the cumulus nvue YAML initial config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/initial/cumulus_nvue.j2)] ***
 changed: [rtr]
 
 TASK [Wait for nvued to start] *************************************************
@@ -384,16 +382,16 @@ ok: [h3]
 ok: [h4]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
 changed: [h4 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 changed: [h3 -> localhost]
 
-TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
+TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
-changed: [h3 -> localhost]
+changed: [h2 -> localhost]
 changed: [h4 -> localhost]
+changed: [h3 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -401,23 +399,23 @@ skipping: [h2]
 skipping: [h3]
 skipping: [h4]
 
-TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
 
-TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
+TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
-changed: [h3 -> localhost]
 changed: [h4 -> localhost]
+changed: [h3 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-8dzj9h6_.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-cbe54r_m.sh] ***********************
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 changed: [h4 -> localhost]
 changed: [h3 -> localhost]
-changed: [h2 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -425,7 +423,7 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [rtr]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for rtr => (item=vrf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for rtr => (item=vrf)
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [rtr]
@@ -435,6 +433,9 @@ ok: [rtr]
 
 TASK [fail] ********************************************************************
 skipping: [rtr]
+
+TASK [Find configuration deployment deploy_script for vrf] *********************
+ok: [rtr]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [rtr] => 
@@ -448,6 +449,7 @@ ok: [rtr] =>
             table: auto
           red:
             table: auto
+  
   
   
     - set:
@@ -471,16 +473,13 @@ ok: [rtr] =>
             ip:
               vrf: blue
 
-TASK [Find configuration deployment deploy_script for vrf] *********************
-ok: [rtr]
-
 TASK [Deploy vrf configuration] ************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for rtr
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for rtr
 
 TASK [set_fact] ****************************************************************
 ok: [rtr]
 
-TASK [copy the cumulus nvue YAML vrf config file to switch (generated from /home/pipi/net101/tools/netsim/ansible/templates/vrf/cumulus_nvue.j2)] ***
+TASK [copy the cumulus nvue YAML vrf config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/cumulus_nvue.j2)] ***
 changed: [rtr]
 
 TASK [Wait for nvued to start] *************************************************
@@ -499,11 +498,11 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-h2                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-h3                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-h4                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-rtr                        : ok=29   changed=6    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+h1                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+h2                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+h3                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+h4                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+rtr                        : ok=30   changed=6    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 
 
 
