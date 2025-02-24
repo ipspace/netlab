@@ -1,6 +1,6 @@
 {% from "ospf/cumulus_nvue.j2" import vrf_ospf with context %}
 {% from "bgp/cumulus_nvue.macro.j2" import bgp_in_vrf with context %}
-
+---
 - set:
     vrf:
 {% for vname,vdata in vrfs.items() %}
@@ -15,8 +15,36 @@
 {% endfor %}
 
 {% for vname,vdata in vrfs.items() if 'bgp' in vdata %}
+{%   if loop.first and 'bgp' not in module %}
+{# In case the vrf module is used without the bgp module, need to repeat the base router config #}
+{%     include "bgp/cumulus_nvue.j2" %}
+{%   endif %}
 {{   bgp_in_vrf(vname, vdata) }}
 {% endfor %}
+
+{# Workaround for lack of NVUE support for VRF route leaking - note can only create 1 snippet for frr.conf globally #}
+{% set import_lengths = vrfs.values()|map(attribute='import',default=[])|map('length')|list %}
+{% if import_lengths|max > 1 %}
+- set:
+    system:
+      config:
+        snippet:
+          frr.conf: |
+{%   for vname,vdata in vrfs.items() %}
+            router bgp {{ bgp.as }} vrf {{ vname }}
+{%     for _af in ['ipv4','ipv6'] if _af in vdata.af %}
+              address-family {{ _af }} unicast
+                label vpn export auto
+                export vpn
+                import vpn
+                rd vpn export {{ vdata.rd }}
+                rt vpn import {{ vdata.import|join(" ") }}
+                rt vpn export {{ vdata.export|join(" ") }}
+                exit-address-family
+{%     endfor %}
+            !
+{%   endfor %}
+{% endif %}
 
 {% for intf in netlab_interfaces if intf.vrf is defined %}
 - set:

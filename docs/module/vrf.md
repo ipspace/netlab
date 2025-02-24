@@ -22,7 +22,7 @@ VRFs are supported on these platforms:
 | Cisco IOS XE[^18v]    | ✅  | ✅  | ✅  |
 | Cisco Nexus OS        | ✅  | ✅  | ✅  |
 | Cumulus Linux 4.x     | ✅  | ✅  | ✅  |
-| Cumulus 5.x (NVUE)    | ✅  |  ❌  |  ✅  |
+| Cumulus 5.x (NVUE)    | ✅  |  ✅ [❗](caveats-cumulus-nvue) |  ✅  |
 | Dell OS10             | ✅  | ✅  | ✅  |
 | FRR [❗](caveats-frr) | ✅  | ✅  | ✅  |
 | Junos[^Junos]         | ✅  | ✅  | ✅  |

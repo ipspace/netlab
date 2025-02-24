@@ -238,8 +238,8 @@ defaults.devices.cumulus.libvirt.memory: 2048
 Other caveats:
 
 * The default MTU value is 1500 to match the implementation defaults from other vendors and enable things like seamless OSPF peering.
-* Older Cumulus Linux releases (up to at least 5.9.2) do not support asymmetrical IRB over VXLAN.
 * *netlab* uses Cumulus VX 5.3 containers created by Michael Kashin and downloaded from his Docker Hub account. These containers are severely out-of-date, are not tested in our integration tests, and might not work as expected.
+* Some features - such as VRF route leaking and route advertisement in the default VRF (used in certain EVPN scenarios) - are not supported by NVUE, and require the use of custom config *snippets*. Only one such snippet is supported per configuration file (e.g. /etc/frr/frr.conf), which means a topology using a combination of multiple features that all require *snippets* will not work.
 
 (caveats-os10)=
 ## Dell OS10
