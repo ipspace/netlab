@@ -14,8 +14,8 @@ TASK [Find device readiness script] ********************************************
 ok: [rtr]
 ok: [h1]
 ok: [h2]
-ok: [h4]
 ok: [h3]
+ok: [h4]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [rtr]
@@ -83,8 +83,8 @@ TASK [Find configuration template for initial] *********************************
 ok: [rtr]
 ok: [h1]
 ok: [h2]
-ok: [h4]
 ok: [h3]
+ok: [h4]
 
 TASK [fail] ********************************************************************
 skipping: [rtr]
@@ -168,6 +168,44 @@ ok: [h2] =>
     ip -6 addr del 2001:db8:2:2::2/64 dev eth1 2>/dev/null
     set -e
     ip -6 addr add 2001:db8:2:2::2/64 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    #
+    #
+    # Print the final routing table
+    ip route
+ok: [h4] => 
+  msg: |-
+    initial configuration for h4
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:2:3::4/64 dev eth1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:2:3::4/64 dev eth1
     ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
@@ -276,44 +314,6 @@ ok: [rtr] =>
               address:
                 127.0.0.1/8: {}
                 2001:db8:1:5::1/64: {}
-ok: [h4] => 
-  msg: |-
-    initial configuration for h4
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
-    set +e
-    ip -6 addr del 2001:db8:2:3::4/64 dev eth1 2>/dev/null
-    set -e
-    ip -6 addr add 2001:db8:2:3::4/64 dev eth1
-    ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    #
-    #
-    #
-    # Print the final routing table
-    ip route
 ok: [h3] => 
   msg: |-
     initial configuration for h3
@@ -382,8 +382,8 @@ ok: [h3]
 ok: [h4]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h4 -> localhost]
 changed: [h2 -> localhost]
+changed: [h4 -> localhost]
 changed: [h1 -> localhost]
 changed: [h3 -> localhost]
 
@@ -408,14 +408,14 @@ skipping: [h4]
 TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
-changed: [h4 -> localhost]
 changed: [h3 -> localhost]
+changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-cbe54r_m.sh] ***********************
-changed: [h1 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-a_nc7w6j.sh] ***********************
+changed: [h3 -> localhost]
 changed: [h2 -> localhost]
 changed: [h4 -> localhost]
-changed: [h3 -> localhost]
+changed: [h1 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -442,13 +442,14 @@ ok: [rtr] =>
   msg: |-
     vrf configuration for rtr
     =========================================
-  
+    ---
     - set:
         vrf:
           blue:
             table: auto
           red:
             table: auto
+  
   
   
   

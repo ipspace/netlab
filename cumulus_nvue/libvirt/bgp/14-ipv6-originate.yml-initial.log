@@ -88,6 +88,54 @@ ok: [x1]
 ok: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut2] => 
+  msg: |-
+    initial configuration for dut2
+    =========================================
+  
+    - set:
+        system:
+          hostname: dut2
+          config:
+            snippet:
+              system-mtu:
+                file: /etc/network/ifupdown2/policy.d/mtu.json
+                content: |
+                  { "address": { "defaults": { "mtu": "1500" } } }
+  
+        interface:
+          eth0:
+            ip:
+              vrf: mgmt
+              address:
+                dhcp: {}
+            type: eth
+          swp1:
+            type: swp
+            link:
+              state:
+                up : {}
+            description: "dut2 -> dut [external]"
+            ip:
+              address:
+                2001:db8:cafe:e01::2/64: {}
+              ipv6:
+                forward: on
+              neighbor-discovery:
+                enable: on
+                router-advertisement:
+                  enable: on
+                  interval: 5000
+  
+  
+    - set:
+        interface:
+          lo:
+            type: loopback
+            ip:
+              address:
+                127.0.0.1/8: {}
+                2001:db8:1:2::1/64: {}
 ok: [dut] => 
   msg: |-
     initial configuration for dut
@@ -187,54 +235,6 @@ ok: [dut] =>
               address:
                 127.0.0.1/8: {}
                 2001:db8:1:1::1/64: {}
-ok: [dut2] => 
-  msg: |-
-    initial configuration for dut2
-    =========================================
-  
-    - set:
-        system:
-          hostname: dut2
-          config:
-            snippet:
-              system-mtu:
-                file: /etc/network/ifupdown2/policy.d/mtu.json
-                content: |
-                  { "address": { "defaults": { "mtu": "1500" } } }
-  
-        interface:
-          eth0:
-            ip:
-              vrf: mgmt
-              address:
-                dhcp: {}
-            type: eth
-          swp1:
-            type: swp
-            link:
-              state:
-                up : {}
-            description: "dut2 -> dut [external]"
-            ip:
-              address:
-                2001:db8:cafe:e01::2/64: {}
-              ipv6:
-                forward: on
-              neighbor-discovery:
-                enable: on
-                router-advertisement:
-                  enable: on
-                  interval: 5000
-  
-  
-    - set:
-        interface:
-          lo:
-            type: loopback
-            ip:
-              address:
-                127.0.0.1/8: {}
-                2001:db8:1:2::1/64: {}
 ok: [x1] => 
   msg: |-
     initial configuration for x1
@@ -431,12 +431,12 @@ ok: [dut]
 ok: [dut2]
 
 TASK [copy the cumulus nvue YAML initial config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/initial/cumulus_nvue.j2)] ***
-changed: [dut]
 changed: [dut2]
+changed: [dut]
 
 TASK [Wait for nvued to start] *************************************************
-ok: [dut2]
 ok: [dut]
+ok: [dut2]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
@@ -461,16 +461,16 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
 ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
@@ -508,15 +508,20 @@ skipping: [x2]
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [dut]
 ok: [dut2]
-ok: [x1]
 ok: [x2]
+ok: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
   msg: |-
     bgp configuration for dut
     =========================================
-    ---
+    - set:
+        router:
+          bgp:
+            enable: on
+            autonomous-system: 65000
+            router-id: 10.0.0.1
     - set:
         vrf:
           default:
@@ -609,7 +614,12 @@ ok: [dut2] =>
   msg: |-
     bgp configuration for dut2
     =========================================
-    ---
+    - set:
+        router:
+          bgp:
+            enable: on
+            autonomous-system: 65001
+            router-id: 10.0.0.2
     - set:
         vrf:
           default:
@@ -698,8 +708,8 @@ changed: [dut]
 changed: [dut2]
 
 TASK [execute on cumulus: 'nv config apply -y' for bgp config] *****************
-changed: [dut2]
 changed: [dut]
+changed: [dut2]
 
 TASK [template] ****************************************************************
 changed: [x1]
