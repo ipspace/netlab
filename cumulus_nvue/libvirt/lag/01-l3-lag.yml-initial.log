@@ -5,61 +5,102 @@ PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
-ok: [xr]
+ok: [x1]
+ok: [x2]
 
 TASK [Find device readiness script] ********************************************
 ok: [dut]
-ok: [xr]
+ok: [x1]
+ok: [x2]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [dut]
-skipping: [xr]
+skipping: [x1]
+skipping: [x2]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, xr
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [dut]
-ok: [xr]
+ok: [x1]
+ok: [x2]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [dut]
-ok: [xr]
+ok: [x1]
+ok: [x2]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
-skipping: [xr]
+skipping: [x1]
+skipping: [x2]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [dut]
-ok: [xr]
+ok: [x1]
+ok: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
-skipping: [xr]
+ok: [x1] => 
+  msg: |-
+    normalize configuration for x1
+    =========================================
+    !
+    interface Ethernet1
+     shutdown
+     mac-address 52dc.cafe.0201
+    !
+    interface Ethernet2
+     shutdown
+     mac-address 52dc.cafe.0202
+ok: [x2] => 
+  msg: |-
+    normalize configuration for x2
+    =========================================
+    !
+    interface Ethernet1
+     shutdown
+     mac-address 52dc.cafe.0301
+    !
+    interface Ethernet2
+     shutdown
+     mac-address 52dc.cafe.0302
 
 TASK [Deploy normalize configuration] ******************************************
 skipping: [dut]
-skipping: [xr]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for x1, x2
+
+TASK [eos_config: deploying normalize from /home/pipi/net101/tools/netsim/ansible/templates/normalize/eos.j2] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [x1]
+changed: [x2]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, xr
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
-ok: [xr]
+ok: [x1]
+ok: [x2]
 
 TASK [Find configuration template for initial] *********************************
 ok: [dut]
-ok: [xr]
+ok: [x1]
+ok: [x2]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
-skipping: [xr]
+skipping: [x1]
+skipping: [x2]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [dut]
-ok: [xr]
+ok: [x1]
+ok: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -89,10 +130,23 @@ ok: [dut] =>
             link:
               state:
                 up : {}
-            description: "dut -> xr"
+            description: "dut -> x1 [stub]"
             ip:
               address:
-                10.1.0.1/30: {}
+                172.16.0.1/24: {}
+              ipv6:
+                enable: off
+  
+          bond2:
+            type: bond
+            link:
+              mtu: 1400
+              state:
+                up : {}
+            description: "dut -> x2 [stub]"
+            ip:
+              address:
+                172.16.1.1/24: {}
               ipv6:
                 enable: off
   
@@ -101,7 +155,7 @@ ok: [dut] =>
             link:
               state:
                 down : {}
-            description: "dut -> xr"
+            description: "dut -> x1 [stub]"
             ip:
               ipv6:
                 enable: off
@@ -111,7 +165,29 @@ ok: [dut] =>
             link:
               state:
                 down : {}
-            description: "dut -> xr"
+            description: "dut -> x1 [stub]"
+            ip:
+              ipv6:
+                enable: off
+  
+          swp3:
+            type: swp
+            link:
+              mtu: 1400
+              state:
+                down : {}
+            description: "dut -> x2 [stub]"
+            ip:
+              ipv6:
+                enable: off
+  
+          swp4:
+            type: swp
+            link:
+              mtu: 1400
+              state:
+                down : {}
+            description: "dut -> x2 [stub]"
             ip:
               ipv6:
                 enable: off
@@ -126,183 +202,99 @@ ok: [dut] =>
                 10.0.0.1/32: {}
               ipv6:
                 enable: off
-ok: [xr] => 
+ok: [x1] => 
   msg: |-
-    initial configuration for xr
+    initial configuration for x1
     =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)# "
-    echo
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    cat <<SCRIPT >.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)$ "
-    export PATH=$PATH:/usr/sbin
-    echo
-    echo "Use sudo vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # Build hosts file
-    #
-    #
-    cat <<SCRIPT >/tmp/hosts
-    #
-    # Created by netlab initial
-    #
-    10.0.0.1 dut
-    10.1.0.1 bond1.dut
-    10.0.0.2 xr
-    10.1.0.2 bond1.xr
-    SCRIPT
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
-    #
-    # Configure system defaults on Ubuntu
-    #
-    hostnamectl set-hostname xr
-    sysctl -w net.ipv4.ip_forward=1
-    sysctl -w net.ipv6.conf.all.forwarding=1
-    APT_INSTALL=
-    #
-    if which curl; then
-      echo "Package curl already installed"
-    else
-      APT_INSTALL="$APT_INSTALL curl"
-    fi
-    #
-    if which gpg; then
-      echo "Package gnupg already installed"
-    else
-      APT_INSTALL="$APT_INSTALL gnupg"
-    fi
-    #
-    if which bridge; then
-      echo "Package iproute2 already installed"
-    else
-      APT_INSTALL="$APT_INSTALL iproute2"
-    fi
-    #
-    # APT_INSTALL always starts with a blank, so we can't just check if it's empty
-    # The following hack turns a string that contains only whitespaces into
-    # an empty string and removes leading whitespaces
-    #
-    APT_INSTALL=`echo $APT_INSTALL`
-    if [ -n "$APT_INSTALL" ]; then
-      echo "Installing packages $APT_INSTALL"
-      apt-get update -qq && apt-get install -qq $APT_INSTALL
-    fi
-    #
-    # Install FRR on a Ubuntu VM if needed
-    #
-    if which /usr/lib/frr/frrinit.sh; then
-      echo "FRR already installed, skipping installation"
-    else
-      curl -s https://deb.frrouting.org/frr/keys.asc >/etc/apt/trusted.gpg.d/frr.asc
-      FRRVER="frr-stable"
-      echo deb https://deb.frrouting.org/frr $(lsb_release -s -c) $FRRVER > /etc/apt/sources.list.d/frr.list
-      apt-get update -qq && apt-get install -qq frr frr-pythontools bridge-utils ethtool
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-    #
-    # Enable FRR daemons
-    #
-    echo "ospfd=yes" >>/etc/frr/daemons
-    echo "ospf6d=yes" >>/etc/frr/daemons
-  
-    /usr/lib/frr/frrinit.sh restart
-  
-    #
-    # Create loopbacks, stub and lag/bond devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-    if [ ! -e /sys/class/net/bond1 ]; then
-      if [ ! -e /sys/devices/virtual/net/bond1 ]; then
-    #
-    # Make sure 'bonding' module is loaded
-    #
-    if [ ! -e /sys/module/bonding ]; then
-    modprobe bonding miimon=100 mode=802.3ad lacp_rate=fast
-    fi
-    if [ ! -e /sys/class/net/bond1 ]; then
-    ip link add dev bond1 type bond mode 802.3ad lacp_rate fast
-    fi
-  
-        ip link set dev bond1 up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    sysctl -qw net.ipv6.conf.bond1.disable_ipv6=1
-    ip link set dev bond1 mtu 1500
-    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
-    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
-    ip link set dev eth2 mtu 1500
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-  
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname xr
+    hostname x1
     !
-    frr defaults datacenter
+    logging monitor debugging
+    aaa authorization exec default local
     !
-    interface lo
+    lldp run
+    ip routing
+    !
+    !
+    ip host dut 10.0.0.1 172.16.0.1 172.16.1.1
+    ip host x2 172.16.1.3
+    !
+    interface Management1
+     no lldp transmit
+     no lldp receive
+    !
+    interface port-channel1
+     no switchport
+     mtu 1500
+     description x1 -> dut [stub]
+     ip address 172.16.0.2/24
+    !
+    interface Ethernet1
+     no switchport
+     mtu 1500
+     description x1 -> dut [stub]
+    !
+     mac-address 52dc.cafe.0201
      no shutdown
-     ip address 10.0.0.2/32
     !
-    interface bond1
+    interface Ethernet2
+     no switchport
+     mtu 1500
+     description x1 -> dut [stub]
+    !
+     mac-address 52dc.cafe.0202
      no shutdown
-     description xr -> dut
-     ip address 10.1.0.2/30
     !
-    interface eth1
+ok: [x2] => 
+  msg: |-
+    initial configuration for x2
+    =========================================
+    hostname x2
+    !
+    logging monitor debugging
+    aaa authorization exec default local
+    !
+    lldp run
+    ip routing
+    !
+    !
+    ip host dut 10.0.0.1 172.16.0.1 172.16.1.1
+    ip host x1 172.16.0.2
+    !
+    interface Management1
+     no lldp transmit
+     no lldp receive
+    !
+    interface port-channel1
+     no switchport
+     mtu 1400
+     description x2 -> dut [stub]
+     ip address 172.16.1.3/24
+    !
+    interface Ethernet1
+     no switchport
+     mtu 1400
+     description x2 -> dut [stub]
+    !
+     mac-address 52dc.cafe.0301
      no shutdown
-     description xr -> dut
-     ! no ip address
     !
-    interface eth2
+    interface Ethernet2
+     no switchport
+     mtu 1400
+     description x2 -> dut [stub]
+    !
+     mac-address 52dc.cafe.0302
      no shutdown
-     description xr -> dut
-     ! no ip address
     !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for xr
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for x1, x2
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
 
-TASK [copy the cumulus nvue YAML initial config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/initial/cumulus_nvue.j2)] ***
+TASK [copy the cumulus nvue YAML initial config file to switch (generated from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus_nvue.j2)] ***
 changed: [dut]
 
 TASK [Wait for nvued to start] *************************************************
@@ -317,65 +309,60 @@ changed: [dut]
 TASK [execute on cumulus: 'nv config apply -y' for initial config] *************
 changed: [dut]
 
-TASK [template] ****************************************************************
-changed: [xr]
-
-TASK [set_fact] ****************************************************************
-ok: [xr]
-
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [xr]
-
-TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-skipping: [xr]
+TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
+changed: [x1]
+changed: [x2]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
-ok: [xr]
+ok: [x1]
+ok: [x2]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, xr => (item=lag)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, xr => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=lag)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=routing)
 
 TASK [Figure out whether to deploy the module lag on current device] ***********
 ok: [dut]
-ok: [xr]
+ok: [x2]
+ok: [x1]
 
 TASK [Find configuration template for lag] *************************************
 ok: [dut]
-ok: [xr]
+ok: [x1]
+ok: [x2]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
-skipping: [xr]
+skipping: [x1]
+skipping: [x2]
 
 TASK [Find configuration deployment deploy_script for lag] *********************
 ok: [dut]
-ok: [xr]
+ok: [x1]
+ok: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [xr] => 
+ok: [x1] => 
   msg: |-
-    lag configuration for xr
+    lag configuration for x1
     =========================================
-    #!/bin/bash
-    #
-    set -e # Exit immediately when any command fails
-    #
-    # Bond devices are created by 'initial' module - add members
-    #
-    ethtool -s eth1 autoneg off speed 1000 duplex full
-    ip link set dev eth1 down
-    ip link set dev eth1 master bond1
-    ip link set dev eth1 up
-    ethtool -s eth2 autoneg off speed 1000 duplex full
-    ip link set dev eth2 down
-    ip link set dev eth2 master bond1
-    ip link set dev eth2 up
-    ip link set dev bond1 up
-    exit 0
+  
+    interface port-channel1
+     description x1 -> dut
+    !
+    !
+    interface Ethernet1
+     description x1 -> dut in channel-group 1
+     channel-group 1 mode active
+     lacp timer fast
+    !
+    interface Ethernet2
+     description x1 -> dut in channel-group 1
+     channel-group 1 mode active
+     lacp timer fast
 ok: [dut] => 
   msg: |-
     lag configuration for dut
@@ -396,15 +383,48 @@ ok: [dut] =>
               member:
                 swp1: {}
                 swp2: {}
+          swp3:
+            link:
+              state:
+                up: {}
+          swp4:
+            link:
+              state:
+                up: {}
+          bond2:
+            link:
+              mtu: 1400
+            bond:
+              member:
+                swp3: {}
+                swp4: {}
+ok: [x2] => 
+  msg: |-
+    lag configuration for x2
+    =========================================
+  
+    interface port-channel1
+     description x2 -> dut
+    !
+    !
+    interface Ethernet1
+     description x2 -> dut in channel-group 1
+     channel-group 1 mode active
+     lacp timer fast
+    !
+    interface Ethernet2
+     description x2 -> dut in channel-group 1
+     channel-group 1 mode active
+     lacp timer fast
 
 TASK [Deploy lag configuration] ************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for xr
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for x1, x2
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
 
-TASK [copy the cumulus nvue YAML lag config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/lag/cumulus_nvue.j2)] ***
+TASK [copy the cumulus nvue YAML lag config file to switch (generated from /home/pipi/net101/tools/netsim/ansible/templates/lag/cumulus_nvue.j2)] ***
 changed: [dut]
 
 TASK [Wait for nvued to start] *************************************************
@@ -419,137 +439,75 @@ changed: [dut]
 TASK [execute on cumulus: 'nv config apply -y' for lag config] *****************
 changed: [dut]
 
-TASK [template] ****************************************************************
-changed: [xr]
+TASK [eos_config: deploying lag from /home/pipi/net101/tools/netsim/ansible/templates/lag/eos.j2] ***
+changed: [x1]
+changed: [x2]
 
-TASK [set_fact] ****************************************************************
-ok: [xr]
-
-TASK [run /tmp/config.sh to deploy lag config from /home/pipi/netlab_gh/netsim/ansible/templates/lag/frr.j2] ***
-changed: [xr]
-
-TASK [run vtysh to import lag config from /home/pipi/netlab_gh/netsim/ansible/templates/lag/frr.j2] ***
-skipping: [xr]
-
-TASK [Figure out whether to deploy the module ospf on current device] **********
+TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [dut]
-ok: [xr]
+ok: [x1]
+ok: [x2]
 
-TASK [Find configuration template for ospf] ************************************
-ok: [dut]
-ok: [xr]
+TASK [Find configuration template for routing] *********************************
+skipping: [dut]
+ok: [x1]
+ok: [x2]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
-skipping: [xr]
+skipping: [x1]
+skipping: [x2]
 
-TASK [Find configuration deployment deploy_script for ospf] ********************
-ok: [dut]
-ok: [xr]
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [dut]
+ok: [x1]
+ok: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [dut] => 
-  msg: |-
-    ospf configuration for dut
-    =========================================
-    - set:
-        router:
-          ospf:
-            enable: on
-  
-  
-    - set:
-        vrf:
-          default:
-            router:
-              ospf:
-                enable: on
-  
-                router-id: 10.0.0.1
-  
-        interface:
-          lo:
-            router:
-              ospf:
-                area: 0.0.0.0
-                network-type: broadcast
-          bond1:
-            router:
-              ospf:
-                area: 0.0.0.0
-                network-type: point-to-point
-ok: [xr] => 
-  msg: |-
-    ospf configuration for xr
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.2
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface bond1
-    ! xr -> dut
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    do write
-
-TASK [Deploy ospf configuration] ***********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for xr
-
-TASK [set_fact] ****************************************************************
-ok: [dut]
-
-TASK [copy the cumulus nvue YAML ospf config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/cumulus_nvue.j2)] ***
-changed: [dut]
-
-TASK [Wait for nvued to start] *************************************************
 skipping: [dut]
+ok: [x1] => 
+  msg: |-
+    routing configuration for x1
+    =========================================
+    !
+    !
+    ! AS-path access lists
+    !
+    !
+    ! Static routes
+    !
+    ip route 0.0.0.0/0 port-channel1 172.16.0.1
+ok: [x2] => 
+  msg: |-
+    routing configuration for x2
+    =========================================
+    !
+    !
+    ! AS-path access lists
+    !
+    !
+    ! Static routes
+    !
+    ip route 0.0.0.0/0 port-channel1 172.16.1.1
 
-TASK [set_fact] ****************************************************************
-ok: [dut]
+TASK [Deploy routing configuration] ********************************************
+skipping: [dut]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for x1, x2
 
-TASK [execute on cumulus: 'nv config patch' for ospf config] *******************
-changed: [dut]
-
-TASK [execute on cumulus: 'nv config apply -y' for ospf config] ****************
-changed: [dut]
-
-TASK [template] ****************************************************************
-changed: [xr]
-
-TASK [set_fact] ****************************************************************
-ok: [xr]
-
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
-skipping: [xr]
-
-TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [xr]
+TASK [eos_config: deploying routing from /home/pipi/net101/tools/netsim/ansible/templates/routing/eos.j2] ***
+changed: [x2]
+changed: [x1]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=41   changed=9    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
-xr                         : ok=34   changed=6    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+dut                        : ok=32   changed=6    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+x1                         : ok=31   changed=4    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
+x2                         : ok=31   changed=4    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
 
 
 
 The device under is a router with a L3 LAG link connected to a FRR device. The
-devices should be able to establish an OSPF adjacency.
+FRR device should be able to ping the loopback interface of DUT.
 
