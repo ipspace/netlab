@@ -19,7 +19,7 @@ skipping: [x2]
 skipping: [dut]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for x1, x2, dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x1, x2, dut
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [dut]
@@ -70,9 +70,9 @@ ok: [x2] =>
 
 TASK [Deploy normalize configuration] ******************************************
 skipping: [dut]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for x1, x2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for x1, x2
 
-TASK [eos_config: deploying normalize from /home/pipi/net101/tools/netsim/ansible/templates/normalize/eos.j2] ***
+TASK [eos_config: deploying normalize from /home/pipi/netlab_gh/netsim/ansible/templates/normalize/eos.j2] ***
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
 should be similar to how they appear if present in the running configuration on
 device including the indentation
@@ -80,7 +80,7 @@ changed: [x2]
 changed: [x1]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for x1, x2, dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x1, x2, dut
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
@@ -240,6 +240,20 @@ ok: [dut] =>
             - 172.16.1.1/24
     SCRIPT
   
+    # Disable auto-negotiation on Ethernet interfaces, needed to make LACP work correctly
+    cat <<SCRIPT > /etc/systemd/network/98-eth.link
+  
+    [Match]
+    OriginalName=eth*
+  
+    [Link]
+    BitsPerSecond=1G
+    AutoNegotiation=no
+    Duplex=full
+    SCRIPT
+  
+    chmod 600 /etc/netplan/*
+  
     echo -n 'Starting netplan generate ' && date
     netplan generate
     echo -n 'Starting netplan apply ' && date
@@ -330,17 +344,17 @@ ok: [x2] =>
     !
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for x1, x2
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for x1, x2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux.yml for dut
 
-TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
-changed: [x1]
+TASK [eos_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/eos.j2] ***
 changed: [x2]
+changed: [x1]
 
 TASK [template] ****************************************************************
 changed: [dut]
 
-TASK [Execute /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux.j2] ***
+TASK [Execute /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux.j2] ***
 changed: [dut]
 
 PLAY [Deploy module-specific configurations] ***********************************
@@ -351,8 +365,8 @@ ok: [x1]
 ok: [x2]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=lag)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=lag)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=routing)
 
 TASK [Figure out whether to deploy the module lag on current device] ***********
 ok: [dut]
@@ -361,8 +375,8 @@ ok: [x2]
 
 TASK [Find configuration template for lag] *************************************
 ok: [dut]
-ok: [x2]
 ok: [x1]
+ok: [x2]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -371,8 +385,8 @@ skipping: [x2]
 
 TASK [Find configuration deployment deploy_script for lag] *********************
 ok: [dut]
-ok: [x1]
 ok: [x2]
+ok: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -389,10 +403,8 @@ ok: [dut] =>
     ethtool -s eth2 autoneg off speed 1000 duplex full
     ethtool -s eth3 autoneg off speed 1000 duplex full
     ethtool -s eth4 autoneg off speed 1000 duplex full
-    ip link del bond1
-    ip link del bond2
-    netplan generate
-    netplan apply
+    ip link set dev bond1 up
+    ip link set dev bond2 up
     exit 0
 ok: [x1] => 
   msg: |-
@@ -432,16 +444,16 @@ ok: [x2] =>
      lacp timer fast
 
 TASK [Deploy lag configuration] ************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for x1, x2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for x1, x2
 
 TASK [template] ****************************************************************
 changed: [dut]
 
-TASK [Execute /tmp/config.sh to deploy lag config from /home/pipi/net101/tools/netsim/ansible/templates/lag/linux.j2] ***
+TASK [Execute /tmp/config.sh to deploy lag config from /home/pipi/netlab_gh/netsim/ansible/templates/lag/linux.j2] ***
 changed: [dut]
 
-TASK [eos_config: deploying lag from /home/pipi/net101/tools/netsim/ansible/templates/lag/eos.j2] ***
+TASK [eos_config: deploying lag from /home/pipi/netlab_gh/netsim/ansible/templates/lag/eos.j2] ***
 changed: [x2]
 changed: [x1]
 
@@ -494,9 +506,9 @@ ok: [x2] =>
 
 TASK [Deploy routing configuration] ********************************************
 skipping: [dut]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for x1, x2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for x1, x2
 
-TASK [eos_config: deploying routing from /home/pipi/net101/tools/netsim/ansible/templates/routing/eos.j2] ***
+TASK [eos_config: deploying routing from /home/pipi/netlab_gh/netsim/ansible/templates/routing/eos.j2] ***
 changed: [x1]
 changed: [x2]
 
