@@ -1,4 +1,5 @@
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+[WARNING]: Found variable using reserved name: hosts
 
 PLAY [Deploy initial device configuration] *************************************
 
@@ -13,8 +14,8 @@ TASK [Find device readiness script] ********************************************
 ok: [h1]
 ok: [h2]
 ok: [x1]
-ok: [dut]
 ok: [th]
+ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [h1]
@@ -37,8 +38,8 @@ TASK [Find configuration template for normalize] *******************************
 ok: [h1]
 ok: [h2]
 ok: [x1]
-ok: [dut]
 ok: [th]
+ok: [dut]
 
 TASK [fail] ********************************************************************
 skipping: [h1]
@@ -47,14 +48,14 @@ skipping: [x1]
 skipping: [th]
 skipping: [dut]
 
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [h1]
-skipping: [h2]
-skipping: [x1]
-skipping: [th]
-skipping: [dut]
-
 TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [h1]
+ok: [h2]
+ok: [x1]
+ok: [dut]
+ok: [th]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
 skipping: [h2]
 skipping: [x1]
@@ -75,8 +76,8 @@ TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [h1]
 ok: [h2]
 ok: [x1]
-ok: [th]
 ok: [dut]
+ok: [th]
 
 TASK [Find configuration template for initial] *********************************
 ok: [h1]
@@ -92,69 +93,70 @@ skipping: [x1]
 skipping: [th]
 skipping: [dut]
 
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [h1]
+ok: [h2]
+ok: [x1]
+ok: [th]
+ok: [dut]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [dut] => 
+ok: [th] => 
   msg: |-
-    initial configuration for dut
+    initial configuration for th
     =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
   
-    updates:
-    - path: /system/mtu
-      value:
-       default-port-mtu: 1514
-       default-l2-mtu: 1514
-       default-ip-mtu: 1500
-       _annotate_default-ip-mtu: "Custom system wide setting, overrides default 1500"
-  
-    - path: /interface[name=system0]/subinterface[index=0]
-      value:
-       description: "No description"
-       ipv4:
-        admin-state: enable
-        address:
-        - ip-prefix: "10.0.0.1/32"
-  
-  
-    - path: /interface[name=ethernet-1/1]
-      value:
-       subinterface:
-        index: 0
-        description: "dut ~ x1,th"
-  
-    - path: /interface[name=ethernet-1/1]/subinterface[index=0]
-      value:
-       description: "dut ~ x1,th"
-       ipv4:
-        admin-state: enable
-        address:
-        - ip-prefix: "172.16.44.1/24"
-          primary: [null]
-       ipv6:
-        admin-state: enable
-        address:
-        - ip-prefix: "2001:db8:cafe:44::1/64"
-        neighbor-discovery:
-         learn-unsolicited: link-local
-        router-advertisement:
-         router-role:
-          admin-state: enable             # no ipv6 nd suppress-ra
-          min-advertisement-interval: 4   # Leaving this at platform default 200..600 takes too long at startup
-          _annotate_min-advertisement-interval: "Reduced from platform default 200s"
-          max-advertisement-interval: 5
-  
-  
-  
-    - path: /network-instance[name=default]
-      value:
-       type: default
-       interface:
-       - name: system0.0
-  
-    - path: /network-instance[name=default]
-      value:
-       type: default
-       interface:
-       - name: ethernet-1/1.0
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.44.5/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.44.5/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:cafe:44::5/64 dev eth1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:cafe:44::5/64 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.44.1 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.44.1 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.44.1 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.44.1 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
 ok: [h1] => 
   msg: |-
     initial configuration for h1
@@ -233,62 +235,6 @@ ok: [h1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [th] => 
-  msg: |-
-    initial configuration for th
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.44.5/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.44.5/24 dev eth1
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
-    set +e
-    ip -6 addr del 2001:db8:cafe:44::5/64 dev eth1 2>/dev/null
-    set -e
-    ip -6 addr add 2001:db8:cafe:44::5/64 dev eth1
-    ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.2.0.0/24 2>/dev/null; do
-      : ; done
-    #
-    #
-    echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.44.1 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.44.1 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.44.1 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.44.1 dev eth1 protocol static
-    #
-    # Print the final routing table
-    ip route
 ok: [h2] => 
   msg: |-
     initial configuration for h2
@@ -367,6 +313,68 @@ ok: [h2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+  
+    updates:
+    - path: /system/mtu
+      value:
+       default-port-mtu: 1514
+       default-l2-mtu: 1514
+       default-ip-mtu: 1500
+       _annotate_default-ip-mtu: "Custom system wide setting, overrides default 1500"
+  
+    - path: /interface[name=system0]/subinterface[index=0]
+      value:
+       description: "No description"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "10.0.0.1/32"
+  
+  
+    - path: /interface[name=ethernet-1/1]
+      value:
+       subinterface:
+        index: 0
+        description: "dut ~ x1,th"
+  
+    - path: /interface[name=ethernet-1/1]/subinterface[index=0]
+      value:
+       description: "dut ~ x1,th"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "172.16.44.1/24"
+          primary: [null]
+       ipv6:
+        admin-state: enable
+        address:
+        - ip-prefix: "2001:db8:cafe:44::1/64"
+        neighbor-discovery:
+         learn-unsolicited: link-local
+        router-advertisement:
+         router-role:
+          admin-state: enable             # no ipv6 nd suppress-ra
+          min-advertisement-interval: 4   # Leaving this at platform default 200..600 takes too long at startup
+          _annotate_min-advertisement-interval: "Reduced from platform default 200s"
+          max-advertisement-interval: 5
+  
+  
+  
+    - path: /network-instance[name=default]
+      value:
+       type: default
+       interface:
+       - name: system0.0
+  
+    - path: /network-instance[name=default]
+      value:
+       type: default
+       interface:
+       - name: ethernet-1/1.0
 ok: [x1] => 
   msg: |-
     initial configuration for x1
@@ -482,13 +490,6 @@ ok: [x1] =>
     vtysh -f /tmp/config
     exit 0
 
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [h1]
-ok: [h2]
-ok: [x1]
-ok: [th]
-ok: [dut]
-
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for h1, h2, x1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for th
@@ -506,8 +507,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for h1, h2, x1
 
 TASK [template] ****************************************************************
-changed: [h2]
 changed: [h1]
+changed: [h2]
 changed: [x1]
 
 TASK [set_fact] ****************************************************************
@@ -516,9 +517,9 @@ ok: [h2]
 ok: [x1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+changed: [x1]
 changed: [h1]
 changed: [h2]
-changed: [x1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [h1]
@@ -543,7 +544,7 @@ skipping: [th]
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [th -> localhost]
 
-TASK [Remove temporary file /tmp/th_initial-nutctl4e.sh] ***********************
+TASK [Remove temporary file /tmp/th_initial-4f3ss6dy.sh] ***********************
 changed: [th -> localhost]
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
@@ -586,6 +587,12 @@ skipping: [h1]
 skipping: [h2]
 skipping: [x1]
 
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [dut]
+skipping: [x1]
+ok: [h1]
+ok: [h2]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
 skipping: [x1]
@@ -614,20 +621,14 @@ ok: [h2] =>
     ip route 172.16.44.0/24 172.16.33.42 eth1
     ipv6 route 2001:db8:cafe:44::/64 2001:db8:cafe:33::2a eth1
 
-TASK [Find configuration deployment deploy_script for routing] *****************
-skipping: [dut]
-skipping: [x1]
-ok: [h1]
-ok: [h2]
-
 TASK [Deploy routing configuration] ********************************************
 skipping: [dut]
 skipping: [x1]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for h1, h2
 
 TASK [template] ****************************************************************
-changed: [h1]
 changed: [h2]
+changed: [h1]
 
 TASK [set_fact] ****************************************************************
 ok: [h1]
@@ -658,6 +659,12 @@ skipping: [dut]
 skipping: [h1]
 skipping: [h2]
 skipping: [x1]
+
+TASK [Find configuration deployment deploy_script for vlan] ********************
+skipping: [h1]
+skipping: [h2]
+ok: [dut]
+ok: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
@@ -764,12 +771,6 @@ ok: [dut] =>
        interface:
        - name: irb0.1000
 
-TASK [Find configuration deployment deploy_script for vlan] ********************
-skipping: [h1]
-skipping: [h2]
-ok: [dut]
-ok: [x1]
-
 TASK [Deploy vlan configuration] ***********************************************
 skipping: [h1]
 skipping: [h2]
@@ -814,6 +815,12 @@ skipping: [dut]
 skipping: [h1]
 skipping: [h2]
 skipping: [x1]
+
+TASK [Find configuration deployment deploy_script for gateway] *****************
+skipping: [h1]
+skipping: [h2]
+ok: [dut]
+ok: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
@@ -865,12 +872,6 @@ ok: [x1] =>
     CONFIG
     vtysh -f /tmp/vrrp_config
 
-TASK [Find configuration deployment deploy_script for gateway] *****************
-skipping: [h1]
-skipping: [h2]
-ok: [dut]
-ok: [x1]
-
 TASK [Deploy gateway configuration] ********************************************
 skipping: [h1]
 skipping: [h2]
@@ -902,11 +903,11 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=32   changed=3    unreachable=0    failed=0    skipped=16   rescued=0    ignored=0   
-h1                         : ok=30   changed=5    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
-h2                         : ok=29   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
-th                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-x1                         : ok=36   changed=6    unreachable=0    failed=0    skipped=17   rescued=0    ignored=0   
+dut                        : ok=33   changed=3    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+h1                         : ok=31   changed=5    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+h2                         : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+th                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+x1                         : ok=37   changed=6    unreachable=0    failed=0    skipped=16   rescued=0    ignored=0   
 
 
 
