@@ -138,8 +138,8 @@ It looks like you have another lab running in this directory. If you want to
 continue the lab startup process due to a previous failure, please use the
 'netlab up --snapshot' command.
 
-Otherwise use 'netlab status' to check the status of labs running on this machine, or
-'netlab down' to shut down the other lab running in this directory.
+Otherwise use 'netlab status' to check the status of labs running on this
+machine, or 'netlab down' to shut down the other lab running in this directory.
 
 If you are sure that no other lab is running in this directory, remove the
 netlab.lock file manually and retry.
@@ -163,10 +163,12 @@ def check_lab_instance(topology: Box) -> None:
 It looks like the lab instance '{lab_id}' is already running in directory
 {lab_states[lab_id].dir}.
 
-Please use 'netlab status' to check the status of labs running on this machine.
-You can stop the other lab instance with 'netlab status cleanup {lab_id}'.
+Please use 'netlab status --all' to check the status of labs running on this
+machine. You can stop the other lab instance with:
 
-If you think your netlab status file is corrupt, use 'netlab status reset' to
+netlab status -i {lab_id} --cleanup
+
+If you think your netlab status file is corrupt, use 'netlab status --reset' to
 delete it.
 ''')
   log.fatal(f'aborting "netlab up" request')
