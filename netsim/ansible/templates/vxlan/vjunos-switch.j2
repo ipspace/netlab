@@ -1,0 +1,51 @@
+{# 
+   vJunos Switch VXLAN: different configuration required if VXLAN static flooding or EVPN-based
+#}
+
+{# first of all, in any case, better to explicitly ECMP load balance per-flow #}
+policy-options {
+    policy-statement ecmp {
+        then {
+            load-balance per-flow;
+        }
+    }
+}
+routing-options {
+    forwarding-table {
+        export ecmp;
+    }
+}
+
+{% if vxlan.flooding|default('') == 'static' %}
+
+{# define basic VXLAN config in switch-options stanza #}
+switch-options {
+    vtep-source-interface {{ vxlan.vtep_interface }};
+{# need to list all possible static vtep here - fine tuning will be done per-vlan #}
+{%   for remote_vtep in vxlan.vtep_list %}
+    remote-vtep-list {{ remote_vtep }};
+{%   endfor %}
+}
+
+{# define VLAN to VXLAN mapping and remote vteps #}
+{%   if vxlan.vlans is defined %}
+vlans {
+{%     for vname in vxlan.vlans if vlans[vname].vni is defined %}
+{%       set vlan = vlans[vname] %}
+    {{ vname }} {
+        vxlan {
+            vni {{ vlan.vni }};
+            ingress-node-replication;
+{%       if vlan.vtep_list is defined %}
+{%         for vtep in vlan.vtep_list %}
+            static-remote-vtep-list {{ vtep }};
+{%         endfor %}
+{%       endif %}
+        }
+    }
+{%     endfor %}
+}
+{%   endif %}
+
+
+{% endif %}
