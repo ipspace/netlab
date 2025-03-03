@@ -49,3 +49,32 @@ vlans {
 
 
 {% endif %}
+
+
+{% if vxlan.flooding|default('') == 'evpn' %}
+
+{# use switch-options with "fake" RD and RT - the RT will be overwritten per-vni on the protocols->evpn #}
+switch-options {
+    vtep-source-interface {{ vxlan.vtep_interface }};
+    route-distinguisher {{ vxlan.vtep }}:65535;
+    vrf-target target:{{ bgp.as|default(65535) }}:65535;
+}
+
+{# need to define this to avoid validation errors #}
+protocols evpn encapsulation vxlan;
+
+{# define VLAN to VXLAN mapping #}
+{%   if vxlan.vlans is defined %}
+vlans {
+{%     for vname in vxlan.vlans if vlans[vname].vni is defined %}
+{%       set vlan = vlans[vname] %}
+    {{ vname }} {
+        vxlan {
+            vni {{ vlan.vni }};
+        }
+    }
+{%     endfor %}
+}
+{%   endif %}
+
+{% endif %}

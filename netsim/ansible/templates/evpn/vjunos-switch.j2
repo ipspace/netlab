@@ -1,0 +1,84 @@
+{# EVPN config using mac-vrf & co #}
+
+{# Enable BGP EVPN for specific neighbors #}
+protocols {
+  bgp {
+{% for af in ['ipv4','ipv6'] if bgp[af] is defined and loopback[af] is defined %}
+    group ibgp-peers-{{ af }} {
+{%   for n in bgp.neighbors if n[af] is defined and n.type == 'ibgp' and n.evpn|default(false) %}
+      neighbor {{ n[af] }} {
+        family evpn {
+          signaling;
+        }
+      }
+{%   endfor %}
+    }
+{% endfor %}
+    group ebgp-peers {
+{% for n in bgp.neighbors if n.type == 'ebgp' and n.evpn|default(false) %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
+      neighbor {{ n[af] }} {
+        family evpn {
+          signaling;
+        }
+      }
+{%   endfor %}
+{% endfor %}
+    }
+  }
+}
+
+{# VERY DIRTY HACK here for initial testing - since we can specify only one vrf-target per vni-option, let's use the first import one #}
+protocols {
+  evpn {
+    encapsulation vxlan;
+    default-gateway no-gateway-community;
+    extended-vni-list all;
+{% if vxlan.vlans is defined %}
+    vni-options {
+{%   for vname in vxlan.vlans if vlans[vname].vni is defined %}
+{%     set vlan = vlans[vname] %}
+        vni {{ vlan.vni }} {
+            vrf-target target:{{ vlan.evpn.import[0] }};
+        }
+{%   endfor %}
+    }
+{% endif %}
+  }
+}
+
+
+{# define L3VNI on vrf routing-instance #}
+{% if vrfs is defined %}
+routing-instances {
+
+{%   for n,v in vrfs.items() if v.af is defined and v.evpn is defined %}
+    {{ n }} {
+        protocols {
+            evpn {
+                irb-symmetric-routing {
+                    vni {{ v.evpn.transit_vni }};
+                }
+                ip-prefix-routes {
+                    advertise direct-nexthop;
+                    encapsulation vxlan;
+                    vni {{ v.evpn.transit_vni }};
+                }
+            }
+        }
+        route-distinguisher {{ v.evpn.rd }};
+    }
+{%   endfor %}
+
+}
+
+{%   for vname in vxlan.vlans|default([]) if vlans[vname].vni is defined and vlans[vname].mode|default('') == 'irb' and vlans[vname].vrf is defined %}
+{%     set vlan = vlans[vname] %}
+interfaces {
+    irb.{{ vlan.id }} {
+        proxy-macip-advertisement;
+    }
+}
+{%   endfor %}
+
+{% endif %}
