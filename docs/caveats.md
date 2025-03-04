@@ -336,6 +336,10 @@ See also [](caveats-junos).
 
 * You can run Juniper vJunos-switch as a container packaged by Roman Dodin's fork of [vrnetlab](https://github.com/hellt/vrnetlab/). See [_containerlab_ documentation](https://containerlab.dev/manual/kinds/vr-vjunosswitch/) for further details.
 * Use a recent *vrnetlab* release that places the management interface into the **mgmt_junos** routing instance to avoid the conflict between [management IP subnet](clab-vrnetlab) `10.0.0.0/24` and **netlab** loopback addressing.
+* vJunos-switch VLAN configuration uses the so-called *Enterprise Style VLAN configuration* (which uses `family ethernet-switching` on unit 0 of interfaces).
+* For the above reason, the current netlab implementation of vJunos-switch EVPN configuration uses the `switch-options` (*default-switch*) configuration stanza, which leads to some drawbacks/limitations:
+    * All EVPN routes are announced with the same RD (configured under `switch-options`). A RT is configured as well under `switch-options`, but then it is overwritten per-VNI under the `protocol evpn` configuration.
+    * It is not possible to use multiple import/export RT. The *first* import RT is used on the configuration templates as the VNI RT.
 
 See also [](caveats-junos).
 
