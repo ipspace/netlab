@@ -35,6 +35,7 @@ The following table describes per-platform support of individual VXLAN features:
 | FRR                | ✅  | ✅  | ✅  |
 | Nokia SR Linux     | ✅ [❗](caveats-srlinux)  |  ❌  |  ❌  |
 | Nokia SR OS        | ✅  |  ❌  |  ❌  |
+| vJunos-switch      | ✅  | ✅  |  ❌ |
 | VyOS               | ✅  | ✅  | ✅  |
 
 ```{tip}

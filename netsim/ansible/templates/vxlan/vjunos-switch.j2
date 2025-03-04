@@ -1,0 +1,81 @@
+{# 
+   vJunos Switch VXLAN: different configuration required if VXLAN static flooding or EVPN-based
+#}
+
+{# first of all, in any case, better to explicitly ECMP load balance per-flow #}
+policy-options {
+    policy-statement ecmp {
+        then {
+            load-balance per-flow;
+        }
+    }
+}
+routing-options {
+    forwarding-table {
+        export ecmp;
+    }
+}
+
+{# define basic VXLAN config in switch-options stanza #}
+switch-options {
+    vtep-source-interface {{ vxlan.vtep_interface }};
+}
+
+{# define basic VLAN to VXLAN mapping #}
+{%   if vxlan.vlans is defined %}
+vlans {
+{%     for vname in vxlan.vlans if vlans[vname].vni is defined %}
+{%       set vlan = vlans[vname] %}
+    {{ vname }} {
+        vxlan {
+            vni {{ vlan.vni }};
+        }
+    }
+{%     endfor %}
+}
+{%   endif %}
+
+{# different options for vxlan flooding types (static vs evpn) #}
+
+{% if vxlan.flooding|default('') == 'static' %}
+
+switch-options {
+{# need to list all possible static vtep here - fine tuning will be done per-vlan #}
+{%   for remote_vtep in vxlan.vtep_list %}
+    remote-vtep-list {{ remote_vtep }};
+{%   endfor %}
+}
+
+{# define static remote vteps for VXLANs #}
+{%   if vxlan.vlans is defined %}
+vlans {
+{%     for vname in vxlan.vlans if vlans[vname].vni is defined %}
+{%       set vlan = vlans[vname] %}
+    {{ vname }} {
+        vxlan {
+            ingress-node-replication;
+{%       if vlan.vtep_list is defined %}
+{%         for vtep in vlan.vtep_list %}
+            static-remote-vtep-list {{ vtep }};
+{%         endfor %}
+{%       endif %}
+        }
+    }
+{%     endfor %}
+}
+{%   endif %}
+
+{% endif %}
+
+{% if vxlan.flooding|default('') == 'evpn' %}
+
+{# use switch-options with "fake" RD and RT - the RT will be overwritten per-vni on the protocols->evpn #}
+switch-options {
+    route-distinguisher {{ vxlan.vtep }}:65535;
+    vrf-target target:{{ bgp.as|default(65535) }}:65535;
+}
+
+{# need to define this to avoid validation errors #}
+protocols evpn encapsulation vxlan;
+
+{% endif %}

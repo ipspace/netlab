@@ -32,6 +32,7 @@ The following table describes per-platform support of individual EVPN/VXLAN feat
 | FRR                | ✅  |  ❌  | ✅  | ✅  |
 | Nokia SR Linux     | ✅  |  ✅  | ✅  | ✅  |
 | Nokia SR OS        | ✅  |  ❌  | ✅  | ✅  |
+| vJunos-switch [❗](caveats-vjunos-switch) | ✅  |  ❌  | ✅  | ✅  |
 | VyOS               | ✅  |  ❌  | ✅  | ✅  |
 
 The following table describes per-platform support of individual EVPN/MPLS features:
@@ -64,6 +65,7 @@ EVPN module supports IBGP- and EBGP-based EVPN:
 | FRR                | ✅  | ✅  | ✅  | ✅  |
 | Nokia SR Linux     | ✅  | ✅  |  ❌  |  ❌  |
 | Nokia SR OS        | ✅  | ✅  | ✅  | ✅  |
+| vJunos-switch      | ✅  | ✅  |  ❌  |  ❌  |
 | VyOS               | ✅  | ✅  |  ❌  |  ❌  |
 
 With additional nerd knobs ([more details](evpn-weird-designs)), it's possible to implement the more convoluted designs, including:
@@ -82,6 +84,7 @@ With additional nerd knobs ([more details](evpn-weird-designs)), it's possible t
 | FRR                | ✅  | ✅  |
 | Nokia SR Linux     | ✅  | ❌   |
 | Nokia SR OS        | ✅  | ❌   |
+| vJunos-switch      | ✅  | ❌   |
 | VyOS               | ✅  | ❌   |
 
 Most EVPN/VXLAN implementations support only IPv4 VXLAN transport; some can run VXLAN-over-IPv6:
@@ -97,6 +100,7 @@ Most EVPN/VXLAN implementations support only IPv4 VXLAN transport; some can run 
 | FRR                | ✅  | ✅  |
 | Nokia SR Linux     | ✅  | ❌   |
 | Nokia SR OS        | ✅  | ❌   |
+| vJunos-switch      | ✅  | ❌   |
 | VyOS               | ✅  | ❌ [❗](caveats-vyos)   |
 
 (evpn-global-parameters)=
