@@ -89,11 +89,15 @@ protocols {
     group ebgp-peers {
       export ebgp-export;
       advertise-inactive;
-{% for n in bgp.neighbors if n.type == 'ebgp' %}
+{# treat localas_ibgp as ebgp session --> no usage of local address #}
+{% for n in bgp.neighbors if (n.type == 'ebgp' or n.type == 'localas_ibgp') %}
 {%   for af in ['ipv4','ipv6'] if n[af] is defined %}
       neighbor {{ n[af] }} {
         peer-as {{ n.as }};
         description {{ n.name }};
+{%     if n.local_as is defined %}
+        local-as {{ n.local_as }}{% if n.replace_global_as|default(True) %} no-prepend-global-as{% endif +%};
+{%     endif %}
         family {{ 'inet' if af == 'ipv4' else 'inet6' }} {
           unicast;
         }
