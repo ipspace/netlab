@@ -86,6 +86,7 @@ The following features are only supported on a subset of platforms:
 | Cumulus Linux 5.x (NVUE) |  ✅ |  ✅ |  ✅ |  ❌ |
 | Dell OS10                |  ✅ |  ❌  |  ❌  |  ❌  |
 | FRR                      |  ✅ |  ✅ |  ✅ |  ✅ |
+| JunOS                    |  ✅ |  ✅ |  ❌  |  ❌  |
 | Nokia SR Linux           |  ✅ |  ✅ |  ✅ [❗](caveats-srlinux) |  ✅ |
 | Nokia SR OS              |  ✅ |  ✅ |  ❌  |  ❌  |
 | Sonic                    |  ✅ |  ✅ |  ❌  |  ❌  |
