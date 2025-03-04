@@ -18,6 +18,7 @@ protocols {
 {% for n in bgp.neighbors if n.type == 'ebgp' and n.evpn|default(false) %}
 {%   for af in ['ipv4','ipv6'] if n[af] is defined %}
       neighbor {{ n[af] }} {
+        accept-remote-nexthop;
         family evpn {
           signaling;
         }
@@ -29,6 +30,8 @@ protocols {
 }
 
 {# VERY DIRTY HACK here for initial testing - since we can specify only one vrf-target per vni-option, let's use the first import one #}
+{# - do it only if vxlan is defined - no need if we are RR only #}
+{% if vxlan is defined %}
 protocols {
   evpn {
     encapsulation vxlan;
@@ -46,6 +49,7 @@ protocols {
 {% endif %}
   }
 }
+{% endif %}
 
 
 {# define L3VNI on vrf routing-instance #}
@@ -72,13 +76,16 @@ routing-instances {
 
 }
 
+{# according to JunOS doc, in case NO ANYCAST GATEWAY is configured, enable 'proxy-macip-advertisement' on central IRB interfaces #}
+interfaces {
 {%   for vname in vxlan.vlans|default([]) if vlans[vname].vni is defined and vlans[vname].mode|default('') == 'irb' and vlans[vname].vrf is defined %}
 {%     set vlan = vlans[vname] %}
-interfaces {
+{%     if not vlan.gateway|default(false) %}
     irb.{{ vlan.id }} {
         proxy-macip-advertisement;
     }
-}
+{%     endif %}
 {%   endfor %}
+}
 
 {% endif %}
