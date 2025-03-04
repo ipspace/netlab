@@ -7,7 +7,7 @@
 #
 from box import Box
 
-from . import _Quirks
+from . import _Quirks,report_quirk
 from ..utils import log
 from ..augment import devices
 
@@ -98,6 +98,15 @@ def check_multiple_loopbacks(node: Box, topology: Box) -> None:
       module='quirks',
       hint='junos_lb')
 
+def check_evpn_ebgp(node: Box, topology: Box) -> None:
+  for ngb in node.get('bgp.neighbors',[]):
+    if ngb.type == 'ebgp' and ngb.get('evpn',False):
+      report_quirk(
+        f'EVPN is not supported on EBGP sessions (node {node.name} neighbor {ngb.name})',
+        node=node,
+        category=log.IncorrectType,
+        quirk='evpn_ebgp')
+
 class JUNOS(_Quirks):
 
   @classmethod
@@ -106,3 +115,4 @@ class JUNOS(_Quirks):
       print("*** DEVICE QUIRKS FOR JUNOS {}".format(node.name))
     fix_unit_0(node,topology)
     check_multiple_loopbacks(node,topology)
+    check_evpn_ebgp(node,topology)
