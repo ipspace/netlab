@@ -115,4 +115,4 @@ class JUNOS(_Quirks):
       print("*** DEVICE QUIRKS FOR JUNOS {}".format(node.name))
     fix_unit_0(node,topology)
     check_multiple_loopbacks(node,topology)
-    check_evpn_ebgp(node,topology)
+    #check_evpn_ebgp(node,topology)

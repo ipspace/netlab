@@ -19,8 +19,15 @@ protocols {
 {%   for af in ['ipv4','ipv6'] if n[af] is defined %}
       neighbor {{ n[af] }} {
         accept-remote-nexthop;
+{# EVPN ebgp-based overlay: no-nexthop-change needs to be defined per-neighbor, but we still need to have NHS for inet and inet6.
+# This can be forced on the 'ebgp-export' policy. #}
+        multihop no-nexthop-change;
         family evpn {
-          signaling;
+          signaling {
+{%     if n.allowas_in is defined %}
+            loops {{ n.allowas_in }};
+{%     endif %}
+          }
         }
       }
 {%   endfor %}
@@ -28,6 +35,27 @@ protocols {
     }
   }
 }
+
+{# in case of EVPN ebgp-based overlay, force NHS for inet and inet6 bgp routes #}
+{% for n in bgp.neighbors if n.type == 'ebgp' and n.evpn|default(false) %}
+{%   if loop.first %}
+policy-options {
+    policy-statement ebgp-export {
+{%     for f in [ 'inet', 'inet6' ] %}
+        term bgp_{{ f }}_nhs {
+            from {
+                family {{ f }};
+                protocol bgp;
+            }
+            then {
+                next-hop self;
+            }
+        }
+{%     endfor %}
+    }
+}
+{%   endif %}
+{% endfor %}
 
 {# VERY DIRTY HACK here for initial testing - since we can specify only one vrf-target per vni-option, let's use the first import one #}
 {# - do it only if vxlan is defined - no need if we are RR only #}

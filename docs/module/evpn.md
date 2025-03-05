@@ -65,7 +65,7 @@ EVPN module supports IBGP- and EBGP-based EVPN:
 | FRR                | ✅  | ✅  | ✅  | ✅  |
 | Nokia SR Linux     | ✅  | ✅  |  ❌  |  ❌  |
 | Nokia SR OS        | ✅  | ✅  | ✅  | ✅  |
-| vJunos-switch      | ✅  | ✅  |  ❌  |  ❌  |
+| vJunos-switch      | ✅  | ✅  |  ✅  |  ❌  |
 | VyOS               | ✅  | ✅  |  ❌  |  ❌  |
 
 With additional nerd knobs ([more details](evpn-weird-designs)), it's possible to implement the more convoluted designs, including:
@@ -84,7 +84,7 @@ With additional nerd knobs ([more details](evpn-weird-designs)), it's possible t
 | FRR                | ✅  | ✅  |
 | Nokia SR Linux     | ✅  | ❌   |
 | Nokia SR OS        | ✅  | ❌   |
-| vJunos-switch      | ✅  | ❌   |
+| vJunos-switch      | ✅  | ✅   |
 | VyOS               | ✅  | ❌   |
 
 Most EVPN/VXLAN implementations support only IPv4 VXLAN transport; some can run VXLAN-over-IPv6:
