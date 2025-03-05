@@ -84,7 +84,7 @@ With additional nerd knobs ([more details](evpn-weird-designs)), it's possible t
 | FRR                | ✅  | ✅  |
 | Nokia SR Linux     | ✅  | ❌   |
 | Nokia SR OS        | ✅  | ❌   |
-| vJunos-switch      | ✅  | ❌   |
+| vJunos-switch      | ✅  | ✅   |
 | VyOS               | ✅  | ❌   |
 
 Most EVPN/VXLAN implementations support only IPv4 VXLAN transport; some can run VXLAN-over-IPv6:
