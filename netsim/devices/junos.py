@@ -101,11 +101,13 @@ def check_multiple_loopbacks(node: Box, topology: Box) -> None:
 def check_evpn_ebgp(node: Box, topology: Box) -> None:
   for ngb in node.get('bgp.neighbors',[]):
     if ngb.type == 'ebgp' and ngb.get('evpn',False):
-      report_quirk(
-        f'EVPN is not supported on EBGP sessions (node {node.name} neighbor {ngb.name})',
-        node=node,
-        category=log.IncorrectType,
-        quirk='evpn_ebgp')
+      ngb_activate = ngb.get('activate', {})
+      if ngb_activate.get('ipv4', False) or ngb_activate.get('ipv6', False):
+        report_quirk(
+          f'EVPN is not supported on EBGP sessions together with other address families (node {node.name} neighbor {ngb.name})',
+          node=node,
+          category=log.IncorrectType,
+          quirk='evpn_ebgp')
 
 class JUNOS(_Quirks):
 
