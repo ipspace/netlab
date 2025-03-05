@@ -299,12 +299,14 @@ diag debug application httpsd -1
 (caveats-junos)=
 ## Common Junos caveats
 
+* Ansible requires `ncclient` Python package and its dependencies to be installed (`python3 -m pip install ncclient`) to configure Junos devices.
 * Junos cannot have more than one loopback interface per routing instance. Using **loopback** links on Junos devices will result in configuration errors.
 * Junos configuration template configures BFD timers within routing protocol configuration, not on individual interfaces
-* Requires `ncclient` Python package and its dependencies to be installed (`python3 -m pip install ncclient`).
+* Junos does not disable the default BGP address family on a BGP neighbor until another AF is configured.
 * Anycast Gateway is not working properly on vSRX and vPTX:
-    * On vPTX, virtual MAC address is ignored, hence the integration test is failing. Removing the support for anycast gateway for now.
-    * On vSRX, not supporting properly vlan configuration (irb), Anycast Gateway cannot be tested.
+
+    * On vPTX, the virtual MAC address is ignored. Hence, the integration test is failing. Removing the support for anycast gateway for now.
+    * Anycast Gateway cannot be tested on vSRX as it does not support the VLAN IRB configuration.
 
 (caveats-vptx)=
 ## Juniper vPTX

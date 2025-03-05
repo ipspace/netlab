@@ -2,7 +2,7 @@
 
 import sys
 
-__version__ = "1.9.4-post2"
+__version__ = "1.9.5"
 
 abort = False
 

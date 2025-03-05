@@ -204,6 +204,7 @@ You can change the parameters of the management network in the **addressing.mgmt
 * **netlab up** uses XML definition in `templates/provider/libvirt/vagrant-libvirt.xml` within the Python package directory ([source file](https://github.com/ipspace/netlab/blob/master/netsim/templates/provider/libvirt/vagrant-libvirt.xml)) to create the management network. If you'd like to change the management network parameters, create a custom XML definition in the `libvirt/vagrant-libvirt.xml` file in the current directory, `~/.netlab` directory, or `/etc/netlab` directory.
 * If you want to use an existing libvirt network as the management network, make sure it has the same static DHCP mappings as the management network created by the **netlab up** command.
 
+(libvirt-mgmt-ip)=
 ### VM Management IPv4 Addresses
 
 The only way to assign a management IPv4 address to a network device started as a virtual machine is through DHCP, and *vagrant*, together with *libvirt* (and *dnsmasq*), provides a seamless implementation. IPv6 management addresses do not work as most Vagrant boxes do not use DHCPv6.
