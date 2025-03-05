@@ -4,6 +4,7 @@ protocols {
   }
 }
 
+{# VRRP interfaces #}
 {% for intf in interfaces if intf.gateway.protocol|default('none') == 'vrrp' %}
 {%   if loop.first %}
 interfaces {
@@ -21,6 +22,28 @@ interfaces {
           no-preempt;
 {%     endif %}
         }
+      }
+    }
+{%   endfor %}
+  }
+{%   if loop.last %}
+}
+{%   endif %}
+{% endfor %}
+
+{# anycast gateway interfaces #}
+{% for intf in interfaces if intf.gateway.protocol|default('none') == 'anycast' %}
+{%   if loop.first %}
+interfaces {
+{%   endif %}
+  {{ intf.ifname }} {
+    virtual-gateway-accept-data;
+{%   for af in 'ipv4','ipv6' if af in intf.gateway and af in intf and intf[af] is string %}
+{# define v4 or v6 mac address #}
+    virtual-gateway-{{ af[2:] }}-mac {{ gateway.anycast.mac|hwaddr('linux') }};
+    family {{ 'inet' if af == 'ipv4' else 'inet6' }} {
+      address {{ intf[af] }} {
+        virtual-gateway-address {{ intf.gateway[af]|ipaddr('address') }};
       }
     }
 {%   endfor %}
