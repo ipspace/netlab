@@ -27,7 +27,7 @@ The module is supported on these platforms:
 | Cumulus 5.x (NVUE)    | ✅ | ✅ |  ✅ |
 | Dell OS10             | ✅ [❗](caveats-os10) | ✅ [❗](caveats-os10) | ✅ [❗](caveats-os10)  |
 | FRRouting             | ✅  | ✅  | ✅  |
-| Junos[^Junos]         | ❌  | ✅  | ✅  |
+| Junos[^Junos]         | ✅ [❗](caveats-junos)  | ✅  | ✅  |
 | Nokia SR OS           | ✅  | ✅  | ✅  |
 | Nokia SR Linux        | ✅  | ❌  | ❌  |
 | VyOS                  | ❌  | ✅  | ✅  |
