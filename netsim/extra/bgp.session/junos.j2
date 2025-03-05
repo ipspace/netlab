@@ -3,9 +3,12 @@
 {#
    Macro for neighbor attributes
 #}
-{% macro bgp_neighbor(n,bfd) %}
+{% macro bgp_neighbor(n,bfd,af) %}
 {%   if n.as_override|default(false) %}
   as-override;
+{%   endif %}
+{%   if n.allowas_in is defined %}
+  family {{ 'inet' if af == 'ipv4' else 'inet6' }} unicast loops {{ n.allowas_in }};
 {%   endif %}
 {%   if n.bfd|default(False) %}
 {%     if bfd %}
@@ -43,7 +46,7 @@ protocols {
 {%     endif %}
       neighbor {{ n[af] }} {
         {# IBGP neighbor within an address family #}
-        {{ bgp_neighbor(n,bfd) }}
+        {{ bgp_neighbor(n,bfd,af) }}
       }
 {%     if loop.last %}
     }
@@ -57,7 +60,7 @@ protocols {
 {%   for af in ['ipv4','ipv6'] if n[af] is defined %}
       neighbor {{ n[af] }} {
         {# EBGP neighbor #}
-        {{ bgp_neighbor(n,bfd) }}
+        {{ bgp_neighbor(n,bfd,af) }}
       }
 {%   endfor %}
 {%     if loop.last %}
@@ -81,7 +84,7 @@ routing-instances {
 {%       endif %}
           neighbor {{ n[af] }} {
             {# THIS HERE IS THE NEIGHBOR (VRF->iBGP) #}
-            {{ bgp_neighbor(n,bfd) }}
+            {{ bgp_neighbor(n,bfd,af) }}
           }
 {%       if loop.last %}
         }
@@ -96,7 +99,7 @@ routing-instances {
 {%     for af in ['ipv4','ipv6'] if n[af] is defined %}
           neighbor {{ n[af] }} {
             {# THIS HERE IS THE NEIGHBOR (VRF->eBGP) #}
-            {{ bgp_neighbor(n,bfd) }}
+            {{ bgp_neighbor(n,bfd,af) }}
           }
 {%     endfor %}
 {%     if loop.last %}
