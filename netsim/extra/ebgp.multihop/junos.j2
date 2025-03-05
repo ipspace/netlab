@@ -1,0 +1,43 @@
+{# global #}
+protocols {
+  bgp {
+    group ebgp-peers {
+{% for n in bgp.neighbors if n.type == 'ebgp' and n.multihop is defined %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
+      neighbor {{ n[af] }} {
+        multihop ttl {{ n.multihop }};
+{%     if n._source_lb_data[af] is defined %}
+        local-address {{ n._source_lb_data[af]|ipaddr('address') }}
+{%     endif %}
+      }
+{%   endfor %}
+{% endfor %}
+    }
+  }
+}
+
+{# VRF #}
+routing-instances {
+{% for vname,vdata in (vrfs|default({})).items() %}
+
+  {{vname}} {
+    protocols {
+      bgp {
+        group ebgp-peers {
+{%   for n in vdata.bgp.neighbors|default([]) if n.type == 'ebgp' and n.multihop is defined %}
+{%     for af in ['ipv4','ipv6'] if n[af] is defined %}
+          neighbor {{ n[af] }} {
+            multihop ttl {{ n.multihop }};
+{%       if n._source_lb_data[af] is defined %}
+        local-address {{ n._source_lb_data[af]|ipaddr('address') }}
+{%       endif %}
+          }
+{%     endfor %}
+{%   endfor %}
+        }
+      }
+    }
+  }
+
+{% endfor %}
+}

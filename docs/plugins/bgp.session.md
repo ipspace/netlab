@@ -113,7 +113,7 @@ The plugin implements AS-path-mangling nerd knobs for the following platforms:
 | Cumulus Linux 4.x   |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
 | Cumulus 5.x (NVUE)  |  ✅  |  ❌  |  ❌  |  ❌  |  ❌  |
 | FRR                 |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
-| Junos[^Junos]       |   ❌  |  ✅  |   ❌  |   ❌  |   ❌  |
+| Junos[^Junos]       |   ✅  |  ✅  |   ❌  |   ❌  |   ❌  |
 | Mikrotik RouterOS 7 |  ✅  |  ✅  |   ❌  |   ❌  |   ❌  |
 | Nokia SR Linux      |  ✅  |  ✅  |  ✅  |   ❌  |  ✅  |
 | Nokia SR OS         |  ✅  |  ✅  |   ❌  |   ❌  |   ❌  |

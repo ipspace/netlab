@@ -197,9 +197,11 @@ def fix_vrf_loopbacks(ndata: Box, topology: Box) -> None:
         continue
 
       ngb._source_ifname = lb.ifname
+      ngb._source_lb_data = lb
 
     else:
       ngb._source_ifname = ndata.loopback.ifname
+      ngb._source_lb_data = ndata.loopback
 
 '''
 post_transform processing:

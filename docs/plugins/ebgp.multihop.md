@@ -17,6 +17,7 @@ The plugin includes Jinja2 templates for the following platforms:
 | Cumulus Linux 4.x   |  ✅  |  ✅  |
 | Cumulus 5.x (NVUE)  |  ✅  |  ✅  |
 | FRR                 |  ✅  |  ✅  |
+| JunOS               |  ✅  |  ✅  |
 | Nokia SR Linux      |  ✅  |  ❌   |
 | Nokia SR OS         |  ✅  |  ❌   |
 
