@@ -237,8 +237,13 @@ but fails to pass them to the routed interface of the same VLAN
 '''
 def extend_device_wait_time(v_entry: Box, topology: Box) -> None:
   for ndata in topology.nodes.values():
-    v_params = topology.get(f'defaults.devices.{ndata.device}.netlab_validate.{v_entry.name}',{})
+    d_path = f'defaults.devices.{ndata.device}.netlab_validate.{v_entry.name}'
+    v_params = topology.get(d_path,{})
     if not v_params:
+      continue
+    if not isinstance(v_params,Box):
+      log.warning(
+        text=f'{d_path} is not a dictionary, ignoring')
       continue
     if 'wait' in v_params and v_params.wait > v_entry.get('wait',0):
       if log.VERBOSE:
