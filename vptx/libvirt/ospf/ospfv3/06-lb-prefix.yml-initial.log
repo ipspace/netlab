@@ -16,44 +16,53 @@ skipping: [x1]
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vptx.yml for dut
 
 TASK [Wait for et-0/0/0 to appear] *********************************************
-fatal: [dut]: FAILED! => changed=false 
-  msg: Unexpected session close
+ok: [dut]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x1, dut
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [x1]
+ok: [dut]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [x1]
+ok: [dut]
 
 TASK [fail] ********************************************************************
 skipping: [x1]
+skipping: [dut]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [x1]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [x1]
+skipping: [dut]
 
 TASK [Deploy normalize configuration] ******************************************
 skipping: [x1]
+skipping: [dut]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x1, dut
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [x1]
+ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
 ok: [x1]
+ok: [dut]
 
 TASK [fail] ********************************************************************
 skipping: [x1]
+skipping: [dut]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [x1]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [x1] => 
@@ -149,9 +158,53 @@ ok: [x1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    system {
+      host-name dut;
+      static-host-mapping {
+      }
+    }
+  
+  
+    interfaces {
+      et-0/0/0 {
+        mtu 1514;
+      }
+  
+      lo0.0 {
+  
+          family inet6 {
+            address 2001:db8:1:1::1/64;
+          }
+  
+      }
+      et-0/0/0.0 {
+        description "dut -> x1";
+  
+          family inet6 {
+            address 2001:db8:3::1/64;
+          }
+  
+      }
+    }
+    protocols {
+      lldp {
+        interface re0:mgmt-0 {
+          disable;
+        }
+        interface all;
+      }
+      router-advertisement {
+        interface et-0/0/0.0;
+      }
+    }
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for x1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [x1 -> localhost]
@@ -174,27 +227,60 @@ changed: [x1]
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
 
+TASK [junos_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/junos.j2] ***
+[WARNING]: mgd: statement must contain additional statements
+changed: [dut]
+
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [x1]
+ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x1 => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1 => (item=ospf)
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [x1]
+ok: [dut]
 
 TASK [Find configuration template for ospf] ************************************
 ok: [x1]
+ok: [dut]
 
 TASK [fail] ********************************************************************
+skipping: [dut]
 skipping: [x1]
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [x1]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => 
+  msg: |-
+    ospf configuration for dut
+    =========================================
+    routing-options {
+      router-id 10.0.0.1
+    }
+    protocols {
+      delete: ospf3;
+    }
+  
+    protocols {
+      ospf3 {
+        area 0.0.0.0 {
+          interface lo0.0 {
+          }
+        }
+        area 0.0.0.0 {
+          interface et-0/0/0.0 {
+            interface-type p2p;
+          }
+        }
+      }
+    }
 ok: [x1] => 
   msg: |-
     ospf configuration for x1
@@ -224,7 +310,12 @@ ok: [x1] =>
     do write
 
 TASK [Deploy ospf configuration] ***********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for x1
+
+TASK [junos_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/junos.j2] ***
+[WARNING]:  statement not found
+changed: [dut]
 
 TASK [template] ****************************************************************
 changed: [x1]
@@ -242,9 +333,12 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=3    changed=0    unreachable=0    failed=1    skipped=0    rescued=0    ignored=0   
+dut                        : ok=23   changed=2    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
 x1                         : ok=27   changed=5    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
 
-Fatal error in netlab: Executing Ansible playbook /home/pipi/netlab_gh/netsim/ansible/initial-config.ansible failed
-Error executing ansible-playbook /home/pipi/netlab_gh/netsim/ansible/initial-config.ansible:
-  Command '['ansible-playbook', '/home/pipi/netlab_gh/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.
+
+
+This lab tests the advertised prefix of the loopback interface. According
+to RFC 5340, section 4439, the advertised prefix length of the loopback
+interface should always be /128.
+
