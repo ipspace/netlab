@@ -1,41 +1,45 @@
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+[WARNING]: Found variable using reserved name: hosts
 
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [h1]
-ok: [h2]
 ok: [s1]
-ok: [s2]
-ok: [h4]
+ok: [h2]
 ok: [h3]
+ok: [h4]
+ok: [s2]
 
 TASK [Find device readiness script] ********************************************
 ok: [h1]
-ok: [h3]
 ok: [h2]
 ok: [s1]
-ok: [s2]
 ok: [h4]
+ok: [h3]
+ok: [s2]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [s1]
-skipping: [s2]
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/eos-clab.yml for s2
+
+TASK [Wait for cEOS SSH daemon to start] ***************************************
+ok: [s2]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, h1, h2, h3, h4
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2, h1, h2, h3, h4
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [s1]
-ok: [s2]
 ok: [h4]
+ok: [s2]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [h1]
@@ -53,48 +57,69 @@ skipping: [h2]
 skipping: [h3]
 skipping: [h4]
 
+TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [h1]
+ok: [s1]
+ok: [h4]
+ok: [h2]
+ok: [h3]
+ok: [s2]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [s1]
-skipping: [s2]
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
-
-TASK [Find configuration deployment deploy_script for normalize] ***************
-skipping: [s1]
-skipping: [s2]
-skipping: [h1]
-skipping: [h2]
-skipping: [h3]
-skipping: [h4]
+ok: [s2] => 
+  msg: |-
+    normalize configuration for s2
+    =========================================
+    !
+    interface Ethernet1
+     shutdown
+     mac-address 52dc.cafe.0601
+    !
+    interface Ethernet2
+     shutdown
+     mac-address 52dc.cafe.0602
+    !
+    interface Ethernet3
+     shutdown
+     mac-address 52dc.cafe.0603
 
 TASK [Deploy normalize configuration] ******************************************
 skipping: [s1]
-skipping: [s2]
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for s2
+
+TASK [eos_config: deploying normalize from /home/pipi/netlab_gh/netsim/ansible/templates/normalize/eos.j2] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [s2]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, h1, h2, h3, h4
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2, h1, h2, h3, h4
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [h1]
 ok: [h2]
-ok: [h3]
 ok: [s1]
+ok: [h3]
 ok: [h4]
 ok: [s2]
 
 TASK [Find configuration template for initial] *********************************
 ok: [h1]
-ok: [s1]
+ok: [h3]
 ok: [h2]
 ok: [h4]
+ok: [s1]
 ok: [s2]
-ok: [h3]
 
 TASK [fail] ********************************************************************
 skipping: [s1]
@@ -103,6 +128,14 @@ skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [h1]
+ok: [h4]
+ok: [h3]
+ok: [h2]
+ok: [s1]
+ok: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [h1] => 
@@ -156,6 +189,57 @@ ok: [h1] =>
     #
     # Print the final routing table
     ip route
+ok: [h3] => 
+  msg: |-
+    initial configuration for h3
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.1.3/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.1.3/24 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.1.5 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.1.5 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.1.5 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.1.5 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
 ok: [h2] => 
   msg: |-
     initial configuration for h2
@@ -200,16 +284,16 @@ ok: [h2] =>
     #
     #
     echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.0.6 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.0.6 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.0.6 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.0.6 dev eth1 protocol static
+    ip route add 172.16.0.0/16 via 172.16.0.5 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.0.5 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.0.5 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.0.5 dev eth1 protocol static
     #
     # Print the final routing table
     ip route
-ok: [h3] => 
+ok: [h4] => 
   msg: |-
-    initial configuration for h3
+    initial configuration for h4
     =========================================
     #!/bin/bash
     #
@@ -232,9 +316,9 @@ ok: [h3] =>
     #
     ip link set dev eth1 up
     set +e
-    ip addr del 172.16.1.3/24 dev eth1 2>/dev/null
+    ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
     set -e
-    ip addr add 172.16.1.3/24 dev eth1
+    ip addr add 172.16.1.4/24 dev eth1
     ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
@@ -324,151 +408,79 @@ ok: [s1] =>
         ip address 172.16.1.5/24
     !
     !
-ok: [h4] => 
-  msg: |-
-    initial configuration for h4
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.1.4/24 dev eth1
-    ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.2.0.0/24 2>/dev/null; do
-      : ; done
-    #
-    #
-    echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.1.6 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.1.6 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.1.6 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.1.6 dev eth1 protocol static
-    #
-    # Print the final routing table
-    ip route
 ok: [s2] => 
   msg: |-
     initial configuration for s2
     =========================================
     hostname s2
     !
-    lldp
+    logging monitor debugging
+    aaa authorization exec default local
     !
-  
-  
-    !
-    vlan 701
-     name blue
-    !
-    vlan 700
-     name red
-    !
-  
-    !
-  
-    !
-    interface loopback 0
-        ip address 10.0.0.6/32
-    !
-    interface mgmt
-        no lldp transmit
-        no lldp receive
-    !
-  
-  
-  
-    interface 1/1/1
-        shutdown
-        mtu 9198
-        description s2 -> s1
-        no shutdown
-    !
-  
-  
-    interface 1/1/2
-        shutdown
-        mtu 9198
-        description [Access VLAN red] s2 -> h2
-        no shutdown
-    !
-  
-  
-    interface 1/1/3
-        shutdown
-        mtu 9198
-        description [Access VLAN blue] s2 -> h4
-        no shutdown
-    !
-  
-  
-    interface vlan700
-        description VLAN red (700) -> [s1,h1,h2]
-        ip address 172.16.0.6/24
-    !
-  
-  
-    interface vlan701
-        description VLAN blue (701) -> [h3,s1,h4]
-        ip address 172.16.1.6/24
+    lldp run
+    ip routing
     !
     !
-
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [h1]
-ok: [s1]
-ok: [h2]
-ok: [h4]
-ok: [s2]
-ok: [h3]
+    ip host h1 172.16.0.1
+    ip host h2 172.16.0.2
+    ip host h3 172.16.1.3
+    ip host h4 172.16.1.4
+    ip host s1 10.0.0.5 172.16.0.5 172.16.1.5
+    !
+    interface Management0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     ip address 10.0.0.6/32
+    !
+    interface Ethernet1
+     no switchport
+     description s2 -> s1
+    !
+     mac-address 52dc.cafe.0601
+     no shutdown
+    !
+    interface Ethernet2
+     no switchport
+     description [Access VLAN red] s2 -> h2
+    !
+     mac-address 52dc.cafe.0602
+     no shutdown
+    !
+    interface Ethernet3
+     no switchport
+     description [Access VLAN blue] s2 -> h4
+    !
+     mac-address 52dc.cafe.0603
+     no shutdown
+    !
+    interface Vlan700
+     description VLAN red (700) -> [s1,h1,h2]
+    !
+    interface Vlan701
+     description VLAN blue (701) -> [h3,s1,h4]
+    !
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for s1, s2
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2, h3, h4
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/arubacx.yml for s1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for s2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2, h3, h4
 
 TASK [tempfile] ****************************************************************
 changed: [s1 -> localhost]
-changed: [s2 -> localhost]
 
 TASK [template] ****************************************************************
 changed: [s1 -> localhost]
-changed: [s2 -> localhost]
 
-TASK [aoscx_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/arubacx.j2] ***
-changed: [s2]
+TASK [aoscx_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/arubacx.j2] ***
 changed: [s1]
 
 TASK [file] ********************************************************************
 changed: [s1 -> localhost]
-changed: [s2 -> localhost]
+
+TASK [eos_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/eos.j2] ***
+changed: [s2]
 
 TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
@@ -482,7 +494,7 @@ changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
@@ -494,19 +506,19 @@ skipping: [h2]
 skipping: [h3]
 skipping: [h4]
 
-TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
 
-TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h3 -> localhost]
-changed: [h1 -> localhost]
-changed: [h4 -> localhost]
+TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
+changed: [h3 -> localhost]
+changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-_9krulep.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-fwlcacjd.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
@@ -519,7 +531,7 @@ ok: [s1]
 ok: [s2]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=vlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=vlan)
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [s1]
@@ -532,6 +544,10 @@ ok: [s2]
 TASK [fail] ********************************************************************
 skipping: [s1]
 skipping: [s2]
+
+TASK [Find configuration deployment deploy_script for vlan] ********************
+ok: [s1]
+ok: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [s1] => 
@@ -560,58 +576,61 @@ ok: [s2] =>
   msg: |-
     vlan configuration for s2
     =========================================
+    vlan 701
+     name blue
     !
+    vlan 700
+     name red
     !
-    interface 1/1/1
-     no routing
-     vlan trunk allow 700,701
-     vlan trunk native 700
+  
     !
-    interface 1/1/2
-     no routing
-     vlan access 700
+    interface Ethernet1
+     switchport
+     switchport mode trunk
+     switchport trunk allowed vlan 700,701
+     switchport trunk native vlan 700
     !
-    interface 1/1/3
-     no routing
-     vlan access 701
+    interface Ethernet2
+     switchport
+     switchport access vlan 700
     !
-    interface vlan700
+    interface Ethernet3
+     switchport
+     switchport access vlan 701
     !
-    interface vlan701
-
-TASK [Find configuration deployment deploy_script for vlan] ********************
-ok: [s1]
-ok: [s2]
+    interface Vlan700
+    !
+    interface Vlan701
 
 TASK [Deploy vlan configuration] ***********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for s1, s2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/arubacx.yml for s1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for s2
 
 TASK [tempfile] ****************************************************************
 changed: [s1 -> localhost]
-changed: [s2 -> localhost]
 
 TASK [template] ****************************************************************
 changed: [s1 -> localhost]
-changed: [s2 -> localhost]
 
-TASK [aoscx_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/arubacx.j2] ***
-changed: [s2]
+TASK [aoscx_config: deploying vlan from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/arubacx.j2] ***
 changed: [s1]
 
 TASK [file] ********************************************************************
 changed: [s1 -> localhost]
-changed: [s2 -> localhost]
+
+TASK [eos_config: deploying vlan from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/eos.j2] ***
+changed: [s2]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-h2                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-h3                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-h4                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-s1                         : ok=26   changed=8    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-s2                         : ok=26   changed=8    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+h1                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+h2                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+h3                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+h4                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+s1                         : ok=27   changed=8    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+s2                         : ok=26   changed=3    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
 
 
 

@@ -1,19 +1,20 @@
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+[WARNING]: Found variable using reserved name: hosts
 
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [r1]
 ok: [r2]
-ok: [rr2]
 ok: [dut]
+ok: [rr2]
 ok: [x1]
 
 TASK [Find device readiness script] ********************************************
 ok: [r1]
 ok: [r2]
-ok: [x1]
 ok: [rr2]
+ok: [x1]
 ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
@@ -24,14 +25,14 @@ skipping: [rr2]
 skipping: [x1]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, rr2, x1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, rr2, x1
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [r1]
 ok: [r2]
 ok: [rr2]
-ok: [dut]
 ok: [x1]
+ok: [dut]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [r1]
@@ -47,14 +48,14 @@ skipping: [r2]
 skipping: [rr2]
 skipping: [x1]
 
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [dut]
-skipping: [r1]
-skipping: [r2]
-skipping: [rr2]
-skipping: [x1]
-
 TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [r1]
+ok: [r2]
+ok: [x1]
+ok: [rr2]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
 skipping: [r1]
 skipping: [r2]
@@ -69,7 +70,7 @@ skipping: [rr2]
 skipping: [x1]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, rr2, x1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, rr2, x1
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [r1]
@@ -82,8 +83,8 @@ TASK [Find configuration template for initial] *********************************
 ok: [r1]
 ok: [r2]
 ok: [rr2]
-ok: [x1]
 ok: [dut]
+ok: [x1]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -91,6 +92,13 @@ skipping: [r1]
 skipping: [r2]
 skipping: [rr2]
 skipping: [x1]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [r1]
+ok: [r2]
+ok: [rr2]
+ok: [dut]
+ok: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [r1] => 
@@ -151,28 +159,26 @@ ok: [r1] =>
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
     ip link set eth1 down
     ip link set eth1 up
+    ip link set dev eth1 mtu 1500
     sysctl -qw net.ipv6.conf.eth2.autoconf=0
     sysctl -qw net.ipv6.conf.eth2.accept_ra=0
     ip link set eth2 down
     ip link set eth2 up
+    ip link set dev eth2 mtu 1500
     sysctl -qw net.ipv6.conf.eth3.autoconf=0
     sysctl -qw net.ipv6.conf.eth3.accept_ra=0
     ip link set eth3 down
     ip link set eth3 up
+    ip link set dev eth3 mtu 1500
     sysctl -qw net.ipv6.conf.eth4.autoconf=0
     sysctl -qw net.ipv6.conf.eth4.accept_ra=0
     ip link set eth4 down
     ip link set eth4 up
+    ip link set dev eth4 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
-    ip link set dev eth2 mtu 1500
-    ip link set dev eth3 mtu 1500
-    ip link set dev eth4 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -285,13 +291,11 @@ ok: [r2] =>
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
     ip link set eth1 down
     ip link set eth1 up
+    ip link set dev eth1 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -322,6 +326,46 @@ ok: [r2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    hostname dut
+    !
+    lldp enable
+    !
+    !
+    !
+    !
+    default mtu 1532
+    !
+    interface loopback0
+     ipv6 address 2001:db8:1:1::1/64
+    !
+    interface mgmt1/1/1
+     no lldp transmit
+     no lldp receive
+    !
+    interface ethernet1/1/1
+     no shutdown
+     no switchport
+     description "dut -> r1"
+     ipv6 nd max-ra-interval 4
+     ipv6 nd min-ra-interval 3
+     ipv6 nd send-ra
+     ipv6 address 2001:db8:3::1/64
+     ipv6 unreachables
+    !
+    interface ethernet1/1/2
+     no shutdown
+     no switchport
+     description "dut -> x1 [external]"
+     ipv6 nd max-ra-interval 4
+     ipv6 nd min-ra-interval 3
+     ipv6 nd send-ra
+     ipv6 address 2001:db8:3:3::1/64
+     ipv6 unreachables
+    !
 ok: [rr2] => 
   msg: |-
     initial configuration for rr2
@@ -380,13 +424,11 @@ ok: [rr2] =>
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
     ip link set eth1 down
     ip link set eth1 up
+    ip link set dev eth1 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -475,13 +517,11 @@ ok: [x1] =>
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
     ip link set eth1 down
     ip link set eth1 up
+    ip link set dev eth1 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -512,62 +552,15 @@ ok: [x1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    hostname dut
-    !
-    lldp enable
-    !
-    !
-    !
-    !
-    default mtu 1532
-    !
-    interface loopback0
-     ipv6 address 2001:db8:1:1::1/64
-    !
-    interface mgmt1/1/1
-     no lldp transmit
-     no lldp receive
-    !
-    interface ethernet1/1/1
-     no shutdown
-     no switchport
-     mtu 1532
-     description "dut -> r1"
-     ipv6 nd max-ra-interval 4
-     ipv6 nd min-ra-interval 3
-     ipv6 nd send-ra
-     ipv6 address 2001:db8:3::1/64
-    !
-    interface ethernet1/1/2
-     no shutdown
-     no switchport
-     mtu 1532
-     description "dut -> x1 [external]"
-     ipv6 nd max-ra-interval 4
-     ipv6 nd min-ra-interval 3
-     ipv6 nd send-ra
-     ipv6 address 2001:db8:3:3::1/64
-    !
-
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [r1]
-ok: [r2]
-ok: [rr2]
-ok: [dut]
-ok: [x1]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/dellos10.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for r1, r2, rr2, x1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/dellos10.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for r1, r2, rr2, x1
 
 TASK [wait_for_connection] *****************************************************
 skipping: [dut]
 
-TASK [dellos10_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/dellos10.j2] ***
+TASK [dellos10_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/dellos10.j2, save to startup=yes] ***
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
@@ -580,13 +573,13 @@ skipping: [rr2]
 skipping: [x1]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, rr2, x1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, rr2, x1
 
 TASK [template] ****************************************************************
 changed: [r2]
 changed: [rr2]
-changed: [x1]
 changed: [r1]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -594,13 +587,13 @@ ok: [r2]
 ok: [rr2]
 ok: [x1]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r2]
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [rr2]
+changed: [r2]
 changed: [r1]
 changed: [x1]
 
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r1]
 skipping: [r2]
 skipping: [rr2]
@@ -612,25 +605,25 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [r1]
 ok: [r2]
 ok: [rr2]
-ok: [x1]
 ok: [dut]
+ok: [x1]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, rr2, x1 => (item=bgp)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, rr2, x1 => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, rr2, x1 => (item=bgp)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, rr2, x1 => (item=ospf)
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [r1]
-ok: [r2]
 ok: [dut]
+ok: [r2]
 ok: [rr2]
 ok: [x1]
 
 TASK [Find configuration template for bgp] *************************************
 ok: [r1]
-ok: [dut]
 ok: [r2]
 ok: [rr2]
+ok: [dut]
 ok: [x1]
 
 TASK [fail] ********************************************************************
@@ -639,6 +632,13 @@ skipping: [r1]
 skipping: [r2]
 skipping: [rr2]
 skipping: [x1]
+
+TASK [Find configuration deployment deploy_script for bgp] *********************
+ok: [r1]
+ok: [r2]
+ok: [dut]
+ok: [rr2]
+ok: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [r1] => 
@@ -966,28 +966,21 @@ ok: [rr2] =>
     !
     do write
 
-TASK [Find configuration deployment deploy_script for bgp] *********************
-ok: [r1]
-ok: [r2]
-ok: [rr2]
-ok: [dut]
-ok: [x1]
-
 TASK [Deploy bgp configuration] ************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/dellos10.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2, rr2, x1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/dellos10.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2, rr2, x1
 
 TASK [wait_for_connection] *****************************************************
 skipping: [dut]
 
-TASK [dellos10_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/dellos10.j2] ***
+TASK [dellos10_config: deploying bgp from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/dellos10.j2, save to startup=yes] ***
 changed: [dut]
 
 TASK [template] ****************************************************************
+changed: [x1]
+changed: [r2]
 changed: [r1]
 changed: [rr2]
-changed: [r2]
-changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -995,24 +988,24 @@ ok: [r2]
 ok: [rr2]
 ok: [x1]
 
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [r1]
 skipping: [r2]
 skipping: [rr2]
 skipping: [x1]
 
-TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [r1]
-changed: [r2]
+TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [rr2]
 changed: [x1]
+changed: [r2]
+changed: [r1]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [r1]
 ok: [r2]
 ok: [dut]
-ok: [x1]
 ok: [rr2]
+ok: [x1]
 
 TASK [Find configuration template for ospf] ************************************
 skipping: [x1]
@@ -1027,6 +1020,13 @@ skipping: [r1]
 skipping: [r2]
 skipping: [rr2]
 skipping: [x1]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+skipping: [x1]
+ok: [r1]
+ok: [r2]
+ok: [dut]
+ok: [rr2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [x1]
@@ -1140,53 +1140,46 @@ ok: [rr2] =>
     !
     do write
 
-TASK [Find configuration deployment deploy_script for ospf] ********************
-skipping: [x1]
-ok: [r1]
-ok: [r2]
-ok: [dut]
-ok: [rr2]
-
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [x1]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/dellos10.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2, rr2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/dellos10.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2, rr2
 
 TASK [wait_for_connection] *****************************************************
 skipping: [dut]
 
-TASK [dellos10_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/dellos10.j2] ***
+TASK [dellos10_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/dellos10.j2, save to startup=yes] ***
 changed: [dut]
 
 TASK [template] ****************************************************************
 changed: [rr2]
-changed: [r2]
 changed: [r1]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
 ok: [r2]
 ok: [rr2]
 
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
 skipping: [r1]
 skipping: [r2]
 skipping: [rr2]
 
-TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [r2]
-changed: [r1]
+TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [rr2]
+changed: [r1]
+changed: [r2]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=27   changed=3    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
-r1                         : ok=35   changed=7    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
-r2                         : ok=34   changed=6    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
-rr2                        : ok=34   changed=6    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
-x1                         : ok=27   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+dut                        : ok=28   changed=3    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+r1                         : ok=36   changed=7    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
+r2                         : ok=35   changed=6    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
+rr2                        : ok=35   changed=6    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
+x1                         : ok=28   changed=4    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
 
 
 
