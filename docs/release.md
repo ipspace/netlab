@@ -1,6 +1,17 @@
 Release Notes
 =============
 
+**Release 1.9.5 (2025-03-05)**
+
+* Cumulus Linux NVUE: VXLAN, EVPN, VRF-aware BGP, VRF route leaking, route import
+* Junos: BGP local-as, allowas-in, and EBGP multihop
+* vJunos-switch: anycast gateway, VXLAN, and EVPN
+* [VXLAN anycast VTEP in MLAG deployments](plugin-mlag-vtep)
+* Use [configured node management MAC/IPv4 addresses](libvirt-mgmt-ip) in vagrant-libvirt DHCP pool
+* Make `--instance` and `--snapshot` CLI parameters consistent 
+
+[More details...](release-1.9.5)
+
 **Release 1.9.4-post2 (2025-02-10)**
 
 This release fixes [niche features in multiple configuration templates](release-1.9.4-post-2-device-fixes) and [a few bugs](bug-fixes-1.9.4-post2).
