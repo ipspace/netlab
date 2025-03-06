@@ -43,11 +43,12 @@ def sum_results(data: Box) -> None:
         OK = True
         continue
 
-      if step == 'validate' and 'caveat' in data[k]:
+      if step in ['config','validate'] and 'caveat' in data[k]:
         OK = False
         continue
 
-      if data[k][step] is False or (step == 'caveat' and data[k].get('validate') is False):
+      if data[k][step] is False or \
+         (step == 'caveat' and (data[k].get('validate') is False or data[k].get('config') is False)):
         increase_counter(data,step)
         OK = False
 
