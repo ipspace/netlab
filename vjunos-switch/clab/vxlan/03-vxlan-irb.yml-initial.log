@@ -18,8 +18,8 @@ ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
-ok: [s2]
 ok: [s1]
+ok: [s2]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [h1]
@@ -35,20 +35,20 @@ TASK [Check if 'sshpass' is installed] *****************************************
 ok: [s1 -> localhost]
 
 TASK [Check for 'timeout' command] *********************************************
-ok: [s1 -> localhost]
 ok: [s2 -> localhost]
+ok: [s1 -> localhost]
 
 TASK [Execute local ssh command to check vjunos-switch readiness] **************
-FAILED - RETRYING: [s2 -> localhost]: Execute local ssh command to check vjunos-switch readiness (40 retries left).
 FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (40 retries left).
-FAILED - RETRYING: [s2 -> localhost]: Execute local ssh command to check vjunos-switch readiness (39 retries left).
+FAILED - RETRYING: [s2 -> localhost]: Execute local ssh command to check vjunos-switch readiness (40 retries left).
 FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (39 retries left).
-FAILED - RETRYING: [s2 -> localhost]: Execute local ssh command to check vjunos-switch readiness (38 retries left).
+FAILED - RETRYING: [s2 -> localhost]: Execute local ssh command to check vjunos-switch readiness (39 retries left).
 FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (38 retries left).
-FAILED - RETRYING: [s2 -> localhost]: Execute local ssh command to check vjunos-switch readiness (37 retries left).
+FAILED - RETRYING: [s2 -> localhost]: Execute local ssh command to check vjunos-switch readiness (38 retries left).
 FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (37 retries left).
-FAILED - RETRYING: [s2 -> localhost]: Execute local ssh command to check vjunos-switch readiness (36 retries left).
+FAILED - RETRYING: [s2 -> localhost]: Execute local ssh command to check vjunos-switch readiness (37 retries left).
 FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (36 retries left).
+FAILED - RETRYING: [s2 -> localhost]: Execute local ssh command to check vjunos-switch readiness (36 retries left).
 ok: [s1 -> localhost]
 ok: [s2 -> localhost]
 
@@ -81,8 +81,8 @@ ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
-ok: [s2]
 ok: [s1]
+ok: [s2]
 
 TASK [fail] ********************************************************************
 skipping: [h1]
@@ -124,8 +124,8 @@ ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
-ok: [s1]
 ok: [s2]
+ok: [s1]
 
 TASK [Find configuration template for initial] *********************************
 ok: [h1]
@@ -146,10 +146,10 @@ skipping: [s2]
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [h1]
 ok: [h2]
-ok: [h4]
 ok: [h3]
-ok: [s1]
+ok: [h4]
 ok: [s2]
+ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [h1] => 
@@ -200,6 +200,57 @@ ok: [h1] =>
     ip route add 10.0.0.0/24 via 172.16.0.5 dev eth1 protocol static
     ip route add 10.1.0.0/16 via 172.16.0.5 dev eth1 protocol static
     ip route add 10.2.0.0/24 via 172.16.0.5 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
+ok: [h4] => 
+  msg: |-
+    initial configuration for h4
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.1.4/24 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.1.6 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.1.6 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.1.6 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.1.6 dev eth1 protocol static
     #
     # Print the final routing table
     ip route
@@ -302,57 +353,6 @@ ok: [h3] =>
     ip route add 10.0.0.0/24 via 172.16.1.5 dev eth1 protocol static
     ip route add 10.1.0.0/16 via 172.16.1.5 dev eth1 protocol static
     ip route add 10.2.0.0/24 via 172.16.1.5 dev eth1 protocol static
-    #
-    # Print the final routing table
-    ip route
-ok: [h4] => 
-  msg: |-
-    initial configuration for h4
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.1.4/24 dev eth1
-    ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.2.0.0/24 2>/dev/null; do
-      : ; done
-    #
-    #
-    echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.1.6 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.1.6 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.1.6 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.1.6 dev eth1 protocol static
     #
     # Print the final routing table
     ip route
@@ -570,20 +570,20 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for 
 TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
 ok: [h2]
-ok: [h3]
 ok: [h4]
+ok: [h3]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h3 -> localhost]
-changed: [h4 -> localhost]
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+changed: [h4 -> localhost]
+changed: [h3 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h4 -> localhost]
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h4 -> localhost]
 changed: [h3 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -598,12 +598,12 @@ skipping: [h3]
 skipping: [h4]
 
 TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h2 -> localhost]
-changed: [h4 -> localhost]
 changed: [h1 -> localhost]
 changed: [h3 -> localhost]
+changed: [h2 -> localhost]
+changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-pj97mzwr.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-32m0vs86.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
@@ -626,8 +626,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=vxlan)
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
-ok: [s2]
 ok: [s1]
+ok: [s2]
 
 TASK [Find configuration template for vlan] ************************************
 ok: [s1]
@@ -757,8 +757,8 @@ skipping: [s1]
 skipping: [s2]
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
-ok: [s2]
 ok: [s1]
+ok: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [s1] => 
@@ -815,8 +815,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for 
 
 TASK [junos_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/junos.j2] ***
 [WARNING]:  statement not found
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [Figure out whether to deploy the module vxlan on current device] *********
 ok: [s1]
