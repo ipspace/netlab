@@ -24,10 +24,9 @@ def set_format_tags(data: Box) -> None:
   for v in data.get('results',{}).values():
     if not isinstance(v,Box):
       continue
-    if '_timestamp' in v:
-      data._columns.timestamp = True
-    if '_version' in v:
-      data._columns.version = True
+    for kw in ['timestamp','version','image']:
+      if f'_{kw}' in v:
+        data._columns[kw] = True
 
 def create_html_page(
       args: argparse.Namespace,

@@ -1,96 +1,104 @@
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+[WARNING]: Found variable using reserved name: hosts
 
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
+ok: [r1]
 ok: [h1]
 ok: [h2]
 ok: [s1]
 ok: [s2]
-ok: [r1]
 
 TASK [Find device readiness script] ********************************************
-ok: [h1]
-ok: [h2]
-ok: [s1]
 ok: [r1]
+ok: [h1]
+ok: [s1]
+ok: [h2]
 ok: [s2]
 
 TASK [Wait for device to become ready] *****************************************
+skipping: [r1]
 skipping: [h1]
 skipping: [h2]
 skipping: [s1]
 skipping: [s2]
-skipping: [r1]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1, s2, r1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for r1, h1, h2, s1, s2
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
-ok: [h1]
-ok: [s1]
-ok: [h2]
-ok: [s2]
 ok: [r1]
+ok: [h1]
+ok: [h2]
+ok: [s1]
+ok: [s2]
 
 TASK [Find configuration template for normalize] *******************************
+ok: [r1]
 ok: [h1]
 ok: [h2]
 ok: [s1]
-ok: [r1]
 ok: [s2]
 
 TASK [fail] ********************************************************************
+skipping: [r1]
 skipping: [h1]
 skipping: [h2]
 skipping: [s1]
 skipping: [s2]
-skipping: [r1]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [h1]
-skipping: [h2]
-skipping: [s1]
-skipping: [s2]
-skipping: [r1]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [r1]
+ok: [h1]
+ok: [h2]
+ok: [s2]
+ok: [s1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [r1]
 skipping: [h1]
 skipping: [h2]
 skipping: [s1]
 skipping: [s2]
-skipping: [r1]
 
 TASK [Deploy normalize configuration] ******************************************
+skipping: [r1]
 skipping: [h1]
 skipping: [h2]
 skipping: [s1]
 skipping: [s2]
-skipping: [r1]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1, s2, r1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for r1, h1, h2, s1, s2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [r1]
 ok: [h1]
 ok: [h2]
 ok: [s1]
 ok: [s2]
-ok: [r1]
 
 TASK [Find configuration template for initial] *********************************
+ok: [r1]
 ok: [h1]
 ok: [h2]
 ok: [s1]
 ok: [s2]
-ok: [r1]
 
 TASK [fail] ********************************************************************
+skipping: [r1]
 skipping: [h1]
 skipping: [h2]
 skipping: [s1]
 skipping: [s2]
-skipping: [r1]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [r1]
+ok: [h1]
+ok: [h2]
+ok: [s2]
+ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [h1] => 
@@ -218,6 +226,98 @@ ok: [s1] =>
        type: default
        interface:
        - name: system0.0
+ok: [r1] => 
+  msg: |-
+    initial configuration for r1
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+    ip link set dev eth2 mtu 1500
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname r1
+    !
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.5/32
+    !
+    interface eth1
+     no shutdown
+     description r1 -> [h1,s1,s2]
+     ip address 172.16.0.5/24
+    !
+    interface eth2
+     no shutdown
+     description r1 -> [h2,s1,s2]
+     ip address 172.16.1.5/24
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
 ok: [s2] => 
   msg: |-
     initial configuration for s2
@@ -241,93 +341,44 @@ ok: [s2] =>
        type: default
        interface:
        - name: system0.0
-ok: [r1] => 
-  msg: |-
-    initial configuration for r1
-    =========================================
-  
-    updates:
-  
-    - path: /interface[name=system0]/subinterface[index=0]
-      value:
-       description: "No description"
-       ipv4:
-        admin-state: enable
-        address:
-        - ip-prefix: "10.0.0.5/32"
-  
-  
-    - path: /interface[name=ethernet-1/1]
-      value:
-       subinterface:
-        index: 0
-        description: "r1 ~ h1,s1,s2"
-  
-    - path: /interface[name=ethernet-1/1]/subinterface[index=0]
-      value:
-       description: "r1 ~ h1,s1,s2"
-       ipv4:
-        admin-state: enable
-        address:
-        - ip-prefix: "172.16.0.5/24"
-          primary: [null]
-  
-    - path: /interface[name=ethernet-1/2]
-      value:
-       subinterface:
-        index: 0
-        description: "r1 ~ h2,s1,s2"
-  
-    - path: /interface[name=ethernet-1/2]/subinterface[index=0]
-      value:
-       description: "r1 ~ h2,s1,s2"
-       ipv4:
-        admin-state: enable
-        address:
-        - ip-prefix: "172.16.1.5/24"
-          primary: [null]
-  
-  
-  
-    - path: /network-instance[name=default]
-      value:
-       type: default
-       interface:
-       - name: system0.0
-  
-    - path: /network-instance[name=default]
-      value:
-       type: default
-       interface:
-       - name: ethernet-1/1.0
-    - path: /network-instance[name=default]
-      value:
-       type: default
-       interface:
-       - name: ethernet-1/2.0
-
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [h1]
-ok: [h2]
-ok: [s1]
-ok: [s2]
-ok: [r1]
 
 TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for r1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2, r1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
+
+TASK [Attempt to load VRF kernel module] ***************************************
+changed: [r1 -> localhost]
+
+TASK [Disable FRR management VRF when modprobe fails] **************************
+skipping: [r1]
+
+TASK [include_tasks] ***********************************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1
+
+TASK [template] ****************************************************************
+changed: [r1]
+
+TASK [set_fact] ****************************************************************
+ok: [r1]
+
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+changed: [r1]
+
+TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+skipping: [r1]
 
 TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -338,27 +389,24 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-7yoih0wb.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-vzlztv8d.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [s1]
 ok: [s2]
-ok: [r1]
 
 TASK [Update SRL initial node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2)] ***
 changed: [s2]
 changed: [s1]
-changed: [r1]
 
 TASK [debug] *******************************************************************
 skipping: [s1]
 skipping: [s2]
-skipping: [r1]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -380,6 +428,10 @@ ok: [s2]
 TASK [fail] ********************************************************************
 skipping: [s1]
 skipping: [s2]
+
+TASK [Find configuration deployment deploy_script for vlan] ********************
+ok: [s1]
+ok: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [s1] => 
@@ -567,10 +619,6 @@ ok: [s2] =>
        subinterface:
        - index: 701
 
-TASK [Find configuration deployment deploy_script for vlan] ********************
-ok: [s1]
-ok: [s2]
-
 TASK [Deploy vlan configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
 
@@ -579,8 +627,8 @@ ok: [s1]
 ok: [s2]
 
 TASK [Update SRL vlan node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/vlan/srlinux.j2)] ***
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [debug] *******************************************************************
 skipping: [s1]
@@ -590,11 +638,11 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-h2                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-r1                         : ok=13   changed=1    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-s1                         : ok=22   changed=2    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
-s2                         : ok=22   changed=2    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+h1                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+h2                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+r1                         : ok=17   changed=3    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+s1                         : ok=23   changed=2    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+s2                         : ok=23   changed=2    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
 
 
 

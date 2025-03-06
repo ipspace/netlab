@@ -1,4 +1,5 @@
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+[WARNING]: Found variable using reserved name: hosts
 
 PLAY [Deploy initial device configuration] *************************************
 
@@ -21,7 +22,7 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, h1, h2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r2, h1, h2
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [dut]
@@ -41,13 +42,13 @@ skipping: [r2]
 skipping: [h1]
 skipping: [h2]
 
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [dut]
-skipping: [r2]
-skipping: [h1]
-skipping: [h2]
-
 TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [dut]
+ok: [r2]
+ok: [h1]
+ok: [h2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
 skipping: [r2]
 skipping: [h1]
@@ -60,7 +61,7 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, h1, h2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r2, h1, h2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
@@ -79,6 +80,12 @@ skipping: [dut]
 skipping: [r2]
 skipping: [h1]
 skipping: [h2]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [dut]
+ok: [r2]
+ok: [h1]
+ok: [h2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [h1] => 
@@ -133,6 +140,74 @@ ok: [h1] =>
     #
     # Print the final routing table
     ip route
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+  
+    - set:
+        system:
+          hostname: dut
+          config:
+            snippet:
+              system-mtu:
+                file: /etc/network/ifupdown2/policy.d/mtu.json
+                content: |
+                  { "address": { "defaults": { "mtu": "1500" } } }
+  
+        interface:
+          eth0:
+            ip:
+              vrf: mgmt
+              address:
+                dhcp: {}
+            type: eth
+          swp1:
+            type: swp
+            link:
+              state:
+                up : {}
+            description: "dut -> [h1,r2]"
+            ip:
+              address:
+                172.16.33.1/24: {}
+                2001:db8:cafe:33::1/64: {}
+              ipv6:
+                forward: on
+              neighbor-discovery:
+                enable: on
+                router-advertisement:
+                  enable: on
+                  interval: 5000
+  
+          swp2:
+            type: swp
+            link:
+              state:
+                up : {}
+            description: "dut -> [r2,h2]"
+            ip:
+              address:
+                172.16.44.1/24: {}
+                2001:db8:cafe:44::1/64: {}
+              ipv6:
+                forward: on
+              neighbor-discovery:
+                enable: on
+                router-advertisement:
+                  enable: on
+                  interval: 5000
+  
+  
+    - set:
+        interface:
+          lo:
+            type: loopback
+            ip:
+              address:
+                10.0.0.1/32: {}
+              ipv6:
+                enable: off
 ok: [h2] => 
   msg: |-
     initial configuration for h2
@@ -185,71 +260,6 @@ ok: [h2] =>
     #
     # Print the final routing table
     ip route
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-  
-    - set:
-        system:
-          hostname: dut
-        interface:
-          eth0:
-            ip:
-              vrf: mgmt
-              address:
-                dhcp: {}
-            type: eth
-          swp1:
-            type: swp
-            link:
-              mtu: 1500
-              state:
-                up : {}
-            description: "dut -> [h1,r2]"
-            ip:
-              address:
-                172.16.33.1/24: {}
-                2001:db8:cafe:33::1/64: {}
-              ipv6:
-                forward: on
-              neighbor-discovery:
-                enable: on
-                router-advertisement:
-                  enable: on
-                  interval: 5000
-  
-  
-          swp2:
-            type: swp
-            link:
-              mtu: 1500
-              state:
-                up : {}
-            description: "dut -> [r2,h2]"
-            ip:
-              address:
-                172.16.44.1/24: {}
-                2001:db8:cafe:44::1/64: {}
-              ipv6:
-                forward: on
-              neighbor-discovery:
-                enable: on
-                router-advertisement:
-                  enable: on
-                  interval: 5000
-  
-  
-  
-    - set:
-        interface:
-          lo:
-            type: loopback
-            ip:
-              address:
-                10.0.0.1/32: {}
-              ipv6:
-                enable: off
 ok: [r2] => 
   msg: |-
     initial configuration for r2
@@ -308,18 +318,16 @@ ok: [r2] =>
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
     ip link set eth1 down
     ip link set eth1 up
+    ip link set dev eth1 mtu 1500
     sysctl -qw net.ipv6.conf.eth2.autoconf=0
     sysctl -qw net.ipv6.conf.eth2.accept_ra=0
     ip link set eth2 down
     ip link set eth2 up
+    ip link set dev eth2 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
-    ip link set dev eth2 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -358,21 +366,15 @@ ok: [r2] =>
     vtysh -f /tmp/config
     exit 0
 
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [dut]
-ok: [r2]
-ok: [h1]
-ok: [h2]
-
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for r2
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for r2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
 
-TASK [copy the cumulus nvue YAML initial config file to switch (generated from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus_nvue.j2)] ***
+TASK [copy the cumulus nvue YAML initial config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/initial/cumulus_nvue.j2)] ***
 changed: [dut]
 
 TASK [Wait for nvued to start] *************************************************
@@ -394,7 +396,7 @@ TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [r2]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for r2
 
 TASK [template] ****************************************************************
 changed: [r2]
@@ -402,10 +404,10 @@ changed: [r2]
 TASK [set_fact] ****************************************************************
 ok: [r2]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [r2]
 
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r2]
 
 TASK [Define script filename and determine whether to execute in netns] ********
@@ -413,10 +415,10 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -424,15 +426,15 @@ TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
 skipping: [h2]
 
-TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 skipping: [h1]
 skipping: [h2]
 
-TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
+TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-88fh820p.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-2qoeqsdi.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -445,8 +447,8 @@ ok: [h2]
 ok: [r2]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, h1, h2, r2 => (item=gateway)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, h1, h2, r2 => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, h1, h2, r2 => (item=gateway)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, h1, h2, r2 => (item=routing)
 
 TASK [Figure out whether to deploy the module gateway on current device] *******
 ok: [dut]
@@ -465,6 +467,12 @@ skipping: [dut]
 skipping: [h1]
 skipping: [h2]
 skipping: [r2]
+
+TASK [Find configuration deployment deploy_script for gateway] *****************
+skipping: [h1]
+skipping: [h2]
+ok: [dut]
+ok: [r2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
@@ -508,6 +516,8 @@ ok: [r2] =>
     #
     set -e # Exit immediately when any command fails
     #
+    sysctl -w net.ipv6.conf.all.enhanced_dad=0
+    sysctl -w net.ipv6.conf.default.enhanced_dad=0
     if [ ! -e /sys/class/net/vrrp-1-217 ]; then
       ip link add vrrp-1-217 link eth1 type macvlan mode bridge
       ip link set dev vrrp-1-217 address 00:00:5e:00:01:d9 addrgenmode none
@@ -537,22 +547,16 @@ ok: [r2] =>
     CONFIG
     vtysh -f /tmp/vrrp_config
 
-TASK [Find configuration deployment deploy_script for gateway] *****************
-skipping: [h1]
-skipping: [h2]
-ok: [dut]
-ok: [r2]
-
 TASK [Deploy gateway configuration] ********************************************
 skipping: [h1]
 skipping: [h2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r2
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
 
-TASK [copy the cumulus nvue YAML gateway config file to switch (generated from /home/pipi/net101/tools/netsim/ansible/templates/gateway/cumulus_nvue.j2)] ***
+TASK [copy the cumulus nvue YAML gateway config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/gateway/cumulus_nvue.j2)] ***
 changed: [dut]
 
 TASK [Wait for nvued to start] *************************************************
@@ -573,10 +577,10 @@ changed: [r2]
 TASK [set_fact] ****************************************************************
 ok: [r2]
 
-TASK [run /tmp/config.sh to deploy gateway config from /home/pipi/net101/tools/netsim/ansible/templates/gateway/frr.j2] ***
+TASK [run /tmp/config.sh to deploy gateway config from /home/pipi/netlab_gh/netsim/ansible/templates/gateway/frr.j2] ***
 changed: [r2]
 
-TASK [run vtysh to import gateway config from /home/pipi/net101/tools/netsim/ansible/templates/gateway/frr.j2] ***
+TASK [run vtysh to import gateway config from /home/pipi/netlab_gh/netsim/ansible/templates/gateway/frr.j2] ***
 skipping: [r2]
 
 TASK [Figure out whether to deploy the module routing on current device] *******
@@ -596,6 +600,12 @@ skipping: [dut]
 skipping: [h1]
 skipping: [h2]
 skipping: [r2]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [dut]
+skipping: [r2]
+ok: [h1]
+ok: [h2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
@@ -621,42 +631,36 @@ ok: [h2] =>
     #
     ip route
 
-TASK [Find configuration deployment deploy_script for routing] *****************
-skipping: [dut]
-skipping: [r2]
-ok: [h1]
-ok: [h2]
-
 TASK [Deploy routing configuration] ********************************************
 skipping: [dut]
 skipping: [r2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
 
 TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux.j2] ***
-changed: [h1 -> localhost]
+TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux.j2] ***
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Execute /tmp/config-h1_routing.sh to deploy routing config based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux.j2] ***
-changed: [h2]
+TASK [Execute /tmp/config-h1_routing.sh to deploy routing config based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux.j2] ***
 changed: [h1]
+changed: [h2]
 
-TASK [Container configuration for routing based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux.j2 executed in netns] ***
+TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux.j2 executed in netns] ***
 skipping: [h1]
 skipping: [h2]
 
-TASK [Remove temporary file /tmp/h1_routing-mni2eh3u.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-itgv5yi9.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -664,10 +668,10 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=31   changed=6    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
-h1                         : ok=31   changed=9    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
-h2                         : ok=31   changed=9    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
-r2                         : ok=28   changed=5    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+dut                        : ok=32   changed=6    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+h1                         : ok=32   changed=9    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
+h2                         : ok=32   changed=9    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
+r2                         : ok=29   changed=5    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
 
 
 

@@ -124,15 +124,13 @@ ok: [dut] =>
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
     sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+    ip link set dev eth2 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
-    ip link set dev eth2 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -218,13 +216,11 @@ ok: [probe] =>
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -305,13 +301,11 @@ ok: [x1] =>
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -359,8 +353,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for
 
 TASK [template] ****************************************************************
 changed: [probe]
-changed: [dut]
 changed: [x1]
+changed: [dut]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
@@ -368,9 +362,9 @@ ok: [probe]
 ok: [x1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [dut]
-changed: [x1]
 changed: [probe]
+changed: [x1]
+changed: [dut]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [dut]
@@ -463,8 +457,8 @@ TASK [Deploy routing configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for dut, probe, x1
 
 TASK [template] ****************************************************************
-changed: [probe]
 changed: [dut]
+changed: [probe]
 changed: [x1]
 
 TASK [set_fact] ****************************************************************
@@ -479,8 +473,8 @@ skipping: [x1]
 
 TASK [run vtysh to import routing config from /home/pipi/net101/tools/netsim/ansible/templates/routing/frr.j2] ***
 changed: [probe]
-changed: [x1]
 changed: [dut]
+changed: [x1]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [dut]
@@ -498,41 +492,6 @@ skipping: [probe]
 skipping: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [probe] => 
-  msg: |-
-    bgp configuration for probe
-    =========================================
-    !
-    router bgp 65100
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.2
-    !
-      neighbor 10.1.0.1 remote-as 65000
-      neighbor 10.1.0.1 description dut
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-      network 10.0.0.2/32
-    !
-    !
-    !
-      neighbor 10.1.0.1 activate
-      no neighbor 10.1.0.1 send-community all
-      neighbor 10.1.0.1 send-community standard
-      neighbor 10.1.0.1 send-community large
-    !
-    !
-    !
-    do write
 ok: [dut] => 
   msg: |-
     bgp configuration for dut
@@ -572,6 +531,41 @@ ok: [dut] =>
       no neighbor 10.1.0.6 send-community all
       neighbor 10.1.0.6 send-community standard
       neighbor 10.1.0.6 send-community large
+    !
+    !
+    !
+    do write
+ok: [probe] => 
+  msg: |-
+    bgp configuration for probe
+    =========================================
+    !
+    router bgp 65100
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.2
+    !
+      neighbor 10.1.0.1 remote-as 65000
+      neighbor 10.1.0.1 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.2/32
+    !
+    !
+    !
+      neighbor 10.1.0.1 activate
+      no neighbor 10.1.0.1 send-community all
+      neighbor 10.1.0.1 send-community standard
+      neighbor 10.1.0.1 send-community large
     !
     !
     !
@@ -625,9 +619,9 @@ TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for dut, probe, x1
 
 TASK [template] ****************************************************************
-changed: [probe]
 changed: [x1]
 changed: [dut]
+changed: [probe]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
@@ -677,8 +671,8 @@ TASK [Run the configuration deployment script] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for dut, x1
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [dut]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]

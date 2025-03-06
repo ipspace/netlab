@@ -1,0 +1,901 @@
+[WARNING]: Invalid characters were found in group names but not replaced, use
+-vvvv to see details
+[WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [h1]
+ok: [h2]
+ok: [ros]
+ok: [s1]
+
+TASK [Find device readiness script] ********************************************
+ok: [h1]
+ok: [h2]
+ok: [ros]
+ok: [s1]
+
+TASK [Wait for device to become ready] *****************************************
+skipping: [h1]
+skipping: [h2]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vjunos-switch-clab.yml for ros, s1
+
+TASK [Wait for SSH server] *****************************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vm-clab-ssh-check.yml for ros, s1
+
+TASK [Check if 'sshpass' is installed] *****************************************
+ok: [ros -> localhost]
+
+TASK [Check for 'timeout' command] *********************************************
+ok: [ros -> localhost]
+ok: [s1 -> localhost]
+
+TASK [Execute local ssh command to check vjunos-switch readiness] **************
+FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (40 retries left).
+FAILED - RETRYING: [ros -> localhost]: Execute local ssh command to check vjunos-switch readiness (40 retries left).
+FAILED - RETRYING: [ros -> localhost]: Execute local ssh command to check vjunos-switch readiness (39 retries left).
+FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (39 retries left).
+FAILED - RETRYING: [ros -> localhost]: Execute local ssh command to check vjunos-switch readiness (38 retries left).
+FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (38 retries left).
+FAILED - RETRYING: [ros -> localhost]: Execute local ssh command to check vjunos-switch readiness (37 retries left).
+FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (37 retries left).
+FAILED - RETRYING: [ros -> localhost]: Execute local ssh command to check vjunos-switch readiness (36 retries left).
+FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (36 retries left).
+ok: [ros -> localhost]
+ok: [s1 -> localhost]
+
+TASK [Confirm ros SSH server works] ********************************************
+ok: [ros] => 
+  msg: Node ros is ready.
+ok: [s1] => 
+  msg: Node s1 is ready.
+
+TASK [Wait for ge-0/0/0 interface] *********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vjunos-switch.yml for ros, s1
+
+TASK [Wait for ge-0/0/0 to appear] *********************************************
+ok: [ros]
+ok: [s1]
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, ros, s1
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [h1]
+ok: [h2]
+ok: [ros]
+ok: [s1]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [h1]
+ok: [h2]
+ok: [ros]
+ok: [s1]
+
+TASK [fail] ********************************************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [ros]
+skipping: [s1]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [h1]
+ok: [h2]
+ok: [s1]
+ok: [ros]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [h1]
+skipping: [h2]
+skipping: [ros]
+skipping: [s1]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [ros]
+skipping: [s1]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, ros, s1
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [h1]
+ok: [h2]
+ok: [ros]
+ok: [s1]
+
+TASK [Find configuration template for initial] *********************************
+ok: [h1]
+ok: [h2]
+ok: [ros]
+ok: [s1]
+
+TASK [fail] ********************************************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [ros]
+skipping: [s1]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [h1]
+ok: [h2]
+ok: [ros]
+ok: [s1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.3/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.3/24 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.0.2 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.0.2 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.0.2 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.0.2 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.1.4/24 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.1.2 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.1.2 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.1.2 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.1.2 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
+ok: [s1] => 
+  msg: |-
+    initial configuration for s1
+    =========================================
+    system {
+      host-name s1;
+      static-host-mapping {
+        h1 inet 172.16.0.3;
+        h2 inet 172.16.1.4;
+        ros inet 10.0.0.2;
+      }
+    }
+  
+  
+    interfaces {
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    }
+    interfaces {
+      ge-0/0/0 {
+        mtu 1614;
+      }
+      ge-0/0/1 {
+        mtu 1514;
+      }
+      ge-0/0/2 {
+        mtu 1514;
+      }
+  
+      lo0.0 {
+  
+          family inet {
+            address 10.0.0.1/32;
+          }
+  
+      }
+      ge-0/0/0.0 {
+        description "s1 -> ros";
+  
+          family inet {
+            address 10.1.0.2/30;
+          }
+  
+      }
+      ge-0/0/1.0 {
+        description "[Access VLAN red] s1 -> h1";
+  
+  
+      }
+      ge-0/0/2.0 {
+        description "[Access VLAN blue] s1 -> h2";
+  
+  
+      }
+      irb.1000 {
+        description "VLAN red (1000) -> [h1,ros]";
+  
+  
+      }
+      irb.1001 {
+        description "VLAN blue (1001) -> [h2,ros]";
+  
+  
+      }
+    }
+    protocols {
+      lldp {
+        interface fxp0 {
+          disable;
+        }
+        interface all;
+      }
+    }
+ok: [ros] => 
+  msg: |-
+    initial configuration for ros
+    =========================================
+    system {
+      host-name ros;
+      static-host-mapping {
+        h1 inet 172.16.0.3;
+        h2 inet 172.16.1.4;
+        s1 inet 10.0.0.1;
+      }
+    }
+  
+  
+  
+  
+  
+  
+    policy-options {
+      community tg_65000_1 members target:65000:1;
+    }
+  
+  
+  
+    policy-options {
+      policy-statement vrf-tenant-export {
+        term 1 {
+          then {
+            community add tg_65000_1;
+            accept;
+          }
+        }
+      }
+  
+  
+  
+      policy-statement vrf-tenant-import {
+        term 1 {
+          from community [ tg_65000_1 ];
+          then accept;
+        }
+        term default {
+          then reject;
+        }
+      }
+    }
+  
+    routing-instances {
+  
+      tenant {
+        instance-type vrf;
+        route-distinguisher 65000:1;
+  
+        vrf-import vrf-tenant-import;
+        vrf-export vrf-tenant-export;
+  
+        routing-options {
+          auto-export;
+        }
+  
+        interface irb.1000;
+        interface irb.1001;
+  
+      }
+  
+    }
+    interfaces {
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    }
+    interfaces {
+      ge-0/0/0 {
+        mtu 1614;
+      }
+  
+      lo0.0 {
+  
+          family inet {
+            address 10.0.0.2/32;
+          }
+  
+      }
+      ge-0/0/0.0 {
+        description "ros -> s1";
+  
+          family inet {
+            address 10.1.0.1/30;
+          }
+  
+      }
+      irb.1000 {
+        description "VLAN red (1000) -> [h1,s1]";
+  
+          family inet {
+            address 172.16.0.2/24;
+            mtu 1500;
+          }
+  
+      }
+      irb.1001 {
+        description "VLAN blue (1001) -> [h2,s1]";
+  
+          family inet {
+            address 172.16.1.2/24;
+            mtu 1500;
+          }
+  
+      }
+    }
+    protocols {
+      lldp {
+        interface fxp0 {
+          disable;
+        }
+        interface all;
+      }
+    }
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for ros, s1
+
+TASK [Define script filename and determine whether to execute in netns] ********
+ok: [h1]
+ok: [h2]
+
+TASK [Create a temporary file for the rendered script] *************************
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
+skipping: [h1]
+skipping: [h2]
+
+TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
+skipping: [h1]
+skipping: [h2]
+
+TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [Remove temporary file /tmp/h1_initial-xkl0gb8m.sh] ***********************
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [junos_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/junos.j2] ***
+[WARNING]: mgd: statement has no contents; ignored
+changed: [s1]
+changed: [ros]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [ros]
+ok: [s1]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ros, s1 => (item=vlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ros, s1 => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ros, s1 => (item=vrf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ros, s1 => (item=vxlan)
+
+TASK [Figure out whether to deploy the module vlan on current device] **********
+ok: [ros]
+ok: [s1]
+
+TASK [Find configuration template for vlan] ************************************
+ok: [ros]
+ok: [s1]
+
+TASK [fail] ********************************************************************
+skipping: [ros]
+skipping: [s1]
+
+TASK [Find configuration deployment deploy_script for vlan] ********************
+ok: [ros]
+ok: [s1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [ros] => 
+  msg: |-
+    vlan configuration for ros
+    =========================================
+  
+    vlans {
+      blue {
+        vlan-id 1001;
+  
+        l3-interface irb.1001;
+  
+      }
+      red {
+        vlan-id 1000;
+  
+        l3-interface irb.1000;
+  
+      }
+    }
+  
+    interfaces {
+  
+    }
+ok: [s1] => 
+  msg: |-
+    vlan configuration for s1
+    =========================================
+  
+    vlans {
+      blue {
+        vlan-id 1001;
+  
+  
+      }
+      red {
+        vlan-id 1000;
+  
+  
+      }
+    }
+  
+    interfaces {
+  
+  
+      ge-0/0/1.0 {
+        family ethernet-switching {
+  
+          vlan {
+            members red;
+          }
+  
+        }
+      }
+  
+  
+  
+      ge-0/0/2.0 {
+        family ethernet-switching {
+  
+          vlan {
+            members blue;
+          }
+  
+        }
+      }
+  
+  
+    }
+
+TASK [Deploy vlan configuration] ***********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for ros, s1
+
+TASK [junos_config: deploying vlan from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/vjunos-switch.j2] ***
+changed: [ros]
+changed: [s1]
+
+TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [ros]
+ok: [s1]
+
+TASK [Find configuration template for ospf] ************************************
+ok: [ros]
+ok: [s1]
+
+TASK [fail] ********************************************************************
+skipping: [ros]
+skipping: [s1]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+ok: [ros]
+ok: [s1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [ros] => 
+  msg: |-
+    ospf configuration for ros
+    =========================================
+    routing-options {
+      router-id 10.0.0.2
+    }
+    protocols {
+      delete: ospf;
+    }
+  
+    protocols {
+      ospf {
+        area 0.0.0.0 {
+          interface lo0.0 {
+          }
+        }
+        area 0.0.0.0 {
+          interface ge-0/0/0.0 {
+            interface-type p2p;
+          }
+        }
+      }
+    }
+ok: [s1] => 
+  msg: |-
+    ospf configuration for s1
+    =========================================
+    routing-options {
+      router-id 10.0.0.1
+    }
+    protocols {
+      delete: ospf;
+    }
+  
+    protocols {
+      ospf {
+        area 0.0.0.0 {
+          interface lo0.0 {
+          }
+        }
+        area 0.0.0.0 {
+          interface ge-0/0/0.0 {
+            interface-type p2p;
+          }
+        }
+      }
+    }
+
+TASK [Deploy ospf configuration] ***********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for ros, s1
+
+TASK [junos_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/junos.j2] ***
+[WARNING]:  statement not found
+changed: [ros]
+changed: [s1]
+
+TASK [Figure out whether to deploy the module vrf on current device] ***********
+ok: [ros]
+ok: [s1]
+
+TASK [Find configuration template for vrf] *************************************
+skipping: [s1]
+ok: [ros]
+
+TASK [fail] ********************************************************************
+skipping: [ros]
+skipping: [s1]
+
+TASK [Find configuration deployment deploy_script for vrf] *********************
+skipping: [s1]
+ok: [ros]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [s1]
+ok: [ros] => 
+  msg: |-
+    vrf configuration for ros
+    =========================================
+  
+    routing-instances {
+      tenant {
+        routing-options {
+          router-id 10.0.0.2
+        }
+      }
+    }
+  
+  
+    policy-options {
+      policy-statement vrf-tenant-ospf-export {
+        term redis_direct {
+          from {
+            protocol direct;
+          }
+          then accept;
+        }
+        term redis_bgp {
+          from protocol bgp;
+          then {
+            accept;
+          }
+        }
+        term redis_local_target {
+          from community [ tg_65000_1 ];
+          then accept;
+        }
+      }
+    }
+    routing-instances {
+      tenant {
+    protocols {
+      delete: ospf;
+    }
+  
+    protocols {
+      ospf {
+        export vrf-tenant-ospf-export;
+        area 0.0.0.0 {
+          interface irb.1000 {
+          }
+        }
+        area 0.0.0.0 {
+          interface irb.1001 {
+          }
+        }
+      }
+    }
+    } }
+
+TASK [Deploy vrf configuration] ************************************************
+skipping: [s1]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for ros
+
+TASK [junos_config: deploying vrf from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/junos.j2] ***
+changed: [ros]
+
+TASK [Figure out whether to deploy the module vxlan on current device] *********
+ok: [ros]
+ok: [s1]
+
+TASK [Find configuration template for vxlan] ***********************************
+ok: [s1]
+ok: [ros]
+
+TASK [fail] ********************************************************************
+skipping: [ros]
+skipping: [s1]
+
+TASK [Find configuration deployment deploy_script for vxlan] *******************
+ok: [s1]
+ok: [ros]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [ros] => 
+  msg: |-
+    vxlan configuration for ros
+    =========================================
+  
+    policy-options {
+        policy-statement ecmp {
+            then {
+                load-balance per-flow;
+            }
+        }
+    }
+    routing-options {
+        forwarding-table {
+            export ecmp;
+        }
+    }
+  
+    switch-options {
+        vtep-source-interface lo0.0;
+    }
+  
+    vlans {
+        red {
+            vxlan {
+                vni 101000;
+            }
+        }
+        blue {
+            vxlan {
+                vni 101001;
+            }
+        }
+    }
+  
+  
+  
+    switch-options {
+        remote-vtep-list 10.0.0.1;
+    }
+  
+    vlans {
+        red {
+            vxlan {
+                ingress-node-replication;
+                static-remote-vtep-list 10.0.0.1;
+            }
+        }
+        blue {
+            vxlan {
+                ingress-node-replication;
+                static-remote-vtep-list 10.0.0.1;
+            }
+        }
+    }
+ok: [s1] => 
+  msg: |-
+    vxlan configuration for s1
+    =========================================
+  
+    policy-options {
+        policy-statement ecmp {
+            then {
+                load-balance per-flow;
+            }
+        }
+    }
+    routing-options {
+        forwarding-table {
+            export ecmp;
+        }
+    }
+  
+    switch-options {
+        vtep-source-interface lo0.0;
+    }
+  
+    vlans {
+        red {
+            vxlan {
+                vni 101000;
+            }
+        }
+        blue {
+            vxlan {
+                vni 101001;
+            }
+        }
+    }
+  
+  
+  
+    switch-options {
+        remote-vtep-list 10.0.0.2;
+    }
+  
+    vlans {
+        red {
+            vxlan {
+                ingress-node-replication;
+                static-remote-vtep-list 10.0.0.2;
+            }
+        }
+        blue {
+            vxlan {
+                ingress-node-replication;
+                static-remote-vtep-list 10.0.0.2;
+            }
+        }
+    }
+
+TASK [Deploy vxlan configuration] **********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for ros, s1
+
+TASK [junos_config: deploying vxlan from /home/pipi/netlab_gh/netsim/ansible/templates/vxlan/vjunos-switch.j2] ***
+changed: [s1]
+changed: [ros]
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+h1                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+h2                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+ros                        : ok=50   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+s1                         : ok=44   changed=4    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+
+
+
+The devices under test are VLAN-to-VXLAN bridge and VXLAN router-on-a-stick.
+Assuming 'vxlan-bridging' test case succeeded, this one tests VXLAN-to-VXLAN
+routing
+
+* h1 and h2 should be able to ping each other
+

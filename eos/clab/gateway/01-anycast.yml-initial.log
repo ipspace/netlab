@@ -12,8 +12,8 @@ ok: [dut]
 TASK [Find device readiness script] ********************************************
 ok: [h1]
 ok: [h2]
-ok: [th]
 ok: [x1]
+ok: [th]
 ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
@@ -98,15 +98,15 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [h1]
 ok: [h2]
-ok: [x1]
 ok: [th]
+ok: [x1]
 ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
 ok: [h1]
 ok: [h2]
-ok: [x1]
 ok: [th]
+ok: [x1]
 ok: [dut]
 
 TASK [fail] ********************************************************************
@@ -329,6 +329,69 @@ ok: [h2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    hostname dut
+    !
+    logging monitor debugging
+    aaa authorization exec default local
+    !
+    lldp run
+    ip routing
+    ipv6 unicast-routing
+    !
+    !
+    ip host h1 172.16.33.3
+    ip host h2 172.16.33.4
+    ip host th 172.16.44.5
+    ip host x1 10.0.0.2 172.16.44.2 172.16.33.2
+    ipv6 host h1 2001:db8:cafe:33::3
+    ipv6 host h2 2001:db8:cafe:33::4
+    ipv6 host th 2001:db8:cafe:44::5
+    ipv6 host x1 2001:db8:cafe:44::2
+    !
+    interface defaults
+     mtu 1500
+    !
+    interface Management0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     ip address 10.0.0.1/32
+    !
+    interface Ethernet1
+     no switchport
+     description dut -> [x1,th]
+     ip address 172.16.44.1/24
+     ipv6 nd ra interval 5
+     ipv6 address 2001:db8:cafe:44::1/64
+    !
+     mac-address 52dc.cafe.0101
+     no shutdown
+    !
+    interface Ethernet2
+     no switchport
+     description [Access VLAN edge] dut -> h1
+    !
+     mac-address 52dc.cafe.0102
+     no shutdown
+    !
+    interface Ethernet3
+     no switchport
+     description [Access VLAN edge] dut -> x1
+    !
+     mac-address 52dc.cafe.0103
+     no shutdown
+    !
+    interface Vlan1000
+     description VLAN edge (1000) -> [h1,x1,h2]
+     ip address 172.16.33.1/24
+     ipv6 nd ra interval 5
+     ipv6 address 2001:db8:cafe:33::1/64
+    !
 ok: [x1] => 
   msg: |-
     initial configuration for x1
@@ -443,69 +506,6 @@ ok: [x1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    hostname dut
-    !
-    logging monitor debugging
-    aaa authorization exec default local
-    !
-    lldp run
-    ip routing
-    ipv6 unicast-routing
-    !
-    !
-    ip host h1 172.16.33.3
-    ip host h2 172.16.33.4
-    ip host th 172.16.44.5
-    ip host x1 10.0.0.2 172.16.44.2 172.16.33.2
-    ipv6 host h1 2001:db8:cafe:33::3
-    ipv6 host h2 2001:db8:cafe:33::4
-    ipv6 host th 2001:db8:cafe:44::5
-    ipv6 host x1 2001:db8:cafe:44::2
-    !
-    interface defaults
-     mtu 1500
-    !
-    interface Management0
-     no lldp transmit
-     no lldp receive
-    !
-    interface Loopback0
-     ip address 10.0.0.1/32
-    !
-    interface Ethernet1
-     no switchport
-     description dut -> [x1,th]
-     ip address 172.16.44.1/24
-     ipv6 nd ra interval 5
-     ipv6 address 2001:db8:cafe:44::1/64
-    !
-     mac-address 52dc.cafe.0101
-     no shutdown
-    !
-    interface Ethernet2
-     no switchport
-     description [Access VLAN edge] dut -> h1
-    !
-     mac-address 52dc.cafe.0102
-     no shutdown
-    !
-    interface Ethernet3
-     no switchport
-     description [Access VLAN edge] dut -> x1
-    !
-     mac-address 52dc.cafe.0103
-     no shutdown
-    !
-    interface Vlan1000
-     description VLAN edge (1000) -> [h1,x1,h2]
-     ip address 172.16.33.1/24
-     ipv6 nd ra interval 5
-     ipv6 address 2001:db8:cafe:33::1/64
-    !
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [h1]
@@ -534,9 +534,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for h1, h2, x1
 
 TASK [template] ****************************************************************
-changed: [h2]
 changed: [x1]
 changed: [h1]
+changed: [h2]
 
 TASK [set_fact] ****************************************************************
 ok: [h1]
@@ -544,8 +544,8 @@ ok: [h2]
 ok: [x1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [h1]
 changed: [h2]
+changed: [h1]
 changed: [x1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -571,7 +571,7 @@ skipping: [th]
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [th -> localhost]
 
-TASK [Remove temporary file /tmp/th_initial-uxto_ga_.sh] ***********************
+TASK [Remove temporary file /tmp/th_initial-487sg3mo.sh] ***********************
 changed: [th -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
@@ -657,8 +657,8 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [run vtysh to import routing config from /home/pipi/net101/tools/netsim/ansible/templates/routing/frr.j2] ***
-changed: [h1]
 changed: [h2]
+changed: [h1]
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [h1]
@@ -752,8 +752,8 @@ TASK [run vtysh to import vlan config from /home/pipi/net101/tools/netsim/ansibl
 skipping: [x1]
 
 TASK [Figure out whether to deploy the module gateway on current device] *******
-ok: [h1]
 ok: [h2]
+ok: [h1]
 ok: [x1]
 ok: [dut]
 
@@ -810,6 +810,7 @@ ok: [dut] =>
     !
     interface Vlan1000
       ip virtual-router address 172.16.33.42/24
+      ipv6 virtual-router address 2001:db8:cafe:33::2a
 
 TASK [Find configuration deployment deploy_script for gateway] *****************
 skipping: [h1]

@@ -40,7 +40,7 @@ ok: [x1] =>
     =========================================
     !
     interface Ethernet1
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0201
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
@@ -128,13 +128,11 @@ ok: [dut] =>
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -263,13 +261,14 @@ ok: [dut] =>
     #
     if [ ! -e /sys/devices/virtual/net/vlan42 ]; then
       brctl addbr vlan42
+      ip link set dev vlan42 address 52:dc:ca:fd:01:00
   
-  
-      ip link set dev vlan42 up
       ip addr flush dev vlan42
     fi
   
     brctl addif vlan42 eth1
+  
+    ip link set dev vlan42 up
     exit 0
 ok: [x1] => 
   msg: |-

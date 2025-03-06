@@ -1,4 +1,5 @@
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+[WARNING]: Found variable using reserved name: hosts
 
 PLAY [Deploy initial device configuration] *************************************
 
@@ -28,8 +29,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for l1,
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [l1]
-ok: [l2]
 ok: [spine]
+ok: [l2]
 ok: [h1]
 ok: [h2]
 
@@ -37,8 +38,8 @@ TASK [Find configuration template for normalize] *******************************
 ok: [l1]
 ok: [l2]
 ok: [spine]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 
 TASK [fail] ********************************************************************
 skipping: [l1]
@@ -47,14 +48,14 @@ skipping: [spine]
 skipping: [h1]
 skipping: [h2]
 
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [l1]
-skipping: [l2]
-skipping: [spine]
-skipping: [h1]
-skipping: [h2]
-
 TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [l1]
+ok: [l2]
+ok: [h1]
+ok: [spine]
+ok: [h2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [l1]
 skipping: [l2]
 skipping: [spine]
@@ -82,8 +83,8 @@ TASK [Find configuration template for initial] *********************************
 ok: [l1]
 ok: [l2]
 ok: [spine]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 
 TASK [fail] ********************************************************************
 skipping: [l1]
@@ -91,6 +92,13 @@ skipping: [l2]
 skipping: [spine]
 skipping: [h1]
 skipping: [h2]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [l1]
+ok: [l2]
+ok: [spine]
+ok: [h1]
+ok: [h2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [l1] => 
@@ -213,43 +221,6 @@ ok: [spine] =>
        type: default
        interface:
        - name: ethernet-1/2.0
-ok: [h1] => 
-  msg: |-
-    initial configuration for h1
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.31.1.1/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.31.1.1/24 dev eth1
-    ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    #
-    #
-    #
-    # Print the final routing table
-    ip route
 ok: [h2] => 
   msg: |-
     initial configuration for h2
@@ -278,6 +249,43 @@ ok: [h2] =>
     ip addr del 172.31.1.2/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.31.1.2/24 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    #
+    #
+    # Print the final routing table
+    ip route
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.31.1.1/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.31.1.1/24 dev eth1
     ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
@@ -342,15 +350,13 @@ ok: [l2] =>
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1600
     sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+    ip link set dev eth2 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1600
-    ip link set dev eth2 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -386,13 +392,6 @@ ok: [l2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [l1]
-ok: [l2]
-ok: [spine]
-ok: [h1]
-ok: [h2]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1, spine
@@ -453,12 +452,12 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-fnqgyh9n.sh] ***********************
-changed: [h1 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-7agax1e0.sh] ***********************
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -488,6 +487,11 @@ skipping: [l1]
 skipping: [l2]
 skipping: [spine]
 
+TASK [Find configuration deployment deploy_script for vlan] ********************
+skipping: [spine]
+ok: [l1]
+ok: [l2]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [spine]
 ok: [l2] => 
@@ -500,13 +504,14 @@ ok: [l2] =>
     #
     if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
       brctl addbr vlan1000
+      ip link set dev vlan1000 address 52:dc:ca:fd:04:00
   
-  
-      ip link set dev vlan1000 up
       ip addr flush dev vlan1000
     fi
   
     brctl addif vlan1000 eth2
+  
+    ip link set dev vlan1000 up
     exit 0
 ok: [l1] => 
   msg: |-
@@ -534,11 +539,6 @@ ok: [l1] =>
       value:
        subinterface:
        - index: 1000
-
-TASK [Find configuration deployment deploy_script for vlan] ********************
-skipping: [spine]
-ok: [l1]
-ok: [l2]
 
 TASK [Deploy vlan configuration] ***********************************************
 skipping: [spine]
@@ -580,6 +580,11 @@ TASK [fail] ********************************************************************
 skipping: [l1]
 skipping: [l2]
 skipping: [spine]
+
+TASK [Find configuration deployment deploy_script for bgp] *********************
+ok: [l1]
+ok: [l2]
+ok: [spine]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [l2] => 
@@ -908,8 +913,6 @@ ok: [spine] =>
         peer-as: 65000
         transport:
           local-address: 10.0.0.5
-          passive-mode: True
-          _annotate_passive-mode: "Improve robustness during startup"
         route-reflector:
           cluster-id: 10.0.0.5
           client: True
@@ -954,8 +957,6 @@ ok: [spine] =>
         peer-as: 65000
         transport:
           local-address: 10.0.0.5
-          passive-mode: True
-          _annotate_passive-mode: "Improve robustness during startup"
         route-reflector:
           cluster-id: 10.0.0.5
           client: True
@@ -995,9 +996,6 @@ ok: [spine] =>
           standard: True
           large: True
           _annotate_large: "Assuming 'standard' implies 'large' here"
-        route-reflector:
-          cluster-id: 10.0.0.5
-          client: True
   
   
     - path: /network-instance[name=default]/protocols/bgp
@@ -1036,9 +1034,6 @@ ok: [spine] =>
           standard: True
           large: True
           _annotate_large: "Assuming 'standard' implies 'large' here"
-        route-reflector:
-          cluster-id: 10.0.0.5
-          client: True
   
   
     - path: /network-instance[name=default]/protocols/bgp
@@ -1055,11 +1050,6 @@ ok: [spine] =>
           local-as:
             as-number: 65100
             prepend-global-as: False # Don't include iBGP global AS in eBGP advertisements
-
-TASK [Find configuration deployment deploy_script for bgp] *********************
-ok: [l1]
-ok: [l2]
-ok: [spine]
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1, spine
@@ -1103,6 +1093,11 @@ TASK [fail] ********************************************************************
 skipping: [l1]
 skipping: [l2]
 skipping: [spine]
+
+TASK [Find configuration deployment deploy_script for vxlan] *******************
+skipping: [spine]
+ok: [l1]
+ok: [l2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [spine]
@@ -1153,8 +1148,6 @@ ok: [l2] =>
   
   
   
-    # Determine max MTU used on interfaces, to configure VXLAN interface
-  
     # Create L3 VNIs with bridges and add to correct vrf table
   
     # Create VXLAN L2 interface per vni
@@ -1171,18 +1164,13 @@ ok: [l2] =>
     brctl addif vlan1000 vxlan1000
     brctl stp vlan1000 off
     # Do not generate ipv6 link-local address for VXLAN devices
-    ip link set mtu 1600 addrgenmode none dev vxlan1000
+    ip link set mtu 1500 addrgenmode none dev vxlan1000
     # Disable dynamic MAC learning for evpn, see https://docs.frrouting.org/en/latest/evpn.html
     bridge link set dev vxlan1000 learning off
     ip link set up dev vxlan1000
   
   
     exit $?
-
-TASK [Find configuration deployment deploy_script for vxlan] *******************
-skipping: [spine]
-ok: [l1]
-ok: [l2]
 
 TASK [Deploy vxlan configuration] **********************************************
 skipping: [spine]
@@ -1225,6 +1213,11 @@ skipping: [l1]
 skipping: [l2]
 skipping: [spine]
 
+TASK [Find configuration deployment deploy_script for evpn] ********************
+ok: [l1]
+ok: [l2]
+ok: [spine]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [l1] => 
   msg: |-
@@ -1250,6 +1243,10 @@ ok: [l2] =>
   msg: |-
     evpn configuration for l2
     =========================================
+    #!/bin/bash
+    #
+    set -e
+    cat >/tmp/evpn_config <<CONFIG
     router bgp 65000
      address-family l2vpn evpn
       advertise-all-vni
@@ -1274,6 +1271,9 @@ ok: [l2] =>
     ! L3 VRF EVPN handling
     !
     do write
+    CONFIG
+    vtysh -f /tmp/evpn_config
+    vtysh -c 'clear bgp *'
 ok: [spine] => 
   msg: |-
     evpn configuration for spine
@@ -1295,11 +1295,6 @@ ok: [spine] =>
           evpn:
             rapid-update: True
 
-TASK [Find configuration deployment deploy_script for evpn] ********************
-ok: [l1]
-ok: [l2]
-ok: [spine]
-
 TASK [Deploy evpn configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1, spine
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
@@ -1309,8 +1304,8 @@ ok: [l1]
 ok: [spine]
 
 TASK [Update SRL evpn node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/evpn/srlinux.j2)] ***
-changed: [spine]
 changed: [l1]
+changed: [spine]
 
 TASK [debug] *******************************************************************
 skipping: [l1]
@@ -1323,20 +1318,20 @@ TASK [set_fact] ****************************************************************
 ok: [l2]
 
 TASK [run /tmp/config.sh to deploy evpn config from /home/pipi/net101/tools/netsim/ansible/templates/evpn/frr.j2] ***
-skipping: [l2]
+changed: [l2]
 
 TASK [run vtysh to import evpn config from /home/pipi/net101/tools/netsim/ansible/templates/evpn/frr.j2] ***
-changed: [l2]
+skipping: [l2]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-h2                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-l1                         : ok=46   changed=5    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
-l2                         : ok=53   changed=11   unreachable=0    failed=0    skipped=16   rescued=0    ignored=0   
-spine                      : ok=34   changed=3    unreachable=0    failed=0    skipped=21   rescued=0    ignored=0   
+h1                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+h2                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+l1                         : ok=47   changed=5    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
+l2                         : ok=54   changed=11   unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+spine                      : ok=35   changed=3    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
 
 
 

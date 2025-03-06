@@ -1,4 +1,5 @@
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+[WARNING]: Found variable using reserved name: hosts
 
 PLAY [Deploy initial device configuration] *************************************
 
@@ -29,11 +30,11 @@ TASK [fail] ********************************************************************
 skipping: [dut]
 skipping: [x1]
 
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [dut]
-skipping: [x1]
-
 TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [dut]
+ok: [x1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
 skipping: [x1]
 
@@ -55,6 +56,10 @@ ok: [x1]
 TASK [fail] ********************************************************************
 skipping: [dut]
 skipping: [x1]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [dut]
+ok: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -171,13 +176,11 @@ ok: [x1] =>
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
     ip link set eth1 down
     ip link set eth1 up
+    ip link set dev eth1 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -207,10 +210,6 @@ ok: [x1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [dut]
-ok: [x1]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
@@ -267,56 +266,11 @@ TASK [fail] ********************************************************************
 skipping: [dut]
 skipping: [x1]
 
+TASK [Find configuration deployment deploy_script for bgp] *********************
+ok: [dut]
+ok: [x1]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [x1] => 
-  msg: |-
-    bgp configuration for x1
-    =========================================
-    !
-    router bgp 65100
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.2
-    !
-      neighbor 10.1.0.1 remote-as 65000
-      neighbor 10.1.0.1 description dut
-    !
-      neighbor 2001:db8:3::1 remote-as 65000
-      neighbor 2001:db8:3::1 description dut
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-      network 10.0.0.2/32
-    !
-    !
-    !
-      neighbor 10.1.0.1 activate
-      no neighbor 10.1.0.1 send-community all
-      neighbor 10.1.0.1 send-community standard
-      neighbor 10.1.0.1 send-community large
-    !
-     address-family ipv6 unicast
-    !
-  
-    !
-    !
-    !
-      neighbor 2001:db8:3::1 activate
-      no neighbor 2001:db8:3::1 send-community all
-      neighbor 2001:db8:3::1 send-community standard
-      neighbor 2001:db8:3::1 send-community large
-    !
-    !
-    !
-    do write
 ok: [dut] => 
   msg: |-
     bgp configuration for dut
@@ -466,10 +420,55 @@ ok: [dut] =>
             admin-state: enable
   
           peer-as: 65100
-
-TASK [Find configuration deployment deploy_script for bgp] *********************
-ok: [dut]
-ok: [x1]
+ok: [x1] => 
+  msg: |-
+    bgp configuration for x1
+    =========================================
+    !
+    router bgp 65100
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.2
+    !
+      neighbor 10.1.0.1 remote-as 65000
+      neighbor 10.1.0.1 description dut
+    !
+      neighbor 2001:db8:3::1 remote-as 65000
+      neighbor 2001:db8:3::1 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.2/32
+    !
+    !
+    !
+      neighbor 10.1.0.1 activate
+      no neighbor 10.1.0.1 send-community all
+      neighbor 10.1.0.1 send-community standard
+      neighbor 10.1.0.1 send-community large
+    !
+     address-family ipv6 unicast
+    !
+  
+    !
+    !
+    !
+      neighbor 2001:db8:3::1 activate
+      no neighbor 2001:db8:3::1 send-community all
+      neighbor 2001:db8:3::1 send-community standard
+      neighbor 2001:db8:3::1 send-community large
+    !
+    !
+    !
+    do write
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
@@ -510,8 +509,8 @@ skipping: [dut]
 skipping: [x1]
 
 TASK [Check is the configuration template is a file] ***************************
-ok: [x1 -> localhost]
 ok: [dut -> localhost]
+ok: [x1 -> localhost]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -551,8 +550,8 @@ TASK [run vtysh to import bgp.session config from /home/pipi/net101/tools/netsim
 skipping: [x1]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=29   changed=3    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
-x1                         : ok=34   changed=7    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
+dut                        : ok=30   changed=3    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+x1                         : ok=35   changed=7    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
 
 
 
