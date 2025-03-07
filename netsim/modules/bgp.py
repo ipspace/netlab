@@ -14,6 +14,11 @@ from ..data.validate import validate_item
 from ..augment import devices
 from ..utils import log, routing as _rp_utils
 
+def neighbor_activate_af(neighbor: Box, af: str, flag: str = "") -> None:
+  neighbor[af] = flag or True
+  if 'activate' in neighbor:
+    neighbor.activate[af] = True
+
 def check_bgp_parameters(node: Box, topology: Box) -> None:
   if not "bgp" in node:  # pragma: no cover (should have been tested and reported by the caller)
     return
