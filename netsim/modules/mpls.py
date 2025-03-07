@@ -10,6 +10,7 @@ from .. import data
 from ..data.validate import must_be_bool,must_be_list
 from ..augment import devices
 from ..utils import log
+from .bgp import prune_shutdown_flag
 
 AF_LIST: typing.Final[list] = ['ipv4','ipv6']
 BGP_SESSIONS: typing.Final[list] = ['ibgp','ebgp']
@@ -124,6 +125,8 @@ def node_adjust_bgplu(node: Box, topology: Box, features: Box) -> None:
     for af in ['ipv4','ipv6']:
       if af in n and af in node.mpls.bgp and n.type in node.mpls.bgp[af]:
         n[af+'_label'] = True
+        # Additionally, remove neigh shutdown flag for neigh AF
+        prune_shutdown_flag(n, af)
 
 def node_adjust_6pe(node: Box, topology: Box, features: Box) -> None:
   if not validate_mpls_bgp_parameter(node,'bgp'):
@@ -149,6 +152,7 @@ def node_adjust_6pe(node: Box, topology: Box, features: Box) -> None:
   for n in node.bgp.neighbors:                          # Now iterate over BGP neighbors
     if 'ipv4' in n and n.type in node.mpls['6pe']:      # Do we have an IPv4 session with the neighbor and 6PE enabled?
       n['6pe'] = True                                   # ... enable 6PE AF on IPv4 neighbor session
+      prune_shutdown_flag(n, 'ipv4')                    # ... disable IPv4 shutdown flag, if present
 
       # If the neighbor is also using 6PE and will enable 6PE on this session
       # ... then we don't need IPv6 BGP session --> remove it
@@ -181,6 +185,8 @@ def node_adjust_mplsvpn(node: Box, topology: Box, features: Box) -> None:
       for af in AF_LIST:
         if af in node.mpls.vpn:
           n['vpn'+af.replace('ip','')] = n.ipv4
+          # Additionally, remove neigh shutdown flag for neigh AF
+          prune_shutdown_flag(n, af)
 
 '''
 check_node_features: Check if a node supports the requested MPLS features
