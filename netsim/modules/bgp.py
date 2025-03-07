@@ -361,6 +361,39 @@ def activate_bgp_default_af(node: Box, activate: Box, topology: Box) -> None:
         ngb.activate[af] = node.bgp.get(af) and af in activate and ngb.type in activate[af]
 
 """
+shutdown_neigh_no_af -- set shutdown flag on neighbors without active AF (per af)
+
+Based on transport session(s) with a BGP neighbor, local BGP AF, and BGP AF configuration
+parameters, set neighbor.shutdown.AF flags.
+To be used to force neigh shutdown on devices that enable the default AF.
+"""
+def shutdown_neigh_no_af(node: Box, topology: Box) -> None:
+  for ngb in node.bgp.neighbors:
+    ngb.shutdown = {}
+    for af in ('ipv4','ipv6'):
+      if af in ngb:
+        if not ngb.activate[af]:
+          ngb.shutdown[af] = True
+    if len(ngb.shutdown) == 0:
+      del ngb.shutdown
+
+"""
+prune_shutdown_flag -- prune the shutdown flag for a specific af in neigh
+
+Remove the shutdown flag for a specific Address Family in a BGP neighbor.
+If the resulting shutdown structure is empy, remove it as well.
+
+This function can be called by external modules which depend on BGP, i.e., EVPN or MPLS
+
+"""
+def prune_shutdown_flag(neigh: Box, af: str) -> None:
+  if af in neigh.get('shutdown', {}):
+    del neigh.shutdown[af]
+  if 'shutdown' in neigh and len(neigh.shutdown) == 0:
+    del neigh.shutdown
+
+
+"""
 Build BGP route reflector clusters
 
 Iterate over all ASNs in the lab, and for route reflectors that don't have rr_cluster_id
@@ -448,6 +481,7 @@ def build_bgp_sessions(node: Box, topology: Box) -> None:
     activate.append('localas_ibgp')
 
   activate_bgp_default_af(node,activate,topology)
+  shutdown_neigh_no_af(node,topology)
 
 """
 bgp_set_advertise: set bgp.advertise flag on stub links and on loopback interfaces

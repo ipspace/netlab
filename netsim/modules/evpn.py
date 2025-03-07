@@ -6,6 +6,7 @@ from ..utils import log
 from .. import data
 from ..data.validate import must_be_int,must_be_dict,must_be_string
 from ..augment import devices
+from .bgp import prune_shutdown_flag
 
 """
 validate_evpn_list
@@ -51,6 +52,10 @@ def enable_evpn_af(node: Box, topology: Box) -> None:
   for bn in node.bgp.get('neighbors',[]):
     if bn.type in bgp_session and 'evpn' in topology.nodes[bn.name].get('module'):
       bn.evpn = True
+      # Additionally, remove neigh shutdown flag for neigh AF
+      for af in ['ipv4','ipv6']:
+        if bn.get(af, False):
+          prune_shutdown_flag(bn, af)
 
 def get_usable_evpn_asn(topology: Box) -> int:
   asn = ( topology.get('evpn.as',None) or
