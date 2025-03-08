@@ -19,6 +19,12 @@ def neighbor_activate_af(neighbor: Box, af: str, flag: str = "") -> None:
   if 'activate' in neighbor:
     neighbor.activate[af] = True
 
+def neighbor_deactivate_af(neighbor: Box, af: str) -> None:
+  if af not in ['ipv4','ipv6']:
+    neighbor.pop(af,None)
+  if 'activate' in neighbor:
+    neighbor.activate.pop(af,None)
+
 def check_bgp_parameters(node: Box, topology: Box) -> None:
   if not "bgp" in node:  # pragma: no cover (should have been tested and reported by the caller)
     return
@@ -718,3 +724,15 @@ class BGP(_Module):
     bgp_transform_community_list(node,topology)
     _routing.check_vrf_protocol_support(node,'bgp',None,'bgp',topology)
     _routing.process_imports(node,'bgp',topology,global_vars.get_const('vrf_igp_protocols',['connected']))
+
+  #
+  # Mark neigbors with no active address families as '_shutdown'
+  #
+  def node_cleanup(self, node: Box, topology: Box) -> None:
+    for nb in node.bgp.get('neighbors',[]):
+      if 'activate' in nb:
+        active_af = [ k for k,v in nb.activate.items() if v ]
+        for af1,af2 in [('ipv4','ipv6'),('ipv6','ipv4')]:
+          if af1 in nb:
+            if not active_af or (af1 not in active_af and (af2 in active_af)):
+              nb._shutdown[af1] = True
