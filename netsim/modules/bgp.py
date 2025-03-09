@@ -14,16 +14,18 @@ from ..data.validate import validate_item
 from ..augment import devices
 from ..utils import log, routing as _rp_utils
 
-def neighbor_activate_af(neighbor: Box, af: str, flag: str = "") -> None:
+def neighbor_activate_af(neighbor: Box, af: str, ip_versions: typing.List[str], flag: str = "") -> None:
   neighbor[af] = flag or True
-  if 'activate' in neighbor:
-    neighbor.activate[af] = True
+  for _ip in ip_versions:
+    neighbor._activate[_ip][af] = True
 
-def neighbor_deactivate_af(neighbor: Box, af: str) -> None:
+def neighbor_deactivate_af(neighbor: Box, af: str, ip_versions: typing.List[str]) -> None:
   if af not in ['ipv4','ipv6']:
     neighbor.pop(af,None)
-  if 'activate' in neighbor:
-    neighbor.activate.pop(af,None)
+  for _ip in ip_versions:
+    neighbor._activate[_ip].pop(af,None)
+    if neighbor._activate[_ip]=={}:
+      neighbor._activate.pop(_ip,None)
 
 def check_bgp_parameters(node: Box, topology: Box) -> None:
   if not "bgp" in node:  # pragma: no cover (should have been tested and reported by the caller)
@@ -733,8 +735,8 @@ class BGP(_Module):
       if 'activate' in nb:
         active_af = [ k for k,v in nb.activate.items() if v ]
         if 'ipv4' in nb:
-          if not active_af or ('ipv4' not in active_af and 'ipv6' in active_af):
+          if not active_af or (active_af==['ipv6'] and 'ipv6' in nb):
             nb._shutdown.ipv4 = True
         if 'ipv6' in nb:
-          if not active_af or ('ipv6' not in active_af and 'ipv4' in active_af and 'ipv4_rfc8950' not in nb):
+          if not active_af or ('ipv6' not in active_af and 'ipv4' in nb and 'ipv4_rfc8950' not in nb):
             nb._shutdown.ipv6 = True

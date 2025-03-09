@@ -51,7 +51,7 @@ def enable_evpn_af(node: Box, topology: Box) -> None:
   #
   for bn in node.bgp.get('neighbors',[]):
     if bn.type in bgp_session and 'evpn' in topology.nodes[bn.name].get('module'):
-      neighbor_activate_af(bn,'evpn')
+      neighbor_activate_af(bn,'evpn',ip_versions=[v for v in ['ipv4','ipv6'] if v in bn])
 
 def get_usable_evpn_asn(topology: Box) -> int:
   asn = ( topology.get('evpn.as',None) or

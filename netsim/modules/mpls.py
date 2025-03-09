@@ -124,7 +124,7 @@ def node_adjust_bgplu(node: Box, topology: Box, features: Box) -> None:
   for n in node.bgp.neighbors:
     for af in ['ipv4','ipv6']:
       if af in n and af in node.mpls.bgp and n.type in node.mpls.bgp[af]:
-        neighbor_activate_af(n,af+'_label')
+        neighbor_activate_af(n,af+'_label',ip_versions=[af])
 
 def node_adjust_6pe(node: Box, topology: Box, features: Box) -> None:
   if not validate_mpls_bgp_parameter(node,'bgp'):
@@ -147,9 +147,9 @@ def node_adjust_6pe(node: Box, topology: Box, features: Box) -> None:
   if not 'neighbors' in node.get('bgp',{}):
     return
 
-  for n in node.bgp.neighbors:                          # Now iterate over BGP neighbors
-    if 'ipv4' in n and n.type in node.mpls['6pe']:      # Do we have an IPv4 session with the neighbor and 6PE enabled?
-      neighbor_activate_af(n,'6pe')                     # ... enable 6PE AF on IPv4 neighbor session
+  for n in node.bgp.neighbors:                           # Now iterate over BGP neighbors
+    if 'ipv4' in n and n.type in node.mpls['6pe']:       # Do we have an IPv4 session with the neighbor and 6PE enabled?
+      neighbor_activate_af(n,'6pe',ip_versions=['ipv4']) # ... enable 6PE AF on IPv4 neighbor session
 
       # If the neighbor is also using 6PE and will enable 6PE on this session
       # ... then we don't need IPv6 BGP session --> remove it
