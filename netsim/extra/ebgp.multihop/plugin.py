@@ -129,7 +129,6 @@ def augment_af_activation(ndata: Box, topology: Box) -> None:
       if not af in ngb:                                           # Skip the irrelevant transport AF
         continue
       for bgp_af in af_list_base[af].valid_values:                # Iterate over all potential address famiilies
-        chg = ngb.activate if bgp_af in ['ipv4','ipv6'] else ngb  # Find the object to change (neighbor or activate dictionary)
         if bgp_af in af_set[af]:                                  # Is the AF active on this transport EBGP multhop session?
           bgp.neighbor_activate_af(ngb,bgp_af,ip_versions=[af])   # Yes, turn it on
         else:
