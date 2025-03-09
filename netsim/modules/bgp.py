@@ -119,10 +119,10 @@ def bgp_neighbor(n: Box, intf: Box, ctype: str, sessions: Box, extra_data: typin
       if af in intf:
         af_count = af_count + 1
         if isinstance(intf[af],bool):
-          ngb[af] = intf[af]
+          _ip = intf[af]
         else:
-          ngb[af] = _rp_utils.get_intf_address(intf[af])
-        neighbor_activate_af(ngb,af,ip_versions=[af])
+          _ip = _rp_utils.get_intf_address(intf[af])
+        neighbor_activate_af(ngb,af,ip_versions=[af],flag=_ip)
   if 'ipv4_rfc8950' in extra_data:
     neighbor_activate_af(ngb,'ipv4_rfc8950',ip_versions=['ipv6'])
   return ngb if af_count > 0 else None
