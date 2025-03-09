@@ -374,7 +374,7 @@ parameters, set neighbor.activate.AF flags
 def activate_bgp_default_af(node: Box, activate: Box, topology: Box) -> None:
   for ngb in node.bgp.neighbors:
     for af in ('ipv4','ipv6'):
-      if af in ngb and (af=='ipv6' or ngb[af] is not True):
+      if af in ngb:
         ngb._activate[af][af] = node.bgp.get(af) and af in activate and ngb.type in activate[af]
 
 """
