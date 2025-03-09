@@ -371,7 +371,7 @@ def activate_bgp_default_af(node: Box, activate: Box, topology: Box) -> None:
   for ngb in node.bgp.neighbors:
     for af in ('ipv4','ipv6'):
       if af in ngb:
-        ngb.activate[af] = node.bgp.get(af) and af in activate and ngb.type in activate[af]
+        ngb._activate[af][af] = node.bgp.get(af) and af in activate and ngb.type in activate[af]
 
 """
 Build BGP route reflector clusters
@@ -732,8 +732,8 @@ class BGP(_Module):
   #
   def node_cleanup(self, node: Box, topology: Box) -> None:
     for nb in node.bgp.get('neighbors',[]):
-      if 'activate' in nb:
-        active_af = [ k for k,v in nb.activate.items() if v ]
+      if '_activate' in nb:
+        active_af = [ k for k,v in nb._activate.items() if v ]
         if 'ipv4' in nb:
           if not active_af or (active_af==['ipv6'] and 'ipv6' in nb):
             nb._shutdown.ipv4 = True
