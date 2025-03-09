@@ -737,6 +737,7 @@ class BGP(_Module):
     for nb in node.bgp.get('neighbors',[]):
       if '_activate' in nb:
         for af in ['ipv4','ipv6']:
-          active_af = [ k for k,v in nb._activate[af].items() if v ] if af in nb._activate else []
-          if not active_af:
+          if af not in nb:
+            continue
+          if af not in nb._activate or not [ k for k,v in nb._activate[af].items() if v ]:
             nb._shutdown[af] = True
