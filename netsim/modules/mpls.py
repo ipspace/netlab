@@ -181,7 +181,7 @@ def node_adjust_mplsvpn(node: Box, topology: Box, features: Box) -> None:
     if 'ipv4' in n:
       for af in AF_LIST:
         if af in node.mpls.vpn:
-          neighbor_activate_af(n,'vpn'+af.replace('ip',''),n.ipv4)
+          neighbor_activate_af(n,'vpn'+af.replace('ip',''),ip_versions=['ipv4'], flag=n.ipv4)
 
 '''
 check_node_features: Check if a node supports the requested MPLS features

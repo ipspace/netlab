@@ -122,7 +122,9 @@ def bgp_neighbor(n: Box, intf: Box, ctype: str, sessions: Box, extra_data: typin
           ngb[af] = intf[af]
         else:
           ngb[af] = _rp_utils.get_intf_address(intf[af])
-
+        neighbor_activate_af(n,af,ip_versions=[af])
+  if 'ipv4_rfc8950' in extra_data:
+    neighbor_activate_af(n,'rfc8950',ip_versions=['ipv6'])
   return ngb if af_count > 0 else None
 
 """
@@ -733,10 +735,7 @@ class BGP(_Module):
   def node_cleanup(self, node: Box, topology: Box) -> None:
     for nb in node.bgp.get('neighbors',[]):
       if '_activate' in nb:
-        active_af = [ k for k,v in nb._activate.items() if v ]
-        if 'ipv4' in nb:
-          if not active_af or (active_af==['ipv6'] and 'ipv6' in nb):
-            nb._shutdown.ipv4 = True
-        if 'ipv6' in nb:
-          if not active_af or ('ipv6' not in active_af and 'ipv4' in nb and 'ipv4_rfc8950' not in nb):
-            nb._shutdown.ipv6 = True
+        for af in ['ipv4','ipv6']:
+          active_af = [ k for k,v in nb._activate[af].items() if v ] if af in nb._activate else []
+          if not active_af:
+            nb._shutdown[af] = True
