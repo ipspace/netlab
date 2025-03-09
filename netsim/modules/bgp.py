@@ -123,7 +123,8 @@ def bgp_neighbor(n: Box, intf: Box, ctype: str, sessions: Box, extra_data: typin
           ngb[af] = intf[af]
         else:
           ngb[af] = _rp_utils.get_intf_address(intf[af])
-        neighbor_activate_af(ngb,af,ip_versions=[af])
+        if af=='ipv6' or ngb[af] is not True:
+          neighbor_activate_af(ngb,af,ip_versions=[af])
   if 'ipv4_rfc8950' in extra_data:
     neighbor_activate_af(ngb,'ipv4_rfc8950',ip_versions=['ipv6'])
   return ngb if af_count > 0 else None
@@ -373,7 +374,7 @@ parameters, set neighbor.activate.AF flags
 def activate_bgp_default_af(node: Box, activate: Box, topology: Box) -> None:
   for ngb in node.bgp.neighbors:
     for af in ('ipv4','ipv6'):
-      if af in ngb:
+      if af in ngb and (af=='ipv6' or ngb[af] is not True):
         ngb._activate[af][af] = node.bgp.get(af) and af in activate and ngb.type in activate[af]
 
 """
@@ -735,9 +736,11 @@ class BGP(_Module):
   #
   def node_cleanup(self, node: Box, topology: Box) -> None:
     for nb in node.bgp.get('neighbors',[]):
-      if '_activate' in nb:
-        for af in ['ipv4','ipv6']:
-          if af not in nb:
-            continue
-          if af not in nb._activate or not [ k for k,v in nb._activate[af].items() if v ]:
-            nb._shutdown[af] = True
+      for af in ['ipv4','ipv6']:
+        if af not in nb:
+          nb._activate.pop(af,None)
+          continue
+        nb._activate[af] = { k:v for k,v in nb._activate[af].items() if v }  # Remove any 'False' flags
+        if not nb._activate[af]:
+          nb._activate.pop(af,None)
+          nb._shutdown[af] = True
