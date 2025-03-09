@@ -737,10 +737,11 @@ class BGP(_Module):
   def node_cleanup(self, node: Box, topology: Box) -> None:
     for nb in node.bgp.get('neighbors',[]):
       for af in ['ipv4','ipv6']:
-        if af not in nb:
+        if af not in nb and (af=='ipv4' or 'local_if' not in nb):
           nb._activate.pop(af,None)
           continue
         nb._activate[af] = { k:v for k,v in nb._activate[af].items() if v }  # Remove any 'False' flags
         if not nb._activate[af]:
           nb._activate.pop(af,None)
-          nb._shutdown[af] = True
+          if nb[af] is not True:
+            nb._shutdown[af] = True
