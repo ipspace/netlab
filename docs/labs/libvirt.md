@@ -25,7 +25,7 @@ You MUST use **netlab up** to start the lab to ensure the virtual machines get c
 
 ## Supported Versions
 
-We tested _netlab_ with Vagrant version 2.3.4 and vagrant-libvirt plugin version 0.11.2. These are also the versions installed by the **netlab install libvirt** command.
+We tested _netlab_ with Vagrant version 2.4.0 and vagrant-libvirt plugin version 0.12.2. These are also the versions installed by the **netlab install libvirt** command.
 
 (libvirt-vagrant-boxes)=
 ## Vagrant Boxes
@@ -134,6 +134,7 @@ The new Vagrant box will be copied into the *libvirt* storage pool the next time
 
 * P2P UDP tunnels are used for links with two nodes, and link **type** is set to **p2p** (the default behavior for links with two nodes). P2P tunnels are transparent; you can run any layer-2 control-plane protocol (including LACP) over them.
 * *libvirt* networks are used for all other links. They are automatically created and deleted by **vagrant up** and **vagrant down** commands executed by **netlab up** and **netlab down**. **netlab up** sets the `group_fwd_mask` for all Vagrant-created Linux bridges to 0x4000 to [enable LLDP passthrough](https://blog.ipspace.net/2020/12/linux-bridge-lldp.html).
+* *netlab* configures the MTU for libvirt bridge networks with a fixed value of 9500
 
 (libvirt-capture)=
 ### Packet Capture
