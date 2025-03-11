@@ -12,6 +12,7 @@ The plugin includes Jinja2 templates for the following platforms:
 
 | Operating system    | VRRPV2 | Notes
 | ------------------- | :----: | 
+| Cumulus 5.x (NVUE)  |   ✅   | VRRPv3 is the default on Cumulus
 | Dell OS10           |   ✅   | VRRPv2 is the default on OS10
 
 ## Example config
