@@ -1,0 +1,56 @@
+---
+message: |
+  Use this topology to test the (global) IPv4-only EBGP multihop implementation
+
+module: [ bgp, ospf ]
+
+prefix:
+  beacon:
+    ipv4: 192.168.42.0/24
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ pe2, c1 ]
+
+plugin: [ ebgp.multihop, bgp.session ]
+
+bgp.multihop.sessions:
+- dut:
+  pe2:
+    passive: True
+
+nodes:
+  dut:
+    bgp.as: 65000
+  c1:
+    module: [ ospf ]
+  pe2:
+    bgp.as: 65101
+
+links:
+- dut-c1
+- c1-pe2
+- dut:
+  prefix: beacon
+
+validate:
+  ospf:
+    description: Check OSPFv2 adjacency with DUT
+    wait_msg: Waiting for OSPF adjacency process to complete
+    wait: 50
+    nodes: [ c1 ]
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id)
+  bgp:
+    description: Check IPv4 EBGP sessions with DUT
+    wait_msg: Wait for BGP sessions to be established
+    wait: 40
+    nodes: [ pe2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+  prefix:
+    description: Check whether DUT propagates the IPv4 beacon prefix
+    wait_msg: Wait for BGP convergence
+    wait: 30
+    nodes: [ pe2 ]
+    plugin: bgp_prefix(prefix.beacon.ipv4)
