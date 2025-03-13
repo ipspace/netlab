@@ -17,6 +17,7 @@ from . import global_vars
 Common error checking routines:
 
 * get_element_path: given prefix and suffix (either one could be missing) return the full path
+* resolve_const_value: when given a string, try to use it as a constant, otherwise return initial value
 * init_wrong_type: initialize the error message caches
 * wrong_type_text: return the type of the data item, tranforming Box into dict
 * wrong_type_message: prints the 'wrong data type' error message
@@ -34,6 +35,11 @@ def get_element_path(parent: str, element: typing.Optional[str]) -> str:
     # The fun part: merge prefix + suffix and get rid of unneeded 'topology.' prefix
     path = f'{parent}.{element}'
     return path.replace('topology.','') if path.startswith('topology.') else path
+
+def resolve_const_value(value: typing.Any, default: typing.Optional[typing.Any]) -> typing.Any:
+  if not isinstance(value,str):
+    return value
+  return global_vars.get_const(value,default if default is not None else value)  
 
 _wrong_type_help: dict = {}                           # Remember the 'wrong type' hints we printed out
 _attr_help_cache: typing.Optional[Box] = None         # Remember which attribute help messages we already printed out
@@ -459,14 +465,18 @@ def must_be_str(value: typing.Any) -> dict:
   return { '_valid': True } if isinstance(value,str) else { '_type': 'a string' }
 
 @type_test()
-def must_be_id(value: typing.Any, max_length: int = 16) -> dict:
-  match_str = f'[a-zA-Z_][a-zA-Z0-9_-]{{0,{max_length - 1}}}'
+def must_be_id(value: typing.Any, max_length: typing.Union[int,str] = 16) -> dict:
+  id_length = resolve_const_value(max_length,16)
+  if not isinstance(id_length,int):
+    log.fatal(f'Internal failure in must_be_id: max_length {max_length} did not resolve into int')
+
+  match_str = f'[a-zA-Z_][a-zA-Z0-9_-]{{0,{id_length - 1}}}'
 #  print(f'must_be_id: v={value} m={match_str}')
   if not isinstance(value,str) or not re.fullmatch(match_str,value):
     return {
       '_valid': False,
-      '_type' : f'a {max_length}-character identifier',
-      '_help' : f'a string starting with a letter or an underscore and containing up to {max_length} letters, numbers, or underscores'
+      '_type' : f'a {id_length}-character identifier',
+      '_help' : f'a string starting with a letter or an underscore and containing up to {id_length} letters, numbers, or underscores'
     }
 
   return { '_valid': True } 
