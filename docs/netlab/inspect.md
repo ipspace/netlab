@@ -58,7 +58,7 @@ Finally, the data selection argument is evaluated as a Python expression, so you
 (netlab-inspect-node)=
 ## Node Inspection Examples
 
-You can use the `--node` parameter to inspect the data structure of a single node, a list of nodes (separated by commas), or a wildcard expression.
+You can use the `--node` parameter to inspect the data structure of a single node, a group of nodes, or a wildcard (glob) expression. You can also specify multiple parameters separated by commas.
 
 | To display this information... | ...use this command |
 |--------------------------------|---------------------|
@@ -66,7 +66,9 @@ You can use the `--node` parameter to inspect the data structure of a single nod
 | interface data for node `r1`   | `netlab inspect --node r1 interfaces` |
 | first interface on node `r1`   |  `netlab inspect --node r1 'interfaces[0]'` |
 | BGP parameters on R1 and R2    | `netlab inspect --node r1,r2 bgp` |
+| BGP parameters of routers in group as65101 | `netlab inspect --node as65101 bgp` |
 | VRFs on all nodes              | `netlab inspect --node '*' vrfs` |
+| VLANs on all nodes start with 'r' | `netlab inspect --node 'r*' vlans` |
 
 ```{warning}
 You can use Python expressions only when specifying a single node to inspect.
