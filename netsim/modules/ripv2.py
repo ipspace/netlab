@@ -53,6 +53,3 @@ class RIPv2(_Module):
     _routing.check_vrf_protocol_support(node,proto='ripv2',af='ipv6',feature='ripng',topology=topology)
     for rip_data in _routing.routing_protocol_data(node,'ripv2'):
       adjust_rip_timers(rip_data)
-
-    if 'ripv2' in node and 'loopback' in node:
-      node.loopback.ripv2.passive = False
