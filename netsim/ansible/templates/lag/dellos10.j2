@@ -6,13 +6,12 @@ vlt-domain {{ intf.lag.mlag.peergroup }}
  vlt-mac {{ intf.lag.mlag.mac | hwaddr('linux') }}
 {# Reduce default 90-second delay timer to avoid wasting time waiting #}
  delay-restore 30
- discovery-interface {{ intf.ifname }}
-{%   for ch in interfaces if ch.lag._peerlink|default(0) == intf.linkindex %}
+{%   for ch in interfaces if ch.lag._parentindex|default(None) == intf.lag.ifindex %}
  discovery-interface {{ ch.ifname }}
 {%   endfor %}
 {% endfor %}
 
-{% for intf in interfaces if intf.type == 'lag' %}
+{% for intf in interfaces if intf.type == 'lag' and intf.ifname != 'peerlink' %}
 interface {{ intf.ifname }}
 {%  if '_mlag' in intf.lag %}
 {%   set desc = intf.name.replace(",", "\\\\,") + " in vlt-port-channel " + intf.lag.ifindex|string %}

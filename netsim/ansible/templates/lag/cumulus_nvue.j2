@@ -1,24 +1,5 @@
 {% if lag.mlag is defined %}
 - set:
-    interface:
-      peerlink:
-        bridge:
-          domain:
-            br_default:
-              learning: off # As recommended by NVidia
-        bond:
-          member:
-{% for intf in interfaces if intf.lag.mlag.peergroup is defined %}
-            {{ intf.ifname }}: {}
-{%   for ch in interfaces if ch.lag._peerlink|default(0) == intf.linkindex %}
-            {{ ch.ifname }}: {}
-{%   endfor %}
-{% endfor %}
-        type: peerlink
-      peerlink.{{ lag.mlag.vlan }}:
-        base-interface: peerlink
-        type: sub
-        vlan: {{ lag.mlag.vlan }}
     mlag:
       init-delay: 10
       backup:
@@ -54,6 +35,11 @@
         bridge:
           domain:
             br_default: {}
+{%  elif i.ifname=='peerlink' %}
+        bridge:
+          domain:
+            br_default:
+              learning: off # As recommended by NVidia
 {%  endif %}
         bond:
 {%  if '_mlag' in i.lag %}

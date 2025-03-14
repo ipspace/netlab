@@ -1,23 +1,3 @@
-{# Provision VSX peerlink #}
-{% for intf in interfaces if intf.lag.mlag.peergroup is defined %}
-
-interface lag {{ intf.lag.mlag.ifindex }}
-    no shutdown
-    no routing
-    vlan trunk native 1
-    vlan trunk allowed all
-    lacp mode active
-    description VSX ISL
-
-!
-{%   for ch in ([intf]+interfaces) if ch==intf or ch.lag._peerlink|default(0) == intf.linkindex %}
-interface {{ ch.ifname }}
-    no shutdown
-    description {{ ch.name }} (ISL in lag {{intf.lag.mlag.ifindex }})
-    lag {{ intf.lag.mlag.ifindex }}
-!
-{%   endfor %}
-
 !
 ! VSX Config
 !
@@ -36,6 +16,11 @@ vsx
 interface {{ intf.ifname }}{{ mclag_intf }}{{ mclag_intf_static }}
 {%   if '_mlag' in intf.lag %}
     description {{ intf.name }} (VSX LAG {{ intf.lag.ifindex }})
+{%   elif intf.lag.mlag.peergroup is defined %}
+    no routing
+    vlan trunk native 1
+    vlan trunk allowed all
+    description VSX ISL
 {%   else %}
     description {{ intf.name }}
 {%   endif %}
@@ -57,6 +42,7 @@ interface {{ intf.ifname }}{{ mclag_intf }}{{ mclag_intf_static }}
 {%   for ch in interfaces if ch.lag._parentindex|default(None) == intf.lag.ifindex %}
 !
 interface {{ ch.ifname }}
+    no shutdown
     description {{ ch.name }} in lag {{ intf.lag.ifindex }}
     lag {{ intf.lag.ifindex }}
 !
