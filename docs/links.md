@@ -287,6 +287,7 @@ In dual-stack or IPv6-only environments, you have to use the prefix dictionary s
 * To create unnumbered link, set **unnumbered** link attribute to *True*
 * To enable IPv4 or IPv6 processing on interfaces attached to the link without assigning IP addresses to those interfaces, set the **ipv4** or **ipv6** prefix attribute to **True**.
 
+(links-interface-static-addressing)=
 ## Static Interface Addressing
 
 You can specify a static interface address within the link-specific node data with the **ipv4** and **ipv6** attributes. You can also set **ipv4** or **ipv6** attribute of link-specific node data to these special values:

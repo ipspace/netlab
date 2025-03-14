@@ -201,12 +201,12 @@ vlans:
 VLAN interfaces and subinterfaces are created on-demand based on these rules:
 
 * A VLAN/SVI/BVI interface is created for every VLAN with **mode** set to *bridge* or *irb* present on a node's physical interface.
-* A VLAN/SVI/BVI interface is also created for every VLAN with **mode** set to *irb* present in node's **vlans** dictionary[^VVR].
+* A VLAN/SVI/BVI interface is also created for every VLAN with **mode** set to *irb* present in the node's **vlans** dictionary[^VVR].
 * VLAN subinterfaces are created on VLAN trunks on platforms behaving more like routers than switches (example: Cisco IOS).
 * A routed VLAN subinterface is created on every interface that has a VLAN with **mode** set to *route*.
-* Routed VLAN subinterfaces are not created for access VLAN interfaces (VLAN specified in **vlan.access** attribute) when the VLAN **mode** is set to *route*. There is no difference between routed access VLAN interface and an interface without VLAN configuration.
+* Routed VLAN subinterfaces are not created for access VLAN interfaces (VLAN specified in **vlan.access** attribute) when the VLAN **mode** is set to *route*. There is no difference between a routed access VLAN interface and an interface without VLAN configuration.
 
-The VLAN **mode** can be set in global- or node **vlans** dictionary or with the **vlan.mode** interface/link attribute.
+The VLAN **mode** can be set in the global- or node **vlans** dictionary or with the **vlan.mode** interface/link attribute.
 
 [^VVR]: You can use this functionality to implement VXLAN-to-VXLAN routing in a router-on-a-stick design or asymmetric IRB.
 
@@ -263,15 +263,17 @@ You cannot set VLAN interface parameters for bridged or IRB VLANs on access or t
 (module-vlan-trunk-attributes)=
 ### Modifying Attributes of VLANs in a VLAN Trunk
 
-Use a list of VLANs in a **vlan.trunk** attribute when you don't want to change individual VLAN attributes on a link/interface level. Use a **vlan.trunk** dictionary when you want to set additional parameters for the virtual links created for individual VLAN in the trunk.
+Use a list of VLANs in a **vlan.trunk** attribute when you don't want to change individual VLAN attributes on a link/interface level. Use a **vlan.trunk** dictionary when you want to set additional parameters for the virtual links created for an individual VLAN in the trunk.
 
 You could use this functionality to set VLAN forwarding mode (**vlan.mode**) on individual VLANs in a trunk[^NMT], or to set parameters for a routed VLAN subinterface.
 
 ```{warning}
-Use interface- or link attributes within the **‌trunk** dictionary only on routed VLAN subinterfaces. Attributes for VLAN/SVI interfaces should be set within global or node-level **‌vlans** definition.
+Attributes within the **‌trunk** dictionary should be valid *‌interface* parameters (for example, don't try to use the link **prefix** attribute).
+
+Use them only on routed VLAN subinterfaces; attributes for VLAN/SVI interfaces should be set within the global or node-level **‌vlans** definition.
 ```
 
-For example, to set OSPF cost for a routed subinterface for VLAN *red* without changing the OSPF cost for *blue* or *green* VLAN, use this link definition:
+For example, to set the OSPF cost for a routed subinterface for VLAN *red* without changing the OSPF cost for *blue* or *green* VLAN, use this link definition:
 
 ```
 links:
@@ -302,19 +304,24 @@ When at least one node attached to a VLAN-enabled link uses VLAN forwarding mode
 (vlan-addressing-routed)=
 The above rule does not apply to *routed* access interfaces or virtual links. A *routed* VLAN link is a link on which all connected nodes that use **vlan** configuration module use forwarding mode **route** for that VLAN.
 
-A unique prefix is assigned to every *routed* VLAN link (access interface or trunk link VLAN member). The prefix cannot be specified with the VLAN **prefix** attribute; use **pool** VLAN attribute to specify the address pool to be used for the virtual link. You can also specify the link prefix in the **prefix** attribute of an [individual VLAN trunk member](module-vlan-trunk-attributes).
+A unique prefix is assigned to every *routed* VLAN link (access interface or trunk link VLAN member). The prefix cannot be specified with the VLAN **prefix** attribute or on a VLAN trunk; use the **pool** VLAN attribute to specify the address pool to be used for the virtual link. You can also specify the link prefix in the **prefix** attribute of an [individual VLAN trunk member](module-vlan-trunk-attributes).
 
 ```{note}
-If you want to use unnumbered VLAN member links, set VLAN **pool** to **unnumbered**.
+If you want to use unnumbered VLAN member links, [define an addressing pool](address-pool-specs) that sets **‌ipv4** and/or **ipv6** to _True_ and use that pool in the VLAN **‌pool** definition.
 ```
 
 ### Physical Interface and VLAN Interface Addressing
 
 The following rules are used to assign VLAN IPv4/IPv6 addresses to node interfaces:
 
-* When a node is attached to a VLAN-enabled link, but does not have a **vlan** interface attribute, the VLAN IP address is assigned to physical interface.
+* When a node is attached to a VLAN-enabled link but does not have a **vlan** interface attribute, the VLAN IP address is assigned to the physical interface.
 * When the VLAN forwarding mode is set to *irb*, the node VLAN IP address is assigned to a VLAN interface.
-* When the VLAN forwarding mode of a VLAN in a VLAN trunk is set to *route*, the node VLAN IP address is  assigned to the routed subinterface (see also [](module-vlan-creating-interfaces)).
+* When the VLAN forwarding mode of a VLAN in a VLAN trunk is set to *route*, the node VLAN IP address is assigned to the routed subinterface (see also [](module-vlan-creating-interfaces)).
+
+```{tip}
+You can use the [**‌ipv4** or **‌ipv6** attributes](links-interface-static-addressing) within the [**‌vlan.trunk** interface dictionary](module-vlan-trunk-attributes) to change an interface IPv4 or IPv6 address.
+```
+
 * No IP address is assigned to the VLAN interface when the VLAN forwarding mode is set to *bridge*.
 * No IP address is assigned to the physical interface that has an **access** or **native** VLAN with **mode** set to *bridge* or *irb*. You can try to force an IP address assignment to such an interface with **ipv4** or **ipv6** interface attribute and become responsible for the results of your actions.
 * Interfaces with **access** or **native** VLAN that has **mode** set to *route* are treated like regular interfaces and get IP addresses. These interfaces will be configured as regular layer-3 interfaces without *access* or *native* VLAN[^PLER].
