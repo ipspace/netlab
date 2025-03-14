@@ -166,6 +166,23 @@ def passive(
   # triggers the generation of default gateway which is used for default routing on daemons
   intf[proto].passive = is_true_stub(intf,topology,proto)
 
+'''
+Add IGP information to the loopback interface to enable the templates to use netlab_interfaces
+'''
+def add_loopback_igp(node: Box, proto: str, topology: Box) -> None:
+  if 'loopback' not in node:                                # Node working in host mode, no loopback
+    return
+
+  d_feature = devices.get_device_features(node,topology.defaults)
+  lb_data = d_feature[proto].get('loopback',{})             # Get device-specific loopback info (if present)
+  if not isinstance(lb_data,Box):                           # Sanity check
+    log.fatal(f'defaults.devices.{node.device}.features.{proto}.loopback must be a dictionary')
+
+  node.loopback[proto] = lb_data + node.loopback[proto]     # Merge device LB info with whatever is already on LB
+                                                            # Note that an empty box is created on first reference
+  if 'passive' not in node.loopback[proto]:                 # Finally, many templates expect 'passive' to be present
+    node.loopback[proto].passive = False                    # ... so add a bogus 'not passive' flag if needed
+
 # Get a router ID prefix from the router_id pool
 #
 def get_router_id_prefix(node: Box, proto: str, pools: Box, use_id: bool = True) -> typing.Optional[Box]:
@@ -733,6 +750,7 @@ def igp_post_transform(
   if remove_unused_igp(node,proto):
     return
 
+  add_loopback_igp(node,proto,topology)
   process_imports(node,proto,topology,['bgp','connected'])
   process_default_route(node,proto,topology)
 
