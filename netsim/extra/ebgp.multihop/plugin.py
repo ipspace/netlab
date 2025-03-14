@@ -196,12 +196,10 @@ def fix_vrf_loopbacks(ndata: Box, topology: Box) -> None:
           module='ebgp.multihop')
         continue
 
-      ngb._source_ifname = lb.ifname
-      ngb._source_lb_data = lb
+      ngb._source_intf = lb
 
     else:
-      ngb._source_ifname = ndata.loopback.ifname
-      ngb._source_lb_data = ndata.loopback
+      ngb._source_intf = ndata.loopback
 
 '''
 post_transform processing:
