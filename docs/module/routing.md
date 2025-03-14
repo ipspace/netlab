@@ -433,11 +433,12 @@ A static route entry's **nexthop** attribute specifies the next hop used to reac
 
 * **ipv4** -- an IPv4 next hop (an address, not a prefix)
 * **ipv6** -- an IPv6 next hop (an address, not a prefix)
+* **gateway** (boolean) -- the next hop is the default gateway. This entry will be resolved into a list containing all directly connected default gateways in the specified next-hop VRF (a node might use more than one default gateway to reach a destination).
 * **node** -- The next hop is the specified node. The node name will be resolved into a list of directly connected next-hops or the control-plane endpoint of a distant node (allowing you to specify recursive static routes).
 
 ```{tip}
 * Static route entries with an **‌ipv4** prefix must have an **‌ipv4** next hop (and likewise for **‌ipv6**). _netlab_ does not support IPv6 next hops for IPv4 routes.
-* _netlab_ will configure several static routes with different next hops if your topology has multiple direct links between the source and the next-hop node.
+* _netlab_ will configure several static routes with different next hops if your topology has multiple direct links between the source and the next-hop node or if a node is attached to multiple links with default gateways.
 * Static routes cannot point to unnumbered IPv4 interfaces or LLA-only IPv6 interfaces.
 ```
 
@@ -475,6 +476,46 @@ nodes:
     module: [ ospf ]
 
 links: [ c-p, c-p, p-x ]
+```
+
+The following topology will add a default route toward the anycast default gateway:
+
+```
+nodes:
+  c:
+    module: [ routing ]
+    routing.static:
+    - ipv4: 0.0.0.0/0
+      gateway: True
+  s1:
+    module: [ gateway ]
+  s2:
+    module: [ gateway ]
+
+links:
+- interfaces: [ c, s1, s2 ]
+  gateway.protocol: anycast
+```
+
+In the following topology, the node C is attached to two interfaces with a default gateway. _netlab_ will configure two static default routes (one per default gateway):
+
+```
+nodes:
+  c:
+    module: [ routing ]
+    routing.static:
+    - ipv4: 0.0.0.0/0
+      gateway: True
+  s1:
+    module: [ gateway ]
+  s2:
+    module: [ gateway ]
+
+links:
+- interfaces: [ c, s1, s2 ]
+  gateway.protocol: anycast
+- interfaces: [ c, s1, s2 ]
+  gateway.protocol: anycast
 ```
 
 ### VRF Static Routes

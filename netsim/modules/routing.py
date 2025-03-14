@@ -716,6 +716,37 @@ def import_static_routes(idx: int,o_name: str,node: Box,topology: Box) -> typing
   return None
 
 """
+Create next-hop information from neighbor addresses and static route data
+"""
+def create_nexthop_data(sr_data: Box,ngb_addr: Box, intf: Box) -> Box:
+  nh_data = data.get_empty_box()
+
+  for af in log.AF_LIST:
+    if af not in ngb_addr:
+      continue
+    if isinstance(ngb_addr[af],str):
+      nh_data[af] = ngb_addr[af]
+      nh_data.intf = intf.ifname
+
+  if nh_data and 'vrf' in sr_data.nexthop:
+    nh_data.vrf = sr_data.nexthop.vrf
+
+  return nh_data
+
+"""
+Extract an address from the NH list into the next-hop information. Further
+processing of static routes uses that next-hop information to figure out
+whether we have at least one viable next hop for every prefix specified in
+the static route
+"""
+def extract_nh_from_list(nh: Box) -> None:
+  for af in log.AF_LIST:
+    if af not in nh:
+      af_nh = [ nh_entry[af] for nh_entry in nh.nhlist if af in nh_entry ]
+      if af_nh:
+        nh[af] = af_nh[0]
+
+"""
 When a static route uses a node as a next hop, we have to resolve
 that into IPv4/IPv6 addresses. This function returns a list of
 next hops (IPv4/IPv6/intf) for directly-connected nodes or control-plane
@@ -739,26 +770,13 @@ def resolve_node_nexthop(sr_data: Box, node: Box, topology: Box) -> Box:
         continue
 
       ngb_addr = extract_af_info(ngb,keep_prefix=False)
-      nh_data = data.get_empty_box()
-      if 'vrf' in sr_data.nexthop:
-        nh_data.vrf = sr_data.nexthop.vrf
-
-      for af in log.AF_LIST:
-        if af not in ngb_addr:
-          continue
-        if isinstance(ngb_addr[af],str):
-          nh_data[af] = ngb_addr[af]
-          nh_data.intf = intf.ifname
+      nh_data = create_nexthop_data(sr_data,ngb_addr,intf)
 
       if nh_data:
         data.append_to_list(nh,'nhlist',nh_data)
   
   if nh:
-    for af in log.AF_LIST:
-      if af not in nh:
-        af_nh = [ nh_entry[af] for nh_entry in nh.nhlist if af in nh_entry ]
-        if af_nh:
-          nh[af] = af_nh[0]
+    extract_nh_from_list(nh)
   else:
     if node_found:
       log.error(
@@ -770,6 +788,38 @@ def resolve_node_nexthop(sr_data: Box, node: Box, topology: Box) -> Box:
     nh = extract_af_info(
            _routing.get_remote_cp_endpoint(topology.nodes[sr_data.nexthop.node]),
            keep_prefix=False)
+
+  return nh
+
+"""
+When a static route uses a default gateway as a next hop, we have to resolve
+that into IPv4/IPv6 addresses. This function returns a list of default gateway
+next hops (IPv4/IPv6/intf).
+
+Please note that the next-hop list is returned as the 'nhlist' attribute of the
+'nexthop' data structure.
+"""
+def resolve_gateway_nexthop(sr_data: Box, node: Box, topology: Box) -> Box:
+  nh = data.get_empty_box()
+  nh_vrf = sr_data.nexthop.vrf if 'vrf' in sr_data.nexthop else sr_data.get('vrf',None)
+
+  for intf in node.interfaces:
+    gw_data = intf.get('gateway',{})                    # Do we have the gateway information on the interface?
+    if not gw_data:                                     # It might not be present on routers using static routes
+      gw_list = [ ngb.gateway for ngb in intf.neighbors if 'gateway' in ngb ]
+      if gw_list:                                       # ... so we try to get the information from the neighbors
+        gw_data = gw_list[0]                            # ... using the 'gateway' module
+
+    if not gw_data:                                     # No usable gateway information
+      continue
+
+    gw_addr = extract_af_info(gw_data,keep_prefix=False)
+    nh_data = create_nexthop_data(sr_data,gw_addr,intf)
+    if nh_data:
+      data.append_to_list(nh,'nhlist',nh_data)
+
+  if nh:
+    extract_nh_from_list(nh)
 
   return nh
 
@@ -887,6 +937,8 @@ def check_static_routes(idx: int,o_name: str,node: Box,topology: Box) -> None:
 
   if sr_data.nexthop.get('node',None):
     sr_data.nexthop = resolve_node_nexthop(sr_data,node,topology) + sr_data.nexthop
+  elif sr_data.nexthop.get('gateway',None):
+    sr_data.nexthop = resolve_gateway_nexthop(sr_data,node,topology) + sr_data.nexthop
   elif 'ipv4' in sr_data.nexthop or 'ipv6' in sr_data.nexthop:
     resolve_nexthop_intf(sr_data,node,topology)
 
