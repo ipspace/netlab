@@ -250,11 +250,18 @@ def create_peer_vlan(peerlink: Box, mlag_peer_features: Box, topology: Box) -> N
     for a in list(peerlink.keys()):
       if a in lag_peervlan_attr:                             # Move all l3 attributes to the vlan interface
         vlan[a] = peerlink.pop(a,None)
-    if not vlan.prefix:
+    if not vlan.prefix and 'ip' in mlag_peer_features:
       try: 
         vlan.prefix = { 'ipv4': str(netaddr.IPNetwork(mlag_peer_features.ip)), 'allocation': 'p2p' }
       except:
         pass
+    if mlag_peer_features.ip=='linklocal':
+      if 'pool' not in vlan:
+        vlan.pool = 'mlag_linklocal'                         # Configure ipv6-only pool unless user specified other
+      elif vlan.pool.get('ipv6',None) is not True:
+        log.error( f'Custom pool {vlan.pool} on MLAG peerlink {peerlink._linkname} must enable ipv6 LLA',
+          category=log.IncorrectValue,
+          module='lag')
     topology.vlans[ vlan_name ] = vlan
     peerlink.vlan.trunk = [ vlan_name ]
     if log.debug_active('lag'):
@@ -399,6 +406,12 @@ def check_bridge_links(topology: Box) -> None:
     err_cache[n_text] = True                                # Remember we already warned the user
 
 class LAG(_Module):
+
+  """
+  module_pre_default - define a custom address pool to use for peer links with linklocal addressing
+  """
+  def module_pre_default(self, topology: Box) -> None:
+    topology.addressing.mlag_linklocal.ipv6 = True 
 
   """
   module_pre_transform -- Analyze any user provided lag.ifindex values and peerlink ids, 
