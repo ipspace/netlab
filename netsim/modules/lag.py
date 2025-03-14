@@ -345,7 +345,11 @@ def process_lag_link(link: Box, mlag_pairs: dict, topology: Box) -> bool:
 # populate_mlag_peer - Lookup the IPv4 loopback address for the mlag peer, and derive a virtual MAC to use
 #
 def populate_mlag_peer(node: Box, intf: Box, topology: Box) -> None:
-  peer = topology.nodes[intf._vlan_saved_neighbors[0].node]
+  nbs = intf.get('_vlan_saved_neighbors', intf.get('neighbors',[]))
+  if not nbs:
+    log.error("Internal error: Unable to determine neighbors",module='lag')
+    return
+  peer = topology.nodes[nbs[0].node]
   features = devices.get_device_features(node,topology.defaults)
   mlag_peer = features.get('lag.mlag.peer',{})
   _target = node.lag if mlag_peer.get('global',False) else intf.lag  # Set at node or intf level?
@@ -363,7 +367,7 @@ def populate_mlag_peer(node: Box, intf: Box, topology: Box) -> None:
     else:                                                            # Figure out which IPs Netlab assigned to the VLAN
       net = netaddr.IPNetwork(mlag_peer.ip)
       id = 0 if node.id < peer.id else 1
-      _target.mlag.peer = str(net[1-id])                                    # Higher node ID gets .1
+      _target.mlag.peer = str(net[1-id])                             # Higher node ID gets .1
 
   if 'backup_ip' in mlag_peer:
     bk_ip = peer.get(mlag_peer.backup_ip,None)
@@ -375,8 +379,8 @@ def populate_mlag_peer(node: Box, intf: Box, topology: Box) -> None:
                 module='lag')
 
   if 'mac' in mlag_peer and not isinstance(_target.get('mlag.mac',None),str):
-    mac = netaddr.EUI(mlag_peer.mac)                                        # Generate unique virtual MAC per MLAG group
-    mac._set_value(mac.value + intf.get(PEERLINK_ID_ATT,0) % 65536 )        # ...based on lag.mlag.peergroup
+    mac = netaddr.EUI(mlag_peer.mac)                                 # Generate unique virtual MAC per MLAG group
+    mac._set_value(mac.value + intf.get(PEERLINK_ID_ATT,0) % 65536 ) # ...based on lag.mlag.peergroup
     _target.mlag.mac = str(mac)
 
   for v in ['vlan','ifindex']:

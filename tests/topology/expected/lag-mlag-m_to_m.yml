@@ -30,9 +30,8 @@ links:
     ifname: Ethernet1
     node: a2
   lag:
-    mlag:
-      peergroup: 1
-  linkindex: 1
+    _parentindex: 1
+  linkindex: 4
   node_count: 2
   prefix: false
   type: p2p
@@ -45,9 +44,8 @@ links:
     ifname: Ethernet1
     node: b2
   lag:
-    mlag:
-      peergroup: 2
-  linkindex: 2
+    _parentindex: 2
+  linkindex: 5
   node_count: 2
   prefix: false
   type: p2p
@@ -61,7 +59,7 @@ links:
     node: b1
   lag:
     _parentindex: 3
-  linkindex: 4
+  linkindex: 6
   node_count: 2
   prefix: false
   type: p2p
@@ -75,12 +73,18 @@ links:
     node: b2
   lag:
     _parentindex: 3
-  linkindex: 5
+  linkindex: 7
   node_count: 2
   prefix: false
   type: p2p
 - _linkname: vlans.red.links[1]
+<<<<<<< HEAD
   bridge: input_6
+=======
+  bridge: input_8
+  gateway:
+    ipv4: 172.16.0.1/24
+>>>>>>> 084053fb5 (Update test results, enable ospf v4)
   interfaces:
   - _vlan_mode: irb
     ifindex: 3
@@ -93,7 +97,7 @@ links:
     ifname: eth1
     ipv4: 172.16.0.5/24
     node: h1
-  linkindex: 6
+  linkindex: 8
   node_count: 2
   prefix:
     allocation: id_based
@@ -102,7 +106,13 @@ links:
   vlan:
     access: red
 - _linkname: vlans.red.links[2]
+<<<<<<< HEAD
   bridge: input_7
+=======
+  bridge: input_9
+  gateway:
+    ipv4: 172.16.0.4/24
+>>>>>>> 084053fb5 (Update test results, enable ospf v4)
   interfaces:
   - _vlan_mode: irb
     ifindex: 3
@@ -115,7 +125,7 @@ links:
     ifname: eth1
     ipv4: 172.16.0.6/24
     node: h2
-  linkindex: 7
+  linkindex: 9
   node_count: 2
   prefix:
     allocation: id_based
@@ -136,22 +146,30 @@ nodes:
     device: eos
     id: 1
     interfaces:
-    - ifindex: 1
-      ifname: Ethernet1
+    - ifindex: 30000
+      ifname: port-channel4094
       lag:
+        ifindex: 4094
+        lacp: fast
+        lacp_mode: active
         mlag:
-          ifindex: 4094
-          peer: 169.254.127.1
           peergroup: 1
-          self: 169.254.127.0/31
-          vlan: 4094
-      linkindex: 1
       name: a1 -> a2
       neighbors:
-      - ifname: Ethernet1
+      - ifname: port-channel4094
         node: a2
-      type: p2p
-    - ifindex: 30000
+      type: lag
+      virtual_interface: true
+      vlan:
+        access_id: 1
+        native: mlag_untagged
+        trunk:
+          mlag_untagged: {}
+          peervlan_1: {}
+        trunk_id:
+        - 1
+        - 4094
+    - ifindex: 30001
       ifname: port-channel10
       lag:
         _mlag: true
@@ -173,20 +191,30 @@ nodes:
           red: {}
         trunk_id:
         - 1000
+    - ifindex: 1
+      ifname: Ethernet1
+      lag:
+        _parentindex: 4094
+      linkindex: 4
+      name: a1 -> a2
+      neighbors:
+      - ifname: Ethernet1
+        node: a2
+      type: p2p
     - ifindex: 2
       ifname: Ethernet2
       lag:
         _parentindex: 10
-      linkindex: 4
+      linkindex: 6
       name: a1 -> b1
       neighbors:
       - ifname: Ethernet2
         node: b1
       type: p2p
-    - bridge: input_6
+    - bridge: input_8
       ifindex: 3
       ifname: Ethernet3
-      linkindex: 6
+      linkindex: 8
       name: '[Access VLAN red] a1 -> h1'
       neighbors:
       - ifname: eth1
@@ -198,6 +226,22 @@ nodes:
         access_id: 1000
     - bridge_group: 1
       ifindex: 40000
+      ifname: Vlan1
+      name: VLAN mlag_untagged (1) -> [a2,b2,b1]
+      neighbors:
+      - ifname: Vlan1
+        node: a2
+      - ifname: Vlan1
+        node: b2
+      - ifname: Vlan1
+        node: b1
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: bridge
+        name: mlag_untagged
+    - bridge_group: 2
+      ifindex: 40001
       ifname: Vlan1000
       ipv4: 172.16.0.1/24
       name: VLAN red (1000) -> [h1,a2,b1,b2,h2]
@@ -222,9 +266,27 @@ nodes:
       vlan:
         mode: irb
         name: red
+    - bridge_group: 3
+      ifindex: 40002
+      ifname: Vlan4094
+      ipv4: 169.254.127.0/31
+      name: VLAN peervlan_1 (4094) -> [a2]
+      neighbors:
+      - ifname: Vlan4094
+        ipv4: 169.254.127.1/31
+        node: a2
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: irb
+        name: peervlan_1
     lag:
       lacp: fast
       lacp_mode: active
+      mlag:
+        ifindex: 4094
+        peer: 169.254.127.1
+        vlan: 4094
     loopback:
       ifindex: 0
       ifname: Loopback0
@@ -242,10 +304,24 @@ nodes:
     name: a1
     role: router
     vlan:
-      max_bridge_group: 1
+      max_bridge_group: 3
     vlans:
-      red:
+      mlag_untagged:
         bridge_group: 1
+        id: 1
+        mode: bridge
+        prefix:
+          allocation: id_based
+          ipv4: 172.16.1.0/24
+      peervlan_1:
+        bridge_group: 3
+        id: 4094
+        mode: irb
+        prefix:
+          allocation: p2p
+          ipv4: 169.254.127.0/31
+      red:
+        bridge_group: 2
         id: 1000
         mode: irb
         prefix:
@@ -258,22 +334,30 @@ nodes:
     device: eos
     id: 2
     interfaces:
-    - ifindex: 1
-      ifname: Ethernet1
+    - ifindex: 30000
+      ifname: port-channel4094
       lag:
+        ifindex: 4094
+        lacp: fast
+        lacp_mode: active
         mlag:
-          ifindex: 4094
-          peer: 169.254.127.0
           peergroup: 1
-          self: 169.254.127.1/31
-          vlan: 4094
-      linkindex: 1
       name: a2 -> a1
       neighbors:
-      - ifname: Ethernet1
+      - ifname: port-channel4094
         node: a1
-      type: p2p
-    - ifindex: 30000
+      type: lag
+      virtual_interface: true
+      vlan:
+        access_id: 1
+        native: mlag_untagged
+        trunk:
+          mlag_untagged: {}
+          peervlan_1: {}
+        trunk_id:
+        - 1
+        - 4094
+    - ifindex: 30001
       ifname: port-channel10
       lag:
         _mlag: true
@@ -295,11 +379,21 @@ nodes:
           red: {}
         trunk_id:
         - 1000
+    - ifindex: 1
+      ifname: Ethernet1
+      lag:
+        _parentindex: 4094
+      linkindex: 4
+      name: a2 -> a1
+      neighbors:
+      - ifname: Ethernet1
+        node: a1
+      type: p2p
     - ifindex: 2
       ifname: Ethernet2
       lag:
         _parentindex: 10
-      linkindex: 5
+      linkindex: 7
       name: a2 -> b2
       neighbors:
       - ifname: Ethernet2
@@ -307,6 +401,36 @@ nodes:
       type: p2p
     - bridge_group: 1
       ifindex: 40000
+      ifname: Vlan1
+      name: VLAN mlag_untagged (1) -> [a1,b2,b1]
+      neighbors:
+      - ifname: Vlan1
+        node: a1
+      - ifname: Vlan1
+        node: b2
+      - ifname: Vlan1
+        node: b1
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: bridge
+        name: mlag_untagged
+    - bridge_group: 2
+      ifindex: 40001
+      ifname: Vlan4094
+      ipv4: 169.254.127.1/31
+      name: VLAN peervlan_1 (4094) -> [a1]
+      neighbors:
+      - ifname: Vlan4094
+        ipv4: 169.254.127.0/31
+        node: a1
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: irb
+        name: peervlan_1
+    - bridge_group: 3
+      ifindex: 40002
       ifname: Vlan1000
       ipv4: 172.16.0.2/24
       name: VLAN red (1000) -> [h1,a1,b1,b2,h2]
@@ -334,6 +458,10 @@ nodes:
     lag:
       lacp: fast
       lacp_mode: active
+      mlag:
+        ifindex: 4094
+        peer: 169.254.127.0
+        vlan: 4094
     loopback:
       ifindex: 0
       ifname: Loopback0
@@ -351,10 +479,24 @@ nodes:
     name: a2
     role: router
     vlan:
-      max_bridge_group: 1
+      max_bridge_group: 3
     vlans:
-      red:
+      mlag_untagged:
         bridge_group: 1
+        id: 1
+        mode: bridge
+        prefix:
+          allocation: id_based
+          ipv4: 172.16.1.0/24
+      peervlan_1:
+        bridge_group: 2
+        id: 4094
+        mode: irb
+        prefix:
+          allocation: p2p
+          ipv4: 169.254.127.0/31
+      red:
+        bridge_group: 3
         id: 1000
         mode: irb
         prefix:
@@ -367,22 +509,30 @@ nodes:
     device: eos
     id: 3
     interfaces:
-    - ifindex: 1
-      ifname: Ethernet1
+    - ifindex: 30000
+      ifname: port-channel4094
       lag:
+        ifindex: 4094
+        lacp: fast
+        lacp_mode: active
         mlag:
-          ifindex: 4094
-          peer: 169.254.127.1
           peergroup: 2
-          self: 169.254.127.0/31
-          vlan: 4094
-      linkindex: 2
       name: b1 -> b2
       neighbors:
-      - ifname: Ethernet1
+      - ifname: port-channel4094
         node: b2
-      type: p2p
-    - ifindex: 30000
+      type: lag
+      virtual_interface: true
+      vlan:
+        access_id: 1
+        native: mlag_untagged
+        trunk:
+          mlag_untagged: {}
+          peervlan_2: {}
+        trunk_id:
+        - 1
+        - 4094
+    - ifindex: 30001
       ifname: port-channel20
       lag:
         _mlag: true
@@ -404,11 +554,21 @@ nodes:
           red: {}
         trunk_id:
         - 1000
+    - ifindex: 1
+      ifname: Ethernet1
+      lag:
+        _parentindex: 4094
+      linkindex: 5
+      name: b1 -> b2
+      neighbors:
+      - ifname: Ethernet1
+        node: b2
+      type: p2p
     - ifindex: 2
       ifname: Ethernet2
       lag:
         _parentindex: 20
-      linkindex: 4
+      linkindex: 6
       name: b1 -> a1
       neighbors:
       - ifname: Ethernet2
@@ -416,6 +576,36 @@ nodes:
       type: p2p
     - bridge_group: 1
       ifindex: 40000
+      ifname: Vlan1
+      name: VLAN mlag_untagged (1) -> [a2,a1,b2]
+      neighbors:
+      - ifname: Vlan1
+        node: a2
+      - ifname: Vlan1
+        node: a1
+      - ifname: Vlan1
+        node: b2
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: bridge
+        name: mlag_untagged
+    - bridge_group: 2
+      ifindex: 40001
+      ifname: Vlan4094
+      ipv4: 169.254.127.0/31
+      name: VLAN peervlan_2 (4094) -> [b2]
+      neighbors:
+      - ifname: Vlan4094
+        ipv4: 169.254.127.1/31
+        node: b2
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: irb
+        name: peervlan_2
+    - bridge_group: 3
+      ifindex: 40002
       ifname: Vlan1000
       ipv4: 172.16.0.3/24
       name: VLAN red (1000) -> [h1,a1,a2,b2,h2]
@@ -443,6 +633,10 @@ nodes:
     lag:
       lacp: fast
       lacp_mode: active
+      mlag:
+        ifindex: 4094
+        peer: 169.254.127.1
+        vlan: 4094
     loopback:
       ifindex: 0
       ifname: Loopback0
@@ -460,10 +654,24 @@ nodes:
     name: b1
     role: router
     vlan:
-      max_bridge_group: 1
+      max_bridge_group: 3
     vlans:
-      red:
+      mlag_untagged:
         bridge_group: 1
+        id: 1
+        mode: bridge
+        prefix:
+          allocation: id_based
+          ipv4: 172.16.1.0/24
+      peervlan_2:
+        bridge_group: 2
+        id: 4094
+        mode: irb
+        prefix:
+          allocation: p2p
+          ipv4: 169.254.127.0/31
+      red:
+        bridge_group: 3
         id: 1000
         mode: irb
         prefix:
@@ -476,22 +684,30 @@ nodes:
     device: eos
     id: 4
     interfaces:
-    - ifindex: 1
-      ifname: Ethernet1
+    - ifindex: 30000
+      ifname: port-channel4094
       lag:
+        ifindex: 4094
+        lacp: fast
+        lacp_mode: active
         mlag:
-          ifindex: 4094
-          peer: 169.254.127.0
           peergroup: 2
-          self: 169.254.127.1/31
-          vlan: 4094
-      linkindex: 2
       name: b2 -> b1
       neighbors:
-      - ifname: Ethernet1
+      - ifname: port-channel4094
         node: b1
-      type: p2p
-    - ifindex: 30000
+      type: lag
+      virtual_interface: true
+      vlan:
+        access_id: 1
+        native: mlag_untagged
+        trunk:
+          mlag_untagged: {}
+          peervlan_2: {}
+        trunk_id:
+        - 1
+        - 4094
+    - ifindex: 30001
       ifname: port-channel20
       lag:
         _mlag: true
@@ -513,20 +729,30 @@ nodes:
           red: {}
         trunk_id:
         - 1000
+    - ifindex: 1
+      ifname: Ethernet1
+      lag:
+        _parentindex: 4094
+      linkindex: 5
+      name: b2 -> b1
+      neighbors:
+      - ifname: Ethernet1
+        node: b1
+      type: p2p
     - ifindex: 2
       ifname: Ethernet2
       lag:
         _parentindex: 20
-      linkindex: 5
+      linkindex: 7
       name: b2 -> a2
       neighbors:
       - ifname: Ethernet2
         node: a2
       type: p2p
-    - bridge: input_7
+    - bridge: input_9
       ifindex: 3
       ifname: Ethernet3
-      linkindex: 7
+      linkindex: 9
       name: '[Access VLAN red] b2 -> h2'
       neighbors:
       - ifname: eth1
@@ -538,6 +764,22 @@ nodes:
         access_id: 1000
     - bridge_group: 1
       ifindex: 40000
+      ifname: Vlan1
+      name: VLAN mlag_untagged (1) -> [a2,a1,b1]
+      neighbors:
+      - ifname: Vlan1
+        node: a2
+      - ifname: Vlan1
+        node: a1
+      - ifname: Vlan1
+        node: b1
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: bridge
+        name: mlag_untagged
+    - bridge_group: 2
+      ifindex: 40001
       ifname: Vlan1000
       ipv4: 172.16.0.4/24
       name: VLAN red (1000) -> [h1,a1,a2,b1,h2]
@@ -562,9 +804,27 @@ nodes:
       vlan:
         mode: irb
         name: red
+    - bridge_group: 3
+      ifindex: 40002
+      ifname: Vlan4094
+      ipv4: 169.254.127.1/31
+      name: VLAN peervlan_2 (4094) -> [b1]
+      neighbors:
+      - ifname: Vlan4094
+        ipv4: 169.254.127.0/31
+        node: b1
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: irb
+        name: peervlan_2
     lag:
       lacp: fast
       lacp_mode: active
+      mlag:
+        ifindex: 4094
+        peer: 169.254.127.0
+        vlan: 4094
     loopback:
       ifindex: 0
       ifname: Loopback0
@@ -582,10 +842,24 @@ nodes:
     name: b2
     role: router
     vlan:
-      max_bridge_group: 1
+      max_bridge_group: 3
     vlans:
-      red:
+      mlag_untagged:
         bridge_group: 1
+        id: 1
+        mode: bridge
+        prefix:
+          allocation: id_based
+          ipv4: 172.16.1.0/24
+      peervlan_2:
+        bridge_group: 3
+        id: 4094
+        mode: irb
+        prefix:
+          allocation: p2p
+          ipv4: 169.254.127.0/31
+      red:
+        bridge_group: 2
         id: 1000
         mode: irb
         prefix:
@@ -598,13 +872,13 @@ nodes:
     device: linux
     id: 5
     interfaces:
-    - bridge: input_6
+    - bridge: input_8
       gateway:
         ipv4: 172.16.0.1/24
       ifindex: 1
       ifname: eth1
       ipv4: 172.16.0.5/24
-      linkindex: 6
+      linkindex: 8
       name: h1 -> [a1,a2,b1,b2,h2]
       neighbors:
       - ifname: Vlan1000
@@ -660,13 +934,13 @@ nodes:
     device: linux
     id: 6
     interfaces:
-    - bridge: input_7
+    - bridge: input_9
       gateway:
         ipv4: 172.16.0.1/24
       ifindex: 1
       ifname: eth1
       ipv4: 172.16.0.6/24
-      linkindex: 7
+      linkindex: 9
       name: h2 -> [h1,a1,a2,b1,b2]
       neighbors:
       - ifname: eth1
@@ -717,6 +991,50 @@ nodes:
           ipv4: 172.16.0.1
 provider: libvirt
 vlans:
+  mlag_untagged:
+    host_count: 0
+    id: 1
+    mode: bridge
+    neighbors:
+    - ifname: Vlan1
+      node: a2
+    - ifname: Vlan1
+      node: a1
+    - ifname: Vlan1
+      node: b2
+    - ifname: Vlan1
+      node: b1
+    prefix:
+      allocation: id_based
+      ipv4: 172.16.1.0/24
+  peervlan_1:
+    host_count: 0
+    id: 4094
+    mode: irb
+    neighbors:
+    - ifname: Vlan4094
+      ipv4: 169.254.127.1/31
+      node: a2
+    - ifname: Vlan4094
+      ipv4: 169.254.127.0/31
+      node: a1
+    prefix:
+      allocation: p2p
+      ipv4: 169.254.127.0/31
+  peervlan_2:
+    host_count: 0
+    id: 4094
+    mode: irb
+    neighbors:
+    - ifname: Vlan4094
+      ipv4: 169.254.127.1/31
+      node: b2
+    - ifname: Vlan4094
+      ipv4: 169.254.127.0/31
+      node: b1
+    prefix:
+      allocation: p2p
+      ipv4: 169.254.127.0/31
   red:
     host_count: 2
     id: 1000
