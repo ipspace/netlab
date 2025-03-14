@@ -1,6 +1,7 @@
 {% macro decl_interface(i) %}
       {{ i.ifname }}:
-        type: {{ 'svi' if i.type=='svi' else 'sub' if i.type=='vlan_member' else 'bond' if i.type=='lag' else 'swp' }}
+        type: {{ 'svi' if i.type=='svi' else 'sub' if i.type=='vlan_member' else 'bond' if i.type=='lag' 
+                 else 'peerlink' if i.ifname=='peerlink' else 'swp' }}
         link:
 {%  if i.mtu is defined %}
           mtu: {{ i.mtu }}
@@ -32,6 +33,8 @@
               enable: on
               interval: 5000
 {%    endif %}
+{%  elif i.ifname=='peerlink' %}
+            forward: on
 {%  else %}
             enable: off
 {%  endif %}
@@ -57,10 +60,6 @@
           address:
             dhcp: {}
         type: eth
-{% if lag.mlag is defined %}
-      peerlink:
-        type: peerlink
-{% endif %}
 
 {# Avoid creating L2-only sub interfaces #}
 {% for l in interfaces|default([]) if l.type not in ['loopback','vlan_member']

@@ -246,26 +246,19 @@ def create_peer_vlan(peerlink: Box, mlag_peer_features: Box, topology: Box) -> N
   if 'vlan' in mlag_peer_features:                           # Check if device supports an explicit peering VLAN
     vlan_name = f"peervlan_{ peerlink[PEERLINK_ID_ATT] }"
     vlan = data.get_box({ 'id': mlag_peer_features.vlan, 'mode': mlag_peer_features.get('vlan_mode','route') })
-    # _target = peerlink if vlan.mode=='route' else vlan
-    _target = vlan
     lag_peervlan_attr = list(topology.defaults.lag.attributes.lag_peervlan_attr)
     for a in list(peerlink.keys()):
       if a in lag_peervlan_attr:                             # Move all l3 attributes to the vlan interface
-        _target[a] = peerlink.pop(a,None)
-    if not _target.prefix:
+        vlan[a] = peerlink.pop(a,None)
+    if not vlan.prefix:
       try: 
-        _target.prefix = { 'ipv4': str(netaddr.IPNetwork(mlag_peer_features.ip)), 'allocation': 'p2p' }
+        vlan.prefix = { 'ipv4': str(netaddr.IPNetwork(mlag_peer_features.ip)), 'allocation': 'p2p' }
       except:
         pass
-    if mlag_peer_features.ip=='linklocal':
-      if _target.prefix is False:
-        _target.prefix = { 'ipv6': True }
-      else:
-        _target.prefix.ipv6 = True
     topology.vlans[ vlan_name ] = vlan
     peerlink.vlan.trunk = [ vlan_name ]
     if log.debug_active('lag'):
-      print(f'create_peer_vlan: {vlan_name} = {_target}')
+      print(f'create_peer_vlan: {vlan_name} = {vlan}')
 
   if 'prefix' not in peerlink:
     peerlink.prefix = False
