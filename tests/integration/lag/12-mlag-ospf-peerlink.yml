@@ -1,0 +1,30 @@
+message: |
+  The devices under test are an MLAG pair peering through OSPFv2 using ipv4 unnumbered on the peerlink
+
+# defaults.devices.cumulus_nvue.warnings.ospfv3: False
+ospf.af.ipv6: False
+
+addressing:
+  ospf_peerlink:
+    ipv4: True    # Use IPv4 unnumbered
+    ipv6: True    # Use IPv6 LLA
+
+groups:
+  _auto_create: true
+  switches:
+    members: [ s1, s2 ]
+    module: [ lag, vlan, ospf ]
+
+links:
+- lag:
+    members: [s1-s2]
+    mlag.peergroup: true
+  pool: ospf_peerlink
+
+validate:
+  adj:
+    description: Check OSPF adjacencies
+    wait_msg: Waiting for OSPF adjacency process to complete
+    wait: 50
+    nodes: [ s2 ]
+    plugin: ospf_neighbor(nodes.s1.ospf.router_id)

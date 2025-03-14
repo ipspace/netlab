@@ -250,7 +250,7 @@ def create_peer_vlan(peerlink: Box, mlag_peer_features: Box, topology: Box) -> N
     for a in list(peerlink.keys()):
       if a in lag_peervlan_attr:                             # Move all l3 attributes to the vlan interface
         vlan[a] = peerlink.pop(a,None)
-    if not vlan.prefix and 'ip' in mlag_peer_features:
+    if 'ip' in mlag_peer_features and vlan.mode!='route':    # Don't put a prefix on routed VLANs
       try: 
         vlan.prefix = { 'ipv4': str(netaddr.IPNetwork(mlag_peer_features.ip)), 'allocation': 'p2p' }
       except:
@@ -258,12 +258,15 @@ def create_peer_vlan(peerlink: Box, mlag_peer_features: Box, topology: Box) -> N
     if mlag_peer_features.ip=='linklocal':
       if 'pool' not in vlan:
         vlan.pool = 'mlag_linklocal'                         # Configure ipv6-only pool unless user specified other
-      elif vlan.pool.get('ipv6',None) is not True:
+      elif topology.addressing[vlan.pool].get('ipv6',None) is not True:
         log.error( f'Custom pool {vlan.pool} on MLAG peerlink {peerlink._linkname} must enable ipv6 LLA',
           category=log.IncorrectValue,
           module='lag')
     topology.vlans[ vlan_name ] = vlan
-    peerlink.vlan.trunk = [ vlan_name ]
+    topology.vlans[ 'mlag_untagged' ] = { 'id': 1, 'mode': 'bridge' } # Need to allow untagged packets on the peerlink too
+    peerlink.vlan.trunk = [ 'mlag_untagged', vlan_name ]
+    peerlink.vlan.native = 'mlag_untagged'
+    # TODO: Assign IPs statically here, instead of using 'prefix'
     if log.debug_active('lag'):
       print(f'create_peer_vlan: {vlan_name} = {vlan}')
 
@@ -342,7 +345,7 @@ def process_lag_link(link: Box, mlag_pairs: dict, topology: Box) -> bool:
 # populate_mlag_peer - Lookup the IPv4 loopback address for the mlag peer, and derive a virtual MAC to use
 #
 def populate_mlag_peer(node: Box, intf: Box, topology: Box) -> None:
-  peer = topology.nodes[intf.neighbors[0].node]
+  peer = topology.nodes[intf._vlan_saved_neighbors[0].node]
   features = devices.get_device_features(node,topology.defaults)
   mlag_peer = features.get('lag.mlag.peer',{})
   _target = node.lag if mlag_peer.get('global',False) else intf.lag  # Set at node or intf level?
