@@ -1,18 +1,19 @@
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+[WARNING]: Found variable using reserved name: hosts
 
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
-ok: [dut2]
 ok: [x1]
+ok: [dut2]
 ok: [x2]
 
 TASK [Find device readiness script] ********************************************
 ok: [dut]
 ok: [dut2]
-ok: [x1]
 ok: [x2]
+ok: [x1]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [dut]
@@ -21,7 +22,7 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, dut2, x1, x2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, dut2, x1, x2
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [dut]
@@ -41,13 +42,13 @@ skipping: [dut2]
 skipping: [x1]
 skipping: [x2]
 
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [dut]
-skipping: [dut2]
-skipping: [x1]
-skipping: [x2]
-
 TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [dut]
+ok: [x2]
+ok: [dut2]
+ok: [x1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
 skipping: [dut2]
 skipping: [x1]
@@ -60,7 +61,7 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, dut2, x1, x2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, dut2, x1, x2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
@@ -75,135 +76,18 @@ ok: [x1]
 ok: [x2]
 
 TASK [fail] ********************************************************************
+skipping: [dut]
 skipping: [dut2]
 skipping: [x1]
-skipping: [dut]
 skipping: [x2]
 
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [x1]
+ok: [dut]
+ok: [dut2]
+ok: [x2]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
-  
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-    fi
-  
-    # Configuration items start here
-  
-    configure
-    set system host-name 'dut'
-  
-  
-    set interfaces dummy dum0 address 2001:db8:1:1::1/64
-  
-  
-  
-    set interfaces ethernet eth1 description 'dut -> x1 [external]'
-  
-    set interfaces ethernet eth1 mtu 1500
-  
-  
-    set interfaces ethernet eth1 address 2001:db8:3::1/64;
-  
-  
-  
-  
-    set interfaces ethernet eth2 description 'dut -> x2 [external]'
-  
-    set interfaces ethernet eth2 mtu 1500
-  
-  
-    set interfaces ethernet eth2 address 2001:db8:3:1::1/64;
-  
-  
-  
-  
-    set interfaces ethernet eth3 description 'dut -> dut2 [external]'
-  
-    set interfaces ethernet eth3 mtu 1500
-  
-  
-    set interfaces ethernet eth3 address 2001:db8:cafe:e01::1/64;
-  
-  
-  
-  
-    set interfaces ethernet eth4 description 'dut -> stub [stub]'
-  
-    set interfaces ethernet eth4 mtu 1500
-  
-  
-    set interfaces ethernet eth4 address 2001:db8:cafe:e42::1/64;
-  
-  
-  
-    set service lldp interface all
-    set service lldp interface eth0 disable
-  
-    set service router-advert interface eth1
-    set service router-advert interface eth2
-    set service router-advert interface eth3
-    set service router-advert interface eth4
-  
-    set service ssh
-  
-    # Commit, save and exit from subshell
-  
-    commit
-    save
-    exit
-  
-    # Restart FRR to pick up the new hostname
-    sudo service frr restart
-ok: [dut2] => 
-  msg: |-
-    initial configuration for dut2
-    =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
-  
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-    fi
-  
-    # Configuration items start here
-  
-    configure
-    set system host-name 'dut2'
-  
-  
-    set interfaces dummy dum0 address 2001:db8:1:2::1/64
-  
-  
-  
-    set interfaces ethernet eth1 description 'dut2 -> dut [external]'
-  
-    set interfaces ethernet eth1 mtu 1500
-  
-  
-    set interfaces ethernet eth1 address 2001:db8:cafe:e01::2/64;
-  
-  
-  
-    set service lldp interface all
-    set service lldp interface eth0 disable
-  
-    set service router-advert interface eth1
-  
-    set service ssh
-  
-    # Commit, save and exit from subshell
-  
-    commit
-    save
-    exit
-  
-    # Restart FRR to pick up the new hostname
-    sudo service frr restart
 ok: [x1] => 
   msg: |-
     initial configuration for x1
@@ -262,13 +146,11 @@ ok: [x1] =>
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
     ip link set eth1 down
     ip link set eth1 up
+    ip link set dev eth1 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -357,13 +239,11 @@ ok: [x2] =>
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
     ip link set eth1 down
     ip link set eth1 up
+    ip link set dev eth1 mtu 1500
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -394,16 +274,131 @@ ok: [x2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [dut]
-ok: [dut2]
-ok: [x1]
-ok: [x2]
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+  
+    configure
+    set system host-name 'dut'
+  
+  
+    set interfaces dummy dum0 address 2001:db8:1:1::1/64
+  
+  
+  
+    set interfaces ethernet eth1 description 'dut -> x1 [external]'
+  
+    set interfaces ethernet eth1 mtu 1500
+  
+  
+    set interfaces ethernet eth1 address 2001:db8:3::1/64;
+  
+  
+  
+  
+    set interfaces ethernet eth2 description 'dut -> x2 [external]'
+  
+    set interfaces ethernet eth2 mtu 1500
+  
+  
+    set interfaces ethernet eth2 address 2001:db8:3:1::1/64;
+  
+  
+  
+  
+    set interfaces ethernet eth3 description 'dut -> dut2 [external]'
+  
+    set interfaces ethernet eth3 mtu 1500
+  
+  
+    set interfaces ethernet eth3 address 2001:db8:cafe:e01::1/64;
+  
+  
+  
+  
+    set interfaces dummy dum1 description 'dut -> stub'
+  
+  
+  
+    set interfaces dummy dum1 address 2001:db8:cafe:e42::1/64;
+  
+  
+  
+    set service lldp interface all
+    set service lldp interface eth0 disable
+  
+    set service router-advert interface eth1
+    set service router-advert interface eth2
+    set service router-advert interface eth3
+  
+    set service ssh
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
+  
+    # Restart FRR to pick up the new hostname
+    sudo service frr restart
+ok: [dut2] => 
+  msg: |-
+    initial configuration for dut2
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+  
+    configure
+    set system host-name 'dut2'
+  
+  
+    set interfaces dummy dum0 address 2001:db8:1:2::1/64
+  
+  
+  
+    set interfaces ethernet eth1 description 'dut2 -> dut [external]'
+  
+    set interfaces ethernet eth1 mtu 1500
+  
+  
+    set interfaces ethernet eth1 address 2001:db8:cafe:e01::2/64;
+  
+  
+  
+    set service lldp interface all
+    set service lldp interface eth0 disable
+  
+    set service router-advert interface eth1
+  
+    set service ssh
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
+  
+    # Restart FRR to pick up the new hostname
+    sudo service frr restart
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for dut, dut2
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for x1, x2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/vyos.yml for dut, dut2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for x1, x2
 
 TASK [wait_for_connection] *****************************************************
 ok: [dut]
@@ -425,7 +420,7 @@ TASK [template] ****************************************************************
 changed: [dut]
 changed: [dut2]
 
-TASK [execute config-initial.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/vyos.j2] ***
+TASK [execute config-initial.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/vyos.j2] ***
 changed: [dut2]
 changed: [dut]
 
@@ -437,21 +432,21 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
 ok: [x2]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x2]
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [x1]
+changed: [x2]
 
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
 skipping: [x2]
 
@@ -464,7 +459,7 @@ ok: [x1]
 ok: [x2]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, dut2, x1, x2 => (item=bgp)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, dut2, x1, x2 => (item=bgp)
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [dut]
@@ -483,6 +478,12 @@ skipping: [dut]
 skipping: [dut2]
 skipping: [x1]
 skipping: [x2]
+
+TASK [Find configuration deployment deploy_script for bgp] *********************
+ok: [dut]
+ok: [dut2]
+ok: [x1]
+ok: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -688,15 +689,9 @@ ok: [x2] =>
     !
     do write
 
-TASK [Find configuration deployment deploy_script for bgp] *********************
-ok: [dut]
-ok: [dut2]
-ok: [x1]
-ok: [x2]
-
 TASK [Deploy bgp configuration] ************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for dut, dut2
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/vyos.yml for dut, dut2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2
 
 TASK [wait_for_connection] *****************************************************
 skipping: [dut]
@@ -715,10 +710,10 @@ ok: [dut]
 ok: [dut2]
 
 TASK [template] ****************************************************************
-changed: [dut2]
 changed: [dut]
+changed: [dut2]
 
-TASK [execute config-bgp.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/vyos.j2] ***
+TASK [execute config-bgp.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/vyos.j2] ***
 changed: [dut2]
 changed: [dut]
 
@@ -730,11 +725,11 @@ TASK [set_fact] ****************************************************************
 ok: [x1]
 ok: [x2]
 
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [x1]
 skipping: [x2]
 
-TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [x2]
 changed: [x1]
 
@@ -742,10 +737,10 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=28   changed=4    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
-dut2                       : ok=28   changed=4    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
-x1                         : ok=26   changed=5    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
-x2                         : ok=25   changed=4    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+dut                        : ok=29   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+dut2                       : ok=29   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+x1                         : ok=27   changed=5    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+x2                         : ok=26   changed=4    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
 
 
 

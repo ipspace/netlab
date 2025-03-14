@@ -4,8 +4,8 @@
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [x2]
 ok: [x1]
+ok: [x2]
 ok: [dut]
 
 TASK [Find device readiness script] ********************************************
@@ -320,8 +320,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -366,6 +366,90 @@ ok: [x2]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+    routing-options {
+      autonomous-system 65000;
+      router-id 10.0.0.1
+      static {
+        route 172.42.42.0/24 discard;
+      }
+    }
+    policy-options {
+      delete: policy-statement ibgp-export;
+      delete: policy-statement ebgp-export;
+    }
+    policy-options {
+      policy-statement ibgp-export {
+        term advertise {
+          from {
+            protocol direct;
+            interface [
+               lo0.0  ];
+          }
+          then accept;
+        }
+        term originate {
+          from protocol static;
+          then accept;
+        }
+        term next-hop-self {
+          from {
+            route-type external;
+          }
+          then {
+            next-hop self;
+          }
+        }
+      }
+      policy-statement ebgp-export {
+        term advertise {
+          from {
+            protocol direct;
+            interface [ lo0.0 ];
+          }
+          then accept;
+        }
+        term originate {
+          from protocol static;
+          then accept;
+        }
+      }
+    }
+    protocols {
+      delete: bgp;
+    }
+    protocols {
+      bgp {
+        group ibgp-peers-ipv4 {
+          type internal;
+          export ibgp-export;
+          advertise-inactive;
+        }
+        group ebgp-peers {
+          export ebgp-export;
+          advertise-inactive;
+          neighbor 10.1.0.2 {
+            peer-as 65100;
+            description x1;
+            local-as 65002 no-prepend-global-as;
+            family inet {
+              unicast;
+            }
+          }
+          neighbor 10.1.0.6 {
+            peer-as 65101;
+            description x2;
+            local-as 65101 no-prepend-global-as;
+            family inet {
+              unicast;
+            }
+          }
+        }
+      }
+    }
 ok: [x1] => 
   msg: |-
     bgp configuration for x1
@@ -438,91 +522,6 @@ ok: [x2] =>
     !
     !
     do write
-ok: [dut] => 
-  msg: |-
-    bgp configuration for dut
-    =========================================
-    routing-options {
-      autonomous-system 65000;
-      router-id 10.0.0.1
-      static {
-        route 172.42.42.0/24 discard;
-      }
-    }
-    policy-options {
-      delete: policy-statement ibgp-export;
-      delete: policy-statement ebgp-export;
-    }
-    policy-options {
-      policy-statement ibgp-export {
-        term advertise {
-          from {
-            protocol direct;
-            interface [
-               lo0.0  ];
-          }
-          then accept;
-        }
-        term originate {
-          from protocol static;
-          then accept;
-        }
-        term next-hop-self {
-          from {
-            route-type external;
-          }
-          then {
-            next-hop self;
-          }
-        }
-      }
-      policy-statement ebgp-export {
-        term advertise {
-          from {
-            protocol direct;
-            interface [ lo0.0 ];
-          }
-          then accept;
-        }
-        term originate {
-          from protocol static;
-          then accept;
-        }
-      }
-    }
-    protocols {
-      delete: bgp;
-    }
-    protocols {
-      bgp {
-        group ibgp-peers-ipv4 {
-          type internal;
-          export ibgp-export;
-          advertise-inactive;
-          local-address 10.0.0.1;
-        }
-        group ebgp-peers {
-          export ebgp-export;
-          advertise-inactive;
-          neighbor 10.1.0.2 {
-            peer-as 65100;
-            description x1;
-            local-as 65002 no-prepend-global-as;
-            family inet {
-              unicast;
-            }
-          }
-          neighbor 10.1.0.6 {
-            peer-as 65101;
-            description x2;
-            local-as 65101 no-prepend-global-as;
-            family inet {
-              unicast;
-            }
-          }
-        }
-      }
-    }
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
@@ -545,8 +544,8 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched

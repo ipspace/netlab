@@ -427,9 +427,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for r2, rc, x1
 
 TASK [template] ****************************************************************
-changed: [r2]
-changed: [x1]
 changed: [rc]
+changed: [x1]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
@@ -437,9 +437,9 @@ ok: [rc]
 ok: [x1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x1]
 changed: [rc]
 changed: [r2]
+changed: [x1]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r2]
@@ -449,8 +449,8 @@ skipping: [x1]
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [rc]
 ok: [r2]
+ok: [rc]
 ok: [x1]
 ok: [dut]
 
@@ -477,50 +477,12 @@ skipping: [rc]
 skipping: [x1]
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
+ok: [r2]
 ok: [rc]
 ok: [x1]
-ok: [r2]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [r2] => 
-  msg: |-
-    bgp configuration for r2
-    =========================================
-    !
-    router bgp 65000
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.2
-    !
-      neighbor 10.0.0.1 remote-as 65000
-      neighbor 10.0.0.1 description dut
-      neighbor 10.0.0.1 update-source lo
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-      network 10.0.0.2/32
-    !
-    !
-    !
-      neighbor 10.0.0.1 activate
-      neighbor 10.0.0.1 next-hop-self
-      no neighbor 10.0.0.1 send-community all
-      neighbor 10.0.0.1 send-community standard
-      neighbor 10.0.0.1 send-community large
-      neighbor 10.0.0.1 send-community extended
-    !
-    !
-    !
-    do write
 ok: [dut] => 
   msg: |-
     bgp configuration for dut
@@ -571,15 +533,16 @@ ok: [dut] =>
           type internal;
           export ibgp-export;
           advertise-inactive;
-          local-address 10.0.0.1;
           cluster 10.0.0.1;
           neighbor 10.0.0.10 {
+            local-address 10.0.0.1;
             description rc;
             family inet {
               unicast;
             }
           }
           neighbor 10.0.0.2 {
+            local-address 10.0.0.1;
             description r2;
             family inet {
               unicast;
@@ -599,6 +562,44 @@ ok: [dut] =>
         }
       }
     }
+ok: [r2] => 
+  msg: |-
+    bgp configuration for r2
+    =========================================
+    !
+    router bgp 65000
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.2
+    !
+      neighbor 10.0.0.1 remote-as 65000
+      neighbor 10.0.0.1 description dut
+      neighbor 10.0.0.1 update-source lo
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.2/32
+    !
+    !
+    !
+      neighbor 10.0.0.1 activate
+      neighbor 10.0.0.1 next-hop-self
+      no neighbor 10.0.0.1 send-community all
+      neighbor 10.0.0.1 send-community standard
+      neighbor 10.0.0.1 send-community large
+      neighbor 10.0.0.1 send-community extended
+    !
+    !
+    !
+    do write
 ok: [x1] => 
   msg: |-
     bgp configuration for x1
@@ -684,9 +685,9 @@ TASK [junos_config: deploying bgp from /home/pipi/netlab_gh/netsim/ansible/templ
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [rc]
-changed: [r2]
 changed: [x1]
+changed: [r2]
+changed: [rc]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
@@ -700,8 +701,8 @@ skipping: [x1]
 
 TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [r2]
-changed: [x1]
 changed: [rc]
+changed: [x1]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [r2]
@@ -753,34 +754,6 @@ ok: [dut] =>
         }
       }
     }
-ok: [rc] => 
-  msg: |-
-    ospf configuration for rc
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.10
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! rc -> r2
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    do write
 ok: [r2] => 
   msg: |-
     ospf configuration for r2
@@ -814,6 +787,34 @@ ok: [r2] =>
   
     !
     do write
+ok: [rc] => 
+  msg: |-
+    ospf configuration for rc
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.10
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! rc -> r2
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    do write
 
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [x1]
@@ -824,8 +825,8 @@ TASK [junos_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/temp
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [r2]
 changed: [rc]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
@@ -836,8 +837,8 @@ skipping: [r2]
 skipping: [rc]
 
 TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [rc]
 changed: [r2]
+changed: [rc]
 
 PLAY [Deploy custom deployment templates] **************************************
 

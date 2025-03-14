@@ -406,8 +406,8 @@ skipping: [x2]
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [x1]
 ok: [x2]
+ok: [x1]
 ok: [dut]
 ok: [dut2]
 
@@ -474,51 +474,41 @@ ok: [x1] =>
     !
     !
     do write
-ok: [dut2] => 
+ok: [x2] => 
   msg: |-
-    bgp configuration for dut2
+    bgp configuration for x2
     =========================================
     !
-    router bgp 65001
-      log-neighbor-changes
+    router bgp 65101
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
   
-    ! define a generic unnumbered template to be used for eBGP unnumbered...
-    ! additionally, need to define link-local-only-nexthop as per Dell suggested "Cumulus workaround"
-    ! WTF Dell...
-      template unnumbered_ebgp
-        link-local-only-nexthop
-        exit
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
   
-      router-id 10.0.0.2
+      bgp router-id 10.0.0.4
     !
-      neighbor 2001:db8:cafe:e01::1
-        remote-as 65000
-  
-        description "dut"
-        send-community standard
-  
-    !
-     address-family ipv6 unicast
-       soft-reconfiguration inbound
-       activate
-     exit
-  
-    !
-     address-family ipv4 unicast
-       no activate
-     exit
-  
-      no shutdown
-      exit
-    !
+      neighbor 2001:db8:3:1::1 remote-as 65000
+      neighbor 2001:db8:3:1::1 description dut
     !
      address-family ipv6 unicast
     !
-      network 2001:db8:1:2::/64
+  
+    !
+      network 2001:db8:1:4::/64
     !
     !
     !
+      neighbor 2001:db8:3:1::1 activate
+      no neighbor 2001:db8:3:1::1 send-community all
+      neighbor 2001:db8:3:1::1 send-community standard
+      neighbor 2001:db8:3:1::1 send-community large
     !
+    !
+    !
+    do write
 ok: [dut] => 
   msg: |-
     bgp configuration for dut
@@ -604,41 +594,51 @@ ok: [dut] =>
     !
     !
     !
-ok: [x2] => 
+ok: [dut2] => 
   msg: |-
-    bgp configuration for x2
+    bgp configuration for dut2
     =========================================
     !
-    router bgp 65101
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
+    router bgp 65001
+      log-neighbor-changes
   
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
+    ! define a generic unnumbered template to be used for eBGP unnumbered...
+    ! additionally, need to define link-local-only-nexthop as per Dell suggested "Cumulus workaround"
+    ! WTF Dell...
+      template unnumbered_ebgp
+        link-local-only-nexthop
+        exit
   
-      bgp router-id 10.0.0.4
+      router-id 10.0.0.2
     !
-      neighbor 2001:db8:3:1::1 remote-as 65000
-      neighbor 2001:db8:3:1::1 description dut
+      neighbor 2001:db8:cafe:e01::1
+        remote-as 65000
+  
+        description "dut"
+        send-community standard
+  
+    !
+     address-family ipv6 unicast
+       soft-reconfiguration inbound
+       activate
+     exit
+  
+    !
+     address-family ipv4 unicast
+       no activate
+     exit
+  
+      no shutdown
+      exit
+    !
     !
      address-family ipv6 unicast
     !
-  
-    !
-      network 2001:db8:1:4::/64
+      network 2001:db8:1:2::/64
     !
     !
     !
-      neighbor 2001:db8:3:1::1 activate
-      no neighbor 2001:db8:3:1::1 send-community all
-      neighbor 2001:db8:3:1::1 send-community standard
-      neighbor 2001:db8:3:1::1 send-community large
     !
-    !
-    !
-    do write
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/dellos10.yml for dut, dut2

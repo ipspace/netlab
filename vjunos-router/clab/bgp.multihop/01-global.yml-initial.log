@@ -67,8 +67,8 @@ skipping: [c1]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [pe2]
-ok: [c1]
 ok: [dut]
+ok: [c1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
@@ -197,6 +197,72 @@ ok: [pe2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    system {
+      host-name dut;
+      static-host-mapping {
+        pe2 inet 10.0.0.3;
+        c1 inet 10.0.0.2;
+      }
+    }
+  
+  
+    interfaces {
+      ge-0/0/0 {
+        mtu 1514;
+      }
+      ge-0/0/1 {
+        mtu 1514;
+      }
+  
+      lo0.0 {
+  
+          family inet {
+            address 10.0.0.1/32;
+          }
+          family inet6 {
+            address 2001:db8:1:1::1/64;
+          }
+  
+      }
+      ge-0/0/0.0 {
+        description "dut -> c1";
+  
+          family inet {
+            address 10.1.0.2/30;
+          }
+          family inet6 {
+            address 2001:db8:3::2/64;
+          }
+  
+      }
+      ge-0/0/1.0 {
+        description "dut -> stub [stub]";
+  
+          family inet {
+            address 192.168.42.1/24;
+          }
+          family inet6 {
+            address 2001:db8:42::1/64;
+          }
+  
+      }
+    }
+    protocols {
+      lldp {
+        interface fxp0 {
+          disable;
+        }
+        interface all;
+      }
+      router-advertisement {
+        interface ge-0/0/0.0;
+        interface ge-0/0/1.0;
+      }
+    }
 ok: [c1] => 
   msg: |-
     initial configuration for c1
@@ -303,72 +369,6 @@ ok: [c1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    system {
-      host-name dut;
-      static-host-mapping {
-        pe2 inet 10.0.0.3;
-        c1 inet 10.0.0.2;
-      }
-    }
-  
-  
-    interfaces {
-      ge-0/0/0 {
-        mtu 1514;
-      }
-      ge-0/0/1 {
-        mtu 1514;
-      }
-  
-      lo0.0 {
-  
-          family inet {
-            address 10.0.0.1/32;
-          }
-          family inet6 {
-            address 2001:db8:1:1::1/64;
-          }
-  
-      }
-      ge-0/0/0.0 {
-        description "dut -> c1";
-  
-          family inet {
-            address 10.1.0.2/30;
-          }
-          family inet6 {
-            address 2001:db8:3::2/64;
-          }
-  
-      }
-      ge-0/0/1.0 {
-        description "dut -> stub [stub]";
-  
-          family inet {
-            address 192.168.42.1/24;
-          }
-          family inet6 {
-            address 2001:db8:42::1/64;
-          }
-  
-      }
-    }
-    protocols {
-      lldp {
-        interface fxp0 {
-          disable;
-        }
-        interface all;
-      }
-      router-advertisement {
-        interface ge-0/0/0.0;
-        interface ge-0/0/1.0;
-      }
-    }
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
@@ -388,8 +388,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for pe2, c1
 
 TASK [template] ****************************************************************
-changed: [pe2]
 changed: [c1]
+changed: [pe2]
 
 TASK [set_fact] ****************************************************************
 ok: [pe2]
@@ -540,13 +540,11 @@ ok: [dut] =>
           type internal;
           export ibgp-export;
           advertise-inactive;
-          local-address 10.0.0.1;
         }
         group ibgp-peers-ipv6 {
           type internal;
           export ibgp-export;
           advertise-inactive;
-          local-address 2001:db8:1:1::1;
         }
         group ebgp-peers {
           export ebgp-export;
@@ -670,6 +668,55 @@ ok: [c1] =>
   
     !
     do write
+ok: [pe2] => 
+  msg: |-
+    ospf configuration for pe2
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.3
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! pe2 -> c1
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    ! OSPFv3 FRR configuration
+    !
+    interface lo
+    !
+     ipv6 ospf6 area 0.0.0.0
+    !
+    interface eth1
+    ! pe2 -> c1
+     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 network point-to-point
+    !
+    !
+    router ospf6
+     ospf6 router-id 10.0.0.3
+     timers lsa min-arrival 100
+     timers throttle spf 10 50 500
+  
+  
+    exit
+  
+    !
+    do write
 ok: [dut] => 
   msg: |-
     ospf configuration for dut
@@ -722,63 +769,14 @@ ok: [dut] =>
         }
       }
     }
-ok: [pe2] => 
-  msg: |-
-    ospf configuration for pe2
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.3
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! pe2 -> c1
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    ! OSPFv3 FRR configuration
-    !
-    interface lo
-    !
-     ipv6 ospf6 area 0.0.0.0
-    !
-    interface eth1
-    ! pe2 -> c1
-     ipv6 ospf6 area 0.0.0.0
-     ipv6 ospf6 network point-to-point
-    !
-    !
-    router ospf6
-     ospf6 router-id 10.0.0.3
-     timers lsa min-arrival 100
-     timers throttle spf 10 50 500
-  
-  
-    exit
-  
-    !
-    do write
 
 TASK [Deploy ospf configuration] ***********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for c1, pe2
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
 
 TASK [template] ****************************************************************
-changed: [c1]
 changed: [pe2]
+changed: [c1]
 
 TASK [set_fact] ****************************************************************
 ok: [c1]
@@ -811,8 +809,8 @@ skipping: [dut]
 skipping: [pe2]
 
 TASK [Check is the configuration template is a file] ***************************
-ok: [dut -> localhost]
 ok: [pe2 -> localhost]
+ok: [dut -> localhost]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
