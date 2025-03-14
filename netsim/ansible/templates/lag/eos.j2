@@ -1,37 +1,28 @@
 {# Provision mlag peerlink, EOS supports at most 1 peerlink #}
-{% for intf in interfaces if intf.lag.mlag.peergroup is defined %}
-
-vlan {{ intf.lag.mlag.vlan }}
+vlan {{ lag.mlag.vlan }}
  name "MLAG-peerlink"
  trunk group m1peer
 !
-no spanning-tree vlan-id {{ intf.lag.mlag.vlan }}
+no spanning-tree vlan-id {{ lag.mlag.vlan }}
 
-interface port-channel {{ intf.lag.mlag.ifindex }}
- description MLAG peerlink(s) {{ intf.name }}
+interface port-channel {{ lag.mlag.ifindex }}
+ description MLAG peerlink(s)
  switchport mode trunk
  switchport trunk group m1peer
 !
 
-interface vlan {{ intf.lag.mlag.vlan }}
+interface vlan {{ lag.mlag.vlan }}
  description MLAG peerlink local-interface
- ip address {{ intf.lag.mlag.self }}
  no autostate
 !
 
 mlag
- domain-id mlag{{ intf.lag.mlag.peergroup }}
- local-interface vlan {{ intf.lag.mlag.vlan }}
- peer-address {{ intf.lag.mlag.peer }}
- peer-link port-channel {{ intf.lag.mlag.ifindex }}
+ domain-id mlagDomain
+ local-interface vlan {{ lag.mlag.vlan }}
+ peer-address {{ lag.mlag.peer }}
+ peer-link port-channel {{ lag.mlag.ifindex }}
  no shutdown
 !
-{%   for ch in ([intf]+interfaces) if ch==intf or ch.lag._peerlink|default(0) == intf.linkindex %}
-interface {{ ch.ifname }}
- description {{ ch.name }} (peerlink in channel-group {{intf.lag.mlag.ifindex }})
- channel-group {{ intf.lag.mlag.ifindex }} mode active
-!
-{%   endfor %}
 
 {% if 'gateway' in module %}
 ip virtual-router mac-address mlag-peer
