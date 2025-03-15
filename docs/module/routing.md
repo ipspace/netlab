@@ -417,10 +417,9 @@ community:
 
 Static routes are defined as lists of prefix/next-hop pairs in the **routing.static** node attribute. Each static route entry must specify a prefix and a next hop.
 
-The static route prefix can be defined with any one of these attributes:
+The static route prefix can be defined with one of these attributes:
 
-* **ipv4** -- an IPv4 prefix
-* **ipv6** -- an IPv6 prefix
+* **ipv4**/**ipv6** -- an IPv4 and/or IPv6 prefix
 * **pool** -- [address pool](address-pools) prefix
 * **prefix** -- a [named prefix](named-prefixes)
 * **node** -- a prefix of the specified node's control-plane endpoint (loopback interface or first data-plane interface)
@@ -431,12 +430,12 @@ You can combine **‌ipv4** and **‌ipv6** prefixes in the same static route en
 
 A static route entry's **nexthop** attribute specifies the next hop used to reach the specified prefixes. The next hop can be defined with any one of these attributes:
 
-* **ipv4** -- an IPv4 next hop (an address, not a prefix)
-* **ipv6** -- an IPv6 next hop (an address, not a prefix)
+* **ipv4**/**ipv6** -- an IPv4 and/or IPv6 next hop (an address, not a prefix)
 * **gateway** (boolean) -- the next hop is the default gateway. This entry will be resolved into a list containing all directly connected default gateways in the specified next-hop VRF (a node might use more than one default gateway to reach a destination).
 * **node** -- The next hop is the specified node. The node name will be resolved into a list of directly connected next-hops or the control-plane endpoint of a distant node (allowing you to specify recursive static routes).
 
 ```{tip}
+* You can combine **‌ipv4** and **‌ipv6** next hops in the same static route entry. **gateway** and **node** next-hop attributes are exclusive and can specify both IPv4 and IPv6 next hops.
 * Static route entries with an **‌ipv4** prefix must have an **‌ipv4** next hop (and likewise for **‌ipv6**). _netlab_ does not support IPv6 next hops for IPv4 routes.
 * _netlab_ will configure several static routes with different next hops if your topology has multiple direct links between the source and the next-hop node or if a node is attached to multiple links with default gateways.
 * Static routes cannot point to unnumbered IPv4 interfaces or LLA-only IPv6 interfaces.
