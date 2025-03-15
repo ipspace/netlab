@@ -264,6 +264,9 @@ def validate_list(
   if not '_subtype' in data_type:
     return True
 
+  if log.debug_active('validate'):
+    print(f'validate_list {data_name} {parent_path} subtype: {data_type._subtype}')
+    print(f'attribute namespaces: {attributes.keys()}')
   for idx,value in enumerate(data):             # Iterate over all list values
     if isinstance(data_type._subtype,str) and data_type._subtype in attributes:
       OK = validate_attributes(                 # User defined data type, do full recursive validation including namespaces and modules
@@ -381,6 +384,46 @@ def transform_validation_shortcuts(data_type: typing.Any) -> typing.Union[Box,di
   log.fatal(f'Internal validation error: unknown data type {data_type}')
 
 """
+check_valid_with: check whether the dictionary has any conflicting attributes
+
+Inputs:
+* data to check (should be Box)
+* dict data type to check against (could be raw data type or contain _keys)
+* path to the object, name of the data, module doing the check
+"""
+def check_valid_with(
+      data: Box,
+      data_type: Box,
+      path: str,
+      data_name: str,
+      module: str) -> None:
+
+  if log.debug_active('validate'):
+    print(f'check_valid_with {path} {data} against {data_name} {data_type}')
+
+  attr_list = list(data.keys())                             # Get the list of data attributes
+  _keys = data_type.get('_keys',data_type)                  # Get the definition of keys
+  report_list: typing.List[str] = []                        # List of already-reported incompatibilities
+
+  for attr in attr_list:
+    if not isinstance(_keys.get(attr,None),Box):            # Skip invalid attributes or simple types
+      continue
+    if '_valid_with' not in _keys[attr]:                    # Attribute has no restrictions
+      continue
+    if attr in report_list:                                 # Incompatibility has already been reported
+      continue
+    inv_list = [ x for x in attr_list
+                  if x != attr and
+                     x not in _keys[attr]._valid_with and
+                     not x.startswith('_') ]                # Build a list of incompatible attributes
+    if inv_list:                                            # ... and report them
+      log.error(
+        f'Attribute(s) {",".join(inv_list)} cannot be used with attribute {attr} in {path}',
+        category=log.IncorrectAttr,
+        module=module)
+      report_list = report_list + inv_list
+
+"""
 validate_item -- validate a single item from an object:
 
 * Return if the data type is None (= not validated)
@@ -419,6 +462,10 @@ def validate_item(
     return True                                                       # ==> anything goes
 
   data_type = transform_validation_shortcuts(data_type)
+
+  if log.debug_active('validate'):
+    print(f'validate_item {parent_path}.{key} as {data_type}')
+    print(f'attribute namespaces: {list(attributes.keys())}')
 
   # First check the required module(s)
   if '_requires' in data_type:
@@ -491,6 +538,14 @@ def validate_item(
 
   if parent is not None:                                            # Validation function might have changed the parent value
     data = parent[key]                                              # ... make sure we do the last step using the current value
+
+  if dt_name == 'dict' and isinstance(data_type,Box) and isinstance(data,Box):
+    check_valid_with(
+      data=data,
+      data_type=data_type,
+      path=parent_path if parent is None else f'{parent_path}.{key}',
+      data_name=data_name,
+      module=module)
 
   if dt_name in subtype_validation:
     return subtype_validation[dt_name](
@@ -590,23 +645,12 @@ def validate_attributes(
     return
 
   check_required_keys(data,valid,data_path,module)
-
+  check_valid_with(data,valid,data_path,data_name,module)
   for k in data.keys():
     if any(k.startswith(i) for i in ignored):           # Skip internal attributes
       continue
 
     if k in valid:                                      # Is this a valid attribute?
-      #
-      # First check if this attribute cannot be used with some other attributes
-      if isinstance(valid[k],Box) and '_valid_with' in valid[k]:
-        not_valid_list = [ x for x in data.keys() if x != k and x not in valid[k]._valid_with ]
-        if not_valid_list:
-          log.error(
-            f"Attribute {k} cannot be used with attributes {','.join(not_valid_list)} in {data_path}",
-            log.IncorrectAttr,
-            module)
-        continue
-
       # Now validate the value of the attribute
       validate_item(
         parent=data,
