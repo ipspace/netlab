@@ -640,7 +640,7 @@ def create_vlan_links(link: Box, v_attr: Box, topology: Box) -> None:
           # Still no usable IP prefix? Try to get it from the node VLAN pool, but only if VLAN is not in bridge mode
           if not prefix and vname in intf_node.get('vlans',{}):
             if intf_data._vlan_mode != 'bridge':
-              prefix = topology.node[intf.node].vlans[vname].get('prefix',None)
+              prefix = intf_node.vlans[vname].get('prefix',None)
 
           link_data.interfaces.append(intf_data)            # Append the interface to vlan link
 
