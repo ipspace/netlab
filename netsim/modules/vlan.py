@@ -80,27 +80,30 @@ at this point, so most of the changes done on node VLANs would be applicable
 to single-node VLANs.
 """
 def validate_vlan_attributes(obj: Box, topology: Box) -> None:
+
+  if not 'vlans' in obj:                                            # No VLANs? Nothing to do
+    return
+
   obj_name = 'global VLANs' if obj is topology else obj.name
   obj_path = 'vlans' if obj is topology else f'nodes.{obj.name}.vlans'
   default_fwd_mode = obj.get('vlan.mode',None) or get_global_parameter(topology,'vlan.mode')
-
-  if not 'vlans' in obj:
-    return
 
   for vname in list(obj.vlans.keys()):
     if not obj.vlans[vname]:
       obj.vlans[vname] = data.get_empty_box()
 
     vdata = obj.vlans[vname]
-
     if not 'mode' in vdata:                                         # Do we have 'mode' set in the VLAN definition?
       if default_fwd_mode and obj is not topology:                  # Propagate default VLAN forwarding mode if needed
-        vdata.mode = default_fwd_mode
-
+        vdata.mode = default_fwd_mode                               # but only for node level VLANs, to avoid that
+                                                                    # a node level vlan.mode setting gets ignored
     if not 'id' in vdata:                                           # When VLAN ID is not defined
       vdata.id = _dataplane.get_next_id('vlan_id')                  # ... take the next free VLAN ID from the list
 
     if vdata.get('mode',default_fwd_mode or 'irb')=='route':        # Don't assign a prefix to routed VLANs
+      if 'prefix' in vdata:
+        log.error(f'Routed vlan {vname} in {obj_name} cannot be assigned a prefix ({vdata.prefix})',
+                  log.IncorrectAttr,'vlan',more_hints="use a pool instead")
       continue
 
     vlan_pool = [ vdata.pool ] if isinstance(vdata.get('pool',None),str) else []
@@ -1214,7 +1217,6 @@ def create_vlan_access_links(topology: Box) -> None:
       continue                                                              # ... no problem, skip it
     if not 'links' in vdata:                                                # No VLAN links?
       continue                                                              # ... no problem, move on
-
     for cnt,l in enumerate(vdata.links):                                    # So far so good, now iterate over the links
       link_data = links.adjust_link_object(                                 # Create link data from link definition
                     l=l,
@@ -1306,7 +1308,10 @@ class VLAN(_Module):
 
         # Set node-level VLAN forwarding mode and merge topology VLAN data into node VLAN data
         set_node_vlan_mode(node.vlans[vname],node,topology.vlans[vname],topology)
+
         node.vlans[vname] = topology.vlans[vname] + node.vlans[vname]
+        if node.vlans[vname].mode == 'route':
+          node.vlans[vname].pop('prefix',None)              # Remove any prefix for routed VLANs
       else:                                                 # Single node VLAN, set forwarding mode
         set_node_vlan_mode(node.vlans[vname],node,node.vlans[vname],topology)
 
