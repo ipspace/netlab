@@ -65,9 +65,11 @@ def nvue_check_native_routed_on_mixed_trunk(node: Box, topology: Box) -> None:
         continue
       if j.get('vlan.mode','irb') in ['bridge','irb']:          # Are we dealing with a mixed trunk?
         report_quirk(
-          f"Node {node.name} uses a mixed trunk with a routed native VLAN, which is not supported; suggested to use 'mode: irb' instead",
+          f"You cannot use a mixed trunk with a routed native VLAN",
+          more_data=[ f"node {node.name} interface {i.ifname} ({i.name}) vlan {i._vlan_native}" ],
+          more_hints=[ "Use 'mode: irb' instead for the native VLAN" ],
           quirk='native_routed_on_mixed_trunk',
-          category=log.FatalError,
+          category=log.IncorrectType,
           node=node)
 
 """
