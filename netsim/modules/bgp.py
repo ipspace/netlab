@@ -608,6 +608,9 @@ def bgp_transform_community_list(node: Box, topology: Box) -> None:
 link_ebgp_role_set -- set EBGP role for a regular link
 """
 def ebgp_role_link(link: Box, topology: Box, EBGP_ROLE: str) -> None:
+  if link.get("role",None):                                 # Link already has a role, move on
+    return
+
   as_set = {}
   for ifdata in link.get('interfaces',[]):                  # Collect BGP AS numbers from nodes
     ndata = topology.nodes[ifdata.node]                     # ... connected to the link
@@ -615,7 +618,7 @@ def ebgp_role_link(link: Box, topology: Box, EBGP_ROLE: str) -> None:
     if node_as:
       as_set[node_as] = True                                # ... and store them in a dictionary
 
-  if len(as_set) > 1 and not link.get("role"):              # If we have more than two AS numbers per link
+  if len(as_set) > 1:                                       # If we have more than two AS numbers per link
     link.role = EBGP_ROLE                                   # ... set link role unless it's already set
 
 """
