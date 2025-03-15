@@ -100,12 +100,13 @@ def validate_vlan_attributes(obj: Box, topology: Box) -> None:
     if not 'id' in vdata:                                           # When VLAN ID is not defined
       vdata.id = _dataplane.get_next_id('vlan_id')                  # ... take the next free VLAN ID from the list
 
-    vlan_pool = [ vdata.pool ] if isinstance(vdata.get('pool',None),str) else []
-    vlan_pool.extend(['vlan','lan'])
-    pfx_list = links.assign_link_prefix(vdata,vlan_pool,topology.pools,topology.nodes,f'{obj_path}.{vname}')
-    vdata.prefix = addressing.rebuild_prefix(pfx_list)
-    if not 'allocation' in vdata.prefix:
-      vdata.prefix.allocation = 'id_based'
+    if vdata.get('mode','irb')!='route':                            # Don't assign a prefix to routed VLANs
+      vlan_pool = [ vdata.pool ] if isinstance(vdata.get('pool',None),str) else []
+      vlan_pool.extend(['vlan','lan'])
+      pfx_list = links.assign_link_prefix(vdata,vlan_pool,topology.pools,topology.nodes,f'{obj_path}.{vname}')
+      vdata.prefix = addressing.rebuild_prefix(pfx_list)
+      if not 'allocation' in vdata.prefix:
+          vdata.prefix.allocation = 'id_based'
 
 """
 check_link_vlan_attributes: check correctness of VLAN link attributes
@@ -650,7 +651,7 @@ def create_vlan_links(link: Box, v_attr: Box, topology: Box) -> None:
         link_data.vlan.mode = 'route'
         for intf in link_data.interfaces:
           intf.vlan.mode = 'route'
-      else:
+      elif prefix is not None:
         link_data.prefix = prefix
 
       topology.links.append(link_data)
