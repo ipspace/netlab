@@ -604,6 +604,49 @@ def bgp_transform_community_list(node: Box, topology: Box) -> None:
   for s_type in list(clist.keys()):
     clist[s_type] = data.kw_list_transform(kw_xform,clist[s_type])
 
+"""
+link_ebgp_role_set -- set EBGP role for a regular link
+"""
+def ebgp_role_link(link: Box, topology: Box, EBGP_ROLE: str) -> None:
+  if link.get("role",None):                                 # Link already has a role, move on
+    return
+
+  as_set = {}
+  for ifdata in link.get('interfaces',[]):                  # Collect BGP AS numbers from nodes
+    ndata = topology.nodes[ifdata.node]                     # ... connected to the link
+    node_as = ndata.get('bgp.as',None)
+    if node_as:
+      as_set[node_as] = True                                # ... and store them in a dictionary
+
+  if len(as_set) > 1:                                       # If we have more than two AS numbers per link
+    link.role = EBGP_ROLE                                   # ... set link role unless it's already set
+
+"""
+vlan_ebgp_role_collect -- collect EBGP role information from a VLAN link
+"""
+def vlan_ebgp_role_collect(link: Box, topology: Box) -> None:
+  vlan_name = link.get('vlan_name',None)                    # Get the relevant VLAN name
+  if vlan_name not in topology.vlans:                       # Not a global VLAN, don't waste time
+    return
+
+  for ifdata in link.get('interfaces',[]):                  # Iterate over nodes attached to this VLAN segment
+    ndata = topology.nodes[ifdata.node]
+    node_as = ndata.get('bgp.as',None)                      # Get node AS number and store it in VLAN _as_set list
+    if not node_as:
+      continue
+    data.append_to_list(topology.vlans[vlan_name],'_as_set',node_as)
+
+"""
+vlan_ebgp_role_set -- set EBGP role on VLANs based on collected information
+"""
+def vlan_ebgp_role_set(topology: Box, EBGP_ROLE: str) -> None:
+  for vname,vdata in topology.vlans.items():                # Iterate over global VLANs
+    if '_as_set' not in vdata:                              # Does the VLAN have _as_set list
+      continue
+    if len(vdata._as_set) > 1 and 'role' not in vdata:      # Are there at least two ASNs in the _as_set?
+      vdata.role = EBGP_ROLE                                # ... set VLAN role unless it's already set
+    vdata.pop('_as_set',None)                               # ... and clean up
+
 class BGP(_Module):
 
   """
@@ -628,26 +671,23 @@ class BGP(_Module):
     check_bgp_parameters(node, topology)
 
   """
-  Link pre-transform: Set link role based on BGP nodes attached to the link.
-
-  If the nodes belong to at least two autonomous systems, and the ebgp_role
-  variable is set, set the link role to ebgp_role
+  pre-link transform processing handles VLANs. An AS set is built for every VLAN
+  and the VLAN role is set when a VLAN contains nodes from more than one AS.
   """
-  def link_pre_transform(self, link: Box, topology: Box) -> None:
-    ebgp_role = topology.bgp.get("ebgp_role",None) or topology.defaults.bgp.get("ebgp_role",None)
-    if not ebgp_role:
+  def module_pre_link_transform(self, topology: Box) -> None:
+    EBGP_ROLE = topology.bgp.get("ebgp_role",None) or topology.defaults.bgp.get("ebgp_role",None)
+    if not EBGP_ROLE:
       return
 
-    as_set = {}
-    for ifdata in link.get('interfaces',[]):
-      n = ifdata.node
-      if "bgp" in topology.nodes[n]:
-        node_as = topology.nodes[n].bgp.get("as")
-        if node_as:
-          as_set[node_as] = True
+    has_vlans = 'vlan' in topology.module and 'vlans' in topology
+    for link in topology.links:
+      if not 'vlan_name' in link:
+        ebgp_role_link(link,topology,EBGP_ROLE)
+      elif has_vlans:
+        vlan_ebgp_role_collect(link,topology)
 
-    if len(as_set) > 1 and not link.get("role"):
-      link.role = ebgp_role
+    if has_vlans:
+      vlan_ebgp_role_set(topology,EBGP_ROLE)
 
   #
   # Have to set BGP router IDs and cluster IDs before going into node_post_transform

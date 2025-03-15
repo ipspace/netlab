@@ -123,9 +123,9 @@ BGP module sets link role specified in **defaults.bgp.ebgp_role** on links conne
 If you want to include external subnets into your IGP (and disable BGP **next_hop_self** processing), set **defaults.bgp.ebgp_role** to **passive**.
 
 ```{warning}
-The BGP module does not set the link role on SVI/VLAN interfaces with EBGP sessions, potentially resulting in IGP running on an inter-AS link.
+The BGP module sets the link role on direct links and global VLANs but not on VLANs defined on a single node.
 
-As a workaround, set the **‌vlans._name_.role** global parameter to **‌external** on inter-AS VLANs.
+As a workaround, set the **‌nodes._node_.vlans._name_.role** node VLAN parameter to **‌external** on inter-AS VLANs defined on a single node.
 ```
 
 (routing_disable)=
