@@ -106,6 +106,9 @@ def validate_vlan_attributes(obj: Box, topology: Box) -> None:
     
     * VLANs in bridge/irb forwarding mode
     * All global VLANs if the mixed_fwd_check is disabled
+
+    Please note that the global VLAN prefix is copied into the node VLAN prefix, so no (new) prefix
+    is assigned to the node VLAN data if we already have a global VLAN prefix.
     """
     #
     fwd_mode = vdata.get('mode',default_fwd_mode or 'irb')
@@ -118,8 +121,9 @@ def validate_vlan_attributes(obj: Box, topology: Box) -> None:
           f'Routed vlan {vname} in {obj_name} cannot be assigned a prefix ({vdata.prefix})',
           category=log.IncorrectAttr,
           module='vlan',
-          more_hints="Use the 'pool' VLAN attribute to control VLAN prefix allocation, or change the global VLAN to " +
-                     "'irb' and set vlan.mode to 'route' at selected nodes")
+          more_hints=[
+            "Use the 'pool' VLAN attribute to control VLAN prefix allocation on routed VLANs",
+            "You can also change the global VLAN to 'irb' and set vlan.mode to 'route' at selected nodes"])
       continue
 
     vlan_pool = [ vdata.pool ] if isinstance(vdata.get('pool',None),str) else []
