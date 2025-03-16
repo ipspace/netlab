@@ -100,10 +100,13 @@ def validate_vlan_attributes(obj: Box, topology: Box) -> None:
     if not 'id' in vdata:                                           # When VLAN ID is not defined
       vdata.id = _dataplane.get_next_id('vlan_id')                  # ... take the next free VLAN ID from the list
 
-    if vdata.get('mode',default_fwd_mode or 'irb')=='route':        # Don't assign a prefix to routed VLANs
+    if vdata.get('mode',default_fwd_mode or 'irb') == 'route':      # Don't assign a prefix to routed VLANs
       if 'prefix' in vdata:
-        log.error(f'Routed vlan {vname} in {obj_name} cannot be assigned a prefix ({vdata.prefix})',
-                  log.IncorrectAttr,'vlan',more_hints="use a pool instead")
+        log.error(
+          f'Routed vlan {vname} in {obj_name} cannot be assigned a prefix ({vdata.prefix})',
+          category=log.IncorrectAttr,
+          module='vlan',
+          more_hints="Use the 'pool' VLAN attribute to control VLAN prefix allocation")
       continue
 
     vlan_pool = [ vdata.pool ] if isinstance(vdata.get('pool',None),str) else []
