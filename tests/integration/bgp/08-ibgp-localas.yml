@@ -5,13 +5,21 @@ message: |
   turning an EBGP session into an IBGP session. It should establish the BGP
   sessions with X1 and X2, and propagate BGP prefixes between them.
 
-module: [ bgp ]
+  The test also checks (as a warning) whether DUT propagates "real" IBGP routes
+  over local-as IBGP session. Failure to do that indicates that the next hop is
+  not set correctly, or that DUT is not working as a route reflector toward
+  local-as IBGP neighbor.
+
+module: [ bgp, ospf ]
 
 groups:
   probes:
     device: frr
     provider: clab
+    members: [ x1, x2, x3 ]
+  ebgp:
     members: [ x1, x2 ]
+    module: [ bgp ]
 
 defaults.bgp.as: 65000
 defaults.interfaces.mtu: 1500
@@ -25,6 +33,8 @@ nodes:
   x2:
     bgp.as: 65101
     loopback.ipv4: 172.42.2.1/24
+  x3:
+    bgp.originate: 172.42.3.0/24
 
 links:
 - dut:
@@ -33,13 +43,20 @@ links:
 - dut:
     bgp.local_as: 65101
   x2:
+- dut-x3
 
 validate:
+  ospf_adj_dut:
+    description: Check OSPF adjacencies with DUT
+    wait: 40
+    nodes: [ x3 ]
+    wait_msg: Waiting for OSPF adjacency process to complete
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id)
   session:
-    description: Check EBGP sessions with DUT (wait up to 10 seconds)
+    description: Check BGP sessions with DUT (wait up to 10 seconds)
     wait: 20
     wait_msg: Wait for BGP sessions to be established
-    nodes: [ x1, x2 ]
+    nodes: [ x1, x2, x3 ]
     plugin: bgp_neighbor(node.bgp.neighbors,'dut')
 
   prefix:
@@ -56,8 +73,30 @@ validate:
     nodes: [ x2 ]
     plugin: bgp_prefix('172.42.1.0/24')
 
-  prop_ibgp:
-    description: Check whether DUT propagates IBGP routes to EBGP
+  prop_ebgp_nh:
+    description: Check whether DUT sets the correct NH for EBGP routes sent to local-as IBGP session
+    wait_msg: Wait for BGP convergence
+    level: warning
+    nodes: [ x2 ]
+    plugin: bgp_prefix('172.42.1.0/24',best=True)
+
+  prop_la_ibgp:
+    description: Check whether DUT propagates local-as IBGP routes to EBGP
     wait: 3
     nodes: [ x1 ]
-    plugin: bgp_prefix('172.42.2.0/24')
+    plugin: bgp_prefix('172.42.2.0/24',best=True)
+
+  prop_internal:
+    description: Check whether DUT propagates real IBGP routes over IBGP local-as session
+    level: warning
+    wait: 3
+    wait_msg: Wait for BGP convergence
+    nodes: [ x2 ]
+    plugin: bgp_prefix('172.42.3.0/24')
+
+  nh_internal:
+    description: Check whether DUT fixes the next hop of IBGP routes sent over IBGP local-as session
+    level: warning
+    wait_msg: Wait for BGP convergence
+    nodes: [ x2 ]
+    plugin: bgp_prefix('172.42.3.0/24',best=True)
