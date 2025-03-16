@@ -87,6 +87,7 @@ def validate_vlan_attributes(obj: Box, topology: Box) -> None:
   obj_name = 'global VLANs' if obj is topology else obj.name
   obj_path = 'vlans' if obj is topology else f'nodes.{obj.name}.vlans'
   default_fwd_mode = obj.get('vlan.mode',None) or get_global_parameter(topology,'vlan.mode')
+  mixed_fwd_mode = topology.get('defaults.vlan.warnings.mixed_fwd_check',None) is False
 
   for vname in list(obj.vlans.keys()):
     if not obj.vlans[vname]:
@@ -100,8 +101,20 @@ def validate_vlan_attributes(obj: Box, topology: Box) -> None:
     if not 'id' in vdata:                                           # When VLAN ID is not defined
       vdata.id = _dataplane.get_next_id('vlan_id')                  # ... take the next free VLAN ID from the list
 
-    if vdata.get('mode',default_fwd_mode or 'irb') == 'route':      # Don't assign a prefix to routed VLANs
-      if 'prefix' in vdata:
+    """
+    We need to assign prefixes to:
+    
+    * VLANs in bridge/irb forwarding mode
+    * All VLANs if the mixed_fwd_check is disabled
+    * node-only VLANs
+    """
+    #
+    fwd_mode = vdata.get('mode',default_fwd_mode or 'irb')
+    need_pfx = fwd_mode != 'route' or (mixed_fwd_mode and obj is topology)
+    if log.debug_active('vlan'):
+      print(f'validate_vlan: {obj_path}.{vname} fwd_mode: {fwd_mode} need_pfx: {need_pfx}')
+    if not need_pfx:                                               # Does this VLAN need a prefix?
+      if 'prefix' in vdata and not mixed_fwd_mode:                 # No, having one is an error
         log.error(
           f'Routed vlan {vname} in {obj_name} cannot be assigned a prefix ({vdata.prefix})',
           category=log.IncorrectAttr,
