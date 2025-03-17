@@ -245,7 +245,7 @@ create_peer_vlan - create a global VLAN for the peerlink (if supported), to enab
 def create_peer_vlan(peerlink: Box, mlag_peer_features: Box, topology: Box) -> None:
   if 'vlan' in mlag_peer_features:                           # Check if device supports an explicit peering VLAN
     vlan_name = f"peervlan_{ peerlink[PEERLINK_ID_ATT] }"
-    vlan = data.get_box({ 'id': mlag_peer_features.vlan, 'mode': mlag_peer_features.get('vlan_mode','route') })
+    vlan = data.get_box({ 'id': mlag_peer_features.vlan, 'mode': 'irb' })
     lag_peervlan_attr = list(topology.defaults.lag.attributes.lag_peervlan_attr)
     for a in list(peerlink.keys()):
       if a in lag_peervlan_attr:                             # Move all l3 attributes to the vlan interface
@@ -266,7 +266,12 @@ def create_peer_vlan(peerlink: Box, mlag_peer_features: Box, topology: Box) -> N
     topology.vlans[ 'mlag_untagged' ] = { 'id': 1, 'mode': 'bridge' } # Need to allow untagged packets on the peerlink too
     peerlink.vlan.trunk = [ 'mlag_untagged', vlan_name ]
     peerlink.vlan.native = 'mlag_untagged'
-    # TODO: Assign IPs statically here, instead of using 'prefix'
+
+    node_mode = mlag_peer_features.get('vlan_mode','route')
+    if node_mode=='route':                                   # Override 'irb' mode at each mlag peer node
+      for intf in peerlink.interfaces:
+        intf.vlan.trunk[vlan_name].vlan.mode = 'route'
+
     if log.debug_active('lag'):
       print(f'create_peer_vlan: {vlan_name} = {vlan}')
 
@@ -289,7 +294,6 @@ def create_peer_links(peerlink: Box, mlag_pairs: dict, topology: Box) -> bool:
   first_pair : typing.List[str] = []
   for idx,member in enumerate(peerlink.lag.members):
     if idx==0:
-      
       first_pair = [ i.node for i in member.interfaces ]
       node = topology.nodes[ first_pair[0] ]
       if node.device != topology.nodes[ first_pair[1] ].device:     # Check that both are the same device type
