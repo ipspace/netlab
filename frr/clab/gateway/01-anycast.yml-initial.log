@@ -52,8 +52,8 @@ TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [dut]
 ok: [h1]
 ok: [h2]
-ok: [x1]
 ok: [th]
+ok: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
@@ -101,62 +101,6 @@ ok: [x1]
 ok: [th]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [th] => 
-  msg: |-
-    initial configuration for th
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.44.5/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.44.5/24 dev eth1
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
-    set +e
-    ip -6 addr del 2001:db8:cafe:44::5/64 dev eth1 2>/dev/null
-    set -e
-    ip -6 addr add 2001:db8:cafe:44::5/64 dev eth1
-    ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.2.0.0/24 2>/dev/null; do
-      : ; done
-    #
-    #
-    echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.44.1 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.44.1 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.44.1 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.44.1 dev eth1 protocol static
-    #
-    # Print the final routing table
-    ip route
 ok: [dut] => 
   msg: |-
     initial configuration for dut
@@ -427,6 +371,62 @@ ok: [h2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [th] => 
+  msg: |-
+    initial configuration for th
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.44.5/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.44.5/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:cafe:44::5/64 dev eth1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:cafe:44::5/64 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.44.1 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.44.1 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.44.1 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.44.1 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
 ok: [x1] => 
   msg: |-
     initial configuration for x1
@@ -559,21 +559,21 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for dut, h1, h2, x1
 
 TASK [template] ****************************************************************
-changed: [h1]
-changed: [dut]
-changed: [h2]
 changed: [x1]
+changed: [h2]
+changed: [dut]
+changed: [h1]
 
 TASK [set_fact] ****************************************************************
-ok: [h1]
 ok: [dut]
+ok: [h1]
 ok: [h2]
 ok: [x1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [h1]
-changed: [dut]
 changed: [h2]
+changed: [dut]
 changed: [x1]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
@@ -600,7 +600,7 @@ skipping: [th]
 TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [th -> localhost]
 
-TASK [Remove temporary file /tmp/th_initial-tais43jm.sh] ***********************
+TASK [Remove temporary file /tmp/th_initial-mmd8dn0k.sh] ***********************
 changed: [th -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
@@ -771,16 +771,16 @@ skipping: [h2]
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for dut, x1
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [dut]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
 ok: [x1]
 
 TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/frr.j2] ***
-changed: [x1]
 changed: [dut]
+changed: [x1]
 
 TASK [run vtysh to import vlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/frr.j2] ***
 skipping: [dut]
