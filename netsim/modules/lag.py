@@ -355,6 +355,26 @@ def populate_mlag_peer(node: Box, intf: Box, topology: Box) -> None:
   
   intf.pop('vlan',None)                                                     # Remove any VLANs provisioned on peerlinks
 
+def check_bridge_links(topology: Box) -> None:
+  err_cache: dict = {}
+  for link in topology.links:
+    if '_virtual_lag' not in link:
+      continue
+
+    if 'bridge' not in link:
+      continue
+
+    nodes = sorted([ intf.node for intf in link.interfaces ])
+    n_text = " and ".join(nodes)
+    if n_text in err_cache:
+      continue
+
+    log.warning(
+      text=f'The LAG link between {n_text} is using a Linux bridge. LACP will not work',
+      more_hints = [ 'See https://netlab.tools/module/lag/#lag-multi-provider for more details' ],
+      module='lag',
+      flag='lag.bridge')
+
 class LAG(_Module):
 
   """
@@ -402,6 +422,7 @@ class LAG(_Module):
   def module_post_transform(self, topology: Box) -> None:
     if log.debug_active('lag'):
       print(f'LAG module_post_transform: Cleanup "virtual_lag" links')
+    check_bridge_links(topology)
     topology.links = [ link for link in topology.links if '_virtual_lag' not in link ]
 
   """
