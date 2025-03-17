@@ -315,9 +315,13 @@ def warning(*,
   if flag_value is False:
     return
 
+  if 'category' not in kwargs:
+    kwargs['category'] = Warning
+
   # Add the 'this is how you disable this warning' hint
   #
-  q_hint = f'Set {flag} to False to hide this warning'                    # The 'disable me' hint
+  q_disable = 'hide this warning' if kwargs['category'] is Warning else 'disable this check'
+  q_hint = f'Set {flag} to False to {q_disable}'                          # The 'disable me' hint
   c_hint = kwargs.get('more_hints',None)                                  # The caller hint
   if c_hint in _HINTS_CACHE:                                              # Was the caller hint already displayed?
     c_hint = None
@@ -335,7 +339,7 @@ def warning(*,
     if q_hint:                                                            # If we managed to squeeze in our hint...
       _HINTS_CACHE.append(q_hint)                                         # ... make sure we don't do it twice
 
-  error(text,category=Warning,module=module,**kwargs)                     # And finally, generate the warning
+  error(text,module=module,**kwargs)                                      # And finally, generate the warning
   if c_hint:                                                              # ... and add the caller hint (if any)
     _HINTS_CACHE.append(c_hint)                                           # ... to the displayed hints
 
