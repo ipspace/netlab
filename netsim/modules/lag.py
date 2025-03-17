@@ -246,6 +246,8 @@ def create_peer_vlan(peerlink: Box, mlag_peer_features: Box, topology: Box) -> N
   if 'vlan' in mlag_peer_features:                           # Check if device supports an explicit peering VLAN
     vlan_name = f"peervlan_{ peerlink[PEERLINK_ID_ATT] }"
     vlan = data.get_box({ 'id': mlag_peer_features.vlan, 'mode': 'irb' })
+    if 'stp' in topology.module:
+      vlan.stp.disable = True
     lag_peervlan_attr = list(topology.defaults.lag.attributes.lag_peervlan_attr)
     for a in list(peerlink.keys()):
       if a in lag_peervlan_attr:                             # Move all l3 attributes to the vlan interface
@@ -262,11 +264,16 @@ def create_peer_vlan(peerlink: Box, mlag_peer_features: Box, topology: Box) -> N
         log.error( f'Custom pool {vlan.pool} on MLAG peerlink {peerlink._linkname} must enable ipv6 LLA',
           category=log.IncorrectValue,
           module='lag')
-    topology.vlans[ vlan_name ] = vlan
-    topology.vlans[ 'mlag_untagged' ] = { 'id': 1, 'mode': 'bridge' } # Need to allow untagged packets on the peerlink too
-    peerlink.vlan.trunk = [ 'mlag_untagged', vlan_name ]
-    peerlink.vlan.native = 'mlag_untagged'
 
+    # Need to allow untagged packets on the peerlink too. Use existing untagged vlan if possible
+    untagged = [ (vname,vdata) for vname,vdata in topology.vlans.items() if vdata.id==1 ]
+    if not untagged:
+      untagged = [('mlag_untagged',{ 'id': 1, 'mode': 'bridge' })]
+      topology.vlans[ untagged[0][0] ] = untagged[0][1]
+    peerlink.vlan.trunk = [ untagged[0][0], vlan_name ]
+    peerlink.vlan.native = untagged[0][0]
+
+    topology.vlans[ vlan_name ] = vlan
     node_mode = mlag_peer_features.get('vlan_mode','route')
     if node_mode=='route':                                   # Override 'irb' mode at each mlag peer node
       for intf in peerlink.interfaces:
@@ -275,10 +282,6 @@ def create_peer_vlan(peerlink: Box, mlag_peer_features: Box, topology: Box) -> N
     if log.debug_active('lag'):
       print(f'create_peer_vlan: {vlan_name} = {vlan}')
 
-  if 'prefix' not in peerlink:
-    peerlink.prefix = False
-  peerlink.lag.ifindex = mlag_peer_features.get('ifindex',0) # Set lag.ifindex, default to 0 if not provided
-  topology.links[peerlink.linkindex-1] = peerlink            # Update topology
   if log.debug_active('lag'):
     print(f'create_peer_vlan: peerlink = {peerlink}')
 
@@ -306,7 +309,12 @@ def create_peer_links(peerlink: Box, mlag_pairs: dict, topology: Box) -> bool:
         return False
       ifname = strings.eval_format(mlag_features.get('ifname','peerlink'),mlag_features)
       peerlink.interfaces = [ { 'node': i.node, 'ifname': ifname, '_type': 'lag' } for i in member.interfaces ]
+      peerlink.lag.ifindex = mlag_features.get('ifindex',0)         # Set lag.ifindex, default to 0 if not provided
       create_peer_vlan(peerlink, mlag_features, topology)
+      if 'prefix' not in peerlink:
+        peerlink.prefix = False
+
+      topology.links[peerlink.linkindex-1] = peerlink               # Update topology
       mlag_pairs[ first_pair[0] ] = first_pair[1]                   # Keep track of mlag peers
       mlag_pairs[ first_pair[1] ] = first_pair[0]
     else:
