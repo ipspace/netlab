@@ -1056,82 +1056,29 @@ The link.gateway.ipv4/link.gateway.ipv6 attributes are not copied into
 node-on-link data automatically, so we need an extra step after assigning the
 link gateway IP (based on gateway.id)
 
-Please note that the link gateway IP has to be propagated only to nodes that use
-the gateway module to avoid confusion in configuration templates.
+Please note that:
+
+* Links that have no gateway nodes attached to them might have 'gateway' set to
+  True/False
+* The link gateway IP has to be propagated only to nodes that use the gateway
+  module to avoid confusion in configuration templates.
+* The whole gateway structure is copied into host interface data to get static
+  routing on VLANs working correctly
 '''
 def copy_link_gateway(link: Box, nodes: Box) -> None:
   if 'gateway' not in link:
     return
   for intf in link.interfaces:                              # Copy link gateway into interface attributes
-    if 'gateway' not in nodes[intf.node].get('module',[]):  # ... but only for nodes using the gateway module
+    if isinstance(link.gateway,Box) and nodes[intf.node].get('role','') == 'host':
+      intf.gateway = link.gateway                           # Copy usable gateway data into host interfaces
+      continue
+    if 'gateway' not in nodes[intf.node].get('module',[]):  # ... or nodes using the gateway module
       continue
     if intf.get('gateway',None) is False:                   # Skip interfaces where gateway is explicitly turned off
       continue
     for af in log.AF_LIST:
       if af in link.gateway:
         intf.gateway[af] = link.gateway[af]
-
-'''
-set_default_gateway -- copy link default gateway into host interface data
-
-We're almost done with the link processing. The link data is complete and the
-node interfaces have been created. As the last step, we find links that have
-host attached and copy link gateway IP address into host interface data -- but
-only for the first host interface.
-
-For links without they 'gateway' attribute, we take the IPv4 address of the
-first device that is not a host and that does not use DHCP as the link gateway
-IPv4 address.
-
-Please note we can't do this step before the node interfaces have been created
-because we don't know what the "first interface" is before that.
-
-Finally, while the code might copy 'gateway.ipv6' into interface data if it was
-set somewhere else, we don't expect that to be used. IPv6 should use RA.
-'''
-def set_default_gateway(link: Box, nodes: Box) -> None:
-  if not 'host_count' in link:      # No hosts attached to the link, get out
-    return
-  link.pop('host_count',None)
-
-  # No IPv4 prefix on the link or unnumbered IPv4 link
-  if not link.prefix or 'ipv4' not in link.prefix or isinstance(link.prefix.ipv4,bool):
-    return
-
-  if log.debug_active('links'):
-    print(f'Set DGW for {link}')
-  if not 'gateway' in link:                               # Do we have first-hop gateway on the link?
-    for ifdata in link.interfaces:                        # Nope, iterate over interfaces, find routers running IPv4
-      if nodes[ifdata.node].get('role','') != 'host' and ifdata.get('ipv4',False):
-        if ifdata.get('dhcp.client.ipv4',False):
-          continue                                        # Skip routers running DHCP clients
-        link.gateway.ipv4 = ifdata.ipv4                   # Remember the router's IPv4 address
-        if ifdata.ipv4 is not True:                       # ... and if it's not unnumbered
-          break                                           # ... get out, we found it
-
-    if link.get('gateway.ipv4',None) is True:             # Did we find an unnumbered IPv4 address?
-      log.error(                                          # Complain...
-        text=f'Hosts cannot be attached to subnets where all routers have unnumbered interfaces (found in {link._linkname})',
-        category=log.IncorrectValue,
-        module='links')
-      link.pop('gateway',None)                            # ... and remove it, it's useless
-
-  elif link.gateway is False:
-    return
-
-  if not 'gateway' in link or not isinstance(link.gateway,Box) or not 'ipv4' in link.gateway: # Didn't find a usable gateway, exit
-    if log.debug_active('links'):
-      print('... not found')
-    return
-
-  if log.debug_active('links'):
-    print(f'... DGW: {link.gateway}')
-
-  for ifdata in link.interfaces:                          # Copy link gateway to all hosts attached to the link
-    if nodes[ifdata.node].get('role','') == 'host':       # Set gateway only for hosts
-      for interface in nodes[ifdata.node].interfaces:     # Find the corresponding host interface
-        if link.linkindex == interface.linkindex:
-          interface.gateway = link.gateway                # Copy link gateway to host interface
 
 """
 Set node.af flags to indicate that the node has IPv4 and/or IPv6 address family configured
@@ -1288,7 +1235,6 @@ def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools:
     cleanup_link_interface_AF_entries(link)
     if defaults.warnings.duplicate_address:
       check_duplicate_address(link)
-    set_default_gateway(link,nodes)
 
   interface_feature_check(nodes,defaults)
   set_node_af(nodes)
@@ -1298,5 +1244,5 @@ def cleanup(topology: Box) -> None:
   if not 'links' in topology:
     return
 
-#  for link in topology.links:
-#    link.pop('_linkname',None)
+  for link in topology.links:
+    link.pop('host_count',None)
