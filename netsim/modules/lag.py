@@ -266,9 +266,9 @@ def create_peer_vlan(peerlink: Box, mlag_peer_features: Box, topology: Box) -> N
           module='lag')
 
     # Need to allow untagged packets on the peerlink too. Use existing untagged vlan if possible
-    untagged = [ (vname,vdata) for vname,vdata in topology.vlans.items() if vdata.id==1 ]
+    untagged = [ (vname,vdata) for vname,vdata in topology.vlans.items() if vdata and vdata.get('id',None)==1 ]
     if not untagged:
-      untagged = [('mlag_untagged',{ 'id': 1, 'mode': 'bridge' })]
+      untagged = [('mlag_untagged',{ 'id': 1, 'mode': 'bridge', 'prefix': False })]
       topology.vlans[ untagged[0][0] ] = untagged[0][1]
     peerlink.vlan.trunk = [ untagged[0][0], vlan_name ]
     peerlink.vlan.native = untagged[0][0]
