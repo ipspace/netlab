@@ -84,10 +84,10 @@ def transform_data(topology: Box) -> None:
     augment.plugin.execute('post_link_transform',topology)
 
   modules.post_link_transform(topology)
+  augment.nodes.post_link_transform(topology)
 
 def post_transform(topology: Box) -> None:
   augment.validate.process_validation(topology)
-  augment.nodes.post_transform(topology)
   modules.post_transform(topology)
   augment.plugin.execute('post_transform',topology)
   augment.groups.node_config_templates(topology)

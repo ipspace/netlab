@@ -1163,50 +1163,6 @@ def check_mixed_native_trunk(node: Box, topology: Box) -> None:
       more_data=f'Found on interface {intf.ifname} ({intf.name})')
 
 """
-fix_vlan_gateways -- set VLAN-wide gateway IP
-
-The link augmentation code sets gateway IP for hosts connected to physical links. That approach does not work
-for VLAN subnets stretched across multiple physical links. We have to fix that here based on host neighbor list.
-
-We have to do a two-step process because the first-hop gateway is not applied consistently on every segment of the 
-VLAN (because a VLAN is modeled as a number of link).
-"""
-def fix_vlan_gateways(topology: Box) -> None:
-  for node in topology.nodes.values():
-    if node.get('role') != 'host':                                    # Fix first-hop gateways only for hosts
-      continue
-    for intf in node.get('interfaces',[]):                            # Iterate over all interfaces
-      if not intf.get('ipv4',None):                                   # ... that are IP interfaces
-        continue
-      if intf.get('gateway.ipv4',None):                               # ... that don't already have an IPv4 gateway
-        continue
-
-      gw_found = False
-      for neighbor in intf.get('neighbors',[]):                       # Iterate over all neighbors trying to find first-hop gateway
-        if not neighbor.get('gateway.ipv4',None):                     # ... does the neighbor have first-hop gateway set?
-          continue                                                    # ... nope, keep going
-
-        n_node = topology.nodes[neighbor.node]
-        if n_node.get('role') == 'host':                              # Check whether the neighbor is a host
-          continue                                                    # ... don't trust gateway information coming from another host
-
-        gw_found = True                                               # Found a first-hop gateway on a non-host. Mission Accomplished
-        intf.gateway.ipv4 = neighbor.gateway.ipv4                     # ... copy it and get out of here
-        break
-
-      if gw_found:                                                    # Found the first-hop gateway, no need for additional work
-        break
-
-      for neighbor in intf.get('neighbors',[]):                       # Another iteration, now desperately looking at neighbor IPv4 addresses
-        if not neighbor.get('ipv4',False):                            # Does the neighbor have a usable IPv4 address?
-          continue                                                    # ... nope, move on
-
-        n_node = topology.nodes[neighbor.node]
-        if n_node.get('role') != 'host':                              # Use the neighbor IPv4 address only if it's not another host
-          intf.gateway.ipv4 = neighbor.ipv4                           # Set that address as our gateway
-          break                                                       # ... and get out of here
-
-"""
 populate_node_vlan_data -- merge topology VLANs into node VLANs that were copied from groups.node_data
 
 This routine is just an iteration wrapper around populate_node_vlan
@@ -1466,7 +1422,6 @@ class VLAN(_Module):
     topology.links = [ link for link in topology.links if link.type != 'vlan_member' ]
 
     cleanup_vlan_flags(topology)
-    fix_vlan_gateways(topology)
 
   """
   Final cleanup of interface data: restore neighbors and regenerate descriptions

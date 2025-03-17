@@ -793,26 +793,84 @@ def resolve_node_nexthop(sr_data: Box, node: Box, topology: Box) -> Box:
   return nh
 
 """
+Create the gateway-of-last-resort: for all missing address families:
+
+* Iterate over interface neighbors
+* Skip neighbors that are not routers
+* Skip neighbors that have no usable IP address (LLA/unnumbered does not count)
+* Skip neighbors that use DHCP clients
+
+If anything is left, use that as the gateway of last resort
+"""
+def create_gateway_last_resort(intf: Box, missing_af: Box, topology: Box) -> typing.Tuple[Box,bool]:
+  gw_data = data.get_empty_box()
+  unnum_ngb = False
+
+  for af in list(missing_af.keys()):                        # Iterate over all missing AFs
+    for ngb in intf.neighbors:                              # Iterate over all interface neighbors
+      n_node = topology.nodes[ngb.node]
+      if n_node.get('role') == 'host':                      # Host neighbors are useless
+        continue
+      if af not in ngb:                                     # Does the neighbor have an address in desired AF?
+        continue
+      if ngb[af] is True:                                   # Do we have an unnumbered neighbor?
+        unnum_ngb = True                                    # Mark that we found a fishy neighbor
+        continue
+      if not isinstance(ngb[af],str):                       # Is the neighbor IP address a real address?
+        continue
+      if ngb.get(f'dhcp.client.{af}',False):                # Is neighbor using a DHCP client?
+        continue
+      gw_data[af] = ngb[af]                                 # Use neighbor as the gateway of last resort
+      missing_af.pop(af,None)                               # One less AF to worry about
+      break                                                 # And get out of the neighbor loop
+
+  if gw_data:
+    intf.gateway = gw_data                                  # Store the cached data
+  return (gw_data,unnum_ngb)                                # ... and return it together with fishy ngb flag
+
+"""
 When a static route uses a default gateway as a next hop, we have to resolve
 that into IPv4/IPv6 addresses. This function returns a list of default gateway
 next hops (IPv4/IPv6/intf).
 
 Please note that the next-hop list is returned as the 'nhlist' attribute of the
 'nexthop' data structure.
+
+Finally, this function can be called twice, first trying to get the configured
+gateway data (using the "gateway" module), and if that fails with a desperate
+call to get the gateway of last resort (create_gw set to True).
+
+The "gateway of last resort" functionality tries to find the first usable
+adjacent router (one per AF, potentially on different interfaces) and uses
+that as the next hop for the 'gateway' static routes. The collected information
+is added to the interface data to speed up the lookup for subsequent static
+route entries.
 """
-def resolve_gateway_nexthop(sr_data: Box, node: Box, topology: Box) -> Box:
+def resolve_gateway_nexthop(sr_data: Box, node: Box, topology: Box, create_gw: bool = False) -> Box:
   nh = data.get_empty_box()
   nh_vrf = sr_data.nexthop.vrf if 'vrf' in sr_data.nexthop else sr_data.get('vrf',None)
 
+  found_unnum_ngb = False
+  if create_gw:                                         # This is a desperate call for gateway-of-last-resort
+    missing_af = data.get_box(node.af)                  # ... so we need to keep the track of missing AFs
+
   for intf in node.interfaces:
+    if intf.get('vrf',None) != nh_vrf:                  # Skip interfaces in wrong VRFs
+      continue
+
     gw_data = intf.get('gateway',{})                    # Do we have the gateway information on the interface?
     if not gw_data:                                     # It might not be present on routers using static routes
       gw_list = [ ngb.gateway for ngb in intf.neighbors if 'gateway' in ngb ]
       if gw_list:                                       # ... so we try to get the information from the neighbors
         gw_data = gw_list[0]                            # ... using the 'gateway' module
+        intf.gateway = gw_data                          # ... and cache it for further use
 
     if not gw_data:                                     # No usable gateway information
-      continue
+      if create_gw:                                     # Are we trying to set up gateway of last resort?
+        (gw_data,u_ngb) = create_gateway_last_resort(intf,missing_af,topology)
+        found_unnum_ngb = found_unnum_ngb or u_ngb
+        if not gw_data:                                 # Found no useful gateway of last resort
+          continue                                      # ... move to the next interface
 
     gw_addr = extract_af_info(gw_data,keep_prefix=False)
     nh_data = create_nexthop_data(sr_data,gw_addr,intf)
@@ -821,6 +879,15 @@ def resolve_gateway_nexthop(sr_data: Box, node: Box, topology: Box) -> Box:
 
   if nh:
     extract_nh_from_list(nh)
+  else:
+    if found_unnum_ngb and '_unnum_warning' not in node:
+      log.warning(
+        text=f'Host {node.name} is attached only to subnets where all routers have unnumbered interfaces',
+        category=log.MissingValue,
+        module='routing',
+        flag='host_gw',
+        hint='host_gw')
+      node._unnum_warning = True
 
   return nh
 
@@ -926,10 +993,13 @@ def check_static_routes(idx: int,o_name: str,node: Box,topology: Box) -> None:
     return
 
   if 'nexthop' not in sr_data:
-    log.error(
-      f'Static route "{get_static_route_id(sr_data)}" in node {node.name} has no next hop information',
-      category=log.MissingValue,
-      module='routing')
+    if '_skip_missing' in sr_data:
+      sr_data.remove = True
+    else:
+      log.error(
+        f'Static route "{get_static_route_id(sr_data)}" in node {node.name} has no next hop information',
+        category=log.MissingValue,
+        module='routing')
     return
 
   if 'vrf' in sr_data or 'vrf' in sr_data.nexthop:
@@ -939,7 +1009,10 @@ def check_static_routes(idx: int,o_name: str,node: Box,topology: Box) -> None:
   if sr_data.nexthop.get('node',None):
     sr_data.nexthop = resolve_node_nexthop(sr_data,node,topology) + sr_data.nexthop
   elif sr_data.nexthop.get('gateway',None):
-    sr_data.nexthop = resolve_gateway_nexthop(sr_data,node,topology) + sr_data.nexthop
+    gw_nh = resolve_gateway_nexthop(sr_data,node,topology)
+    if not gw_nh:
+      gw_nh = resolve_gateway_nexthop(sr_data,node,topology,create_gw=True)
+    sr_data.nexthop = gw_nh + sr_data.nexthop
   elif 'ipv4' in sr_data.nexthop or 'ipv6' in sr_data.nexthop:
     resolve_nexthop_intf(sr_data,node,topology)
 
@@ -948,11 +1021,14 @@ def check_static_routes(idx: int,o_name: str,node: Box,topology: Box) -> None:
       continue
     
     if af not in sr_data.nexthop:
-      log.error(
-        f'A static route for {sr_data[af]} on node {node.name} has no {af} next hop',
-        more_data=str(sr_data),
-        category=log.MissingValue,
-        module='routing')
+      if '_skip_missing' in sr_data:
+        sr_data.remove = True
+      else:
+        log.error(
+          f'A static route for {sr_data[af]} on node {node.name} has no {af} next hop',
+          more_data=str(sr_data),
+          category=log.MissingValue,
+          module='routing')
       return
 
   if 'nhlist' in sr_data.nexthop:

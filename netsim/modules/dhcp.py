@@ -4,7 +4,7 @@
 import typing
 from box import Box
 
-from . import _Module,_routing
+from . import _Module,_routing,routing
 from ..utils import log, strings, routing as _rp_utils
 from .. import data
 from ..augment import devices
@@ -114,6 +114,18 @@ def check_protocol_support(node: Box, topology: Box) -> bool:
   return OK
 
 '''
+get_gateway_data: Fetch the IPv4 default gateway data from vlan/link or
+call the routing module "get me default gateway of last resort" function
+'''
+def get_gateway_data(link: Box, topology: Box) -> Box:
+  if isinstance(link.get('gateway',None),Box):
+    return link.gateway
+  
+  ifdata = data.get_box({'neighbors': link.get('neighbors',[] )})
+  (gw_data,u_flag) = routing.create_gateway_last_resort(ifdata,data.get_box({'ipv4': True}),topology)
+  return gw_data
+
+'''
 We don't want to build DHCP pools in Jinja2 templates. This function:
 
 * Analyzes all links in the lab topology
@@ -138,13 +150,15 @@ def build_topology_dhcp_pools(topology: Box) -> None:
       continue
 
     pid = strings.make_id(f'vlan_{vname}')
+    gw_data = get_gateway_data(vdata,topology)
+
     for af in log.AF_LIST:
       af_pfx = vdata.get(f'prefix.{af}',None)
       if isinstance(af_pfx,str):
         pools[pid][af] = af_pfx
 
-      if vdata.get(f'gateway.{af}',None):
-        pools[pid].gateway[af] = vdata.gateway[af]
+      if af in gw_data:
+        pools[pid].gateway[af] = _rp_utils.get_intf_address(gw_data[af])
 
     if pid in pools and 'vrf' in vdata:                     # Copy VLAN VRF if we got some usable prefixes
       pools[pid].vrf = vdata.vrf
@@ -184,6 +198,7 @@ def build_topology_dhcp_pools(topology: Box) -> None:
         pools[pid].vrf = link.vrf                           # ... to support VRF-aware DHCP servers
 
     pools[pid].active = True
+    gw_data = get_gateway_data(link,topology)
     for af in log.AF_LIST:                                  # Iterate over link address families
       if af not in link.dhcp.subnet:
         continue                                            # No clients within this AF
@@ -201,8 +216,8 @@ def build_topology_dhcp_pools(topology: Box) -> None:
       else:
         pools[pid][af] = af_pfx                             # New pool, add prefix
 
-      if af in link.get('gateway',{}):                      # Save default gateway if present
-        pools[pid].gateway[af] = _rp_utils.get_intf_address(link.gateway[af])
+      if af in gw_data:                                     # Save default gateway if present
+        pools[pid].gateway[af] = _rp_utils.get_intf_address(gw_data[af])
 
       for intf in link.get('interfaces',[]):                # Now iterate over the interfaces attached to the link
         if af not in intf:                                  # Irrelevant interface, move on

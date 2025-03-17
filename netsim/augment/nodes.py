@@ -454,34 +454,21 @@ def default_static_route_list(topology: Box) -> list:
     if ap_name in ['mgmt','router_id']:
       continue
 
-    if not isinstance(ap_data.get('ipv4',False),str):
-      continue
-
-    sr_list.append(data.get_box({ 'ipv4': ap_data.ipv4 }))
+    for af in ['ipv4','ipv6']:
+      if not isinstance(ap_data.get(af,False),str):
+        continue
+      sr_list.append(data.get_box({ af: ap_data[af], '_skip_missing': True, 'nexthop.gateway': True }))
 
   return sr_list
 
 '''
-Given the global list of static routes, create a host-specific list that
-contains the host default gateway
-'''
-def create_host_static_routes(sr_list: BoxList, intf: Box) -> list:
-  host_list = []
-
-  # Extract next hops from the gateway data structure
-  next_hop = { kw:value.split('/')[0] for (kw,value) in intf.gateway.items() if kw in log.AF_LIST }
-  next_hop['intf'] = intf.ifname
-  next_hop['idx'] = 0
-
-  for sr_entry in sr_list:
-    host_list.append(sr_entry + { 'nexthop': next_hop })
-
-  return host_list
-
-'''
-For all hosts, create 'routing.static' table (unless it exists) that contains IPv4
+For all hosts, create 'routing.static' table (unless it exists) that contains
 static routes to the first usable default gateway for all pool prefixes or for global
 static routes.
+
+* The IPv4 static routes are generated if the node uses IPv4 AF
+* The IPv6 static routes are generated if the node uses IPv6 AF and does not listen
+  to Router Advertisements
 '''
 def add_host_static_routes(topology: Box) -> None:
   sr_list = topology.get('routing.static.host',None)
@@ -496,18 +483,20 @@ def add_host_static_routes(topology: Box) -> None:
     # Premature optimization: create the default static route list only when encountering the first host
     if sr_list is None:
       sr_list = default_static_route_list(topology)
+    
+    features = devices.get_device_features(n_data,topology.defaults)
+    host_af_list = [ af for af in n_data.af if af != 'ipv6' or not features.initial.ipv6_use_ra ]
+    n_data.routing.static = []
+    for af in host_af_list:
+      n_data.routing.static += [ data.get_box(sr_entry) for sr_entry in sr_list if af in sr_entry ]
 
-    for intf in n_data.interfaces:                # Iterate over host interfaces
-      if not intf.get('gateway.ipv4',None):       # Do we have an IPv4 gateway on the interface?
-        continue                                  # ... nope, move on
-
-      n_data.routing.static = create_host_static_routes(sr_list,intf)
+    data.append_to_list(n_data,'module','routing')
 
 '''
 Final node transformation step, executed after the link transformation is done and the
 node interfaces have been created.
 '''
-def post_transform(topology: Box) -> None:
+def post_link_transform(topology: Box) -> None:
   add_host_static_routes(topology)
 
 '''
