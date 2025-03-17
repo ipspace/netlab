@@ -491,6 +491,7 @@ def add_host_static_routes(topology: Box) -> None:
       n_data.routing.static += [ data.get_box(sr_entry) for sr_entry in sr_list if af in sr_entry ]
 
     data.append_to_list(n_data,'module','routing')
+    data.append_to_list(topology,'module','routing')
 
 '''
 Final node transformation step, executed after the link transformation is done and the
