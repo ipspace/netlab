@@ -355,25 +355,36 @@ def populate_mlag_peer(node: Box, intf: Box, topology: Box) -> None:
   
   intf.pop('vlan',None)                                                     # Remove any VLANs provisioned on peerlinks
 
+"""
+Sanity check: virtual LAG links that would have to use a Linux bridge would not work
+
+This function depends on the exact sequence of events during the transformation process:
+
+* LAG module creates extra "virtual lag" links to generate the bond interfaces
+* Multi-provider code marks those links as multi-provider links and adds a "bridge" attribute
+* The sanity check is run before the virtual LAG links are removed
+"""
 def check_bridge_links(topology: Box) -> None:
   err_cache: dict = {}
   for link in topology.links:
-    if '_virtual_lag' not in link:
+    if '_virtual_lag' not in link:                          # Not a virtual LAG link
       continue
 
-    if 'bridge' not in link:
+    if 'bridge' not in link:                                # Not a multi-provider link, we're OK
       continue
 
     nodes = sorted([ intf.node for intf in link.interfaces ])
-    n_text = " and ".join(nodes)
-    if n_text in err_cache:
-      continue
+    n_text = " and ".join(nodes)                            # Find the nodes attached to the link
+    if n_text in err_cache:                                 # Do not create more than one warning
+      continue                                              # ... for a pair of nodes
 
     log.warning(
       text=f'The LAG link between {n_text} is using a Linux bridge. LACP will not work',
       more_hints = [ 'See https://netlab.tools/module/lag/#lag-multi-provider for more details' ],
       module='lag',
       flag='lag.bridge')
+    
+    err_cache[n_text] = True                                # Remember we already warned the user
 
 class LAG(_Module):
 
