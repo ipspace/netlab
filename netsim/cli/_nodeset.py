@@ -11,6 +11,7 @@ import fnmatch
 from box import Box
 from ..utils import log
 from .. import data
+from ..augment import groups
 
 # Is a string a glob expression?
 #
@@ -33,6 +34,15 @@ def add_glob(glob: str, names: list, results: list) -> int:
 Given a nodeset (as a string) and the lab topology, return the list
 of nodes matching the nodeset. Generate errors as appropriate and
 abort if needed.
+
+Nodeset is a comma-separate list of:
+
+* Node names
+* Group names
+* Glob expressions matching node names
+
+The function does its best to maintain the order in which the nodes
+were specified.
 """
 def parse_nodeset(ns: str, topology: Box) -> list:
   n_names = list(topology.nodes.keys())
@@ -41,6 +51,9 @@ def parse_nodeset(ns: str, topology: Box) -> list:
     if is_glob(n_element):
       if not add_glob(n_element,n_names,n_list):
         log.error(f'Wildcard node specification {n_element} does not match any nodes',log.IncorrectValue,'')
+    elif n_element in topology.groups:
+      node_list = groups.group_members(topology,n_element)
+      n_list = n_list + [ n for n in node_list if n not in n_list ]
     else:
       if n_element not in n_names:
         log.error(f'Invalid node name {n_element}',log.IncorrectValue,'')

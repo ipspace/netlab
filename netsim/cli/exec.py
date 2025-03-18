@@ -36,6 +36,11 @@ def exec_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespace, typin
       action='store_true',
       help='Print the hosts and the commands that would be executed on them, but do not execute them')
   parser.add_argument(
+      '--header',
+      dest='header',
+      action='store_true',
+      help='Add node headers before command printouts')
+  parser.add_argument(
       dest='node', action='store',
       help='Node(s) to run command on')
   parser_lab_location(parser,instance=True,action='execute commands in')
@@ -53,21 +58,18 @@ def run(cli_args: typing.List[str]) -> None:
 
   rest = quote_list(rest)    
   topology = load_snapshot(args)
-  selector = args.node
-  args = argparse.Namespace(show=None,verbose=False, quiet=True,Output=True) 
-  if selector in topology.nodes:
-    connect_to_node(node=selector,args=args,rest=rest,topology=topology,log_level=log_level)
-  elif selector in topology.groups:
-    node_list = group_members(topology,selector)
-    for node in node_list:           
-        connect_to_node(node=node,args=args,rest=rest,topology=topology,log_level=log_level)   
-  else:  
-    node_list = _nodeset.parse_nodeset(selector,topology)
-    for node in node_list:
-        connect_to_node(node=node,args=args,rest=rest,topology=topology,log_level=log_level)
-  
- 
+  node_list = _nodeset.parse_nodeset(args.node,topology)
+  p_header = args.header
 
-    
-
-
+  args = argparse.Namespace(show=None,verbose=False,quiet=True,Output=True)
+  for node in node_list:
+    if p_header:
+      print('=' * 80)
+      print(f'{node}: executing {" ".join(rest)}')
+      print('=' * 80)
+    connect_to_node(
+      node=node,
+      args=args,
+      rest=rest,
+      topology=topology,
+      log_level=LogLevel.NONE if p_header else log_level)

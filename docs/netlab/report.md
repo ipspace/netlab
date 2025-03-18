@@ -36,3 +36,7 @@ The **[netlab show reports](netlab-show-reports)** command displays up-to-date l
 * `netlab report bgp-neighbor.md` creates the table of BGP neighbors in Markdown format
 * `netlab report bgp-neighbor.ascii` creates the Markdown BGP neighbors report and renders it as ASCII text using the [rich.markdown](https://rich.readthedocs.io/en/stable/markdown.html) library.
 * `netlab report addressing --node r1,r2` creates addressing report for R1 and R2.
+
+```{tip}
+[**netlab inspect** documentation](netlab-inspect-node) describes how to specify the nodes on which the command will be executed.
+```
