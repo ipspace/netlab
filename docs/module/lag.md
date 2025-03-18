@@ -66,6 +66,7 @@ links:
      ifindex: 50
 ```
 
+(lag-multi-provider)=
 ### Caveat: Multi-provider Labs
 
 _netlab_ implements links between containers and virtual machines with Linux bridges that block LACP packets. Package virtual machines into [vrnetlab](clab-vrnetlab) containers to connect them to pure containers.
