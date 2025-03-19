@@ -486,6 +486,19 @@ def add_host_static_routes(topology: Box) -> None:
     
     features = devices.get_device_features(n_data,topology.defaults)
     host_af_list = [ af for af in n_data.af if af != 'ipv6' or not features.initial.ipv6_use_ra ]
+    if 'dhcp' in topology.get('module',[]):       # If we use DHCP module, we have to scan for the DHCP clients
+      for af in list(host_af_list):          
+        if n_data.get('dhcp.server',False):       # ... unfortunately before the DHCP module post-transform cleanup
+          continue                                # ... so we have to skip known DHCP servers
+        for intf in n_data.interfaces:            
+          if intf.get(f'dhcp.server',None):       # ... as well as DHCP relays
+            continue
+          if intf.get(f'dhcp.client.{af}',None):  # Now check for the DHCP clients
+            host_af_list.remove(af)               # Found a DHCP client interface, remove the AF
+
+    if not host_af_list:                          # Is there anything left to do?
+      continue                                    # Nope, no need to muddy the waters
+
     n_data.routing.static = []
     for af in host_af_list:
       n_data.routing.static += [ data.get_box(sr_entry) for sr_entry in sr_list if af in sr_entry ]
