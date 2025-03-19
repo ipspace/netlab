@@ -304,7 +304,7 @@ def validate_link_vlan_attributes(link: Box,v_attr: Box,topology: Box) -> bool:
                 f'Node {intf.node} is using native VLAN without VLAN trunk\n... {link}',
                 log.IncorrectValue,
                 'vlan')
-            elif not intf.vlan.native in node_trunk:              # ... native VLAN not in trunk, that's not valid
+            elif node_native not in node_trunk:                   # ... native VLAN not in trunk, that's not valid
               log.error(
                 f'Node {intf.node} is using native VLAN that is not defined in its VLAN trunk\n... {link}',
                 log.IncorrectValue,

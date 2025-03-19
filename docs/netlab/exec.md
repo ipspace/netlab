@@ -3,6 +3,8 @@
 
 **netlab exec** command uses information stored in the _netlab_ snapshot file and reported with the **[`netlab inspect --node`](inspect.md)** command to execute a command on one or more lab devices using SSH or **docker exec**.
 
+[**netlab inspect** documentation](netlab-inspect-node) describes how to specify the nodes on which the command will be executed.
+
 ## Usage
 
 ```text
@@ -20,6 +22,7 @@ options:
   -q, --quiet           Report only major errors
   --dry-run             Print the hosts and the commands that would be executed on them,
                         but do not execute them
+  --header              Add node headers before command printouts
   -i INSTANCE, --instance INSTANCE
                         Specify lab instance to execute commands in
 
