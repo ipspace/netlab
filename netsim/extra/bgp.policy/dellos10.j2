@@ -1,0 +1,47 @@
+{#
+  Apply route map to a BGP neighbor
+#}
+{% macro apply_route_map(n,af,rm_per_af=False) -%}
+{%   if 'policy' in n %}
+  address-family {{ af }} unicast
+{%     for direction in [ 'in','out' ] if direction in n.policy %}
+   route-map {{ n.policy[direction] }}{{ '-%s'|format(af) if rm_per_af else '' }} {{ direction }}
+{%     endfor %}
+{%-  endif %}
+{%- endmacro %}
+{% macro ebgp_neighbor(n,af) -%}
+{%   if 'policy' in n or 'weight' in n %}
+{%     set peer = n[af] if n[af] is string else 'interface ' + n.local_if|default('?') %}
+ neighbor {{ peer }}
+{%     if 'weight' in n %}
+  weight {{ n.weight }}
+{%     endif %}
+{{     apply_route_map(n,af,True) }}
+{%   endif %}
+{%- endmacro %}
+!
+router bgp {{ bgp.as }}
+{% if 'locpref' in bgp %}
+  default local-preference {{ bgp.locpref }}
+{% endif %}
+!
+! Neighbors
+{% for af in ['ipv4','ipv6'] if af in bgp %}
+{%   for n in bgp.neighbors if n[af] is defined %}
+{{     ebgp_neighbor(n,af) }}
+{%   endfor %}
+{% endfor %}
+!
+{% if vrfs is defined %}
+{%   for vname,vdata in vrfs.items() if vdata.bgp is defined and vdata.bgp.neighbors is defined %}
+{%     for af in ['ipv4','ipv6'] if af in vdata.af|default({}) %}
+{%       for n in vdata.bgp.neighbors if n[af] is defined %}
+{%         if loop.first %}
+router bgp {{ bgp.as }} vrf {{ vname }}
+{%         endif %}
+{{         ebgp_neighbor(n,af) }}
+{%       endfor %}
+{%     endfor %}
+{%   endfor %}
+{% endif %}
+!
