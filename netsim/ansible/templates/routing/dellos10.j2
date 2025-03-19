@@ -36,14 +36,13 @@ ip community-list {{ c_value.type }} {{ c_name }} {{ c_line.action }} {{ c_line.
 {%   set _nh_vrf = sr_data.nexthop.vrf|default(None) %}
 {%   set _nh_vrf_str = 'vrf ' + _nh_vrf + ' ' if _nh_vrf else '' %}
 {%   set cmd_intf = 'interface ' + sr_data.nexthop.intf + ' ' if 'intf' in sr_data.nexthop else '' %}
-{%   if 'ipv4' in sr_data %}
-ip route {{ _vrf_str }}{{
+{%   for _vrf in [ _vrf_str, _nh_vrf_str ] %}
+{%     if 'ipv4' in sr_data %}
+ip route {{ _vrf }}{{
     sr_data.ipv4|ipaddr('network') }}/{{ sr_data.ipv4|ipaddr('prefix') }} {{ cmd_intf }}{{ sr_data.nexthop.ipv4 }}
-ip route {{ _nh_vrf_str }}{{
-    sr_data.ipv4|ipaddr('network') }}/{{ sr_data.ipv4|ipaddr('prefix') }} {{ cmd_intf }}{{ sr_data.nexthop.ipv4 }}
-{%   endif %}
-{%   if 'ipv6' in sr_data %}
-ipv6 route {{ _vrf_str }}{{ sr_data.ipv6 }} {{ cmd_intf }}{{ sr_data.nexthop.ipv6 }}
-ipv6 route {{ _nh_vrf_str }}{{ sr_data.ipv6 }} {{ cmd_intf }}{{ sr_data.nexthop.ipv6 }}
-{%   endif %}
+{%     endif %}
+{%     if 'ipv6' in sr_data %}
+ipv6 route {{ _vrf }}{{ sr_data.ipv6 }} {{ cmd_intf }}{{ sr_data.nexthop.ipv6 }}
+{%     endif %}
+{%   endfor %}
 {% endfor %}
