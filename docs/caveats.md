@@ -308,6 +308,19 @@ diag debug application httpsd -1
     * On vPTX, the virtual MAC address is ignored. Hence, the integration test is failing. Removing the support for anycast gateway for now.
     * Anycast Gateway cannot be tested on vSRX as it does not support the VLAN IRB configuration.
 
+(caveats-vmx)=
+## Juniper vMX
+
+* vMX can run only as a [_vrnetlab_ container](clab-vrnetlab)
+* vMX requires a license file. By default, _netlab_ downloads the evaluation license for Junos 18.2 from Juniper web site.
+
+You can change the location of the license file with two variables:
+
+* **netlab_license_file** -- the name of a local file containing the relevant vMX license.
+* **netlab_license_url** -- the URL of a license file. The license file will be downloaded and installed to the vMX device. This parameter is used only when the local license file is not specified.
+
+You can change the license file parameters within a node definition or with **defaults.devices.vmx.group_vars._parameter_name_** [system default](topo-defaults).
+
 (caveats-vptx)=
 ## Juniper vPTX
 

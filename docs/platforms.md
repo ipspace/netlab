@@ -30,7 +30,7 @@
 | Fortinet FortiOS [❗](caveats-fortios)    | fortios            |
 | FRRouting (FRR) [❗](caveats-frr)         | frr                |
 | [Generic Linux host](labs/linux.md)       | linux              |
-| Juniper vMX [❗](caveats-junos)             | vmx                |
+| Juniper vMX [❗](caveats-vmx)             | vmx                |
 | Juniper vPTX (vJunos EVO) [❗](caveats-vptx) | vptx               |
 | Juniper vSRX 3.0 [❗](caveats-vsrx)       | vsrx               |
 | vJunos-switch [❗](caveats-vjunos-switch) | vjunos-switch |
