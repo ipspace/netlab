@@ -1,0 +1,45 @@
+{% import '_route_map_ios.j2' as routemap with context %}
+!
+{% if routing.policy|default({}) %}
+{%   call(p_entry,af_list) routemap.create_route_maps(routing.policy) -%}
+{{     routemap.common_route_map_entry(p_entry,af_list) }}
+{%-  endcall %} 
+{% endif %}
+{% if routing.prefix|default({}) %}
+{%   include '_prefix_list_ios.j2' %}
+{% endif %}
+!
+! AS-path access lists
+!
+{% if routing.aspath|default({}) %}
+{%   for asp_name,asp_list in routing.aspath.items() %}
+!
+{%     for asp_line in asp_list %}
+ip as-path access-list {{ routing._numobj.aspath[asp_name] }} {{ asp_line.action }} {{ asp_line.path }}
+{%     endfor %}
+{%   endfor %}
+{% endif %}
+{% if routing.community|default({}) %}
+{%   for c_name,c_value in routing.community.items() %}
+!
+{%     for c_line in c_value.value %}
+ip community-list {{ c_value.type }} {{ c_name }} {{ c_line.action }} {{ c_line._value }}
+{%     endfor %}
+{%   endfor %}
+{% endif %}
+!
+! Static routes (nexthop vrf is implied by interface)
+!
+{% for sr_data in routing.static|default([]) %}
+{%   set cmd_vrf = 'vrf ' + sr_data.vrf + ' ' if 'vrf' in sr_data else '' %}
+{%   set cmd_intf = 'interface ' + sr_data.nexthop.intf + ' ' if 'intf' in sr_data.nexthop else '' %}
+{%   set leak_global = ' global' if sr_data.nexthop.vrf is defined and sr_data.nexthop.vrf is none else '' %}
+{%   if 'ipv4' in sr_data %}
+ip route {{ cmd_vrf }}{{ 
+    sr_data.ipv4|ipaddr('network') }}/{{ sr_data.ipv4|ipaddr('prefix') }} {{ cmd_intf }}{{ sr_data.nexthop.ipv4 }}
+{%   endif %}
+{%   if 'ipv6' in sr_data %}
+{%   set e_vrf = ' nexthop-vrf '+(sr_data.nexthop.vrf or 'default') if 'vrf' in sr_data.nexthop else '' %}
+ipv6 route {{ cmd_vrf }}{{ sr_data.ipv6 }} {{ cmd_intf }}{{ sr_data.nexthop.ipv6 }}
+{%   endif %}
+{% endfor %}
