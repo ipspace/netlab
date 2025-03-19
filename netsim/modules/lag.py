@@ -247,7 +247,7 @@ def create_peer_vlan(peerlink: Box, mlag_peer_features: Box, topology: Box) -> N
     vlan_name = f"peervlan_{ peerlink[PEERLINK_ID_ATT] }"
     vlan = data.get_box({ 'id': mlag_peer_features.vlan, 'mode': 'irb' })
     if 'stp' in topology.module:
-      vlan.stp.disable = True
+      vlan.stp.enable = False
     lag_peervlan_attr = list(topology.defaults.lag.attributes.lag_peervlan_attr)
     for a in list(peerlink.keys()):
       if a in lag_peervlan_attr:                             # Move all l3 attributes to the vlan interface
