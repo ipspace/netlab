@@ -21,18 +21,6 @@
     update-source {{ n._source_intf.ifname }}
 {%   endif %}
 {%   if 'ibgp' in n.type %}
-{%     if bgp.next_hop_self is defined and bgp.next_hop_self %}
-{#
-  In Dell OS10, next-hop-self is configured under AF
-#}
-{%       for af in ['ipv4','ipv6'] if bgp[af] is defined and n._activate[af][af] is defined %}
-!
- address-family {{ af }} unicast
-   next-hop-self
- exit
-{%       endfor %}
-{%     endif -%}
-
 {%     if bgp.rr|default('') and not n.rr|default('') %}
     route-reflector-client
 {%     endif %}
@@ -46,26 +34,22 @@
 {%     endfor %}
 {%   endif %}
 
-{% for af in ['ipv4','ipv6'] if bgp[af] is defined and n._activate[af][af] is defined %}
-!
- address-family {{ af }} unicast
-   soft-reconfiguration inbound
-   activate
- exit
-{% endfor %}
-
+{%   for _af in ['ipv4','ipv6'] %}
+    address-family {{ _af }} unicast
+{%     if n._activate[af][_af] is defined %}
 {#
-  And now, **WTF**, since Dell OS10 cannot disable ipv4 AF by default, we need to:
+         In Dell OS10, next-hop-self is configured under AF
 #}
-{% if n._activate is defined %}
-{# keep default behavior in case n._activate is not defined #}
-{%   if not n._activate['ipv4']['ipv4']|default(False) %}
-!
- address-family ipv4 unicast
-   no activate
- exit
-{%   endif %}
-{% endif %}
+{%       if if 'ibgp' in n.type and bgp.next_hop_self|default(False) %}
+      next-hop-self
+{%       endif %}
+      soft-reconfiguration inbound
+      activate
+{%     else %}
+      no activate
+{%     endif %}
+      exit
+{% endfor %}
   
   {{ 'no ' if not n._shutdown[af]|default(False) else '' }}shutdown
   exit
