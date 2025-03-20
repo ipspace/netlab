@@ -33,6 +33,9 @@ router bgp {{ bgp.as }}
 {%     if af == 'ipv6' and n[af] is string and n.ipv4_rfc8950|default(False) %}
   neighbor {{ peer }} capability extended-nexthop
 {%     endif %}
+{%     if n._shutdown[af] is defined %}
+  neighbor {{ peer }} shutdown
+{%     endif %}
 !
 {%   endfor %}
 {% endfor %}
@@ -57,8 +60,7 @@ router bgp {{ bgp.as }}
 {%   endfor %}
 !
 {%   for n in bgp.neighbors
-       if n[af] is defined 
-         and (n.activate[af] is defined and n.activate[af]) %}
+       if n[af] is defined and n._activate[af][af] is defined %}
 {%     set peer = n[af] if n[af] is string 
                   else n.local_if if n.local_if is defined
                   else n.ipv6 if af == 'ipv4' and n.ipv4_rfc8950 

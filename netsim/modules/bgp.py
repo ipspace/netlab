@@ -14,6 +14,20 @@ from ..data.validate import validate_item
 from ..augment import devices
 from ..utils import log, routing as _rp_utils
 
+def neighbor_activate_af(neighbor: Box, af: str, ip_versions: typing.List[str], flag: str = "") -> None:
+  if af not in ['ipv4','ipv6']:
+    neighbor[af] = flag or True
+  for _ip in ip_versions:
+    neighbor._activate[_ip][af] = True
+
+def neighbor_deactivate_af(neighbor: Box, af: str, ip_versions: typing.List[str]) -> None:
+  if af not in ['ipv4','ipv6']:
+    neighbor.pop(af,None)
+  for _ip in ip_versions:
+    neighbor._activate[_ip].pop(af,None)
+    if neighbor._activate[_ip]=={}:
+      neighbor._activate.pop(_ip,None)
+
 def check_bgp_parameters(node: Box, topology: Box) -> None:
   if not "bgp" in node:  # pragma: no cover (should have been tested and reported by the caller)
     return
@@ -109,7 +123,9 @@ def bgp_neighbor(n: Box, intf: Box, ctype: str, sessions: Box, extra_data: typin
           ngb[af] = intf[af]
         else:
           ngb[af] = _rp_utils.get_intf_address(intf[af])
-
+        neighbor_activate_af(ngb,af,ip_versions=[af])
+  if 'ipv4_rfc8950' in ngb:
+    neighbor_activate_af(ngb,'ipv4_rfc8950',ip_versions=['ipv6'])
   return ngb if af_count > 0 else None
 
 """
@@ -358,7 +374,7 @@ def activate_bgp_default_af(node: Box, activate: Box, topology: Box) -> None:
   for ngb in node.bgp.neighbors:
     for af in ('ipv4','ipv6'):
       if af in ngb:
-        ngb.activate[af] = node.bgp.get(af) and af in activate and ngb.type in activate[af]
+        ngb._activate[af][af] = node.bgp.get(af) and af in activate and ngb.type in activate[af]
 
 """
 Build BGP route reflector clusters
@@ -713,3 +729,18 @@ class BGP(_Module):
     bgp_transform_community_list(node,topology)
     _routing.check_vrf_protocol_support(node,'bgp',None,'bgp',topology)
     _routing.process_imports(node,'bgp',topology,global_vars.get_const('vrf_igp_protocols',['connected']))
+
+  #
+  # Mark neigbors with no active address families as '_shutdown'
+  #
+  def node_cleanup(self, node: Box, topology: Box) -> None:
+    for nb in node.bgp.get('neighbors',[]):
+      for af in ['ipv4','ipv6']:
+        if af not in nb and (af=='ipv4' or 'local_if' not in nb):
+          nb._activate.pop(af,None)
+          continue
+        nb._activate[af] = { k:v for k,v in nb._activate[af].items() if v }  # Remove any 'False' flags
+        if not nb._activate[af]:
+          nb._activate.pop(af,None)
+          if nb[af] is not True:
+            nb._shutdown[af] = True
