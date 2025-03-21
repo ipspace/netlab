@@ -27,6 +27,7 @@ The following table describes high-level per-platform support of generic routing
 | Aruba AOS-CX       | ✅ | ✅ | ✅ | ✅ |
 | Cisco IOS/XE[^18v] | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Cumulus Linux      | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Dell OS10          | ✅ | ✅ | ✅ | ✅ | ✅ |
 | FRR                | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Linux              | ❌  | ❌  | ❌  | ❌  | ✅ |
 | Nokia SR Linux     |  ✅ |  ✅ [❗](caveats-srlinux) |
@@ -103,6 +104,7 @@ You can use these routing policy **match** parameters on devices supported by th
 | Aruba AOS-CX        | ✅ | ❌  | ✅ | ✅ |
 | Cisco IOS/XE[^18v]  | ✅ | ❌  | ✅ | ✅ |
 | Cumulus Linux       | ✅ | ❌  | ✅ | ✅ |
+| Dell OS10           | ✅ | ❌  | ✅ | ✅ |
 | FRR                 | ✅ | ❌  | ✅ | ✅ |
 | Nokia SR Linux      | ✅ |
 | VyOS                | ✅ | ❌  | ✅ | ✅ |
@@ -115,6 +117,7 @@ You can use these routing policy **set** parameters on devices supported by the 
 | Aruba AOS-CX        | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Cisco IOS/XE[^18v]  | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Cumulus Linux       | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Dell OS10           | ✅ | ✅ | ✅ | ✅ | ✅ |
 | FRR                 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Nokia SR Linux      | ❌  | ✅ | ✅ | ❌  | ❌  |
 | Nokia SR OS         | ❌  | ✅ | ✅ | ❌  | ❌  |
@@ -128,6 +131,7 @@ The **set.community** attribute can be used to set these BGP communities on supp
 | Aruba AOS-CX        | ✅ | ❌  | ❌  | ✅ | ✅ |
 | Cisco IOS/XE[^18v]  | ✅ | ❌  | ❌  | ✅ | ❌  |
 | Cumulus Linux       | ✅ | ✅ | ✅ | ✅ | ❌  |
+| Dell OS10           | ✅ | ❌ | ✅ | ✅ | ❌  |
 | FRR                 | ✅ | ✅ | ✅ | ✅ | ❌  |
 | VyOS                | ✅ | ✅ | ✅ | ✅ | ❌  |
 
