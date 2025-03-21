@@ -50,9 +50,9 @@ skipping: [x1]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [dut]
+ok: [r1]
 ok: [r2]
 ok: [rr2]
-ok: [r1]
 ok: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -547,10 +547,10 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, rr2, x1
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [r1]
 changed: [r2]
 changed: [rr2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -560,8 +560,8 @@ ok: [x1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [r2]
-changed: [rr2]
 changed: [r1]
+changed: [rr2]
 changed: [x1]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
@@ -594,8 +594,8 @@ TASK [Find configuration template for bgp] *************************************
 ok: [dut]
 ok: [r1]
 ok: [r2]
-ok: [rr2]
 ok: [x1]
+ok: [rr2]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -663,55 +663,85 @@ ok: [r1] =>
     ip route 172.0.42.0/24 Null0
     !
     do write
-ok: [r2] => 
+ok: [dut] => 
   msg: |-
-    bgp configuration for r2
+    bgp configuration for dut
     =========================================
-    !
-    router bgp 65000
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
+    - set:
+        router:
+          bgp:
+            enable: on
+            autonomous-system: 65000
+            router-id: 10.0.0.1
+    - set:
+        vrf:
+          default:
+            router:
+              bgp:
+                enable: on
+                autonomous-system: 65000
+                router-id: 10.0.0.1
+                route-reflection:
+                  enable: on
+                  cluster-id: 10.0.0.42
+                address-family:
+                  ipv4-unicast:
+                    enable: on
   
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
+                    network:
+                      10.0.0.1/32: {}
+                neighbor:
+                  10.0.0.2:
+                    description: "rr2"
+                    update-source: lo
+                    remote-as: internal
+                    address-family:
+                      ipv4-unicast:
+                        enable: on
+                        nexthop-setting: self
+                        community-advertise:
+                          regular: on
+                          extended: on
+                          large: off
   
-      bgp router-id 10.0.0.3
-    !
-      neighbor 10.0.0.1 remote-as 65000
-      neighbor 10.0.0.1 description dut
-      neighbor 10.0.0.1 update-source lo
-    !
-      neighbor 10.0.0.2 remote-as 65000
-      neighbor 10.0.0.2 description rr2
-      neighbor 10.0.0.2 update-source lo
-    !
-     address-family ipv4 unicast
-    !
+                  10.0.0.10:
+                    description: "r1"
+                    update-source: lo
+                    remote-as: internal
+                    address-family:
+                      ipv4-unicast:
+                        enable: on
+                        nexthop-setting: self
+                        route-reflector-client: on
+                        community-advertise:
+                          regular: on
+                          extended: on
+                          large: off
   
-    !
-      network 10.0.0.3/32
-    !
-    !
-    !
-      neighbor 10.0.0.1 activate
-      neighbor 10.0.0.1 next-hop-self
-      no neighbor 10.0.0.1 send-community all
-      neighbor 10.0.0.1 send-community standard
-      neighbor 10.0.0.1 send-community large
-      neighbor 10.0.0.1 send-community extended
-    !
-      neighbor 10.0.0.2 activate
-      neighbor 10.0.0.2 next-hop-self
-      no neighbor 10.0.0.2 send-community all
-      neighbor 10.0.0.2 send-community standard
-      neighbor 10.0.0.2 send-community large
-      neighbor 10.0.0.2 send-community extended
-    !
-    !
-    !
-    do write
+                  10.0.0.3:
+                    description: "r2"
+                    update-source: lo
+                    remote-as: internal
+                    address-family:
+                      ipv4-unicast:
+                        enable: on
+                        nexthop-setting: self
+                        route-reflector-client: on
+                        community-advertise:
+                          regular: on
+                          extended: on
+                          large: off
+  
+                  10.1.0.14:
+                    description: "x1"
+                    remote-as: 65101
+                    address-family:
+                      ipv4-unicast:
+                        enable: on
+                        community-advertise:
+                          regular: on
+                          extended: off
+                          large: off
 ok: [rr2] => 
   msg: |-
     bgp configuration for rr2
@@ -810,85 +840,55 @@ ok: [x1] =>
     !
     !
     do write
-ok: [dut] => 
+ok: [r2] => 
   msg: |-
-    bgp configuration for dut
+    bgp configuration for r2
     =========================================
-    - set:
-        router:
-          bgp:
-            enable: on
-            autonomous-system: 65000
-            router-id: 10.0.0.1
-    - set:
-        vrf:
-          default:
-            router:
-              bgp:
-                enable: on
-                autonomous-system: 65000
-                router-id: 10.0.0.1
-                route-reflection:
-                  enable: on
-                  cluster-id: 10.0.0.42
-                address-family:
-                  ipv4-unicast:
-                    enable: on
+    !
+    router bgp 65000
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
   
-                    network:
-                      10.0.0.1/32: {}
-                neighbor:
-                  10.0.0.2:
-                    description: "rr2"
-                    update-source: lo
-                    remote-as: internal
-                    address-family:
-                      ipv4-unicast:
-                        enable: on
-                        nexthop-setting: self
-                        community-advertise:
-                          regular: on
-                          extended: on
-                          large: off
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
   
-                  10.0.0.10:
-                    description: "r1"
-                    update-source: lo
-                    remote-as: internal
-                    address-family:
-                      ipv4-unicast:
-                        enable: on
-                        nexthop-setting: self
-                        route-reflector-client: on
-                        community-advertise:
-                          regular: on
-                          extended: on
-                          large: off
+      bgp router-id 10.0.0.3
+    !
+      neighbor 10.0.0.1 remote-as 65000
+      neighbor 10.0.0.1 description dut
+      neighbor 10.0.0.1 update-source lo
+    !
+      neighbor 10.0.0.2 remote-as 65000
+      neighbor 10.0.0.2 description rr2
+      neighbor 10.0.0.2 update-source lo
+    !
+     address-family ipv4 unicast
+    !
   
-                  10.0.0.3:
-                    description: "r2"
-                    update-source: lo
-                    remote-as: internal
-                    address-family:
-                      ipv4-unicast:
-                        enable: on
-                        nexthop-setting: self
-                        route-reflector-client: on
-                        community-advertise:
-                          regular: on
-                          extended: on
-                          large: off
-  
-                  10.1.0.14:
-                    description: "x1"
-                    remote-as: 65101
-                    address-family:
-                      ipv4-unicast:
-                        enable: on
-                        community-advertise:
-                          regular: on
-                          extended: off
-                          large: off
+    !
+      network 10.0.0.3/32
+    !
+    !
+    !
+      neighbor 10.0.0.1 activate
+      neighbor 10.0.0.1 next-hop-self
+      no neighbor 10.0.0.1 send-community all
+      neighbor 10.0.0.1 send-community standard
+      neighbor 10.0.0.1 send-community large
+      neighbor 10.0.0.1 send-community extended
+    !
+      neighbor 10.0.0.2 activate
+      neighbor 10.0.0.2 next-hop-self
+      no neighbor 10.0.0.2 send-community all
+      neighbor 10.0.0.2 send-community standard
+      neighbor 10.0.0.2 send-community large
+      neighbor 10.0.0.2 send-community extended
+    !
+    !
+    !
+    do write
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for dut
@@ -913,10 +913,10 @@ TASK [execute on cumulus: 'nv config apply -y' for bgp config] *****************
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [r2]
 changed: [r1]
-changed: [x1]
 changed: [rr2]
+changed: [r2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -931,10 +931,10 @@ skipping: [rr2]
 skipping: [x1]
 
 TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [x1]
+changed: [r1]
 changed: [r2]
 changed: [rr2]
-changed: [r1]
+changed: [x1]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [dut]
@@ -1115,8 +1115,8 @@ TASK [execute on cumulus: 'nv config apply -y' for ospf config] ****************
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [r1]
 changed: [r2]
+changed: [r1]
 changed: [rr2]
 
 TASK [set_fact] ****************************************************************
@@ -1131,8 +1131,8 @@ skipping: [rr2]
 
 TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [r2]
-changed: [r1]
 changed: [rr2]
+changed: [r1]
 
 PLAY [Deploy custom deployment templates] **************************************
 

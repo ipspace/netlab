@@ -12,8 +12,8 @@ ok: [h3]
 ok: [h4]
 
 TASK [Find device readiness script] ********************************************
-ok: [s2]
 ok: [s1]
+ok: [s2]
 ok: [h1]
 ok: [h2]
 ok: [h3]
@@ -55,8 +55,8 @@ skipping: [h3]
 skipping: [h4]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
-ok: [s2]
 ok: [s1]
+ok: [s2]
 ok: [h1]
 ok: [h2]
 ok: [h3]
@@ -165,6 +165,57 @@ ok: [h1] =>
     #
     # Print the final routing table
     ip route
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.2/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.2/24 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.0.5 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.0.5 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.0.5 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.0.5 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
 ok: [h3] => 
   msg: |-
     initial configuration for h3
@@ -213,57 +264,6 @@ ok: [h3] =>
     ip route add 10.0.0.0/24 via 172.16.1.5 dev eth1 protocol static
     ip route add 10.1.0.0/16 via 172.16.1.5 dev eth1 protocol static
     ip route add 10.2.0.0/24 via 172.16.1.5 dev eth1 protocol static
-    #
-    # Print the final routing table
-    ip route
-ok: [h2] => 
-  msg: |-
-    initial configuration for h2
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.0.2/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.0.2/24 dev eth1
-    ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.2.0.0/24 2>/dev/null; do
-      : ; done
-    #
-    #
-    echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.0.6 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.0.6 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.0.6 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.0.6 dev eth1 protocol static
     #
     # Print the final routing table
     ip route
@@ -496,12 +496,12 @@ ok: [s1]
 ok: [s2]
 
 TASK [copy the cumulus nvue YAML initial config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/initial/cumulus_nvue.j2)] ***
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [Wait for nvued to start] *************************************************
-ok: [s2]
 ok: [s1]
+ok: [s2]
 
 TASK [set_fact] ****************************************************************
 ok: [s1]
@@ -512,8 +512,8 @@ changed: [s1]
 changed: [s2]
 
 TASK [execute on cumulus: 'nv config apply -y' for initial config] *************
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
@@ -522,15 +522,15 @@ ok: [h3]
 ok: [h4]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h2 -> localhost]
 changed: [h4 -> localhost]
 changed: [h1 -> localhost]
 changed: [h3 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
+changed: [h1 -> localhost]
 changed: [h4 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
@@ -546,16 +546,16 @@ skipping: [h3]
 skipping: [h4]
 
 TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-x60d2dkh.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-sm28r946.sh] ***********************
 changed: [h2 -> localhost]
-changed: [h1 -> localhost]
 changed: [h4 -> localhost]
 changed: [h3 -> localhost]
+changed: [h1 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -565,6 +565,7 @@ ok: [s2]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=vlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=routing)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=ospf)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=vrf)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=vxlan)
@@ -595,7 +596,6 @@ ok: [s1] =>
           domain:
             br_default:
               type: vlan-aware
-              untagged: none
               vlan:
                 '1001': {}
                 '1000': {}
@@ -624,7 +624,6 @@ ok: [s2] =>
           domain:
             br_default:
               type: vlan-aware
-              untagged: none
               vlan:
                 '1000': {}
   
@@ -663,6 +662,30 @@ changed: [s2]
 TASK [execute on cumulus: 'nv config apply -y' for vlan config] ****************
 changed: [s2]
 changed: [s1]
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [s1]
+ok: [s2]
+
+TASK [Find configuration template for routing] *********************************
+skipping: [s1]
+skipping: [s2]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [s1]
+skipping: [s2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [s1]
+skipping: [s2]
+
+TASK [Deploy routing configuration] ********************************************
+skipping: [s1]
+skipping: [s2]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [s1]
@@ -750,8 +773,8 @@ ok: [s1]
 ok: [s2]
 
 TASK [copy the cumulus nvue YAML ospf config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/cumulus_nvue.j2)] ***
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [Wait for nvued to start] *************************************************
 skipping: [s1]
@@ -762,8 +785,8 @@ ok: [s1]
 ok: [s2]
 
 TASK [execute on cumulus: 'nv config patch' for ospf config] *******************
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [execute on cumulus: 'nv config apply -y' for ospf config] ****************
 changed: [s1]
@@ -908,12 +931,12 @@ ok: [s1]
 ok: [s2]
 
 TASK [execute on cumulus: 'nv config patch' for vrf config] ********************
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [execute on cumulus: 'nv config apply -y' for vrf config] *****************
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [Figure out whether to deploy the module vxlan on current device] *********
 ok: [s1]
@@ -992,8 +1015,8 @@ ok: [s1]
 ok: [s2]
 
 TASK [copy the cumulus nvue YAML vxlan config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/vxlan/cumulus_nvue.j2)] ***
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [Wait for nvued to start] *************************************************
 skipping: [s1]
@@ -1004,8 +1027,8 @@ ok: [s1]
 ok: [s2]
 
 TASK [execute on cumulus: 'nv config patch' for vxlan config] ******************
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [execute on cumulus: 'nv config apply -y' for vxlan config] ***************
 changed: [s1]
@@ -1019,8 +1042,8 @@ h1                         : ok=17   changed=4    unreachable=0    failed=0    s
 h2                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 h3                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 h4                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-s1                         : ok=63   changed=15   unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
-s2                         : ok=63   changed=15   unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
+s1                         : ok=65   changed=15   unreachable=0    failed=0    skipped=18   rescued=0    ignored=0   
+s2                         : ok=65   changed=15   unreachable=0    failed=0    skipped=18   rescued=0    ignored=0   
 
 
 
