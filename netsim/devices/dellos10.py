@@ -74,6 +74,17 @@ def check_vrrp_on_virtual_networks(node:Box, topology: Box) -> None:
         more_data=err_data,
         node=node)
 
+"""
+check_expanded_communities - Check for unsupported 'expanded' communities or regex
+"""
+def check_expanded_communities(node:Box, topology: Box) -> None:
+  for c_name,c_value in node.get('routing.community',{}).items():
+    if c_value.get('type',None) != 'standard':
+      report_quirk(
+        f"Dell OS10 (node {node.name}) does not support communities of type '{c_value.type}'",
+        quirk='non-standard_communities',
+        node=node)
+
 class OS10(_Quirks):
 
   @classmethod
@@ -91,6 +102,8 @@ class OS10(_Quirks):
         check_vrrp_on_virtual_networks(node,topology)
     if 'stp' in mods:
       check_pvrst_on_virtual_networks(node,topology)
+    if 'routing' in mods:
+      check_expanded_communities(node,topology)
 
   def check_config_sw(self, node: Box, topology: Box) -> None:
     need_ansible_collection(node,'dellemc.os10')
