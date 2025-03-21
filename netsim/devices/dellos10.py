@@ -23,6 +23,20 @@ def check_vlan_ospf(node: Box, iflist: BoxList, vname: str) -> None:
       node=node)
 
 """
+check_ospf_originate_default - Check if the topology is using custom 'cost' or 'type' attributes for originated
+                               OSPF default routes, if so warn about lack of support
+"""
+def check_ospf_originate_default(node: Box) -> None:
+  ospf_default = node.get('ospf.default',{})
+  unsupported_atts = ospf_default.keys() - set(['always'])
+  if unsupported_atts:
+    report_quirk( f'node {node.name} uses unsupported ospf.default originate attributes that will be ignored',
+      quirk='ospf_default_unsupported_attributes',
+      category=Warning,
+      more_data=sorted(unsupported_atts),
+      node=node)
+
+"""
 check_anycast_gateways - check that anycast gateways are only used on SVI interfaces, not p2p links
 
 See https://infohub.delltechnologies.com/en-us/l/dell-emc-smartfabric-os10-virtual-link-trunking-reference-architecture-guide-1/ip-anycast-gateway-support-2/
@@ -94,6 +108,7 @@ class OS10(_Quirks):
       check_vlan_ospf(node,node.interfaces,'default')
       for vname,vdata in node.get('vrfs',{}).items():
         check_vlan_ospf(node,vdata.get('ospf.interfaces',[]),vname)
+      check_ospf_originate_default(node)
     
     if 'gateway' in mods:
       if 'anycast' in node.get('gateway',{}):
