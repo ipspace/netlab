@@ -29,8 +29,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [l1]
-ok: [spine]
 ok: [l2]
+ok: [spine]
 ok: [h1]
 ok: [h2]
 
@@ -38,8 +38,8 @@ TASK [Find configuration template for normalize] *******************************
 ok: [l1]
 ok: [l2]
 ok: [spine]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 
 TASK [fail] ********************************************************************
 skipping: [l1]
@@ -74,15 +74,15 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [l1]
-ok: [spine]
 ok: [l2]
+ok: [spine]
 ok: [h1]
 ok: [h2]
 
 TASK [Find configuration template for initial] *********************************
 ok: [l1]
-ok: [spine]
 ok: [l2]
+ok: [spine]
 ok: [h1]
 ok: [h2]
 
@@ -261,43 +261,6 @@ ok: [spine] =>
                 10.0.0.5/32: {}
               ipv6:
                 enable: off
-ok: [h2] => 
-  msg: |-
-    initial configuration for h2
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.31.1.2/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.31.1.2/24 dev eth1
-    ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    #
-    #
-    #
-    # Print the final routing table
-    ip route
 ok: [l2] => 
   msg: |-
     initial configuration for l2
@@ -395,6 +358,43 @@ ok: [l2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.31.1.2/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.31.1.2/24 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    #
+    #
+    # Print the final routing table
+    ip route
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for l1, spine
@@ -406,8 +406,8 @@ ok: [l1]
 ok: [spine]
 
 TASK [copy the cumulus nvue YAML initial config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/initial/cumulus_nvue.j2)] ***
-changed: [l1]
 changed: [spine]
+changed: [l1]
 
 TASK [Wait for nvued to start] *************************************************
 ok: [l1]
@@ -418,8 +418,8 @@ ok: [l1]
 ok: [spine]
 
 TASK [execute on cumulus: 'nv config patch' for initial config] ****************
-changed: [spine]
 changed: [l1]
+changed: [spine]
 
 TASK [execute on cumulus: 'nv config apply -y' for initial config] *************
 changed: [spine]
@@ -470,7 +470,7 @@ TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/a
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-qr52dwec.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-1k8w218z.sh] ***********************
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
@@ -483,6 +483,7 @@ ok: [spine]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=vlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=routing)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=bgp)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=vxlan)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=evpn)
@@ -509,6 +510,26 @@ ok: [l2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [spine]
+ok: [l1] => 
+  msg: |-
+    vlan configuration for l1
+    =========================================
+    - set:
+        bridge:
+          domain:
+            br_default:
+              type: vlan-aware
+              vlan:
+                '1000': {}
+  
+  
+    - set:
+        interface:
+         swp2:
+           bridge:
+             domain:
+               br_default:
+                 access: 1000
 ok: [l2] => 
   msg: |-
     vlan configuration for l2
@@ -528,27 +549,6 @@ ok: [l2] =>
   
     ip link set dev vlan1000 up
     exit 0
-ok: [l1] => 
-  msg: |-
-    vlan configuration for l1
-    =========================================
-    - set:
-        bridge:
-          domain:
-            br_default:
-              type: vlan-aware
-              untagged: none
-              vlan:
-                '1000': {}
-  
-  
-    - set:
-        interface:
-         swp2:
-           bridge:
-             domain:
-               br_default:
-                 access: 1000
 
 TASK [Deploy vlan configuration] ***********************************************
 skipping: [spine]
@@ -584,6 +584,36 @@ changed: [l2]
 
 TASK [run vtysh to import vlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/frr.j2] ***
 skipping: [l2]
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [l1]
+ok: [l2]
+ok: [spine]
+
+TASK [Find configuration template for routing] *********************************
+skipping: [l1]
+skipping: [l2]
+skipping: [spine]
+
+TASK [fail] ********************************************************************
+skipping: [l1]
+skipping: [l2]
+skipping: [spine]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [l1]
+skipping: [l2]
+skipping: [spine]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [l1]
+skipping: [l2]
+skipping: [spine]
+
+TASK [Deploy routing configuration] ********************************************
+skipping: [l1]
+skipping: [l2]
+skipping: [spine]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [l1]
@@ -982,7 +1012,7 @@ ok: [l2] =>
       exit-vni
   
       neighbor 10.0.0.5 activate
-      neighbor 10.0.0.5 soft-reconfiguration inbound
+    #  neighbor 10.0.0.5 soft-reconfiguration inbound
   
      exit-address-family
     !
@@ -1118,8 +1148,8 @@ ok: [l1]
 ok: [spine]
 
 TASK [copy the cumulus nvue YAML evpn config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/evpn/cumulus_nvue.j2)] ***
-changed: [l1]
 changed: [spine]
+changed: [l1]
 
 TASK [Wait for nvued to start] *************************************************
 skipping: [l1]
@@ -1155,9 +1185,9 @@ skipping: no hosts matched
 PLAY RECAP *********************************************************************
 h1                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 h2                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-l1                         : ok=63   changed=15   unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
-l2                         : ok=54   changed=11   unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
-spine                      : ok=45   changed=9    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+l1                         : ok=65   changed=15   unreachable=0    failed=0    skipped=18   rescued=0    ignored=0   
+l2                         : ok=56   changed=11   unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+spine                      : ok=47   changed=9    unreachable=0    failed=0    skipped=24   rescued=0    ignored=0   
 
 
 

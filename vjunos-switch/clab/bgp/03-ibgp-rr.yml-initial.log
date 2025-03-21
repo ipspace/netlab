@@ -16,8 +16,8 @@ TASK [Find device readiness script] ********************************************
 ok: [r1]
 ok: [r2]
 ok: [rr2]
-ok: [x1]
 ok: [dut]
+ok: [x1]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [r1]
@@ -67,8 +67,8 @@ TASK [Find configuration template for normalize] *******************************
 ok: [r1]
 ok: [r2]
 ok: [dut]
-ok: [rr2]
 ok: [x1]
+ok: [rr2]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -80,9 +80,9 @@ skipping: [x1]
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [r1]
 ok: [dut]
-ok: [x1]
 ok: [r2]
 ok: [rr2]
+ok: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
@@ -105,8 +105,8 @@ TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [r1]
 ok: [r2]
 ok: [dut]
-ok: [rr2]
 ok: [x1]
+ok: [rr2]
 
 TASK [Find configuration template for initial] *********************************
 ok: [r1]
@@ -126,13 +126,68 @@ TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [r1]
 ok: [dut]
 ok: [r2]
-ok: [rr2]
 ok: [x1]
+ok: [rr2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [rr2] => 
+ok: [dut] => 
   msg: |-
-    initial configuration for rr2
+    initial configuration for dut
+    =========================================
+    system {
+      host-name dut;
+      static-host-mapping {
+        r1 inet 10.0.0.10;
+        r2 inet 10.0.0.3;
+        rr2 inet 10.0.0.2;
+        x1 inet 172.42.42.1;
+      }
+    }
+  
+  
+    interfaces {
+      ge-0/0/0 {
+        mtu 1514;
+      }
+      ge-0/0/1 {
+        mtu 1514;
+      }
+  
+      lo0.0 {
+  
+          family inet {
+            address 10.0.0.1/32;
+          }
+  
+      }
+      ge-0/0/0.0 {
+        description "dut -> r1";
+  
+          family inet {
+            address 10.1.0.1/30;
+          }
+  
+      }
+      ge-0/0/1.0 {
+        description "dut -> x1 [external]";
+  
+          family inet {
+            address 10.1.0.13/30;
+          }
+  
+      }
+    }
+    protocols {
+      lldp {
+        interface fxp0 {
+          disable;
+        }
+        interface all;
+      }
+    }
+ok: [x1] => 
+  msg: |-
+    initial configuration for x1
     =========================================
     #!/bin/bash
     #
@@ -195,7 +250,7 @@ ok: [rr2] =>
     # Rest of initial configuration done through VTYSH
     #
     cat >/tmp/config <<CONFIG
-    hostname rr2
+    hostname x1
     !
     vrf mgmt
      exit-vrf
@@ -204,72 +259,17 @@ ok: [rr2] =>
     !
     interface lo
      no shutdown
-     ip address 10.0.0.2/32
+     ip address 172.42.42.1/24
     !
     interface eth1
      no shutdown
-     description rr2 -> r1
-     ip address 10.1.0.6/30
+     description x1 -> dut [external]
+     ip address 10.1.0.14/30
     !
     do write
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    system {
-      host-name dut;
-      static-host-mapping {
-        r1 inet 10.0.0.10;
-        r2 inet 10.0.0.3;
-        rr2 inet 10.0.0.2;
-        x1 inet 172.42.42.1;
-      }
-    }
-  
-  
-    interfaces {
-      ge-0/0/0 {
-        mtu 1514;
-      }
-      ge-0/0/1 {
-        mtu 1514;
-      }
-  
-      lo0.0 {
-  
-          family inet {
-            address 10.0.0.1/32;
-          }
-  
-      }
-      ge-0/0/0.0 {
-        description "dut -> r1";
-  
-          family inet {
-            address 10.1.0.1/30;
-          }
-  
-      }
-      ge-0/0/1.0 {
-        description "dut -> x1 [external]";
-  
-          family inet {
-            address 10.1.0.13/30;
-          }
-  
-      }
-    }
-    protocols {
-      lldp {
-        interface fxp0 {
-          disable;
-        }
-        interface all;
-      }
-    }
 ok: [r1] => 
   msg: |-
     initial configuration for r1
@@ -454,9 +454,9 @@ ok: [r2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [x1] => 
+ok: [rr2] => 
   msg: |-
-    initial configuration for x1
+    initial configuration for rr2
     =========================================
     #!/bin/bash
     #
@@ -519,7 +519,7 @@ ok: [x1] =>
     # Rest of initial configuration done through VTYSH
     #
     cat >/tmp/config <<CONFIG
-    hostname x1
+    hostname rr2
     !
     vrf mgmt
      exit-vrf
@@ -528,12 +528,12 @@ ok: [x1] =>
     !
     interface lo
      no shutdown
-     ip address 172.42.42.1/24
+     ip address 10.0.0.2/32
     !
     interface eth1
      no shutdown
-     description x1 -> dut [external]
-     ip address 10.1.0.14/30
+     description rr2 -> r1
+     ip address 10.1.0.6/30
     !
     do write
     CONFIG
@@ -560,22 +560,22 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, rr2, x1
 
 TASK [template] ****************************************************************
-changed: [x1]
-changed: [r1]
 changed: [rr2]
 changed: [r2]
+changed: [r1]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
-ok: [r1]
 ok: [r2]
 ok: [rr2]
 ok: [x1]
+ok: [r1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r1]
 changed: [rr2]
 changed: [r2]
 changed: [x1]
+changed: [r1]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r1]
@@ -593,15 +593,15 @@ ok: [rr2]
 ok: [x1]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, rr2, x1 => (item=bgp)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, rr2, x1 => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, rr2, r2, x1 => (item=bgp)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, rr2, r2, x1 => (item=ospf)
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [r1]
 ok: [r2]
+ok: [dut]
 ok: [rr2]
 ok: [x1]
-ok: [dut]
 
 TASK [Find configuration template for bgp] *************************************
 ok: [r1]
@@ -620,8 +620,8 @@ skipping: [x1]
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [r1]
 ok: [dut]
-ok: [rr2]
 ok: [r2]
+ok: [rr2]
 ok: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -726,21 +726,23 @@ ok: [dut] =>
           type internal;
           export ibgp-export;
           advertise-inactive;
-          local-address 10.0.0.1;
           cluster 10.0.0.42;
           neighbor 10.0.0.2 {
+            local-address 10.0.0.1;
             description rr2;
             family inet {
               unicast;
             }
           }
           neighbor 10.0.0.10 {
+            local-address 10.0.0.1;
             description r1;
             family inet {
               unicast;
             }
           }
           neighbor 10.0.0.3 {
+            local-address 10.0.0.1;
             description r2;
             family inet {
               unicast;
@@ -917,16 +919,16 @@ TASK [junos_config: deploying bgp from /home/pipi/netlab_gh/netsim/ansible/templ
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [r2]
 changed: [x1]
-changed: [r1]
 changed: [rr2]
+changed: [r1]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
 ok: [r2]
-ok: [rr2]
 ok: [x1]
+ok: [rr2]
 
 TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [r1]
@@ -935,8 +937,8 @@ skipping: [rr2]
 skipping: [x1]
 
 TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [r1]
 changed: [r2]
+changed: [r1]
 changed: [rr2]
 changed: [x1]
 
@@ -964,8 +966,8 @@ skipping: [x1]
 TASK [Find configuration deployment deploy_script for ospf] ********************
 skipping: [x1]
 ok: [r1]
-ok: [r2]
 ok: [dut]
+ok: [r2]
 ok: [rr2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -1098,9 +1100,9 @@ TASK [junos_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/temp
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [r2]
 changed: [r1]
 changed: [rr2]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -1113,8 +1115,8 @@ skipping: [r2]
 skipping: [rr2]
 
 TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [r1]
 changed: [r2]
+changed: [r1]
 changed: [rr2]
 
 PLAY [Deploy custom deployment templates] **************************************

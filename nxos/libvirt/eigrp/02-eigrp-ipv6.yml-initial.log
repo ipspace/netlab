@@ -1,12 +1,13 @@
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+[WARNING]: Found variable using reserved name: hosts
 
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [h1]
 ok: [h2]
-ok: [r1]
 ok: [r2]
+ok: [r1]
 
 TASK [Find device readiness script] ********************************************
 ok: [h1]
@@ -17,14 +18,29 @@ ok: [r2]
 TASK [Wait for device to become ready] *****************************************
 skipping: [h1]
 skipping: [h2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/nxos.yml for r1, r2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/iol-clab.yml for r2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/nxos.yml for r1
+
+TASK [Check if 'sshpass' is installed] *****************************************
+ok: [r2 -> localhost]
+
+TASK [Check for 'timeout' command] *********************************************
+ok: [r2 -> localhost]
+
+TASK [Execute local ssh command to check iol readiness] ************************
+FAILED - RETRYING: [r2 -> localhost]: Execute local ssh command to check iol readiness (20 retries left).
+FAILED - RETRYING: [r2 -> localhost]: Execute local ssh command to check iol readiness (19 retries left).
+ok: [r2 -> localhost]
+
+TASK [Confirm r2 SSH server works] *********************************************
+ok: [r2] => 
+  msg: Node r2 is ready.
 
 TASK [Wait for Eth1/1 to appear] ***********************************************
 ok: [r1]
-ok: [r2]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, r1, r2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, r2, r1
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [h1]
@@ -41,47 +57,53 @@ ok: [r2]
 TASK [fail] ********************************************************************
 skipping: [h1]
 skipping: [h2]
-skipping: [r1]
 skipping: [r2]
+skipping: [r1]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [h1]
+ok: [h2]
+ok: [r2]
+ok: [r1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
 skipping: [h2]
-skipping: [r1]
 skipping: [r2]
-
-TASK [Find configuration deployment deploy_script for normalize] ***************
-skipping: [h1]
-skipping: [h2]
 skipping: [r1]
-skipping: [r2]
 
 TASK [Deploy normalize configuration] ******************************************
 skipping: [h1]
 skipping: [h2]
-skipping: [r1]
 skipping: [r2]
+skipping: [r1]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, r1, r2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, r2, r1
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [h1]
 ok: [h2]
-ok: [r2]
 ok: [r1]
+ok: [r2]
 
 TASK [Find configuration template for initial] *********************************
 ok: [h1]
 ok: [h2]
-ok: [r2]
 ok: [r1]
+ok: [r2]
 
 TASK [fail] ********************************************************************
 skipping: [h1]
 skipping: [h2]
-skipping: [r1]
 skipping: [r2]
+skipping: [r1]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [h1]
+ok: [h2]
+ok: [r1]
+ok: [r2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [h1] => 
@@ -160,45 +182,6 @@ ok: [h2] =>
     #
     # Print the final routing table
     ip route
-ok: [r2] => 
-  msg: |-
-    initial configuration for r2
-    =========================================
-    hostname r2
-    !
-    no ip domain-lookup
-    !
-    feature lldp
-    !
-    username vagrant password vagrant
-    !
-    !
-    !
-    interface mgmt0
-     no lldp transmit
-     no lldp receive
-    !
-    interface loopback0
-     no shutdown
-     ipv6 address 2001:db8:0:4::1/64
-     ipv6 nd ra-interval 5 min 3
-    !
-    interface Ethernet1/1
-     no shutdown
-     no switchport
-     mac-address 52dc.cafe.0401
-     description r2 -> r1
-     ipv6 address use-link-local-only
-     ipv6 nd ra-interval 5 min 3
-    !
-    interface Ethernet1/2
-     no shutdown
-     no switchport
-     mac-address 52dc.cafe.0402
-     description r2 -> h2 [stub]
-     ipv6 address 2001:db8:1:1::4/64
-     ipv6 nd ra-interval 5 min 3
-    !
 ok: [r1] => 
   msg: |-
     initial configuration for r1
@@ -238,16 +221,52 @@ ok: [r1] =>
      ipv6 address use-link-local-only
      ipv6 nd ra-interval 5 min 3
     !
-
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [h1]
-ok: [h2]
-ok: [r2]
-ok: [r1]
+ok: [r2] => 
+  msg: |-
+    initial configuration for r2
+    =========================================
+    hostname r2
+    !
+    no ip domain lookup
+    !
+    lldp run
+    !
+    ip host h1 2001:db8:1::1
+    ip host h2 2001:db8:1:1::2
+    ip host r1 2001:db8:0:3::1 2001:db8:1::3
+    !
+    ipv6 unicast-routing
+    !
+    !
+    interface Loopback0
+     ipv6 address 2001:DB8:0:4::1/64
+    !
+    interface Ethernet0/0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Ethernet0/1
+     description r2 -> r1
+     ipv6 enable
+     no shutdown
+    !
+    interface Ethernet0/2
+     description r2 -> h2 [stub]
+     ipv6 address 2001:DB8:1:1::4/64
+     no shutdown
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
+    !
+    no banner exec
+    no banner login
+    no banner incoming
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/nxos.yml for r1, r2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for r2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/nxos.yml for r1
 
 TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
@@ -273,16 +292,18 @@ TASK [Container configuration for initial based on /home/pipi/net101/tools/netsi
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-v5p5vy6f.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-2srt1e1y.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [nxos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/nxos.j2] ***
+TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
 should be similar to how they appear if present in the running configuration on
 device including the indentation
-changed: [r1]
 changed: [r2]
+
+TASK [nxos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/nxos.j2] ***
+changed: [r1]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -304,6 +325,10 @@ ok: [r2]
 TASK [fail] ********************************************************************
 skipping: [r1]
 skipping: [r2]
+
+TASK [Find configuration deployment deploy_script for eigrp] *******************
+ok: [r1]
+ok: [r2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [r1] => 
@@ -330,40 +355,37 @@ ok: [r2] =>
   msg: |-
     eigrp configuration for r2
     =========================================
-    feature eigrp
+    ipv6 router eigrp 2
+     eigrp router-id 10.0.0.4
+  
+     passive-interface Ethernet0/2
     !
-    router eigrp 2
-     router-id 10.0.0.4
-     address-family ipv6 unicast
+    interface Loopback0
+     ipv6 eigrp 2
     !
-    interface loopback0
-     ipv6 router eigrp 2
+    interface Ethernet0/1
+     ipv6 eigrp 2
     !
-    interface Ethernet1/1
-     ipv6 router eigrp 2
+    interface Ethernet0/2
+     ipv6 eigrp 2
     !
-    interface Ethernet1/2
-     ipv6 router eigrp 2
-     ipv6 passive-interface eigrp 2
-    !
-
-TASK [Find configuration deployment deploy_script for eigrp] *******************
-ok: [r1]
-ok: [r2]
 
 TASK [Deploy eigrp configuration] **********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/nxos.yml for r1, r2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/nxos.yml for r1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for r2
 
 TASK [nxos_config: deploying eigrp from /home/pipi/net101/tools/netsim/ansible/templates/eigrp/nxos.j2] ***
 changed: [r1]
+
+TASK [ios_config: deploying eigrp from /home/pipi/net101/tools/netsim/ansible/templates/eigrp/ios.j2] ***
 changed: [r2]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-h2                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-r1                         : ok=22   changed=2    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
-r2                         : ok=22   changed=2    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+h1                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+h2                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+r1                         : ok=23   changed=2    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
+r2                         : ok=26   changed=2    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
 
