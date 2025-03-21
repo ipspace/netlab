@@ -1,6 +1,14 @@
 Release Notes
 =============
 
+**Release 1.9.6 (2025-03-21)**
+
+* Add 'gateway' as a valid next-hop for [static routes](generic-routing-static)
+* Rewrite the default gateway processing and add IPv6 default gateways
+* [Set libvirt MTU to 9500](libvirt-network) on bridge-based networks
+
+[More details...](release-1.9.6)
+
 **Release 1.9.5 (2025-03-05)**
 
 * Cumulus Linux NVUE: VXLAN, EVPN, VRF-aware BGP, VRF route leaking, route import
