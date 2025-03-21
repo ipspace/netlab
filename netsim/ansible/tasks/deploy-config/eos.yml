@@ -1,4 +1,24 @@
+- set_fact: deployed_config={{ lookup('template',config_template) }}
+- set_fact: bash_script={{ "#!/bin/bash" in deployed_config }}
+
+- template:
+    src: "{{ config_template }}"
+    dest: /tmp/config.sh
+  when: bash_script
+  vars:
+    ansible_user: root
+    ansible_connection: docker
+
+- name: "run /tmp/config.sh to deploy {{netsim_action}} config from {{ config_template }}"
+  command: bash /tmp/config.sh
+  when: not ansible_check_mode and bash_script
+  become: true
+  vars:
+    ansible_user: root
+    ansible_connection: docker
+
 - name: "eos_config: deploying {{ netsim_action }} from {{ config_template }}"
   eos_config:
     src: "{{ config_template }}"
+  when: not ansible_check_mode and not bash_script
   tags: [ print_action, always ]
