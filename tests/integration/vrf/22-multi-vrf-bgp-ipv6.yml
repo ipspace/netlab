@@ -1,15 +1,27 @@
 ---
 message: |
   The device under test has two VRFs with two interfaces in each VRF.
-  Routers are attached to those interfaces and run BGP with device under test.
-  Assuming the multi-vrf BGP test case succeeded, this one adds VRF loopback
-  interfaces advertised into BGP with network statements.
+  Routers are attached to those interfaces and run BGP with device under test
+  in a dual-stack (IPv4 + IPv6) environment.
+
+  The routing and connectivity tests focus on IPv6 (another test cases focuses
+  on IPv4), the dual-stack addressing is used only to trigger the incorrect
+  activation of BGP address families.
 
   * r1 and r2 should be able to ping each other and rtr VRF loopback
   * r3 and r4 should be able to ping each other and rtr VRF loopback
   * r1 should not be able to reach r3
 
-defaults.sources.extra: [ defaults-ipv6-only.yml ]
+  The test also checks whether DUT unnecessarily enables IPv4 AF over IPv6
+  EBGP sessions
+
+addressing:                         # This creates a dual-stack network to uncover the
+  loopback:                         # ... extraneous activations of address families
+    ipv6: 2001:db8:1::/48
+  lan:
+    ipv6: 2001:db8:2::/48
+  p2p:
+    ipv6: 2001:db8:3::/48
 
 groups:
   ce:
@@ -17,6 +29,7 @@ groups:
     module: [ bgp ]
     device: frr
     provider: clab
+    config: [ bgp-xact ]
   pe:
     members: [ dut ]
     module: [ vrf, bgp ]
@@ -71,6 +84,14 @@ validate:
     wait: 5
     nodes: [ r3 ]
     plugin: bgp_prefix(nodes.dut.vrfs.blue.loopback_address.ipv6.replace('::1','::'),af='ipv6')
+  ebgp_4o6:
+    description: Check for invalid activation of IPv4 AF over IPv6 EBGP sessions on DUT
+    nodes: [ r1, r2, r3, r4 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6',activate='ipv4',state='missing')
+  ebgp_6o4:
+    description: Check for invalid activation of IPv6 AF over IPv4 EBGP sessions on DUT
+    nodes: [ r1, r2, r3, r4 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv4',activate='ipv6',state='missing')
   red:
     description: Ping-based reachability test in VRF red
     wait: 3

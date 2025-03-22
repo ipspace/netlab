@@ -9,13 +9,21 @@ message: |
   * r3 and r4 should be able to ping each other
   * r1 should not be able to reach r3
 
+  The test also checks whether DUT unnecessarily enables IPv6 AF over IPv4
+  EBGP sessions
+addressing:
+  loopback:
+    ipv6: 2001:db8:1::/48
+
 groups:
   _auto_create: True
   ce:
     members: [ r1, r2, r3, r4 ]
     module: [ bgp ]
-    device: frr
+    device: eos
     provider: clab
+    config: [ bgp-xact ]
+    netlab_phy_control: False
   pe:
     members: [ dut ]
     module: [ vrf, bgp ]
@@ -43,8 +51,8 @@ nodes:
 
 validate:
   session:
-    description: Check EBGP sessions with DUT (wait up to 10 seconds)
-    wait: 10
+    description: Check EBGP sessions with DUT
+    wait: 20
     wait_msg: Waiting for BGP sessions to start
     nodes: [ r1, r2, r3, r4 ]
     plugin: bgp_neighbor(node.bgp.neighbors,'dut')
@@ -70,6 +78,11 @@ validate:
     fail: DUT is not propagating BGP prefixes between R3 and R4
     nodes: [ r3 ]
     plugin: bgp_prefix(nodes.r4.loopback.ipv4)
+  ebgp_6o4:
+    description: Check for invalid activation of IPv6 AF over IPv4 EBGP sessions on DUT
+    nodes: [ r1, r2, r3, r4 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',activate='ipv6',state='missing')
+    stop_on_error: true
   red:
     description: Ping-based reachability test in VRF red
     nodes: [ r1 ]

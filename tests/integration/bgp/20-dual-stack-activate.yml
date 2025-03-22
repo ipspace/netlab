@@ -3,6 +3,9 @@ message: |
   Use this topology to test the selective activation of IPv4 and IPv6 address
   families on IPv4 and IPv6 IBGP and EBGP sessions.
 
+  The 'session should not be established' error could be triggered by overly
+  generous activation of address families on the tested device.
+
 module: [ bgp, ospf ]
 
 defaults.bgp.as: 65000
@@ -21,6 +24,7 @@ groups:
     device: frr
     provider: clab
     members: [ x1, x2 ]
+    config: [ bgp-xact ]
 
 nodes:
   dut:
@@ -54,12 +58,26 @@ validate:
     description: Wait a few seconds just to be on the safe side
     wait: 3
   ipv6_ebgp:
-    description: IPv6 EBGP session (X2-DUT) should be Idle or Active
-    wait: 5
+    description: IPv6 EBGP session (X2-DUT) should not be established
     nodes: [ x2 ]
     plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6',state=['Idle','Active'])
   ipv4_ibgp:
-    description: IPv4 IBGP session (X1-DUT) should be Idle or Active
-    wait: 5
+    description: IPv4 IBGP session (X1-DUT) should not be established
     nodes: [ x1 ]
     plugin: bgp_neighbor(node.bgp.neighbors,'dut',state=['Idle','Active'])
+  ibgp_4o6:
+    description: There should be no IPv4 AF on IPv6 EBGP session
+    nodes: [ x1 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6',activate='ipv4',state='missing')
+  ibgp_6o4:
+    description: There should be no IPv4 AF on IPv6 EBGP session
+    nodes: [ x1 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv4',activate='ipv6',state='missing')
+  ebgp_4o6:
+    description: There should be no IPv6 AF on IPv4 EBGP session
+    nodes: [ x2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6',activate='ipv4',state='missing')
+  ebgp_6o4:
+    description: There should be no IPv6 AF on IPv4 EBGP session
+    nodes: [ x2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv4',activate='ipv6',state='missing')
