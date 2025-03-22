@@ -18,8 +18,21 @@ def check_vrf_data(data: Box, vrf: str, key: str, missing_data: str) -> Box:
 
   return data.vrfs[vrf][key]
 
-def show_bgp_neighbor(ngb: list, n_id: str, **kwargs: typing.Any) -> str:
-  return 'bgp summary | json'
+af_lookup: typing.Final[dict] = {
+  'ipv4': 'ipv4 unicast',
+  'ipv6': 'ipv6 unicast',
+  'evpn': 'evpn'
+}
+
+def show_bgp_neighbor(ngb: list, n_id: str, af: str='ipv4', *, activate: str = '', **kwargs: typing.Any) -> str:
+  global af_lookup
+  if not activate:  
+    return 'bgp summary | json'
+
+  if activate not in af_lookup:
+    raise Exception(f'Unsupported address family {activate}')
+
+  return f'bgp {af_lookup[activate]} summary | json'
 
 def valid_bgp_neighbor(
       ngb: list,
@@ -27,6 +40,7 @@ def valid_bgp_neighbor(
       af: str = 'ipv4',
       state: str = 'Established',
       vrf: str = 'default',
+      activate: str = '',
       intf: str = '') -> str:
   _result = global_vars.get_result_dict('_result')
 
@@ -39,11 +53,21 @@ def valid_bgp_neighbor(
   
   data = check_vrf_data(_result,vrf,'peers','BGP peers')
 
+  act_err = f' in address family {activate}' if activate else ''
   if not n_addr in data:
-    raise Exception(f'The router has no BGP neighbor with {af} address {n_addr} ({n_id})')
+    result = f'The router has no BGP neighbor with {af} address {n_addr} ({n_id}){act_err}'
+    if state == 'missing':
+      return result
+    else:
+      raise Exception(result)
 
-  if data[n_addr].peerState not in state:
-    raise Exception(f'The neighbor {n_addr} ({n_id}) is in state {data[n_addr].peerState} (expected {state})')  
+  p_state = data[n_addr].peerState
+  if p_state not in state:
+    result = f'The neighbor {n_addr} ({n_id}){act_err} is in state {data[n_addr].peerState}'
+    if state == 'missing' and p_state != 'Established':
+      return result
+    else:
+      raise Exception(f'{result} (expected {state})')  
 
   return f'Neighbor {n_addr} ({n_id}) is in state {data[n_addr].peerState}'
 

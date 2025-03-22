@@ -1,0 +1,84 @@
+---
+module: [ bgp ]
+
+addressing:
+  loopback:
+    ipv6: 2001:db8:1::/48
+  lan:
+    ipv6: 2001:db8:2::/48
+  p2p:
+    ipv6: 2001:db8:3::/48
+
+provider: clab
+nodes:
+  x1:
+    bgp.as: 65000
+    device: eos
+  x2:
+    bgp.as: 65001
+    device: frr
+
+links: [ x1-x2 ]
+
+validate:
+  x1_ipv4:
+    description: IPv4 EBGP session with X2 should be established
+    wait: 10
+    nodes: [ x1 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'x2')
+  x1_ipv6:
+    description: IPv6 EBGP with X2 should be established
+    wait: 10
+    nodes: [ x1 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'x2',af='ipv6')
+  m_x1_6o4:
+    description: 6-over-4 EBGP session with X2 should not be activated
+    nodes: [ x1 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'x2',activate='ipv6',state='missing')
+  m_x1_4o6:
+    description: 4-over-6 EBGP session with X2 should not be activated
+    nodes: [ x1 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'x2',af='ipv6',activate='ipv4',state='missing')
+  x2_ipv4:
+    description: IPv4 EBGP session with X1 should be established
+    nodes: [ x2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'x1')
+  x2_ipv6:
+    description: IPv6 EBGP session with X1 should be established
+    nodes: [ x2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'x1',af='ipv6')
+  m_x2_6o4:
+    description: 6-over-4 EBGP session with X1 should not be activated
+    nodes: [ x2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'x1',activate='ipv6',state='missing')
+  m_x2_4o6:
+    description: 4-over-6 EBGP session with X1 should not be activated
+    nodes: [ x2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'x1',af='ipv6',activate='ipv4',state='missing')
+  bgp_xa:
+    description: Enable cross-AF activation
+    nodes: [ x1, x2 ]
+    config:
+      template: bgp-xact
+  a_x1_6o4:
+    description: 6-over-4 EBGP session with X2 should be activated
+    nodes: [ x1 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'x2',activate='ipv6')
+  a_x1_4o6:
+    description: 4-over-6 EBGP session with X2 should be activated
+    nodes: [ x1 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'x2',af='ipv6',activate='ipv4')
+  a_x2_6o4:
+    description: 6-over-4 EBGP session with X1 should be activated
+    nodes: [ x2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'x1',activate='ipv6')
+  a_x2_4o6:
+    description: 4-over-6 EBGP session with X1 should be activated
+    nodes: [ x2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'x1',af='ipv6',activate='ipv4')
+  bgp_xoff:
+    description: Disable cross-AF activation
+    nodes: [ x1, x2 ]
+    config:
+      template: bgp-xact
+      variable.xa_state: 'no'

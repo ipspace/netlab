@@ -9,17 +9,34 @@ from .. import _common
 from . import BGP_PREFIX_NAMES,check_community_kw
 from ...utils import log
 
-def show_bgp_neighbor(ngb: list, n_id: str, **kwargs: typing.Any) -> str:
-  return 'bgp summary json'
+af_lookup: typing.Final[dict] = {
+  'ipv4': 'ipv4Unicast',
+  'ipv6': 'ipv6Unicast',
+  'evpn': 'evpn'
+}
+
+def show_bgp_neighbor(ngb: list, n_id: str, af: str='ipv4', activate: str = '', **kwargs: typing.Any) -> str:
+  global af_lookup
+
+  if not activate:
+    return 'bgp summary json'
+
+  if activate not in af_lookup:
+    raise Exception(f'Unsupport address family {activate}')
+
+  return f'bgp {activate} summary established json'
 
 def valid_bgp_neighbor(
       ngb: list,
       n_id: str,
       af: str = 'ipv4',
       state: str = 'Established',
+      activate: str = '',
       intf: str = '') -> str:
-  _result = global_vars.get_result_dict('_result')
 
+  global af_lookup
+
+  _result = global_vars.get_result_dict('_result')
   n_addr = _common.get_bgp_neighbor_id(ngb,n_id,af)
 
   if n_addr is True:
@@ -27,17 +44,25 @@ def valid_bgp_neighbor(
       raise Exception(f'Need an interface name for an unnumbered EBGP neighbor')
     n_addr = intf
   
-  struct_name = f'{af}Unicast'
+  act_err = f' in address family {activate}' if activate else ''
+  if not activate:
+    activate = af
+  
+  struct_name = af_lookup[activate]
   if struct_name not in _result:
-    raise Exception('There are no BGP peers')
+    raise Exception('There are no BGP peers in address family {activate}')
 
   data = _result[struct_name].peers
 
   if not n_addr in data:
-    raise Exception(f'The router has no BGP neighbor with {af} address {n_addr} ({n_id})')
+    result = f'The router has no BGP neighbor with {af} address {n_addr} ({n_id}){act_err}'
+    if state == 'missing':
+      return result
+    else:
+      raise Exception(result)
 
   if data[n_addr].state not in state:
-    raise Exception(f'The neighbor {n_addr} ({n_id}) is in state {data[n_addr].state} (expected {state})')  
+    raise Exception(f'The neighbor {n_addr} ({n_id}) {act_err} is in state {data[n_addr].state} (expected {state})')  
 
   return f'Neighbor {n_addr} ({n_id}) is in state {data[n_addr].state}'
 
