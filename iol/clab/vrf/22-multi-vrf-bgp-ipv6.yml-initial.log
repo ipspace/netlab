@@ -7,15 +7,15 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [r1]
 ok: [r2]
 ok: [r3]
-ok: [r4]
 ok: [dut]
+ok: [r4]
 
 TASK [Find device readiness script] ********************************************
 ok: [r1]
 ok: [r2]
 ok: [r3]
-ok: [dut]
 ok: [r4]
+ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [r1]
@@ -67,8 +67,8 @@ TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [r1]
 ok: [r2]
 ok: [r3]
-ok: [r4]
 ok: [dut]
+ok: [r4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
@@ -90,15 +90,15 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [r1]
 ok: [r2]
-ok: [r3]
 ok: [r4]
+ok: [r3]
 ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
 ok: [r1]
 ok: [r2]
-ok: [r4]
 ok: [r3]
+ok: [r4]
 ok: [dut]
 
 TASK [fail] ********************************************************************
@@ -200,7 +200,7 @@ ok: [r1] =>
     interface eth1
      no shutdown
      description r1 -> dut [external]
-     ! no ip address
+     ip address 10.1.0.2/30
      ipv6 address 2001:db8:3::2/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
@@ -293,7 +293,7 @@ ok: [r2] =>
     interface eth1
      no shutdown
      description r2 -> dut [external]
-     ! no ip address
+     ip address 10.1.0.6/30
      ipv6 address 2001:db8:3:1::2/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
@@ -386,7 +386,7 @@ ok: [r3] =>
     interface eth1
      no shutdown
      description r3 -> dut [external]
-     ! no ip address
+     ip address 10.1.0.10/30
      ipv6 address 2001:db8:3:2::2/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
@@ -405,12 +405,12 @@ ok: [dut] =>
     !
     lldp run
     !
-    ip host dut-blue 2001:db8:3:2::1 2001:db8:3:3::1 2001:db8:c001:cafe::1
-    ip host dut-red 2001:db8:3::1 2001:db8:3:1::1 2001:db8:c001:cafe::1
-    ip host r1 10.0.0.2 2001:db8:1:2::1 2001:db8:3::2
-    ip host r2 10.0.0.3 2001:db8:1:3::1 2001:db8:3:1::2
-    ip host r3 10.0.0.4 2001:db8:1:4::1 2001:db8:3:2::2
-    ip host r4 10.0.0.5 2001:db8:1:5::1 2001:db8:3:3::2
+    ip host dut-blue 10.1.0.9 10.1.0.13 2001:db8:3:2::1 2001:db8:3:3::1 2001:db8:c001:cafe::1
+    ip host dut-red 10.1.0.1 10.1.0.5 2001:db8:3::1 2001:db8:3:1::1 2001:db8:c001:cafe::1
+    ip host r1 10.0.0.2 10.1.0.2 2001:db8:1:2::1 2001:db8:3::2
+    ip host r2 10.0.0.3 10.1.0.6 2001:db8:1:3::1 2001:db8:3:1::2
+    ip host r3 10.0.0.4 10.1.0.10 2001:db8:1:4::1 2001:db8:3:2::2
+    ip host r4 10.0.0.5 10.1.0.14 2001:db8:1:5::1 2001:db8:3:3::2
     !
     ip routing
     !
@@ -421,6 +421,9 @@ ok: [dut] =>
      route-target import 65000:2
      route-target export 65000:2
     !
+     address-family ipv4
+     exit-address-family
+    !
      address-family ipv6
      exit-address-family
     !
@@ -428,6 +431,9 @@ ok: [dut] =>
      rd 65000:1
      route-target import 65000:1
      route-target export 65000:1
+    !
+     address-family ipv4
+     exit-address-family
     !
      address-family ipv6
      exit-address-family
@@ -446,24 +452,28 @@ ok: [dut] =>
     interface Ethernet0/1
      vrf forwarding red
      description dut -> r1 [external]
+     ip address 10.1.0.1 255.255.255.252
      ipv6 address 2001:DB8:3::1/64
      no shutdown
     !
     interface Ethernet0/2
      vrf forwarding red
      description dut -> r2 [external]
+     ip address 10.1.0.5 255.255.255.252
      ipv6 address 2001:DB8:3:1::1/64
      no shutdown
     !
     interface Ethernet0/3
      vrf forwarding blue
      description dut -> r3 [external]
+     ip address 10.1.0.9 255.255.255.252
      ipv6 address 2001:DB8:3:2::1/64
      no shutdown
     !
     interface Ethernet1/0
      vrf forwarding blue
      description dut -> r4 [external]
+     ip address 10.1.0.13 255.255.255.252
      ipv6 address 2001:DB8:3:3::1/64
      no shutdown
     !
@@ -570,7 +580,7 @@ ok: [r4] =>
     interface eth1
      no shutdown
      description r4 -> dut [external]
-     ! no ip address
+     ip address 10.1.0.14/30
      ipv6 address 2001:db8:3:3::2/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
@@ -603,10 +613,10 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, r3, r4
 
 TASK [template] ****************************************************************
-changed: [r3]
-changed: [r2]
-changed: [r4]
 changed: [r1]
+changed: [r2]
+changed: [r3]
+changed: [r4]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -647,8 +657,8 @@ ok: [r4]
 ok: [dut]
 
 TASK [Find configuration template for bgp] *************************************
-ok: [r1]
 ok: [r2]
+ok: [r1]
 ok: [r3]
 ok: [r4]
 ok: [dut]
@@ -663,9 +673,9 @@ skipping: [r4]
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [r1]
 ok: [r2]
+ok: [r4]
 ok: [r3]
 ok: [dut]
-ok: [r4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [r1] => 
@@ -684,6 +694,9 @@ ok: [r1] =>
   
       bgp router-id 10.0.0.2
     !
+      neighbor 10.1.0.1 remote-as 65000
+      neighbor 10.1.0.1 description dut
+    !
       neighbor 2001:db8:3::1 remote-as 65000
       neighbor 2001:db8:3::1 description dut
     !
@@ -694,6 +707,11 @@ ok: [r1] =>
       network 10.0.0.2/32
     !
     !
+    !
+      neighbor 10.1.0.1 activate
+      no neighbor 10.1.0.1 send-community all
+      neighbor 10.1.0.1 send-community standard
+      neighbor 10.1.0.1 send-community large
     !
      address-family ipv6 unicast
     !
@@ -727,6 +745,9 @@ ok: [r2] =>
   
       bgp router-id 10.0.0.3
     !
+      neighbor 10.1.0.5 remote-as 65000
+      neighbor 10.1.0.5 description dut
+    !
       neighbor 2001:db8:3:1::1 remote-as 65000
       neighbor 2001:db8:3:1::1 description dut
     !
@@ -737,6 +758,11 @@ ok: [r2] =>
       network 10.0.0.3/32
     !
     !
+    !
+      neighbor 10.1.0.5 activate
+      no neighbor 10.1.0.5 send-community all
+      neighbor 10.1.0.5 send-community standard
+      neighbor 10.1.0.5 send-community large
     !
      address-family ipv6 unicast
     !
@@ -770,6 +796,9 @@ ok: [r4] =>
   
       bgp router-id 10.0.0.5
     !
+      neighbor 10.1.0.13 remote-as 65000
+      neighbor 10.1.0.13 description dut
+    !
       neighbor 2001:db8:3:3::1 remote-as 65000
       neighbor 2001:db8:3:3::1 description dut
     !
@@ -780,6 +809,11 @@ ok: [r4] =>
       network 10.0.0.5/32
     !
     !
+    !
+      neighbor 10.1.0.13 activate
+      no neighbor 10.1.0.13 send-community all
+      neighbor 10.1.0.13 send-community standard
+      neighbor 10.1.0.13 send-community large
     !
      address-family ipv6 unicast
     !
@@ -844,6 +878,9 @@ ok: [r3] =>
   
       bgp router-id 10.0.0.4
     !
+      neighbor 10.1.0.9 remote-as 65000
+      neighbor 10.1.0.9 description dut
+    !
       neighbor 2001:db8:3:2::1 remote-as 65000
       neighbor 2001:db8:3:2::1 description dut
     !
@@ -854,6 +891,11 @@ ok: [r3] =>
       network 10.0.0.4/32
     !
     !
+    !
+      neighbor 10.1.0.9 activate
+      no neighbor 10.1.0.9 send-community all
+      neighbor 10.1.0.9 send-community standard
+      neighbor 10.1.0.9 send-community large
     !
      address-family ipv6 unicast
     !
@@ -880,10 +922,10 @@ TASK [ios_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/temp
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [r1]
 changed: [r3]
-changed: [r2]
+changed: [r1]
 changed: [r4]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -898,8 +940,8 @@ skipping: [r3]
 skipping: [r4]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [r1]
 changed: [r2]
+changed: [r1]
 changed: [r3]
 changed: [r4]
 
@@ -942,6 +984,26 @@ ok: [dut] =>
     =========================================
     !
     router bgp 65000
+     address-family ipv4 vrf blue
+      bgp router-id 10.0.0.1
+      redistribute connected
+  
+    !
+    !
+      neighbor 10.1.0.10 remote-as 65103
+      neighbor 10.1.0.10 description r3
+  
+      neighbor 10.1.0.10 activate
+      neighbor 10.1.0.10 advertisement-interval 0
+      neighbor 10.1.0.10 send-community standard
+  
+      neighbor 10.1.0.14 remote-as 65104
+      neighbor 10.1.0.14 description r4
+  
+      neighbor 10.1.0.14 activate
+      neighbor 10.1.0.14 advertisement-interval 0
+      neighbor 10.1.0.14 send-community standard
+  
      address-family ipv6 vrf blue
       bgp router-id 10.0.0.1
       redistribute connected
@@ -963,6 +1025,26 @@ ok: [dut] =>
       neighbor 2001:db8:3:3::2 activate
       neighbor 2001:db8:3:3::2 advertisement-interval 0
       neighbor 2001:db8:3:3::2 send-community standard
+  
+     address-family ipv4 vrf red
+      bgp router-id 10.0.0.1
+      redistribute connected
+  
+    !
+    !
+      neighbor 10.1.0.2 remote-as 65101
+      neighbor 10.1.0.2 description r1
+  
+      neighbor 10.1.0.2 activate
+      neighbor 10.1.0.2 advertisement-interval 0
+      neighbor 10.1.0.2 send-community standard
+  
+      neighbor 10.1.0.6 remote-as 65102
+      neighbor 10.1.0.6 description r2
+  
+      neighbor 10.1.0.6 activate
+      neighbor 10.1.0.6 advertisement-interval 0
+      neighbor 10.1.0.6 send-community standard
   
      address-family ipv6 vrf red
       bgp router-id 10.0.0.1
@@ -1004,8 +1086,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-custom-config.yml 
 TASK [Find configuration template] *********************************************
 ok: [r1]
 ok: [r2]
-ok: [r4]
 ok: [r3]
+ok: [r4]
 
 TASK [fail] ********************************************************************
 skipping: [r1]
@@ -1015,8 +1097,8 @@ skipping: [r4]
 
 TASK [Check is the configuration template is a file] ***************************
 ok: [r1 -> localhost]
-ok: [r3 -> localhost]
 ok: [r2 -> localhost]
+ok: [r3 -> localhost]
 ok: [r4 -> localhost]
 
 TASK [fail] ********************************************************************
@@ -1034,17 +1116,17 @@ skipping: [r4]
 TASK [Find custom configuration deployment script] *****************************
 ok: [r1]
 ok: [r2]
-ok: [r4]
 ok: [r3]
+ok: [r4]
 
 TASK [Run the configuration deployment script] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2, r3, r4
 
 TASK [template] ****************************************************************
-changed: [r2]
-changed: [r1]
-changed: [r4]
 changed: [r3]
+changed: [r1]
+changed: [r2]
+changed: [r4]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -1060,8 +1142,8 @@ skipping: [r4]
 
 TASK [run vtysh to import bgp-xact config from /home/pipi/net101/tools/tests/integration/vrf/bgp-xact.j2] ***
 changed: [r1]
-changed: [r2]
 changed: [r3]
+changed: [r2]
 changed: [r4]
 
 PLAY RECAP *********************************************************************
@@ -1074,9 +1156,12 @@ r4                         : ok=36   changed=6    unreachable=0    failed=0    s
 
 
 The device under test has two VRFs with two interfaces in each VRF.
-Routers are attached to those interfaces and run BGP with device under test.
-Assuming the multi-vrf BGP test case succeeded, this one adds VRF loopback
-interfaces advertised into BGP with network statements.
+Routers are attached to those interfaces and run BGP with device under test
+in a dual-stack (IPv4 + IPv6) environment.
+
+The routing and connectivity tests focus on IPv6 (another test cases focuses
+on IPv4), the dual-stack addressing is used only to trigger the incorrect
+activation of BGP address families.
 
 * r1 and r2 should be able to ping each other and rtr VRF loopback
 * r3 and r4 should be able to ping each other and rtr VRF loopback
