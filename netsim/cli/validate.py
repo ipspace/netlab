@@ -925,11 +925,14 @@ The validation entry has:
 def execute_netlab_config(v_entry: Box, topology: Box) -> bool:
   node_str = ",".join(v_entry.nodes)
   cmd = f'netlab config {v_entry.config.template} --limit {node_str}'.split(' ')
+  v_dump = []
   for k,v in v_entry.config.variable.items():
     cmd += [ '-e', k + '="' + str(v).replace('"','\\"') + '"' ]
+    v_dump += [ f'{k}={v}' ]
   if log.VERBOSE:
     print(f'Executing {cmd}')
-  log_info(f'Executing configuration snippet {v_entry.config.template}',topology)
+  v_dump_str = " with " + " ".join(v_dump) if v_dump else ""
+  log_info(f'Executing configuration snippet {v_entry.config.template}{v_dump_str}',topology)
   if external_commands.run_command(cmd,check_result=True,ignore_errors=True,return_stdout=True):
     increase_pass_count(v_entry)
     msg = v_entry.get('pass','Devices configured')
