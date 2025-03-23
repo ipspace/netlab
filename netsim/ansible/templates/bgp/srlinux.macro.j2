@@ -74,15 +74,15 @@
 {%   endfor %}
 {% endmacro %}
 
-{% macro bgp_families(neighbor,af,import=None,export=None,group=False) %}
-{%   if neighbor.activate is defined and not group %}
+{% macro bgp_families(neighbor,af) %}
+{%   if neighbor.activate is defined %}
 {%     set _a = neighbor.activate %}
 {%     set activate = {'ipv4': af=='ipv4' and _a[af],'ipv6': af=='ipv6' and _a[af] } %}
 {%   else %}
-{%     set activate = {'ipv4': af=='ipv4' or group,'ipv6': af=='ipv6' or group } %}
+{%     set activate = {'ipv4': af=='ipv4','ipv6': af=='ipv6' } %}
 {%   endif %}
 # bgp_families af={{af}} activate={{activate}}
-{%   if not activate | dict2items | map(attribute='value') | select and not neighbor.evpn|default(False) %}
+{%   if not activate | dict2items | map(attribute='value') | select %}
     admin-state: disable
 {%   else %}
     afi-safi:
@@ -94,30 +94,14 @@
         advertise-ipv6-next-hops: True
         receive-ipv6-next-hops: True
 {%       endif %}
-{%       if import %}
-      import-policy: {{ import }}
-{%       endif %}
-{%       if export %}
-      export-policy: {{ export }}
-{%       endif %}
 {%     else %}
       admin-state: 'disable'
 {%     endif %}
     - afi-safi-name: ipv6-unicast
 {%     if activate.ipv6|default(False) and af=='ipv6' %}
       admin-state: 'enable'
-{%       if import %}
-      import-policy: {{ import }}
-{%       endif %}
-{%       if export %}
-      export-policy: {{ export }}
-{%       endif %}
 {%     else %}
       admin-state: 'disable'
-{%     endif %}
-{%     if 'evpn' in neighbor and neighbor.evpn %}
-    - afi-safi-name: evpn
-      admin-state: enable
 {%     endif %}
 {%   endif %}
 {% endmacro %}
@@ -126,10 +110,13 @@
 - path: /network-instance[name={{vrf}}]/protocols/bgp/group[group-name={{name}}]
   value:
     admin-state: enable
-{% set nh_self = bgp.next_hop_self|default(False) and 'ibgp' in type %}
-{% set nh_self_rr = nh_self and vrf_bgp.rr|default(False) %}
-{% set ep_name = (vrf + "_ibgp-nhs_export") if nh_self_rr else (vrf + "_bgp_export") %}
-{{ bgp_families(neighbor,af,import=[ "ibgp-mark" if nh_self_rr else "accept_all" ],export=[ ep_name, 'accept_all' ],group=True) }}
+{%  set nh_self = bgp.next_hop_self|default(False) and 'ibgp' in type %}
+{%  set nh_self_rr = nh_self and vrf_bgp.rr|default(False) %}
+{%  set ep_name = (vrf + "_ibgp-nhs_export") if nh_self_rr else (vrf + "_bgp_export") %}
+    afi-safi:
+    - afi-safi-name: {{ af }}-unicast
+      export-policy: [ {{ ep_name }}, 'accept_all' ]
+      import-policy: {{ [ "ibgp-mark" if nh_self_rr else "accept_all" ] }}
     timers:
       connect-retry: 10
       _annotate_connect-retry: "Reduce default 120s to 10s"

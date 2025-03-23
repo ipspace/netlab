@@ -38,6 +38,29 @@ updates:
 {%   endfor %}
 {% endfor %}
 
+{# Enable EVPN AF for neighbors #}
+{% for n in bgp.neighbors|default([]) if n.evpn is defined %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
+{%     if n[af] is string %}
+- path: /network-instance[name={{vrf}}]/protocols/bgp
+  value:
+    neighbor:
+    - peer-address: "{{ n[af] }}"
+      afi-safi:
+      - afi-safi-name: evpn
+        admin-state: 'enable'
+{%     elif n[af] is True %}
+{#       interface EBGP session #}
+{%       set peer_group = 'intf-'+n.local_if %}
+- path: /network-instance[name=default]/protocols/bgp/group[group-name={{peer_group}}]
+  value:
+    afi-safi:
+    - afi-safi-name: evpn
+      admin-state: 'enable'
+{%     endif %}
+{%   endfor %}
+{% endfor %}
+
 {# Enable IP advertisement for all irb interfaces in EVPN vlans #}
 {% if vrfs is defined and vrfs %}
 {% for i in interfaces if i.vrf is defined and i.type=='svi' and i.vlan.mode|default('irb')=='irb' %}
