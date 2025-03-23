@@ -21,7 +21,9 @@ def check_vrf_data(data: Box, vrf: str, key: str, missing_data: str) -> Box:
 af_lookup: typing.Final[dict] = {
   'ipv4': 'ipv4 unicast',
   'ipv6': 'ipv6 unicast',
-  'evpn': 'evpn'
+  'evpn': 'evpn',
+  'vpnv4': 'vpn-ipv4',
+  'vpnv6': 'vpn-ipv6'
 }
 
 def show_bgp_neighbor(ngb: list, n_id: str, af: str='ipv4', *, activate: str = '', **kwargs: typing.Any) -> str:

@@ -12,7 +12,17 @@ from ...utils import log
 af_lookup: typing.Final[dict] = {
   'ipv4': 'ipv4Unicast',
   'ipv6': 'ipv6Unicast',
-  'evpn': 'evpn'
+  'evpn': 'evpn',
+  'vpnv4': 'vpnv4',
+  'vpnv6': 'vpnv6'
+}
+
+af_kw: typing.Final[dict] = {
+  'ipv4': 'ipv4 summary established',
+  'ipv6': 'ipv6 summary established',
+  'evpn': 'evpn summary',
+  'vpnv4': 'ipv4 vpn summary',
+  'vpnv6': 'ipv6 vpn summary'
 }
 
 def show_bgp_neighbor(ngb: list, n_id: str, af: str='ipv4', activate: str = '', **kwargs: typing.Any) -> str:
@@ -24,7 +34,7 @@ def show_bgp_neighbor(ngb: list, n_id: str, af: str='ipv4', activate: str = '', 
   if activate not in af_lookup:
     raise Exception(f'Unsupport address family {activate}')
 
-  return f"bgp {activate} summary {'established ' if 'ip' in activate else ''}json"
+  return f"bgp {af_kw[activate]} json"
 
 def valid_bgp_neighbor(
       ngb: list,
