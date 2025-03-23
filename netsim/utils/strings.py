@@ -123,6 +123,9 @@ def eval_format(fmt: str, data: dict) -> str:
   ex = "f'"+fmt+"'"                    # String to format-evaluate
   return str(eval(ex,dict(data)))      # An awful hack to use f-string specified in a string variable
 
+def eval_format_args(fmt: str, **kwargs: typing.Any) -> str:
+  return eval_format(fmt,kwargs)
+
 """
 eval_format_list: execute eval_format on a list
 """

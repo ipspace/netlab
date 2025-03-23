@@ -18,7 +18,7 @@ def unit_0_trick(intf: Box, round: str ='global') -> None:
   oldname = intf.ifname
   newname = oldname + ".0"
   if log.debug_active('quirks'):
-    print(" - [{}] Found interface {}, renaming to {}".format(round, intf.ifname, newname))
+    print(f" - [{round}] Found interface {intf.ifname}, renaming to {newname}")
   intf.ifname = newname
   intf.junos_interface = oldname
   intf.junos_unit = '0'
@@ -64,15 +64,15 @@ def fix_unit_0(node: Box, topology: Box) -> None:
           set_junos_mtu(intf, JUNOS_MTU_FLEX_VLAN_HEADER_LENGTH)
         elif junos_vlan_kind == 'l3-switch':
           # for a l3-switch, add it on vlan mode route or if no vlan structure is defined (flex vlan tagging with native only)
-          if 'vlan' not in intf or intf.get('vlan', {}).get('mode', '') == 'route':
+          if 'vlan' not in intf or intf.get('vlan.mode',None) == 'route':
             set_junos_mtu(intf, JUNOS_MTU_FLEX_VLAN_HEADER_LENGTH)
   
   # need to append .0 unit trick to the interface list copied into vrf->ospf
   if 'vrf' in mods and 'ospf' in mods:
     for vname,vdata in node.vrfs.items():
-      for intf in vdata.get('ospf', {}).get('interfaces', []):
+      for intf in vdata.get('ospf.interfaces',[]):
         if not '.' in intf.ifname:
-          unit_0_trick(intf, "vrf({})/ospf".format(vname))
+          unit_0_trick(intf, f"vrf({vname})/ospf")
 
 def check_multiple_loopbacks(node: Box, topology: Box) -> None:
   vrf_count: dict = {}
@@ -114,7 +114,7 @@ class JUNOS(_Quirks):
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
     if log.debug_active('quirks'):
-      print("*** DEVICE QUIRKS FOR JUNOS {}".format(node.name))
+      print(f"*** DEVICE QUIRKS FOR JUNOS {node.name}")
     fix_unit_0(node,topology)
     check_multiple_loopbacks(node,topology)
     check_evpn_ebgp(node,topology)
