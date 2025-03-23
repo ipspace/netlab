@@ -5,7 +5,7 @@ import typing
 from box import Box
 
 from . import _Module,get_effective_module_attribute,_dataplane
-from ..utils import log
+from ..utils import log,strings
 from .. import data
 from ..data import get_empty_box,get_box,get_global_parameter
 from ..augment import devices,groups,links,addressing
@@ -878,7 +878,8 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
       vlan_ifdata.vlan.name = access_vlan
       vlan_ifdata.type = "svi"
       vlan_ifdata.ifindex = links.get_unique_ifindex(node,iftype='svi',start=SVI_IFINDEX_OFFSET)
-      vlan_ifdata.ifname = svi_name.format(                                 # ... ifindex, ifname, description
+      vlan_ifdata.ifname = strings.eval_format_args(
+                              fmt=svi_name,
                               vlan=vlan_data.id,
                               bvi=vlan_data.bridge_group,
                               ifname=ifdata.ifname)
@@ -1047,7 +1048,7 @@ def rename_vlan_subinterfaces(node: Box, topology: Box) -> None:
     ifname_data.ifname = parent_intf.ifname                           # ... making sure ifname is coming from parent interface
 
     old_intf = data.get_box({ 'ifname': intf.ifname })                # Create a fake interface with old interface name
-    intf.ifname = subif_name.format(**ifname_data)
+    intf.ifname = strings.eval_format(subif_name,ifname_data)
     intf.parent_ifindex = parent_intf.ifindex
     intf.parent_ifname = parent_intf.ifname
     intf.virtual_interface = True

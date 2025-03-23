@@ -137,7 +137,7 @@ def adjust_link_list(
   elif isinstance(links,list):
     for l in links:
       link_cnt = link_cnt + 1
-      linkname = linkname_format.format(link_cnt=link_cnt)
+      linkname = strings.eval_format_args(linkname_format,link_cnt=link_cnt)
       link_data = adjust_link_object(l,linkname,nodes)
       if not link_data is None:
         if link_data.get('disable',False) is True:

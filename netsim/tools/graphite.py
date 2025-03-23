@@ -17,6 +17,8 @@ import json
 from box import Box
 
 from ..data import get_empty_box
+from ..utils import strings
+
 from . import _ToolOutput
 
 DEFAULT_NODE_ICON = "router"
@@ -47,9 +49,9 @@ def nodes_items(topology: Box) -> Box:
             DEFAULT_NODE_ICON )
         graph_level = n.get('graphite.level',1)
         node_group = "tier-1"
-        node_as = n.get('bgp', {}).get('as')
+        node_as = n.get('bgp.as',None)
         if node_as:
-            node_group = "as{}".format(node_as)
+            node_group = f"as{node_as}"
         r[name] = {
                 'name': name,
                 'kind': n.device,
@@ -71,13 +73,13 @@ def nodes_items(topology: Box) -> Box:
             node_item = topology.nodes[l.interfaces[0].node]
             graph_level = node_item.get('graphite.level',1)
             node_group = "tier-1"
-            node_as = node_item.get('bgp', {}).get('as')
+            node_as = node_item.get('bgp.as',None)
             if node_as:
-                node_group = "as{}".format(node_as)
-            name = HOST_BRIDGE_NODE_NAME.format(type=l.type, index=l.linkindex)
+                node_group = f"as{node_as}"
+            name = strings.eval_format_args(HOST_BRIDGE_NODE_NAME,type=l.type,index=l.linkindex)
             r[name] =  {
                     'name': name,
-                    'kind': "(host bridge: {})".format(l.bridge),
+                    'kind': f"(host bridge: {l.bridge})",
                     "ipv4_address": '',
                     "group": node_group,
                     "labels": {
@@ -114,7 +116,10 @@ def links_items(topology: Box) -> list:
         elif l.type == "lan" or l.type == "stub":
             for bridge_intf in l.interfaces:
                 ldata = get_empty_box()
-                bridge_node_name = HOST_BRIDGE_NODE_NAME.format(type=l.type, index=l.linkindex)
+                bridge_node_name = strings.eval_format_args(
+                                     HOST_BRIDGE_NODE_NAME,
+                                     type=l.type,
+                                     index=l.linkindex)
                 ldata.a = {
                     'node': bridge_intf.node,
                     'interface': short_ifname(bridge_intf.ifname),
