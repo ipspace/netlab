@@ -19,12 +19,12 @@ def show_bgp_neighbor(ngb: list, n_id: str, af: str='ipv4', activate: str = '', 
   global af_lookup
 
   if not activate:
-    return 'bgp summary json'
+    return "bgp summary json"
 
   if activate not in af_lookup:
     raise Exception(f'Unsupport address family {activate}')
 
-  return f'bgp {activate} summary established json'
+  return f"bgp {activate} summary {'established ' if 'ip' in activate else ''}json"
 
 def valid_bgp_neighbor(
       ngb: list,
@@ -49,10 +49,12 @@ def valid_bgp_neighbor(
     activate = af
   
   struct_name = af_lookup[activate]
-  if struct_name not in _result:
-    raise Exception('There are no BGP peers in address family {activate}')
-
-  data = _result[struct_name].peers
+  if 'peers' in _result:
+    data = _result.peers
+  elif struct_name not in _result:
+    raise Exception(f'There are no BGP peers in address family {activate}')
+  else:
+    data = _result[struct_name].peers
 
   if not n_addr in data:
     result = f'The router has no BGP neighbor with {af} address {n_addr} ({n_id}){act_err}'
