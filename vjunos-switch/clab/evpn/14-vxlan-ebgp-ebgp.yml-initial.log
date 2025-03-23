@@ -8,15 +8,15 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [spine]
 ok: [l2]
-ok: [l1]
 ok: [h1]
 ok: [h2]
+ok: [l1]
 
 TASK [Find device readiness script] ********************************************
-ok: [l2]
 ok: [spine]
-ok: [h1]
+ok: [l2]
 ok: [l1]
+ok: [h1]
 ok: [h2]
 
 TASK [Wait for device to become ready] *****************************************
@@ -36,14 +36,15 @@ ok: [spine -> localhost]
 ok: [l1 -> localhost]
 
 TASK [Execute local ssh command to check vjunos-switch readiness] **************
-FAILED - RETRYING: [spine -> localhost]: Execute local ssh command to check vjunos-switch readiness (40 retries left).
 FAILED - RETRYING: [l1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (40 retries left).
-FAILED - RETRYING: [spine -> localhost]: Execute local ssh command to check vjunos-switch readiness (39 retries left).
+FAILED - RETRYING: [spine -> localhost]: Execute local ssh command to check vjunos-switch readiness (40 retries left).
 FAILED - RETRYING: [l1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (39 retries left).
-FAILED - RETRYING: [spine -> localhost]: Execute local ssh command to check vjunos-switch readiness (38 retries left).
+FAILED - RETRYING: [spine -> localhost]: Execute local ssh command to check vjunos-switch readiness (39 retries left).
 FAILED - RETRYING: [l1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (38 retries left).
-FAILED - RETRYING: [spine -> localhost]: Execute local ssh command to check vjunos-switch readiness (37 retries left).
+FAILED - RETRYING: [spine -> localhost]: Execute local ssh command to check vjunos-switch readiness (38 retries left).
 FAILED - RETRYING: [l1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (37 retries left).
+FAILED - RETRYING: [spine -> localhost]: Execute local ssh command to check vjunos-switch readiness (37 retries left).
+FAILED - RETRYING: [l1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (36 retries left).
 FAILED - RETRYING: [spine -> localhost]: Execute local ssh command to check vjunos-switch readiness (36 retries left).
 ok: [l1 -> localhost]
 ok: [spine -> localhost]
@@ -58,8 +59,8 @@ TASK [Wait for ge-0/0/0 interface] *********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vjunos-switch.yml for spine, l1
 
 TASK [Wait for ge-0/0/0 to appear] *********************************************
-ok: [l1]
 ok: [spine]
+ok: [l1]
 
 TASK [Normalize config on bridge-like devices] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for spine, l1, l2, h1, h2
@@ -357,7 +358,7 @@ ok: [l2] =>
     !
     interface vlan1000
      no shutdown
-     description VLAN red (1000) -> [h1,l1,h2]
+     description VLAN red (1000) -> [h1,l1,h2] [external]
      ! no ip address
     !
     do write
@@ -424,7 +425,7 @@ ok: [l1] =>
   
       }
       irb.1000 {
-        description "VLAN red (1000) -> [h1,h2,l2]";
+        description "VLAN red (1000) -> [h1,h2,l2] [external]";
   
   
       }
@@ -474,12 +475,12 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -493,7 +494,7 @@ TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/a
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-v1nu7olm.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-yavqv_6f.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -506,6 +507,7 @@ ok: [spine]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=vlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=routing)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=bgp)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=vxlan)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=evpn)
@@ -532,6 +534,25 @@ ok: [l1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [spine]
+ok: [l2] => 
+  msg: |-
+    vlan configuration for l2
+    =========================================
+    #!/bin/bash
+    #
+    set -e # Exit immediately when any command fails
+    #
+    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
+      brctl addbr vlan1000
+      ip link set dev vlan1000 address 52:dc:ca:fd:03:00
+  
+      ip addr flush dev vlan1000
+    fi
+  
+    brctl addif vlan1000 eth2
+  
+    ip link set dev vlan1000 up
+    exit 0
 ok: [l1] => 
   msg: |-
     vlan configuration for l1
@@ -560,25 +581,6 @@ ok: [l1] =>
   
   
     }
-ok: [l2] => 
-  msg: |-
-    vlan configuration for l2
-    =========================================
-    #!/bin/bash
-    #
-    set -e # Exit immediately when any command fails
-    #
-    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
-      brctl addbr vlan1000
-      ip link set dev vlan1000 address 52:dc:ca:fd:03:00
-  
-      ip addr flush dev vlan1000
-    fi
-  
-    brctl addif vlan1000 eth2
-  
-    ip link set dev vlan1000 up
-    exit 0
 
 TASK [Deploy vlan configuration] ***********************************************
 skipping: [spine]
@@ -600,6 +602,36 @@ changed: [l2]
 TASK [run vtysh to import vlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/frr.j2] ***
 skipping: [l2]
 
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [l2]
+ok: [l1]
+ok: [spine]
+
+TASK [Find configuration template for routing] *********************************
+skipping: [l1]
+skipping: [l2]
+skipping: [spine]
+
+TASK [fail] ********************************************************************
+skipping: [l1]
+skipping: [l2]
+skipping: [spine]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [l1]
+skipping: [l2]
+skipping: [spine]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [l1]
+skipping: [l2]
+skipping: [spine]
+
+TASK [Deploy routing configuration] ********************************************
+skipping: [l1]
+skipping: [l2]
+skipping: [spine]
+
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [l2]
 ok: [l1]
@@ -607,8 +639,8 @@ ok: [spine]
 
 TASK [Find configuration template for bgp] *************************************
 ok: [l2]
-ok: [spine]
 ok: [l1]
+ok: [spine]
 
 TASK [fail] ********************************************************************
 skipping: [l1]
@@ -617,10 +649,56 @@ skipping: [spine]
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [l2]
-ok: [spine]
 ok: [l1]
+ok: [spine]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [l2] => 
+  msg: |-
+    bgp configuration for l2
+    =========================================
+    !
+    router bgp 65201
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.3
+    !
+      neighbor 10.1.0.6 remote-as 65100
+      neighbor 10.1.0.6 description spine
+    !
+      neighbor 10.0.0.1 remote-as 65100
+      neighbor 10.0.0.1 description spine
+      neighbor 10.0.0.1 update-source lo
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.3/32
+    !
+    !
+    !
+      neighbor 10.1.0.6 activate
+      no neighbor 10.1.0.6 send-community all
+      neighbor 10.1.0.6 send-community standard
+      neighbor 10.1.0.6 send-community large
+      neighbor 10.1.0.6 send-community extended
+    !
+      neighbor 10.0.0.1 activate
+      no neighbor 10.0.0.1 send-community all
+      neighbor 10.0.0.1 send-community standard
+      neighbor 10.0.0.1 send-community large
+      neighbor 10.0.0.1 send-community extended
+    !
+    !
+    !
+    do write
 ok: [l1] => 
   msg: |-
     bgp configuration for l1
@@ -671,7 +749,6 @@ ok: [l1] =>
           type internal;
           export ibgp-export;
           advertise-inactive;
-          local-address 10.0.0.2;
         }
         group ebgp-peers {
           export ebgp-export;
@@ -686,50 +763,11 @@ ok: [l1] =>
           neighbor 10.0.0.1 {
             peer-as 65100;
             description spine;
+            shutdown;
           }
         }
       }
     }
-ok: [l2] => 
-  msg: |-
-    bgp configuration for l2
-    =========================================
-    !
-    router bgp 65201
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.3
-    !
-      neighbor 10.1.0.6 remote-as 65100
-      neighbor 10.1.0.6 description spine
-    !
-      neighbor 10.0.0.1 remote-as 65100
-      neighbor 10.0.0.1 description spine
-      neighbor 10.0.0.1 update-source lo
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-      network 10.0.0.3/32
-    !
-    !
-    !
-      neighbor 10.1.0.6 activate
-      no neighbor 10.1.0.6 send-community all
-      neighbor 10.1.0.6 send-community standard
-      neighbor 10.1.0.6 send-community large
-      neighbor 10.1.0.6 send-community extended
-    !
-    !
-    !
-    do write
 ok: [spine] => 
   msg: |-
     bgp configuration for spine
@@ -780,7 +818,6 @@ ok: [spine] =>
           type internal;
           export ibgp-export;
           advertise-inactive;
-          local-address 10.0.0.1;
         }
         group ebgp-peers {
           export ebgp-export;
@@ -802,10 +839,12 @@ ok: [spine] =>
           neighbor 10.0.0.2 {
             peer-as 65200;
             description l1;
+            shutdown;
           }
           neighbor 10.0.0.3 {
             peer-as 65201;
             description l2;
+            shutdown;
           }
         }
       }
@@ -834,8 +873,8 @@ changed: [l2]
 
 TASK [Figure out whether to deploy the module vxlan on current device] *********
 ok: [l2]
-ok: [spine]
 ok: [l1]
+ok: [spine]
 
 TASK [Find configuration template for vxlan] ***********************************
 skipping: [spine]
@@ -854,6 +893,40 @@ ok: [l1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [spine]
+ok: [l2] => 
+  msg: |-
+    vxlan configuration for l2
+    =========================================
+    #!/bin/bash
+    #
+    set -e # Exit immediately when any command fails
+    #
+  
+  
+  
+    # Create L3 VNIs with bridges and add to correct vrf table
+  
+    # Create VXLAN L2 interface per vni
+    ip link add vxlan1000 type vxlan \
+      id 1000 \
+      dstport 4789 \
+      local 10.0.0.3 nolearning
+    #
+    # Add it to the VLAN bridge (create if needed for l3 vnis); disable STP
+    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
+    brctl addbr vlan1000
+    ip link set up dev vlan1000
+    fi
+    brctl addif vlan1000 vxlan1000
+    brctl stp vlan1000 off
+    # Do not generate ipv6 link-local address for VXLAN devices
+    ip link set mtu 1500 addrgenmode none dev vxlan1000
+    # Disable dynamic MAC learning for evpn, see https://docs.frrouting.org/en/latest/evpn.html
+    bridge link set dev vxlan1000 learning off
+    ip link set up dev vxlan1000
+  
+  
+    exit $?
 ok: [l1] => 
   msg: |-
     vxlan configuration for l1
@@ -893,40 +966,6 @@ ok: [l1] =>
     }
   
     protocols evpn encapsulation vxlan;
-ok: [l2] => 
-  msg: |-
-    vxlan configuration for l2
-    =========================================
-    #!/bin/bash
-    #
-    set -e # Exit immediately when any command fails
-    #
-  
-  
-  
-    # Create L3 VNIs with bridges and add to correct vrf table
-  
-    # Create VXLAN L2 interface per vni
-    ip link add vxlan1000 type vxlan \
-      id 1000 \
-      dstport 4789 \
-      local 10.0.0.3 nolearning
-    #
-    # Add it to the VLAN bridge (create if needed for l3 vnis); disable STP
-    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
-    brctl addbr vlan1000
-    ip link set up dev vlan1000
-    fi
-    brctl addif vlan1000 vxlan1000
-    brctl stp vlan1000 off
-    # Do not generate ipv6 link-local address for VXLAN devices
-    ip link set mtu 1500 addrgenmode none dev vxlan1000
-    # Disable dynamic MAC learning for evpn, see https://docs.frrouting.org/en/latest/evpn.html
-    bridge link set dev vxlan1000 learning off
-    ip link set up dev vxlan1000
-  
-  
-    exit $?
 
 TASK [Deploy vxlan configuration] **********************************************
 skipping: [spine]
@@ -955,8 +994,8 @@ ok: [spine]
 
 TASK [Find configuration template for evpn] ************************************
 ok: [l2]
-ok: [spine]
 ok: [l1]
+ok: [spine]
 
 TASK [fail] ********************************************************************
 skipping: [l1]
@@ -969,39 +1008,6 @@ ok: [l1]
 ok: [spine]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [l1] => 
-  msg: |-
-    evpn configuration for l1
-    =========================================
-  
-    protocols {
-      bgp {
-        group ibgp-peers-ipv4 {
-        }
-        group ebgp-peers {
-          neighbor 10.0.0.1 {
-            accept-remote-nexthop;
-            multihop no-nexthop-change;
-            family evpn {
-              signaling;
-            }
-          }
-        }
-      }
-    }
-  
-    protocols {
-      evpn {
-        encapsulation vxlan;
-        default-gateway no-gateway-community;
-        extended-vni-list all;
-        vni-options {
-            vni 1000 {
-                vrf-target target:65000:1000;
-            }
-        }
-      }
-    }
 ok: [l2] => 
   msg: |-
     evpn configuration for l2
@@ -1024,7 +1030,7 @@ ok: [l2] =>
       exit-vni
   
       neighbor 10.0.0.1 activate
-      neighbor 10.0.0.1 soft-reconfiguration inbound
+    #  neighbor 10.0.0.1 soft-reconfiguration inbound
   
      exit-address-family
     !
@@ -1037,6 +1043,40 @@ ok: [l2] =>
     CONFIG
     vtysh -f /tmp/evpn_config
     vtysh -c 'clear bgp *'
+ok: [l1] => 
+  msg: |-
+    evpn configuration for l1
+    =========================================
+  
+    protocols {
+      bgp {
+        group ibgp-peers-ipv4 {
+        }
+        group ebgp-peers {
+          neighbor 10.0.0.1 {
+            accept-remote-nexthop;
+            multihop no-nexthop-change;
+            delete: shutdown;
+            family evpn {
+              signaling;
+            }
+          }
+        }
+      }
+    }
+  
+    protocols {
+      evpn {
+        encapsulation vxlan;
+        default-gateway no-gateway-community;
+        extended-vni-list all;
+        vni-options {
+            vni 1000 {
+                vrf-target target:65000:1000;
+            }
+        }
+      }
+    }
 ok: [spine] => 
   msg: |-
     evpn configuration for spine
@@ -1050,6 +1090,7 @@ ok: [spine] =>
           neighbor 10.0.0.2 {
             accept-remote-nexthop;
             multihop no-nexthop-change;
+            delete: shutdown;
             family evpn {
               signaling;
             }
@@ -1057,6 +1098,7 @@ ok: [spine] =>
           neighbor 10.0.0.3 {
             accept-remote-nexthop;
             multihop no-nexthop-change;
+            delete: shutdown;
             family evpn {
               signaling;
             }
@@ -1092,8 +1134,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-custom-config.yml for
 
 TASK [Find configuration template] *********************************************
 ok: [l2]
-ok: [spine]
 ok: [l1]
+ok: [spine]
 
 TASK [fail] ********************************************************************
 skipping: [l1]
@@ -1102,8 +1144,8 @@ skipping: [spine]
 
 TASK [Check is the configuration template is a file] ***************************
 ok: [l1 -> localhost]
-ok: [spine -> localhost]
 ok: [l2 -> localhost]
+ok: [spine -> localhost]
 
 TASK [fail] ********************************************************************
 skipping: [l1]
@@ -1116,17 +1158,17 @@ skipping: [l1]
 skipping: [spine]
 
 TASK [Find custom configuration deployment script] *****************************
-ok: [l1]
 ok: [l2]
 ok: [spine]
+ok: [l1]
 
 TASK [Run the configuration deployment script] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for l1, spine
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
 TASK [junos_config: deploying ebgp.multihop from /home/pipi/netlab_gh/netsim/extra/ebgp.multihop/junos.j2] ***
-changed: [spine]
 changed: [l1]
+changed: [spine]
 
 TASK [template] ****************************************************************
 changed: [l2]
@@ -1143,9 +1185,9 @@ changed: [l2]
 PLAY RECAP *********************************************************************
 h1                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 h2                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-l1                         : ok=55   changed=6    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
-l2                         : ok=62   changed=13   unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
-spine                      : ok=46   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+l1                         : ok=57   changed=6    unreachable=0    failed=0    skipped=16   rescued=0    ignored=0   
+l2                         : ok=64   changed=13   unreachable=0    failed=0    skipped=24   rescued=0    ignored=0   
+spine                      : ok=48   changed=4    unreachable=0    failed=0    skipped=24   rescued=0    ignored=0   
 
 
 
