@@ -35,6 +35,8 @@ groups:
     members: [ spine ]
     module: [ bgp, evpn ]
   x_switches:
+    module: [ vlan, vxlan, bgp, evpn ]
+    bgp.multihop.activate.ipv4: [ ipv4, evpn ]  # Force IPv4 AF on multihop EBGP session on the probe device
     members: [ l2 ]
     device: frr
     provider: clab
@@ -64,6 +66,36 @@ links:
   mtu: 1600
 
 validate:
+  ebgp_adj:
+    description: Check EBGP adjacencies with Spine
+    wait: 40
+    nodes: [ l2 ]
+    wait_msg: Waiting for EGBP session
+    plugin: bgp_neighbor([ n for n in node.bgp.neighbors if 'multihop' not in n],'spine')
+
+  evpn_adj:
+    description: Check EVPN/IBGP adjacencies with Spine
+    wait: 40
+    nodes: [ l2 ]
+    wait_msg: Waiting for EVPN/IBGP session
+    plugin: >-
+      bgp_neighbor(
+        [ n for n in node.bgp.neighbors if 'multihop' in n],
+        'spine',
+        activate='evpn')
+
+  ibgp_adj:
+    description: Check IPv4/IBGP adjacencies with Spine
+    wait: 40
+    nodes: [ l2 ]
+    wait_msg: Waiting for EVPN/IBGP session
+    plugin: >-
+      bgp_neighbor(
+        [ n for n in node.bgp.neighbors if 'multihop' in n],
+        'spine',
+        activate='ipv4',
+        state='missing')
+
   ping_red:
     description: Ping-based reachability test in VLAN red
     wait_msg: Waiting for STP to wake up
