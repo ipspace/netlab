@@ -22,7 +22,7 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, dut2, x1, x2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, dut2, x1, x2
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [dut]
@@ -61,7 +61,7 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, dut2, x1, x2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, dut2, x1, x2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
@@ -471,14 +471,14 @@ ok: [x2] =>
     exit 0
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for dut, dut2
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for x1, x2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut, dut2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for x1, x2
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [dut]
 ok: [dut2]
 
-TASK [Update SRL initial node configuration (template=/home/pipi/netlab_gh/netsim/ansible/templates/initial/srlinux.j2)] ***
+TASK [Update SRL initial node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2)] ***
 changed: [dut2]
 changed: [dut]
 
@@ -494,7 +494,7 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
 
 TASK [template] ****************************************************************
 changed: [x1]
@@ -504,11 +504,11 @@ TASK [set_fact] ****************************************************************
 ok: [x1]
 ok: [x2]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [x2]
 changed: [x1]
 
-TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
 skipping: [x2]
 
@@ -521,7 +521,7 @@ ok: [x1]
 ok: [x2]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, dut2, x1, x2 => (item=bgp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, dut2, x1, x2 => (item=bgp)
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [dut]
@@ -661,10 +661,19 @@ ok: [dut] =>
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
       value:
         admin-state: enable
+    # neighbor: {'activate': {'ipv6': True}, 'as': 65100, 'ifindex': 1, 'ipv6': '2001:db8:3::2', 'name': 'x1', 'type': 'ebgp'}
+    # ipv4: True
+    # ipv6: True
         afi-safi:
-        - afi-safi-name: ipv6-unicast
-          export-policy: [ default_bgp_export, 'accept_all' ]
+        - afi-safi-name: ipv4-unicast
+          admin-state: disable
           import-policy: ['accept_all']
+          export-policy: ['default_bgp_export', 'accept_all']
+        - afi-safi-name: ipv6-unicast
+          admin-state: enable
+          import-policy: ['accept_all']
+          export-policy: ['default_bgp_export', 'accept_all']
+  
         timers:
           connect-retry: 10
           _annotate_connect-retry: "Reduce default 120s to 10s"
@@ -681,22 +690,33 @@ ok: [dut] =>
         - peer-address: "2001:db8:3::2"
           description: x1
           peer-group: ebgp
-      # bgp_families af=ipv6 activate={'ipv4': False, 'ipv6': True}
+      # neighbor: {'activate': {'ipv6': True}, 'as': 65100, 'ifindex': 1, 'ipv6': '2001:db8:3::2', 'name': 'x1', 'type': 'ebgp'}
+      # ipv4: True
+      # ipv6: True
           afi-safi:
           - afi-safi-name: ipv4-unicast
-            admin-state: 'disable'
+            admin-state: disable
           - afi-safi-name: ipv6-unicast
-            admin-state: 'enable'
+            admin-state: enable
   
           peer-as: 65100
   
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
       value:
         admin-state: enable
+    # neighbor: {'activate': {'ipv6': True}, 'as': 65101, 'ifindex': 2, 'ipv6': '2001:db8:3:1::2', 'name': 'x2', 'type': 'ebgp'}
+    # ipv4: True
+    # ipv6: True
         afi-safi:
-        - afi-safi-name: ipv6-unicast
-          export-policy: [ default_bgp_export, 'accept_all' ]
+        - afi-safi-name: ipv4-unicast
+          admin-state: disable
           import-policy: ['accept_all']
+          export-policy: ['default_bgp_export', 'accept_all']
+        - afi-safi-name: ipv6-unicast
+          admin-state: enable
+          import-policy: ['accept_all']
+          export-policy: ['default_bgp_export', 'accept_all']
+  
         timers:
           connect-retry: 10
           _annotate_connect-retry: "Reduce default 120s to 10s"
@@ -713,22 +733,33 @@ ok: [dut] =>
         - peer-address: "2001:db8:3:1::2"
           description: x2
           peer-group: ebgp
-      # bgp_families af=ipv6 activate={'ipv4': False, 'ipv6': True}
+      # neighbor: {'activate': {'ipv6': True}, 'as': 65101, 'ifindex': 2, 'ipv6': '2001:db8:3:1::2', 'name': 'x2', 'type': 'ebgp'}
+      # ipv4: True
+      # ipv6: True
           afi-safi:
           - afi-safi-name: ipv4-unicast
-            admin-state: 'disable'
+            admin-state: disable
           - afi-safi-name: ipv6-unicast
-            admin-state: 'enable'
+            admin-state: enable
   
           peer-as: 65101
   
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
       value:
         admin-state: enable
+    # neighbor: {'activate': {'ipv6': True}, 'as': 65001, 'ifindex': 3, 'ipv6': '2001:db8:cafe:e01::2', 'name': 'dut2', 'type': 'ebgp'}
+    # ipv4: True
+    # ipv6: True
         afi-safi:
-        - afi-safi-name: ipv6-unicast
-          export-policy: [ default_bgp_export, 'accept_all' ]
+        - afi-safi-name: ipv4-unicast
+          admin-state: disable
           import-policy: ['accept_all']
+          export-policy: ['default_bgp_export', 'accept_all']
+        - afi-safi-name: ipv6-unicast
+          admin-state: enable
+          import-policy: ['accept_all']
+          export-policy: ['default_bgp_export', 'accept_all']
+  
         timers:
           connect-retry: 10
           _annotate_connect-retry: "Reduce default 120s to 10s"
@@ -745,12 +776,14 @@ ok: [dut] =>
         - peer-address: "2001:db8:cafe:e01::2"
           description: dut2
           peer-group: ebgp
-      # bgp_families af=ipv6 activate={'ipv4': False, 'ipv6': True}
+      # neighbor: {'activate': {'ipv6': True}, 'as': 65001, 'ifindex': 3, 'ipv6': '2001:db8:cafe:e01::2', 'name': 'dut2', 'type': 'ebgp'}
+      # ipv4: True
+      # ipv6: True
           afi-safi:
           - afi-safi-name: ipv4-unicast
-            admin-state: 'disable'
+            admin-state: disable
           - afi-safi-name: ipv6-unicast
-            admin-state: 'enable'
+            admin-state: enable
   
           peer-as: 65001
 ok: [dut2] => 
@@ -831,10 +864,19 @@ ok: [dut2] =>
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
       value:
         admin-state: enable
+    # neighbor: {'activate': {'ipv6': True}, 'as': 65000, 'ifindex': 1, 'ipv6': '2001:db8:cafe:e01::1', 'name': 'dut', 'type': 'ebgp'}
+    # ipv4: True
+    # ipv6: True
         afi-safi:
-        - afi-safi-name: ipv6-unicast
-          export-policy: [ default_bgp_export, 'accept_all' ]
+        - afi-safi-name: ipv4-unicast
+          admin-state: disable
           import-policy: ['accept_all']
+          export-policy: ['default_bgp_export', 'accept_all']
+        - afi-safi-name: ipv6-unicast
+          admin-state: enable
+          import-policy: ['accept_all']
+          export-policy: ['default_bgp_export', 'accept_all']
+  
         timers:
           connect-retry: 10
           _annotate_connect-retry: "Reduce default 120s to 10s"
@@ -851,12 +893,14 @@ ok: [dut2] =>
         - peer-address: "2001:db8:cafe:e01::1"
           description: dut
           peer-group: ebgp
-      # bgp_families af=ipv6 activate={'ipv4': False, 'ipv6': True}
+      # neighbor: {'activate': {'ipv6': True}, 'as': 65000, 'ifindex': 1, 'ipv6': '2001:db8:cafe:e01::1', 'name': 'dut', 'type': 'ebgp'}
+      # ipv4: True
+      # ipv6: True
           afi-safi:
           - afi-safi-name: ipv4-unicast
-            admin-state: 'disable'
+            admin-state: disable
           - afi-safi-name: ipv6-unicast
-            admin-state: 'enable'
+            admin-state: enable
   
           peer-as: 65000
 ok: [x2] => 
@@ -896,14 +940,14 @@ ok: [x2] =>
     do write
 
 TASK [Deploy bgp configuration] ************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for dut, dut2
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut, dut2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [dut]
 ok: [dut2]
 
-TASK [Update SRL bgp node configuration (template=/home/pipi/netlab_gh/netsim/ansible/templates/bgp/srlinux.j2)] ***
+TASK [Update SRL bgp node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2)] ***
 changed: [dut2]
 changed: [dut]
 
@@ -912,18 +956,18 @@ skipping: [dut]
 skipping: [dut2]
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
 ok: [x2]
 
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [x1]
 skipping: [x2]
 
-TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [x1]
 changed: [x2]
 

@@ -6,8 +6,8 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [s1]
 ok: [s2]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 ok: [h3]
 ok: [h4]
 
@@ -28,7 +28,7 @@ skipping: [h3]
 skipping: [h4]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2, h1, h2, h3, h4
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, h1, h2, h3, h4
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [s1]
@@ -43,8 +43,8 @@ ok: [s1]
 ok: [s2]
 ok: [h1]
 ok: [h2]
-ok: [h4]
 ok: [h3]
+ok: [h4]
 
 TASK [fail] ********************************************************************
 skipping: [s1]
@@ -79,13 +79,13 @@ skipping: [h3]
 skipping: [h4]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2, h1, h2, h3, h4
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, h1, h2, h3, h4
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [s1]
 ok: [s2]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 ok: [h3]
 ok: [h4]
 
@@ -165,9 +165,9 @@ ok: [h1] =>
     #
     # Print the final routing table
     ip route
-ok: [h4] => 
+ok: [h3] => 
   msg: |-
-    initial configuration for h4
+    initial configuration for h3
     =========================================
     #!/bin/bash
     #
@@ -190,9 +190,9 @@ ok: [h4] =>
     #
     ip link set dev eth1 up
     set +e
-    ip addr del 172.16.3.6/24 dev eth1 2>/dev/null
+    ip addr del 172.16.2.5/24 dev eth1 2>/dev/null
     set -e
-    ip addr add 172.16.3.6/24 dev eth1
+    ip addr add 172.16.2.5/24 dev eth1
     ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
@@ -209,10 +209,10 @@ ok: [h4] =>
     #
     #
     echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.3.2 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.3.2 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.3.2 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.3.2 dev eth1 protocol static
+    ip route add 172.16.0.0/16 via 172.16.2.1 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.2.1 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.2.1 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.2.1 dev eth1 protocol static
     #
     # Print the final routing table
     ip route
@@ -268,6 +268,57 @@ ok: [s1] =>
   
   
     # TODO: vdata.rd, vdata.import/export, vdata.af
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.1.4/24 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.1.1 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.1.1 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.1.1 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.1.1 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
 ok: [s2] => 
   msg: |-
     initial configuration for s2
@@ -320,9 +371,9 @@ ok: [s2] =>
   
   
     # TODO: vdata.rd, vdata.import/export, vdata.af
-ok: [h3] => 
+ok: [h4] => 
   msg: |-
-    initial configuration for h3
+    initial configuration for h4
     =========================================
     #!/bin/bash
     #
@@ -345,9 +396,9 @@ ok: [h3] =>
     #
     ip link set dev eth1 up
     set +e
-    ip addr del 172.16.2.5/24 dev eth1 2>/dev/null
+    ip addr del 172.16.3.6/24 dev eth1 2>/dev/null
     set -e
-    ip addr add 172.16.2.5/24 dev eth1
+    ip addr add 172.16.3.6/24 dev eth1
     ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
@@ -364,74 +415,23 @@ ok: [h3] =>
     #
     #
     echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.2.1 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.2.1 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.2.1 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.2.1 dev eth1 protocol static
-    #
-    # Print the final routing table
-    ip route
-ok: [h2] => 
-  msg: |-
-    initial configuration for h2
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.1.4/24 dev eth1
-    ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.2.0.0/24 2>/dev/null; do
-      : ; done
-    #
-    #
-    echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.1.1 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.1.1 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.1.1 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.1.1 dev eth1 protocol static
+    ip route add 172.16.0.0/16 via 172.16.3.2 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.3.2 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.3.2 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.3.2 dev eth1 protocol static
     #
     # Print the final routing table
     ip route
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2, h3, h4
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2, h3, h4
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [s1]
 ok: [s2]
 
-TASK [Update SRL initial node configuration (template=/home/pipi/netlab_gh/netsim/ansible/templates/initial/srlinux.j2)] ***
+TASK [Update SRL initial node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2)] ***
 changed: [s1]
 changed: [s2]
 
@@ -446,15 +446,15 @@ ok: [h3]
 ok: [h4]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h3 -> localhost]
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h3 -> localhost]
 changed: [h4 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
+TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+changed: [h3 -> localhost]
 changed: [h2 -> localhost]
 changed: [h4 -> localhost]
-changed: [h3 -> localhost]
 changed: [h1 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
@@ -463,23 +463,23 @@ skipping: [h2]
 skipping: [h3]
 skipping: [h4]
 
-TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
+TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
 
-TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h2 -> localhost]
+TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [h4 -> localhost]
-changed: [h3 -> localhost]
+changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h3 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-r7i86r6r.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-9u_rqomx.sh] ***********************
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
-changed: [h2 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -488,13 +488,13 @@ ok: [s1]
 ok: [s2]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=vlan)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=routing)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=bgp)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=ospf)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=vrf)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=vxlan)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=evpn)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=vlan)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=routing)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=bgp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=vrf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=vxlan)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=evpn)
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [s1]
@@ -757,13 +757,13 @@ ok: [s2] =>
        - name: irb0.1000
 
 TASK [Deploy vlan configuration] ***********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [s1]
 ok: [s2]
 
-TASK [Update SRL vlan node configuration (template=/home/pipi/netlab_gh/netsim/ansible/templates/vlan/srlinux.j2)] ***
+TASK [Update SRL vlan node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/vlan/srlinux.j2)] ***
 changed: [s2]
 changed: [s1]
 
@@ -890,10 +890,21 @@ ok: [s1] =>
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
       value:
         admin-state: enable
+    # neighbor: {'_source_intf': {'ifindex': 0, 'ifname': 'lo0.0', 'ipv4': '10.0.0.1/32', 'neighbors': [], 'type': 'loopback', 'virtual_interface': True}, 'activate': {'ipv4': True}, 'as': 65000, 'evpn': True, 'ipv4': '10.0.0.2', 'name': 's2', 'type': 'ibgp'}
+    # ipv4: True
+    # ipv6: True
         afi-safi:
         - afi-safi-name: ipv4-unicast
-          export-policy: [ default_bgp_export, 'accept_all' ]
+          admin-state: enable
           import-policy: ['accept_all']
+          export-policy: ['default_bgp_export', 'accept_all']
+        - afi-safi-name: ipv6-unicast
+          admin-state: disable
+          import-policy: ['accept_all']
+          export-policy: ['default_bgp_export', 'accept_all']
+        - afi-safi-name: evpn
+          admin-state: enable
+  
         timers:
           connect-retry: 10
           _annotate_connect-retry: "Reduce default 120s to 10s"
@@ -914,12 +925,16 @@ ok: [s1] =>
         - peer-address: "10.0.0.2"
           description: s2
           peer-group: ibgp-ipv4
-      # bgp_families af=ipv4 activate={'ipv4': True, 'ipv6': False}
+      # neighbor: {'_source_intf': {'ifindex': 0, 'ifname': 'lo0.0', 'ipv4': '10.0.0.1/32', 'neighbors': [], 'type': 'loopback', 'virtual_interface': True}, 'activate': {'ipv4': True}, 'as': 65000, 'evpn': True, 'ipv4': '10.0.0.2', 'name': 's2', 'type': 'ibgp'}
+      # ipv4: True
+      # ipv6: False
           afi-safi:
           - afi-safi-name: ipv4-unicast
-            admin-state: 'enable'
+            admin-state: enable
           - afi-safi-name: ipv6-unicast
-            admin-state: 'disable'
+            admin-state: disable
+          - afi-safi-name: evpn
+            admin-state: enable
 ok: [s2] => 
   msg: |-
     bgp configuration for s2
@@ -998,10 +1013,21 @@ ok: [s2] =>
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
       value:
         admin-state: enable
+    # neighbor: {'_source_intf': {'ifindex': 0, 'ifname': 'lo0.0', 'ipv4': '10.0.0.2/32', 'neighbors': [], 'type': 'loopback', 'virtual_interface': True}, 'activate': {'ipv4': True}, 'as': 65000, 'evpn': True, 'ipv4': '10.0.0.1', 'name': 's1', 'type': 'ibgp'}
+    # ipv4: True
+    # ipv6: True
         afi-safi:
         - afi-safi-name: ipv4-unicast
-          export-policy: [ default_bgp_export, 'accept_all' ]
+          admin-state: enable
           import-policy: ['accept_all']
+          export-policy: ['default_bgp_export', 'accept_all']
+        - afi-safi-name: ipv6-unicast
+          admin-state: disable
+          import-policy: ['accept_all']
+          export-policy: ['default_bgp_export', 'accept_all']
+        - afi-safi-name: evpn
+          admin-state: enable
+  
         timers:
           connect-retry: 10
           _annotate_connect-retry: "Reduce default 120s to 10s"
@@ -1022,23 +1048,27 @@ ok: [s2] =>
         - peer-address: "10.0.0.1"
           description: s1
           peer-group: ibgp-ipv4
-      # bgp_families af=ipv4 activate={'ipv4': True, 'ipv6': False}
+      # neighbor: {'_source_intf': {'ifindex': 0, 'ifname': 'lo0.0', 'ipv4': '10.0.0.2/32', 'neighbors': [], 'type': 'loopback', 'virtual_interface': True}, 'activate': {'ipv4': True}, 'as': 65000, 'evpn': True, 'ipv4': '10.0.0.1', 'name': 's1', 'type': 'ibgp'}
+      # ipv4: True
+      # ipv6: False
           afi-safi:
           - afi-safi-name: ipv4-unicast
-            admin-state: 'enable'
+            admin-state: enable
           - afi-safi-name: ipv6-unicast
-            admin-state: 'disable'
+            admin-state: disable
+          - afi-safi-name: evpn
+            admin-state: enable
 
 TASK [Deploy bgp configuration] ************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [s1]
 ok: [s2]
 
-TASK [Update SRL bgp node configuration (template=/home/pipi/netlab_gh/netsim/ansible/templates/bgp/srlinux.j2)] ***
-changed: [s2]
+TASK [Update SRL bgp node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2)] ***
 changed: [s1]
+changed: [s2]
 
 TASK [debug] *******************************************************************
 skipping: [s1]
@@ -1061,39 +1091,6 @@ ok: [s1]
 ok: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [s1] => 
-  msg: |-
-    ospf configuration for s1
-    =========================================
-    updates:
-  
-  
-    - path: /network-instance[name=default]
-      value:
-        router-id: 10.0.0.1
-        protocols:
-          ospf:
-            instance:
-            - name: "0"
-              version: ospf-v2
-              admin-state: enable
-              max-ecmp-paths: 64
-              area:
-              - area-id: 0.0.0.0
-                interface:
-                - interface-name: system0.0
-                  passive: True
-              - area-id: 0.0.0.0
-                interface:
-                - interface-name: ethernet-1/1.0
-                  interface-type: "point-to-point"
-                  failure-detection:
-                    enable-bfd: False
-           # OSPF not configured on external interface ethernet-1/2
-           # OSPF not configured on external interface ethernet-1/3
-           # OSPF not configured on external interface irb0.1000
-           # OSPF not configured on external interface irb0.1002
-           # OSPF not configured on external interface irb0.1001
 ok: [s2] => 
   msg: |-
     ospf configuration for s2
@@ -1127,17 +1124,50 @@ ok: [s2] =>
            # OSPF not configured on external interface irb0.1001
            # OSPF not configured on external interface irb0.1003
            # OSPF not configured on external interface irb0.1000
+ok: [s1] => 
+  msg: |-
+    ospf configuration for s1
+    =========================================
+    updates:
+  
+  
+    - path: /network-instance[name=default]
+      value:
+        router-id: 10.0.0.1
+        protocols:
+          ospf:
+            instance:
+            - name: "0"
+              version: ospf-v2
+              admin-state: enable
+              max-ecmp-paths: 64
+              area:
+              - area-id: 0.0.0.0
+                interface:
+                - interface-name: system0.0
+                  passive: True
+              - area-id: 0.0.0.0
+                interface:
+                - interface-name: ethernet-1/1.0
+                  interface-type: "point-to-point"
+                  failure-detection:
+                    enable-bfd: False
+           # OSPF not configured on external interface ethernet-1/2
+           # OSPF not configured on external interface ethernet-1/3
+           # OSPF not configured on external interface irb0.1000
+           # OSPF not configured on external interface irb0.1002
+           # OSPF not configured on external interface irb0.1001
 
 TASK [Deploy ospf configuration] ***********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [s1]
 ok: [s2]
 
-TASK [Update SRL ospf node configuration (template=/home/pipi/netlab_gh/netsim/ansible/templates/ospf/srlinux.j2)] ***
-changed: [s1]
+TASK [Update SRL ospf node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2)] ***
 changed: [s2]
+changed: [s1]
 
 TASK [debug] *******************************************************************
 skipping: [s1]
@@ -1502,13 +1532,13 @@ ok: [s2] =>
           policy-result: "accept"
 
 TASK [Deploy vrf configuration] ************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [s1]
 ok: [s2]
 
-TASK [Update SRL vrf node configuration (template=/home/pipi/netlab_gh/netsim/ansible/templates/vrf/srlinux.j2)] ***
+TASK [Update SRL vrf node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/vrf/srlinux.j2)] ***
 changed: [s1]
 changed: [s2]
 
@@ -1669,15 +1699,15 @@ ok: [s2] =>
            vxlan-interface: vxlan0.1001
 
 TASK [Deploy vxlan configuration] **********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [s1]
 ok: [s2]
 
-TASK [Update SRL vxlan node configuration (template=/home/pipi/netlab_gh/netsim/ansible/templates/vxlan/srlinux.j2)] ***
-changed: [s2]
+TASK [Update SRL vxlan node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/vxlan/srlinux.j2)] ***
 changed: [s1]
+changed: [s2]
 
 TASK [debug] *******************************************************************
 skipping: [s1]
@@ -1720,15 +1750,6 @@ ok: [s1] =>
         - afi-safi-name: evpn
           evpn:
             rapid-update: True
-  
-    - path: /network-instance[name=default]/protocols/bgp
-      value:
-        neighbor:
-        - peer-address: "10.0.0.2"
-          admin-state: 'enable'
-          afi-safi:
-          - afi-safi-name: evpn
-            admin-state: 'enable'
   
     - path: /interface[name=irb0]/subinterface[index=1000]
       value:
@@ -1788,15 +1809,6 @@ ok: [s2] =>
           evpn:
             rapid-update: True
   
-    - path: /network-instance[name=default]/protocols/bgp
-      value:
-        neighbor:
-        - peer-address: "10.0.0.1"
-          admin-state: 'enable'
-          afi-safi:
-          - afi-safi-name: evpn
-            admin-state: 'enable'
-  
     - path: /interface[name=irb0]/subinterface[index=1001]
       value:
        ipv4:
@@ -1836,15 +1848,15 @@ ok: [s2] =>
               _annotate: "Advertise local irb interface IPs"
 
 TASK [Deploy evpn configuration] ***********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [s1]
 ok: [s2]
 
-TASK [Update SRL evpn node configuration (template=/home/pipi/netlab_gh/netsim/ansible/templates/evpn/srlinux.j2)] ***
-changed: [s1]
+TASK [Update SRL evpn node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/evpn/srlinux.j2)] ***
 changed: [s2]
+changed: [s1]
 
 TASK [debug] *******************************************************************
 skipping: [s1]
