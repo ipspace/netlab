@@ -79,7 +79,7 @@ The keys of the **vrfs** dictionary are VRF names; the values are VRF definition
 * **rd** -- route distinguisher (integer or string)
 * **import** -- a list of import route targets
 * **export** -- a list of export route targets
-* **loopback** (bool or prefix) -- Create a loopback interface for this VRF.
+* **loopback** (bool or prefix) -- Create a loopback interface for this VRF ([more details](vrf-loopback)).
 * **links** - a [list of links](module-vrf-links) within this VRF.
 * A VRF definition can also contain other link- or interface-level parameters (for example, OSPF cost).
 
@@ -116,7 +116,7 @@ A loopback interface is created for a VRF whenever you set the **vrfs.*name*.loo
 * A dictionary of address families specifying IPv4 and/or IPv6 prefixes to be used on the loopback interface
 
 ```{warning}
-The explicit IPv4/IPv6 loopback addresses should be used only in the node VRF definition, not in the global VRF definition.
+The explicit IPv4/IPv6 loopback addresses can be used only in the node VRF definition, not in the global VRF definition.
 ```
 
 ### RD and RT Values
