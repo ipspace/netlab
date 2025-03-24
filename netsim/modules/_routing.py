@@ -13,7 +13,9 @@ import typing
 from ..utils import log, routing as _rp_utils
 from ..augment import addressing,devices
 from .routing import import_routing_policy,check_routing_policy
+from . import get_effective_module_attribute
 from .. import data
+from ..data import global_vars
 
 # Build routing protocol address families
 #
@@ -417,15 +419,31 @@ def check_intf_support(node: Box, proto: str, topology: Box) -> bool:
 """
 get_remote_cp_endpoint: find the remote control-plane endpoint
 
-Return loopback interface or the first physical interface
+Return loopback interface or a physical interface, preferring intra-AS over external over VRF interfaces
 """
 def get_remote_cp_endpoint(n: Box) -> Box:
   if 'loopback' in n and n.get('role') != 'host':           # The node has loopback and is not a host
     return n.loopback                                       # ... can't use loopback if the node has no routing
 
-  if n.interfaces:                                          # Hope the node has at least one usable interface
-    return n.interfaces[0]                                  # ... if it does, return that
+  topology = global_vars.get_topology() or data.get_empty_box()
+  EBGP_ROLE = get_effective_module_attribute(
+                path='bgp.ebgp_role',
+                topology=topology,
+                defaults=topology.defaults) or 'external'
 
+  # Remember the interfaces we found in order of preference
+  intf_options: dict = { 'internal': None, 'external': None, 'vrf': None }
+
+  for intf in n.interfaces:                                 # Iterate over all interfaces
+    intf_type = 'vrf' if 'vrf' in intf else 'external' if intf.get('role',None) == EBGP_ROLE else 'internal'
+    if intf_options[intf_type] is None:                     # Do we already have an interface of this type?
+      intf_options[intf_type] = intf                        # ... nope, remember it
+
+  # Collect the list of all relevant interfaces
+  best_intf = [ intf for intf in intf_options.values() if intf is not None ]
+
+  if best_intf:                                             # Did we find at least one relevant interface?
+    return best_intf[0]                                     # ... return the best one
   return data.get_empty_box()                               # Otherwise return an empty box
 
 """

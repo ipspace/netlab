@@ -128,7 +128,7 @@ def get_neighbor_rr(n: Box) -> typing.Optional[typing.Dict]:
 get_remote_ibgp_endpoint: find the remote endpoint of an IBGP session
 
 * Loopback interface if it exists
-* First physical interface if the remote device is a daemon without a loopback interface
+* Remote CP endpoint if the remote device is a daemon without a loopback interface
 * Otherwise, an empty box (which will result in no IBGP session due to lack of IP addresses)
 """
 def get_remote_ibgp_endpoint(n: Box) -> Box:
@@ -136,7 +136,7 @@ def get_remote_ibgp_endpoint(n: Box) -> Box:
     return n.loopback
 
   if n.get('_daemon',False) and n.interfaces:
-    return n.interfaces[0]
+    return _routing.get_remote_cp_endpoint(n)
 
   return data.get_empty_box()
 
