@@ -213,7 +213,14 @@ Some routing protocols support route import (redistribution) that can be specifi
 * A dictionary of protocols to import
 * A dictionary with protocol-specific parameters. The only recognized parameter is **policy**, which specifies the import [routing policy](generic-routing-policies).
 
+The **_protocol_.import** parameter can be specified:
+
+* In a node definition to configure redistribution between routing protocol instances in the global routing table
+* In a VRF definition to configure redistribution on all nodes using the specified VRF
+* In a node VRF definition to configure in-VRF route redistribution on that node.
+
 **Notes:**
+
 * The **connected** keyword is used to specify connected routes.
 * The source protocol must be active on the node doing route import. For example, to import BGP routes into OSPF, both **bgp** and **ospf** configuration modules must be specified on the node.
 * When importing IGP routes into another IGP within a VRF, the source IGP must have at least one parameter set in the VRF (to tell *netlab* the IGP is active within that VRF). You could, for example, set ***protocol*.active** to *True*

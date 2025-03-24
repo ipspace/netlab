@@ -184,11 +184,17 @@ Finally, the BGP configuration module supports these advanced node parameters th
 
 [^RAS_P]: This functionality might not be configurable on all platforms. For example, Arista EOS supports only the **neighbor local-as no-prepend replace-as** command.
 
+(bgp-vrf)=
 ## VRF Parameters
 
 * BGP is always enabled for all VRF address families. By default, _netlab_ redistributes connected interfaces and IGP routes into BGP VRF address families. You can change that on devices supporting configurable route import with the **[bgp.import](routing_import)** VRF parameter.
 * You can set a VRF-specific BGP router ID with **bgp.router_id** VRF parameter. Use this setting when building topologies with back-to-back links between VRFs on the same device.
 * To stop the creation of VRF EBGP sessions, set the **bgp** VRF parameter to *False* (see also [](routing_disable_vrf)).
+
+**Limitations:**
+
+* IBGP sessions cannot be used within a VRF instance. You can use the BGP **local-as** functionality to create what looks like an IBGP session to the BGP neighbors.
+* You should not use the same BGP AS number on PE- and CE-routers; that would trigger the creation of impossible IBGP sessions between global PE loopbacks and in-VRF CE loopbacks. Use [](plugin-bgp-domain) if you want to build a topology with overlapping AS numbers.
 
 ## Link-Level Parameters
 

@@ -57,8 +57,8 @@ These platforms support routing protocols in VRFs:
 
 ```{note}
 * You cannot run EIGRP within a VRF, but the configuration module is VRF-aware -- it will not try to configure EIGRP routing on VRF interfaces
-* IBGP within a VRF instance does not work. PE-routers and CE-routers MUST HAVE different BGP AS numbers
-* See [VRF Integration Tests Results](https://release.netlab.tools/_html/coverage.vrf) for more details.
+* IBGP within a VRF instance does not work. PE-routers and CE-routers MUST HAVE different BGP AS numbers ([more details](bgp-vrf))
+* The detailed device support matrix is in the [VRF Integration Tests Results](https://release.netlab.tools/_html/coverage.vrf).
 ```
 
 ## Parameters
@@ -147,7 +147,7 @@ The following default values are used in VRF definitions missing **rd**, **impor
 
 * VRFs specified in nodes inherit missing parameters from the global VRFs with the same name
 * When the **rd** is missing, it's assigned a unique value using **bgp.as** or **vrf.as** value as the high-end of the RD value
-* Missing **import** and **export** route targets become a list with the VRF RD being the sole element.
+* The missing **import** and **export** route targets become a list, with the VRF RD as the sole element.
 
 For example, defining a simple VRF *red*...
 
@@ -208,7 +208,7 @@ nodes:
 Notes:
 
 * The global RD/RT values are generated using the system default **vrf.as** value (65000).
-* The global RT values for the *red* VRF are copied into the node data structures. The global RD value is not copied because it's set in the node VRF definition.
+* The global RT values for the *red* VRF are copied into the node data structures. The global RD value is not copied because it is set in the node VRF definition.
 * Node RD value for the *red* VRF is generated using the node **bgp.as** value (65001).
 
 (module-vrf-interface)=
@@ -282,9 +282,10 @@ BGP, OSPF, and IS-IS configuration modules are VRF aware:
 Notes:
 
 * VRF OSPF instances are created only in VRFs with neighbors using the **ospf**  configuration module. To create an OSPF instance in a VRF that would need OSPF based on the lab topology, set the **ospf.active** node VRF parameter to *True*.
-* VRF-specific OSPF and BGP configurations are included in the VRF configuration templates.
-* Connected subnets are redistributed into the OSPF VRF routing process and the BGP VRF address family.
-* If a node has **bgp.as** parameter and VRF-specific OSPF instance(s), the VRF configuration templates configure two-way redistribution between them and the BGP VRF address family.
+* VRF-specific IGP and BGP configurations are included in the VRF configuration templates.
+* Connected subnets are redistributed into the IGP VRF routing processes and the BGP VRF address family.
+* If a node has **bgp.as** parameter and VRF-specific IGP instance(s), the VRF configuration templates configure two-way redistribution between the IGP instances and the BGP VRF address family unless you [configured VRF route redistribution](routing_import).
+* IBGP sessions within VRF instances do not work ([more details](bgp-vrf))
 
 ### Creating VRF OSPF Instances
 
