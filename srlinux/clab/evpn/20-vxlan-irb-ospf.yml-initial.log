@@ -6,8 +6,8 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [s1]
 ok: [s2]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 ok: [h3]
 ok: [h4]
 
@@ -28,14 +28,14 @@ skipping: [h3]
 skipping: [h4]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, h1, h2, h3, h4
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2, h1, h2, h3, h4
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [s1]
 ok: [s2]
 ok: [h1]
-ok: [h3]
 ok: [h2]
+ok: [h3]
 ok: [h4]
 
 TASK [Find configuration template for normalize] *******************************
@@ -58,8 +58,8 @@ TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [s1]
 ok: [s2]
 ok: [h1]
-ok: [h3]
 ok: [h2]
+ok: [h3]
 ok: [h4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -79,13 +79,13 @@ skipping: [h3]
 skipping: [h4]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, h1, h2, h3, h4
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2, h1, h2, h3, h4
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [s1]
 ok: [s2]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 ok: [h3]
 ok: [h4]
 
@@ -268,6 +268,58 @@ ok: [s1] =>
   
   
     # TODO: vdata.rd, vdata.import/export, vdata.af
+ok: [s2] => 
+  msg: |-
+    initial configuration for s2
+    =========================================
+  
+    updates:
+  
+    - path: /interface[name=system0]/subinterface[index=0]
+      value:
+       description: "No description"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "10.0.0.2/32"
+  
+  
+    - path: /interface[name=ethernet-1/1]
+      value:
+     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
+       mtu: 1614
+       subinterface:
+     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
+        ip-mtu: 1600
+        index: 0
+        description: "s2 ~ s1"
+  
+    - path: /interface[name=ethernet-1/1]/subinterface[index=0]
+      value:
+       description: "s2 ~ s1"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "10.1.0.2/30"
+          primary: [null]
+  
+  
+  
+    - path: /network-instance[name=default]
+      value:
+       type: default
+       interface:
+       - name: system0.0
+  
+    - path: /network-instance[name=default]
+      value:
+       type: default
+       interface:
+       - name: ethernet-1/1.0
+  
+  
+  
+    # TODO: vdata.rd, vdata.import/export, vdata.af
 ok: [h3] => 
   msg: |-
     initial configuration for h3
@@ -363,75 +415,23 @@ ok: [h2] =>
     #
     #
     echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.1.2 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.1.2 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.1.2 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.1.2 dev eth1 protocol static
+    ip route add 172.16.0.0/16 via 172.16.1.1 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.1.1 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.1.1 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.1.1 dev eth1 protocol static
     #
     # Print the final routing table
     ip route
-ok: [s2] => 
-  msg: |-
-    initial configuration for s2
-    =========================================
-  
-    updates:
-  
-    - path: /interface[name=system0]/subinterface[index=0]
-      value:
-       description: "No description"
-       ipv4:
-        admin-state: enable
-        address:
-        - ip-prefix: "10.0.0.2/32"
-  
-  
-    - path: /interface[name=ethernet-1/1]
-      value:
-     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
-       mtu: 1614
-       subinterface:
-     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
-        ip-mtu: 1600
-        index: 0
-        description: "s2 ~ s1"
-  
-    - path: /interface[name=ethernet-1/1]/subinterface[index=0]
-      value:
-       description: "s2 ~ s1"
-       ipv4:
-        admin-state: enable
-        address:
-        - ip-prefix: "10.1.0.2/30"
-          primary: [null]
-  
-  
-  
-    - path: /network-instance[name=default]
-      value:
-       type: default
-       interface:
-       - name: system0.0
-  
-    - path: /network-instance[name=default]
-      value:
-       type: default
-       interface:
-       - name: ethernet-1/1.0
-  
-  
-  
-    # TODO: vdata.rd, vdata.import/export, vdata.af
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2, h3, h4
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2, h3, h4
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [s1]
 ok: [s2]
 
-TASK [Update SRL initial node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2)] ***
+TASK [Update SRL initial node configuration (template=/home/pipi/netlab_gh/netsim/ansible/templates/initial/srlinux.j2)] ***
 changed: [s1]
 changed: [s2]
 
@@ -446,16 +446,16 @@ ok: [h3]
 ok: [h4]
 
 TASK [Create a temporary file for the rendered script] *************************
+changed: [h3 -> localhost]
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 changed: [h4 -> localhost]
-changed: [h3 -> localhost]
 
-TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
-changed: [h3 -> localhost]
+TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h2 -> localhost]
 changed: [h4 -> localhost]
+changed: [h3 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -463,22 +463,22 @@ skipping: [h2]
 skipping: [h3]
 skipping: [h4]
 
-TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
 
-TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
+TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [h2 -> localhost]
+changed: [h4 -> localhost]
 changed: [h3 -> localhost]
 changed: [h1 -> localhost]
-changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-myqk5mbf.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-r7i86r6r.sh] ***********************
+changed: [h1 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
@@ -488,12 +488,13 @@ ok: [s1]
 ok: [s2]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=vlan)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=bgp)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=ospf)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=vrf)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=vxlan)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=evpn)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=vlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=bgp)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=vrf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=vxlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=evpn)
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [s1]
@@ -756,17 +757,41 @@ ok: [s2] =>
        - name: irb0.1000
 
 TASK [Deploy vlan configuration] ***********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [s1]
 ok: [s2]
 
-TASK [Update SRL vlan node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/vlan/srlinux.j2)] ***
+TASK [Update SRL vlan node configuration (template=/home/pipi/netlab_gh/netsim/ansible/templates/vlan/srlinux.j2)] ***
 changed: [s2]
 changed: [s1]
 
 TASK [debug] *******************************************************************
+skipping: [s1]
+skipping: [s2]
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [s1]
+ok: [s2]
+
+TASK [Find configuration template for routing] *********************************
+skipping: [s1]
+skipping: [s2]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [s1]
+skipping: [s2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [s1]
+skipping: [s2]
+
+TASK [Deploy routing configuration] ********************************************
 skipping: [s1]
 skipping: [s2]
 
@@ -867,16 +892,8 @@ ok: [s1] =>
         admin-state: enable
         afi-safi:
         - afi-safi-name: ipv4-unicast
-          admin-state: enable
+          export-policy: [ default_bgp_export, 'accept_all' ]
           import-policy: ['accept_all']
-          export-policy: ['default_bgp_export', 'accept_all']
-        - afi-safi-name: ipv6-unicast
-          admin-state: disable
-          import-policy: ['accept_all']
-          export-policy: ['default_bgp_export', 'accept_all']
-        - afi-safi-name: evpn
-          admin-state: enable
-  
         timers:
           connect-retry: 10
           _annotate_connect-retry: "Reduce default 120s to 10s"
@@ -897,11 +914,12 @@ ok: [s1] =>
         - peer-address: "10.0.0.2"
           description: s2
           peer-group: ibgp-ipv4
+      # bgp_families af=ipv4 activate={'ipv4': True, 'ipv6': False}
           afi-safi:
           - afi-safi-name: ipv4-unicast
-            admin-state: enable
-          - afi-safi-name: evpn
-            admin-state: enable
+            admin-state: 'enable'
+          - afi-safi-name: ipv6-unicast
+            admin-state: 'disable'
 ok: [s2] => 
   msg: |-
     bgp configuration for s2
@@ -982,16 +1000,8 @@ ok: [s2] =>
         admin-state: enable
         afi-safi:
         - afi-safi-name: ipv4-unicast
-          admin-state: enable
+          export-policy: [ default_bgp_export, 'accept_all' ]
           import-policy: ['accept_all']
-          export-policy: ['default_bgp_export', 'accept_all']
-        - afi-safi-name: ipv6-unicast
-          admin-state: disable
-          import-policy: ['accept_all']
-          export-policy: ['default_bgp_export', 'accept_all']
-        - afi-safi-name: evpn
-          admin-state: enable
-  
         timers:
           connect-retry: 10
           _annotate_connect-retry: "Reduce default 120s to 10s"
@@ -1012,22 +1022,23 @@ ok: [s2] =>
         - peer-address: "10.0.0.1"
           description: s1
           peer-group: ibgp-ipv4
+      # bgp_families af=ipv4 activate={'ipv4': True, 'ipv6': False}
           afi-safi:
           - afi-safi-name: ipv4-unicast
-            admin-state: enable
-          - afi-safi-name: evpn
-            admin-state: enable
+            admin-state: 'enable'
+          - afi-safi-name: ipv6-unicast
+            admin-state: 'disable'
 
 TASK [Deploy bgp configuration] ************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [s1]
 ok: [s2]
 
-TASK [Update SRL bgp node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2)] ***
-changed: [s1]
+TASK [Update SRL bgp node configuration (template=/home/pipi/netlab_gh/netsim/ansible/templates/bgp/srlinux.j2)] ***
 changed: [s2]
+changed: [s1]
 
 TASK [debug] *******************************************************************
 skipping: [s1]
@@ -1118,13 +1129,13 @@ ok: [s2] =>
            # OSPF not configured on external interface irb0.1000
 
 TASK [Deploy ospf configuration] ***********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [s1]
 ok: [s2]
 
-TASK [Update SRL ospf node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2)] ***
+TASK [Update SRL ospf node configuration (template=/home/pipi/netlab_gh/netsim/ansible/templates/ospf/srlinux.j2)] ***
 changed: [s1]
 changed: [s2]
 
@@ -1491,15 +1502,15 @@ ok: [s2] =>
           policy-result: "accept"
 
 TASK [Deploy vrf configuration] ************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [s1]
 ok: [s2]
 
-TASK [Update SRL vrf node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/vrf/srlinux.j2)] ***
-changed: [s2]
+TASK [Update SRL vrf node configuration (template=/home/pipi/netlab_gh/netsim/ansible/templates/vrf/srlinux.j2)] ***
 changed: [s1]
+changed: [s2]
 
 TASK [debug] *******************************************************************
 skipping: [s1]
@@ -1658,15 +1669,15 @@ ok: [s2] =>
            vxlan-interface: vxlan0.1001
 
 TASK [Deploy vxlan configuration] **********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [s1]
 ok: [s2]
 
-TASK [Update SRL vxlan node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/vxlan/srlinux.j2)] ***
-changed: [s1]
+TASK [Update SRL vxlan node configuration (template=/home/pipi/netlab_gh/netsim/ansible/templates/vxlan/srlinux.j2)] ***
 changed: [s2]
+changed: [s1]
 
 TASK [debug] *******************************************************************
 skipping: [s1]
@@ -1709,6 +1720,15 @@ ok: [s1] =>
         - afi-safi-name: evpn
           evpn:
             rapid-update: True
+  
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
+        neighbor:
+        - peer-address: "10.0.0.2"
+          admin-state: 'enable'
+          afi-safi:
+          - afi-safi-name: evpn
+            admin-state: 'enable'
   
     - path: /interface[name=irb0]/subinterface[index=1000]
       value:
@@ -1768,6 +1788,15 @@ ok: [s2] =>
           evpn:
             rapid-update: True
   
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
+        neighbor:
+        - peer-address: "10.0.0.1"
+          admin-state: 'enable'
+          afi-safi:
+          - afi-safi-name: evpn
+            admin-state: 'enable'
+  
     - path: /interface[name=irb0]/subinterface[index=1001]
       value:
        ipv4:
@@ -1807,15 +1836,15 @@ ok: [s2] =>
               _annotate: "Advertise local irb interface IPs"
 
 TASK [Deploy evpn configuration] ***********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [s1]
 ok: [s2]
 
-TASK [Update SRL evpn node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/evpn/srlinux.j2)] ***
-changed: [s2]
+TASK [Update SRL evpn node configuration (template=/home/pipi/netlab_gh/netsim/ansible/templates/evpn/srlinux.j2)] ***
 changed: [s1]
+changed: [s2]
 
 TASK [debug] *******************************************************************
 skipping: [s1]
@@ -1829,8 +1858,8 @@ h1                         : ok=17   changed=4    unreachable=0    failed=0    s
 h2                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 h3                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 h4                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-s1                         : ok=63   changed=7    unreachable=0    failed=0    skipped=18   rescued=0    ignored=0   
-s2                         : ok=63   changed=7    unreachable=0    failed=0    skipped=18   rescued=0    ignored=0   
+s1                         : ok=65   changed=7    unreachable=0    failed=0    skipped=23   rescued=0    ignored=0   
+s2                         : ok=65   changed=7    unreachable=0    failed=0    skipped=23   rescued=0    ignored=0   
 
 
 

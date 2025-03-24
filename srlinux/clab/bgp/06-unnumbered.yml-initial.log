@@ -489,8 +489,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2, x3
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 changed: [x3]
 
 TASK [set_fact] ****************************************************************
@@ -499,9 +499,9 @@ ok: [x2]
 ok: [x3]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+changed: [x2]
 changed: [x3]
 changed: [x1]
-changed: [x2]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
@@ -540,8 +540,8 @@ skipping: [x3]
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [dut]
 ok: [x1]
-ok: [x3]
 ok: [x2]
+ok: [x3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [x1] => 
@@ -610,6 +610,41 @@ ok: [x2] =>
       no neighbor eth1 send-community all
       neighbor eth1 send-community standard
       neighbor eth1 send-community large
+    !
+    !
+    !
+    do write
+ok: [x3] => 
+  msg: |-
+    bgp configuration for x3
+    =========================================
+    !
+    router bgp 65102
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 172.42.43.1
+    !
+      neighbor 10.1.0.1 remote-as 65000
+      neighbor 10.1.0.1 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 172.42.43.0/24
+    !
+    !
+    !
+      neighbor 10.1.0.1 activate
+      no neighbor 10.1.0.1 send-community all
+      neighbor 10.1.0.1 send-community standard
+      neighbor 10.1.0.1 send-community large
     !
     !
     !
@@ -694,17 +729,8 @@ ok: [dut] =>
         admin-state: enable
         afi-safi:
         - afi-safi-name: ipv4-unicast
-          admin-state: enable
-          ipv4-unicast:
-            advertise-ipv6-next-hops: True
-            receive-ipv6-next-hops: True
+          export-policy: [ default_bgp_export, 'accept_all' ]
           import-policy: ['accept_all']
-          export-policy: ['default_bgp_export', 'accept_all']
-        - afi-safi-name: ipv6-unicast
-          admin-state: disable
-          import-policy: ['accept_all']
-          export-policy: ['default_bgp_export', 'accept_all']
-  
         timers:
           connect-retry: 10
           _annotate_connect-retry: "Reduce default 120s to 10s"
@@ -730,17 +756,8 @@ ok: [dut] =>
         admin-state: enable
         afi-safi:
         - afi-safi-name: ipv4-unicast
-          admin-state: enable
-          ipv4-unicast:
-            advertise-ipv6-next-hops: True
-            receive-ipv6-next-hops: True
+          export-policy: [ default_bgp_export, 'accept_all' ]
           import-policy: ['accept_all']
-          export-policy: ['default_bgp_export', 'accept_all']
-        - afi-safi-name: ipv6-unicast
-          admin-state: disable
-          import-policy: ['accept_all']
-          export-policy: ['default_bgp_export', 'accept_all']
-  
         timers:
           connect-retry: 10
           _annotate_connect-retry: "Reduce default 120s to 10s"
@@ -766,14 +783,8 @@ ok: [dut] =>
         admin-state: enable
         afi-safi:
         - afi-safi-name: ipv4-unicast
-          admin-state: enable
+          export-policy: [ default_bgp_export, 'accept_all' ]
           import-policy: ['accept_all']
-          export-policy: ['default_bgp_export', 'accept_all']
-        - afi-safi-name: ipv6-unicast
-          admin-state: disable
-          import-policy: ['accept_all']
-          export-policy: ['default_bgp_export', 'accept_all']
-  
         timers:
           connect-retry: 10
           _annotate_connect-retry: "Reduce default 120s to 10s"
@@ -790,46 +801,14 @@ ok: [dut] =>
         - peer-address: "10.1.0.2"
           description: x3
           peer-group: ebgp
+      # bgp_families af=ipv4 activate={'ipv4': True, 'ipv6': False}
           afi-safi:
           - afi-safi-name: ipv4-unicast
-            admin-state: enable
+            admin-state: 'enable'
+          - afi-safi-name: ipv6-unicast
+            admin-state: 'disable'
   
           peer-as: 65102
-ok: [x3] => 
-  msg: |-
-    bgp configuration for x3
-    =========================================
-    !
-    router bgp 65102
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 172.42.43.1
-    !
-      neighbor 10.1.0.1 remote-as 65000
-      neighbor 10.1.0.1 description dut
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-      network 172.42.43.0/24
-    !
-    !
-    !
-      neighbor 10.1.0.1 activate
-      no neighbor 10.1.0.1 send-community all
-      neighbor 10.1.0.1 send-community standard
-      neighbor 10.1.0.1 send-community large
-    !
-    !
-    !
-    do write
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for dut

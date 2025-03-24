@@ -31,7 +31,7 @@ skipping: [h3]
 skipping: [h4]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine, h1, h2, h3, h4
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine, h1, h2, h3, h4
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [l1]
@@ -64,8 +64,8 @@ TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [l1]
 ok: [l2]
 ok: [spine]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 ok: [h3]
 ok: [h4]
 
@@ -88,7 +88,7 @@ skipping: [h3]
 skipping: [h4]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine, h1, h2, h3, h4
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine, h1, h2, h3, h4
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [l1]
@@ -121,10 +121,10 @@ TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [l1]
 ok: [spine]
 ok: [l2]
-ok: [h1]
 ok: [h2]
-ok: [h3]
+ok: [h1]
 ok: [h4]
+ok: [h3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [l1] => 
@@ -255,9 +255,9 @@ ok: [spine] =>
   
   
     # TODO: vdata.rd, vdata.import/export, vdata.af
-ok: [h1] => 
+ok: [h3] => 
   msg: |-
-    initial configuration for h1
+    initial configuration for h3
     =========================================
     #!/bin/bash
     #
@@ -280,60 +280,9 @@ ok: [h1] =>
     #
     ip link set dev eth1 up
     set +e
-    ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
+    ip addr del 172.16.1.3/24 dev eth1 2>/dev/null
     set -e
-    ip addr add 172.16.0.1/24 dev eth1
-    ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.2.0.0/24 2>/dev/null; do
-      : ; done
-    #
-    #
-    echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.0.7 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.0.7 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.0.7 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.0.7 dev eth1 protocol static
-    #
-    # Print the final routing table
-    ip route
-ok: [h4] => 
-  msg: |-
-    initial configuration for h4
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.1.4/24 dev eth1
+    ip addr add 172.16.1.3/24 dev eth1
     ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
@@ -385,6 +334,57 @@ ok: [h2] =>
     ip addr del 172.16.0.2/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.0.2/24 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.0.7 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.0.7 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.0.7 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.0.7 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.1/24 dev eth1
     ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
@@ -517,9 +517,9 @@ ok: [l2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [h3] => 
+ok: [h4] => 
   msg: |-
-    initial configuration for h3
+    initial configuration for h4
     =========================================
     #!/bin/bash
     #
@@ -542,9 +542,9 @@ ok: [h3] =>
     #
     ip link set dev eth1 up
     set +e
-    ip addr del 172.16.1.3/24 dev eth1 2>/dev/null
+    ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
     set -e
-    ip addr add 172.16.1.3/24 dev eth1
+    ip addr add 172.16.1.4/24 dev eth1
     ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
@@ -570,15 +570,15 @@ ok: [h3] =>
     ip route
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1, spine
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for l2
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2, h3, h4
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for l1, spine
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for l2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2, h3, h4
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [l1]
 ok: [spine]
 
-TASK [Update SRL initial node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2)] ***
+TASK [Update SRL initial node configuration (template=/home/pipi/netlab_gh/netsim/ansible/templates/initial/srlinux.j2)] ***
 changed: [spine]
 changed: [l1]
 
@@ -593,7 +593,7 @@ TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [l2]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for l2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for l2
 
 TASK [template] ****************************************************************
 changed: [l2]
@@ -601,10 +601,10 @@ changed: [l2]
 TASK [set_fact] ****************************************************************
 ok: [l2]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [l2]
 
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [l2]
 
 TASK [Define script filename and determine whether to execute in netns] ********
@@ -614,14 +614,14 @@ ok: [h3]
 ok: [h4]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
-changed: [h3 -> localhost]
 changed: [h2 -> localhost]
+changed: [h3 -> localhost]
+changed: [h1 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
+TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
@@ -631,23 +631,23 @@ skipping: [h2]
 skipping: [h3]
 skipping: [h4]
 
-TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
 
-TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h3 -> localhost]
+TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-dw8f22_t.sh] ***********************
-changed: [h4 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-1fht4pfa.sh] ***********************
 changed: [h1 -> localhost]
-changed: [h3 -> localhost]
 changed: [h2 -> localhost]
+changed: [h3 -> localhost]
+changed: [h4 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -657,12 +657,13 @@ ok: [l2]
 ok: [spine]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=vlan)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=bgp)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=ospf)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=vrf)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=vxlan)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=evpn)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=vlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=bgp)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=vrf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=vxlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=evpn)
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [l1]
@@ -670,8 +671,8 @@ ok: [l2]
 ok: [spine]
 
 TASK [Find configuration template for vlan] ************************************
-ok: [l2]
 ok: [l1]
+ok: [l2]
 ok: [spine]
 
 TASK [fail] ********************************************************************
@@ -825,16 +826,16 @@ ok: [spine] =>
        - name: irb0.1001
 
 TASK [Deploy vlan configuration] ***********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1, spine
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for l1, spine
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [l1]
 ok: [spine]
 
-TASK [Update SRL vlan node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/vlan/srlinux.j2)] ***
-changed: [spine]
+TASK [Update SRL vlan node configuration (template=/home/pipi/netlab_gh/netsim/ansible/templates/vlan/srlinux.j2)] ***
 changed: [l1]
+changed: [spine]
 
 TASK [debug] *******************************************************************
 skipping: [l1]
@@ -846,11 +847,41 @@ changed: [l2]
 TASK [set_fact] ****************************************************************
 ok: [l2]
 
-TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
+TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/frr.j2] ***
 changed: [l2]
 
-TASK [run vtysh to import vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
+TASK [run vtysh to import vlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/frr.j2] ***
 skipping: [l2]
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [l1]
+ok: [l2]
+ok: [spine]
+
+TASK [Find configuration template for routing] *********************************
+skipping: [l1]
+skipping: [l2]
+skipping: [spine]
+
+TASK [fail] ********************************************************************
+skipping: [l1]
+skipping: [l2]
+skipping: [spine]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [l1]
+skipping: [l2]
+skipping: [spine]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [l1]
+skipping: [l2]
+skipping: [spine]
+
+TASK [Deploy routing configuration] ********************************************
+skipping: [l1]
+skipping: [l2]
+skipping: [spine]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [l1]
@@ -991,16 +1022,8 @@ ok: [l1] =>
         admin-state: enable
         afi-safi:
         - afi-safi-name: ipv4-unicast
-          admin-state: enable
+          export-policy: [ default_bgp_export, 'accept_all' ]
           import-policy: ['accept_all']
-          export-policy: ['default_bgp_export', 'accept_all']
-        - afi-safi-name: ipv6-unicast
-          admin-state: disable
-          import-policy: ['accept_all']
-          export-policy: ['default_bgp_export', 'accept_all']
-        - afi-safi-name: evpn
-          admin-state: enable
-  
         timers:
           connect-retry: 10
           _annotate_connect-retry: "Reduce default 120s to 10s"
@@ -1021,11 +1044,12 @@ ok: [l1] =>
         - peer-address: "10.0.0.7"
           description: spine
           peer-group: ibgp-ipv4
+      # bgp_families af=ipv4 activate={'ipv4': True, 'ipv6': False}
           afi-safi:
           - afi-safi-name: ipv4-unicast
-            admin-state: enable
-          - afi-safi-name: evpn
-            admin-state: enable
+            admin-state: 'enable'
+          - afi-safi-name: ipv6-unicast
+            admin-state: 'disable'
 ok: [spine] => 
   msg: |-
     bgp configuration for spine
@@ -1137,16 +1161,8 @@ ok: [spine] =>
         admin-state: enable
         afi-safi:
         - afi-safi-name: ipv4-unicast
-          admin-state: enable
+          export-policy: [ default_ibgp-nhs_export, 'accept_all' ]
           import-policy: ['ibgp-mark']
-          export-policy: ['default_ibgp-nhs_export', 'accept_all']
-        - afi-safi-name: ipv6-unicast
-          admin-state: disable
-          import-policy: ['ibgp-mark']
-          export-policy: ['default_ibgp-nhs_export', 'accept_all']
-        - afi-safi-name: evpn
-          admin-state: enable
-  
         timers:
           connect-retry: 10
           _annotate_connect-retry: "Reduce default 120s to 10s"
@@ -1169,11 +1185,12 @@ ok: [spine] =>
         - peer-address: "10.0.0.5"
           description: l1
           peer-group: ibgp-ipv4
+      # bgp_families af=ipv4 activate={'ipv4': True, 'ipv6': False}
           afi-safi:
           - afi-safi-name: ipv4-unicast
-            admin-state: enable
-          - afi-safi-name: evpn
-            admin-state: enable
+            admin-state: 'enable'
+          - afi-safi-name: ipv6-unicast
+            admin-state: 'disable'
   
   
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
@@ -1181,16 +1198,8 @@ ok: [spine] =>
         admin-state: enable
         afi-safi:
         - afi-safi-name: ipv4-unicast
-          admin-state: enable
+          export-policy: [ default_ibgp-nhs_export, 'accept_all' ]
           import-policy: ['ibgp-mark']
-          export-policy: ['default_ibgp-nhs_export', 'accept_all']
-        - afi-safi-name: ipv6-unicast
-          admin-state: disable
-          import-policy: ['ibgp-mark']
-          export-policy: ['default_ibgp-nhs_export', 'accept_all']
-        - afi-safi-name: evpn
-          admin-state: enable
-  
         timers:
           connect-retry: 10
           _annotate_connect-retry: "Reduce default 120s to 10s"
@@ -1213,21 +1222,22 @@ ok: [spine] =>
         - peer-address: "10.0.0.6"
           description: l2
           peer-group: ibgp-ipv4
+      # bgp_families af=ipv4 activate={'ipv4': True, 'ipv6': False}
           afi-safi:
           - afi-safi-name: ipv4-unicast
-            admin-state: enable
-          - afi-safi-name: evpn
-            admin-state: enable
+            admin-state: 'enable'
+          - afi-safi-name: ipv6-unicast
+            admin-state: 'disable'
 
 TASK [Deploy bgp configuration] ************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1, spine
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for l1, spine
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [l1]
 ok: [spine]
 
-TASK [Update SRL bgp node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2)] ***
+TASK [Update SRL bgp node configuration (template=/home/pipi/netlab_gh/netsim/ansible/templates/bgp/srlinux.j2)] ***
 changed: [l1]
 changed: [spine]
 
@@ -1241,10 +1251,10 @@ changed: [l2]
 TASK [set_fact] ****************************************************************
 ok: [l2]
 
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [l2]
 
-TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [l2]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
@@ -1364,16 +1374,16 @@ ok: [l2] =>
     do write
 
 TASK [Deploy ospf configuration] ***********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1, spine
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for l1, spine
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [l1]
 ok: [spine]
 
-TASK [Update SRL ospf node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2)] ***
-changed: [spine]
+TASK [Update SRL ospf node configuration (template=/home/pipi/netlab_gh/netsim/ansible/templates/ospf/srlinux.j2)] ***
 changed: [l1]
+changed: [spine]
 
 TASK [debug] *******************************************************************
 skipping: [l1]
@@ -1385,10 +1395,10 @@ changed: [l2]
 TASK [set_fact] ****************************************************************
 ok: [l2]
 
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
 skipping: [l2]
 
-TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [l2]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
@@ -1398,8 +1408,8 @@ ok: [spine]
 
 TASK [Find configuration template for vrf] *************************************
 ok: [l1]
-ok: [spine]
 ok: [l2]
+ok: [spine]
 
 TASK [fail] ********************************************************************
 skipping: [l1]
@@ -1609,14 +1619,14 @@ ok: [spine] =>
           policy-result: "accept"
 
 TASK [Deploy vrf configuration] ************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1, spine
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for l1, spine
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [l1]
 ok: [spine]
 
-TASK [Update SRL vrf node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/vrf/srlinux.j2)] ***
+TASK [Update SRL vrf node configuration (template=/home/pipi/netlab_gh/netsim/ansible/templates/vrf/srlinux.j2)] ***
 changed: [l1]
 changed: [spine]
 
@@ -1630,10 +1640,10 @@ changed: [l2]
 TASK [set_fact] ****************************************************************
 ok: [l2]
 
-TASK [run /tmp/config.sh to deploy vrf config from /home/pipi/net101/tools/netsim/ansible/templates/vrf/frr.j2] ***
+TASK [run /tmp/config.sh to deploy vrf config from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/frr.j2] ***
 changed: [l2]
 
-TASK [run vtysh to import vrf config from /home/pipi/net101/tools/netsim/ansible/templates/vrf/frr.j2] ***
+TASK [run vtysh to import vrf config from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/frr.j2] ***
 skipping: [l2]
 
 TASK [Figure out whether to deploy the module vxlan on current device] *********
@@ -1846,16 +1856,16 @@ ok: [spine] =>
            vxlan-interface: vxlan0.1001
 
 TASK [Deploy vxlan configuration] **********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1, spine
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for l1, spine
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [l1]
 ok: [spine]
 
-TASK [Update SRL vxlan node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/vxlan/srlinux.j2)] ***
-changed: [spine]
+TASK [Update SRL vxlan node configuration (template=/home/pipi/netlab_gh/netsim/ansible/templates/vxlan/srlinux.j2)] ***
 changed: [l1]
+changed: [spine]
 
 TASK [debug] *******************************************************************
 skipping: [l1]
@@ -1867,10 +1877,10 @@ changed: [l2]
 TASK [set_fact] ****************************************************************
 ok: [l2]
 
-TASK [run /tmp/config.sh to deploy vxlan config from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/frr.j2] ***
+TASK [run /tmp/config.sh to deploy vxlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vxlan/frr.j2] ***
 changed: [l2]
 
-TASK [run vtysh to import vxlan config from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/frr.j2] ***
+TASK [run vtysh to import vxlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vxlan/frr.j2] ***
 skipping: [l2]
 
 TASK [Figure out whether to deploy the module evpn on current device] **********
@@ -1914,6 +1924,15 @@ ok: [l1] =>
         - afi-safi-name: evpn
           evpn:
             rapid-update: True
+  
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
+        neighbor:
+        - peer-address: "10.0.0.7"
+          admin-state: 'enable'
+          afi-safi:
+          - afi-safi-name: evpn
+            admin-state: 'enable'
 ok: [l2] => 
   msg: |-
     evpn configuration for l2
@@ -1941,7 +1960,7 @@ ok: [l2] =>
       exit-vni
   
       neighbor 10.0.0.7 activate
-      neighbor 10.0.0.7 soft-reconfiguration inbound
+    #  neighbor 10.0.0.7 soft-reconfiguration inbound
   
      exit-address-family
     !
@@ -1975,6 +1994,23 @@ ok: [spine] =>
           evpn:
             rapid-update: True
   
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
+        neighbor:
+        - peer-address: "10.0.0.5"
+          admin-state: 'enable'
+          afi-safi:
+          - afi-safi-name: evpn
+            admin-state: 'enable'
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
+        neighbor:
+        - peer-address: "10.0.0.6"
+          admin-state: 'enable'
+          afi-safi:
+          - afi-safi-name: evpn
+            admin-state: 'enable'
+  
     - path: /interface[name=irb0]/subinterface[index=1000]
       value:
        ipv4:
@@ -2001,16 +2037,16 @@ ok: [spine] =>
               _annotate: "Advertise local irb interface IPs"
 
 TASK [Deploy evpn configuration] ***********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for l1, spine
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for l1, spine
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [l1]
 ok: [spine]
 
-TASK [Update SRL evpn node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/evpn/srlinux.j2)] ***
-changed: [l1]
+TASK [Update SRL evpn node configuration (template=/home/pipi/netlab_gh/netsim/ansible/templates/evpn/srlinux.j2)] ***
 changed: [spine]
+changed: [l1]
 
 TASK [debug] *******************************************************************
 skipping: [l1]
@@ -2022,10 +2058,10 @@ changed: [l2]
 TASK [set_fact] ****************************************************************
 ok: [l2]
 
-TASK [run /tmp/config.sh to deploy evpn config from /home/pipi/net101/tools/netsim/ansible/templates/evpn/frr.j2] ***
+TASK [run /tmp/config.sh to deploy evpn config from /home/pipi/netlab_gh/netsim/ansible/templates/evpn/frr.j2] ***
 changed: [l2]
 
-TASK [run vtysh to import evpn config from /home/pipi/net101/tools/netsim/ansible/templates/evpn/frr.j2] ***
+TASK [run vtysh to import evpn config from /home/pipi/netlab_gh/netsim/ansible/templates/evpn/frr.j2] ***
 skipping: [l2]
 
 PLAY [Deploy custom deployment templates] **************************************
@@ -2036,9 +2072,9 @@ h1                         : ok=17   changed=4    unreachable=0    failed=0    s
 h2                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 h3                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 h4                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-l1                         : ok=63   changed=7    unreachable=0    failed=0    skipped=18   rescued=0    ignored=0   
-l2                         : ok=72   changed=15   unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
-spine                      : ok=63   changed=7    unreachable=0    failed=0    skipped=18   rescued=0    ignored=0   
+l1                         : ok=65   changed=7    unreachable=0    failed=0    skipped=23   rescued=0    ignored=0   
+l2                         : ok=74   changed=15   unreachable=0    failed=0    skipped=24   rescued=0    ignored=0   
+spine                      : ok=65   changed=7    unreachable=0    failed=0    skipped=23   rescued=0    ignored=0   
 
 
 

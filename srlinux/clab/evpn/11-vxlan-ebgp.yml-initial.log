@@ -25,13 +25,13 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for spine, l1, l2, h1, h2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for spine, l1, l2, h1, h2
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [spine]
 ok: [l1]
-ok: [l2]
 ok: [h1]
+ok: [l2]
 ok: [h2]
 
 TASK [Find configuration template for normalize] *******************************
@@ -70,7 +70,7 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for spine, l1, l2, h1, h2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for spine, l1, l2, h1, h2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [spine]
@@ -101,43 +101,6 @@ ok: [h2]
 ok: [h1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [h1] => 
-  msg: |-
-    initial configuration for h1
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.31.1.4/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.31.1.4/24 dev eth1
-    ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    #
-    #
-    #
-    # Print the final routing table
-    ip route
 ok: [spine] => 
   msg: |-
     initial configuration for spine
@@ -210,6 +173,43 @@ ok: [spine] =>
        type: default
        interface:
        - name: ethernet-1/2.0
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.31.1.4/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.31.1.4/24 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    #
+    #
+    # Print the final routing table
+    ip route
 ok: [h2] => 
   msg: |-
     initial configuration for h2
@@ -337,7 +337,7 @@ ok: [l1] =>
     !
     interface vlan1000
      no shutdown
-     description VLAN red (1000) -> [h1,h2,l2]
+     description VLAN red (1000) -> [h1,h2,l2] [external]
      ! no ip address
     !
     do write
@@ -434,7 +434,7 @@ ok: [l2] =>
     !
     interface vlan1000
      no shutdown
-     description VLAN red (1000) -> [h1,l1,h2]
+     description VLAN red (1000) -> [h1,l1,h2] [external]
      ! no ip address
     !
     do write
@@ -443,14 +443,14 @@ ok: [l2] =>
     exit 0
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for spine
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for l1, l2
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for spine
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for l1, l2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [spine]
 
-TASK [Update SRL initial node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2)] ***
+TASK [Update SRL initial node configuration (template=/home/pipi/netlab_gh/netsim/ansible/templates/initial/srlinux.j2)] ***
 changed: [spine]
 
 TASK [debug] *******************************************************************
@@ -464,7 +464,7 @@ skipping: [l1]
 skipping: [l2]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for l1, l2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for l1, l2
 
 TASK [template] ****************************************************************
 changed: [l2]
@@ -474,11 +474,11 @@ TASK [set_fact] ****************************************************************
 ok: [l1]
 ok: [l2]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [l1]
 changed: [l2]
 
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [l1]
 skipping: [l2]
 
@@ -487,10 +487,10 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -498,15 +498,15 @@ TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
 skipping: [h2]
 
-TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 skipping: [h1]
 skipping: [h2]
 
-TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h2 -> localhost]
+TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-d_9qxcnd.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-qnbds13u.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -518,10 +518,11 @@ ok: [l2]
 ok: [spine]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=vlan)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=bgp)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=vxlan)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=evpn)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=vlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=bgp)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=vxlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=evpn)
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [l1]
@@ -586,7 +587,7 @@ ok: [l2] =>
 
 TASK [Deploy vlan configuration] ***********************************************
 skipping: [spine]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l1, l2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for l1, l2
 
 TASK [template] ****************************************************************
 changed: [l2]
@@ -596,13 +597,43 @@ TASK [set_fact] ****************************************************************
 ok: [l1]
 ok: [l2]
 
-TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
+TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/frr.j2] ***
 changed: [l1]
 changed: [l2]
 
-TASK [run vtysh to import vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
+TASK [run vtysh to import vlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/frr.j2] ***
 skipping: [l1]
 skipping: [l2]
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [l1]
+ok: [l2]
+ok: [spine]
+
+TASK [Find configuration template for routing] *********************************
+skipping: [l1]
+skipping: [l2]
+skipping: [spine]
+
+TASK [fail] ********************************************************************
+skipping: [l1]
+skipping: [l2]
+skipping: [spine]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [l1]
+skipping: [l2]
+skipping: [spine]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [l1]
+skipping: [l2]
+skipping: [spine]
+
+TASK [Deploy routing configuration] ********************************************
+skipping: [l1]
+skipping: [l2]
+skipping: [spine]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [l1]
@@ -777,16 +808,8 @@ ok: [spine] =>
         admin-state: enable
         afi-safi:
         - afi-safi-name: ipv4-unicast
-          admin-state: enable
+          export-policy: [ default_bgp_export, 'accept_all' ]
           import-policy: ['accept_all']
-          export-policy: ['default_bgp_export', 'accept_all']
-        - afi-safi-name: ipv6-unicast
-          admin-state: disable
-          import-policy: ['accept_all']
-          export-policy: ['default_bgp_export', 'accept_all']
-        - afi-safi-name: evpn
-          admin-state: enable
-  
         timers:
           connect-retry: 10
           _annotate_connect-retry: "Reduce default 120s to 10s"
@@ -803,11 +826,12 @@ ok: [spine] =>
         - peer-address: "10.1.0.1"
           description: l1
           peer-group: ebgp
+      # bgp_families af=ipv4 activate={'ipv4': True, 'ipv6': False}
           afi-safi:
           - afi-safi-name: ipv4-unicast
-            admin-state: enable
-          - afi-safi-name: evpn
-            admin-state: enable
+            admin-state: 'enable'
+          - afi-safi-name: ipv6-unicast
+            admin-state: 'disable'
   
           peer-as: 65201
   
@@ -816,16 +840,8 @@ ok: [spine] =>
         admin-state: enable
         afi-safi:
         - afi-safi-name: ipv4-unicast
-          admin-state: enable
+          export-policy: [ default_bgp_export, 'accept_all' ]
           import-policy: ['accept_all']
-          export-policy: ['default_bgp_export', 'accept_all']
-        - afi-safi-name: ipv6-unicast
-          admin-state: disable
-          import-policy: ['accept_all']
-          export-policy: ['default_bgp_export', 'accept_all']
-        - afi-safi-name: evpn
-          admin-state: enable
-  
         timers:
           connect-retry: 10
           _annotate_connect-retry: "Reduce default 120s to 10s"
@@ -842,17 +858,18 @@ ok: [spine] =>
         - peer-address: "10.1.0.5"
           description: l2
           peer-group: ebgp
+      # bgp_families af=ipv4 activate={'ipv4': True, 'ipv6': False}
           afi-safi:
           - afi-safi-name: ipv4-unicast
-            admin-state: enable
-          - afi-safi-name: evpn
-            admin-state: enable
+            admin-state: 'enable'
+          - afi-safi-name: ipv6-unicast
+            admin-state: 'disable'
   
           peer-as: 65202
 
 TASK [Deploy bgp configuration] ************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l1, l2
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for spine
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for l1, l2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for spine
 
 TASK [template] ****************************************************************
 changed: [l2]
@@ -862,18 +879,18 @@ TASK [set_fact] ****************************************************************
 ok: [l1]
 ok: [l2]
 
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [l1]
 skipping: [l2]
 
-TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [l2]
 changed: [l1]
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [spine]
 
-TASK [Update SRL bgp node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2)] ***
+TASK [Update SRL bgp node configuration (template=/home/pipi/netlab_gh/netsim/ansible/templates/bgp/srlinux.j2)] ***
 changed: [spine]
 
 TASK [debug] *******************************************************************
@@ -972,7 +989,7 @@ ok: [l2] =>
 
 TASK [Deploy vxlan configuration] **********************************************
 skipping: [spine]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l1, l2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for l1, l2
 
 TASK [template] ****************************************************************
 changed: [l1]
@@ -982,18 +999,18 @@ TASK [set_fact] ****************************************************************
 ok: [l1]
 ok: [l2]
 
-TASK [run /tmp/config.sh to deploy vxlan config from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/frr.j2] ***
-changed: [l2]
+TASK [run /tmp/config.sh to deploy vxlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vxlan/frr.j2] ***
 changed: [l1]
+changed: [l2]
 
-TASK [run vtysh to import vxlan config from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/frr.j2] ***
+TASK [run vtysh to import vxlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vxlan/frr.j2] ***
 skipping: [l1]
 skipping: [l2]
 
 TASK [Figure out whether to deploy the module evpn on current device] **********
 ok: [l1]
-ok: [l2]
 ok: [spine]
+ok: [l2]
 
 TASK [Find configuration template for evpn] ************************************
 ok: [l1]
@@ -1033,7 +1050,7 @@ ok: [l1] =>
       exit-vni
   
       neighbor 10.1.0.2 activate
-      neighbor 10.1.0.2 soft-reconfiguration inbound
+    #  neighbor 10.1.0.2 soft-reconfiguration inbound
   
      exit-address-family
     !
@@ -1068,7 +1085,7 @@ ok: [l2] =>
       exit-vni
   
       neighbor 10.1.0.6 activate
-      neighbor 10.1.0.6 soft-reconfiguration inbound
+    #  neighbor 10.1.0.6 soft-reconfiguration inbound
   
      exit-address-family
     !
@@ -1102,31 +1119,48 @@ ok: [spine] =>
           evpn:
             rapid-update: True
             inter-as-vpn: True
+  
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
+        neighbor:
+        - peer-address: "10.1.0.1"
+          admin-state: 'enable'
+          afi-safi:
+          - afi-safi-name: evpn
+            admin-state: 'enable'
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
+        neighbor:
+        - peer-address: "10.1.0.5"
+          admin-state: 'enable'
+          afi-safi:
+          - afi-safi-name: evpn
+            admin-state: 'enable'
 
 TASK [Deploy evpn configuration] ***********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l1, l2
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for spine
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for l1, l2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for spine
 
 TASK [template] ****************************************************************
-changed: [l1]
 changed: [l2]
+changed: [l1]
 
 TASK [set_fact] ****************************************************************
 ok: [l1]
 ok: [l2]
 
-TASK [run /tmp/config.sh to deploy evpn config from /home/pipi/net101/tools/netsim/ansible/templates/evpn/frr.j2] ***
+TASK [run /tmp/config.sh to deploy evpn config from /home/pipi/netlab_gh/netsim/ansible/templates/evpn/frr.j2] ***
 changed: [l1]
 changed: [l2]
 
-TASK [run vtysh to import evpn config from /home/pipi/net101/tools/netsim/ansible/templates/evpn/frr.j2] ***
+TASK [run vtysh to import evpn config from /home/pipi/netlab_gh/netsim/ansible/templates/evpn/frr.j2] ***
 skipping: [l1]
 skipping: [l2]
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [spine]
 
-TASK [Update SRL evpn node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/evpn/srlinux.j2)] ***
+TASK [Update SRL evpn node configuration (template=/home/pipi/netlab_gh/netsim/ansible/templates/evpn/srlinux.j2)] ***
 changed: [spine]
 
 TASK [debug] *******************************************************************
@@ -1138,9 +1172,9 @@ skipping: no hosts matched
 PLAY RECAP *********************************************************************
 h1                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 h2                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-l1                         : ok=54   changed=11   unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
-l2                         : ok=53   changed=10   unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
-spine                      : ok=35   changed=3    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+l1                         : ok=56   changed=11   unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+l2                         : ok=55   changed=10   unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+spine                      : ok=37   changed=3    unreachable=0    failed=0    skipped=25   rescued=0    ignored=0   
 
 
 
