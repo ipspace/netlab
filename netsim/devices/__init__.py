@@ -143,13 +143,13 @@ def process_config_sw_check(topology: Box) -> None:
 
   log.exit_on_error()
 
-def report_quirk(text: str, node: Box, quirk: str, **kwargs: typing.Any) -> None:
+def report_quirk(text: str, node: Box, quirk: str = '', **kwargs: typing.Any) -> None:
   topology = get_topology()
 
   # Check the defaults to see if we have to report the quirk
   #
   q_path = f'defaults.devices.{node.device}.warnings.{quirk}'
-  if topology is not None:
+  if topology is not None and quirk:
     q_state = topology.get(q_path,True)
     if not q_state:
       return
@@ -163,12 +163,13 @@ def report_quirk(text: str, node: Box, quirk: str, **kwargs: typing.Any) -> None
 
   # Add the 'this is how you disable this quirk' hint
   #
-  q_disable = 'hide this warning' if kwargs['category'] is Warning else 'disable this check'
-  q_hint = f'Set {q_path} to False to {q_disable}'
-  if 'more_hints' in kwargs and isinstance(kwargs['more_hints'],list):
-    kwargs['more_hints'].append(q_hint)
-  else:
-    kwargs['more_hints'] = [ q_hint ]
+  if quirk:
+    q_disable = 'hide this warning' if kwargs['category'] is Warning else 'disable this check'
+    q_hint = f'Set {q_path} to False to {q_disable}'
+    if 'more_hints' in kwargs and isinstance(kwargs['more_hints'],list):
+      kwargs['more_hints'].append(q_hint)
+    else:
+      kwargs['more_hints'] = [ q_hint ]
 
   # Now hope for the best ;)
   log.error(text,**kwargs)
