@@ -20,9 +20,39 @@ def check_prefix_deny(node: Box) -> None:
           category=log.IncorrectValue)
         break
 
+'''
+Remove unused IPv4/IPv6 transport addresses -- SR Linux does not like a
+BGP neighbor with no active address families
+'''
 def cleanup_neighbor_transport(node: Box, topology: Box) -> None:
   for ngb in _routing.neighbors(node,vrf=True):
-    pass
+    if 'local_if' in ngb:               # True unnumbered, move on
+      continue
+    ipv4 = ngb.get('ipv4',None)
+    if ipv4 is True:                    # Could be RFC 8950 over numbered IPv6, move on
+      continue
+
+    # Remove IPv6 transport session if IPv6 is not activated
+    for af in ['ipv4','ipv6']:
+      if af not in ngb:                 # Do we have the neighbor IP address in this address family?
+        continue
+      if not isinstance(ngb[af],str):   # Is it a string (real IP address)?
+        continue
+      if ngb.activate.get(af,False):    # Is the AF activated?
+        continue
+
+      if af == 'ipv4':
+        x_af = [ af for af in ['evpn','vpnv4','vpnv6','6pe'] if af in ngb ]
+        if x_af:                        # Do we have extra address families running over IPv4 transport?
+          continue
+
+      report_quirk(
+        text=f'Removed {af} transport address {ngb[af]} for BGP neighbor {ngb.name} on node {node.name}',
+        more_hints=['No BGP address family was activated for this BGP neighbor'],
+        quirk='bgp_transport',
+        node=node,
+        category=Warning)
+      ngb.pop(af)
 
 class SRLINUX(_Quirks):
 
