@@ -225,6 +225,7 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
     if not af_list:                                                   # This interface has no usable address
       continue
 
+    intf_vrf = l.get('vrf',None)
     if node_as != node_local_as:
       if not features.bgp.local_as:
         log.error(
@@ -232,7 +233,7 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
           category=log.IncorrectValue,
           module='bgp')
         continue
-      if l.get('vrf',None) and not features.bgp.vrf_local_as:
+      if intf_vrf and not features.bgp.vrf_local_as:
         log.error(
           text=f'{node.name} (device {node.device}) does not support BGP local AS for EBGP sessions in VRF {l.vrf}',
           category=log.IncorrectValue,
@@ -339,13 +340,15 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
       ebgp_data = bgp_neighbor(neighbor,ngb_ifdata,session_type,sessions,extra_data)
       if not ebgp_data is None:
         ebgp_data['as'] = neighbor_local_as
-        if 'vrf' in l:        # VRF neighbor
-          if not node.vrfs[l.vrf].bgp is False:
-            if not node.vrfs[l.vrf].bgp.neighbors:
-              node.vrfs[l.vrf].bgp.neighbors = []
-            node.vrfs[l.vrf].bgp.neighbors.append(ebgp_data)
-        else:                 # Global neighbor
-          node.bgp.neighbors.append(ebgp_data)
+        if intf_vrf :                                 # VRF neighbor
+          if node.vrfs[l.vrf].bgp is False:           # Is BGP disabled for this VRF?
+            continue                                  # ... yeah, move on
+          for af in log.AF_LIST:                      # Add the 'activate' dictionary to make neighbor data consistent
+            if af in ebgp_data:                       # ... as this parameter is not user-controllable
+              ebgp_data.activate[af] = True           # ... enable all default AFs present on the neighbor
+          data.append_to_list(node.vrfs[intf_vrf].bgp,'neighbors',ebgp_data)
+        else:                                         # Global neighbor
+          data.append_to_list(node.bgp,'neighbors',ebgp_data)
 
 """
 activate_bgp_default_af -- activate default AF on IPv4 and/or IPv6 transport sessions
