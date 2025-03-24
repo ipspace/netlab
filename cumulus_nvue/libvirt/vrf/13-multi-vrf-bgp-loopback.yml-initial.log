@@ -25,12 +25,12 @@ skipping: [r3]
 skipping: [r4]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [dut]
-ok: [r2]
 ok: [r1]
+ok: [r2]
 ok: [r3]
 ok: [r4]
 
@@ -50,9 +50,9 @@ skipping: [r4]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [dut]
+ok: [r1]
 ok: [r2]
 ok: [r3]
-ok: [r1]
 ok: [r4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -70,7 +70,7 @@ skipping: [r3]
 skipping: [r4]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
@@ -181,6 +181,91 @@ ok: [dut] =>
                 10.0.0.1/32: {}
               ipv6:
                 enable: off
+ok: [r1] => 
+  msg: |-
+    initial configuration for r1
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname r1
+    !
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.2/32
+    !
+    interface eth1
+     no shutdown
+     description r1 -> dut [external]
+     ip address 10.1.0.2/30
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
 ok: [r2] => 
   msg: |-
     initial configuration for r2
@@ -436,100 +521,15 @@ ok: [r4] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [r1] => 
-  msg: |-
-    initial configuration for r1
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)# "
-    echo
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    #
-    # Create loopbacks, stub and lag/bond devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-  
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname r1
-    !
-    vrf mgmt
-     exit-vrf
-    !
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ip address 10.0.0.2/32
-    !
-    interface eth1
-     no shutdown
-     description r1 -> dut [external]
-     ip address 10.1.0.2/30
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for r1, r2, r3, r4
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for r1, r2, r3, r4
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
 
-TASK [copy the cumulus nvue YAML initial config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/initial/cumulus_nvue.j2)] ***
+TASK [copy the cumulus nvue YAML initial config file to switch (generated from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus_nvue.j2)] ***
 changed: [dut]
 
 TASK [Wait for nvued to start] *************************************************
@@ -548,19 +548,19 @@ TASK [Attempt to load VRF kernel module] ***************************************
 changed: [r1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
-skipping: [r2]
 skipping: [r1]
+skipping: [r2]
 skipping: [r3]
 skipping: [r4]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, r3, r4
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, r3, r4
 
 TASK [template] ****************************************************************
-changed: [r3]
 changed: [r2]
 changed: [r1]
 changed: [r4]
+changed: [r3]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -568,13 +568,13 @@ ok: [r2]
 ok: [r3]
 ok: [r4]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [r2]
-changed: [r3]
 changed: [r1]
+changed: [r3]
 changed: [r4]
 
-TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r1]
 skipping: [r2]
 skipping: [r3]
@@ -590,8 +590,8 @@ ok: [r3]
 ok: [r4]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4 => (item=bgp)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4 => (item=vrf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4 => (item=bgp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4 => (item=vrf)
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [dut]
@@ -788,13 +788,13 @@ ok: [r3] =>
     do write
 
 TASK [Deploy bgp configuration] ************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2, r3, r4
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2, r3, r4
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
 
-TASK [copy the cumulus nvue YAML bgp config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/cumulus_nvue.j2)] ***
+TASK [copy the cumulus nvue YAML bgp config file to switch (generated from /home/pipi/net101/tools/netsim/ansible/templates/bgp/cumulus_nvue.j2)] ***
 changed: [dut]
 
 TASK [Wait for nvued to start] *************************************************
@@ -821,15 +821,15 @@ ok: [r2]
 ok: [r3]
 ok: [r4]
 
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [r1]
 skipping: [r2]
 skipping: [r3]
 skipping: [r4]
 
-TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [r2]
+TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [r1]
+changed: [r2]
 changed: [r3]
 changed: [r4]
 
@@ -858,8 +858,8 @@ TASK [Find configuration deployment deploy_script for vrf] *********************
 skipping: [r1]
 skipping: [r2]
 skipping: [r3]
-skipping: [r4]
 ok: [dut]
+skipping: [r4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r1]
@@ -916,7 +916,7 @@ ok: [dut] =>
               bgp:
                 enable: on
                 autonomous-system: 65000
-                router-id: 10.0.0.1
+                router-id: 10.42.0.1
                 rd: 65000:1
                 address-family:
                   ipv4-unicast:
@@ -981,12 +981,12 @@ skipping: [r1]
 skipping: [r2]
 skipping: [r3]
 skipping: [r4]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus_nvue.yml for dut
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
 
-TASK [copy the cumulus nvue YAML vrf config file to switch (generated from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/cumulus_nvue.j2)] ***
+TASK [copy the cumulus nvue YAML vrf config file to switch (generated from /home/pipi/net101/tools/netsim/ansible/templates/vrf/cumulus_nvue.j2)] ***
 changed: [dut]
 
 TASK [Wait for nvued to start] *************************************************
