@@ -1,11 +1,12 @@
 {#
   Define a BGP neighbor
 #}
-{% macro neighbor(n,ip,bgp,af) %}
+{% macro neighbor(n,ip,bgp,t_af) %}
 {%   set peer = ip if ip is string else 'interface ' + n.local_if|default('?') %}
+{%   set unnumbered = peer != n[t_af] %}
 !
   neighbor {{ peer }}
-{%   if peer!=n[af] %}
+{%   if unnumbered %}
 ! This is an unnumbered eBGP session
 ! WTF Remote-AS configuration not supported for unnumbered peer
     inherit template unnumbered_ebgp inherit-type ebgp
@@ -25,11 +26,11 @@
 {#
   In Dell OS10, next-hop-self is configured under AF
 #}
-{%       for af in ['ipv4','ipv6'] if bgp[af] is defined and n.activate[af] is defined and n.activate[af] %}
+{%       for af in ['ipv4','ipv6'] if n.activate[af]|default(False) and (af == t_af or unnumbered) %}
 !
- address-family {{ af }} unicast
-   next-hop-self
- exit
+    address-family {{ af }} unicast
+      next-hop-self
+    exit
 {%       endfor %}
 {%     endif -%}
 
@@ -46,31 +47,24 @@
 {%     endfor %}
 {%   endif %}
 
-{% for af in ['ipv4','ipv6'] if bgp[af] is defined and n.activate[af] is defined and n.activate[af] %}
+{% for af in ['ipv4','ipv6'] %}
+{%   if n.activate[af]|default(False) and (af == t_af or unnumbered) %}
 !
- address-family {{ af }} unicast
-   soft-reconfiguration inbound
-   activate
- exit
+    address-family {{ af }} unicast
+      soft-reconfiguration inbound
+      activate
+    exit
+{%   else %}
+    address-family {{ af }} unicast
+      no activate
+    exit
+{%   endif %}
 {% endfor %}
 
-{#
-  And now, **WTF**, since Dell OS10 cannot disable ipv4 AF by default, we need to:
-#}
-{% if n.activate is defined %}
-{# keep default behavior in case n.activate is not defined #}
-{%   if n.activate['ipv4'] is not defined or (n.activate['ipv4'] is defined and not n.activate['ipv4']) %}
-!
- address-family ipv4 unicast
-   no activate
- exit
-{%   endif %}
-{% endif %}
-
 {# Override default timers of 60/180 #}
-  timers 3 9
+    timers 3 9
 {# Reduce default advertisement interval of 30s to minimum 1s #}
-  advertisement-interval 1
-  no shutdown
+    advertisement-interval 1
+    no shutdown
   exit
 {%- endmacro %}
