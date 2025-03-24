@@ -5,15 +5,15 @@ PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [l2]
-ok: [h1]
 ok: [spine]
-ok: [l1]
+ok: [h1]
 ok: [h2]
+ok: [l1]
 
 TASK [Find device readiness script] ********************************************
 ok: [l2]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 ok: [spine]
 ok: [l1]
 
@@ -31,14 +31,14 @@ TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [l2]
 ok: [h1]
 ok: [spine]
-ok: [h2]
 ok: [l1]
+ok: [h2]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [l2]
 ok: [h1]
-ok: [spine]
 ok: [h2]
+ok: [spine]
 ok: [l1]
 
 TASK [fail] ********************************************************************
@@ -50,10 +50,10 @@ skipping: [h2]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [l2]
-ok: [h1]
-ok: [spine]
-ok: [l1]
 ok: [h2]
+ok: [spine]
+ok: [h1]
+ok: [l1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [spine]
@@ -73,17 +73,17 @@ TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for spine, l1, l2, h1, h2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
-ok: [l2]
 ok: [h1]
+ok: [l2]
 ok: [h2]
 ok: [spine]
 ok: [l1]
 
 TASK [Find configuration template for initial] *********************************
 ok: [l2]
+ok: [h2]
 ok: [h1]
 ok: [spine]
-ok: [h2]
 ok: [l1]
 
 TASK [fail] ********************************************************************
@@ -95,10 +95,10 @@ skipping: [h2]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [l2]
+ok: [h2]
 ok: [h1]
 ok: [spine]
 ok: [l1]
-ok: [h2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 [WARNING]: The value 'True' is not a valid IP address or network, passing this
@@ -272,13 +272,60 @@ ok: [l2] =>
     !
     interface vlan1000
      no shutdown
-     description VLAN red (1000) -> [h1,l1,h2]
+     description VLAN red (1000) -> [h1,l1,h2] [external]
      ! no ip address
     !
     do write
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [l1] => 
+  msg: |-
+    initial configuration for l1
+    =========================================
+    hostname l1
+    !
+    lldp enable
+    !
+    !
+    ip host spine 10.0.0.1
+    ip host l2 10.0.0.3
+    !
+    !
+    default mtu 1532
+    !
+    interface loopback0
+     ip address 10.0.0.2/32
+     no ipv6 enable
+    !
+    interface mgmt1/1/1
+     no lldp transmit
+     no lldp receive
+    !
+    interface ethernet1/1/1
+     no shutdown
+     no switchport
+     mtu 1632
+     description "l1 -> spine [external]"
+    ! Invalid IPv4 address True
+     ipv6 nd max-ra-interval 4
+     ipv6 nd min-ra-interval 3
+     ipv6 nd send-ra
+     ipv6 nd mtu 1600
+     ipv6 enable
+     ipv6 unreachables
+    !
+    interface ethernet1/1/2
+     no shutdown
+     no switchport
+     description "[Access VLAN red] l1 -> h1"
+     no ipv6 enable
+    !
+    interface virtual-network1000
+     no shutdown
+     description "VLAN red (1000) -> [h1\\,h2\\,l2] [external]"
+     no ipv6 enable
+    !
 ok: [spine] => 
   msg: |-
     initial configuration for spine
@@ -328,53 +375,6 @@ ok: [spine] =>
      ipv6 enable
      ipv6 unreachables
     !
-ok: [l1] => 
-  msg: |-
-    initial configuration for l1
-    =========================================
-    hostname l1
-    !
-    lldp enable
-    !
-    !
-    ip host spine 10.0.0.1
-    ip host l2 10.0.0.3
-    !
-    !
-    default mtu 1532
-    !
-    interface loopback0
-     ip address 10.0.0.2/32
-     no ipv6 enable
-    !
-    interface mgmt1/1/1
-     no lldp transmit
-     no lldp receive
-    !
-    interface ethernet1/1/1
-     no shutdown
-     no switchport
-     mtu 1632
-     description "l1 -> spine [external]"
-    ! Invalid IPv4 address True
-     ipv6 nd max-ra-interval 4
-     ipv6 nd min-ra-interval 3
-     ipv6 nd send-ra
-     ipv6 nd mtu 1600
-     ipv6 enable
-     ipv6 unreachables
-    !
-    interface ethernet1/1/2
-     no shutdown
-     no switchport
-     description "[Access VLAN red] l1 -> h1"
-     no ipv6 enable
-    !
-    interface virtual-network1000
-     no shutdown
-     description "VLAN red (1000) -> [h1\\,h2\\,l2]"
-     no ipv6 enable
-    !
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/dellos10.yml for spine, l1
@@ -415,12 +415,12 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -434,9 +434,9 @@ TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/a
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-3fnklb17.sh] ***********************
-changed: [h1 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-0cn6fs12.sh] ***********************
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -447,6 +447,7 @@ ok: [spine]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=vlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=routing)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=bgp)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=vxlan)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=evpn)
@@ -458,8 +459,8 @@ ok: [spine]
 
 TASK [Find configuration template for vlan] ************************************
 skipping: [spine]
-ok: [l1]
 ok: [l2]
+ok: [l1]
 
 TASK [fail] ********************************************************************
 skipping: [l1]
@@ -535,6 +536,36 @@ changed: [l2]
 
 TASK [run vtysh to import vlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/frr.j2] ***
 skipping: [l2]
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [l2]
+ok: [l1]
+ok: [spine]
+
+TASK [Find configuration template for routing] *********************************
+skipping: [l1]
+skipping: [l2]
+skipping: [spine]
+
+TASK [fail] ********************************************************************
+skipping: [l1]
+skipping: [l2]
+skipping: [spine]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [l1]
+skipping: [l2]
+skipping: [spine]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [l1]
+skipping: [l2]
+skipping: [spine]
+
+TASK [Deploy routing configuration] ********************************************
+skipping: [l1]
+skipping: [l2]
+skipping: [spine]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [l2]
@@ -620,13 +651,17 @@ ok: [l1] =>
         send-community extended
   
     !
-     address-family ipv4 unicast
-       soft-reconfiguration inbound
-       activate
-     exit
+        address-family ipv4 unicast
+          soft-reconfiguration inbound
+          activate
+        exit
+        address-family ipv6 unicast
+          no activate
+        exit
   
-  
-      no shutdown
+        timers 3 9
+        advertisement-interval 1
+        no shutdown
       exit
     !
     !
@@ -664,13 +699,17 @@ ok: [spine] =>
         send-community extended
   
     !
-     address-family ipv4 unicast
-       soft-reconfiguration inbound
-       activate
-     exit
+        address-family ipv4 unicast
+          soft-reconfiguration inbound
+          activate
+        exit
+        address-family ipv6 unicast
+          no activate
+        exit
   
-  
-      no shutdown
+        timers 3 9
+        advertisement-interval 1
+        no shutdown
       exit
     !
       neighbor interface ethernet1/1/2
@@ -683,13 +722,17 @@ ok: [spine] =>
         send-community extended
   
     !
-     address-family ipv4 unicast
-       soft-reconfiguration inbound
-       activate
-     exit
+        address-family ipv4 unicast
+          soft-reconfiguration inbound
+          activate
+        exit
+        address-family ipv6 unicast
+          no activate
+        exit
   
-  
-      no shutdown
+        timers 3 9
+        advertisement-interval 1
+        no shutdown
       exit
     !
     !
@@ -857,7 +900,7 @@ ok: [l2] =>
       exit-vni
   
       neighbor eth1 activate
-      neighbor eth1 soft-reconfiguration inbound
+    #  neighbor eth1 soft-reconfiguration inbound
   
      exit-address-family
     !
@@ -941,9 +984,9 @@ skipping: no hosts matched
 PLAY RECAP *********************************************************************
 h1                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 h2                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-l1                         : ok=42   changed=5    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
-l2                         : ok=54   changed=11   unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
-spine                      : ok=32   changed=3    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+l1                         : ok=44   changed=5    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+l2                         : ok=56   changed=11   unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+spine                      : ok=34   changed=3    unreachable=0    failed=0    skipped=25   rescued=0    ignored=0   
 
 
 

@@ -359,11 +359,6 @@ ok: [s1] =>
     lldp enable
     !
     ip vrf tenant
-    !
-    ! ip route-import|export xxx
-     ip route-import 65000:1
-     ip route-export 65000:1
-    !
     exit
     !
     ip host s2 10.0.0.4
@@ -422,8 +417,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for s2, ce1, ce2
 
 TASK [template] ****************************************************************
-changed: [ce1]
 changed: [ce2]
+changed: [ce1]
 changed: [s2]
 
 TASK [set_fact] ****************************************************************
@@ -614,20 +609,24 @@ ok: [s1] =>
         description "s2"
         update-source loopback0
     !
-     address-family ipv4 unicast
-       next-hop-self
-     exit
+        address-family ipv4 unicast
+          next-hop-self
+        exit
         send-community standard
         send-community extended
   
     !
-     address-family ipv4 unicast
-       soft-reconfiguration inbound
-       activate
-     exit
+        address-family ipv4 unicast
+          soft-reconfiguration inbound
+          activate
+        exit
+        address-family ipv6 unicast
+          no activate
+        exit
   
-  
-      no shutdown
+        timers 3 9
+        advertisement-interval 1
+        no shutdown
       exit
     !
     !
@@ -744,24 +743,6 @@ ok: [ce2] =>
   
     !
     do write
-ok: [s1] => 
-  msg: |-
-    ospf configuration for s1
-    =========================================
-  
-    router ospf 1
-     router-id 10.0.0.3
-  
-    !
-    interface loopback0
-     ip ospf 1 area 0.0.0.0
-     ip ospf passive
-    !
-    interface ethernet1/1/1
-    ! s1 -> s2
-     ip ospf 1 area 0.0.0.0
-     ip ospf network point-to-point
-    !
 ok: [s2] => 
   msg: |-
     ospf configuration for s2
@@ -790,6 +771,29 @@ ok: [s2] =>
   
     !
     do write
+ok: [s1] => 
+  msg: |-
+    ospf configuration for s1
+    =========================================
+  
+    router ospf 1
+     router-id 10.0.0.3
+  
+  
+  
+     timers lsa arrival 100
+     timers spf 10 50 500
+     timers throttle lsa all 100
+    !
+    interface loopback0
+     ip ospf 1 area 0.0.0.0
+     ip ospf passive
+    !
+    interface ethernet1/1/1
+    ! s1 -> s2
+     ip ospf 1 area 0.0.0.0
+     ip ospf network point-to-point
+    !
 
 TASK [Deploy ospf configuration] ***********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for ce1, ce2, s2
@@ -797,8 +801,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/dellos10.yml f
 
 TASK [template] ****************************************************************
 changed: [ce2]
-changed: [ce1]
 changed: [s2]
+changed: [ce1]
 
 TASK [set_fact] ****************************************************************
 ok: [ce1]
@@ -859,6 +863,12 @@ ok: [s1] =>
      redistribute imported-ospf-routes
      redistribute bgp 65000
      redistribute l2vpn evpn
+  
+  
+  
+     timers lsa arrival 100
+     timers spf 10 50 500
+     timers throttle lsa all 100
     !
     interface ethernet1/1/2
     ! s1 -> ce1
@@ -866,7 +876,17 @@ ok: [s1] =>
      ip ospf network point-to-point
     !
   
+    exit
     !
+    ip vrf tenant
+    !
+    ! ip route-import|export xxx
+     ip route-import 65000:1
+     ip route-export 65000:1
+    !
+    exit
+    !
+  
     router bgp 65000
     !
      vrf tenant
@@ -875,7 +895,6 @@ ok: [s1] =>
       template unnumbered_ebgp
         link-local-only-nexthop
         exit
-  
   
   
     !
@@ -1112,7 +1131,7 @@ ok: [s2] =>
     ! Configure explicit Route Targets and RD per L2 VNI; auto-derived differs
   
       neighbor 10.0.0.3 activate
-      neighbor 10.0.0.3 soft-reconfiguration inbound
+    #  neighbor 10.0.0.3 soft-reconfiguration inbound
   
      exit-address-family
     !

@@ -5,15 +5,15 @@ PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [l2]
+ok: [h1]
 ok: [l1]
 ok: [h2]
-ok: [h1]
 ok: [spine]
 
 TASK [Find device readiness script] ********************************************
 ok: [l2]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 ok: [l1]
 ok: [spine]
 
@@ -29,8 +29,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [l2]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 ok: [l1]
 ok: [spine]
 
@@ -50,9 +50,9 @@ skipping: [h2]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [l2]
-ok: [h1]
-ok: [l1]
 ok: [h2]
+ok: [l1]
+ok: [h1]
 ok: [spine]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -81,9 +81,9 @@ ok: [spine]
 
 TASK [Find configuration template for initial] *********************************
 ok: [l2]
-ok: [h2]
 ok: [h1]
 ok: [l1]
+ok: [h2]
 ok: [spine]
 
 TASK [fail] ********************************************************************
@@ -95,10 +95,10 @@ skipping: [h2]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [l2]
-ok: [h2]
 ok: [h1]
 ok: [l1]
 ok: [spine]
+ok: [h2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [h1] => 
@@ -129,6 +129,43 @@ ok: [h1] =>
     ip addr del 172.31.1.1/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.31.1.1/24 dev eth1
+    ip link set dev eth1 mtu 1500
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    #
+    #
+    # Print the final routing table
+    ip route
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.31.1.2/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.31.1.2/24 dev eth1
     ip link set dev eth1 mtu 1500
     #
     # Add static routes (usually IPv4 routes pointing to the first usable gateway)
@@ -235,43 +272,6 @@ ok: [l2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [h2] => 
-  msg: |-
-    initial configuration for h2
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.31.1.2/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.31.1.2/24 dev eth1
-    ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    #
-    #
-    #
-    # Print the final routing table
-    ip route
 ok: [l1] => 
   msg: |-
     initial configuration for l1
@@ -396,8 +396,8 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
@@ -415,7 +415,7 @@ TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/a
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-9vnf4a1g.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-01t04rjj.sh] ***********************
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
@@ -428,6 +428,7 @@ ok: [spine]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=vlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=routing)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=bgp)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=vxlan)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine => (item=evpn)
@@ -517,6 +518,36 @@ changed: [l2]
 TASK [run vtysh to import vlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/frr.j2] ***
 skipping: [l2]
 
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [l2]
+ok: [l1]
+ok: [spine]
+
+TASK [Find configuration template for routing] *********************************
+skipping: [l1]
+skipping: [l2]
+skipping: [spine]
+
+TASK [fail] ********************************************************************
+skipping: [l1]
+skipping: [l2]
+skipping: [spine]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [l1]
+skipping: [l2]
+skipping: [spine]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [l1]
+skipping: [l2]
+skipping: [spine]
+
+TASK [Deploy routing configuration] ********************************************
+skipping: [l1]
+skipping: [l2]
+skipping: [spine]
+
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [l2]
 ok: [l1]
@@ -570,6 +601,13 @@ ok: [l2] =>
     !
     !
     !
+      neighbor 10.0.0.5 activate
+      neighbor 10.0.0.5 next-hop-self
+      no neighbor 10.0.0.5 send-community all
+      neighbor 10.0.0.5 send-community standard
+      neighbor 10.0.0.5 send-community large
+      neighbor 10.0.0.5 send-community extended
+    !
       neighbor 10.1.0.6 activate
       no neighbor 10.1.0.6 send-community all
       neighbor 10.1.0.6 send-community standard
@@ -603,13 +641,16 @@ ok: [l1] =>
         send-community standard
         send-community extended
   
+        address-family ipv4 unicast
+          no activate
+        exit
+        address-family ipv6 unicast
+          no activate
+        exit
   
-    !
-     address-family ipv4 unicast
-       no activate
-     exit
-  
-      no shutdown
+        timers 3 9
+        advertisement-interval 1
+        no shutdown
       exit
     !
       neighbor 10.1.0.2
@@ -620,13 +661,17 @@ ok: [l1] =>
         send-community standard
   
     !
-     address-family ipv4 unicast
-       soft-reconfiguration inbound
-       activate
-     exit
+        address-family ipv4 unicast
+          soft-reconfiguration inbound
+          activate
+        exit
+        address-family ipv6 unicast
+          no activate
+        exit
   
-  
-      no shutdown
+        timers 3 9
+        advertisement-interval 1
+        no shutdown
       exit
     !
     !
@@ -665,13 +710,16 @@ ok: [spine] =>
         send-community standard
         send-community extended
   
+        address-family ipv4 unicast
+          no activate
+        exit
+        address-family ipv6 unicast
+          no activate
+        exit
   
-    !
-     address-family ipv4 unicast
-       no activate
-     exit
-  
-      no shutdown
+        timers 3 9
+        advertisement-interval 1
+        no shutdown
       exit
     !
       neighbor 10.0.0.4
@@ -683,13 +731,16 @@ ok: [spine] =>
         send-community standard
         send-community extended
   
+        address-family ipv4 unicast
+          no activate
+        exit
+        address-family ipv6 unicast
+          no activate
+        exit
   
-    !
-     address-family ipv4 unicast
-       no activate
-     exit
-  
-      no shutdown
+        timers 3 9
+        advertisement-interval 1
+        no shutdown
       exit
     !
       neighbor 10.1.0.1
@@ -700,13 +751,17 @@ ok: [spine] =>
         send-community standard
   
     !
-     address-family ipv4 unicast
-       soft-reconfiguration inbound
-       activate
-     exit
+        address-family ipv4 unicast
+          soft-reconfiguration inbound
+          activate
+        exit
+        address-family ipv6 unicast
+          no activate
+        exit
   
-  
-      no shutdown
+        timers 3 9
+        advertisement-interval 1
+        no shutdown
       exit
     !
       neighbor 10.1.0.5
@@ -717,13 +772,17 @@ ok: [spine] =>
         send-community standard
   
     !
-     address-family ipv4 unicast
-       soft-reconfiguration inbound
-       activate
-     exit
+        address-family ipv4 unicast
+          soft-reconfiguration inbound
+          activate
+        exit
+        address-family ipv6 unicast
+          no activate
+        exit
   
-  
-      no shutdown
+        timers 3 9
+        advertisement-interval 1
+        no shutdown
       exit
     !
     !
@@ -891,7 +950,7 @@ ok: [l2] =>
       exit-vni
   
       neighbor 10.0.0.5 activate
-      neighbor 10.0.0.5 soft-reconfiguration inbound
+    #  neighbor 10.0.0.5 soft-reconfiguration inbound
   
      exit-address-family
     !
@@ -977,9 +1036,9 @@ skipping: no hosts matched
 PLAY RECAP *********************************************************************
 h1                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 h2                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-l1                         : ok=42   changed=5    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
-l2                         : ok=54   changed=11   unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
-spine                      : ok=32   changed=3    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+l1                         : ok=44   changed=5    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+l2                         : ok=56   changed=11   unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+spine                      : ok=34   changed=3    unreachable=0    failed=0    skipped=25   rescued=0    ignored=0   
 
 
 

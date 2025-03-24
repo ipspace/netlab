@@ -323,8 +323,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -404,6 +404,71 @@ ok: [x1] =>
     !
     !
     do write
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+    !
+    router bgp 65000
+      log-neighbor-changes
+  
+    ! define a generic unnumbered template to be used for eBGP unnumbered...
+    ! additionally, need to define link-local-only-nexthop as per Dell suggested "Cumulus workaround"
+    ! WTF Dell...
+      template unnumbered_ebgp
+        link-local-only-nexthop
+        exit
+  
+      router-id 10.0.0.1
+    !
+      neighbor 2001:db8:3::2
+        remote-as 65100
+  
+        description "x1"
+        send-community standard
+  
+        address-family ipv4 unicast
+          no activate
+        exit
+    !
+        address-family ipv6 unicast
+          soft-reconfiguration inbound
+          activate
+        exit
+  
+        timers 3 9
+        advertisement-interval 1
+        no shutdown
+      exit
+    !
+      neighbor 2001:db8:3:1::3
+        remote-as 65101
+  
+        description "x2"
+        send-community standard
+  
+        address-family ipv4 unicast
+          no activate
+        exit
+    !
+        address-family ipv6 unicast
+          soft-reconfiguration inbound
+          activate
+        exit
+  
+        timers 3 9
+        advertisement-interval 1
+        no shutdown
+      exit
+    !
+    !
+     address-family ipv6 unicast
+    !
+      network 2001:db8:1:1::/64
+    !
+    !
+    !
+    !
 ok: [x2] => 
   msg: |-
     bgp configuration for x2
@@ -439,71 +504,6 @@ ok: [x2] =>
     !
     !
     do write
-ok: [dut] => 
-  msg: |-
-    bgp configuration for dut
-    =========================================
-    !
-    router bgp 65000
-      log-neighbor-changes
-  
-    ! define a generic unnumbered template to be used for eBGP unnumbered...
-    ! additionally, need to define link-local-only-nexthop as per Dell suggested "Cumulus workaround"
-    ! WTF Dell...
-      template unnumbered_ebgp
-        link-local-only-nexthop
-        exit
-  
-      router-id 10.0.0.1
-    !
-      neighbor 2001:db8:3::2
-        remote-as 65100
-  
-        description "x1"
-        send-community standard
-  
-    !
-     address-family ipv6 unicast
-       soft-reconfiguration inbound
-       activate
-     exit
-  
-    !
-     address-family ipv4 unicast
-       no activate
-     exit
-  
-      no shutdown
-      exit
-    !
-      neighbor 2001:db8:3:1::3
-        remote-as 65101
-  
-        description "x2"
-        send-community standard
-  
-    !
-     address-family ipv6 unicast
-       soft-reconfiguration inbound
-       activate
-     exit
-  
-    !
-     address-family ipv4 unicast
-       no activate
-     exit
-  
-      no shutdown
-      exit
-    !
-    !
-     address-family ipv6 unicast
-    !
-      network 2001:db8:1:1::/64
-    !
-    !
-    !
-    !
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/dellos10.yml for dut

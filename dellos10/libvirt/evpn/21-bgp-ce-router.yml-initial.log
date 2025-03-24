@@ -359,11 +359,6 @@ ok: [s1] =>
     lldp enable
     !
     ip vrf tenant
-    !
-    ! ip route-import|export xxx
-     ip route-import 65000:1
-     ip route-export 65000:1
-    !
     exit
     !
     ip host s2 10.0.0.4
@@ -422,9 +417,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for s2, ce1, ce2
 
 TASK [template] ****************************************************************
-changed: [ce2]
 changed: [s2]
 changed: [ce1]
+changed: [ce2]
 
 TASK [set_fact] ****************************************************************
 ok: [s2]
@@ -432,9 +427,9 @@ ok: [ce1]
 ok: [ce2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [ce2]
 changed: [ce1]
 changed: [s2]
+changed: [ce2]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [s2]
@@ -682,20 +677,24 @@ ok: [s1] =>
         description "s2"
         update-source loopback0
     !
-     address-family ipv4 unicast
-       next-hop-self
-     exit
+        address-family ipv4 unicast
+          next-hop-self
+        exit
         send-community standard
         send-community extended
   
     !
-     address-family ipv4 unicast
-       soft-reconfiguration inbound
-       activate
-     exit
+        address-family ipv4 unicast
+          soft-reconfiguration inbound
+          activate
+        exit
+        address-family ipv6 unicast
+          no activate
+        exit
   
-  
-      no shutdown
+        timers 3 9
+        advertisement-interval 1
+        no shutdown
       exit
     !
     !
@@ -712,8 +711,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for ce
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/dellos10.yml for s1
 
 TASK [template] ****************************************************************
-changed: [ce1]
 changed: [ce2]
+changed: [ce1]
 changed: [s2]
 
 TASK [set_fact] ****************************************************************
@@ -727,9 +726,9 @@ skipping: [ce2]
 skipping: [s2]
 
 TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
+changed: [ce1]
 changed: [ce2]
 changed: [s2]
-changed: [ce1]
 
 TASK [wait_for_connection] *****************************************************
 skipping: [s1]
@@ -772,6 +771,11 @@ ok: [s1] =>
     router ospf 1
      router-id 10.0.0.3
   
+  
+  
+     timers lsa arrival 100
+     timers spf 10 50 500
+     timers throttle lsa all 100
     !
     interface loopback0
      ip ospf 1 area 0.0.0.0
@@ -866,7 +870,17 @@ ok: [s1] =>
   msg: |-
     vrf configuration for s1
     =========================================
+  
     !
+    ip vrf tenant
+    !
+    ! ip route-import|export xxx
+     ip route-import 65000:1
+     ip route-export 65000:1
+    !
+    exit
+    !
+  
     router bgp 65000
     !
      vrf tenant
@@ -876,7 +890,6 @@ ok: [s1] =>
         link-local-only-nexthop
         exit
   
-  
     !
       neighbor 10.1.0.5
         remote-as 65100
@@ -884,9 +897,18 @@ ok: [s1] =>
         description "ce1"
         send-community standard
   
+    !
+        address-family ipv4 unicast
+          soft-reconfiguration inbound
+          activate
+        exit
+        address-family ipv6 unicast
+          no activate
+        exit
   
-  
-      no shutdown
+        timers 3 9
+        advertisement-interval 1
+        no shutdown
       exit
   
     !
@@ -1113,7 +1135,7 @@ ok: [s2] =>
     ! Configure explicit Route Targets and RD per L2 VNI; auto-derived differs
   
       neighbor 10.0.0.3 activate
-      neighbor 10.0.0.3 soft-reconfiguration inbound
+    #  neighbor 10.0.0.3 soft-reconfiguration inbound
   
      exit-address-family
     !

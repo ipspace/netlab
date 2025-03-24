@@ -291,11 +291,6 @@ ok: [s1] =>
     lldp enable
     !
     ip vrf customer
-    !
-    ! ip route-import|export xxx
-     ip route-import 65000:1
-     ip route-export 65000:1
-    !
     exit
     !
     ip host s2 10.0.0.4
@@ -367,8 +362,8 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
@@ -386,9 +381,9 @@ TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/a
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-a6znmflb.sh] ***********************
-changed: [h2 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-yor3l28p.sh] ***********************
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -398,6 +393,7 @@ ok: [s1]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=vlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=routing)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=bgp)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=ospf)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=vrf)
@@ -459,6 +455,30 @@ TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/netlab_gh/netsim/
 changed: [s2]
 
 TASK [run vtysh to import vlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/frr.j2] ***
+skipping: [s2]
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [s2]
+ok: [s1]
+
+TASK [Find configuration template for routing] *********************************
+skipping: [s1]
+skipping: [s2]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+skipping: [s2]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [s1]
+skipping: [s2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [s1]
+skipping: [s2]
+
+TASK [Deploy routing configuration] ********************************************
+skipping: [s1]
 skipping: [s2]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
@@ -539,20 +559,24 @@ ok: [s1] =>
         description "s2"
         update-source loopback0
     !
-     address-family ipv4 unicast
-       next-hop-self
-     exit
+        address-family ipv4 unicast
+          next-hop-self
+        exit
         send-community standard
         send-community extended
   
     !
-     address-family ipv4 unicast
-       soft-reconfiguration inbound
-       activate
-     exit
+        address-family ipv4 unicast
+          soft-reconfiguration inbound
+          activate
+        exit
+        address-family ipv6 unicast
+          no activate
+        exit
   
-  
-      no shutdown
+        timers 3 9
+        advertisement-interval 1
+        no shutdown
       exit
     !
     !
@@ -611,6 +635,11 @@ ok: [s1] =>
     router ospf 1
      router-id 10.0.0.3
   
+  
+  
+     timers lsa arrival 100
+     timers spf 10 50 500
+     timers throttle lsa all 100
     !
     interface loopback0
      ip ospf 1 area 0.0.0.0
@@ -693,7 +722,17 @@ ok: [s1] =>
   msg: |-
     vrf configuration for s1
     =========================================
+  
     !
+    ip vrf customer
+    !
+    ! ip route-import|export xxx
+     ip route-import 65000:1
+     ip route-export 65000:1
+    !
+    exit
+    !
+  
     router bgp 65000
     !
      vrf customer
@@ -702,7 +741,6 @@ ok: [s1] =>
       template unnumbered_ebgp
         link-local-only-nexthop
         exit
-  
   
   
     !
@@ -892,7 +930,7 @@ ok: [s2] =>
     ! Configure explicit Route Targets and RD per L2 VNI; auto-derived differs
   
       neighbor 10.0.0.3 activate
-      neighbor 10.0.0.3 soft-reconfiguration inbound
+    #  neighbor 10.0.0.3 soft-reconfiguration inbound
   
      exit-address-family
     !
@@ -986,8 +1024,8 @@ skipping: no hosts matched
 PLAY RECAP *********************************************************************
 h1                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 h2                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-s1                         : ok=56   changed=7    unreachable=0    failed=0    skipped=18   rescued=0    ignored=0   
-s2                         : ok=72   changed=15   unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+s1                         : ok=58   changed=7    unreachable=0    failed=0    skipped=23   rescued=0    ignored=0   
+s2                         : ok=74   changed=15   unreachable=0    failed=0    skipped=24   rescued=0    ignored=0   
 
 
 
