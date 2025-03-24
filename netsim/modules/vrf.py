@@ -125,6 +125,13 @@ def normalize_vrf_dict(obj: Box, topology: Box) -> None:
         category=log.IncorrectValue,
         module='vrf')
 
+    if obj is topology and 'loopback' in vdata:
+      if not isinstance(vdata.loopback,bool):
+        log.error(f'The "loopback" attribute in the global VRF "{vname}" must be a bool',
+        more_hints=[ 'You can specify specific IP address for a VRF loopback interface in the node VRF data'],
+        category=log.IncorrectType,
+        module='vrf')
+
     if 'rd' in vdata:
       if vdata.rd is None:      # RD set to None can be used to auto-generate RD while preventing RD inheritance
         continue                # ... skip the rest of the checks
