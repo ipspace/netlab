@@ -1,0 +1,40 @@
+---
+name: Run integration tests
+
+on:
+  issue_comment:
+    types: [ created, edited, deleted ]
+
+jobs:
+  dev_mod_test:
+    if: contains(github.event.comment.html_url, '/pull/') && contains(github.event.comment.body, '/integration')
+    runs-on: [ self-hosted, integration ]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Run integration tests
+      env:
+        GITHUB_COMMENT: ${{ github.event.comment.body }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_CONTEXT: ${{ toJSON(github) }}
+      run: |
+        . setup.sh
+        cd tests/integration
+        set -x
+        echo "integration test request: $GITHUB_COMMENT"
+        gh pr checkout ${{ github.event.issue.number }}
+        gh pr comment ${{ github.event.issue.number }} --body "Got integration test request \`$GITHUB_COMMENT\`"
+        cat >TEST_LOG <<LOG
+        Integration test results
+        \`\`\`
+        LOG
+        set +e
+        ./device-module-test --integration "$GITHUB_COMMENT" 2>&1 | tee -a TEST_LOG
+        cat >>TEST_LOG <<LOG
+        \`\`\`
+        LOG
+        gh pr comment ${{ github.event.issue.number }} --body-file TEST_LOG
+        echo "============ ENVIRONMENT ============="
+        set
+        echo
+        echo "========== GITHUB CONTEXT ============"
+        echo "$GITHUB_CONTEXT"
