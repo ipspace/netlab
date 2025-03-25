@@ -34,7 +34,7 @@ The following parameters can be set on individual links:
 * **lag.ifindex**: Optional parameter that controls the naming of the LAG (bonding, port-channel) interface.
 * **lag.mlag**: Optional dictionary with peer link parameters; see [below](lag-mlag)
 
-This configuration module creates a virtual link with the link type set to **lag** between the **lag.members** and appends the links described in the **lag.members** list to the topology **links** list.
+This configuration module creates virtual **lag** type interfaces on nodes that are listed in **lag.members** and appends the links described in the **lag.members** list to the topology **links** list.
 
 ## Example
 
@@ -112,6 +112,10 @@ links:
     members: [s1-s2]     # Note that multiple physical links are allowed here
     mlag.peergroup: True # (also) used to derive a unique MAC address for this group of MLAG peers
 ```
+
+### Peerlink configuration
+
+The **peerlink** between mlag peers is modeled as a lag link, and hence all the various *Netlab* features - such as IP addressing, OSPF and BGP - and lag features - such as the use of LACP - can be configured on it. Different platforms use different approaches and defaults for implementing the peerlink - e.g. different vlan numbers, irb versus routed mode, etc.; some of these defaults can be changed through _device features_.
 
 ### Advanced MLAG Parameters
 
