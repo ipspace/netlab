@@ -243,23 +243,23 @@ def create_lag_interfaces(link: Box, mlag_pairs: dict, topology: Box) -> None:
 create_peer_vlan - create a global VLAN for the peerlink (if supported), to enable features like OSPF
 """
 def create_peer_vlan(peerlink: Box, mlag_peer_features: Box, topology: Box) -> None:
-  if 'vlan' in mlag_peer_features:                           # Check if device supports an explicit peering VLAN
+  if 'vlan' in mlag_peer_features and mlag_peer_features.vlan: # Check if device supports an explicit peering VLAN
     vlan_name = f"peervlan_{ peerlink[PEERLINK_ID_ATT] }"
     vlan = data.get_box({ 'id': mlag_peer_features.vlan, 'mode': 'irb' })
     if 'stp' in topology.module:
       vlan.stp.enable = False
     lag_peervlan_attr = list(topology.defaults.lag.attributes.lag_peervlan_attr)
     for a in list(peerlink.keys()):
-      if a in lag_peervlan_attr:                             # Move all l3 attributes to the vlan interface
+      if a in lag_peervlan_attr:                               # Move all l3 attributes to the vlan interface
         vlan[a] = peerlink.pop(a,None)
-    if 'ip' in mlag_peer_features and vlan.mode!='route':    # Don't put a prefix on routed VLANs
+    if 'ip' in mlag_peer_features and vlan.mode!='route':      # Don't put a prefix on routed VLANs
       try: 
         vlan.prefix = { 'ipv4': str(netaddr.IPNetwork(mlag_peer_features.ip)), 'allocation': 'p2p' }
       except:
         pass
     if mlag_peer_features.ip=='linklocal':
       if 'pool' not in vlan:
-        vlan.pool = 'mlag_linklocal'                         # Configure ipv6-only pool unless user specified other
+        vlan.pool = 'mlag_linklocal'                           # Configure ipv6-only pool unless user specified other
       elif topology.addressing[vlan.pool].get('ipv6',None) is not True:
         log.error( f'Custom pool {vlan.pool} on MLAG peerlink {peerlink._linkname} must enable ipv6 LLA',
           category=log.IncorrectValue,
