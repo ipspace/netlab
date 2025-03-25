@@ -80,6 +80,11 @@ def test_parse(args: typing.List[str], topology: Box) -> argparse.Namespace:
     action='store',
     default='create,up,initial,validate',
     help='List of steps to execute')
+  parser.add_argument(
+    '--integration',
+    dest='integration',
+    action='store',
+    help='GitHub comment triggering the integration test run')
   parser_add_verbose(parser)
 
   return parser.parse_args(args)
@@ -95,6 +100,16 @@ def load_system_defaults() -> Box:
 def check_device_provider(args: argparse.Namespace, topology: Box) -> None:
   if args.platform:
     return
+
+  if args.integration:
+    i_list = args.integration.replace('  ',' ').split(' ')
+    if len(i_list) < 4:
+      log.fatal('Start the test with /integration provider device test(s) [ limit ]')
+    args.provider = i_list[1]
+    args.device = i_list[2]
+    args.tests = i_list[3].split(',')
+    if len(i_list) >= 5:
+      args.limit = i_list[4]
 
   if args.device:
     os.environ['NETLAB_DEVICE'] = args.device
