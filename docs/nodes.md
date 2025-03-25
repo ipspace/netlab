@@ -76,7 +76,7 @@ nodes:
 * **mgmt** -- management IPv4/IPv6 addresses. Used primarily with the [**external** provider](labs/external.md)
 * **mtu** -- sets device-wide (*system*) MTU. This MTU is applied to all interfaces that don't have an explicit MTU ([more details](links-mtu)).
 * **provider** -- virtualization provider used by this node (see [](labs/multi-provider.md) for more details).
-* **role** -- when set to **host**, the device does not get a loopback IP address and uses static routing toward the [default gateway](links.md#hosts-and-default-gateways). The only supported host device is *linux*, for which the host **role** is set in system device defaults.
+* **role** -- when set to **host**, the device does not get a loopback IP address and [uses static routing](node-router-host) toward the [default gateway](links-gateway) ([more details](node-router-host))
 * **unmanaged** -- when set to *True*, the node is not managed or configured by *netlab*. Use this parameter when integrating *netlab* topologies with additional external devices, which should not be configured by *netlab* ([more details](external-unmanaged)).
 
 ```{tip}
@@ -84,7 +84,22 @@ nodes:
 * You still have to specify the device type (either in the node or as the [default device type](default-device-type)) for unmanaged nodes. _netlab_ uses the device type to determine which features a node supports. If you want to use an unsupported unmanaged device, set **‌device** to **‌none**.
 ```
 
+(node-router-host)=
+## Hosts and Routers
+
+Most _netlab_-supported devices act as *routers*: they have at least one [loopback interface](node-loopback) and run routing protocols to find the best path(s) toward remote destinations.
+
+Hosts do not have loopback interfaces (it's easiest if they have a single interface) and use static routes toward an adjacent [default gateway](links-gateway). On devices that don't have the management VRF, Vagrant or containerlab set up the default route, and _netlab_ adds static IPv4 routes for IPv4 prefixes defined in [address pools](address-pools).
+
+Hosts that have a management VRF (mostly network devices used as hosts) get two IPv4 default routes. Vagrant or containerlab sets up the IPv4 default route in the management VRF, and netlab adds a default route in the global VRF.
+
+Most hosts listen to IPv6 RA messages to get the IPv6 default route. _netlab_ can add an IPv6 default route[^SRv6] on devices that do not listen to RA messages.
+
+[^SRv6]: Or a set of static IPv6 routes for address pool prefixes on devices without a management VRF
+
 (node-loopback)=
+## Loopbacks
+
 You can use the **loopback** node attribute to change the [default allocation of loopback addresses](addressing-loopback). It's a dictionary that can contain static loopback prefixes (**ipv4** and/or **ipv6** attributes) or an alternate addressing pool (**pool** attribute[^LBIN]).
 
 [^LBIN]: The alternate pool you use for IPv4 loopback addresses should have **loopback** in its name (to tell _netlab_ to set the allocated prefix length to /32) or a [**prefix** attribute](address-pool-specs), preferably set to 32. The IPv6 prefix length is automatically set to /64 unless you specify it with the **prefix6** attribute.
