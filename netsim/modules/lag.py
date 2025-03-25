@@ -261,7 +261,8 @@ def create_peer_vlan(peerlink: Box, mlag_peer_features: Box, topology: Box) -> N
       if 'pool' not in vlan:
         vlan.pool = 'mlag_linklocal'                           # Configure ipv6-only pool unless user specified other
       elif topology.addressing[vlan.pool].get('ipv6',None) is not True:
-        log.error( f'Custom pool {vlan.pool} on MLAG peerlink {peerlink._linkname} must enable ipv6 LLA',
+        log.error( f"Custom pool'{vlan.pool}' on MLAG peerlink {peerlink._linkname} must enable ipv6 LLA " +
+                    "to support 'linklocal' IP addressing",
           category=log.IncorrectValue,
           module='lag')
 
