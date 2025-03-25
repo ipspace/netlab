@@ -367,6 +367,18 @@ def augment_node_device_data(n: Box, defaults: Box) -> None:
     log.error(f"Daemon configuration files for node {n} must be a dictionary")
     n.pop('_daemon_config',None)
 
+  role = n.get('role',None)
+  if role:
+    features = devices.get_device_features(n,defaults)
+    allowed_roles = features.initial.get('roles',['router'])
+    if role not in allowed_roles:
+      log.warning(
+        text=f"Node {n.name} (device {n.device}) cannot have role '{role}'",
+        more_hints=[ f'Allowed roles for this device type are: {",".join(allowed_roles) }' ],
+        flag='nodes.roles',
+        category=log.IncorrectType,
+        module='nodes')
+
 '''
 Set addresses of the main loopback interface
 '''
@@ -469,9 +481,16 @@ static routes.
 * The IPv4 static routes are generated if the node uses IPv4 AF
 * The IPv6 static routes are generated if the node uses IPv6 AF and does not listen
   to Router Advertisements
+
+Hosts that have management VRF will get the default static routes, other hosts will
+get static routes configured in the 'routing.static.host' parameter or generated from
+the address pools.
 '''
 def add_host_static_routes(topology: Box) -> None:
   sr_list = topology.get('routing.static.host',None)
+  sr_default = [ 
+    { 'ipv4': '0.0.0.0/0', '_skip_missing': True, 'nexthop.gateway': True },
+    { 'ipv6': '::/0', '_skip_missing': True, 'nexthop.gateway': True } ]
 
   for n_name, n_data in topology.nodes.items():
     if n_data.get('role',None) != 'host':         # Not a host, no need for static routes
@@ -500,8 +519,9 @@ def add_host_static_routes(topology: Box) -> None:
       continue                                    # Nope, no need to muddy the waters
 
     n_data.routing.static = []
+    sr_data = sr_default if features.initial.mgmt_vrf else sr_list
     for af in host_af_list:
-      n_data.routing.static += [ data.get_box(sr_entry) for sr_entry in sr_list if af in sr_entry ]
+      n_data.routing.static += [ data.get_box(sr_entry) for sr_entry in sr_data if af in sr_entry ]
 
     data.append_to_list(n_data,'module','routing')
     data.append_to_list(topology,'module','routing')

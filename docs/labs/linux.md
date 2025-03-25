@@ -51,27 +51,16 @@ On a VRF-enabled router, you might get the following entries (the router has onl
 
 The netlab-generated entries are *appended* to the existing `/etc/hosts` file on virtual machines. The container `/etc/hosts` file is generated from scratch to remove the management IP addresses *containerlab* inserted into the `/etc/hosts` file.
 
-(linux-routes)=
-## Host Routing
-
-Generic Linux device is an IP host that by default does not support IP forwarding or IP routing protocols. It uses static routes set up as follows:
-
-* IPv4 default route points to Vagrant- or containerlab management interface (set by Vagrant/DHCP or containerlab).
-* IPv6 default route points to whichever adjacent device is sending IPv6 Route Advertisement messages (default Linux behavior).
-* IPv4 static routes for all IPv4 address pools defined in lab topology point to the subnet default gateway on the first non-management interface.
-
-The default gateway on a subnet is set by the [gateway module](../module/gateway.md). If you're not using that module, _netlab_ sets the default gateway to the interface IP address of the first non-host[^NH] device connected to the subnet.
-
-[^NH]: A device that does not have **role** set to **host**. A Linux node is usually a **host** and cannot be used as a default gateway.
-
 (linux-forwarding)=
-## Packet Forwarding on Linux Hosts
+## Static Routes and Packet Forwarding on Linux
 
-IPv4 and IPv6 packet forwarding on Linux devices is controlled with the **role** node parameter:
+Linux devices are usually hosts using [static routes](node-router-host) toward the [default gateway](links-gateway).
+
+IPv4 and IPv6 packet forwarding on Linux devices also is controlled with the **role** node parameter:
 
 * **host** (default): a Linux device does not perform packet forwarding and cannot be the default gateway for other hosts.
 * **gateway**: a Linux device does not perform packet forwarding but acts as the default gateway for other hosts. You will have to install a proxy (or a similar solution) for inter-subnet packet forwarding.
-* **router**: A Linux device performs packet forwarding but does not run routing protocols. Use **frr** or **cumulus** device if you want to run routing protocols on a Linux server.
+* **router**: A Linux device performs packet forwarding but does not run routing protocols. Use **frr** device if you want to run routing protocols on a Linux server.
 
 (linux-loopback)=
 ## Loopback Interface
@@ -145,7 +134,7 @@ _netlab_ initial configuration script will skip Ubuntu package installation if i
 The initial configuration process (**[netlab initial](../netlab/initial.md)**) does not rely on commands executed within Linux containers:
 
 * The `/etc/hosts` file is generated during the **[netlab create](../netlab/create.md)** process from the ```templates/provider/clab/frr/hosts.j2``` template (see [](clab-config-template)).
-* Interface IP addresses, static routes to the default gateway (see [](linux-routes)) and any lag bonding interfaces are configured with **ip** commands executed on the Linux host but within the container network namespace.
+* Interface IP addresses, static routes to the default gateway (see [](linux-forwarding)), and any lag bonding interfaces are configured with **ip** commands executed on the Linux host but within the container network namespace.
 * Static default route points to the management interface.
 
 You can, therefore, use any container image as a Linux node.

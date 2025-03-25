@@ -39,7 +39,7 @@ links: [ rtr-h1, rtr-h2 ]
 
 Linux containers are configured with host commands executed within the container networking namespace. _netlab_ does not expect to have Python (or any other CLI command) in a Linux container; you can use whatever Linux container you wish.
 
-On Linux hosts, the _netlab_ initial configuration process adds the `/etc/hosts` file, configures IP addresses on management and lab interfaces, installs LLDP and `net-tools` on Ubuntu virtual machines, and creates static routes pointing to the first-hop gateway on the first lab interface ([more details](linux-routes)). The default route (managed by Vagrant or containerlab) always points to the management interface, allowing you to connect to the Internet and install additional software on Linux hosts.
+On Linux hosts, the _netlab_ initial configuration process adds the `/etc/hosts` file, configures IP addresses on management and lab interfaces, installs LLDP and `net-tools` on Ubuntu virtual machines, and creates static routes pointing to the first-hop gateway on the first lab interface ([more details](linux-forwarding)). The default route (managed by Vagrant or containerlab) always points to the management interface, allowing you to connect to the Internet and install additional software on Linux hosts.
 
 ## Custom Containers or Virtual Machines
 

@@ -420,7 +420,7 @@ A lab device could be a networking device or a host[^HOST]. Links with attached 
 
 * The link type is set to **lan** regardless of the number of attached nodes.
 * If the link **role** is not defined in the topology file, it's set to **stub**  to turn the attached router interfaces into *passive* interfaces[^NOPASS].
-* If the link **gateway** attribute is not defined, it's set to the IP address of the first attached non-host device. You can set the link **gateway** to any value you wish; the value is not checked.
+* If the link **gateway** attribute is not defined (for example, by the [gateway module](module-gateway)), it's set to the IP address of the first attached non-host device. You can set the link **gateway** to any value you wish; the value is not checked.
 * The link **gateway** attribute is copied into the interface data of host nodes and is used to create static routes pointing to the default gateway during the initial device configuration.
 
 [^HOST]: Host devices are identified by **role: host** node attribute. **linux** is the only built-in host device available at the moment.
