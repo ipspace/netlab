@@ -130,7 +130,7 @@ def set_lag_ifindex(bond: Box, intf: Box, topology: Box) -> bool:
       if is_mside:                                             # For M: side we need matching lag.ifindex
         if next_ifindex is None:                               # Do we have a local preference?
           next_ifindex = _dataplane.get_next_id(ID_SET)        # No -> allocate globally
-        bond.lag.ifindex = link_lag_ifindex = next_ifindex  # Put on the link for the other M side to match
+        bond.lag.ifindex = link_lag_ifindex = next_ifindex     # Put on the link for the other M side to match
       else:
         if next_ifindex is None:
           next_ifindex = topology.defaults.lag.start_lag_id    # Start at start_lag_id (default 1)
@@ -245,15 +245,15 @@ create_peer_vlan - create a global VLAN for the peerlink (if supported), to enab
 def create_peer_vlan(peerlink: Box, mlag_peer_features: Box, topology: Box) -> None:
   if 'vlan' in mlag_peer_features and mlag_peer_features.vlan: # Check if device supports an explicit peering VLAN
     vlan_name = f"peervlan_{ peerlink[PEERLINK_ID_ATT] }"
-    vlan = data.get_box({ 'id': mlag_peer_features.vlan, 'mode': 'irb' })
+    vlan = data.get_box({ 'id': mlag_peer_features.vlan, 'mode': 'irb', '_mlag_peer': True })
     if 'stp' in topology.module:
       vlan.stp.enable = False
     lag_peervlan_attr = list(topology.defaults.lag.attributes.lag_peervlan_attr)
     for a in list(peerlink.keys()):
       if a in lag_peervlan_attr:                               # Move all l3 attributes to the vlan interface
         vlan[a] = peerlink.pop(a,None)
-    if 'ip' in mlag_peer_features and vlan.mode!='route':      # Don't put a prefix on routed VLANs
-      try: 
+    if 'ip' in mlag_peer_features and 'pool' not in vlan and vlan.mode!='route': # No prefix on routed VLANs
+      try:
         vlan.prefix = { 'ipv4': str(netaddr.IPNetwork(mlag_peer_features.ip)), 'allocation': 'p2p' }
       except:
         pass
@@ -275,7 +275,7 @@ def create_peer_vlan(peerlink: Box, mlag_peer_features: Box, topology: Box) -> N
 
     topology.vlans[ vlan_name ] = vlan
     node_mode = mlag_peer_features.get('vlan_mode','route')
-    if node_mode=='route':                                   # Override 'irb' mode at each mlag peer node
+    if node_mode=='route':                                     # Override 'irb' mode at each mlag peer node
       for intf in peerlink.interfaces:
         intf.vlan.trunk[vlan_name].vlan.mode = 'route'
 
@@ -293,7 +293,6 @@ def create_peer_links(peerlink: Box, mlag_pairs: dict, topology: Box) -> bool:
   # Create the peerlink as a regular virtual lag link, add physical links for the members
   if not create_lag_member_links(peerlink,topology,peerlink=True):
     return False
-
   first_pair : typing.List[str] = []
   for idx,member in enumerate(peerlink.lag.members):
     if idx==0:
@@ -376,10 +375,13 @@ def populate_mlag_peer(node: Box, intf: Box, topology: Box) -> None:
         log.error(f'Node {peer.name} must have {mlag_peer.ip} defined to support MLAG',
           category=log.IncorrectValue,
           module='lag')
-    else:                                                            # Figure out which IPs Netlab assigned to the VLAN
-      net = netaddr.IPNetwork(mlag_peer.ip)
-      id = 0 if node.id < peer.id else 1
-      _target.mlag.peer = str(net[1-id])                             # Higher node ID gets .1
+    else:                                                            # Figure out which IP Netlab assigned to the peer
+      for i in node.interfaces:
+        if '_mlag_peer' not in i:
+          continue
+        if i.neighbors and 'ipv4' in i.neighbors[0]:
+          _target.mlag.peer = str(netaddr.IPNetwork(i.neighbors[0].ipv4).ip)
+          break
 
   if 'backup_ip' in mlag_peer:
     bk_ip = peer.get(mlag_peer.backup_ip,None)
