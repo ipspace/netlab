@@ -478,7 +478,7 @@ class LAG(_Module):
   def module_post_transform(self, topology: Box) -> None:
     if log.debug_active('lag'):
       print(f'LAG module_post_transform: Cleanup "virtual_lag" links')
-    topology.links = [ link for link in topology.links if '_virtual_lag' not in link ]
+    topology.links = [ link for link in topology.links if '_virtual_lag' not in link and '_peerlink' not in link ]
     check_bridge_links(topology)
 
   """

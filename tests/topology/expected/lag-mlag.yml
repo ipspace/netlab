@@ -18,44 +18,6 @@ lag:
   lacp: fast
   lacp_mode: active
 links:
-- _linkname: links[1]
-  _peerlink: true
-  interfaces:
-  - ifindex: 30000
-    ifname: peerlink
-    node: s1
-    type: lag
-  - ifindex: 30000
-    ifname: peerlink
-    node: s2
-    type: lag
-  lag:
-    ifindex: 1000
-    mlag:
-      peergroup: 1
-  linkindex: 1
-  node_count: 2
-  prefix: false
-  type: p2p
-- _linkname: links[6]
-  _peerlink: true
-  interfaces:
-  - ifindex: 30000
-    ifname: peerlink
-    node: s3
-    type: lag
-  - ifindex: 30000
-    ifname: peerlink
-    node: s4
-    type: lag
-  lag:
-    ifindex: 1000
-    mlag:
-      peergroup: 2
-  linkindex: 6
-  node_count: 2
-  prefix: false
-  type: p2p
 - _linkname: links[1].peerlink[1]
   interfaces:
   - ifindex: 1
@@ -662,14 +624,25 @@ nodes:
         mlag:
           ifindex: 1000
           mac: 02-00-01-A9-00-01
-          peer: 10.0.0.2
+          peer: 169.254.127.1
+          peer_backup_ip: 10.0.0.2
           peergroup: 1
+          vlan: 1002
       name: s1 -> s2
       neighbors:
       - ifname: peerlink
         node: s2
       type: lag
       virtual_interface: true
+      vlan:
+        access_id: 1
+        native: mlag_untagged
+        trunk:
+          mlag_untagged: {}
+          peervlan_1: {}
+        trunk_id:
+        - 1
+        - 1002
     - ifindex: 30001
       ifname: port-channel1
       lag:
@@ -895,6 +868,22 @@ nodes:
       type: p2p
     - bridge_group: 1
       ifindex: 40000
+      ifname: virtual-network1
+      name: VLAN mlag_untagged (1) -> [s2,s4,s3]
+      neighbors:
+      - ifname: virtual-network1
+        node: s2
+      - ifname: virtual-network1
+        node: s4
+      - ifname: virtual-network1
+        node: s3
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: bridge
+        name: mlag_untagged
+    - bridge_group: 2
+      ifindex: 40001
       ifname: virtual-network1000
       ipv4: 172.16.0.1/24
       name: VLAN red (1000) -> [h1,s2,h2]
@@ -913,6 +902,20 @@ nodes:
       vlan:
         mode: irb
         name: red
+    - bridge_group: 3
+      ifindex: 40002
+      ifname: virtual-network1002
+      ipv4: 169.254.127.0/31
+      name: VLAN peervlan_1 (1002) -> [s2]
+      neighbors:
+      - ifname: virtual-network1002
+        ipv4: 169.254.127.1/31
+        node: s2
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: irb
+        name: peervlan_1
     lag:
       lacp: fast
       lacp_mode: active
@@ -933,10 +936,23 @@ nodes:
     mtu: 1500
     name: s1
     vlan:
-      max_bridge_group: 1
+      max_bridge_group: 3
     vlans:
-      red:
+      mlag_untagged:
         bridge_group: 1
+        id: 1
+        mode: bridge
+        prefix:
+          allocation: id_based
+      peervlan_1:
+        bridge_group: 3
+        id: 1002
+        mode: irb
+        prefix:
+          allocation: p2p
+          ipv4: 169.254.127.0/31
+      red:
+        bridge_group: 2
         id: 1000
         mode: irb
         prefix:
@@ -961,14 +977,25 @@ nodes:
         mlag:
           ifindex: 1000
           mac: 02-00-01-A9-00-01
-          peer: 10.0.0.1
+          peer: 169.254.127.0
+          peer_backup_ip: 10.0.0.1
           peergroup: 1
+          vlan: 1002
       name: s2 -> s1
       neighbors:
       - ifname: peerlink
         node: s1
       type: lag
       virtual_interface: true
+      vlan:
+        access_id: 1
+        native: mlag_untagged
+        trunk:
+          mlag_untagged: {}
+          peervlan_1: {}
+        trunk_id:
+        - 1
+        - 1002
     - ifindex: 30001
       ifname: port-channel1
       lag:
@@ -1169,6 +1196,22 @@ nodes:
       type: p2p
     - bridge_group: 1
       ifindex: 40000
+      ifname: virtual-network1
+      name: VLAN mlag_untagged (1) -> [s1,s4,s3]
+      neighbors:
+      - ifname: virtual-network1
+        node: s1
+      - ifname: virtual-network1
+        node: s4
+      - ifname: virtual-network1
+        node: s3
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: bridge
+        name: mlag_untagged
+    - bridge_group: 2
+      ifindex: 40001
       ifname: virtual-network1000
       ipv4: 172.16.0.2/24
       name: VLAN red (1000) -> [h1,s1,h2]
@@ -1187,6 +1230,20 @@ nodes:
       vlan:
         mode: irb
         name: red
+    - bridge_group: 3
+      ifindex: 40002
+      ifname: virtual-network1002
+      ipv4: 169.254.127.1/31
+      name: VLAN peervlan_1 (1002) -> [s1]
+      neighbors:
+      - ifname: virtual-network1002
+        ipv4: 169.254.127.0/31
+        node: s1
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: irb
+        name: peervlan_1
     lag:
       lacp: fast
       lacp_mode: active
@@ -1207,10 +1264,23 @@ nodes:
     mtu: 1500
     name: s2
     vlan:
-      max_bridge_group: 1
+      max_bridge_group: 3
     vlans:
-      red:
+      mlag_untagged:
         bridge_group: 1
+        id: 1
+        mode: bridge
+        prefix:
+          allocation: id_based
+      peervlan_1:
+        bridge_group: 3
+        id: 1002
+        mode: irb
+        prefix:
+          allocation: p2p
+          ipv4: 169.254.127.0/31
+      red:
+        bridge_group: 2
         id: 1000
         mode: irb
         prefix:
@@ -1235,14 +1305,25 @@ nodes:
         mlag:
           ifindex: 1000
           mac: 02-00-01-A9-00-02
-          peer: 10.0.0.4
+          peer: 169.254.127.1
+          peer_backup_ip: 10.0.0.4
           peergroup: 2
+          vlan: 1002
       name: s3 -> s4
       neighbors:
       - ifname: peerlink
         node: s4
       type: lag
       virtual_interface: true
+      vlan:
+        access_id: 1
+        native: mlag_untagged
+        trunk:
+          mlag_untagged: {}
+          peervlan_2: {}
+        trunk_id:
+        - 1
+        - 1002
     - ifindex: 30001
       ifname: port-channel5
       lag:
@@ -1297,6 +1378,36 @@ nodes:
       - ifname: ethernet1/1/8
         node: s2
       type: p2p
+    - bridge_group: 1
+      ifindex: 40000
+      ifname: virtual-network1
+      name: VLAN mlag_untagged (1) -> [s2,s1,s4]
+      neighbors:
+      - ifname: virtual-network1
+        node: s2
+      - ifname: virtual-network1
+        node: s1
+      - ifname: virtual-network1
+        node: s4
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: bridge
+        name: mlag_untagged
+    - bridge_group: 2
+      ifindex: 40001
+      ifname: virtual-network1002
+      ipv4: 169.254.127.0/31
+      name: VLAN peervlan_2 (1002) -> [s4]
+      neighbors:
+      - ifname: virtual-network1002
+        ipv4: 169.254.127.1/31
+        node: s4
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: irb
+        name: peervlan_2
     lag:
       lacp: fast
       lacp_mode: active
@@ -1316,6 +1427,22 @@ nodes:
     - vlan
     mtu: 1500
     name: s3
+    vlan:
+      max_bridge_group: 2
+    vlans:
+      mlag_untagged:
+        bridge_group: 1
+        id: 1
+        mode: bridge
+        prefix:
+          allocation: id_based
+      peervlan_2:
+        bridge_group: 2
+        id: 1002
+        mode: irb
+        prefix:
+          allocation: p2p
+          ipv4: 169.254.127.0/31
   s4:
     af:
       ipv4: true
@@ -1335,14 +1462,25 @@ nodes:
         mlag:
           ifindex: 1000
           mac: 02-00-01-A9-00-02
-          peer: 10.0.0.3
+          peer: 169.254.127.0
+          peer_backup_ip: 10.0.0.3
           peergroup: 2
+          vlan: 1002
       name: s4 -> s3
       neighbors:
       - ifname: peerlink
         node: s3
       type: lag
       virtual_interface: true
+      vlan:
+        access_id: 1
+        native: mlag_untagged
+        trunk:
+          mlag_untagged: {}
+          peervlan_2: {}
+        trunk_id:
+        - 1
+        - 1002
     - ifindex: 30001
       ifname: port-channel5
       lag:
@@ -1409,6 +1547,36 @@ nodes:
       - ifname: ethernet1/1/10
         node: s2
       type: p2p
+    - bridge_group: 1
+      ifindex: 40000
+      ifname: virtual-network1
+      name: VLAN mlag_untagged (1) -> [s2,s1,s3]
+      neighbors:
+      - ifname: virtual-network1
+        node: s2
+      - ifname: virtual-network1
+        node: s1
+      - ifname: virtual-network1
+        node: s3
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: bridge
+        name: mlag_untagged
+    - bridge_group: 2
+      ifindex: 40001
+      ifname: virtual-network1002
+      ipv4: 169.254.127.1/31
+      name: VLAN peervlan_2 (1002) -> [s3]
+      neighbors:
+      - ifname: virtual-network1002
+        ipv4: 169.254.127.0/31
+        node: s3
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: irb
+        name: peervlan_2
     lag:
       lacp: fast
       lacp_mode: active
@@ -1428,8 +1596,67 @@ nodes:
     - vlan
     mtu: 1500
     name: s4
+    vlan:
+      max_bridge_group: 2
+    vlans:
+      mlag_untagged:
+        bridge_group: 1
+        id: 1
+        mode: bridge
+        prefix:
+          allocation: id_based
+      peervlan_2:
+        bridge_group: 2
+        id: 1002
+        mode: irb
+        prefix:
+          allocation: p2p
+          ipv4: 169.254.127.0/31
 provider: clab
 vlans:
+  mlag_untagged:
+    host_count: 0
+    id: 1
+    mode: bridge
+    neighbors:
+    - ifname: virtual-network1
+      node: s2
+    - ifname: virtual-network1
+      node: s1
+    - ifname: virtual-network1
+      node: s4
+    - ifname: virtual-network1
+      node: s3
+    prefix:
+      allocation: id_based
+  peervlan_1:
+    host_count: 0
+    id: 1002
+    mode: irb
+    neighbors:
+    - ifname: virtual-network1002
+      ipv4: 169.254.127.1/31
+      node: s2
+    - ifname: virtual-network1002
+      ipv4: 169.254.127.0/31
+      node: s1
+    prefix:
+      allocation: p2p
+      ipv4: 169.254.127.0/31
+  peervlan_2:
+    host_count: 0
+    id: 1002
+    mode: irb
+    neighbors:
+    - ifname: virtual-network1002
+      ipv4: 169.254.127.1/31
+      node: s4
+    - ifname: virtual-network1002
+      ipv4: 169.254.127.0/31
+      node: s3
+    prefix:
+      allocation: p2p
+      ipv4: 169.254.127.0/31
   red:
     host_count: 0
     id: 1000
