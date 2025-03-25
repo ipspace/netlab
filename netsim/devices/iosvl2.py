@@ -13,9 +13,11 @@ from .iosv import IOS as _IOS,common_ios_quirks
 def check_reserved_vlans(node: Box, topology: Box) -> None:
   for vname,vdata in node.get('vlans',{}).items():
     if vdata.id in range(1002,1006):
-      log.error(
-        f'Cannot use VLAN ID {vdata.id} (VLAN {vname}) on Cisco IOSvL2 or IOLL2 for historic reasons',
+      report_quirk(
+        text=f'Cannot use VLAN ID {vdata.id} (VLAN {vname}) on Cisco IOSvL2 or IOLL2 for historic reasons',
+        node=node,
         category=log.IncorrectValue,
+        quirk='vlan.reserved',
         module='quirks')
 
 '''

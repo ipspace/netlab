@@ -7,7 +7,7 @@
 #
 from box import Box
 
-from . import _Quirks,need_ansible_collection
+from . import _Quirks,need_ansible_collection,report_quirk
 from ..augment import devices
 from ..utils import log
 
@@ -18,35 +18,44 @@ class ARUBACX(_Quirks):
     mods = node.get('module',[])
     # Checks for OSPF Process ID (index based)
     if 'ospf' in mods and 'vrf' in mods:
-        ospfidx = 2
-        for vrf in node.get('vrfs', {}).keys():
-            if ospfidx > 63:
-                log.error(
-                    f'Too many VRFs with OSPF in ({node.name}).\n',
-                    log.IncorrectType,
-                    'quirks')
-                return
-            node.vrfs[vrf]['ospfidx'] = ospfidx
-            ospfidx = ospfidx + 1
+      ospfidx = 2
+      for vrf in node.get('vrfs', {}).keys():
+        if ospfidx > 63:
+          report_quirk(
+            text=f'Too many VRFs with OSPF in ({node.name})',
+            node=node,
+            category=log.IncorrectValue)
+          break
+        node.vrfs[vrf]['ospfidx'] = ospfidx
+        ospfidx = ospfidx + 1
+
     # Remove OSPF default originate route-type (not supported, yet)
     if 'ospf' in mods:
       if 'default' in node.get('ospf', {}) and 'type' in node.ospf.default:
         del node.ospf.default['type']
-        log.info(f'OSPF default-information originate (on node {node.name}) does not support metric-type attribute (on default routing table)',
-                  'quirks')
+        report_quirk(
+           text=f'OSPF default-information originate (used in global routing table on node {node.name}) does not support metric-type attribute',
+           node=node,
+           quirk='ospf_default_type',
+           category=Warning)
+
     if 'ospf' in mods and 'vrf' in mods:
       for vname,vdata in node.get('vrfs', {}).items():
         if 'default' in vdata.get('ospf', {}) and 'type' in vdata.ospf.default:
           del vdata.ospf.default['type']
-          log.info(f'OSPF default-information originate (on node {node.name}) does not support metric-type attribute (on vrf {vname})',
-                    'quirks')
+          report_quirk(
+            text=f'OSPF default-information originate (used in VRF {vname} on node {node.name}) does not support metric-type attribute',
+            node=node,
+            quirk='ospf_default_type',
+            category=Warning)
     
     # MPLS can be used only with 'external' provider
     if 'mpls' in mods and node.get('provider','') != 'external':
-       log.error(
-          f'ArubaCX MPLS data plane works only on physical devices (using the external provider)',
-          log.IncorrectType,
-          'quirks')
+       report_quirk(
+          text=f'MPLS data plane used on node {node.name} works only on physical devices',
+          more_hints='Use a physical switch with the external provider',
+          node=node,
+          category=log.IncorrectType)
     
     # LAG + VSX quirks
     ## on VSX, you **must** configure the switch role as primary or secondary.
