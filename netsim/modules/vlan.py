@@ -130,9 +130,7 @@ def validate_vlan_attributes(obj: Box, topology: Box) -> None:
     vlan_pool.extend(['vlan','lan'])
     pfx_list = links.assign_link_prefix(vdata,vlan_pool,topology.pools,topology.nodes,f'{obj_path}.{vname}')
     vdata.prefix = addressing.rebuild_prefix(pfx_list)
-    if not vdata.prefix:
-      vdata.pop('prefix',None)
-    elif not 'allocation' in vdata.prefix:
+    if not 'allocation' in vdata.prefix:
       vdata.prefix.allocation = 'id_based'
 
 """
