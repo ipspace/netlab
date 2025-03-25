@@ -63,7 +63,11 @@ def docker_connect(
   if not isinstance(shell,list):
     shell = str(shell).split(' ')
 
-  c_args = ['docker','exec','-it',host] + shell
+  c_args = [ 'docker','exec' ]
+  if sys.__stdin__ is not None and sys.__stdin__.isatty():
+    c_args += [ '-it']
+  c_args += [ host ] + shell
+
   if rest:
     c_args.extend(['-c',' '.join(rest)])
 
