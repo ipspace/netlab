@@ -50,6 +50,17 @@
 | BIRD Internet Routing Daemon [❗](caveats-bird) | bird               |
 | dnsmasq DHCP server [❗](caveats-dnsmasq)       | dnsmasq            |
 
+(platform-host)=
+Most devices behave as routers (or layer-3 switches); the following devices can take multiple roles or behave as [IP hosts](node-router-host):
+
+| Device | router | host |
+|-----------------------|:--:|:--:|
+| Arista EOS            | ✅ | ✅ |
+| Bird                  | ✅ | ✅ |
+| Cisco IOS/IOS XE[^18v]| ✅ | ✅ |
+| dnsmasq               | ❌  | ✅ |
+| Generic Linux         | ❌  | ✅ |
+
 **Notes:**
 
 * Use the **[netlab show devices](netlab-show-devices)** command to display the list of supported devices and daemons.
@@ -245,7 +256,8 @@ The following interface addresses are supported on various platforms:
 | VyOS                  | ✅  | ✅  | ✅  |
 
 ```{tip}
-See [Initial Configuration Integration Tests Results](https://release.netlab.tools/_html/coverage.initial) for more details.
+* Use **‌netlab show modules -m initial** to display optional initial configuration features supported by individual devices
+* See [Initial Configuration Integration Tests Results](https://release.netlab.tools/_html/coverage.initial) for up-to-date details.
 ```
 
 ## Supported Configuration Modules

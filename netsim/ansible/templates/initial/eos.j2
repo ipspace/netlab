@@ -4,11 +4,15 @@ logging monitor debugging
 aaa authorization exec default local
 !
 lldp run
-{% if af.ipv4|default(False) %}
+{% if af.ipv4|default(False) and role != 'host' %}
 ip routing
+{% else %}
+no ip routing
 {% endif %}
-{% if af.ipv6|default(False) %}
+{% if af.ipv6|default(False) and role != 'host' %}
 ipv6 unicast-routing
+{% else %}
+no ipv6 unicast-routing
 {% endif %}
 !
 {% if vrfs is defined %}
@@ -66,7 +70,11 @@ interface {{ l.ifname }}
     Set interface IPv6 addresses
 #}
 {% if 'ipv6' in l %}
+{%   if role != 'host' %}
  ipv6 nd ra interval 5
+{%   else %}
+ ipv6 nd ra rx accept default-route
+{%   endif %}
 {%   if l.ipv6 is sameas True %}
  ipv6 enable
 {%   elif l.ipv6 is string and l.ipv6|ipv6 %}

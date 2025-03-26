@@ -13,14 +13,4 @@ If you want to add support for a new configuration module (example: MPLS segment
 * Update the [supported platforms](../platforms.md) documentation and add [caveats](../caveats.md) (if needed).
 * [Submit a PR](guidelines.md).
 
-```eval_rst
-.. toctree::
-   :maxdepth: 1
-   :caption: Implementation Notes
-
-   config/initial.md
-   config/ospf.md
-   config/bfd.md
-   config/vlan.md
-   config/vrf.md
-```
+You'll find more details in the [](dev-config-implementation).

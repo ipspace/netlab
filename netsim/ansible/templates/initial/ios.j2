@@ -14,12 +14,16 @@ ip host {{ hname }} {{ addr_list|join (' ') }}
 !
 {% if af.ipv4|default(False) %}
 ip routing
-!
+{% else %}
+no ip routing
 {% endif %}
-{% if af.ipv6|default(False) %}
+!
+{% if af.ipv6|default(False) and role != 'host' %}
 ipv6 unicast-routing
-!
+{% else %}
+no ipv6 unicast-routing
 {% endif %}
+!
 {% if vrfs is defined %}
 {% include 'ios.vrf.j2' +%}
 !
@@ -86,12 +90,14 @@ interface {{ l.ifname }}
     Set interface addresses: IPv6
 #}
 {% if 'ipv6' in l %}
+{%   if role == 'host' %}
+ ipv6 nd ra suppress all
+ ipv6 nd autoconfig default-route
+{%   endif %}
 {%   if l.ipv6 == True %}
  ipv6 enable
 {%   elif l.ipv6|ipv6 %}
  ipv6 address {{ l.ipv6|upper }}
-{%   else %}
-! Invalid IPv6 address {{ l.ipv6 }}
 {%   endif %}
 {% endif %}
 {% if l.type == 'svi' and netlab_device_type in ['iosvl2','ioll2'] %}
