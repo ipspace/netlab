@@ -252,19 +252,8 @@ def create_peer_vlan(peerlink: Box, mlag_peer_features: Box, topology: Box) -> N
     for a in list(peerlink.keys()):
       if a in lag_peervlan_attr:                               # Move all l3 attributes to the vlan interface
         vlan[a] = peerlink.pop(a,None)
-    if 'ip' in mlag_peer_features and 'pool' not in vlan and vlan.mode!='route': # No prefix on routed VLANs
-      try:
-        vlan.prefix = { 'ipv4': str(netaddr.IPNetwork(mlag_peer_features.ip)), 'allocation': 'p2p' }
-      except:
-        pass
-    if mlag_peer_features.ip=='linklocal':
-      if 'pool' not in vlan:
-        vlan.pool = 'mlag_linklocal'                           # Configure ipv6-only pool unless user specified other
-      elif topology.addressing[vlan.pool].get('ipv6',None) is not True:
-        log.error( f"Custom pool'{vlan.pool}' on MLAG peerlink {peerlink._linkname} must enable ipv6 LLA " +
-                    "to support 'linklocal' IP addressing",
-          category=log.IncorrectValue,
-          module='lag')
+    if 'pool' not in vlan:                                     # Configure a default pool unless user specified other
+      vlan.pool = mlag_peer_features.get('pool','p2p')
 
     # Need to allow untagged packets on the peerlink too. Use existing untagged vlan if possible
     untagged = [ (vname,vdata) for vname,vdata in topology.vlans.items() if vdata and vdata.get('id',None)==1 ]
@@ -365,24 +354,15 @@ def populate_mlag_peer(node: Box, intf: Box, topology: Box) -> None:
   features = devices.get_device_features(node,topology.defaults)
   mlag_peer = features.get('lag.mlag.peer',{})
   _target = node.lag if mlag_peer.get('global',False) else intf.lag  # Set at node or intf level?
-  if 'ip' in mlag_peer:
-    if mlag_peer.ip == 'linklocal':
+
+  for i in node.interfaces:                                      # Figure out which IP Netlab assigned to the peer
+    if not i.pop('_mlag_peer',None):
+      continue
+    if i.neighbors and 'ipv4' in i.neighbors[0]:
+      _target.mlag.peer = str(netaddr.IPNetwork(i.neighbors[0].ipv4).ip)
+    else:
       _target.mlag.peer = 'linklocal'
-    elif 'loopback' in mlag_peer.ip or 'interfaces' in mlag_peer.ip: # Could check if an IGP is configured
-      ip = peer.get(mlag_peer.ip,None)
-      if ip:
-        _target.mlag.peer = str(netaddr.IPNetwork(ip).ip)
-      else:
-        log.error(f'Node {peer.name} must have {mlag_peer.ip} defined to support MLAG',
-          category=log.IncorrectValue,
-          module='lag')
-    else:                                                            # Figure out which IP Netlab assigned to the peer
-      for i in node.interfaces:
-        if '_mlag_peer' not in i:
-          continue
-        if i.neighbors and 'ipv4' in i.neighbors[0]:
-          _target.mlag.peer = str(netaddr.IPNetwork(i.neighbors[0].ipv4).ip)
-          break
+    break
 
   if 'backup_ip' in mlag_peer:
     bk_ip = peer.get(mlag_peer.backup_ip,None)
@@ -430,12 +410,6 @@ def check_bridge_links(topology: Box) -> None:
 class LAG(_Module):
 
   """
-  module_pre_default - define a custom address pool to use for peer links with linklocal addressing
-  """
-  def module_pre_default(self, topology: Box) -> None:
-    topology.addressing.mlag_linklocal.ipv6 = True 
-
-  """
   module_pre_transform -- Analyze any user provided lag.ifindex values and peerlink ids, 
                           convert lag.members to links and create 'lag' type interfaces
 
@@ -475,12 +449,11 @@ class LAG(_Module):
         intf.type = intf.pop('_type')
 
   """
-  module_post_transform - remove temporary 'virtual_lag' links, and check for links with Linux bridges
-                        - e.g. mixed provider links - that would block LACP
+  module_post_transform - remove temporary 'virtual_lag' links and check for Linux bridges blocking LACP
   """
   def module_post_transform(self, topology: Box) -> None:
     if log.debug_active('lag'):
-      print(f'LAG module_post_transform: Cleanup "virtual_lag" links')
+      print(f'LAG module_post_transform: Cleanup "virtual_lag" and "_peerlink" links')
     topology.links = [ link for link in topology.links if '_virtual_lag' not in link and '_peerlink' not in link ]
     check_bridge_links(topology)
 
