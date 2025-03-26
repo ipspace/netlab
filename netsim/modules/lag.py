@@ -359,7 +359,10 @@ def populate_mlag_peer(node: Box, intf: Box, topology: Box) -> None:
     if not i.pop('_mlag_peer',None):
       continue
     if i.neighbors and 'ipv4' in i.neighbors[0]:
-      _target.mlag.peer = str(netaddr.IPNetwork(i.neighbors[0].ipv4).ip)
+      _ip = i.neighbors[0].ipv4
+      if isinstance(_ip,bool):
+        _ip = peer.loopback.ipv4
+      _target.mlag.peer = str(netaddr.IPNetwork(_ip).ip)
     else:
       _target.mlag.peer = 'linklocal'
     break
