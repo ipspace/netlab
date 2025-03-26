@@ -25,7 +25,7 @@ class Cumulus(_Quirks):
         text=f"We do not test Cumulus containers ({node.name}). They might not work correctly",
         node=node,
         category=Warning,
-        quirk="container",
+        quirk="unsupported_container",
         more_hints=[ "See https://netlab.tools/caveats/#caveats-cumulus for more details "])
 
     mods = node.get('module',[])

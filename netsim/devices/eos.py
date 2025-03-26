@@ -36,6 +36,7 @@ def check_mpls_clab(node: Box, topology: Box) -> None:
         text=f'Arista cEOS ({node.name}) versions earlier than 4.32.1F do not support MPLS data plane',
         more_hints = 'To use MPLS with older EOS versions, use vEOS VM with libvirt provider',
         node=node,
+        quirk='mpls_data_plane',
         category=Warning)
 
 def check_shared_mac(node: Box, topology: Box) -> None:
@@ -65,6 +66,7 @@ def check_dhcp_clients(node: Box, topology: Box) -> None:
       continue
     report_quirk(
       text=f"Arista cEOS containers (node {node.name}) cannot run DHCP clients",
+      more_hints="Use vEOS VM with libvirt provider",
       node=node,
       category=log.IncorrectType)
 

@@ -158,5 +158,5 @@ class Cumulus_Nvue(_Quirks):
         text=f"Cumulus VX 5.x container used for node {node.name} is not supported and might not work correctly",
         node=node,
         category=Warning,
-        quirk="container",
+        quirk="unsupported_container",
         more_hints=[ "See https://netlab.tools/caveats/#caveats-cumulus-nvue for more details "])
