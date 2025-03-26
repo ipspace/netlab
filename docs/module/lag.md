@@ -117,7 +117,7 @@ links:
 
 The **peerlink** between mlag peers is modeled as a lag link, and hence all the various *Netlab* features - such as IP addressing, OSPF and BGP - can be configured on it. Different platforms use different approaches and defaults for implementing the peerlink - e.g. different vlan numbers, irb versus routed mode, etc.; some of these defaults can be changed through _device features_.
 
-The default addressing pools used for allocating IP prefixes to mlag peerlinks are `mlag_p2p` and `mlag_linklocal` - default used for Cumulus NVUE - as defined by the **lag** module. If different addressing is desired, set a custom 'pool' attribute on the mlag peerlink.
+The default addressing pools used for allocating IP prefixes to mlag peerlinks are `p2p` (global) and `mlag_linklocal` (default used for Cumulus NVUE, defined by the **lag** module). If different addressing is desired, set a custom 'pool' attribute on the mlag peerlink.
 
 ### Advanced MLAG Parameters
 

@@ -253,7 +253,7 @@ def create_peer_vlan(peerlink: Box, mlag_peer_features: Box, topology: Box) -> N
       if a in lag_peervlan_attr:                               # Move all l3 attributes to the vlan interface
         vlan[a] = peerlink.pop(a,None)
     if 'pool' not in vlan:                                     # Configure a default pool unless user specified other
-      vlan.pool = mlag_peer_features.get('pool','mlag_p2p')
+      vlan.pool = mlag_peer_features.get('pool','p2p')
 
     # Need to allow untagged packets on the peerlink too. Use existing untagged vlan if possible
     untagged = [ (vname,vdata) for vname,vdata in topology.vlans.items() if vdata and vdata.get('id',None)==1 ]
