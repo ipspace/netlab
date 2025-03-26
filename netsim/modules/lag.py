@@ -358,7 +358,7 @@ def populate_mlag_peer(node: Box, intf: Box, topology: Box) -> None:
   for i in node.interfaces:                                      # Figure out which IP Netlab assigned to the peer
     if not i.pop('_mlag_peer',None):
       continue
-    if i.neighbors and 'ipv4' in i.neighbors[0]:
+    if i.neighbors and 'ipv4' in i.neighbors[0] and i.neighbors[0].get('ipv6',None) is not True:
       _ip = i.neighbors[0].ipv4
       if isinstance(_ip,bool):
         _ip = peer.loopback.ipv4
