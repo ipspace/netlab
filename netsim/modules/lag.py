@@ -262,6 +262,7 @@ def create_peer_vlan(peerlink: Box, mlag_peer_features: Box, topology: Box) -> N
       topology.vlans[ untagged[0][0] ] = untagged[0][1]
     peerlink.vlan.trunk = [ untagged[0][0], vlan_name ]
     peerlink.vlan.native = untagged[0][0]
+    peerlink.vlan._allow_all = True
 
     topology.vlans[ vlan_name ] = vlan
     node_mode = mlag_peer_features.get('vlan_mode','route')
