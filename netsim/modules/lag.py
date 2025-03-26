@@ -254,16 +254,22 @@ def create_peer_vlan(peerlink: Box, mlag_peer_features: Box, topology: Box) -> N
         vlan[a] = peerlink.pop(a,None)
     if 'pool' not in vlan:                                     # Configure a default pool unless user specified other
       vlan.pool = mlag_peer_features.get('pool','p2p')
+      vlan.prefix.allocation = 'p2p'
+
+    vlan_trunk = peerlink.get('vlan.trunk',[])
+    if not vlan_trunk:
+      peerlink.vlan._allow_all = True                          # Unless the user configured a trunk, allow all vlans
 
     # Need to allow untagged packets on the peerlink too. Use existing untagged vlan if possible
-    untagged = [ (vname,vdata) for vname,vdata in topology.vlans.items() if vdata and vdata.get('id',None)==1 ]
-    if not untagged:
-      untagged = [('mlag_untagged',{ 'id': 1, 'mode': 'bridge', 'prefix': False })]
-      topology.vlans[ untagged[0][0] ] = untagged[0][1]
-    peerlink.vlan.trunk = [ untagged[0][0], vlan_name ]
-    peerlink.vlan.native = untagged[0][0]
-    peerlink.vlan._allow_all = True
+    if not peerlink.get('vlan.native',None):
+      untagged = [ (vname,vdata) for vname,vdata in topology.vlans.items() if vdata and vdata.get('id',None)==1 ]
+      if not untagged:
+        untagged = [('mlag_untagged',{ 'id': 1, 'mode': 'bridge', 'prefix': False })]
+        topology.vlans[ untagged[0][0] ] = untagged[0][1]
+      vlan_trunk += [ untagged[0][0] ]
+      peerlink.vlan.native = untagged[0][0]
 
+    peerlink.vlan.trunk = vlan_trunk + [ vlan_name ]
     topology.vlans[ vlan_name ] = vlan
     node_mode = mlag_peer_features.get('vlan_mode','route')
     if node_mode=='route':                                     # Override 'irb' mode at each mlag peer node
