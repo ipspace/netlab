@@ -17,10 +17,11 @@ def check_vrrp_bvi(node: Box, topology: Box) -> None:
     if intf.get('type',None) != 'svi':                                  # Not a BVI interface, move on
       continue
 
-    log.error(
-      f'Cisco IOSv cannot run VRRP on BVI interfaces.',
-      log.IncorrectType,
-      'quirks')
+    report_quirk(
+      text=f'Cisco IOSv cannot run VRRP on BVI interfaces.',
+      node=node,
+      category=log.IncorrectType,
+      quirk='vrrp_bvi')
     return
 
 '''

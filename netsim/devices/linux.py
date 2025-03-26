@@ -3,7 +3,7 @@
 #
 from box import Box
 
-from . import _Quirks
+from . import _Quirks,report_quirk
 from ._common import check_indirect_static_routes
 from ..utils import log
 from ..augment import devices
@@ -39,9 +39,9 @@ class Linux(_Quirks):
       return
 
     if 'dhcp' in node.get('module',[]):
-      log.error(
-        f"netlab does not support DHCP functionality in Linux containers",
+      report_quirk(
+        text=f"netlab does not support DHCP functionality in Linux containers (node {node.name})",
+        node=node,
         more_hints=[ "Use 'cumulus' for DHCP client or 'dnsmasq' for DHCP server" ],
         category=log.IncorrectType,
-        module='quirks')
-
+        quirk='clab_dhcp_client')

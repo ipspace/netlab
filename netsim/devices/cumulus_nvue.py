@@ -44,10 +44,11 @@ Checks for OSPFv3 which is not supported by NVUE configuration command
 """
 def nvue_check_ospfv3(node: Box) -> None:
   if node.get('ospf.af.ipv6',False):
-    log.error(f"Node '{node.name}' uses OSPFv3 which cannot be configured through Cumulus NVUE; use a regular 'cumulus' node instead",
-      category=log.FatalError,
-      module='ospf',
-      hint='ospfv3')
+    report_quirk(
+      text=f"Node '{node.name}' uses OSPFv3 which cannot be configured through Cumulus NVUE",
+      more_hints=[ "Use a regular 'cumulus' node instead" ],
+      node=node,
+      category=log.IncorrectType)
 
 """
 Checks for mixed trunk interfaces with native routed vlan. That doesn't work because the parent interface gets added
@@ -153,8 +154,9 @@ class Cumulus_Nvue(_Quirks):
       nvue_check_native_routed_on_mixed_trunk(node,topology)
 
     if devices.get_provider(node,topology) == 'clab':
-      log.error(
-        f"Cumulus VX 5.x container used for node {node.name} is not supported and might not work correctly",
+      report_quirk(
+        text=f"Cumulus VX 5.x container used for node {node.name} is not supported and might not work correctly",
+        node=node,
         category=Warning,
-        module='cumulus_nvue',
+        quirk="unsupported_container",
         more_hints=[ "See https://netlab.tools/caveats/#caveats-cumulus-nvue for more details "])

@@ -92,11 +92,13 @@ def check_multiple_loopbacks(node: Box, topology: Box) -> None:
   for vname,vcnt in vrf_count.items():
     if vcnt <= 1:
       continue
-    log.error(
-      f'Node {node.name} (device {node.device}) has {vcnt} loopbacks in vrf {vname}',
+    report_quirk(
+      text=f'Node {node.name} (device {node.device}) has {vcnt} loopbacks in vrf {vname}',
+      node=node,
       category=log.IncorrectValue,
-      module='quirks',
-      hint='junos_lb')
+      quirk='multi_loopback',
+      hint='single_lb',
+      module='junos')
 
 def check_evpn_ebgp(node: Box, topology: Box) -> None:
   for ngb in node.get('bgp.neighbors',[]):

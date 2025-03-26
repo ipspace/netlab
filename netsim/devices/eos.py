@@ -17,10 +17,10 @@ def check_mlps_vlan_bundle(node: Box) -> None:
     if not vdata.get('evpn.bundle',False):                              # Check only VLANs within a bundle
       continue
     if vdata.get('mode','') != 'bridge':                                # They must be in pure bridging mode
-      log.error(
-        f'Arista EOS supports only bridge VLANs in an EVPN/MPLS VLAN bundle ({vname} on {node.name})',
-        log.IncorrectType,
-        'quirks')
+      report_quirk(
+        text=f'Arista EOS supports only bridge VLANs in an EVPN/MPLS VLAN bundle ({vname} on {node.name})',
+        node=node,
+        category=log.IncorrectType)
     ifname = f'Vlan{vdata.id}'                                          # Now remove the VLAN interface
     node.interfaces = [ intf for intf in node.interfaces if intf.ifname != ifname ]
 
@@ -32,11 +32,12 @@ def check_mpls_clab(node: Box, topology: Box) -> None:
       ceos_version = ''
 
     if ceos_version < '4.32.1F':
-      log.error(
-        f'Arista cEOS ({node.name}) versions earlier than 4.32.1F do not support MPLS data plane',
+      report_quirk(
+        text=f'Arista cEOS ({node.name}) versions earlier than 4.32.1F do not support MPLS data plane',
         more_hints = 'To use MPLS with older EOS versions, use vEOS VM with libvirt provider',
-        category=Warning,
-        module='quirks')
+        node=node,
+        quirk='mpls_data_plane',
+        category=Warning)
 
 def check_shared_mac(node: Box, topology: Box) -> None:
   if devices.get_provider(node,topology) != 'clab':
@@ -49,10 +50,11 @@ def check_shared_mac(node: Box, topology: Box) -> None:
     if intf.get('vlan',None):                                           # Anycast works on VLAN cEOS interfaces
       continue
 
-    log.error(
-      f'Anycast gateway (VARP) on non-VLAN interfaces does not work on Arista cEOS ({node.name}).\n.. Use vEOS VM with libvirt provider',
-      log.IncorrectType,
-      'quirks')
+    report_quirk(
+      text=f'Anycast gateway (VARP) on non-VLAN interfaces does not work on Arista cEOS ({node.name})',
+      more_hints="Use vEOS VM with libvirt provider",
+      node=node,
+      category=log.IncorrectType)
     return
 
 def check_dhcp_clients(node: Box, topology: Box) -> None:
@@ -62,10 +64,11 @@ def check_dhcp_clients(node: Box, topology: Box) -> None:
   for intf in node.interfaces:
     if not intf.get('dhcp.client',False):
       continue
-    log.error(
-      f"Arista cEOS containers (node {node.name}) cannot run DHCP clients.",
-      category=log.IncorrectType,
-      module='quirks')
+    report_quirk(
+      text=f"Arista cEOS containers (node {node.name}) cannot run DHCP clients",
+      more_hints="Use vEOS VM with libvirt provider",
+      node=node,
+      category=log.IncorrectType)
 
 def configure_ceos_attributes(node: Box, topology: Box) -> None:
   serialnumber = node.eos.get('serialnumber',None)
@@ -74,20 +77,21 @@ def configure_ceos_attributes(node: Box, topology: Box) -> None:
     return
 
   if 'clab' not in node or node.clab.kind != "ceos":
-    log.error(
+    report_quirk(
       f"eos.serialnumber and eos.systemmacaddr can only be set for Arista cEOS containers (node {node.name}).",
-      category=Warning,
       more_hints=['Use libvirt.uuid to influence serial number on EOS virtual machines'],
-      module='quirks')
+      node=node,
+      category=Warning,
+      quirk='serialnumber')
     return
   
   mnt_config = '/mnt/flash/ceos-config'
   for ct in node.get('clab.binds',[]):
     if mnt_config in ct:
-      log.error(
-        f"{mnt_config} file is already mapped, unable to configure eos.serialnumber (node {node.name}).",
-        category=log.Skipped,
-        module='quirks')
+      report_quirk(
+        text=f"{mnt_config} file is already mapped, unable to configure eos.serialnumber (node {node.name}).",
+        node=node,
+        category=Warning)
       return
 
   data.append_to_list(node.clab,'binds',f'clab_files/{node.name}/ceos-config:{mnt_config}')
