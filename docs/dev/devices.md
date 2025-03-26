@@ -45,7 +45,7 @@ The device parameters will have to include ([more details](device-box.md#adding-
 * Interface name template (**interface_name**), including `{ifindex}` to insert interface number.
 * The number of the first interface (**ifindex_offset**) if it's different from 1. Sometimes the data plane interfaces start with zero, sometimes they start with 2 because the management interface is interface 1.
 * Name of the management interface (**mgmt_if**) if it cannot be generated from the interface name template (some devices use `mgmt0` or similar). This is the interface Vagrant uses to connect to the device via SSH.
-* Optional loopback interface name (**‌loopback_interface_name**), including `{ifindex}` to insert interface number.
+* Loopback interface name (**‌loopback_interface_name**), optionally including `{ifindex}` to insert loopback interface number.
 * [Image name or box name](device-box.md#adding-new-device-settings) for every supported virtualization provider.
 
 Here's the device parameters file for the dummy device (`none.yml`):
@@ -99,10 +99,78 @@ clab:
       INTFTYPE: et
 ```
 
-Device parameters file can also include numerous *features*. You'll find feature descriptions in the developer documentation for individual modules.
-
 After creating the device parameters file, you'll be able to use your device in network topology and use **netlab create** command to create detailed device data and virtualization provider configuration file.
 
+(dev-device-features)=
+### Device Features
+
+Device parameters file can also include numerous *features*. The following features control the initial device configuration; additional features are described in the developer documentation for individual modules.
+
+* **features.initial.system_mtu** -- The device supports system MTU settings
+* **features.initial.min_mtu** -- The minimum IPv4 MTU supported by your device (the minimum IPv6 MTU cannot be lower than 1280)
+* **features.initial.max_mtu** -- The maximum MTU supported by your device (the maximum MTU cannot be higher than 9216)
+* **features.initial.min_phy_mtu** -- The minimum physical MTU that can be configured on your device (many devices won't accept the physical MTU lower than 1500 bytes).
+* **features.initial.mgmt_vrf** -- The device uses a management VRF and can have [two default routes](node-router-host) (management and global) when [running as a host](node-attributes).
+* **features.initial.ipv4.unnumbered** -- The device supports unnumbered IPv4 interfaces. The IP address of the primary loopback interface should be used as the IPv4 address of those interfaces.
+* **features.initial.ipv6.lla** -- The device supports IPv6 interfaces using just link-local addresses.
+* **features.initial.ipv6.use_ra** -- The device (when running as a host) listens to IPv6 RA messages to generate a default route
+* **features.initial.roles** -- The list of roles a device can have (default: `[ router ]`)
+
+```{tip}
+Please note that the MTU used by netlab is always the layer-3 MTU. If your device expects layer-2 MTU configuration, add the size of the layer-2 header to the interface **mtu** variable.
+```
+
+All device features are optional; a lack of a feature indicates the device does not support it (there is no need to set a feature to *False* unless you're [overriding an inherited value](dev-device-inheritance)).
+
+For example, an Arista EOS device can use system-wide MTU and supports unnumbered IPv4 and LLA-only IPv6 interfaces:
+
+```
+loopback_interface_name: Loopback{ifindex}
+features:
+  initial:
+    system_mtu: True
+    ipv4:
+      unnumbered: True
+    ipv6:
+      lla: True
+```
+
+```{tip}
+To display the actual features of a device, use the **‌netlab show defaults devices._device_.features** command. The features can also be displayed with other [show commands](netlab-show).
+```
+
+(dev-device-roles)=
+### Device Roles
+
+Most devices act as routers (the default behavior); some behave as [hosts](node-router-host) (devices that use static routes, do not have to run routing protocols, and do not forward packets between interfaces) or support more than one role.
+
+Devices that support roles other than **router** MUST have the list of supported roles defined in the **features.initial.roles** device parameter. They should also have the **role** device parameter set to the desired default behavior to simplify the device configuration templates[^RC]
+
+```{warning}
+Devices running as hosts MUST also support the **‌routing** configuration module (Linux hosts are an exception [handled in the `linux.py` device quirk](https://github.com/ipspace/netlab/blob/dev/netsim/devices/linux.py#L17)) and configure static routes from the **‌routing.static** node data structure.
+```
+
+[^RC]: The **role** device parameter is copied into the node data, ensuring the **role** variable is always defined in configuration templates.
+
+For example, Linux nodes can be only hosts:
+
+```
+role: host
+features:
+  initial:
+    roles: [ host ]
+```
+
+Arista EOS switches can be hosts or routers (default: router):
+
+```
+role: router
+features:
+  initial:
+    roles: [ host, router ]
+```
+
+(dev-device-inheritance)=
 ### Device Setting Inheritance
 
 If you're adding a new device that is very similar to another device (example: Cisco IOSv/CSR1KV or Juniper vSRX/vMX/vPTX) use _device setting inheritance_:
@@ -267,15 +335,4 @@ To add a device that is already supported by *netlab* to a new virtualization en
 * Make sure you created at least one test topology in `tests/integration/platform` directory.
 * Submit a pull request against the **dev** branch.
 
-```eval_rst
-.. toctree::
-   :maxdepth: 1
-   :caption: Implementation Notes
-
-   config/deploy.md
-   config/initial.md
-   config/ospf.md
-   config/bfd.md
-   config/vlan.md
-   config/vrf.md
-```
+You'll find more details in the [](dev-config-implementation).

@@ -1,0 +1,92 @@
+---
+message:
+  This scenario tests basic interface, IPv4, and IPv6 configuration,
+  including generation of IPv6 Router Advertisements
+
+addressing:
+  loopback:
+    ipv6: 2001:db8:0::/48
+  lan:
+    ipv6: 2001:db8:1::/48
+
+groups:
+  hosts:
+    members: [ h1, h2, h3, h4 ]
+    module: [ routing ]
+    device: linux
+    provider: clab
+
+nodes:
+  dut:
+    role: host
+  rtr:
+    device: frr
+    provider: clab
+  h1:                           # H1 and H3 are used to test packet forwarding capability of DUT
+    routing.static:
+    - prefix: lan_2
+      nexthop.node: dut
+  h2:                           # H2 is used to test default routing on DUT
+    routing.static:
+    - prefix: lan_1
+      nexthop.node: rtr
+  h3:
+    routing.static:
+    - prefix: lan_1
+      nexthop.node: dut
+  h4:
+
+prefix:
+  lan_1:
+    ipv4: 192.168.42.0/24
+    ipv6: 2001:db8:cafe:1::/64
+  lan_2:
+    ipv4: 192.168.43.0/24
+    ipv6: 2001:db8:cafe:2::/64
+
+links:
+- interfaces: [ rtr, h1, dut ]
+  prefix: lan_1
+- rtr-h2
+- interfaces: [ dut, h3, h4 ]
+  prefix: lan_2
+
+validate:
+  ping_dut_v4:
+    description: IPv4 ping H2 => DUT
+    wait: 10
+    wait_msg: Wait for IPv4 interfaces to become operational
+    nodes: [ h2 ]
+    plugin: ping(nodes.dut.interfaces[0].ipv4,af='ipv4')
+  ping_dut_v6:
+    description: IPv6 ping H2 => DUT
+    wait: 10
+    wait_msg: Wait for IPv6 interfaces to become operational
+    nodes: [ h2 ]
+    plugin: ping(nodes.dut.interfaces[0].ipv6,af='ipv6')
+  fwd_dut_v4:
+    description: IPv4 ping H1 <=> H3
+    pass: DUT is not forwarding packets between its interfaces
+    fail: DUT is forwarding traffic between H1 and H3
+    nodes: [ h3 ]
+    plugin: ping('h1',af='ipv4',expect='fail')
+    level: warning
+  fwd_dut_v6:
+    description: IPv6 ping H1 <=> H3
+    pass: DUT is not forwarding packets between its interfaces
+    fail: DUT is forwarding traffic between H1 and H3
+    nodes: [ h3 ]
+    plugin: ping('h1',af='ipv6',expect='fail')
+    level: warning
+  wait_ra:
+    wait: 30
+    description: Wait for the IPv6 RA messages
+  ra_suppress:
+    description: Check for RA-generated default route
+    nodes: [ h4 ]
+    devices: [ linux ]
+    exec: ip -6 route list default
+    pass: DUT is not sending IPv6 RA messages
+    fail: DUT is sending IPv6 RA, H4 got a default route
+    valid: >-
+      'default' not in stdout

@@ -13,33 +13,6 @@ The device configuration template (in Jinja2 format) should be stored in `netsim
    :backlinks: none
 ```
 
-## Device Parameters
-
-You can use several device settings (specified in [device parameter file](dev-device-parameters)) to indicate which optional initial device configuration features your device supports:
-
-```
-loopback_interface_name: Loopback{ifindex}
-features:
-  initial:
-    system_mtu: True
-    ipv4:
-      unnumbered: True
-    ipv6:
-      lla: True
-```
-
-* **loopback_interface_name** -- Loopback interface name template. Use `{ifindex}` to insert interface number.
-* **features.initial.system_mtu** -- The device supports system MTU settings
-* **features.initial.min_mtu** -- The minimum IPv4 MTU supported by your device (the minimum IPv6 MTU cannot be lower than 1280)
-* **features.initial.max_mtu** -- The maximum MTU supported by your device (the maximum MTU cannot be higher than 9216)
-* **features.initial.min_phy_mtu** -- The minimum physical MTU that can be configured on your device (many devices won't accept the physical MTU lower than 1500 bytes).
-* **features.initial.ipv4.unnumbered** -- The device supports unnumbered IPv4 interfaces. The IP address of the primary loopback interface should be used as the IPv4 address of those interfaces.
-* **features.initial.ipv6.lla** -- The device supports IPv6 interfaces using just link-local addresses.
-
-```{tip}
-Please note that the MTU used by netlab is always the layer-3 MTU. If your device expects layer-2 MTU configuration, add the size of the layer-2 header to the interface **mtu** variable.
-```
-
 ## Static Configuration
 
 Your device template should start with the static configuration needed to make your device usable. You can configure all relevant parameters in the initial device configuration or include the relevant configuration snippets in the box-building instructions.
@@ -63,6 +36,7 @@ Use the following variables to set global configuration parameters:
 * **inventory_hostname** -- device name. You might need to remove special characters (underscore, dots...) from the device name.
 * **af.ipv4** and **af.ipv6** -- global flags indicating whether IPv4 or IPv6 is enabled on this device.
 * **mtu** -- system-wide MTU (when supported by the device)
+* **role** -- enable or disable IPv4/IPv6 routing based on device role (only for devices that [support multiple roles](dev-device-roles))
 
 For example, Arista EOS needs explicit configuration of IPv4 and IPv6 routing. It also supports system-wide MTU:
 
@@ -83,13 +57,28 @@ interface defaults
 !
 ```
 
+If we want to support Arista EOS running as router *or host*, we should also check the **role** parameter:
+
+```
+{% if af.ipv4|default(False) and role != 'host' %}
+ip routing
+{% else %}
+no ip routing
+{% endif %}
+{% if af.ipv6|default(False) and role != 'host' %}
+ipv6 unicast-routing
+{% else %}
+no ipv6 unicast-routing
+{% endif %}
+```
+
 ## Loopback Configuration
 
 The device data model assumes every network device has a primary loopback interface. The data model contains these loopback-related parameters:
 
 * **loopback.ipv4** -- IPv4 loopback address in CIDR format when available.
 * **loopback.ipv6** -- IPv6 loopback address in CIDR format when available.
-* **loopback.ifname** -- Loopback interface name for devices with `loopback_interface_name` parameter.
+* **loopback.ifname** -- Loopback interface name.
 
 ```{tip}
 You could use the **‌netlab_interfaces** list to configure the loopback interface like any other interface. If you take this approach, you should skip interface parameters not applicable to the loopback interface(s) while configuring them.
@@ -191,6 +180,26 @@ interface {{ l.ifname }}
 {% endif %}
 !
 {% endfor %}
+```
+
+When running as a [router](dev-device-roles), your device MUST send IPv6 router advertisements on IPv6-enabled interfaces. When running as a host, it *should* listen to IPv6 router advertisements to get a default route (the **features.initial.ipv6.use_ra** [device feature](dev-device-features) controls this behavior). Arista EOS example:
+
+```
+{#
+    Set interface IPv6 addresses
+#}
+{% if 'ipv6' in l %}
+{%   if role != 'host' %}
+ ipv6 nd ra interval 5
+{%   else %}
+ ipv6 nd ra rx accept default-route
+{%   endif %}
+{%   if l.ipv6 is sameas True %}
+ ipv6 enable
+{%   elif l.ipv6 is string %}
+ ipv6 address {{ l.ipv6 }}
+{%   endif %}
+{% endif %}
 ```
 
 ### Virtual Interfaces
