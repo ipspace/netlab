@@ -18,7 +18,8 @@ vlan_link_attr: typing.Final[dict] = {
   'access': { 'type' : str, 'vlan': True, 'single': True },
   'native': { 'type' : str, 'vlan': True, 'single': True },
   'mode':   { 'type' : str },
-  'trunk' : { 'type' : dict,'vlan': True }
+  'trunk' : { 'type' : dict,'vlan': True },
+  '_allow_all' : { 'type': bool },
 }
 
 def populate_vlan_id_set(topology: Box) -> None:
