@@ -359,6 +359,7 @@ See also [](caveats-junos).
 * For the above reason, the current netlab implementation of vJunos-switch EVPN configuration uses the `switch-options` (*default-switch*) configuration stanza, which leads to some drawbacks/limitations:
     * All EVPN routes are announced with the same RD (configured under `switch-options`). A RT is configured as well under `switch-options`, but then it is overwritten per-VNI under the `protocol evpn` configuration.
     * It is not possible to use multiple import/export RT. The *first* import RT is used on the configuration templates as the VNI RT.
+    * JunOS implements the VLAN-aware EVPN service type by default. This means *currently* interoperability with other vendors is limited. To change this behavior, multiple *mac-vrf* (with *service-type vlan-based*) should be configured, but this requires "SP Style" VLAN configuration.
 
 See also [](caveats-junos).
 
