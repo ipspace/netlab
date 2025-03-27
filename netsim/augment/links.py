@@ -409,7 +409,7 @@ def assign_link_prefix(
       pools: typing.List[str],
       addr_pools: Box,
       nodes: Box,
-      link_path: str = 'links') -> Box:
+      link_path: str = 'links') -> None:
 
   if 'prefix' in link:                                    # Does the link have prefix parameters?
     pfx_data = addressing.parse_prefix(link.prefix,path=link_path)
@@ -417,7 +417,8 @@ def assign_link_prefix(
       print(f'link {link_path} got prefix {pfx_data} from {link.prefix}')
     
     if link.prefix is False:                              # There should be no prefix on this link, get out
-      return pfx_data
+      link.prefix = {}
+      return
 
     if isinstance(link.prefix,str):                       # Is the prefix an IPv4 address?
       link.prefix = addressing.rebuild_prefix(pfx_data)   # ... convert it to prefix dictionary
@@ -426,14 +427,14 @@ def assign_link_prefix(
     #
     # Did we get a usable prefix? It should be empty (l2only) or have IPv4 or IPv6 prefix
     if not pfx_data or 'ipv4' in pfx_data or 'ipv6' in pfx_data:
-      return pfx_data
+      return
 
   else:                                                   # No prefix parameters on the link
     pfx_data = data.get_empty_box()
 
   if 'unnumbered' in link:                                # User requested an unnumbered link
     link.prefix = data.get_box({ 'unnumbered': True })
-    return link.prefix
+    return
 
   if must_be_string(link,'pool',link_path):
     if not link.pool in addr_pools:
@@ -456,7 +457,6 @@ def assign_link_prefix(
     link.pop('prefix',None)
 
   set_fhrp_gateway(link,pfx_list,nodes,link_path)
-  return pfx_list
 
 """
 Get IPAM policy for link/prefix
