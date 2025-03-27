@@ -172,7 +172,8 @@ def log_info(msg: str, topology: Box, f_status: str = 'INFO', f_color: str = 'br
 #
 def p_test_fail(n_name: str, v_entry: Box, topology: Box, fail_msg: str = '') -> None:
   err = v_entry.get('fail',fail_msg or f'Test failed for node {n_name}')
-  err = f'Node {n_name}: '+err
+  if n_name:
+    err = f'Node {n_name}: '+err
   if v_entry.get('level') == 'warning':
     log_failure(err,topology,f_status='WARNING',f_color='bright_yellow')
   else:
@@ -967,6 +968,11 @@ def execute_validation_test(
         sys.exit(1)
       else:
         log_info(v_entry.get('pass','No errors so far, moving on'),topology)
+
+    if v_entry.get('level',None) == 'warning':    # Warning-generating placeholder
+      increase_fail_count(v_entry)                # ... used with test-modifying plugins
+      p_test_fail('',v_entry,topology)            # Simulate a failure, the rest will follow ;)
+      return False
 
     if not args.nowait and v_entry.wait:
       wait_before_testing(v_entry,start_time,topology)
