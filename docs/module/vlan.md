@@ -148,7 +148,6 @@ To use a VLAN on a link, add **vlan** dictionary to a link or an interface on a 
 
 * **access** -- the name of access VLAN configured on the link or interface
 * **trunk** -- a list or dictionary of VLANs configured on a trunk port -- see [](module-vlan-trunk-attributes) for more details.
-* **_allow_all** -- internal flag to mark a trunk for which all VLANs are allowed
 * **native** -- the name of native VLAN configured on a trunk port
 * **mode** -- the default VLAN forwarding mode (route/bridge/irb) for this link or interface -- overrides the node- or global forwarding mode
 
