@@ -21,6 +21,7 @@ def pre_transform(topology: Box) -> None:
   features = get_device_features(node,topology.defaults)
 
   if 'anycast' in features.get('gateway.protocol'):
+    topology.validate.pop('anycast',None)
     return
 
   for vname,vdata in topology.get('vlans',{}).items():
@@ -30,9 +31,15 @@ def pre_transform(topology: Box) -> None:
     if gw_data is None:
       continue
 
-    if gw_data is True:
-      log.warning(
-        text=f'Removing anycast gateway from VLAN {vname}',
-        more_hints=f'Device {def_device} does not support anycast gateways',
-        module='anycast')
-      vdata.pop('gateway',None)
+    if gw_data is not True:
+      continue
+
+    log.warning(
+      text=f'Removing anycast gateway from VLAN {vname}',
+      more_hints=f'Device {def_device} does not support anycast gateways',
+      module='anycast')
+    vdata.pop('gateway',None)
+
+    if 'anycast' in topology.validate:
+      topology.validate.anycast.fail = f'Device {def_device} does not support anycast gateways'
+      topology.validate.anycast.level = 'warning'
