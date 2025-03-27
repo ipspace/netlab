@@ -33,9 +33,14 @@ def sum_results(data: Box) -> None:
       data[k].supported = False
     OK = True
 
-    if 'caveat' in data[k]:
-      if data[k].get('validate',None) is True:
-        data[k].pop('caveat',None)
+    if isinstance(data[k].get('caveat',None),str):                    # Make sure caveat is a list
+      data[k].caveat = [ data[k].caveat ]
+
+    if '_warning' in data[k]:                                         # Add warnings to caveats
+      data[k].caveat = data[k].get('caveat',[]) + data[k]._warning
+    
+    if data[k].get('validate',None) is True:                          # But pop caveats if the validation succeeded
+      data[k].pop('caveat',None)
 
     for step in data[k].keys():
       if step == 'validate' and data[k][step] == 'warning':
