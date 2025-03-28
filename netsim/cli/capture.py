@@ -81,8 +81,8 @@ def run(cli_args: typing.List[str]) -> None:
       exit_on_error=True,
       skip_header=True)
 
-  if not rest:
-    rest = strings.string_to_list(topology.defaults.netlab.capture.command_args)
+  if not [ flag for flag in rest if flag.startswith('-') ]:
+    rest = strings.string_to_list(topology.defaults.netlab.capture.command_args) + rest
 
   p_cmd += rest
   print(f'Starting packet capture on {args.node}/{args.intf}: {" ".join(p_cmd)}')
