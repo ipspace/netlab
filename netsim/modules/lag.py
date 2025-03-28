@@ -356,18 +356,12 @@ def populate_mlag_peer(node: Box, intf: Box, topology: Box) -> None:
   intf.pop('vlan',None)                                                     # Remove any VLANs provisioned on peerlinks
 
 """
-Sanity check: virtual LAG links that would have to use a Linux bridge would not work
-
-This function depends on the exact sequence of events during the transformation process:
-
-* LAG module creates extra "virtual lag" links to generate the bond interfaces
-* Multi-provider code marks those links as multi-provider links and adds a "bridge" attribute
-* The sanity check is run before the virtual LAG links are removed
+Sanity check: LAG links that are configured to use a Linux bridge do not support LACP
 """
 def check_bridge_links(topology: Box) -> None:
   err_cache: dict = {}
   for link in topology.links:
-    if '_virtual_lag' not in link:                          # Not a virtual LAG link
+    if 'lag' not in link:                                   # Not a LAG link
       continue
 
     if 'bridge' not in link:                                # Not a multi-provider link, we're OK
@@ -379,7 +373,7 @@ def check_bridge_links(topology: Box) -> None:
       continue                                              # ... for a pair of nodes
 
     log.warning(
-      text=f'The LAG link between {n_text} is using a Linux bridge. LACP will not work',
+      text=f'The LAG link {link._linkname} between {n_text} is using a Linux bridge. LACP will not work',
       more_hints = [ 'See https://netlab.tools/module/lag/#lag-multi-provider for more details' ],
       module='lag',
       flag='lag.bridge')
@@ -428,13 +422,14 @@ class LAG(_Module):
         intf.type = intf.pop('_type')
 
   """
-  module_post_transform - remove temporary 'virtual_lag' links
+  module_post_transform - remove temporary 'virtual_lag' links, and check for links with Linux bridges
+                        - e.g. mixed provider links - that would block LACP
   """
   def module_post_transform(self, topology: Box) -> None:
     if log.debug_active('lag'):
       print(f'LAG module_post_transform: Cleanup "virtual_lag" links')
-    check_bridge_links(topology)
     topology.links = [ link for link in topology.links if '_virtual_lag' not in link ]
+    check_bridge_links(topology)
 
   """
   After attribute propagation and consolidation, verify that requested features are supported.
