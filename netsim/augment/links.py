@@ -417,7 +417,6 @@ def assign_link_prefix(
       print(f'link {link_path} got prefix {pfx_data} from {link.prefix}')
     
     if link.prefix is False:                              # There should be no prefix on this link, get out
-      link.prefix = {}
       return
 
     if isinstance(link.prefix,str):                       # Is the prefix an IPv4 address?
