@@ -14,9 +14,13 @@ echo
 echo "Use vtysh to connect to FRR daemon"
 echo
 SCRIPT
-{% set fwd_flag = '0' if role == 'host' else '1' %}
-sysctl -w net.ipv4.ip_forward={{ fwd_flag }}
-sysctl -w net.ipv6.conf.all.forwarding={{ fwd_flag }}
+#
+# This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+#
+# FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+#
+sysctl -w net.ipv4.ip_forward={{ '1' if 'ipv4' in af and role == 'router' else '0' }}
+sysctl -w net.ipv6.conf.all.forwarding={{ '1' if 'ipv6' in af and role == 'router' else '0' }}
 #
 {% if clab is not defined %}
 cat <<SCRIPT >.bash_profile
@@ -119,11 +123,21 @@ echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
 cat >/tmp/config <<CONFIG
 hostname {{ inventory_hostname }}
 !
+{#
+  These commands set the corresponding net.ipv4 / net.ipv6 variables.
+  As we don't want to assume the default values, we set them explicitly
+  based on device role and configured address families.
+#}
 {% if role == 'host' %}
 no ip forwarding
 no ipv6 forwarding
-{% elif 'ipv6' in af %}
+{% else %}
+{%   if 'ipv4' in af %}
+ip forwarding
+{%   endif %}
+{%   if 'ipv6' in af %}
 ipv6 forwarding
+{%   endif %}
 {% endif %}
 {% if clab is defined and netlab_mgmt_vrf|default(False) %}
 vrf mgmt
