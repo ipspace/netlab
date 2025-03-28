@@ -1,0 +1,197 @@
+groups:
+  nodes:
+    device: frr
+    members:
+    - n1
+    - n2
+input:
+- topology/input/vlan-prefix-allocation.yml
+- package:topology-defaults.yml
+links:
+- _linkname: links[1]
+  interfaces:
+  - ifindex: 1
+    ifname: eth1
+    node: n1
+    vlan:
+      trunk:
+        v1: {}
+  - ifindex: 1
+    ifname: eth1
+    node: n2
+    vlan:
+      trunk:
+        v1: {}
+  linkindex: 1
+  node_count: 2
+  prefix: {}
+  type: p2p
+  vlan:
+    trunk:
+      v1: {}
+module:
+- vlan
+name: input
+nodes:
+  n1:
+    af:
+      ipv4: true
+    box: debian/bookworm64
+    device: frr
+    id: 3
+    interfaces:
+    - ifindex: 1
+      ifname: eth1
+      linkindex: 1
+      mtu: 1500
+      name: n1 -> n2
+      neighbors:
+      - ifname: eth1
+        node: n2
+      subif_index: 1
+      type: p2p
+    - ifindex: 2
+      ifname: eth1.1000
+      name: '[SubIf VLAN v1] n1 -> n2'
+      neighbors:
+      - ifname: eth2
+        ipv4: 10.1.0.2/30
+        node: n2
+      parent_ifindex: 1
+      parent_ifname: eth1
+      type: vlan_member
+      virtual_interface: true
+      vlan:
+        access: v1
+        access_id: 1000
+    - bridge_group: 1
+      ifindex: 40000
+      ifname: vlan1000
+      ipv4: 10.1.0.1/30
+      mtu: 1500
+      name: VLAN v1 (1000) -> [n2]
+      neighbors:
+      - ifname: vlan1000
+        ipv4: 10.1.0.2/30
+        node: n2
+      pool: p2p
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: irb
+        name: v1
+    loopback:
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.3/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.103
+      mac: 08:4f:a9:03:00:00
+    module:
+    - vlan
+    mtu: 1500
+    name: n1
+    vlan:
+      max_bridge_group: 1
+    vlans:
+      v1:
+        bridge_group: 1
+        id: 1000
+        mode: irb
+        pool: p2p
+        prefix:
+          allocation: p2p
+          ipv4: 10.1.0.0/30
+  n2:
+    af:
+      ipv4: true
+    box: debian/bookworm64
+    device: frr
+    id: 1
+    interfaces:
+    - ifindex: 1
+      ifname: eth1
+      linkindex: 1
+      mtu: 1500
+      name: n2 -> n1
+      neighbors:
+      - ifname: eth1
+        node: n1
+      subif_index: 1
+      type: p2p
+    - ifindex: 2
+      ifname: eth1.1000
+      name: '[SubIf VLAN v1] n2 -> n1'
+      neighbors:
+      - ifname: eth2
+        ipv4: 10.1.0.1/30
+        node: n1
+      parent_ifindex: 1
+      parent_ifname: eth1
+      type: vlan_member
+      virtual_interface: true
+      vlan:
+        access: v1
+        access_id: 1000
+    - bridge_group: 1
+      ifindex: 40000
+      ifname: vlan1000
+      ipv4: 10.1.0.2/30
+      mtu: 1500
+      name: VLAN v1 (1000) -> [n1]
+      neighbors:
+      - ifname: vlan1000
+        ipv4: 10.1.0.1/30
+        node: n1
+      pool: p2p
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: irb
+        name: v1
+    loopback:
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.1/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.101
+      mac: 08:4f:a9:01:00:00
+    module:
+    - vlan
+    mtu: 1500
+    name: n2
+    vlan:
+      max_bridge_group: 1
+    vlans:
+      v1:
+        bridge_group: 1
+        id: 1000
+        mode: irb
+        pool: p2p
+        prefix:
+          allocation: p2p
+          ipv4: 10.1.0.0/30
+provider: libvirt
+vlans:
+  v1:
+    host_count: 0
+    id: 1000
+    neighbors:
+    - ifname: vlan1000
+      ipv4: 10.1.0.2/30
+      node: n2
+    - ifname: vlan1000
+      ipv4: 10.1.0.1/30
+      node: n1
+    pool: p2p
+    prefix:
+      allocation: p2p
+      ipv4: 10.1.0.0/30
