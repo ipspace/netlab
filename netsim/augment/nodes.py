@@ -17,7 +17,7 @@ from .. import providers
 from . import devices,addressing,links
 from ..data.validate import validate_attributes,get_object_attributes
 from ..data.types import must_be_int,must_be_string,must_be_id,must_be_device
-from ..data import global_vars
+from ..data import global_vars,is_true_int
 from ..modules._dataplane import extend_id_set,is_id_used,set_id_counter,get_next_id
 
 MAX_NODE_ID: typing.Final[int] = 250
@@ -128,9 +128,12 @@ def augment_mgmt_if(node: Box, defaults: Box, addrs: typing.Optional[Box]) -> No
     addrs.mac_eui[3] = node.id                    # ... using a difference in the 4th octet, not the last one #1954
     node.mgmt.mac = addrs.mac_eui.format(netaddr.mac_unix_expanded)
 
-  # If the mgmt ipaddress is statically set (IPv4/IPv6)
-  # skip the address set
-  if 'ipv4' in node.mgmt or 'ipv6' in node.mgmt:
+  # If the mgmt ipaddress is statically set (IPv4 or IPv6 address) and there are no
+  # other parameters, skip the address assignment part
+  #
+  has_static = [ af for af in log.AF_LIST if af in node.mgmt and isinstance(node.mgmt[af],str) ]
+  has_other =  [ af for af in log.AF_LIST if af in node.mgmt and not isinstance(node.mgmt[af],str) ]
+  if has_static and not has_other:
     return
 
   if not addrs:                                                       # We need a management address pool, but there's none
@@ -140,30 +143,37 @@ def augment_mgmt_if(node: Box, defaults: Box, addrs: typing.Optional[Box]) -> No
       'nodes')
     return
 
+  start = addrs.get('start',1)                                        # Get first address, skipping the default GW
   for af in 'ipv4','ipv6':                                            # Try to assign IPv4 or IPv6 management address
-    pfx = af + '_pfx'
-    if not pfx in addrs:                                              # ... desired AF not in management pool, try the next one
+    static_addr = node.mgmt.get(af,None)                              # Get configured node address
+    if isinstance(static_addr,str):                                   # Static?
+      continue
+    if static_addr is False:                                          # No address in this AF?
+      node.mgmt.pop(af,None)
       continue
 
-    if not addrs.get('start'):
-      log.fatal(
-        "Start offset missing in management address pool for AF %s" % af,
-        module='addressing',
-        header=True)
+    pfx = af + '_pfx'
+    if not pfx in addrs:                                              # ... desired AF not in management pool, try the next one
+      node.mgmt.pop(af,None)                                          # ... and we also cannot assign a node address
+      continue
+
+    if not is_true_int(static_addr):                                  # Address specified as integer?
+      node.mgmt[af] = node.id + start                                 # Nope, use node ID + offset
 
     try:                                                              # Try to assign management address (might fail due to large ID)
-      node.mgmt[af] = str(addrs[pfx][node.id+addrs.start])
+      node.mgmt[af] = str(addrs[pfx][node.mgmt[af]])
     except Exception as ex:
       log.error(
-        f'Cannot assign management address from prefix {str(addrs[pfx])} (starting at {addrs.start}) to node with ID {node.id}',
-        log.IncorrectValue,
-        'nodes')
+        f'Cannot assign management address #{node.mgmt[af]} for node {node.name} from prefix {str(addrs[pfx])}',
+        more_data=f'Node id {node.id}, management address offset {addrs.start}',
+        category=log.IncorrectValue,
+        module='nodes')
 
   if not 'ipv4' in node.mgmt and not 'ipv6' in node.mgmt:             # Final check: did we get a usable management address?
     log.error(
       f'Node {node.name} does not have a usable management IP addresss',
-      log.MissingValue,
-      'nodes')
+      category=log.MissingValue,
+      module='nodes')
 
 """
 Check duplicate management MAC/IPv4/IPv6 addresses
