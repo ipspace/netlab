@@ -806,10 +806,13 @@ def create_gateway_last_resort(intf: Box, missing_af: Box, topology: Box) -> typ
   gw_data = data.get_empty_box()
   unnum_ngb = False
 
+  # Get roles that can be default gateways
+  gw_roles = global_vars.get_const('gateway.roles',['router','gateway'])
+
   for af in list(missing_af.keys()):                        # Iterate over all missing AFs
     for ngb in intf.neighbors:                              # Iterate over all interface neighbors
       n_node = topology.nodes[ngb.node]
-      if n_node.get('role') == 'host':                      # Host neighbors are useless
+      if n_node.get('role','router') not in gw_roles:       # Host/bridge neighbors are useless
         continue
       if af not in ngb:                                     # Does the neighbor have an address in desired AF?
         continue

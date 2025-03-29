@@ -84,19 +84,6 @@ nodes:
 * You still have to specify the device type (either in the node or as the [default device type](default-device-type)) for unmanaged nodes. _netlab_ uses the device type to determine which features a node supports. If you want to use an unsupported unmanaged device, set **‌device** to **‌none**.
 ```
 
-(node-router-host)=
-## Hosts and Routers
-
-Most _netlab_-supported devices act as *routers*: they have at least one [loopback interface](node-loopback) and run routing protocols to find the best path(s) toward remote destinations.
-
-Hosts do not have loopback interfaces (it's easiest if they have a single interface) and use static routes toward an adjacent [default gateway](links-gateway). On devices that don't have the management VRF, Vagrant or containerlab set up the default route, and _netlab_ adds static IPv4 routes for IPv4 prefixes defined in [address pools](address-pools).
-
-Hosts that have a management VRF (mostly network devices used as hosts) get two IPv4 default routes. Vagrant or containerlab sets up the IPv4 default route in the management VRF, and netlab adds a default route in the global VRF.
-
-Most hosts listen to IPv6 RA messages to get the IPv6 default route. _netlab_ can add an IPv6 default route[^SRv6] on devices that do not listen to RA messages.
-
-[^SRv6]: Or a set of static IPv6 routes for address pool prefixes on devices without a management VRF
-
 (node-loopback)=
 ## Loopbacks
 
@@ -337,4 +324,13 @@ nodes:
     ipv4: 192.168.121.101
     mac: 08-4F-A9-00-00-01
   name: r3
+```
+
+## Advanced Topics
+
+```eval_rst
+.. toctree::
+   :maxdepth: 1
+
+   node-roles.md
 ```
