@@ -1,0 +1,26 @@
+#
+# The "node roles" subsystem appends known (statically defined) node roles modules
+# to the topology Plugins (after the user-defined plugins)
+#
+import typing
+from box import Box
+
+from ..data import append_to_list
+
+"""
+Return all nodes matching the specified role(s)
+"""
+def select_nodes_by_role(topology: Box, select: typing.Union[str,list]) -> typing.Generator:
+  roles = select if isinstance(select,list) else [ select ]
+  for node in topology.nodes.values():
+    if node.get('role','router') in select:
+      yield node
+  
+"""
+Initialize the node role subsystem: append all node-handling modules to topology plugins
+"""
+def init(topology: Box) -> None:
+  from . import host,router
+
+  for role in [ host, router ]:
+    append_to_list(topology,'Plugin',role)
