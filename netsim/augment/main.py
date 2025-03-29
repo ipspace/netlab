@@ -13,6 +13,7 @@ from .. import modules
 from .. import devices as quirks
 from ..data import global_vars,validate
 from . import addressing
+from .. import roles
 
 def topology_init(topology: Box) -> None:
   global_vars.init(topology)
@@ -27,6 +28,7 @@ def transform_setup(topology: Box) -> None:
   topology.nodes = augment.nodes.create_node_dict(topology.nodes)
   augment.groups.precheck_groups(topology)
   augment.plugin.init(topology)                                         # Initialize plugins very early on in case they modify extra attributes
+  roles.init(topology)                                                  # Initialize node roles
   augment.plugin.execute('topology_expand',topology)                    # topology-expanding plugins must be called before link checks
 
   if 'links' in topology:
@@ -72,6 +74,7 @@ def transform_data(topology: Box) -> None:
   log.exit_on_error()
   augment.plugin.execute('post_node_transform',topology)
   modules.post_node_transform(topology)
+  log.exit_on_error()
 
   if 'links' in topology:
     augment.links.validate(topology)
@@ -84,7 +87,6 @@ def transform_data(topology: Box) -> None:
     augment.plugin.execute('post_link_transform',topology)
 
   modules.post_link_transform(topology)
-  augment.nodes.post_link_transform(topology)
 
 def post_transform(topology: Box) -> None:
   augment.validate.process_validation(topology)
