@@ -12,17 +12,19 @@ interface vlan {{ vlan.id }}
 {%   endfor %}
 {% endif %}
 !
-{% for ifdata in interfaces if ifdata.vlan is defined %}
+{% for ifdata in interfaces if ifdata.vlan is defined and ifdata.ifname != 'peerlink' %}
 !
 interface {{ ifdata.ifname }}
 {%   if ifdata.vlan.trunk_id is defined %}
  switchport mode trunk
-{%     if ifdata.vlan.native is defined or 1 in ifdata.vlan.trunk_id %}
+{%     if ifdata.vlan.native is defined or 1 in ifdata.vlan.trunk_id or '_allow_all' in ifdata.vlan %}
  switchport access vlan {{ ifdata.vlan.access_id|default(1) }}
 {%     else %}
  no switchport access vlan
 {%     endif %}
+{%     if '_allow_all' not in ifdata.vlan %}
  switchport trunk allowed vlan {{ ifdata.vlan.trunk_id|difference([ifdata.vlan.access_id|default(1)])|join(",") }}
+{%     endif %}
 {%   elif ifdata.vlan.access_id is defined %}
  switchport mode access
  switchport access vlan {{ ifdata.vlan.access_id }}

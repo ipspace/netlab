@@ -1,6 +1,7 @@
 {% macro decl_interface(i) %}
       {{ i.ifname }}:
-        type: {{ 'svi' if i.type=='svi' else 'sub' if i.type=='vlan_member' else 'bond' if i.type=='lag' else 'swp' }}
+        type: {{ 'svi' if i.type=='svi' else 'sub' if i.type=='vlan_member' else 'bond' if i.type=='lag' 
+                 else 'peerlink' if i.ifname=='peerlink' else 'swp' }}
         link:
 {%  if i.mtu is defined %}
           mtu: {{ i.mtu }}
@@ -12,28 +13,30 @@
 {%  elif i.type|default("") == "stub" %}
         description: Stub interface
 {%  endif %}
+{%  if 'peerlink' not in i.ifname or i.ipv4 is defined %}
         ip:
-{%  if i.ipv4 is defined or (i.ipv6 is string and i.ipv6|ipv6) %}
+{%    if i.ipv4 is defined or (i.ipv6 is string and i.ipv6|ipv6) %}
           address:
-{%    if i.ipv4 is defined %}
+{%      if i.ipv4 is defined %}
             {{ (loopback if i.ipv4 == True else i).ipv4 }}: {}
-{%    endif %}
-{%    if i.ipv6 is string and i.ipv6|ipv6 %}
+{%      endif %}
+{%      if i.ipv6 is string and i.ipv6|ipv6 %}
             {{ i.ipv6 }}: {}
+{%      endif %}
 {%    endif %}
-{%  endif %}
           ipv6:
-{%  if i.ipv6 is defined %}
+{%    if i.ipv6 is defined %}
             forward: on
-{%    if 'ipv6' not in i.dhcp.client|default({}) %}
+{%      if 'ipv6' not in i.dhcp.client|default({}) %}
           neighbor-discovery:
             enable: on
             router-advertisement:
               enable: on
               interval: 5000
-{%    endif %}
-{%  else %}
+{%      endif %}
+{%    else %}
             enable: off
+{%    endif %}
 {%  endif %}
 {% endmacro %}
 
@@ -57,6 +60,7 @@
           address:
             dhcp: {}
         type: eth
+
 {# Avoid creating L2-only sub interfaces #}
 {% for l in interfaces|default([]) if l.type not in ['loopback','vlan_member']
                                   or (l.type=='vlan_member' and ('ipv4' in l or 'ipv6' in l)) %}
