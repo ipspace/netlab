@@ -243,6 +243,9 @@ def create_lag_interfaces(link: Box, mlag_pairs: dict, topology: Box) -> None:
 create_peer_vlan - create a global VLAN for the peerlink (if supported), to enable features like OSPF
 """
 def create_peer_vlan(peerlink: Box, mlag_peer_features: Box, topology: Box) -> None:
+  if peerlink.get('prefix',None) is False:                     # Skip VLAN creation if prefix is set to False
+    return
+
   if 'vlan' in mlag_peer_features and mlag_peer_features.vlan: # Check if device supports an explicit peering VLAN
     vlan_name = f"peervlan_{ peerlink[PEERLINK_ID_ATT] }"
     vlan = data.get_box({ 'id': mlag_peer_features.vlan, 'mode': 'irb', '_mlag_peer': True })
@@ -261,16 +264,7 @@ def create_peer_vlan(peerlink: Box, mlag_peer_features: Box, topology: Box) -> N
     vlan_trunk = peerlink.get('vlan.trunk',[])
     if not vlan_trunk:
       peerlink.vlan._allow_all = True                          # Unless the user configured a trunk, allow all vlans
-
-    # Need to allow untagged packets on the peerlink too. Use existing untagged vlan if possible
-    if not peerlink.get('vlan.native',None):
-      untagged = [ (vname,vdata) for vname,vdata in topology.vlans.items() if vdata and vdata.get('id',None)==1 ]
-      if not untagged:
-        untagged = [('mlag_untagged',{ 'id': 1, 'mode': 'bridge', 'prefix': False })]
-        topology.vlans[ untagged[0][0] ] = untagged[0][1]
-      vlan_trunk += [ untagged[0][0] ]
-      peerlink.vlan.native = untagged[0][0]
-
+                                                               # including native VLAN
     peerlink.vlan.trunk = vlan_trunk + [ vlan_name ]
     topology.vlans[ vlan_name ] = vlan
     node_mode = mlag_peer_features.get('vlan_mode','route')
