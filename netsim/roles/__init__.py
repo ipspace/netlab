@@ -20,7 +20,7 @@ def select_nodes_by_role(topology: Box, select: typing.Union[str,list]) -> typin
 Initialize the node role subsystem: append all node-handling modules to topology plugins
 """
 def init(topology: Box) -> None:
-  from . import host,router
+  from . import host,router,bridge
 
-  for role in [ host, router ]:
+  for role in [ host, router, bridge ]:
     append_to_list(topology,'Plugin',role)
