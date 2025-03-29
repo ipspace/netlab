@@ -13,7 +13,7 @@ Return all nodes matching the specified role(s)
 def select_nodes_by_role(topology: Box, select: typing.Union[str,list]) -> typing.Generator:
   roles = select if isinstance(select,list) else [ select ]
   for node in topology.nodes.values():
-    if node.get('role','router') in select:
+    if node.get('role','router') in roles:
       yield node
   
 """

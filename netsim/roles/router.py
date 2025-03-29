@@ -1,9 +1,7 @@
 '''
-Create detailed node-level data structures from topology
+Router-specific data transformation
 
-* Discover desired imagex (boxes)
-* Add default module list to nodes without specific modules
-* Set loopback and management interface data
+* Add loopback interface data
 '''
 import typing
 
