@@ -252,9 +252,11 @@ def create_peer_vlan(peerlink: Box, mlag_peer_features: Box, topology: Box) -> N
     for a in list(peerlink.keys()):
       if a in lag_peervlan_attr:                               # Move all l3 attributes to the vlan interface
         vlan[a] = peerlink.pop(a,None)
-    if 'pool' not in vlan:                                     # Configure a default pool unless user specified other
-      vlan.pool = mlag_peer_features.get('pool','p2p')
-      vlan.prefix.allocation = 'p2p'
+
+    if 'pool' not in vlan:                                     # Configure a default pool if device needs it
+      vlan_pool = mlag_peer_features.get('pool',None)
+      if vlan_pool:
+        vlan.pool = vlan_pool
 
     vlan_trunk = peerlink.get('vlan.trunk',[])
     if not vlan_trunk:
