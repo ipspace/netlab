@@ -32,28 +32,38 @@ protocols {
   }
 }
 
-{# VERY DIRTY HACK here for initial testing - since we can specify only one vrf-target per vni-option, let's use the first import one #}
-{# - do it only if vxlan is defined - no need if we are RR only #}
-{% if vxlan is defined %}
-protocols {
-  evpn {
-    encapsulation vxlan;
-    default-gateway no-gateway-community;
-    extended-vni-list all;
-{% if vxlan.vlans is defined %}
-    vni-options {
-{%   for vname in vxlan.vlans if vlans[vname].vni is defined %}
-{%     set vlan = vlans[vname] %}
-        vni {{ vlan.vni }} {
-            vrf-target target:{{ vlan.evpn.import[0] }};
-        }
+{% if vlans is defined and vxlan is defined %}
+routing-instances {
+{%   for vname,v in vlans.items() if v.evpn.evi is defined and v.evpn.bundle is not defined %}
+  vlan_{{ vname }} {
+    instance-type mac-vrf;
+    service-type vlan-based;
+    vtep-source-interface {{ vxlan.vtep_interface }};
+    route-distinguisher {{ v.evpn.rd }};
+    vrf-target import {% for t in v.evpn.import %}target:{{ t }} {% endfor -%};
+    vrf-target export {% for t in v.evpn.export %}target:{{ t }} {% endfor -%};
+{%   for intf in interfaces if intf.vlan.access|default('') == vname %}
+    interface {{ intf.ifname }};
 {%   endfor %}
+    vlans {
+      {{ vname }} {
+        vlan-id {{ v.id }};
+        vxlan {
+          vni {{ v.vni }};
+        }
+      }
     }
-{% endif %}
+    protocols {
+      evpn {
+        encapsulation vxlan;
+        default-gateway no-gateway-community;
+        extended-vni-list all;     
+      }
+    }
   }
+{%   endfor %}
 }
 {% endif %}
-
 
 {# define L3VNI on vrf routing-instance #}
 {% if vrfs is defined %}
