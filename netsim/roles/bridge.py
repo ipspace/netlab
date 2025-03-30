@@ -36,6 +36,9 @@ def create_default_VLAN(topology: Box) -> bool:
     if 'id' not in ndata.vlans[BR_DEFAULT]:                 # Create default VLAN box on the fly and check for id
       ndata.vlans[BR_DEFAULT].id = BR_DEF_ID
 
+    append_to_list(ndata,'module','vlan')                   # Activate VLAN module in bridge node and topology
+    append_to_list(topology,'module','vlan')
+
   return br_found
 
 """
