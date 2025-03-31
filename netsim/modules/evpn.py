@@ -382,6 +382,29 @@ def check_node_vrf_bundle(node: Box, topology: Box) -> None:
         log.IncorrectValue,
         'evpn')
 
+"""
+Check the VLAN RT values -- some devices support only a single import/export RT
+"""
+def check_vlan_rt_values(node: Box, topology: Box) -> None:
+  if 'vlans' not in node:
+    return
+
+  features = devices.get_device_features(node,topology.defaults)
+
+  for vname,vdata in node.vlans.items():
+    for dir in ['import', 'export']:
+      rt_list = vdata.get(f'evpn.{dir}',None)
+      if not rt_list:
+        continue
+      if len(rt_list) <= 1:
+        continue
+      if features.evpn.multi_rt:
+        continue
+      log.error(
+        f'Device {node.device} (node {node.name}) does not support multiple {dir} EVPN RT (vlan {vname})',
+        category=log.IncorrectValue,
+        module='evpn')
+
 class EVPN(_Module):
 
   def module_init(self, topology: Box) -> None:
@@ -424,5 +447,6 @@ class EVPN(_Module):
     copy_global_evpn_lists(node,topology)
     check_node_vrf_irb(node,topology)
     check_node_vrf_bundle(node,topology)
+    check_vlan_rt_values(node,topology)
     trim_node_evpn_lists(node)
     set_local_evpn_rd(node)

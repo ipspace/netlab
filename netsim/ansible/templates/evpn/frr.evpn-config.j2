@@ -10,8 +10,11 @@ router bgp {{ bgp.as }}
 {% for vlan in (vlans|default({})).values() if 'vni' in vlan and 'evpn' in vlan %}
   vni {{ vlan.vni }}
    rd {{ vlan.evpn.rd }}
-   route-target export {{ vlan.evpn.export[0] }}
-   route-target import {{ vlan.evpn.import[0] }}
+{%   for dir in ['import','export'] if vlan.evpn[dir]|default([]) %}
+{%     for cmnt in vlan.evpn[dir] %}
+   route-target {{ dir }} {{ cmnt }}
+{%     endfor %}
+{%   endfor %}
   exit-vni
 {% endfor %}
 

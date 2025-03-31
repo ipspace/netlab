@@ -1,0 +1,83 @@
+---
+message: |
+  The device under test is an EVPN PE-device extending a single VLAN into
+  VXLAN, but using multiple import and export route targets. The test checks
+  the correct import and export of EVPN routes and the formation of an
+  E-Tree service.
+
+  * h1 and h2 should be able to ping hx but not each other
+
+  Please note it might take a while for the lab to work due to STP learning
+  phase
+
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h1, h2, hx ]
+    device: linux
+    provider: clab
+  switches:
+    members: [ s1, s2, dut ]
+    module: [ vlan, vxlan, ospf, bgp, evpn ]
+  x_switches:
+    members: [ s1, s2 ]
+    device: frr
+    provider: clab
+
+bgp.as: 65000
+
+vlans:
+  red:
+    mode: bridge
+    prefix:
+      ipv4: 172.31.1.0/24
+    links: [ s1-h1, s2-h2, dut-hx ]
+    vni: 1000
+
+nodes:
+  s1:
+    vlans:
+      red:
+        evpn.import: "65000:1"
+        evpn.export: "65000:101"
+  s2:
+    vlans:
+      red:
+        evpn.import: "65000:2"
+        evpn.export: "65000:102"
+  dut:
+    vlans:
+      red:
+        evpn.import: [ "65000:101", "65000:102" ]
+        evpn.export: [ "65000:1", "65000:2" ]
+
+links:
+- group: core
+  mtu: 1600
+  members: [ s1-s2, s1-dut, s2-dut ]
+
+validate:
+  ospf_adj_s1:
+    description: Check OSPF adjacencies with DUT
+    wait: 40
+    nodes: [ s1, s2 ]
+    wait_msg: Waiting for OSPF adjacency process to complete
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id)
+
+  ibgp_adj_s1:
+    description: Check IBGP adjacencies with DUT
+    wait: 40
+    nodes: [ s1, s2 ]
+    wait_msg: Waiting for IGBP session
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+
+  ping_hx:
+    description: Client-to-server ping test
+    wait_msg: Waiting for STP to wake up
+    wait: 30
+    nodes: [ h1, h2 ]
+    plugin: ping('hx')
+  ping_peer:
+    description: Client-to-client ping test
+    nodes: [ h1 ]
+    plugin: ping('h2',expect='fail')
