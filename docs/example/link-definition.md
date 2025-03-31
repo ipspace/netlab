@@ -11,6 +11,8 @@ This document contains way too many link definition examples, ranging from simpl
 
 Some examples include the resulting internal data structure (link data dictionary with **interfaces** list) generated in an early phase of [topology transformation process](../dev/transform.md).
 
+Read the [Concise Link Descriptions in netlab Topologies](https://blog.ipspace.net/2025/01/netlab-link-definitions/) and [Group Similar Links in netlab Topologies](https://blog.ipspace.net/2025/02/netlab-link-dictionary/) blog posts for even more details.
+
 (link-example-no-attributes)=
 ## Simple Links with No Link Attributes
 
@@ -69,6 +71,16 @@ Result:
   - node: r3
 ```
 
+### Node Names with Hyphens
+
+You cannot use the hyphen-separated list of nodes if you use hyphens in node names. In that case, you can use the (slightly ungainly) list of nodes, for example:
+
+```
+nodes: [ r-1, r-2 ]
+links:
+- [ r-1, r-2 ]
+```
+
 ### Crazy Scenarios
 
 Finally, it's perfectly OK to have the same node connected to a link more than once. Here's a potential bridging loop in case you want to figure out how your device reacts to it:
@@ -89,9 +101,9 @@ Result:
 
 ## Links with Link or Interface Attributes
 
-You can cover simple lab topologies with the *string format*, but you'll quickly get to a point where you'll want to specify additional link attributes. To do that, you have to use a *dictionary* format of link description.
+You can cover simple lab topologies with the *string format*, but you'll quickly get to a point where you'll want to specify additional link attributes. To do that, you must use a *dictionary* link description format.
 
-A *dictionary* format is always translated into the canonical format with **interfaces** list. That format is a bit cumbersome to work with, so you can use a simplified format specifying nodes connected to the link as dictionary keys.
+A *dictionary* format is always translated into the canonical format with an **interfaces** list. However, that format is a bit cumbersome; using a simplified format specifying nodes connected to the link as dictionary keys is much better.
 
 ```{warning}
 You cannot use the dictionary format if you want to have the same node attached to a link multiple times.
@@ -109,7 +121,7 @@ links:
   ospf.area: 3
 ```
 
-Keys in the link dictionary are checked against node names. Nodes are moved into **interfaces** list, the other elements are left unchanged.
+Keys in the link dictionary are checked against node names. Nodes are moved into the **interfaces** list, and the other elements are left unchanged.
 
 ```
 links:
@@ -143,10 +155,21 @@ links:
   - node: r3
 ```
 
+### Using Simplified Interfaces List
+
+You can list the nodes attached to a link in an **interfaces** list instead of declaring them as dictionary keys. For example, you can rewrite the above example as:
+
+```
+nodes: [ r1, r2, r3 ]
+links:
+- interfaces: [ r1, r2, r3 ]
+  bandwidth: 3
+```
+
 (link-interface-attribute)=
 ### Links with Interface Attributes
 
-Each interface (node-to-link attachment) can have its own attributes specified as a dictionary under the node key. For example, you might want to set OSPF cost and disable BFD for a single node on a multi-access link:
+Each interface (node-to-link attachment) can have its attributes specified as a dictionary under the node key. For example, you might want to set OSPF cost and disable BFD for a single node on a multi-access link:
 
 ```
 module: [ ospf,bfd ]
