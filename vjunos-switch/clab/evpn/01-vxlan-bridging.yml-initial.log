@@ -10,15 +10,15 @@ ok: [s2]
 ok: [h1]
 ok: [s1]
 ok: [h2]
-ok: [h4]
 ok: [h3]
+ok: [h4]
 
 TASK [Find device readiness script] ********************************************
 ok: [s2]
 ok: [h1]
-ok: [h3]
 ok: [h2]
 ok: [s1]
+ok: [h3]
 ok: [h4]
 
 TASK [Wait for device to become ready] *****************************************
@@ -62,17 +62,17 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [s2]
 ok: [h1]
-ok: [s1]
 ok: [h2]
-ok: [h3]
 ok: [h4]
+ok: [h3]
+ok: [s1]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [s2]
-ok: [h1]
 ok: [s1]
-ok: [h3]
+ok: [h1]
 ok: [h2]
+ok: [h3]
 ok: [h4]
 
 TASK [fail] ********************************************************************
@@ -85,11 +85,11 @@ skipping: [h4]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [s2]
-ok: [s1]
-ok: [h1]
 ok: [h2]
-ok: [h4]
+ok: [h1]
 ok: [h3]
+ok: [h4]
+ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [s1]
@@ -138,48 +138,11 @@ TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [s2]
 ok: [h1]
 ok: [h2]
-ok: [h4]
 ok: [h3]
+ok: [h4]
 ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [h4] => 
-  msg: |-
-    initial configuration for h4
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.31.1.4/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.31.1.4/24 dev eth1
-    ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    #
-    #
-    #
-    # Print the final routing table
-    ip route
 ok: [h1] => 
   msg: |-
     initial configuration for h1
@@ -291,115 +254,43 @@ ok: [h3] =>
     #
     # Print the final routing table
     ip route
-ok: [s2] => 
+ok: [h4] => 
   msg: |-
-    initial configuration for s2
+    initial configuration for h4
     =========================================
     #!/bin/bash
     #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
     set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)# "
-    echo
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
   
+    ### One-Shot configuration (non-Ubuntu VM or container)
     #
-    # Create loopbacks, stub and lag/bond devices
+    # Disable IPv4 and IPv6 forwarding
     #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
     #
-    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1600
-    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
-    ip link set dev eth2 mtu 1500
-    sysctl -qw net.ipv6.conf.eth3.disable_ipv6=1
-    ip link set dev eth3 mtu 1500
-  
+    # Interface addressing, create any bond devices
     #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-  
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.31.1.4/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.31.1.4/24 dev eth1
+    ip link set dev eth1 mtu 1500
     #
-    # Rest of initial configuration done through VTYSH
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
-    cat >/tmp/config <<CONFIG
-    hostname s2
-    !
-    vrf mgmt
-     exit-vrf
-    !
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ip address 10.0.0.6/32
-    !
-    interface eth1
-     no shutdown
-     description s2 -> s1
-     ip address 10.1.0.2/30
-    !
-    interface eth2
-     no shutdown
-     description [Access VLAN red] s2 -> h2
-     ! no ip address
-    !
-    interface eth3
-     no shutdown
-     description [Access VLAN blue] s2 -> h4
-     ! no ip address
-    !
-    interface vlan1000
-     no shutdown
-     description VLAN red (1000) -> [h1,s1,h2]
-     ! no ip address
-    !
-    interface vlan1001
-     no shutdown
-     description VLAN blue (1001) -> [h3,s1,h4]
-     ! no ip address
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
+    #
+    #
+    #
+    # Print the final routing table
+    ip route
 ok: [s1] => 
   msg: |-
     initial configuration for s1
@@ -495,6 +386,130 @@ ok: [s1] =>
         interface all;
       }
     }
+ok: [s2] => 
+  msg: |-
+    initial configuration for s2
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1600
+    ip link set eth1 up
+    ip link set eth2 down
+    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+    ip link set dev eth2 mtu 1500
+    ip link set eth2 up
+    ip link set eth3 down
+    sysctl -qw net.ipv6.conf.eth3.disable_ipv6=1
+    ip link set dev eth3 mtu 1500
+    ip link set eth3 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname s2
+    !
+    ip forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.6/32
+    !
+    interface eth1
+     no shutdown
+     description s2 -> s1
+     ip address 10.1.0.2/30
+    !
+    interface eth2
+     no shutdown
+     description [Access VLAN red] s2 -> h2
+     ! no ip address
+    !
+    interface eth3
+     no shutdown
+     description [Access VLAN blue] s2 -> h4
+     ! no ip address
+    !
+    interface vlan1000
+     no shutdown
+     description VLAN red (1000) -> [h1,s1,h2]
+     ! no ip address
+    !
+    interface vlan1001
+     no shutdown
+     description VLAN blue (1001) -> [h3,s1,h4]
+     ! no ip address
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for s1
@@ -529,19 +544,19 @@ skipping: [s2]
 TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
 ok: [h2]
-ok: [h3]
 ok: [h4]
+ok: [h3]
 
 TASK [Create a temporary file for the rendered script] *************************
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
-changed: [h4 -> localhost]
 changed: [h3 -> localhost]
+changed: [h4 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h2 -> localhost]
-changed: [h3 -> localhost]
 changed: [h1 -> localhost]
+changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
@@ -557,16 +572,16 @@ skipping: [h3]
 skipping: [h4]
 
 TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h3 -> localhost]
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h4 -> localhost]
+changed: [h3 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-ns2qik9k.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-esvr0nay.sh] ***********************
 changed: [h2 -> localhost]
+changed: [h4 -> localhost]
 changed: [h1 -> localhost]
 changed: [h3 -> localhost]
-changed: [h4 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -732,44 +747,6 @@ ok: [s2]
 ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [s2] => 
-  msg: |-
-    bgp configuration for s2
-    =========================================
-    !
-    router bgp 65000
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.6
-    !
-      neighbor 10.0.0.5 remote-as 65000
-      neighbor 10.0.0.5 description s1
-      neighbor 10.0.0.5 update-source lo
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-      network 10.0.0.6/32
-    !
-    !
-    !
-      neighbor 10.0.0.5 activate
-      neighbor 10.0.0.5 next-hop-self
-      no neighbor 10.0.0.5 send-community all
-      neighbor 10.0.0.5 send-community standard
-      neighbor 10.0.0.5 send-community large
-      neighbor 10.0.0.5 send-community extended
-    !
-    !
-    !
-    do write
 ok: [s1] => 
   msg: |-
     bgp configuration for s1
@@ -834,6 +811,44 @@ ok: [s1] =>
         }
       }
     }
+ok: [s2] => 
+  msg: |-
+    bgp configuration for s2
+    =========================================
+    !
+    router bgp 65000
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.6
+    !
+      neighbor 10.0.0.5 remote-as 65000
+      neighbor 10.0.0.5 description s1
+      neighbor 10.0.0.5 update-source lo
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.6/32
+    !
+    !
+    !
+      neighbor 10.0.0.5 activate
+      neighbor 10.0.0.5 next-hop-self
+      no neighbor 10.0.0.5 send-community all
+      neighbor 10.0.0.5 send-community standard
+      neighbor 10.0.0.5 send-community large
+      neighbor 10.0.0.5 send-community extended
+    !
+    !
+    !
+    do write
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for s1
@@ -961,6 +976,38 @@ ok: [s2]
 ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [s1] => 
+  msg: |-
+    vxlan configuration for s1
+    =========================================
+  
+    policy-options {
+        policy-statement ecmp {
+            then {
+                load-balance per-flow;
+            }
+        }
+    }
+    routing-options {
+        forwarding-table {
+            export ecmp;
+        }
+    }
+  
+    switch-options {
+        vtep-source-interface lo0.0;
+    }
+  
+  
+  
+  
+  
+    switch-options {
+        route-distinguisher 10.0.0.5:65535;
+        vrf-target target:65000:65535;
+    }
+  
+    protocols evpn encapsulation vxlan;
 ok: [s2] => 
   msg: |-
     vxlan configuration for s2
@@ -1014,50 +1061,6 @@ ok: [s2] =>
   
   
     exit $?
-ok: [s1] => 
-  msg: |-
-    vxlan configuration for s1
-    =========================================
-  
-    policy-options {
-        policy-statement ecmp {
-            then {
-                load-balance per-flow;
-            }
-        }
-    }
-    routing-options {
-        forwarding-table {
-            export ecmp;
-        }
-    }
-  
-    switch-options {
-        vtep-source-interface lo0.0;
-    }
-  
-    vlans {
-        red {
-            vxlan {
-                vni 1000;
-            }
-        }
-        blue {
-            vxlan {
-                vni 1001;
-            }
-        }
-    }
-  
-  
-  
-  
-    switch-options {
-        route-distinguisher 10.0.0.5:65535;
-        vrf-target target:65000:65535;
-    }
-  
-    protocols evpn encapsulation vxlan;
 
 TASK [Deploy vxlan configuration] **********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for s1
@@ -1155,18 +1158,58 @@ ok: [s1] =>
       }
     }
   
-    protocols {
-      evpn {
-        encapsulation vxlan;
-        default-gateway no-gateway-community;
-        extended-vni-list all;
-        vni-options {
-            vni 1000 {
-                vrf-target target:65000:1000;
+    vlans {
+      delete: blue;
+      delete: red;
+    }
+  
+    routing-instances {
+      vlan_blue {
+        instance-type mac-vrf;
+        service-type vlan-based;
+        vtep-source-interface lo0.0;
+        route-distinguisher 10.0.0.5:1001;
+        vrf-target import target:65000:1001 ;
+        vrf-target export target:65000:1001 ;
+        interface ge-0/0/2.0;
+        vlans {
+          blue {
+            vlan-id 1001;
+            vxlan {
+              vni 1001;
             }
-            vni 1001 {
-                vrf-target target:65000:1001;
+          }
+        }
+        protocols {
+          evpn {
+            encapsulation vxlan;
+            default-gateway no-gateway-community;
+            extended-vni-list all;
+          }
+        }
+      }
+      vlan_red {
+        instance-type mac-vrf;
+        service-type vlan-based;
+        vtep-source-interface lo0.0;
+        route-distinguisher 10.0.0.5:1000;
+        vrf-target import target:65000:1000 ;
+        vrf-target export target:65000:1000 ;
+        interface ge-0/0/1.0;
+        vlans {
+          red {
+            vlan-id 1000;
+            vxlan {
+              vni 1000;
             }
+          }
+        }
+        protocols {
+          evpn {
+            encapsulation vxlan;
+            default-gateway no-gateway-community;
+            extended-vni-list all;
+          }
         }
       }
     }

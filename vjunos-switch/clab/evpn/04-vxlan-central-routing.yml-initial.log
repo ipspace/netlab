@@ -16,12 +16,12 @@ ok: [h4]
 
 TASK [Find device readiness script] ********************************************
 ok: [l2]
+ok: [l1]
 ok: [h1]
 ok: [h2]
-ok: [l1]
-ok: [spine]
 ok: [h3]
 ok: [h4]
+ok: [spine]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [l2]
@@ -51,9 +51,8 @@ FAILED - RETRYING: [spine -> localhost]: Execute local ssh command to check vjun
 FAILED - RETRYING: [l1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (37 retries left).
 FAILED - RETRYING: [spine -> localhost]: Execute local ssh command to check vjunos-switch readiness (37 retries left).
 FAILED - RETRYING: [l1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (36 retries left).
-FAILED - RETRYING: [spine -> localhost]: Execute local ssh command to check vjunos-switch readiness (36 retries left).
-ok: [l1 -> localhost]
 ok: [spine -> localhost]
+ok: [l1 -> localhost]
 
 TASK [Confirm l1 SSH server works] *********************************************
 ok: [l1] => 
@@ -76,8 +75,8 @@ ok: [l2]
 ok: [h1]
 ok: [h2]
 ok: [l1]
-ok: [h4]
 ok: [h3]
+ok: [h4]
 ok: [spine]
 
 TASK [Find configuration template for normalize] *******************************
@@ -85,8 +84,8 @@ ok: [l2]
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [l1]
 ok: [h4]
+ok: [l1]
 ok: [spine]
 
 TASK [fail] ********************************************************************
@@ -103,8 +102,8 @@ ok: [l2]
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [l1]
 ok: [h4]
+ok: [l1]
 ok: [spine]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -131,20 +130,20 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [l2]
 ok: [h1]
-ok: [l1]
 ok: [h2]
+ok: [l1]
 ok: [h3]
 ok: [spine]
 ok: [h4]
 
 TASK [Find configuration template for initial] *********************************
 ok: [l2]
-ok: [l1]
 ok: [h1]
 ok: [h2]
+ok: [l1]
 ok: [h3]
-ok: [spine]
 ok: [h4]
+ok: [spine]
 
 TASK [fail] ********************************************************************
 skipping: [l1]
@@ -156,12 +155,12 @@ skipping: [h3]
 skipping: [h4]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [l1]
 ok: [l2]
 ok: [h1]
-ok: [h2]
-ok: [h3]
 ok: [h4]
+ok: [h2]
+ok: [l1]
+ok: [h3]
 ok: [spine]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -389,6 +388,14 @@ ok: [l2] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -423,12 +430,18 @@ ok: [l2] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1600
+    ip link set eth1 up
+    ip link set eth2 down
     sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
     ip link set dev eth2 mtu 1500
+    ip link set eth2 up
+    ip link set eth3 down
     sysctl -qw net.ipv6.conf.eth3.disable_ipv6=1
     ip link set dev eth3 mtu 1500
+    ip link set eth3 up
   
     #
     # Add vtysh.conf file
@@ -440,6 +453,7 @@ ok: [l2] =>
     cat >/tmp/config <<CONFIG
     hostname l2
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -812,16 +826,16 @@ ok: [h3]
 ok: [h4]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
-changed: [h3 -> localhost]
 changed: [h4 -> localhost]
+changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h3 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
-changed: [h4 -> localhost]
-changed: [h3 -> localhost]
 changed: [h2 -> localhost]
+changed: [h4 -> localhost]
+changed: [h1 -> localhost]
+changed: [h3 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -837,15 +851,15 @@ skipping: [h4]
 
 TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [h2 -> localhost]
+changed: [h4 -> localhost]
 changed: [h1 -> localhost]
 changed: [h3 -> localhost]
-changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-vqag9vnp.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-m1xl235t.sh] ***********************
 changed: [h4 -> localhost]
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 changed: [h3 -> localhost]
+changed: [h2 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -865,8 +879,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [l2]
-ok: [l1]
 ok: [spine]
+ok: [l1]
 
 TASK [Find configuration template for vlan] ************************************
 ok: [l2]
@@ -1047,8 +1061,8 @@ skipping: [spine]
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [l2]
-ok: [l1]
 ok: [spine]
+ok: [l1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [l2] => 
@@ -1355,8 +1369,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for 
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
 TASK [junos_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/junos.j2] ***
-changed: [spine]
 changed: [l1]
+changed: [spine]
 
 TASK [template] ****************************************************************
 changed: [l2]
@@ -1386,9 +1400,9 @@ skipping: [l2]
 skipping: [spine]
 
 TASK [Find configuration deployment deploy_script for vrf] *********************
+ok: [l1]
 ok: [l2]
 ok: [spine]
-ok: [l1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [l1] => 
@@ -1472,6 +1486,45 @@ ok: [l1] =>
       }
   
     }
+ok: [l2] => 
+  msg: |-
+    vrf configuration for l2
+    =========================================
+    #!/bin/bash
+    #
+    set -e # Exit immediately when any command fails
+    #
+  
+    # Create VRF tables
+    if [ ! -e /sys/devices/virtual/net/customer ]; then
+    ip link add customer type vrf table 100
+    fi
+    ip link set customer up
+  
+    # Move interfaces and loopbacks to vrfs
+    sysctl -qw net.ipv6.conf.vlan1000.keep_addr_on_down=1
+    ip link set vlan1000 master customer
+    sysctl -qw net.ipv6.conf.vlan1001.keep_addr_on_down=1
+    ip link set vlan1001 master customer
+  
+    cat >/tmp/vrf_config <<CONFIG
+    vrf customer
+     exit-vrf
+    !
+    router bgp 65000
+    !
+    !
+    router bgp 65000 vrf customer
+     no bgp ebgp-requires-policy
+     no bgp default ipv4-unicast
+     bgp router-id 10.0.0.6
+    !
+    !
+    do write
+    !
+    CONFIG
+    vtysh -f /tmp/vrf_config
+    exit $?
 ok: [spine] => 
   msg: |-
     vrf configuration for spine
@@ -1553,45 +1606,6 @@ ok: [spine] =>
       }
   
     }
-ok: [l2] => 
-  msg: |-
-    vrf configuration for l2
-    =========================================
-    #!/bin/bash
-    #
-    set -e # Exit immediately when any command fails
-    #
-  
-    # Create VRF tables
-    if [ ! -e /sys/devices/virtual/net/customer ]; then
-    ip link add customer type vrf table 100
-    fi
-    ip link set customer up
-  
-    # Move interfaces and loopbacks to vrfs
-    sysctl -qw net.ipv6.conf.vlan1000.keep_addr_on_down=1
-    ip link set vlan1000 master customer
-    sysctl -qw net.ipv6.conf.vlan1001.keep_addr_on_down=1
-    ip link set vlan1001 master customer
-  
-    cat >/tmp/vrf_config <<CONFIG
-    vrf customer
-     exit-vrf
-    !
-    router bgp 65000
-    !
-    !
-    router bgp 65000 vrf customer
-     no bgp ebgp-requires-policy
-     no bgp default ipv4-unicast
-     bgp router-id 10.0.0.6
-    !
-    !
-    do write
-    !
-    CONFIG
-    vtysh -f /tmp/vrf_config
-    exit $?
 
 TASK [Deploy vrf configuration] ************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for l1, spine
@@ -1634,6 +1648,38 @@ ok: [l1]
 ok: [spine]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [l1] => 
+  msg: |-
+    vxlan configuration for l1
+    =========================================
+  
+    policy-options {
+        policy-statement ecmp {
+            then {
+                load-balance per-flow;
+            }
+        }
+    }
+    routing-options {
+        forwarding-table {
+            export ecmp;
+        }
+    }
+  
+    switch-options {
+        vtep-source-interface lo0.0;
+    }
+  
+  
+  
+  
+  
+    switch-options {
+        route-distinguisher 10.0.0.5:65535;
+        vrf-target target:65000:65535;
+    }
+  
+    protocols evpn encapsulation vxlan;
 ok: [l2] => 
   msg: |-
     vxlan configuration for l2
@@ -1687,50 +1733,6 @@ ok: [l2] =>
   
   
     exit $?
-ok: [l1] => 
-  msg: |-
-    vxlan configuration for l1
-    =========================================
-  
-    policy-options {
-        policy-statement ecmp {
-            then {
-                load-balance per-flow;
-            }
-        }
-    }
-    routing-options {
-        forwarding-table {
-            export ecmp;
-        }
-    }
-  
-    switch-options {
-        vtep-source-interface lo0.0;
-    }
-  
-    vlans {
-        red {
-            vxlan {
-                vni 1000;
-            }
-        }
-        blue {
-            vxlan {
-                vni 1001;
-            }
-        }
-    }
-  
-  
-  
-  
-    switch-options {
-        route-distinguisher 10.0.0.5:65535;
-        vrf-target target:65000:65535;
-    }
-  
-    protocols evpn encapsulation vxlan;
 ok: [spine] => 
   msg: |-
     vxlan configuration for spine
@@ -1753,18 +1755,6 @@ ok: [spine] =>
         vtep-source-interface lo0.0;
     }
   
-    vlans {
-        red {
-            vxlan {
-                vni 1000;
-            }
-        }
-        blue {
-            vxlan {
-                vni 1001;
-            }
-        }
-    }
   
   
   
@@ -1781,8 +1771,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for 
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
 TASK [junos_config: deploying vxlan from /home/pipi/netlab_gh/netsim/ansible/templates/vxlan/vjunos-switch.j2] ***
-changed: [l1]
 changed: [spine]
+changed: [l1]
 
 TASK [template] ****************************************************************
 changed: [l2]
@@ -1813,57 +1803,10 @@ skipping: [spine]
 
 TASK [Find configuration deployment deploy_script for evpn] ********************
 ok: [l2]
-ok: [spine]
 ok: [l1]
+ok: [spine]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [l1] => 
-  msg: |-
-    evpn configuration for l1
-    =========================================
-  
-    protocols {
-      bgp {
-        group ibgp-peers-ipv4 {
-          neighbor 10.0.0.7 {
-            delete: shutdown;
-            family evpn {
-              signaling;
-            }
-          }
-        }
-        group ebgp-peers {
-        }
-      }
-    }
-  
-    protocols {
-      evpn {
-        encapsulation vxlan;
-        default-gateway no-gateway-community;
-        extended-vni-list all;
-        vni-options {
-            vni 1000 {
-                vrf-target target:65000:1000;
-            }
-            vni 1001 {
-                vrf-target target:65000:1001;
-            }
-        }
-      }
-    }
-  
-  
-    routing-instances {
-  
-  
-    }
-  
-    policy-options {
-    }
-  
-    interfaces {
-    }
 ok: [l2] => 
   msg: |-
     evpn configuration for l2
@@ -1904,6 +1847,92 @@ ok: [l2] =>
     CONFIG
     vtysh -f /tmp/evpn_config
     vtysh -c 'clear bgp *'
+ok: [l1] => 
+  msg: |-
+    evpn configuration for l1
+    =========================================
+  
+    protocols {
+      bgp {
+        group ibgp-peers-ipv4 {
+          neighbor 10.0.0.7 {
+            delete: shutdown;
+            family evpn {
+              signaling;
+            }
+          }
+        }
+        group ebgp-peers {
+        }
+      }
+    }
+  
+    vlans {
+      delete: blue;
+      delete: red;
+    }
+  
+    routing-instances {
+      vlan_blue {
+        instance-type mac-vrf;
+        service-type vlan-based;
+        vtep-source-interface lo0.0;
+        route-distinguisher 10.0.0.5:1001;
+        vrf-target import target:65000:1001 ;
+        vrf-target export target:65000:1001 ;
+        interface ge-0/0/2.0;
+        vlans {
+          blue {
+            vlan-id 1001;
+            vxlan {
+              vni 1001;
+            }
+          }
+        }
+        protocols {
+          evpn {
+            encapsulation vxlan;
+            default-gateway no-gateway-community;
+            extended-vni-list all;
+          }
+        }
+      }
+      vlan_red {
+        instance-type mac-vrf;
+        service-type vlan-based;
+        vtep-source-interface lo0.0;
+        route-distinguisher 10.0.0.5:1000;
+        vrf-target import target:65000:1000 ;
+        vrf-target export target:65000:1000 ;
+        interface ge-0/0/1.0;
+        vlans {
+          red {
+            vlan-id 1000;
+            vxlan {
+              vni 1000;
+            }
+          }
+        }
+        protocols {
+          evpn {
+            encapsulation vxlan;
+            default-gateway no-gateway-community;
+            extended-vni-list all;
+          }
+        }
+      }
+    }
+  
+    routing-instances {
+  
+  
+    }
+  
+    policy-options {
+    }
+  
+    interfaces {
+    }
 ok: [spine] => 
   msg: |-
     evpn configuration for spine
@@ -1930,22 +1959,61 @@ ok: [spine] =>
       }
     }
   
-    protocols {
-      evpn {
-        encapsulation vxlan;
-        default-gateway no-gateway-community;
-        extended-vni-list all;
-        vni-options {
-            vni 1000 {
-                vrf-target target:65000:1000;
+    vlans {
+      delete: blue;
+      delete: red;
+    }
+  
+    routing-instances {
+      vlan_blue {
+        instance-type mac-vrf;
+        service-type vlan-based;
+        vtep-source-interface lo0.0;
+        route-distinguisher 10.0.0.7:1001;
+        vrf-target import target:65000:1001 ;
+        vrf-target export target:65000:1001 ;
+        vlans {
+          blue {
+            vlan-id 1001;
+            l3-interface irb.1001;
+            vxlan {
+              vni 1001;
             }
-            vni 1001 {
-                vrf-target target:65000:1001;
+          }
+        }
+        protocols {
+          evpn {
+            encapsulation vxlan;
+            default-gateway no-gateway-community;
+            extended-vni-list all;
+          }
+        }
+      }
+      vlan_red {
+        instance-type mac-vrf;
+        service-type vlan-based;
+        vtep-source-interface lo0.0;
+        route-distinguisher 10.0.0.7:1000;
+        vrf-target import target:65000:1000 ;
+        vrf-target export target:65000:1000 ;
+        vlans {
+          red {
+            vlan-id 1000;
+            l3-interface irb.1000;
+            vxlan {
+              vni 1000;
             }
+          }
+        }
+        protocols {
+          evpn {
+            encapsulation vxlan;
+            default-gateway no-gateway-community;
+            extended-vni-list all;
+          }
         }
       }
     }
-  
   
     routing-instances {
   
@@ -1969,8 +2037,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for 
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
 TASK [junos_config: deploying evpn from /home/pipi/netlab_gh/netsim/ansible/templates/evpn/vjunos-switch.j2] ***
-changed: [l1]
 changed: [spine]
+changed: [l1]
 
 TASK [template] ****************************************************************
 changed: [l2]

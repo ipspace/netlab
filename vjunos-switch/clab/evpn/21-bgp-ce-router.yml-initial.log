@@ -7,14 +7,14 @@ PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [s2]
-ok: [s1]
 ok: [ce1]
 ok: [ce2]
+ok: [s1]
 
 TASK [Find device readiness script] ********************************************
 ok: [s2]
-ok: [ce2]
 ok: [ce1]
+ok: [ce2]
 ok: [s1]
 
 TASK [Wait for device to become ready] *****************************************
@@ -61,9 +61,9 @@ ok: [s1]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [s2]
-ok: [ce2]
 ok: [ce1]
 ok: [s1]
+ok: [ce2]
 
 TASK [fail] ********************************************************************
 skipping: [s1]
@@ -94,14 +94,14 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [s2]
-ok: [ce2]
 ok: [ce1]
 ok: [s1]
+ok: [ce2]
 
 TASK [Find configuration template for initial] *********************************
 ok: [s2]
-ok: [s1]
 ok: [ce1]
+ok: [s1]
 ok: [ce2]
 
 TASK [fail] ********************************************************************
@@ -137,6 +137,14 @@ ok: [s2] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -171,10 +179,14 @@ ok: [s2] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1600
+    ip link set eth1 up
+    ip link set eth2 down
     sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
     ip link set dev eth2 mtu 1500
+    ip link set eth2 up
   
     #
     # Add vtysh.conf file
@@ -186,6 +198,7 @@ ok: [s2] =>
     cat >/tmp/config <<CONFIG
     hostname s2
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -229,6 +242,14 @@ ok: [ce1] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -263,8 +284,10 @@ ok: [ce1] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -276,6 +299,7 @@ ok: [ce1] =>
     cat >/tmp/config <<CONFIG
     hostname ce1
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -314,6 +338,14 @@ ok: [ce2] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -348,8 +380,10 @@ ok: [ce2] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -361,6 +395,7 @@ ok: [ce2] =>
     cat >/tmp/config <<CONFIG
     hostname ce2
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -505,18 +540,18 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for s2
 
 TASK [template] ****************************************************************
 changed: [ce2]
-changed: [s2]
 changed: [ce1]
+changed: [s2]
 
 TASK [set_fact] ****************************************************************
 ok: [s2]
-ok: [ce2]
 ok: [ce1]
+ok: [ce2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [s2]
-changed: [ce2]
 changed: [ce1]
+changed: [ce2]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [s2]
@@ -630,8 +665,8 @@ skipping: [s1]
 skipping: [s2]
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
-ok: [ce2]
 ok: [ce1]
+ok: [ce2]
 ok: [s2]
 ok: [s1]
 
@@ -667,6 +702,41 @@ ok: [ce1] =>
       no neighbor 10.1.0.6 send-community all
       neighbor 10.1.0.6 send-community standard
       neighbor 10.1.0.6 send-community large
+    !
+    !
+    !
+    do write
+ok: [ce2] => 
+  msg: |-
+    bgp configuration for ce2
+    =========================================
+    !
+    router bgp 65101
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.2
+    !
+      neighbor 10.1.0.10 remote-as 65000
+      neighbor 10.1.0.10 description s2
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.2/32
+    !
+    !
+    !
+      neighbor 10.1.0.10 activate
+      no neighbor 10.1.0.10 send-community all
+      neighbor 10.1.0.10 send-community standard
+      neighbor 10.1.0.10 send-community large
     !
     !
     !
@@ -735,41 +805,6 @@ ok: [s1] =>
         }
       }
     }
-ok: [ce2] => 
-  msg: |-
-    bgp configuration for ce2
-    =========================================
-    !
-    router bgp 65101
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.2
-    !
-      neighbor 10.1.0.10 remote-as 65000
-      neighbor 10.1.0.10 description s2
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-      network 10.0.0.2/32
-    !
-    !
-    !
-      neighbor 10.1.0.10 activate
-      no neighbor 10.1.0.10 send-community all
-      neighbor 10.1.0.10 send-community standard
-      neighbor 10.1.0.10 send-community large
-    !
-    !
-    !
-    do write
 ok: [s2] => 
   msg: |-
     bgp configuration for s2
@@ -814,9 +849,9 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for ce
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for s1
 
 TASK [template] ****************************************************************
-changed: [s2]
-changed: [ce2]
 changed: [ce1]
+changed: [ce2]
+changed: [s2]
 
 TASK [set_fact] ****************************************************************
 ok: [ce1]
@@ -829,9 +864,9 @@ skipping: [ce2]
 skipping: [s2]
 
 TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
+changed: [ce1]
 changed: [ce2]
 changed: [s2]
-changed: [ce1]
 
 TASK [junos_config: deploying bgp from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/junos.j2] ***
 [WARNING]:  statement not found
@@ -858,8 +893,8 @@ skipping: [s2]
 TASK [Find configuration deployment deploy_script for ospf] ********************
 skipping: [ce1]
 skipping: [ce2]
-ok: [s1]
 ok: [s2]
+ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ce1]
@@ -1240,8 +1275,8 @@ TASK [run vtysh to import vxlan config from /home/pipi/netlab_gh/netsim/ansible/
 skipping: [s2]
 
 TASK [Figure out whether to deploy the module evpn on current device] **********
-ok: [ce1]
 ok: [ce2]
+ok: [ce1]
 ok: [s2]
 ok: [s1]
 
@@ -1328,14 +1363,6 @@ ok: [s1] =>
         }
         group ebgp-peers {
         }
-      }
-    }
-  
-    protocols {
-      evpn {
-        encapsulation vxlan;
-        default-gateway no-gateway-community;
-        extended-vni-list all;
       }
     }
   
