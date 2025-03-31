@@ -33,6 +33,12 @@ protocols {
 }
 
 {% if vlans is defined and vxlan is defined %}
+vlans {
+{%   for vname,v in vlans.items() if v.evpn.evi is defined and v.evpn.bundle is not defined %}
+  delete: {{ vname }};
+{%   endfor %}
+}
+
 routing-instances {
 {%   for vname,v in vlans.items() if v.evpn.evi is defined and v.evpn.bundle is not defined %}
   vlan_{{ vname }} {
@@ -48,6 +54,9 @@ routing-instances {
     vlans {
       {{ vname }} {
         vlan-id {{ v.id }};
+{%   if v.mode == 'irb' %}
+        l3-interface irb.{{ v.id }};
+{%   endif %}
         vxlan {
           vni {{ v.vni }};
         }
