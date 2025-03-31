@@ -32,7 +32,27 @@ protocols {
   }
 }
 
-{% if vlans is defined and vxlan is defined %}
+{% if vxlan is defined and evpn._junos_default_macvrf|default(False) %}
+protocols {
+  evpn {
+    encapsulation vxlan;
+    default-gateway no-gateway-community;
+    extended-vni-list all;
+{% if vxlan.vlans is defined %}
+    vni-options {
+{%   for vname in vxlan.vlans if vlans[vname].vni is defined %}
+{%     set vlan = vlans[vname] %}
+        vni {{ vlan.vni }} {
+            vrf-target target:{{ vlan.evpn.import[0] }};
+        }
+{%   endfor %}
+    }
+{% endif %}
+  }
+}
+{% endif %}
+
+{% if vlans is defined and vxlan is defined and not evpn._junos_default_macvrf|default(False) %}
 vlans {
 {%   for vname,v in vlans.items() if v.evpn.evi is defined and v.evpn.bundle is not defined %}
   delete: {{ vname }};
@@ -66,7 +86,7 @@ routing-instances {
       evpn {
         encapsulation vxlan;
         default-gateway no-gateway-community;
-        extended-vni-list all;     
+        extended-vni-list all;
       }
     }
   }
