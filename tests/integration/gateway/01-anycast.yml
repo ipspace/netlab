@@ -11,7 +11,7 @@ defaults.interfaces.mtu: 1500
 vlans:
   edge:
     gateway: True
-    links: [ h1-dut, dut-x1, x1-h2 ]
+    links: [ h1-dut, h3-dut, dut-x1, x1-h2 ]
     prefix:
       ipv4: 172.16.33.0/24
       ipv6: 2001:db8:cafe:33::/64
@@ -19,10 +19,10 @@ vlans:
 groups:
   probes:
     provider: clab
-    members: [ h1, h2, x1 ]
+    members: [ h1, h2, h3, x1 ]
     device: frr
   probe_hosts:
-    members: [ h1, h2 ]
+    members: [ h1, h2, h3 ]
     module: [ routing ]
     role: host
     routing.static:
@@ -44,7 +44,7 @@ prefix:
     ipv4: 172.16.44.0/24
     ipv6: 2001:db8:cafe:44::/64
 
-nodes: [ dut, x1, h1, h2, th ]
+nodes: [ dut, x1, h1, h2, h3, th ]
 
 links:
 - interfaces: [ dut, x1, th ]
@@ -66,6 +66,10 @@ validate:
     wait_msg: Waiting for STP to enable VLAN ports
     nodes: [ h1, h2 ]
     plugin: ping('th',af='ipv4')
+  ping_h3_gw:
+    description: IPv4 ping target from H1/H2
+    nodes: [ h3 ]
+    plugin: ping(nodes.h3.interfaces[0].gateway.ipv4)
   ping_h1_v6:
     level: warning
     description: IPv6 ping target from H1/H2
@@ -89,28 +93,28 @@ validate:
   ping_dup:
     description: Check for duplicate packets
     nodes: [ h1, h2 ]
-    devices: [ frr ]
+    devices: [ frr, linux ]
     exec: ping -4 th -c 2
     valid: |
       'DUP' not in stdout
   trace_h1:
     description: Traceroute H1-TH (should go over DUT not X1)
     nodes: [ h1 ]
-    devices: [ frr ]
+    devices: [ frr, linux ]
     exec: traceroute -4 -w 1 -q 2 th
     valid: |
       'th' in stdout and 'x1' not in stdout
   trace_h2:
     description: Traceroute H2-TH (should go over X1 not DUT)
     nodes: [ h2 ]
-    devices: [ frr ]
+    devices: [ frr, linux ]
     exec: traceroute -4 -w 1 -q 2 th
     valid: |
       'th' in stdout and 'dut' not in stdout
   arp:
     description: Check the ARP entry for the anycast gateway
-    nodes: [ h1 ]
-    devices: [ frr ]
+    nodes: [ h1, h3 ]
+    devices: [ frr, linux ]
     exec: arp -n {{ interfaces[0].gateway.ipv4|ipaddr('address') }}
     valid: |
       '02:00:ca:fe:c0:01' in stdout
