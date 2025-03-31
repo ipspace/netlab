@@ -32,6 +32,26 @@ protocols {
   }
 }
 
+{% if vlans is defined %}
+policy-options {
+{%   for dir in ['import', 'export'] %}
+{%     for vname,vdata in vlans.items() if vdata.evpn[dir]|default([])|length > 1 %}
+  community evpn-vlan-{{ vname }}-{{ dir }} members [ target:{{ " target:".join(vdata.evpn[dir]) }} ];
+  policy-statement evpn-vlan-{{ vname }}-{{ dir }} {
+{%       if dir == 'import' %}
+    from community evpn-vlan-{{ vname }}-{{ dir }};
+{%       endif %}
+    then {
+{%       if dir == 'export' %}
+      community add evpn-vlan-{{ vname }}-{{ dir }};
+{%       endif %}
+      accept;
+    }
+  }
+{%     endfor %}
+{%   endfor %}
+}
+{% endif %}
 {% if vxlan is defined and evpn._junos_default_macvrf|default(False) %}
 protocols {
   evpn {
@@ -66,8 +86,14 @@ routing-instances {
     service-type vlan-based;
     vtep-source-interface {{ vxlan.vtep_interface }};
     route-distinguisher {{ v.evpn.rd }};
-    vrf-target import {% for t in v.evpn.import %}target:{{ t }} {% endfor -%};
-    vrf-target export {% for t in v.evpn.export %}target:{{ t }} {% endfor -%};
+{%     for dir in ['import', 'export'] %}
+{%       set tlist_len = v.evpn[dir]|default([])|length %}
+{%       if tlist_len == 1 %}
+    vrf-target {{ dir }} target:{{ v.evpn[dir][0] }};
+{%       elif tlist_len > 1 %}
+    vrf-{{ dir }} evpn-vlan-{{ vname }}-{{ dir }};
+{%       endif %}
+{%     endfor %}
 {%   for intf in interfaces if intf.vlan.access|default('') == vname %}
     interface {{ intf.ifname }};
 {%   endfor %}
