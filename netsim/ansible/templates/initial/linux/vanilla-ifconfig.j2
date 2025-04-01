@@ -1,0 +1,18 @@
+{% macro ifconfig(intf) %}
+{% if intf.ipv4 is defined and intf.ipv4 is string %}
+set +e
+ip addr del {{ intf.ipv4 }} dev {{ intf.ifname }} 2>/dev/null
+set -e
+ip addr add {{ intf.ipv4 }} dev {{ intf.ifname }}
+{% endif %}
+{% if intf.ipv6 is defined and intf.ipv6 is string %}
+sysctl -w net.ipv6.conf.{{ intf.ifname }}.disable_ipv6=0
+set +e
+ip -6 addr del {{ intf.ipv6 }} dev {{ intf.ifname }} 2>/dev/null
+set -e
+ip -6 addr add {{ intf.ipv6 }} dev {{ intf.ifname }}
+{% endif %}
+{% if intf.mtu is defined %}
+ip link set dev {{ intf.ifname }} mtu {{ intf.mtu }}
+{% endif %}
+{% endmacro %}

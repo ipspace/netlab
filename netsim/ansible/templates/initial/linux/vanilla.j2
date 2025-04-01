@@ -1,4 +1,5 @@
 {% from "initial/linux/create-bond.j2" import create_bond_dev %}
+{% from "initial/linux/vanilla-ifconfig.j2" import ifconfig %}
 
 ### One-Shot configuration (non-Ubuntu VM or container)
 #
@@ -8,47 +9,25 @@
 sysctl -w net.ipv4.ip_forward={{ pkt_fwd }}
 sysctl -w net.ipv6.conf.all.forwarding={{ pkt_fwd }}
 {% if loopback is defined %}
-#
-# Loopback addressing
-#
-{%   if 'ipv4' in loopback %}
-set +e
-ip addr del {{ loopback.ipv4 }} dev lo 2>/dev/null
-set -e
-ip addr add {{ loopback.ipv4 }} dev lo
-{%   endif %}
-{%   if 'ipv6' in loopback %}
-sysctl -w net.ipv6.conf.lo.disable_ipv6=0
-set +e
-ip -6 addr del {{ loopback.ipv6 }} dev lo 2>/dev/null
-set -e
-ip -6 addr add {{ loopback.ipv6 }} dev lo
-{%   endif %}
+{{ ifconfig(loopback) }}
 {% endif %}
 #
 # Interface addressing, create any bond devices
 #
-{% for l in interfaces|default([]) %}
-{%   if l.type in ['lag','bond'] %}
-{{     create_bond_dev(l,node_provider) }}
+{% for intf in interfaces if intf.type in ['lan','p2p','stub','lag','bond'] %}
+{%   if intf.type in ['loopback','stub','lag','bond'] %}
+if [ ! -e /sys/class/net/{{ intf.ifname }} ]; then
+  if [ ! -e /sys/devices/virtual/net/{{ intf.ifname }} ]; then
+{%   if intf.type in ['lag','bond'] %}
+{{     create_bond_dev(intf,node_provider) }}
+{%   else %}
+    ip link add {{ intf.ifname }} type dummy
 {%   endif %}
-ip link set dev {{ l.ifname }} up
-{% if l.ipv4 is defined and l.ipv4 is string %}
-set +e
-ip addr del {{ l.ipv4 }} dev {{ l.ifname }} 2>/dev/null
-set -e
-ip addr add {{ l.ipv4 }} dev {{ l.ifname }}
-{% endif %}
-{% if l.ipv6 is defined and l.ipv6 is string %}
-sysctl -w net.ipv6.conf.{{ l.ifname }}.disable_ipv6=0
-set +e
-ip -6 addr del {{ l.ipv6 }} dev {{ l.ifname }} 2>/dev/null
-set -e
-ip -6 addr add {{ l.ipv6 }} dev {{ l.ifname }}
-{% endif %}
-{% if l.mtu is defined %}
-ip link set dev {{ l.ifname }} mtu {{ l.mtu }}
-{% endif %}
+  fi
+fi
+{%   endif %}
+ip link set dev {{ intf.ifname }} up
+{{ ifconfig(intf) }}
 {% endfor %}
 #
 # Add static routes (usually IPv4 routes pointing to the first usable gateway)
