@@ -805,7 +805,12 @@ def set_interface_name(ifdata: Box, link: Box, ifcnt: int) -> None:
     ifdata.name = link.name
     return
 
-  node_name = link.interfaces[ifcnt].node
+  link_iface = link.interfaces[ifcnt]
+  if 'name' in link_iface:
+    ifdata.name = link_iface.name
+    return
+
+  node_name = link_iface.node
   n_list = [ link.interfaces[i].node for i in range(0,len(link.interfaces)) if i != ifcnt ]
   ifdata.name = create_ifname(node_name,n_list)
 
