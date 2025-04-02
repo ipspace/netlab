@@ -1,4 +1,5 @@
 {% from "initial/linux/create-bond.j2" import create_bond_dev %}
+{% from "initial/linux/vanilla-ifconfig.j2" import ifconfig %}
 
 ### One-Shot configuration (non-Ubuntu VM or container)
 #
@@ -8,88 +9,23 @@
 sysctl -w net.ipv4.ip_forward={{ pkt_fwd }}
 sysctl -w net.ipv6.conf.all.forwarding={{ pkt_fwd }}
 {% if loopback is defined %}
-#
-# Loopback addressing
-#
-{%   if 'ipv4' in loopback %}
-set +e
-ip addr del {{ loopback.ipv4 }} dev lo 2>/dev/null
-set -e
-ip addr add {{ loopback.ipv4 }} dev lo
-{%   endif %}
-{%   if 'ipv6' in loopback %}
-sysctl -w net.ipv6.conf.lo.disable_ipv6=0
-set +e
-ip -6 addr del {{ loopback.ipv6 }} dev lo 2>/dev/null
-set -e
-ip -6 addr add {{ loopback.ipv6 }} dev lo
-{%   endif %}
+{{ ifconfig(loopback) }}
 {% endif %}
 #
 # Interface addressing, create any bond devices
 #
-{% for l in interfaces|default([]) %}
-{%   if l.type in ['lag','bond'] %}
-{{     create_bond_dev(l,node_provider) }}
+{% for intf in interfaces if intf.type in ['lan','p2p','stub','lag','bond'] %}
+{%   if intf.type in ['loopback','stub','lag','bond'] %}
+if [ ! -e /sys/class/net/{{ intf.ifname }} ]; then
+  if [ ! -e /sys/devices/virtual/net/{{ intf.ifname }} ]; then
+{%   if intf.type in ['lag','bond'] %}
+{{     create_bond_dev(intf,node_provider) }}
+{%   else %}
+    ip link add {{ intf.ifname }} type dummy
 {%   endif %}
-ip link set dev {{ l.ifname }} up
-{% if l.ipv4 is defined and l.ipv4 is string %}
-set +e
-ip addr del {{ l.ipv4 }} dev {{ l.ifname }} 2>/dev/null
-set -e
-ip addr add {{ l.ipv4 }} dev {{ l.ifname }}
-{% endif %}
-{% if l.ipv6 is defined and l.ipv6 is string %}
-sysctl -w net.ipv6.conf.{{ l.ifname }}.disable_ipv6=0
-set +e
-ip -6 addr del {{ l.ipv6 }} dev {{ l.ifname }} 2>/dev/null
-set -e
-ip -6 addr add {{ l.ipv6 }} dev {{ l.ifname }}
-{% endif %}
-{% if l.mtu is defined %}
-ip link set dev {{ l.ifname }} mtu {{ l.mtu }}
-{% endif %}
-{% endfor %}
-#
-# Add static routes (usually IPv4 routes pointing to the first usable gateway)
-#
-{% set sr_list = routing.static|default([]) %}
-{% for pfx in sr_list|map(attribute='ipv4',default='')|unique if pfx %}
-{%   if loop.first %}
-echo Removing existing IPv4 routes
+  fi
+fi
 {%   endif %}
-while ip route del {{ pfx }} 2>/dev/null; do
-  : ; done
+ip link set dev {{ intf.ifname }} up
+{{ ifconfig(intf) }}
 {% endfor %}
-#
-{% for pfx in sr_list|map(attribute='ipv6',default='')|unique if pfx %}
-{%   if loop.first %}
-set +e
-echo Removing existing IPv6 routes
-{%   endif %}
-while ip route del {{ pfx }} 2>/dev/null; do
-  : ; done
-{% endfor %}
-#
-{% macro sr_add(sr_entry) %}
-{%   for sr_af in ['ipv4','ipv6'] if sr_af in sr_entry %}
-ip route {{ 'append' if sr_entry.nexthop.idx else 'add' }} {{ sr_entry[sr_af] }} via {{ 
-  sr_entry.nexthop[sr_af] }}{{ ' dev '+sr_entry.nexthop.intf if 'intf' in sr_entry.nexthop else '' }} protocol static
-{%   endfor %}
-{% endmacro %}
-{% for sr_entry in sr_list if 'intf' in sr_entry.nexthop %}
-{%   if loop.first %}
-echo Adding direct static routes
-{%   endif %}
-{{ sr_add(sr_entry) -}}
-{% endfor %}
-{% for sr_entry in sr_list if 'intf' not in sr_entry.nexthop %}
-{%   if loop.first %}
-echo Adding indirect static routes
-set -x
-{%   endif %}
-{{ sr_add(sr_entry) -}}
-{% endfor %}
-#
-# Print the final routing table
-ip route
