@@ -1,0 +1,38 @@
+#
+# Add static routes (usually IPv4 routes pointing to the first usable gateway)
+#
+{% macro sr_add(sr_entry) %}
+{%   for sr_af in ['ipv4','ipv6'] if sr_af in sr_entry %}
+ip route {{ 'append' if sr_entry.nexthop.idx else 'add' }} {{ sr_entry[sr_af] }} via {{ 
+  sr_entry.nexthop[sr_af] }}{{ ' dev '+sr_entry.nexthop.intf if 'intf' in sr_entry.nexthop else '' }} protocol static
+{%   endfor %}
+{% endmacro %}
+#
+{% set sr_list = routing.static|default([]) %}
+{% for pfx in sr_list|map(attribute='ipv4',default='')|unique if pfx %}
+{%   if loop.first %}
+echo Removing existing IPv4 routes
+{%   endif %}
+while ip route del {{ pfx }} 2>/dev/null; do
+  : ; done
+{% endfor %}
+#
+{% for pfx in sr_list|map(attribute='ipv6',default='')|unique if pfx %}
+{%   if loop.first %}
+set +e
+echo Removing existing IPv6 routes
+{%   endif %}
+while ip route del {{ pfx }} 2>/dev/null; do
+  : ; done
+{% endfor %}
+#
+#
+{% for sr_entry in sr_list if 'intf' in sr_entry.nexthop %}
+{%   if loop.first %}
+echo Adding direct static routes
+{%   endif %}
+{{ sr_add(sr_entry) -}}
+{% endfor %}
+#
+# Print the final routing table
+ip route

@@ -1,0 +1,33 @@
+# netplan static route configuration
+#
+{% if routing.static|default([]) %}
+{%   set sr_iflist = routing.static|map(attribute='nexthop.intf',default='')|unique %}
+{%   for intf in interfaces|default([]) if intf.ifname in sr_iflist %}
+cat <<SCRIPT > /etc/netplan/11-routes-{{ intf.ifname }}.yaml
+network:
+  version: 2
+  renderer: networkd
+{%     if intf.type in ['lag','bond'] %}
+  bonds:
+{%     else %}
+  ethernets:
+{%     endif %}
+    {{ intf.ifname }}:
+{%     for sr_entry in routing.static if sr_entry.nexthop.intf|default('') == intf.ifname %}
+{%       if loop.first %}
+      routes:
+{%       endif %}
+{%       for sr_af in ['ipv4','ipv6'] if sr_af in sr_entry %}
+      - to: {{ sr_entry[sr_af] }}
+        via: {{ sr_entry.nexthop[sr_af] }}
+{%       endfor %}
+{%     endfor %}
+SCRIPT
+{%   endfor %}
+{% endif %}
+chmod 600 /etc/netplan/*
+
+echo -n 'Starting netplan generate ' && date
+netplan generate
+echo -n 'Starting netplan apply ' && date
+nohup netplan apply &
