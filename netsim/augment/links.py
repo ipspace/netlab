@@ -10,6 +10,7 @@ from box import Box
 # Related modules
 from ..utils import log,strings
 from .. import data
+from ..modules import get_effective_module_attribute
 from ..data.validate import validate_attributes,get_object_attributes
 from ..data.types import must_be_string,must_be_list,must_be_dict,must_be_id
 from ..data.global_vars import get_const
@@ -801,11 +802,12 @@ def create_ifname(node_name: str, ngb_list: typing.List[str],p2p_OK: bool = True
   return ifname
 
 def set_interface_name(ifdata: Box, link: Box, ifcnt: int) -> None:
-  if 'name' in link:
-    ifdata.name = link.name
+  link_iface = link.interfaces[ifcnt]
+  ifdata.name = get_effective_module_attribute('name',intf=link_iface,link=link)
+  if ifdata.name:
     return
 
-  node_name = link.interfaces[ifcnt].node
+  node_name = link_iface.node
   n_list = [ link.interfaces[i].node for i in range(0,len(link.interfaces)) if i != ifcnt ]
   ifdata.name = create_ifname(node_name,n_list)
 
