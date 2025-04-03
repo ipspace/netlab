@@ -53,14 +53,14 @@
 (platform-host)=
 Most devices behave as routers (or layer-3 switches); the following devices can take multiple roles or behave as [IP hosts](node-router-host):
 
-| Device | router | host |
-|-----------------------|:--:|:--:|
-| Arista EOS            | ✅ | ✅ |
-| Bird                  | ✅ | ✅ |
-| Cisco IOS/IOS XE[^18v]| ✅ | ✅ |
-| dnsmasq               | ❌  | ✅ |
-| FRRouting             | ✅ | ✅ |
-| Generic Linux         | ❌  | ✅ |
+| Device | router | host | bridge |
+|-----------------------|:--:|:--:| :--:|
+| Arista EOS            | ✅ | ✅ | ✅ |
+| Bird                  | ✅ | ✅ | ❌  |
+| Cisco IOS/IOS XE[^18v]| ✅ | ✅ | ✅ |
+| dnsmasq               | ❌  | ✅ | ❌  |
+| FRRouting             | ✅ | ✅ | ❌  |
+| Generic Linux         | ❌  | ✅ | ❌  |
 
 **Notes:**
 
