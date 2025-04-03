@@ -111,6 +111,21 @@ def check_evpn_ebgp(node: Box, topology: Box) -> None:
           category=log.IncorrectType,
           quirk='evpn_ebgp')
 
+def default_originate_check(node: Box, topology: Box) -> None:
+  # If BGP is enabled, and there is at least one peer with default-originate, then we need to create the default route discard
+  if 'bgp' not in node.get('module',[]):
+    return
+  for ngb in node.get('bgp.neighbors',[]):
+    if ngb.get('default_originate', False):
+      node.bgp._junos_default_originate = True
+      break
+  if 'vrf' in node.get('module',[]):
+    for vname,vdata in node.vrfs.items():
+      for ngb in vdata.get('bgp.neighbors', []):
+        if ngb.get('default_originate', False):
+          vdata.bgp._junos_default_originate = True
+          break
+
 class JUNOS(_Quirks):
 
   @classmethod
@@ -120,3 +135,4 @@ class JUNOS(_Quirks):
     fix_unit_0(node,topology)
     check_multiple_loopbacks(node,topology)
     check_evpn_ebgp(node,topology)
+    default_originate_check(node,topology)
