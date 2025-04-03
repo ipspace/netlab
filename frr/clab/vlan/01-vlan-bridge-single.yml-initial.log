@@ -82,8 +82,8 @@ skipping: [h2]
 skipping: [h3]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [h1]
 ok: [s1]
+ok: [h1]
 ok: [h2]
 ok: [h3]
 
@@ -233,6 +233,14 @@ ok: [s1] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -267,12 +275,18 @@ ok: [s1] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+    ip link set eth2 down
     sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
     ip link set dev eth2 mtu 1500
+    ip link set eth2 up
+    ip link set eth3 down
     sysctl -qw net.ipv6.conf.eth3.disable_ipv6=1
     ip link set dev eth3 mtu 1500
+    ip link set eth3 up
   
     #
     # Add vtysh.conf file
@@ -284,6 +298,7 @@ ok: [s1] =>
     cat >/tmp/config <<CONFIG
     hostname s1
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -349,8 +364,8 @@ ok: [h2]
 ok: [h3]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h3 -> localhost]
 changed: [h1 -> localhost]
+changed: [h3 -> localhost]
 changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
@@ -373,10 +388,10 @@ changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-u92pfq32.sh] ***********************
-changed: [h2 -> localhost]
-changed: [h3 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-6_acy4ge.sh] ***********************
 changed: [h1 -> localhost]
+changed: [h3 -> localhost]
+changed: [h2 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -385,6 +400,7 @@ ok: [s1]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1 => (item=vlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1 => (item=routing)
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [s1]
@@ -408,14 +424,14 @@ ok: [s1] =>
     set -e # Exit immediately when any command fails
     #
     if [ ! -e /sys/devices/virtual/net/vlan700 ]; then
-      brctl addbr vlan700
+      ip link add vlan700 type bridge
       ip link set dev vlan700 address 52:dc:ca:fd:04:00
   
       ip addr flush dev vlan700
     fi
   
-    brctl addif vlan700 eth2
-    brctl addif vlan700 eth3
+    ip link set dev eth2 master vlan700
+    ip link set dev eth3 master vlan700
   
     ip link set dev vlan700 up
     exit 0
@@ -435,6 +451,24 @@ changed: [s1]
 TASK [run vtysh to import vlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/frr.j2] ***
 skipping: [s1]
 
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [s1]
+
+TASK [Find configuration template for routing] *********************************
+skipping: [s1]
+
+TASK [fail] ********************************************************************
+skipping: [s1]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [s1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [s1]
+
+TASK [Deploy routing configuration] ********************************************
+skipping: [s1]
+
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
@@ -442,7 +476,7 @@ PLAY RECAP *********************************************************************
 h1                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 h2                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 h3                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-s1                         : ok=27   changed=5    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+s1                         : ok=29   changed=5    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
 
 
 

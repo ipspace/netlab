@@ -210,6 +210,14 @@ ok: [ros] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -244,8 +252,10 @@ ok: [ros] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1600
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -257,6 +267,7 @@ ok: [ros] =>
     cat >/tmp/config <<CONFIG
     hostname ros
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -305,6 +316,14 @@ ok: [s1] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -339,12 +358,18 @@ ok: [s1] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1600
+    ip link set eth1 up
+    ip link set eth2 down
     sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
     ip link set dev eth2 mtu 1500
+    ip link set eth2 up
+    ip link set eth3 down
     sysctl -qw net.ipv6.conf.eth3.disable_ipv6=1
     ip link set dev eth3 mtu 1500
+    ip link set eth3 up
   
     #
     # Add vtysh.conf file
@@ -356,6 +381,7 @@ ok: [s1] =>
     cat >/tmp/config <<CONFIG
     hostname s1
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -430,8 +456,8 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
@@ -449,7 +475,7 @@ TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/a
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-ikvw5jit.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-5_rn_2he.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -461,6 +487,7 @@ ok: [s1]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ros, s1 => (item=vlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ros, s1 => (item=routing)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ros, s1 => (item=ospf)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ros, s1 => (item=vrf)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ros, s1 => (item=vxlan)
@@ -491,7 +518,7 @@ ok: [ros] =>
     set -e # Exit immediately when any command fails
     #
     if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
-      brctl addbr vlan1000
+      ip link add vlan1000 type bridge
       ip link set dev vlan1000 address 52:dc:ca:fd:02:00
   
       ip link set dev vlan1000 mtu 1500
@@ -499,7 +526,7 @@ ok: [ros] =>
       ip addr add 172.16.0.2/24 dev vlan1000
     fi
     if [ ! -e /sys/devices/virtual/net/vlan1001 ]; then
-      brctl addbr vlan1001
+      ip link add vlan1001 type bridge
       ip link set dev vlan1001 address 52:dc:ca:fd:02:01
   
       ip link set dev vlan1001 mtu 1500
@@ -520,20 +547,20 @@ ok: [s1] =>
     set -e # Exit immediately when any command fails
     #
     if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
-      brctl addbr vlan1000
+      ip link add vlan1000 type bridge
       ip link set dev vlan1000 address 52:dc:ca:fd:01:00
   
       ip addr flush dev vlan1000
     fi
     if [ ! -e /sys/devices/virtual/net/vlan1001 ]; then
-      brctl addbr vlan1001
+      ip link add vlan1001 type bridge
       ip link set dev vlan1001 address 52:dc:ca:fd:01:01
   
       ip addr flush dev vlan1001
     fi
   
-    brctl addif vlan1000 eth2
-    brctl addif vlan1001 eth3
+    ip link set dev eth2 master vlan1000
+    ip link set dev eth3 master vlan1001
   
     ip link set dev vlan1000 up
     ip link set dev vlan1001 up
@@ -555,6 +582,30 @@ changed: [s1]
 changed: [ros]
 
 TASK [run vtysh to import vlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/frr.j2] ***
+skipping: [ros]
+skipping: [s1]
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [ros]
+ok: [s1]
+
+TASK [Find configuration template for routing] *********************************
+skipping: [ros]
+skipping: [s1]
+
+TASK [fail] ********************************************************************
+skipping: [ros]
+skipping: [s1]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [ros]
+skipping: [s1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [ros]
+skipping: [s1]
+
+TASK [Deploy routing configuration] ********************************************
 skipping: [ros]
 skipping: [s1]
 
@@ -636,8 +687,8 @@ TASK [Deploy ospf configuration] ***********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for ros, s1
 
 TASK [template] ****************************************************************
-changed: [ros]
 changed: [s1]
+changed: [ros]
 
 TASK [set_fact] ****************************************************************
 ok: [ros]
@@ -648,8 +699,8 @@ skipping: [ros]
 skipping: [s1]
 
 TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [s1]
 changed: [ros]
+changed: [s1]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [ros]
@@ -780,11 +831,12 @@ ok: [ros] =>
     #
     # Add it to the VLAN bridge (create if needed for l3 vnis); disable STP
     if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
-    brctl addbr vlan1000
+    ip link add vlan1000 type bridge
     ip link set up dev vlan1000
     fi
-    brctl addif vlan1000 vxlan101000
-    brctl stp vlan1000 off
+    ip link set dev vxlan101000 master vlan1000
+    ip link set vlan1000 type bridge stp_state 0
+  
     # Do not generate ipv6 link-local address for VXLAN devices
     ip link set mtu 1500 addrgenmode none dev vxlan101000
     ip link set up dev vxlan101000
@@ -798,11 +850,12 @@ ok: [ros] =>
     #
     # Add it to the VLAN bridge (create if needed for l3 vnis); disable STP
     if [ ! -e /sys/devices/virtual/net/vlan1001 ]; then
-    brctl addbr vlan1001
+    ip link add vlan1001 type bridge
     ip link set up dev vlan1001
     fi
-    brctl addif vlan1001 vxlan101001
-    brctl stp vlan1001 off
+    ip link set dev vxlan101001 master vlan1001
+    ip link set vlan1001 type bridge stp_state 0
+  
     # Do not generate ipv6 link-local address for VXLAN devices
     ip link set mtu 1500 addrgenmode none dev vxlan101001
     ip link set up dev vxlan101001
@@ -831,11 +884,12 @@ ok: [s1] =>
     #
     # Add it to the VLAN bridge (create if needed for l3 vnis); disable STP
     if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
-    brctl addbr vlan1000
+    ip link add vlan1000 type bridge
     ip link set up dev vlan1000
     fi
-    brctl addif vlan1000 vxlan101000
-    brctl stp vlan1000 off
+    ip link set dev vxlan101000 master vlan1000
+    ip link set vlan1000 type bridge stp_state 0
+  
     # Do not generate ipv6 link-local address for VXLAN devices
     ip link set mtu 1500 addrgenmode none dev vxlan101000
     ip link set up dev vxlan101000
@@ -849,11 +903,12 @@ ok: [s1] =>
     #
     # Add it to the VLAN bridge (create if needed for l3 vnis); disable STP
     if [ ! -e /sys/devices/virtual/net/vlan1001 ]; then
-    brctl addbr vlan1001
+    ip link add vlan1001 type bridge
     ip link set up dev vlan1001
     fi
-    brctl addif vlan1001 vxlan101001
-    brctl stp vlan1001 off
+    ip link set dev vxlan101001 master vlan1001
+    ip link set vlan1001 type bridge stp_state 0
+  
     # Do not generate ipv6 link-local address for VXLAN devices
     ip link set mtu 1500 addrgenmode none dev vxlan101001
     ip link set up dev vxlan101001
@@ -874,8 +929,8 @@ ok: [ros]
 ok: [s1]
 
 TASK [run /tmp/config.sh to deploy vxlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vxlan/frr.j2] ***
-changed: [s1]
 changed: [ros]
+changed: [s1]
 
 TASK [run vtysh to import vxlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vxlan/frr.j2] ***
 skipping: [ros]
@@ -887,8 +942,8 @@ skipping: no hosts matched
 PLAY RECAP *********************************************************************
 h1                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 h2                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-ros                        : ok=54   changed=11   unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
-s1                         : ok=46   changed=8    unreachable=0    failed=0    skipped=18   rescued=0    ignored=0   
+ros                        : ok=56   changed=11   unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+s1                         : ok=48   changed=8    unreachable=0    failed=0    skipped=23   rescued=0    ignored=0   
 
 
 
