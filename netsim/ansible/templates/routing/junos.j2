@@ -1,0 +1,31 @@
+{% if routing.prefix|default({}) %}
+{%   include '_prefix_list_junos.j2' %}
+{% endif %}
+
+{% if routing.aspath|default({}) %}
+policy-options {
+}
+{%   for asp_name,asp_list in routing.aspath.items() %}
+  as-path-group {{ asp_name }} {
+{%     for asp_line in asp_list %}
+{# WARNING: asp_line.action not usable - a quirk will warn the user #}
+    as-path {{ asp_name }}-{{ asp_line.sequence }} "{{ asp_line.path }}";
+{%     endfor %}
+  }
+{%   endfor %}
+}
+{% endif %}
+
+{% if routing.community|default({}) %}
+{%   for c_name,c_value in routing.community.items() %}
+{%     for c_line in c_value.value %}
+{# WARNING: c_line.action not usable #}
+policy-options community {{ c_name }} members [ "{{ c_line._value }}" ];
+{%     endfor %}
+{%   endfor %}
+{% endif %}
+
+{% if routing.policy|default({}) %}
+{%   import '_route_policy_junos.j2' as routemap with context %}
+{{   routemap.create_route_maps(routing.policy) }}
+{% endif %}

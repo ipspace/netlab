@@ -309,6 +309,12 @@ diag debug application httpsd -1
     * On vPTX, the virtual MAC address is ignored. Hence, the integration test is failing. Removing the support for anycast gateway for now.
     * Anycast Gateway cannot be tested on vSRX as it does not support the VLAN IRB configuration.
 
+* Routing import/export filters *currently* have the following caveats (reported as errors in device quirks):
+
+    * *prefix-list* items cannot have *min*/*max* items (*ge*/*le*-equivalent)
+    * *as-path* items cannot have deny items
+    * *community* match cannot have deny items
+
 (caveats-vmx)=
 ## Juniper vMX
 

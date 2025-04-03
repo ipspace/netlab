@@ -126,6 +126,43 @@ def default_originate_check(node: Box, topology: Box) -> None:
           vdata.bgp._junos_default_originate = True
           break
 
+def check_routing_policy_quirks(node: Box, topology: Box) -> None:
+  if 'routing' not in node.get('module',[]):
+    return
+  # prefix-list cannot directly use ge/le
+  for pl_name, pl_list in node.routing.get('prefix', {}).items():
+    for pl_item in pl_list:
+      if 'min' in pl_item or 'max' in pl_item:
+        report_quirk(
+          f'JunOS prefix-list items cannot have min/max items (node {node.name} prefix-list {pl_name})',
+          node=node,
+          category=log.IncorrectValue,
+          quirk='routing_prefixlist_min_max',
+          module='junos'
+        )
+  # AS-PATH cannot directly have action "deny"
+  for asp_name,asp_list in node.routing.get('aspath', {}).items():
+    for asp_item in asp_list:
+      if asp_item.get('action', '') == 'deny':
+        report_quirk(
+          f'JunOS as-path items cannot have deny items (node {node.name} as-path {asp_name})',
+          node=node,
+          category=log.IncorrectValue,
+          quirk='routing_aspath_deny',
+          module='junos'
+        )
+  # Community match cannot directly have action "deny"
+  for c_name,c_list in node.routing.get('community', {}).items():
+    for c_item in c_list.value:
+      if c_item.get('action', '') == 'deny':
+        report_quirk(
+          f'JunOS community match cannot have deny items (node {node.name} community {c_name})',
+          node=node,
+          category=log.IncorrectValue,
+          quirk='routing_community_deny',
+          module='junos'
+        )
+
 class JUNOS(_Quirks):
 
   @classmethod
@@ -135,4 +172,5 @@ class JUNOS(_Quirks):
     fix_unit_0(node,topology)
     check_multiple_loopbacks(node,topology)
     check_evpn_ebgp(node,topology)
+    check_routing_policy_quirks(node,topology)
     default_originate_check(node,topology)
