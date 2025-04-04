@@ -1,0 +1,249 @@
+bgp:
+  advertise_loopback: true
+  as: 65000
+  community:
+    ebgp:
+    - standard
+    ibgp:
+    - standard
+    - extended
+  next_hop_self: true
+groups:
+  as65000:
+    members:
+    - r1
+    - r2
+input:
+- topology/input/bgp-vlan.yml
+- package:topology-defaults.yml
+links:
+- _linkname: links[1]
+  interfaces:
+  - _vlan_mode: route
+    bgp:
+      local_as: 65001
+    ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.1/30
+    node: r1
+    vlan:
+      access: v1
+      mode: route
+  - _vlan_mode: route
+    ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.2/30
+    node: r2
+    vlan:
+      access: v1
+      mode: route
+  linkindex: 1
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.0/30
+  type: p2p
+  vlan:
+    access: v1
+    mode: route
+module:
+- vlan
+- bgp
+name: input
+nodes:
+  r1:
+    af:
+      ipv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65000
+      community:
+        ebgp:
+        - standard
+        - large
+        ibgp:
+        - standard
+        - large
+        - extended
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      ipv4: true
+      neighbors:
+      - _source_intf:
+          ifindex: 0
+          ifname: lo
+          ipv4: 10.0.0.1/32
+          neighbors: []
+          type: loopback
+          virtual_interface: true
+        activate:
+          ipv4: true
+        as: 65000
+        ipv4: 10.0.0.2
+        name: r2
+        type: ibgp
+      - activate:
+          ipv4: true
+        as: 65000
+        ifindex: 1
+        ipv4: 10.1.0.2
+        local_as: 65001
+        name: r2
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.1
+    box: quay.io/frrouting/frr:10.2.2
+    clab:
+      binds:
+      - clab_files/r1/daemons:/etc/frr/daemons
+      - clab_files/r1/hosts:/etc/hosts
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts
+      kind: linux
+    device: frr
+    hostname: clab-input-r1
+    id: 1
+    interfaces:
+    - bgp:
+        local_as: 65001
+      bridge_group: 1
+      ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.1/30
+      linkindex: 1
+      mtu: 1500
+      name: r1 -> r2
+      neighbors:
+      - ifname: eth1
+        ipv4: 10.1.0.2/30
+        node: r2
+      type: p2p
+      vlan:
+        mode: route
+    loopback:
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.1/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.101
+      mac: 08:4f:a9:01:00:00
+    module:
+    - vlan
+    - bgp
+    mtu: 1500
+    name: r1
+    role: router
+    vlan:
+      max_bridge_group: 1
+    vlans:
+      v1:
+        bridge_group: 1
+        id: 1000
+        mode: route
+  r2:
+    af:
+      ipv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65000
+      community:
+        ebgp:
+        - standard
+        - large
+        ibgp:
+        - standard
+        - large
+        - extended
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      ipv4: true
+      neighbors:
+      - _source_intf:
+          ifindex: 0
+          ifname: lo
+          ipv4: 10.0.0.2/32
+          neighbors: []
+          type: loopback
+          virtual_interface: true
+        activate:
+          ipv4: true
+        as: 65000
+        ipv4: 10.0.0.1
+        name: r1
+        type: ibgp
+      - activate:
+          ipv4: true
+        as: 65001
+        ifindex: 1
+        ipv4: 10.1.0.1
+        name: r1
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.2
+    box: quay.io/frrouting/frr:10.2.2
+    clab:
+      binds:
+      - clab_files/r2/daemons:/etc/frr/daemons
+      - clab_files/r2/hosts:/etc/hosts
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts
+      kind: linux
+    device: frr
+    hostname: clab-input-r2
+    id: 2
+    interfaces:
+    - bridge_group: 1
+      ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.2/30
+      linkindex: 1
+      mtu: 1500
+      name: r2 -> r1
+      neighbors:
+      - bgp:
+          local_as: 65001
+        ifname: eth1
+        ipv4: 10.1.0.1/30
+        node: r1
+      type: p2p
+      vlan:
+        mode: route
+    loopback:
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.2/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.102
+      mac: 08:4f:a9:02:00:00
+    module:
+    - vlan
+    - bgp
+    mtu: 1500
+    name: r2
+    role: router
+    vlan:
+      max_bridge_group: 1
+    vlans:
+      v1:
+        bridge_group: 1
+        id: 1000
+        mode: route
+provider: clab
+vlan:
+  mode: route
+vlans:
+  v1:
+    id: 1000
