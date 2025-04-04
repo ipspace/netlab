@@ -324,7 +324,14 @@ def vrf_loopbacks(node : Box, topology: Box) -> None:
                         topology = topology)
   for vrfname,v in node.vrfs.items():
     vrf_loopback = v.get('loopback',None) or node_vrf_loopback        # Do we have VRF loopbacks enabled in the node or in the VRF?
-    if not vrf_loopback:                                              # ... nope, move on
+    if not vrf_loopback:                                              # ... nope, move on (after checking for ipv4 unnumbered)
+      unnum_ifs = [ i.ifname for i in node.interfaces if i.get('ipv4',None) is True and i.get('vrf',None)==vrfname ]
+      if unnum_ifs:
+        log.error(
+          f"VRF {vrfname} on {node.name} contains unnumbered interface(s), but there is no loopback in the VRF",
+          log.MissingDependency,
+          'vrf',
+          more_data=f"Used on interface(s) {','.join(unnum_ifs)}")
       continue
 
     # Note: set interface ifindex to v.vrfidx if you want to have VRF-numbered loopbacks
