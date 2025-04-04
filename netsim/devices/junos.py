@@ -191,6 +191,33 @@ def as_prepend_quirk(node: Box, topology: Box) -> None:
           )
           pl_item.set.prepend.path = new_path
 
+def community_set_quirk(node: Box, topology: Box) -> None:
+  mods = node.get('module',[])
+  if 'routing' not in mods or 'bgp' not in mods:
+    return
+  # JunOS policy, when setting/deleting a community, requires that the community itself is defined as 'policy-options community'
+  # Let's fake out the communities required in "then" sets
+  comm_name_prefix = "x_comm_set_"
+  # add routing.community struct if not present
+  if not 'community' in node.routing:
+    node.routing['community'] = {}
+  for pl_name, pl_list in node.routing.get('policy', {}).items():
+    for pl_item in pl_list:
+      comm_struct = pl_item.get('set.community', {})
+      if comm_struct:
+        for ct in ['standard','extended','large']:
+          for comm in comm_struct.get(ct, []):
+            # add this "fake" community to the community list
+            comm_list_name = comm_name_prefix + comm
+            comm_list_name = comm_list_name.replace(':', '_')
+            comm_list_name = comm_list_name.replace('.', '_')
+            if log.debug_active('quirks'):
+              print(f" - Found community set {comm} in policy {pl_name}, creating list {comm_list_name}")
+            node.routing.community[comm_list_name] = {
+              'type': ct,
+              'value': [{ "action": "permit", "_value": comm }],
+            }
+
 class JUNOS(_Quirks):
 
   @classmethod
@@ -202,4 +229,5 @@ class JUNOS(_Quirks):
     check_evpn_ebgp(node,topology)
     check_routing_policy_quirks(node,topology)
     as_prepend_quirk(node,topology)
+    community_set_quirk(node,topology)
     default_originate_check(node,topology)
