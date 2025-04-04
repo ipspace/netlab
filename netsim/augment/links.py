@@ -878,13 +878,9 @@ def create_node_interfaces(link: Box, addr_pools: Box, ndict: Box, defaults: Box
       # Merge neighbor module data + AF with baseline neighbor data
       ngh_data = interface_data(
                    link=remote_ifdata,
-                   link_attr=mods_with_attr.union(['ipv4','ipv6','_parent_ipv4']),
+                   link_attr=mods_with_attr.union(['ipv4','ipv6']),
                    ifdata=ngh_data)
       ifdata.neighbors.append(ngh_data)
-    #
-    # For unnumbered interfaces with single ipv4 unnumbered peer, copy peer address to simplify device templates
-    if ifdata.get('ipv4',None) is True and len(ifdata.neighbors)==1 and '_parent_ipv4' in ifdata.neighbors[0]:
-      ifdata._unnumbered_peer = ifdata.neighbors[0]._parent_ipv4
 
 """
 set_link_loopback_type: when requested, convert stub links to extra loopbacks
@@ -1254,9 +1250,26 @@ def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools:
   set_node_af(nodes)
   return link_list
 
+"""
+set_unnumbered_peers - mark IPv4 unnumbered peering links with the IP address of the peer
+
+This is done late in the process (during cleanup) in case VRFs with loopbacks are used
+"""
+def set_unnumbered_peers(topology) -> None:
+  for name,node in topology.nodes.items():
+    for intf in node.interfaces:
+      if len(intf.neighbors) != 1:
+        continue
+      if '_parent_ipv4' not in intf:
+        continue
+      peer = topology.nodes[ intf.neighbors[0].node ]
+      peer_if = [ i for i in peer.interfaces if i.ifname==intf.ifname ]
+      if peer_if and '_parent_ipv4' in peer_if[0]:
+        intf._unnumbered_peer = peer_if[0]._parent_ipv4
+
 def cleanup(topology: Box) -> None:
   if not 'links' in topology:
     return
-
+  set_unnumbered_peers(topology)
   for link in topology.links:
     link.pop('host_count',None)
