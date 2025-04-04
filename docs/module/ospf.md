@@ -138,10 +138,11 @@ OSPF routing daemons support these interface-level features:
 
 | Operating system         | Cost  | Network<br />type | Unnumbered<br />IPv4 interfaces | Passive<br />interfaces |
 | ------------------------ |:--:|:--:|:--:|:--:|
-| BIRD                     | ✅ | ✅ | ❌  | ✅ |
+| BIRD                     | ✅ | ✅ | ✅(*) | ✅ |
 
 **Notes:**
 * Routing daemons usually have a single interface. Running OSPF on them seems frivolous unless you need OSPF to get paths toward remote endpoints of IBGP sessions.
+* Unnumbered IPv4 interface support requires single unnumbered peer 
 
 (ospf-interface-optional-support)=
 These devices also support optional OSPF interface attributes:

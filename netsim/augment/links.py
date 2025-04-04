@@ -878,9 +878,13 @@ def create_node_interfaces(link: Box, addr_pools: Box, ndict: Box, defaults: Box
       # Merge neighbor module data + AF with baseline neighbor data
       ngh_data = interface_data(
                    link=remote_ifdata,
-                   link_attr=mods_with_attr.union(['ipv4','ipv6']),
+                   link_attr=mods_with_attr.union(['ipv4','ipv6','_parent_ipv4']),
                    ifdata=ngh_data)
       ifdata.neighbors.append(ngh_data)
+    #
+    # For unnumbered interfaces with single ipv4 unnumbered peer, copy peer address to simplify device templates
+    if ifdata.get('ipv4',None) is True and len(ifdata.neighbors)==1 and '_parent_ipv4' in ifdata.neighbors[0]:
+      ifdata._unnumbered_peer = ifdata.neighbors[0]._parent_ipv4
 
 """
 set_link_loopback_type: when requested, convert stub links to extra loopbacks
@@ -1035,13 +1039,21 @@ def interface_feature_check(nodes: Box, defaults: Box) -> None:
     features = devices.get_device_features(ndata,defaults)
     for ifdata in ndata.get('interfaces',[]):
       if 'ipv4' in ifdata:
-        if isinstance(ifdata.ipv4,bool) and ifdata.ipv4 and \
-            not features.initial.ipv4.unnumbered:
-          log.error(
-            text=f'Device {ndata.device} does not support unnumbered IPv4 interfaces',
-            more_hints=[ f'Used on node {node} interface {ifdata.ifname} (link {ifdata.name})' ],
-            category=log.IncorrectValue,
-            module='interfaces')
+        if isinstance(ifdata.ipv4,bool) and ifdata.ipv4:
+          if not features.initial.ipv4.unnumbered:
+            log.error(
+              text=f'Device {ndata.device} does not support unnumbered IPv4 interfaces',
+              more_hints=[ f'Used on node {node} interface {ifdata.ifname} (link {ifdata.name})' ],
+              category=log.IncorrectValue,
+              module='interfaces')
+          elif features.initial.ipv4.unnumbered == 'peer':
+            if len(ifdata.neighbors)!=1 or ifdata.neighbors[0].get('ipv4',False) is not True:
+              log.error(
+                text=f'Unnumbered interface on node {node} does not have suitable single unnumbered IPv4 peer',
+                more_hints=[ f'Used on device {ndata.device} interface {ifdata.ifname} (link {ifdata.name})' ],
+                category=log.MissingDependency,
+                module='interfaces')
+
       if 'ipv6' in ifdata:
         if isinstance(ifdata.ipv6,bool) and ifdata.ipv6 and \
             not features.initial.ipv6.lla:
