@@ -47,7 +47,12 @@
 {%   if 'match' in p_entry %}
 {%     set ipkwd = 'ip' if match_af == 'ipv4' else 'ipv6' %}
 {%     if 'prefix' in p_entry.match %}
+{#       in case a prefix has min/max, at least set 'prefix-list-filter xxx orlonger' as a form of workaround #}
+{%       if p_entry.match.prefix in routing._junos_prefix_min_max %}
+      from prefix-list-filter {{ p_entry.match.prefix }}-{{ match_af }} orlonger;
+{%       else %}
       from prefix-list {{ p_entry.match.prefix }}-{{ match_af }};
+{%       endif %}
 {%     endif %}
 {%     if 'aspath' in p_entry.match %}
       from as-path-group {{ p_entry.match.aspath }};
@@ -86,6 +91,14 @@ policy-options {
 {{     common_route_map_entry(p_entry,match_af) }}
     }
 {%   endfor %}
+
+{# last-resort reject #}
+    term default-reject {
+      then {
+        reject;
+      }
+    }
+
   }
 }
 

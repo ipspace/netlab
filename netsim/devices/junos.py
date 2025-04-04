@@ -140,6 +140,12 @@ def check_routing_policy_quirks(node: Box, topology: Box) -> None:
           quirk='routing_prefixlist_min_max',
           module='junos'
         )
+        # as a kind-of workaround, add the prefix list name to a dedicated list;
+        #  then, on the policy evaluation, use 'prefix-list-filter XXX orlonger' if the prefix-list is in the list
+        if not '_junos_prefix_min_max' in node.routing:
+          node.routing['_junos_prefix_min_max'] = []
+        node.routing['_junos_prefix_min_max'].append(pl_name)
+
   # AS-PATH cannot directly have action "deny"
   for asp_name,asp_list in node.routing.get('aspath', {}).items():
     for asp_item in asp_list:

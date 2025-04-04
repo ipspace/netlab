@@ -315,7 +315,7 @@ diag debug application httpsd -1
       (while other vendors perform the prepending first, and then add its own AS at the beginning).
       This leads other BGP peers to deny an update received from an eBGP peer that does not list its autonomous system number at the beginning of the *AS_PATH*.
       For this reason, in case we detect a prepend which does not start with the *local-as*, we automatically add it at the beginning of the *AS_PATH*.
-    * *prefix-list* items cannot have *min*/*max* items (*ge*/*le*-equivalent)
+    * *prefix-list* items cannot have *min*/*max* items (*ge*/*le*-equivalent) - as a *kind-of* workaround, if you disable this specific *quirk*, the prefix-list match will be done as `prefix-list-filter XXX orlonger`.
     * *as-path* items cannot have deny items
     * *community* match cannot have deny items
 
