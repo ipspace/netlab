@@ -298,6 +298,10 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
       if ipv4_unnum and not ipv6_num:                 # Unnumbered IPv4 without numbered IPv6
         ipv6_lla = True                               # ... requires IPv6 LLA session
         if not 'ipv6' in l:                           # ... and IPv6 enabled on the interface
+          log.error(f"BGP module is enabling IPv6 LLA on node {node.name} interface {l.ifname} to support IPv4 unnumbered",
+                    more_data="Set 'ipv6' to True to make this warning go away",
+                    category=Warning,
+                    module='bgp')
           l.ipv6 = True
 
       if ipv6_lla:                                    # IPv6 LLA session...
