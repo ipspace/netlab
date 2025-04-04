@@ -163,6 +163,34 @@ def check_routing_policy_quirks(node: Box, topology: Box) -> None:
           module='junos'
         )
 
+def as_prepend_quirk(node: Box, topology: Box) -> None:
+  mods = node.get('module',[])
+  if 'routing' not in mods or 'bgp' not in mods:
+    return
+  # https://github.com/ipspace/netlab/issues/2113
+  # When prepending an AS number different than the local one, JunOS put the prepend as ath the beginning of the AS_PATH 
+  # (while other vendors perform the prepending first, and then add its own AS at the beginning).
+  # This leads other BGP peers to deny an update received from an eBGP peer that does not list its autonomous system number at the beginning of the AS_PATH.
+  # For this reason, in case we detect a prepend which does not start with the local-as, we add it at the beginning of the AS_PATH
+  local_as = str(node.bgp['as']) ## cannot use node.bgp.as - 'as' is reserved keyword
+  for pl_name, pl_list in node.routing.get('policy', {}).items():
+    for pl_item in pl_list:
+      if pl_item.get('set.prepend.path', ''):
+        current_path = pl_item.set.prepend.path
+        # convert to list
+        path_items = current_path.split(' ')
+        if len(path_items) > 0 and path_items[0] != local_as:
+          path_items.insert(0, local_as)
+          new_path = " ".join(path_items)
+          report_quirk(
+            f'JunOS as-path-prepend with AS different from local one requires adding the local AS at the beginning of the AS_PATH - Adding it. (node {node.name} policy {pl_name} current as-path "{current_path}" new as-path "{new_path}")',
+            node=node,
+            category=Warning,
+            quirk='routing_as_prepend_nonlocal_as',
+            module='junos'
+          )
+          pl_item.set.prepend.path = new_path
+
 class JUNOS(_Quirks):
 
   @classmethod
@@ -173,4 +201,5 @@ class JUNOS(_Quirks):
     check_multiple_loopbacks(node,topology)
     check_evpn_ebgp(node,topology)
     check_routing_policy_quirks(node,topology)
+    as_prepend_quirk(node,topology)
     default_originate_check(node,topology)
