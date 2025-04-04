@@ -18,6 +18,22 @@ protocol kernel {
 }
 {% endfor %}
 
+# Configure IPv6 Router Advertisements, if any
+{% for intf in interfaces|default([]) if 'ipv6' in intf %}
+{%   if loop.first %}
+protocol radv {
+{%   endif %}
+  interface "{{ intf.ifname }}" {
+    max ra interval 5;  # Maximum interval between RA messages, in seconds
+{%   if intf.mtu is defined %}
+    link mtu {{ intf.mtu }};
+{%   endif %}
+  };
+{%   if loop.last %}
+}
+{%   endif %}
+{% endfor %}
+
 {% for k,v in _daemon_config.items() if k != device|default(netlab_device_type) %}
 include "{{ v }}";
 {% endfor %}
