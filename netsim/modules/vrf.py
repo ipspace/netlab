@@ -314,7 +314,7 @@ def fix_vrf_unnumbered(node: Box, vrfname: str, lbdata: Box) -> None:
 def vrf_loopbacks(node : Box, topology: Box) -> None:
   loopback_name = devices.get_device_attribute(node,'loopback_interface_name',topology.defaults)
 
-  if not loopback_name:                                                        # pragma: no cover -- hope we got device settings right ;)
+  if not loopback_name:                                         # pragma: no cover -- hope we got device settings right ;)
     log.print_verbose(f'Device {node.device} used by {node.name} does not support VRF loopback interfaces - skipping assignment.')
     return
 
@@ -323,12 +323,13 @@ def vrf_loopbacks(node : Box, topology: Box) -> None:
                         node = node,
                         topology = topology)
   for vrfname,v in node.vrfs.items():
-    vrf_loopback = v.get('loopback',None) or node_vrf_loopback        # Do we have VRF loopbacks enabled in the node or in the VRF?
-    if not vrf_loopback:                                              # ... nope, move on (after checking for ipv4 unnumbered)
-      unnum_ifs = [ i.ifname for i in node.interfaces if i.get('ipv4',None) is True and i.get('vrf',None)==vrfname ]
+    vrf_loopback = v.get('loopback',None) or node_vrf_loopback  # Do we have VRF loopbacks enabled in the node or in the VRF?
+    if not vrf_loopback:                                        # ... nope, move on (after checking for ipv4 unnumbered)
+      unnum_ifs = [ i.ifname for i in node.interfaces if i.get('ipv4',None) is True and i.get('vrf',None)==vrfname
+                    and 'ospf' in i ]
       if unnum_ifs:
         log.error(
-          f"VRF {vrfname} on {node.name} contains unnumbered interface(s), but there is no loopback in the VRF",
+          f"VRF {vrfname} on {node.name} contains unnumbered interface(s) with OSPF, but there is no loopback in the VRF",
           log.MissingDependency,
           'vrf',
           more_data=f"Used on interface(s) {','.join(unnum_ifs)}")
@@ -336,13 +337,13 @@ def vrf_loopbacks(node : Box, topology: Box) -> None:
 
     # Note: set interface ifindex to v.vrfidx if you want to have VRF-numbered loopbacks
     #
-    ifdata = data.get_box({                                           # Create interface data structure
+    ifdata = data.get_box({                                       # Create interface data structure
       'type': "loopback",
       'name': f'VRF Loopback {vrfname}',
       'neighbors': [],
       'vrf': vrfname,})
 
-    links.create_virtual_interface(node,ifdata,topology.defaults)     # Use common function to create loopback interface
+    links.create_virtual_interface(node,ifdata,topology.defaults) # Use common function to create loopback interface
 
     if isinstance(vrf_loopback,bool):
       vrfaddr = addressing.get(topology.pools, ['vrf_loopback'])
