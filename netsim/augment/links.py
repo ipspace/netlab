@@ -1255,7 +1255,7 @@ set_unnumbered_peers - mark IPv4 unnumbered peering links with the IP address of
 
 This is done late in the process (during cleanup) in case VRFs with loopbacks are used
 """
-def set_unnumbered_peers(topology) -> None:
+def set_unnumbered_peers(topology: Box) -> None:
   for name,node in topology.nodes.items():
     for intf in node.interfaces:
       if len(intf.neighbors) != 1:
