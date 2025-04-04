@@ -314,7 +314,7 @@ def fix_vrf_unnumbered(node: Box, vrfname: str, lbdata: Box) -> None:
 def vrf_loopbacks(node : Box, topology: Box) -> None:
   loopback_name = devices.get_device_attribute(node,'loopback_interface_name',topology.defaults)
 
-  if not loopback_name:                                         # pragma: no cover -- hope we got device settings right ;)
+  if not loopback_name:                                           # pragma: no cover -- hope we got device settings right ;)
     log.print_verbose(f'Device {node.device} used by {node.name} does not support VRF loopback interfaces - skipping assignment.')
     return
 
@@ -323,8 +323,8 @@ def vrf_loopbacks(node : Box, topology: Box) -> None:
                         node = node,
                         topology = topology)
   for vrfname,v in node.vrfs.items():
-    vrf_loopback = v.get('loopback',None) or node_vrf_loopback  # Do we have VRF loopbacks enabled in the node or in the VRF?
-    if not vrf_loopback:                                        # ... nope, move on (after checking for ipv4 unnumbered)
+    vrf_loopback = v.get('loopback',None) or node_vrf_loopback    # Do we have VRF loopbacks enabled in the node or in the VRF?
+    if not vrf_loopback:                                          # ... nope, move on (after checking for ipv4 unnumbered)
       unnum_ifs = [ i.ifname for i in node.interfaces if i.get('ipv4',None) is True and i.get('vrf',None)==vrfname
                     and 'ospf' in i ]
       if unnum_ifs:
