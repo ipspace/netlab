@@ -316,7 +316,7 @@ diag debug application httpsd -1
       This leads other BGP peers to deny an update received from an eBGP peer that does not list its autonomous system number at the beginning of the *AS_PATH*.
       For this reason, in case we detect a prepend which does not start with the *local-as*, we automatically add it at the beginning of the *AS_PATH*.
     * *prefix-list* items cannot have *min*/*max* items (*ge*/*le*-equivalent) - as a *kind-of* workaround, if you disable this specific *quirk*, the prefix-list match will be done as `prefix-list-filter XXX orlonger`.
-    * *as-path* items cannot have deny items
+    * *as-path* items cannot have deny items. Also, remember that *as-path* regex syntax for JunOS has different rules than other vendors. I.e., a *null as-path* is represented as `()`.
     * *community* match cannot have deny items
 
 (caveats-vmx)=
