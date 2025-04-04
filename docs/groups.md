@@ -75,7 +75,7 @@ The only peculiarity of the default groups is the handling of group members:
 (groups-object-data)=
 ## Setting Object Data in Groups
 
-Sometimes, you'd like to set an attribute for all group members. For example, in a BGP anycast scenario, we should set **[bgp.advertise_loopback](module/bgp.md#advertised-bgp-prefixes)** to *false* on all anycast server -- they should advertise only the anycast prefix, not individual loopback prefixes. 
+Sometimes, you'd like to set an attribute for all group members. For example, in a BGP anycast scenario, we should set **[bgp.advertise_loopback](bgp-advertise-prefix)** to *false* on all anycast servers -- they should advertise only the shared anycast prefix, not individual loopback prefixes. 
 
 While it's perfectly OK to set the desired attribute(s) on individual nodes, it's much more convenient to specify them in a group definition -- you can use any valid node, VLAN, or VRF attribute (including configuration module attributes[^MNA]) in group definitions[^NDT].
 
@@ -275,7 +275,7 @@ The BGP module creates a node group named *asnnn* where *nnn* is the AS number f
 
 You can set inventory variables (with **vars** attribute), deployment templates (with **config** attribute), or node data on an automatic BGP group, but you cannot specify static group members.
 
-Here is a BGP anycast topology file that depends on setting node data within an automatic BGP group (the topology file uses [BGP as-list](module/bgp.md#global-bgp-configuration-parameters) functionality to specify AS membership):
+Here is a BGP anycast topology file that depends on setting node data within an automatic BGP group (the topology file uses [BGP as-list](bgp-global-parameters) functionality to specify AS membership):
 
 ```
 defaults:
@@ -439,10 +439,16 @@ groups:
 (groups-auto-create)=
 ## Create Objects From Group Members
 
-To prevent typos and duplicate names, the group **members** attribute must contain valid group-type-specific object names specified in the **nodes**, **vlans**, or **vrfs** dictionary. However, if a group contains **\_auto\_create**  attribute set to *True*, *netlab* creates missing objects from group members. You can set the **\_auto\_create** attribute:
+The group **members** attribute must contain valid group-type-specific object names specified in the **nodes**, **vlans**, or **vrfs** dictionary to prevent typos and duplicate names. However, if a group contains **\_auto\_create**  attribute set to *True*, *netlab* creates missing objects from group members. You can set the **\_auto\_create** attribute:
 
 * In individual groups. You can specify the **\_auto\_create** attribute in individual default groups to create nodes in all labs using those defaults.
 * In **groups** or **defaults.groups** dictionary. The global **\_auto\_create**  attribute does not apply to default groups.
+
+```{warning}
+The objects created from group members are added _after_ the existing objects in the **‌nodes**, **‌vlans**, or **‌vrfs** dictionary. Adding an object to these dictionaries (for example, to set a node attribute) might change the order of objects in the dictionary and impact the **‌node.id**/**‌vlan.id**/**‌vrf.id** values and subsequently interface addresses, VLAN tags, and default VRF RD/RT values.
+
+Please note that setting an object parameter with the **‌[netlab up](netlab-up)** `-s` parameter (for example, `-s nodes.s1.device=frr`) implicitly adds the specified object into the parent ‌dictionary and might change the order of objects in that dictionary if the same object were otherwise auto-created from group membership.
+```
 
 For example, due to the global **\_auto\_create** attribute, the following topology creates nodes from the members of all topology groups (**g3**). It also creates nodes from the members of the **g2** default group due to the group **\_auto\_create** attribute.
 

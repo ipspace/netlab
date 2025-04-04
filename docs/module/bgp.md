@@ -100,6 +100,7 @@ See [BGP Integration Tests Results](https://release.netlab.tools/_html/coverage.
 
 [^INTv4]: IPv4 address family activated on an EBGP session established between IPv6 LLA interfaces and using IPv6 next hop for IPv4 prefixes according to RFC 8950
 
+(bgp-global-parameters)=
 ## Global BGP Configuration Parameters
 
 You could use *global* or *per-node* parameters to configure BGP autonomous systems and route reflectors:
@@ -143,7 +144,7 @@ bgp:
 Advanced global configuration parameters include:
 
 * **bgp.community** -- configure BGP community propagation. By default, standard and extended communities are propagated to IBGP neighbors, and standard communities are propagated to EBGP neighbors. See *[BGP Community Propagation](#bgp-communities-propagation)* for more details.
-* **bgp.advertise_roles** -- a list of link types and roles. Links matching any element of the list will be advertised into BGP. See *[Advertised BGP Prefixes](#advertised-bgp-prefixes)* for details.
+* **bgp.advertise_roles** -- a list of link types and roles. Links matching any element of the list will be advertised into BGP. See *[Advertised BGP Prefixes](bgp-advertise-prefix)* for details.
 * **bgp.ebgp_role** -- link role set on links connecting nodes from different autonomous systems. See *[Interaction with IGP](#interaction-with-igp)* for details.
 * **bgp.advertise_loopback** -- when set to `True` (default), the loopback IP addresses of the default loopback interface and any other [loopback links](links-loopback) are advertised as a BGP prefix. Set it to `False` in global defaults or as a node attribute to turn off loopback prefix advertisements.
 
@@ -220,6 +221,7 @@ links:
 
 You can also [disable all EBGP sessions on an interface](routing_disable).
 
+(bgp-advertise-prefix)=
 ## Advertised BGP Prefixes
 
 The following IPv4/IPv6 prefixes are configured with **network** statements within the BGP routing process:
