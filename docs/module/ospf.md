@@ -159,6 +159,12 @@ These devices also support optional OSPF interface attributes:
 | Dell OS10                | ✅ | ✅ | ✅ | ❌  |
 | FRR                      | ✅ | ✅ | ✅ | ❌  |
 
+OSPF routing daemons support these optional OSPF interface attributes:
+
+| Operating system         | Interface<br>timers | Router<br />priority | Cleartext<br>password | MD5<br>digest |
+| ------------------------ |:--:|:--:|:--:|:--:|
+| BIRD                     | ✅ | ✅ | ✅ | ❌ |
+
 (ospf-node-parameters)=
 ## Node Parameters
 
