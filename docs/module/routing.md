@@ -30,6 +30,7 @@ The following table describes high-level per-platform support of generic routing
 | Dell OS10          | ✅ | ✅ | ✅ | ✅ | ✅ |
 | FRR                | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Linux              | ❌  | ❌  | ❌  | ❌  | ✅ |
+| Junos              | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Nokia SR Linux     |  ✅ |  ✅ [❗](caveats-srlinux) |
 | Nokia SR OS        |  ✅ |
 | VyOS               |  ✅ |  ✅ | ✅ |  ✅  |
@@ -105,6 +106,7 @@ You can use these routing policy **match** parameters on devices supported by th
 | Cisco IOS/XE[^18v]  | ✅ | ❌  | ✅ | ✅ |
 | Cumulus Linux       | ✅ | ❌  | ✅ | ✅ |
 | Dell OS10           | ✅ | ❌  | ✅ | ✅ |
+| Junos               | [✅](caveats-junos) | ❌  | [✅](caveats-junos) | [✅](caveats-junos) |
 | FRR                 | ✅ | ❌  | ✅ | ✅ |
 | Nokia SR Linux      | ✅ |
 | VyOS                | ✅ | ❌  | ✅ | ✅ |
@@ -118,6 +120,7 @@ You can use these routing policy **set** parameters on devices supported by the 
 | Cisco IOS/XE[^18v]  | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Cumulus Linux       | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Dell OS10           | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Junos               | ✅ | ✅ | ✅ | ❌  | ✅ |
 | FRR                 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Nokia SR Linux      | ❌  | ✅ | ✅ | ❌  | ❌  |
 | Nokia SR OS         | ❌  | ✅ | ✅ | ❌  | ❌  |
@@ -132,6 +135,7 @@ The **set.community** attribute can be used to set these BGP communities on supp
 | Cisco IOS/XE[^18v]  | ✅ | ❌  | ❌  | ✅ | ❌  |
 | Cumulus Linux       | ✅ | ✅ | ✅ | ✅ | ❌  |
 | Dell OS10           | ✅ | ❌ | ✅ | ✅ | ❌  |
+| Junos               | ✅ | ✅ | ✅ | ✅ | ✅ |
 | FRR                 | ✅ | ✅ | ✅ | ✅ | ❌  |
 | VyOS                | ✅ | ✅ | ✅ | ✅ | ❌  |
 
@@ -537,6 +541,7 @@ _netlab_ supports static routes on these platforms:
 | Aruba AOS-CX        | ✅ | ✅ | [❗](caveats-aruba) |
 | Cisco IOS/XE[^18v]  | ✅ | ✅ | ✅ |
 | Cumulus Linux 4.x   | ✅ | ✅ | ✅ |
+| Junos               | ✅ | ✅ | ❌ |
 | FRR                 | ✅ | ✅ | ✅ |
 | Linux               | ✅ |  ❌ |  ❌ |
 

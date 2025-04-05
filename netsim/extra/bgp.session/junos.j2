@@ -1,9 +1,61 @@
 {# Make sure BFD variable exists ;) #}
 {% set bfd = bfd|default({}) %}
+
+{#
+   Policy for default route originate, and insert discard route
+#}
+policy-options {
+  policy-statement default-route {
+    term default-route-v4 {
+      from {
+        route-filter 0.0.0.0/0 exact;
+      }
+      then accept;
+    }
+    term default-route-v6 {
+      from {
+        route-filter ::/0 exact;
+      }
+      then accept;
+    }
+  }
+}
+
+{% if bgp._junos_default_originate|default(false) %}
+routing-options {
+  static {
+    route 0.0.0.0/0 discard no-install;
+  }
+  rib inet6.0 {
+    static {
+      route ::/0 discard no-install;
+    }
+  }
+}
+{% endif %}
+{% for vname,vdata in (vrfs|default({})).items() %}
+{%   if vdata.bgp._junos_default_originate|default(false) %}
+routing-instances {
+  {{vname}} {
+    routing-options {
+      static {
+        route 0.0.0.0/0 discard no-install;
+      }
+      rib {{vname}}.inet6.0 {
+        static {
+          route ::/0 discard no-install;
+        }
+      }
+    }
+  }
+}
+{%   endif %}
+{% endfor %}
+
 {#
    Macro for neighbor attributes
 #}
-{% macro bgp_neighbor(n,bfd,af) %}
+{% macro bgp_neighbor(n,bfd,af,k) %}
 {%   if n.as_override|default(false) %}
   as-override;
 {%   endif %}
@@ -23,6 +75,12 @@
 {%   endif %}
 {%   if n.passive|default(false) %}
   passive;
+{%   endif %}
+{%   if n.remove_private_as|default(false) %}
+  remove-private;
+{%   endif %}
+{%   if n.default_originate|default(false) %}
+  export [ default-route {{k}}-export ];
 {%   endif %}
 {%   if n.password is defined %}
   authentication-key "{{ n.password }}";
@@ -46,7 +104,7 @@ protocols {
 {%     endif %}
       neighbor {{ n[af] }} {
         {# IBGP neighbor within an address family #}
-        {{ bgp_neighbor(n,bfd,af) }}
+        {{ bgp_neighbor(n,bfd,af,'ibgp') }}
       }
 {%     if loop.last %}
     }
@@ -60,7 +118,7 @@ protocols {
 {%   for af in ['ipv4','ipv6'] if n[af] is defined %}
       neighbor {{ n[af] }} {
         {# EBGP neighbor #}
-        {{ bgp_neighbor(n,bfd,af) }}
+        {{ bgp_neighbor(n,bfd,af,'ebgp') }}
       }
 {%   endfor %}
 {%     if loop.last %}
@@ -84,7 +142,7 @@ routing-instances {
 {%       endif %}
           neighbor {{ n[af] }} {
             {# THIS HERE IS THE NEIGHBOR (VRF->iBGP) #}
-            {{ bgp_neighbor(n,bfd,af) }}
+            {{ bgp_neighbor(n,bfd,af,'ibgp') }}
           }
 {%       if loop.last %}
         }
@@ -99,7 +157,7 @@ routing-instances {
 {%     for af in ['ipv4','ipv6'] if n[af] is defined %}
           neighbor {{ n[af] }} {
             {# THIS HERE IS THE NEIGHBOR (VRF->eBGP) #}
-            {{ bgp_neighbor(n,bfd,af) }}
+            {{ bgp_neighbor(n,bfd,af,'ebgp') }}
           }
 {%     endfor %}
 {%     if loop.last %}

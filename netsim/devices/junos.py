@@ -111,6 +111,119 @@ def check_evpn_ebgp(node: Box, topology: Box) -> None:
           category=log.IncorrectType,
           quirk='evpn_ebgp')
 
+def default_originate_check(node: Box, topology: Box) -> None:
+  # If BGP is enabled, and there is at least one peer with default-originate, then we need to create the default route discard
+  if 'bgp' not in node.get('module',[]):
+    return
+  for ngb in node.get('bgp.neighbors',[]):
+    if ngb.get('default_originate', False):
+      node.bgp._junos_default_originate = True
+      break
+  if 'vrf' in node.get('module',[]):
+    for vname,vdata in node.vrfs.items():
+      for ngb in vdata.get('bgp.neighbors', []):
+        if ngb.get('default_originate', False):
+          vdata.bgp._junos_default_originate = True
+          break
+
+def check_routing_policy_quirks(node: Box, topology: Box) -> None:
+  if 'routing' not in node.get('module',[]):
+    return
+  # prefix-list cannot directly use ge/le
+  for pl_name, pl_list in node.routing.get('prefix', {}).items():
+    for pl_item in pl_list:
+      if 'min' in pl_item or 'max' in pl_item:
+        report_quirk(
+          f'JunOS prefix-list items cannot have min/max items (node {node.name} prefix-list {pl_name})',
+          node=node,
+          category=log.IncorrectValue,
+          quirk='routing_prefixlist_min_max',
+          module='junos'
+        )
+        # as a kind-of workaround, add the prefix list name to a dedicated list;
+        #  then, on the policy evaluation, use 'prefix-list-filter XXX orlonger' if the prefix-list is in the list
+        if not '_junos_prefix_min_max' in node.routing:
+          node.routing['_junos_prefix_min_max'] = []
+        node.routing['_junos_prefix_min_max'].append(pl_name)
+
+  # AS-PATH cannot directly have action "deny"
+  for asp_name,asp_list in node.routing.get('aspath', {}).items():
+    for asp_item in asp_list:
+      if asp_item.get('action', '') == 'deny':
+        report_quirk(
+          f'JunOS as-path items cannot have deny items (node {node.name} as-path {asp_name})',
+          node=node,
+          category=log.IncorrectValue,
+          quirk='routing_aspath_deny',
+          module='junos'
+        )
+  # Community match cannot directly have action "deny"
+  for c_name,c_list in node.routing.get('community', {}).items():
+    for c_item in c_list.value:
+      if c_item.get('action', '') == 'deny':
+        report_quirk(
+          f'JunOS community match cannot have deny items (node {node.name} community {c_name})',
+          node=node,
+          category=log.IncorrectValue,
+          quirk='routing_community_deny',
+          module='junos'
+        )
+
+def as_prepend_quirk(node: Box, topology: Box) -> None:
+  mods = node.get('module',[])
+  if 'routing' not in mods or 'bgp' not in mods:
+    return
+  # https://github.com/ipspace/netlab/issues/2113
+  # When prepending an AS number different than the local one, JunOS put the prepend as ath the beginning of the AS_PATH 
+  # (while other vendors perform the prepending first, and then add its own AS at the beginning).
+  # This leads other BGP peers to deny an update received from an eBGP peer that does not list its autonomous system number at the beginning of the AS_PATH.
+  # For this reason, in case we detect a prepend which does not start with the local-as, we add it at the beginning of the AS_PATH
+  local_as = str(node.bgp['as']) ## cannot use node.bgp.as - 'as' is reserved keyword
+  for pl_name, pl_list in node.routing.get('policy', {}).items():
+    for pl_item in pl_list:
+      if pl_item.get('set.prepend.path', ''):
+        current_path = pl_item.set.prepend.path
+        # convert to list
+        path_items = current_path.split(' ')
+        if len(path_items) > 0 and path_items[0] != local_as:
+          path_items.insert(0, local_as)
+          new_path = " ".join(path_items)
+          report_quirk(
+            f'JunOS as-path-prepend with AS different from local one requires adding the local AS at the beginning of the AS_PATH - Adding it. (node {node.name} policy {pl_name} current as-path "{current_path}" new as-path "{new_path}")',
+            node=node,
+            category=Warning,
+            quirk='routing_as_prepend_nonlocal_as',
+            module='junos'
+          )
+          pl_item.set.prepend.path = new_path
+
+def community_set_quirk(node: Box, topology: Box) -> None:
+  mods = node.get('module',[])
+  if 'routing' not in mods or 'bgp' not in mods:
+    return
+  # JunOS policy, when setting/deleting a community, requires that the community itself is defined as 'policy-options community'
+  # Let's fake out the communities required in "then" sets
+  comm_name_prefix = "x_comm_set_"
+  # add routing.community struct if not present
+  if not 'community' in node.routing:
+    node.routing['community'] = {}
+  for pl_name, pl_list in node.routing.get('policy', {}).items():
+    for pl_item in pl_list:
+      comm_struct = pl_item.get('set.community', {})
+      if comm_struct:
+        for ct in ['standard','extended','large']:
+          for comm in comm_struct.get(ct, []):
+            # add this "fake" community to the community list
+            comm_list_name = comm_name_prefix + comm
+            comm_list_name = comm_list_name.replace(':', '_')
+            comm_list_name = comm_list_name.replace('.', '_')
+            if log.debug_active('quirks'):
+              print(f" - Found community set {comm} in policy {pl_name}, creating list {comm_list_name}")
+            node.routing.community[comm_list_name] = {
+              'type': ct,
+              'value': [{ "action": "permit", "_value": comm }],
+            }
+
 class JUNOS(_Quirks):
 
   @classmethod
@@ -120,3 +233,7 @@ class JUNOS(_Quirks):
     fix_unit_0(node,topology)
     check_multiple_loopbacks(node,topology)
     check_evpn_ebgp(node,topology)
+    check_routing_policy_quirks(node,topology)
+    as_prepend_quirk(node,topology)
+    community_set_quirk(node,topology)
+    default_originate_check(node,topology)

@@ -304,21 +304,24 @@ diag debug application httpsd -1
 * Junos cannot have more than one loopback interface per routing instance. Using **loopback** links on Junos devices will result in configuration errors.
 * Junos configuration template configures BFD timers within routing protocol configuration, not on individual interfaces
 * Junos does not disable the default BGP address family on a BGP neighbor until another AF is configured.
-* Anycast Gateway is not working properly on vSRX and vPTX:
 
-    * On vPTX, the virtual MAC address is ignored. Hence, the integration test is failing. Removing the support for anycast gateway for now.
-    * Anycast Gateway cannot be tested on vSRX as it does not support the VLAN IRB configuration.
+Implementation limitations in import/export route filters (reported as errors that can be disabled with topology settings):
+
+* When prepending an AS number different than the local one, JunOS puts the prepended AS at the beginning of the *AS_PATH* while other vendors perform the prepending and then add the device's own AS at the beginning. Most EBGP peers deny a BGP update that does not have the neighbor's AS number at the beginning of the *AS_PATH*. If needed, _netlab_ automatically adds the *local-as* to the prepend list to get it at the beginning of the *AS_PATH*.
+* *prefix-list* items cannot have *min*/*max* items (*ge*/*le*-equivalent). As a workaround (if you disable this specific *quirk*), the prefix-list match will be done as `prefix-list-filter XXX orlonger`.
+* *as-path* items cannot have "deny" items. Also, remember that the *as-path* regex syntax for JunOS has different rules than other vendors. For example, a *null as-path* is represented as `()`.
+* *community* matches cannot have "deny" items
 
 (caveats-vmx)=
 ## Juniper vMX
 
 * vMX can run only as a [_vrnetlab_ container](clab-vrnetlab)
-* vMX requires a license file. By default, _netlab_ downloads the evaluation license for Junos 18.2 from Juniper web site.
+* vMX requires a license file. By default, _netlab_ downloads the evaluation license for Junos 18.2 from the Juniper website.
 
 You can change the location of the license file with two variables:
 
 * **netlab_license_file** -- the name of a local file containing the relevant vMX license.
-* **netlab_license_url** -- the URL of a license file. The license file will be downloaded and installed to the vMX device. This parameter is used only when the local license file is not specified.
+* **netlab_license_url** -- the URL of a license file. The license file will be downloaded and installed on the vMX device. This parameter is used only when the local license file is not specified.
 
 You can change the license file parameters within a node definition or with **defaults.devices.vmx.group_vars._parameter_name_** [system default](topo-defaults).
 
@@ -326,6 +329,7 @@ You can change the license file parameters within a node definition or with **de
 ## Juniper vPTX
 
 * *netlab* release 1.7.0 supports only vJunosEvolved releases that do not require external PFE- and RPIO links. The first vJunosEvolved release implementing internal PFE- and RPIO links is the release 23.2R1-S1.8.
+* The virtual MAC address of the anycast gateway is ignored. _netlab_, therefore, does not support the anycast gateway on vPTX.
 
 The rest of this section lists information you might find helpful if you're a long-time Junos user:
 

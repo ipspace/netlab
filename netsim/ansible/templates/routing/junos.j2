@@ -1,0 +1,61 @@
+{% if routing.prefix|default({}) %}
+{%   include '_prefix_list_junos.j2' %}
+{% endif %}
+
+{% if routing.aspath|default({}) %}
+policy-options {
+{%   for asp_name,asp_list in routing.aspath.items() %}
+  as-path-group {{ asp_name }} {
+{%     for asp_line in asp_list %}
+{# WARNING: asp_line.action not usable - a quirk will warn the user #}
+    as-path {{ asp_name }}-{{ asp_line.sequence }} "{{ asp_line.path }}";
+{%     endfor %}
+  }
+{%   endfor %}
+}
+{% endif %}
+
+{% if routing.community|default({}) %}
+{%   for c_name,c_value in routing.community.items() %}
+{%     for c_line in c_value.value %}
+{# WARNING: c_line.action not usable #}
+{%       if c_value.type|default('') == 'large' %}
+policy-options community {{ c_name }} members [ "large:{{ c_line._value }}" ];
+{%       else %}
+policy-options community {{ c_name }} members [ "{{ c_line._value }}" ];
+{%       endif %}
+{%     endfor %}
+{%   endfor %}
+{% endif %}
+
+{% if routing.policy|default({}) %}
+{%   import '_route_policy_junos.j2' as routemap with context %}
+{{   routemap.create_route_maps(routing.policy) }}
+{% endif %}
+
+{# ### Static Routing ### #}
+
+{% for sr_data in routing.static|default([]) %}
+{#   if we have a vrf route, open the routing instance stanza #}
+{%   if 'vrf' in sr_data %}
+routing-instances {
+  {{sr_data.vrf}} {
+{%   endif %}
+
+{#   recursive lookup is triggered by a route without the intf parameter #}
+{%   set route_resolve = ' resolve' if not 'intf' in sr_data.nexthop else '' %}
+    routing-options {
+{%   if 'ipv4' in sr_data %}
+      static route {{sr_data.ipv4}} next-hop {{sr_data.nexthop.ipv4}}{{route_resolve}};
+{%   endif %}
+{%   if 'ipv6' in sr_data %}
+{%   set ipv6_vrf_rib = sr_data.vrf + '.' if 'vrf' in sr_data else '' %}
+        rib {{ ipv6_vrf_rib }}inet6.0 static route {{sr_data.ipv6}} next-hop {{sr_data.nexthop.ipv6}}{{route_resolve}};
+{%   endif %}
+    }
+
+{%   if 'vrf' in sr_data %}
+  }
+}
+{%   endif %}
+{% endfor %}
