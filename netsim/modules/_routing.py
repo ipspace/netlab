@@ -300,10 +300,8 @@ def build_vrf_interface_list(
 
   # Time to cleanup IGP data
   for vname,vdata in node.get('vrfs',{}).items():                     # ... iterate over the list of VRFs
-    try:
-      proto_active = vdata.get(f'{proto}.active',False)               # Get the IGP data for the VRF
-    except:                                                           # ... assume 'not active' if get fails
-      proto_active = False
+    proto_active = isinstance(vdata[proto],Box) \
+                   and vdata[proto].get(f'active',False)              # Get the IGP active status for the VRF
     if not proto_active:                                              # If there's no record of active IGP neighbors
       remove_vrf_imports(node,vname,vdata,proto)                      # Remove all mentions of the IGP imports
       vdata.pop(proto,None)                                           # ... remove the VRF IGP instance
