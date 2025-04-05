@@ -15,9 +15,14 @@ protocol ospf {{ ver }} ospf_{{ ver }} {
   area {{ area }} {
     default cost 10;
 {%     if area == ospf.area and af in loopback|default({}) %}
+{%       if af=='ipv4' %}
     interface "lo" {
       stub;
     };
+{%       else %}
+    # RFC 5340, section 4.4.3.9: Loopback should be advertised as /128
+    stubnet {{ loopback.ipv6 | ipaddr('address') }}/128;
+{%       endif %}
 {%     endif %}
 {%     for l in interfaces|default([]) if af in l and 'ospf' in l and 'area' in l.ospf and l.ospf.area == area %}
     interface "{{ l.ifname }}" {
