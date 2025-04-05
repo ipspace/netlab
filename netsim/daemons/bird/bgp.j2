@@ -15,17 +15,17 @@ protocol static bgp_ipv4 {
 
 filter bgp_prefixes {
   if source ~ [ RTS_STATIC, RTS_BGP ]
-    then accept;
+    then accept "Static or BGP route:", net;
 
 {% if bgp.advertise_loopback|default(False) %}
   if source ~ [ RTS_DEVICE ] && ifname = "lo"
-    then accept;
+    then accept "advertise loopback:", net;
 {% endif %}
 {% for intf in interfaces if 'bgp' in intf and intf.bgp.advertise|default(False) %}
   if source ~ [ RTS_DEVICE ] && ifname = "{{ intf.ifname }}"
-    then accept;
+    then accept "bgp.advertise:", net;
 {% endfor %}
-  reject;
+  reject "not accepted:", net, " source=", source, " preference=", preference;
 }
 
 {% for n in bgp.neighbors %}
@@ -54,6 +54,7 @@ protocol bgp bgp_{{ n.name }}_{{ af }} {
   {{ af }} {
     import all;
     export filter bgp_prefixes;
+    preference 160; # Higher than OSPF 150, default is 100
 {%       if 'next_hop_self' in bgp and bgp.next_hop_self and 'ibgp' in n.type %}
     next hop self {{ 'on' if n.type == 'localas_ibgp' else 'ebgp' }};
 {%       endif %}
