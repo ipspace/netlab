@@ -1034,29 +1034,29 @@ def interface_feature_check(nodes: Box, defaults: Box) -> None:
   for node,ndata in nodes.items():
     features = devices.get_device_features(ndata,defaults)
     for ifdata in ndata.get('interfaces',[]):
+      more_info = f'Interface {ifdata.ifname} (link {ifdata.name})'
       if 'ipv4' in ifdata:
-        if isinstance(ifdata.ipv4,bool) and ifdata.ipv4:
+        if ifdata.ipv4 is True:
           if not features.initial.ipv4.unnumbered:
             log.error(
-              text=f'Device {ndata.device} does not support unnumbered IPv4 interfaces',
-              more_hints=[ f'Used on node {node} interface {ifdata.ifname} (link {ifdata.name})' ],
+              text=f'Device {ndata.device} (node {node}) does not support unnumbered IPv4 interfaces',
+              more_hints=more_info,
               category=log.IncorrectValue,
               module='interfaces')
           elif features.initial.ipv4.unnumbered == 'peer':
             if len(ifdata.neighbors)!=1 or ifdata.neighbors[0].get('ipv4',False) is not True:
               log.error(
-                text=f'Unnumbered interface on node {node} does not have suitable single unnumbered IPv4 peer',
-                more_hints=[ f'Used on device {ndata.device} interface {ifdata.ifname} (link {ifdata.name})' ],
+                text=f'Unnumbered interfaces on device {ndata.device} (node {node}) require a single unnumbered IPv4 peer',
+                more_hints=more_info,
                 category=log.MissingDependency,
                 module='interfaces')
 
       if 'ipv6' in ifdata:
-        if isinstance(ifdata.ipv6,bool) and ifdata.ipv6 and \
-            not features.initial.ipv6.lla:
+        if ifdata.ipv6 is True and not features.initial.ipv6.lla:
           log.error(
-            f'Device {ndata.device} does not support LLA-only IPv6 interfaces',
+            f'Device {ndata.device} (node {node}) does not support LLA-only IPv6 interfaces',
             category=log.IncorrectValue,
-            more_hints=f'Used on interface {ifdata.ifname} (link {ifdata.name})',
+            more_hints=more_info,
             module='interfaces')
 
 '''
