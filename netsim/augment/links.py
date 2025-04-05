@@ -1034,21 +1034,29 @@ def interface_feature_check(nodes: Box, defaults: Box) -> None:
   for node,ndata in nodes.items():
     features = devices.get_device_features(ndata,defaults)
     for ifdata in ndata.get('interfaces',[]):
+      more_info = f'Interface {ifdata.ifname} (link {ifdata.name})'
       if 'ipv4' in ifdata:
-        if isinstance(ifdata.ipv4,bool) and ifdata.ipv4 and \
-            not features.initial.ipv4.unnumbered:
-          log.error(
-            text=f'Device {ndata.device} does not support unnumbered IPv4 interfaces',
-            more_hints=[ f'Used on node {node} interface {ifdata.ifname} (link {ifdata.name})' ],
-            category=log.IncorrectValue,
-            module='interfaces')
+        if ifdata.ipv4 is True:
+          if not features.initial.ipv4.unnumbered:
+            log.error(
+              text=f'Device {ndata.device} (node {node}) does not support unnumbered IPv4 interfaces',
+              more_hints=more_info,
+              category=log.IncorrectValue,
+              module='interfaces')
+          elif features.initial.ipv4.unnumbered == 'peer':
+            if len(ifdata.neighbors)!=1 or ifdata.neighbors[0].get('ipv4',False) is not True:
+              log.error(
+                text=f'Unnumbered interfaces on device {ndata.device} (node {node}) require a single unnumbered IPv4 peer',
+                more_hints=more_info,
+                category=log.MissingDependency,
+                module='interfaces')
+
       if 'ipv6' in ifdata:
-        if isinstance(ifdata.ipv6,bool) and ifdata.ipv6 and \
-            not features.initial.ipv6.lla:
+        if ifdata.ipv6 is True and not features.initial.ipv6.lla:
           log.error(
-            f'Device {ndata.device} does not support LLA-only IPv6 interfaces',
+            f'Device {ndata.device} (node {node}) does not support LLA-only IPv6 interfaces',
             category=log.IncorrectValue,
-            more_hints=f'Used on interface {ifdata.ifname} (link {ifdata.name})',
+            more_hints=more_info,
             module='interfaces')
 
 '''
@@ -1242,9 +1250,26 @@ def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools:
   set_node_af(nodes)
   return link_list
 
+"""
+set_unnumbered_peers - mark IPv4 unnumbered peering links with the IP address of the peer
+
+This is done late in the process (during cleanup) in case VRFs with loopbacks are used
+"""
+def set_unnumbered_peers(topology: Box) -> None:
+  for name,node in topology.nodes.items():
+    for intf in node.interfaces:
+      if len(intf.neighbors) != 1:
+        continue
+      if '_parent_ipv4' not in intf:
+        continue
+      peer = topology.nodes[ intf.neighbors[0].node ]
+      peer_if = [ i for i in peer.interfaces if i.ifname==intf.ifname ]
+      if peer_if and '_parent_ipv4' in peer_if[0]:
+        intf._unnumbered_peer = peer_if[0]._parent_ipv4
+
 def cleanup(topology: Box) -> None:
   if not 'links' in topology:
     return
-
+  set_unnumbered_peers(topology)
   for link in topology.links:
     link.pop('host_count',None)
