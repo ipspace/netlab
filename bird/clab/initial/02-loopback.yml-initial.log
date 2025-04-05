@@ -132,6 +132,22 @@ ok: [r] =>
     ip -6 addr add 2001:db8:1:1::1/64 dev eth2
     ip link set dev eth2 mtu 1500
   
+    if [ ! -e /sys/class/net/lo1 ]; then
+      if [ ! -e /sys/devices/virtual/net/lo1 ]; then
+        ip link add lo1 type dummy
+      fi
+    fi
+    ip link set dev lo1 up
+    set +e
+    ip addr del 10.2.0.1/32 dev lo1 2>/dev/null
+    set -e
+    ip addr add 10.2.0.1/32 dev lo1
+    sysctl -w net.ipv6.conf.lo1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:cafe::1/64 dev lo1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:cafe::1/64 dev lo1
+  
   
     #
     set -e
@@ -214,9 +230,9 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
-changed: [h2 -> localhost]
 changed: [r -> localhost]
+changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/bird-clab.j2] ***
 changed: [h1 -> localhost]
@@ -238,10 +254,10 @@ changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 changed: [r -> localhost]
 
-TASK [Remove temporary file /tmp/r_initial-qet3w_pf.sh] ************************
+TASK [Remove temporary file /tmp/r_initial-21517__u.sh] ************************
+changed: [h2 -> localhost]
 changed: [r -> localhost]
 changed: [h1 -> localhost]
-changed: [h2 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -340,22 +356,22 @@ changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux.j2] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
 TASK [Execute /tmp/config-h1_routing.sh to deploy routing config based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux.j2] ***
-changed: [h1]
 changed: [h2]
+changed: [h1]
 
 TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux.j2 executed in netns] ***
 skipping: [h1]
 skipping: [h2]
 
-TASK [Remove temporary file /tmp/h1_routing-d7g9ql4b.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-_htkfmvh.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
