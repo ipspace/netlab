@@ -1,39 +1,8 @@
-protocol device {
-  scan time 10;
-}
-
-protocol direct {
-  ipv4;
-  ipv6;
-}
-
 {% set module = module|default([]) %}
-{% for _af in ['ipv4','ipv6'] if _af in af %}
-protocol kernel {
-  learn;
-  {{ _af }} {
-    export all;
-    import all;
-  };
-}
-{% endfor %}
+{% include 'protocols.j2' %}
 
-{% if role!='host' %}
-# Configure IPv6 Router Advertisements, if any
-{%   for intf in interfaces|default([]) if 'ipv6' in intf %}
-{%     if loop.first %}
-protocol radv {
-{%     endif %}
-  interface "{{ intf.ifname }}" {
-    max ra interval 5;  # Maximum interval between RA messages, in seconds
-{%     if intf.mtu is defined %}
-    link mtu {{ intf.mtu }};
-{%     endif %}
-  };
-{%     if loop.last %}
-}
-{%     endif %}
-{%   endfor %}
+{% if role != 'host' and 'ipv6' in af %}
+{%   include 'radv.j2' %}
 {% endif %}
 
 {% for k,v in _daemon_config.items() if k != device|default(netlab_device_type) %}
