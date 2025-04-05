@@ -308,8 +308,9 @@ def fix_vrf_unnumbered(node: Box, vrfname: str, lbdata: Box) -> None:
     if intf.get('ipv4',None) is not True:                       # Skip interfaces that are not unnumbered
       continue
 
-    intf._parent_intf = lbdata.ifname                           # Make in-VRF loopback the parent interface for in-VRF
-    intf._parent_ipv4 = lbdata.ipv4                             # ... IPv4 unnumbereds
+    intf._parent_intf = lbdata.ifname                           # Make in-VRF loopback the parent interface for
+    intf._parent_ipv4 = lbdata.ipv4                             # ... in-VRF IPv4 unnumbereds
+    intf._parent_vrf  = vrfname                                 # ... and remember where the data came from
 
 def vrf_loopbacks(node : Box, topology: Box) -> None:
   loopback_name = devices.get_device_attribute(node,'loopback_interface_name',topology.defaults)
@@ -492,6 +493,9 @@ class VRF(_Module):
       if vname in topology.get('vrfs',{}):                              # Carefully check for global VRF
         node.vrfs[vname] = topology.vrfs[vname] + node.vrfs[vname]      # ... and do the data merge
 
+    # Set additional loopbacks (one for each defined VRF)
+    vrf_loopbacks(node, topology)
+
   def node_post_transform(self, node: Box, topology: Box) -> None:
     vrf_count = 0
 
@@ -551,9 +555,6 @@ class VRF(_Module):
       vrfidx = vrfidx + 1
 
     validate_vrf_route_leaking(node)
-
-    # Set additional loopbacks (one for each defined VRF)
-    vrf_loopbacks(node, topology)
 
     # Finally, set BGP router ID if we set BGP AS number
     #
