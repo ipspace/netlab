@@ -261,35 +261,59 @@ def remove_vrf_interfaces(node: Box, proto: str) -> None:
 #
 # build_vrf_interface_list -- copy VRF interfaces into VRF definition
 #
-def build_vrf_interface_list(node: Box, proto: str, topology: Box) -> None:
+def build_vrf_interface_list(
+      node: Box,
+      proto: str,
+      topology: Box,
+      vrf_unnumbered_check: bool = True) -> None:                     # Check the source IP VRF for IPv4 unnumbereds
+  
+  unnum_err_list = data.get_empty_box()
+
   for l in node.interfaces:
-    if proto in l and 'vrf' in l:
-      if node.vrfs[l.vrf][proto] is True:                                   # Handle 'force' the protocol by setting it to True
-        node.vrfs[l.vrf][proto] = { 'active': True }
-      elif node.vrfs[l.vrf][proto] is False:                                # Skip protocols disabled on VRF level
-        l.pop(proto,None)
-        continue
-      if not 'interfaces' in node.vrfs[l.vrf][proto]:                       # Start with an empty interface list
-        node.vrfs[l.vrf][proto].interfaces = []
-      if not 'active' in node.vrfs[l.vrf][proto]:                           # Assume there are no IGP neighbors in this VRF
-        node.vrfs[l.vrf][proto].active = False
-      node.vrfs[l.vrf][proto] = node[proto] + node.vrfs[l.vrf][proto]       # Add node IGP parameters to VRF IGP parameters
-      node.vrfs[l.vrf][proto].interfaces.append(data.get_box(l))            # Append a copy of the interface data
-      l.pop(proto,None)                                                     # ... and remove global IGP parameters from interface
-                                                                            # Next we need to find if the VRF instance of IGP matters
-      for neighbor in l.neighbors:                                          # ... iterate over the list of neighbors
-        n_data = topology.nodes[neighbor.node]
-        if proto in n_data.get('module',[]):                                # ... and check if at least one of them uses the IGP
-          node.vrfs[l.vrf][proto].active = True
-                                                                            # Cleanup IGP data
-  for vname,vdata in node.get('vrfs',{}).items():                           # ... iterate over the list of VRFs
-    try:
-      proto_active = vdata.get(f'{proto}.active',False)                     # Get the IGP data for the VRF
-    except:                                                                 # ... assume 'not active' if get fails
-      proto_active = False
-    if not proto_active:                                                    # If there's no record of active IGP neighbors
-      remove_vrf_imports(node,vname,vdata,proto)                            # Remove all mentions of the IGP imports
-      vdata.pop(proto,None)                                                 # ... remove the VRF IGP instance
+    if proto not in l:                                                # Not running the protocol on the interface?
+      continue
+    if 'vrf' not in l:                                                # Interface not in a VRF?
+      continue
+    if node.vrfs[l.vrf][proto] is True:                               # Handle 'force' the protocol by setting it to True
+      node.vrfs[l.vrf][proto] = { 'active': True }
+    elif node.vrfs[l.vrf][proto] is False:                            # Skip protocols disabled on VRF level
+      l.pop(proto,None)
+      continue
+    if not 'active' in node.vrfs[l.vrf][proto]:                       # Assume there are no IGP neighbors in this VRF
+      node.vrfs[l.vrf][proto].active = False
+    node.vrfs[l.vrf][proto] = node[proto] + node.vrfs[l.vrf][proto]   # Add node IGP parameters to VRF IGP parameters
+    data.append_to_list(
+      node.vrfs[l.vrf][proto],
+      list_name='interfaces',
+      item=data.get_box(l))                                           # Append a copy of the interface data
+    if vrf_unnumbered_check and \
+        l.get('ipv4',None) is True and \
+        l.get('_parent_vrf',None) != l.vrf:                           # Have to check the loopback source VRF?
+      data.append_to_list(unnum_err_list,l.vrf,l.ifname)              # ... remember we failed
+
+    l.pop(proto,None)                                                 # Finally, remove global IGP parameters from interface
+                                                                      # Next we need to find if the VRF instance of IGP matters
+    for neighbor in l.neighbors:                                      # ... iterate over the list of neighbors
+      n_data = topology.nodes[neighbor.node]
+      if proto in n_data.get('module',[]):                            # ... and check if at least one of them uses the IGP
+        node.vrfs[l.vrf][proto].active = True
+
+  # Time to cleanup IGP data
+  for vname,vdata in node.get('vrfs',{}).items():                     # ... iterate over the list of VRFs
+    proto_active = isinstance(vdata[proto],Box) \
+                   and vdata[proto].get(f'active',False)              # Get the IGP active status for the VRF
+    if not proto_active:                                              # If there's no record of active IGP neighbors
+      remove_vrf_imports(node,vname,vdata,proto)                      # Remove all mentions of the IGP imports
+      vdata.pop(proto,None)                                           # ... remove the VRF IGP instance
+      continue
+
+    # IGP protocol is active in the VRF
+    if unnum_err_list[vname]:                                         # Do we have unnumbered errors?
+      log.error(
+        f"VRF {vname} on {node.name} has unnumbered interface(s) running {proto} without a VRF loopback",
+        category=log.MissingDependency,
+        module="vrf",
+        more_data=f"Used on interface(s) {','.join(unnum_err_list[vname])}")      
 
 #
 # remove_unaddressed_intf -- remove all interfaces without IPv4 or IPv6 address from IGP
@@ -748,13 +772,14 @@ def igp_post_transform(
       topology: Box,
       proto: str,
       vrf_aware: bool = False,
+      vrf_unnumbered_check: bool = True,
       propagate: typing.Optional[typing.Callable] = None) -> None:
 
   features = devices.get_device_features(node,topology.defaults)
 
   remove_unaddressed_intf(node,proto)
   if vrf_aware:
-    build_vrf_interface_list(node,proto,topology)
+    build_vrf_interface_list(node,proto,topology,vrf_unnumbered_check)
   else:
     remove_vrf_interfaces(node,proto)
 
