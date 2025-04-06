@@ -2,18 +2,11 @@
 router id {{ bgp.router_id }};
 {% endif %}
 
-{% for pfx in bgp.originate|default([]) %}
-{%   if loop.first %}
-protocol static bgp_ipv4 {
-  ipv4;
-{%   endif %}
-  route {{ pfx }} unreachable;
-{%   if loop.last %}
-}
-{%   endif %}
-{% endfor %}
+# Define filtered tables
+ipv4 table filtered_ipv4;
+ipv6 table filtered_ipv6;
 
-function bgp_prefixes() {
+filter bgp_prefixes {
   if source ~ [ RTS_STATIC, RTS_BGP ]
     then accept "Static or BGP route:", net;
 
@@ -27,6 +20,42 @@ function bgp_prefixes() {
 {% endfor %}
   reject "not accepted:", net, " source=", source, " preference=", preference;
 }
+
+{% for af in ['ipv4','ipv6'] %}
+protocol aggregator agg_{{ af }} {
+  table master{{ af[3:] }};
+  export filter bgp_prefixes;
+  aggregate on net;
+  merge by {
+    bool has_ospf = false;
+    bool has_bgp = false;
+    for route r in routes do {
+      if r.source = RTS_OSPF then has_ospf = true;
+      if r.source = RTS_BGP then has_bgp = true;
+      print net," src=",r.source," pref=",r.preference;
+
+      if r.preference > preference then preference = r.preference;
+    }
+    if (has_ospf && has_bgp) then {
+      preference = 160;
+    }
+    accept "Aggregated:",net," pref=",preference;
+  };
+  import all;
+  peer table filtered_{{ af }};
+}
+{% endfor %}
+
+{% for pfx in bgp.originate|default([]) %}
+{%   if loop.first %}
+protocol static bgp_ipv4 {
+  ipv4;
+{%   endif %}
+  route {{ pfx }} unreachable;
+{%   if loop.last %}
+}
+{%   endif %}
+{% endfor %}
 
 {#
  Build a BGP export filter per neighbor type, to filter communities
@@ -44,7 +73,7 @@ filter bgp_export_{{ ntype }} {
   bgp_ext_community.empty;
 {%   endif %}
 
-  bgp_prefixes();
+  accept;
 }
 {% endfor %}
 
@@ -64,9 +93,9 @@ protocol bgp bgp_{{ n.name }}_{{ af }} {
 {%     if n.rs_client|default(False) %}
   enforce first as off;
 {%     endif %}
-{%     if bgp.rr|default('') and ((not n.rr|default('') and n.type == 'ibgp') or n.type == 'localas_ibgp') %}
+{%     if bgp.rr|default(False) and ((not n.rr|default('') and n.type == 'ibgp') or n.type == 'localas_ibgp') %}
   rr client;
-{%       if bgp.rr|default(False) and bgp.rr_cluster_id|default(False) %}
+{%       if bgp.rr_cluster_id|default(False) %}
   rr cluster id {{ bgp.rr_cluster_id }};
 {%       endif %}
 {%     endif %}
@@ -74,6 +103,8 @@ protocol bgp bgp_{{ n.name }}_{{ af }} {
   {{ af }} {
     import all;
     export filter bgp_export_{{ n.type }};
+    table filtered_{{ af }};
+
 {%       if 'next_hop_self' in bgp and bgp.next_hop_self and 'ibgp' in n.type %}
     next hop self {{ 'on' if n.type == 'localas_ibgp' else 'ebgp' }};
 {%       endif %}
