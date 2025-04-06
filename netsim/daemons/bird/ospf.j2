@@ -11,6 +11,18 @@ router id {{ ospf.router_id }};
 {% for af in ['ipv4','ipv6'] if af in ospf.af %}
 {%   set ver = 'v2' if af == 'ipv4' else 'v3' %}
 protocol ospf {{ ver }} ospf_{{ ver }} {
+{%   if ospf.import is defined %}
+  {{ af }} {
+    export filter {
+{%-    set MAPPING = { 'bgp' : "RTS_BGP", 'connected': "RTS_DEVICE", 'static': "RTS_STATIC_DEVICE,RTS_STATIC" } %} 
+      if source ~ [ {% for p in ospf.import %}{{ MAPPING[p] }}{% if not loop.last %},{% endif %}{% endfor %} ] then {
+        ospf_metric2 = 20;
+        accept;
+      }
+      reject;
+   };
+  };
+{%   endif %}
 {%   for area in area_list %}
   area {{ area }} {
     default cost 10;
