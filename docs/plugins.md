@@ -19,6 +19,7 @@
    plugins/multilab.md
    plugins/node.clone.md
    plugins/vrrp.version.md
+   plugins/firewall.zonebased.md
 ```
 
 Plugins needed by a topology file are listed in the **plugin** top-level element, for example:
