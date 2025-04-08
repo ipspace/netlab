@@ -17,21 +17,21 @@ def post_transform(topology: Box) -> None:
         for intf in node.get('interfaces',[]):
             # if link has a firewall zone, apply extra config to this node
             fw_zone = intf.get('firewall.zone', '')
-            if fw_zone:
-                if not zbf_supported:
-                    log.error( f"Node {node.name}({node.device}) does not support 'firewall.zone' used on {intf.name}",
-                            category=log.IncorrectAttr,module=_config_name)
-                else:
-                    # add zone to list of zones
-                    node.firewall.zonebased._zones[fw_zone] = {}
-                    # add config template
-                    api.node_config(node,_config_name)
+            if not zbf_supported and fw_zone:
+                log.error( f"Node {node.name}({node.device}) does not support 'firewall.zone' used on {intf.name}",
+                        category=log.IncorrectAttr,module=_config_name)
+            elif fw_zone:
+                # add zone to list of zones
+                node.firewall.zonebased._zones[fw_zone] = {}
+                # add config template
+                api.node_config(node,_config_name)
         # now check that zones defined in rules are defined
         rule_idx = 0
         for def_rule in node.get('firewall.zonebased.default_rules', []):
-            for z in [ def_rule.from_zone, def_rule.to_zone ]:
+            for z_direction in [ 'from_zone', 'to_zone' ]:
+                z = def_rule[z_direction]
                 if z not in node.firewall.zonebased._zones:
-                    log.error( f"Node {node.name} does not have zone '{z}' defined in default zone rule '{rule_idx}'",
+                    log.error( f"Node {node.name} does not have zone '{z}' defined in default zone rule '{rule_idx}' direction '{z_direction}'",
                             category=log.IncorrectAttr,module=_config_name)
             rule_idx = rule_idx + 1
     return
