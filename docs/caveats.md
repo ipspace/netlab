@@ -356,12 +356,20 @@ See also [](caveats-junos).
 * You can run Juniper vJunos-switch as a container packaged by Roman Dodin's fork of [vrnetlab](https://github.com/hellt/vrnetlab/). See [_containerlab_ documentation](https://containerlab.dev/manual/kinds/vr-vjunosswitch/) for further details.
 * Use a recent *vrnetlab* release that places the management interface into the **mgmt_junos** routing instance to avoid the conflict between [management IP subnet](clab-vrnetlab) `10.0.0.0/24` and **netlab** loopback addressing.
 * vJunos-switch VLAN configuration uses the so-called *Enterprise Style VLAN configuration* (which uses `family ethernet-switching` on unit 0 of interfaces).
-* For the above reason, the current netlab implementation of vJunos-switch EVPN configuration uses the `switch-options` (*default-switch*) configuration stanza, which leads to some drawbacks/limitations:
-    * All EVPN routes are announced with the same RD (configured under `switch-options`). A RT is configured as well under `switch-options`, but then it is overwritten per-VNI under the `protocol evpn` configuration.
-    * It is not possible to use multiple import/export RT. The *first* import RT is used on the configuration templates as the VNI RT.
-    * JunOS implements the VLAN-aware EVPN service type by default. This means *currently* interoperability with other vendors is limited. To change this behavior, multiple *mac-vrf* (with *service-type vlan-based*) should be configured, but this requires "SP Style" VLAN configuration.
 
 See also [](caveats-junos).
+
+### EVPN Caveats on vJunos-Switch
+
+_netlab_ can use *default-switch* or MAC VRF EVPN configuration on a vJunos-switch. It uses MAC VRF EVPN configuration unless you set the **evpn.\_junos\_default\_macvrf** variable to *True*.
+
+MAC VRF EVPN configuration (using VLAN-based EVPN service) works well with most other EVPN implementations. However, it uses a separate MAC VRF for every VLAN, and as we're not creating the VLAN subinterfaces, we have to assign physical interfaces to MAC VRFs. It's thus impossible to use an EVPN-enabled VLAN in a VLAN trunk.
+
+The VLAN-aware EVPN configuration (using the `switch-options` of the default routing instance) has other drawbacks and limitations:
+
+* All EVPN routes are announced with the same RD (configured under `switch-options`). A default route target is configured under `switch-options` but is then overwritten for each VNI under the `protocol evpn` configuration.
+* You cannot use multiple import/export RT. The *first* import RT is used on the configuration templates as the VNI RT.
+* VLAN-aware EVPN service might not work with devices from other vendors using VLAN-based EVPN service. For example, the VLAN-aware EVPN service works with FRRouting but not with Arista EOS.
 
 (caveats-vjunos-router)=
 ## vJunos-Router in Containerlab
