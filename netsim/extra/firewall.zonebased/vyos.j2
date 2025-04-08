@@ -1,0 +1,57 @@
+#!/bin/vbash
+
+{# basic zone-based firewall plugin template for VyOS #}
+
+source /opt/vyatta/etc/functions/script-template
+
+if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+    exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+fi
+
+# Configuration items start here
+
+configure
+
+{% set rule_action_map = { 'permit':'accept', 'deny':'drop' } %}
+
+{# make it stateful... #}
+set firewall global-options state-policy established action 'accept'
+set firewall global-options state-policy related action 'accept'
+
+{# create local zone to allow all local services and fw host inbound traffic #}
+
+set firewall ipv4 name def_LOCAL default-action accept
+set firewall ipv6 name def_LOCAL default-action accept
+set firewall zone LOCAL local-zone
+{% for zonename,zonedata in (firewall.zonebased._zones|default({})).items() %}
+set firewall zone LOCAL from {{zonename}} firewall name def_LOCAL
+set firewall zone LOCAL from {{zonename}} firewall ipv6-name def_LOCAL
+{% endfor %}
+
+{# add interfaces to zones #}
+
+{% for intf in interfaces|default([]) if intf.firewall.zone is defined %}
+set firewall zone {{ intf.firewall.zone }} member interface {{ intf.ifname }}
+{% endfor %}
+
+{# create required zone-to-zone named policies #}
+
+{% for def_rule in firewall.zonebased.default_rules|default([]) %}
+
+set firewall ipv4 name def_{{def_rule.from_zone}}_{{def_rule.to_zone}} default-action {{rule_action_map[def_rule.action]}}
+set firewall ipv6 name def_{{def_rule.from_zone}}_{{def_rule.to_zone}} default-action {{rule_action_map[def_rule.action]}}
+
+set firewall zone {{def_rule.to_zone}} from {{def_rule.from_zone}} firewall name def_{{def_rule.from_zone}}_{{def_rule.to_zone}}
+set firewall zone {{def_rule.to_zone}} from {{def_rule.from_zone}} firewall ipv6-name def_{{def_rule.from_zone}}_{{def_rule.to_zone}}
+
+{% endfor %}
+
+
+
+
+# Commit, save and exit from subshell
+
+commit
+save
+exit
+

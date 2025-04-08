@@ -1,0 +1,52 @@
+---
+message: |
+  Use this topology to test the zone-to-zone default policy for firewall.zonebased plugin.
+
+plugin: [ firewall.zonebased ]
+
+defaults.devices.vsrx.clab.image: vrnetlab/juniper_vsrx:21.3R1.9
+
+nodes:
+  fw:
+    firewall.zonebased:
+      default_rules:
+      - from_zone: trusted
+        to_zone: trusted
+        action: permit
+      - from_zone: trusted
+        to_zone: untrusted
+        action: permit
+  h1:
+    device: linux
+    provider: clab
+  h2:
+    device: linux
+    provider: clab
+  h3:
+    device: linux
+    provider: clab
+
+links:
+- fw:
+    firewall.zone: trusted
+  h1:
+- fw:
+    firewall.zone: untrusted
+  h2:
+- fw:
+    firewall.zone: trusted
+  h3:
+
+validate:
+  ping_permit:
+    description: Ping from zone trusted to zone untrusted
+    nodes: [ h1 ]
+    plugin: ping('h2')
+  ping_drop:
+    description: Ping from zone untrusted to zone trusted (shall fail)
+    nodes: [ h2 ]
+    plugin: ping('h1',expect='fail')
+  ping_intrazone:
+    description: Ping from zone trusted to zone trusted (intra-zone)
+    nodes: [ h1 ]
+    plugin: ping('h3')

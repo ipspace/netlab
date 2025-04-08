@@ -1,0 +1,47 @@
+{# basic zone-based firewall plugin template for vSRX #}
+
+{# create zones and allow all local services and fw host inbound traffic #}
+
+security {
+  zones {
+{% for zonename,zonedata in (firewall.zonebased._zones|default({})).items() %}
+    security-zone {{zonename}} {
+      host-inbound-traffic {
+        system-services all;
+        protocols all;
+      }
+    }
+{% endfor %}
+  }
+}
+
+{# assign interfaces to zones #}
+
+{% for intf in interfaces|default([]) if intf.firewall.zone is defined %}
+security zones security-zone {{ intf.firewall.zone }} interfaces {{ intf.ifname }};
+{% endfor %}
+
+security {
+  delete: policies;
+}
+security policies default-policy deny-all;
+
+{# TODO: specific zone-to-zone rules here #}
+
+{# default zone-to-zone rules #}
+security {
+  policies {
+{% for def_rule in firewall.zonebased.default_rules|default([]) %}
+    from-zone {{def_rule.from_zone}} to-zone {{def_rule.to_zone}} {
+      policy default {
+        match {
+          source-address any;
+          destination-address any;
+          application any;
+        }
+        then {{def_rule.action}};
+      }
+    }
+{% endfor %}
+  }
+}
