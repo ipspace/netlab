@@ -23,12 +23,12 @@ The plugin includes Jinja2 templates for the following platforms:
 
 The plugin adds the following attributes defined at node level:
 * **firewall.zonebased.default_rules** (list) -- List of defaults *zone to zone* policies. Each item is a *dict* with the following attributes:
-    * **from_zone** (string, mandatory) -- Policy Source Zone
-    * **to_zone** (string, mandatory) -- Policy Destination Zone
+    * **from_zone** (id, mandatory) -- Policy Source Zone
+    * **to_zone** (id, mandatory) -- Policy Destination Zone
     * **action** (string, mandatory, one of `permit`, `deny`) -- Policy Action
 
 Additional interface level attributes:
-* **firewall.zone** (string) -- the firewall zone for this firewall interface
+* **firewall.zone** (id) -- the firewall zone for this firewall interface
 
 ## Example
 
