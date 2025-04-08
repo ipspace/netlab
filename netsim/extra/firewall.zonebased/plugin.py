@@ -14,12 +14,6 @@ def post_transform(topology: Box) -> None:
     for node in topology.nodes.values():
         features = devices.get_device_features(node,topology.defaults)
         zbf_supported = 'firewall.zonebased' in features
-        if zbf_supported:
-            # Create basic structures if not exists
-            if 'firewall' not in node:
-                node.firewall = {}
-            if 'firewall.zonebased' not in node:
-                node.firewall.zonebased = { '_zones': {} }
         for intf in node.get('interfaces',[]):
             # if link has a firewall zone, apply extra config to this node
             fw_zone = intf.get('firewall.zone', '')
