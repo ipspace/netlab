@@ -32,9 +32,41 @@ protocols {
   }
 }
 
-{# VERY DIRTY HACK here for initial testing - since we can specify only one vrf-target per vni-option, let's use the first import one #}
-{# - do it only if vxlan is defined - no need if we are RR only #}
-{% if vxlan is defined %}
+{% if vlans is defined %}
+policy-options {
+{%   for vname,vdata in vlans.items() %}
+{%     if vdata.evpn.export|default([])|length > 1 %}
+  delete: policy-statement evpn-vlan-{{ vname }}-export;
+  community evpn-vlan-{{ vname }}-export members [ target:{{ " target:".join(vdata.evpn.export) }} ];
+  policy-statement evpn-vlan-{{ vname }}-export {
+    then {
+      community add evpn-vlan-{{ vname }}-export;
+      accept;
+    }
+  }
+{%     endif %}
+{%     if vdata.evpn.import|default([])|length > 1 %}
+  delete: policy-statement evpn-vlan-{{ vname }}-import;
+{%       set cmnt_list = [] %}
+{%       for cmnt in vdata.evpn.import %}
+{%         set cmnt_name = "evpn-vlan-" + vname + "-import-" + loop.index|string %}
+{%         set _ = cmnt_list.append(cmnt_name) %}
+  community {{ cmnt_name }} members [ target:{{ cmnt }} ];
+{%       endfor %}
+  policy-statement evpn-vlan-{{ vname }}-import {
+{%       for cmnt in vdata.evpn.import %}
+    term import-{{ loop.index }} {
+{%         set cmnt_name = "evpn-vlan-" + vname + "-import-" + loop.index|string %}
+      from community {{ cmnt_name }};
+      then accept;
+    }
+{%       endfor %}
+  }
+{%     endif %}
+{%   endfor %}
+}
+{% endif %}
+{% if vxlan is defined and evpn._junos_default_macvrf|default(False) %}
 protocols {
   evpn {
     encapsulation vxlan;
@@ -54,6 +86,53 @@ protocols {
 }
 {% endif %}
 
+{% if vlans is defined and vxlan is defined and not evpn._junos_default_macvrf|default(False) %}
+vlans {
+{%   for vname,v in vlans.items() if v.evpn.evi is defined and v.evpn.bundle is not defined %}
+  delete: {{ vname }};
+{%   endfor %}
+}
+
+routing-instances {
+{%   for vname,v in vlans.items() if v.evpn.evi is defined and v.evpn.bundle is not defined %}
+  vlan_{{ vname }} {
+    instance-type mac-vrf;
+    service-type vlan-based;
+    vtep-source-interface {{ vxlan.vtep_interface }};
+    route-distinguisher {{ v.evpn.rd }};
+{%     for dir in ['import', 'export'] %}
+{%       set tlist_len = v.evpn[dir]|default([])|length %}
+{%       if tlist_len == 1 %}
+    vrf-target {{ dir }} target:{{ v.evpn[dir][0] }};
+{%       elif tlist_len > 1 %}
+    vrf-{{ dir }} evpn-vlan-{{ vname }}-{{ dir }};
+{%       endif %}
+{%     endfor %}
+{%   for intf in interfaces if intf.vlan.access|default('') == vname %}
+    interface {{ intf.ifname }};
+{%   endfor %}
+    vlans {
+      {{ vname }} {
+        vlan-id {{ v.id }};
+{%   if v.mode == 'irb' %}
+        l3-interface irb.{{ v.id }};
+{%   endif %}
+        vxlan {
+          vni {{ v.vni }};
+        }
+      }
+    }
+    protocols {
+      evpn {
+        encapsulation vxlan;
+        default-gateway no-gateway-community;
+        extended-vni-list all;
+      }
+    }
+  }
+{%   endfor %}
+}
+{% endif %}
 
 {# define L3VNI on vrf routing-instance #}
 {% if vrfs is defined %}
