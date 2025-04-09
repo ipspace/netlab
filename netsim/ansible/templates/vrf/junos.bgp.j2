@@ -5,6 +5,12 @@ policy-options {
 {% for vname,vdata in vrfs.items() %}
 
   policy-statement vrf-{{vname}}-ibgp-export {
+    term redis_bgp {
+      from {
+        protocol bgp;
+      }
+      then accept;
+    }
     term redis_direct {
       from {
         protocol direct;
@@ -23,19 +29,15 @@ policy-options {
       }
       then accept;
     }
-{%   if bgp.next_hop_self is defined and bgp.next_hop_self %}
-    term next-hop-self {
-      from {
-        route-type external;
-      }
-      then {
-        next-hop self;
-      }
-    }
-{%   endif %}
   }
 
   policy-statement vrf-{{vname}}-ebgp-export {
+    term redis_bgp {
+      from {
+        protocol bgp;
+      }
+      then accept;
+    }
     term redis_direct {
       from {
         protocol direct;
@@ -77,7 +79,12 @@ routing-instances {
 {%   for af in ['ipv4','ipv6'] if vdata.af[af] is defined and vdata.loopback_address[af] is defined %}
         group ibgp-peers-{{ af }} {
           type internal;
-          export vrf-{{vname}}-ibgp-export;
+          export [ 
+{%     if bgp.next_hop_self|default(false) %}
+            next-hop-self
+{%     endif %}
+            vrf-{{vname}}-ibgp-export
+          ];
           advertise-inactive;
           local-address {{ vdata.loopback_address[af]|ipaddr('address') }};
 {%     if bgp.rr|default(False) %}

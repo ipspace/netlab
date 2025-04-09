@@ -5,18 +5,24 @@
    Policy for default route originate, and insert discard route
 #}
 policy-options {
-  policy-statement default-route {
+  policy-statement bgp-default-route {
     term default-route-v4 {
       from {
         route-filter 0.0.0.0/0 exact;
       }
-      then accept;
+      then {
+        community add x-route-permit-mark;
+        next policy;
+      }
     }
     term default-route-v6 {
       from {
         route-filter ::/0 exact;
       }
-      then accept;
+      then {
+        community add x-route-permit-mark;
+        next policy;
+      }
     }
   }
 }
@@ -80,7 +86,20 @@ routing-instances {
   remove-private;
 {%   endif %}
 {%   if n.default_originate|default(false) %}
-  export [ default-route {{k}}-export ];
+{# replace export policy with updated one, which includes default route policy #}
+  delete: export;
+  export [ 
+{%     if k == 'ibgp' and bgp.next_hop_self|default(false) %}
+    next-hop-self
+{%     endif %}
+    bgp-advertise
+    bgp-redistribute
+    bgp-default-route
+{%     if n.policy.out|default('') %}
+    {{ n.policy.out }}-{{ af }}
+{%     endif %}
+    bgp-final
+        ];
 {%   endif %}
 {%   if n.password is defined %}
   authentication-key "{{ n.password }}";

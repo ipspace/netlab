@@ -1,3 +1,6 @@
+{# since routing is applied before bgp, need to set the internal community for flow control also here #}
+policy-options community x-route-permit-mark members large:65535:0:65536;
+
 {% if routing.prefix|default({}) %}
 {%   include '_prefix_list_junos.j2' %}
 {% endif %}
@@ -5,11 +8,28 @@
 {% if routing.aspath|default({}) %}
 policy-options {
 {%   for asp_name,asp_list in routing.aspath.items() %}
-  as-path-group {{ asp_name }} {
+  delete: policy-statement x_aspath_match_{{ asp_name }};
+{# we need to create a subroutine for as-path matching if we want to use permit/deny, and use the as-path name defined above #}
 {%     for asp_line in asp_list %}
-{# WARNING: asp_line.action not usable - a quirk will warn the user #}
-    as-path {{ asp_name }}-{{ asp_line.sequence }} "{{ asp_line.path }}";
+  as-path {{ asp_name }}-{{ asp_line.sequence }} "{{ asp_line._junos_path }}";
+  policy-statement x_aspath_match_{{ asp_name }} {
+    term seq{{ asp_line.sequence }} {
+      from as-path {{ asp_name }}-{{ asp_line.sequence }};
+      then {
+{%       if asp_line.action == 'permit' %}
+        accept;
+{%       else %}
+        reject;
+{%       endif %}
+      }
+    }
+  }
 {%     endfor %}
+{# add reject as last resort for subroutine #}
+  policy-statement x_aspath_match_{{ asp_name }} {
+    term default-reject {
+      then reject;
+    }
   }
 {%   endfor %}
 }
@@ -17,14 +37,39 @@ policy-options {
 
 {% if routing.community|default({}) %}
 {%   for c_name,c_value in routing.community.items() %}
+delete: policy-options policy-statement x_comm_match_{{ c_name }};
 {%     for c_line in c_value.value %}
-{# WARNING: c_line.action not usable #}
+
 {%       if c_value.type|default('') == 'large' %}
-policy-options community {{ c_name }} members [ "large:{{ c_line._value }}" ];
+policy-options community {{ c_name }}_{{ loop.index }} members [ "large:{{ c_line._value }}" ];
 {%       else %}
-policy-options community {{ c_name }} members [ "{{ c_line._value }}" ];
+policy-options community {{ c_name }}_{{ loop.index }} members [ "{{ c_line._value }}" ];
 {%       endif %}
+
+{# we need to create a subroutine for community matching if we want to use permit/deny, and use the community name defined above #}
+policy-options {
+  policy-statement x_comm_match_{{ c_name }} {
+    term seq{{ loop.index }} {
+      from community {{ c_name }}_{{ loop.index }};
+      then {
+{%       if c_line.action == 'permit' %}
+        accept;
+{%       else %}
+        reject;
+{%       endif %}
+      }
+    }
+  }
+}
 {%     endfor %}
+{# add reject as last resort for subroutine #}
+policy-options {
+  policy-statement x_comm_match_{{ c_name }} {
+    term default-reject {
+      then reject;
+    }
+  }
+}
 {%   endfor %}
 {% endif %}
 
