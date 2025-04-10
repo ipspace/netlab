@@ -8,8 +8,8 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [r2]
 ok: [r4]
-ok: [dut]
 ok: [r1]
+ok: [dut]
 ok: [r3]
 
 TASK [Find device readiness script] ********************************************
@@ -59,9 +59,9 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [r2]
 ok: [r4]
+ok: [r1]
 ok: [dut]
 ok: [r3]
-ok: [r1]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [r2]
@@ -79,10 +79,10 @@ skipping: [r3]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [r2]
-ok: [r3]
 ok: [dut]
-ok: [r1]
+ok: [r3]
 ok: [r4]
+ok: [r1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
@@ -123,16 +123,16 @@ skipping: [r1]
 skipping: [r3]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [r1]
 ok: [r2]
-ok: [r4]
 ok: [dut]
+ok: [r4]
+ok: [r1]
 ok: [r3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [r2] => 
+ok: [r4] => 
   msg: |-
-    initial configuration for r2
+    initial configuration for r4
     =========================================
     #!/bin/bash
     #
@@ -149,6 +149,14 @@ ok: [r2] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
     #
     # Get the current next hop for the default route
     #
@@ -184,8 +192,10 @@ ok: [r2] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -195,8 +205,9 @@ ok: [r2] =>
     # Rest of initial configuration done through VTYSH
     #
     cat >/tmp/config <<CONFIG
-    hostname r2
+    hostname r4
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -204,12 +215,12 @@ ok: [r2] =>
     !
     interface lo
      no shutdown
-     ip address 10.0.0.3/32
+     ip address 10.0.0.5/32
     !
     interface eth1
      no shutdown
-     description r2 -> dut [external]
-     ip address 10.1.0.6/30
+     description r4 -> dut [external]
+     ip address 10.1.0.14/30
     !
     do write
     CONFIG
@@ -244,7 +255,7 @@ ok: [dut] =>
   
   
     policy-options {
-      policy-statement vrf-blue-export {
+      policy-statement vrf-blue-rt-export {
         term 1 {
           then {
             community add tg_65000_2;
@@ -255,7 +266,7 @@ ok: [dut] =>
   
   
   
-      policy-statement vrf-blue-import {
+      policy-statement vrf-blue-rt-import {
         term 1 {
           from community [ tg_65000_2 ];
           then accept;
@@ -264,7 +275,7 @@ ok: [dut] =>
           then reject;
         }
       }
-      policy-statement vrf-red-export {
+      policy-statement vrf-red-rt-export {
         term 1 {
           then {
             community add tg_65000_1;
@@ -275,7 +286,7 @@ ok: [dut] =>
   
   
   
-      policy-statement vrf-red-import {
+      policy-statement vrf-red-rt-import {
         term 1 {
           from community [ tg_65000_1 ];
           then accept;
@@ -292,8 +303,8 @@ ok: [dut] =>
         instance-type vrf;
         route-distinguisher 65000:2;
   
-        vrf-import vrf-blue-import;
-        vrf-export vrf-blue-export;
+        vrf-import vrf-blue-rt-import;
+        vrf-export vrf-blue-rt-export;
   
         routing-options {
           auto-export;
@@ -309,8 +320,8 @@ ok: [dut] =>
         instance-type vrf;
         route-distinguisher 65000:1;
   
-        vrf-import vrf-red-import;
-        vrf-export vrf-red-export;
+        vrf-import vrf-red-rt-import;
+        vrf-export vrf-red-rt-export;
   
         routing-options {
           auto-export;
@@ -384,9 +395,9 @@ ok: [dut] =>
         interface all;
       }
     }
-ok: [r4] => 
+ok: [r2] => 
   msg: |-
-    initial configuration for r4
+    initial configuration for r2
     =========================================
     #!/bin/bash
     #
@@ -403,6 +414,14 @@ ok: [r4] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
     #
     # Get the current next hop for the default route
     #
@@ -438,8 +457,10 @@ ok: [r4] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -449,8 +470,9 @@ ok: [r4] =>
     # Rest of initial configuration done through VTYSH
     #
     cat >/tmp/config <<CONFIG
-    hostname r4
+    hostname r2
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -458,12 +480,12 @@ ok: [r4] =>
     !
     interface lo
      no shutdown
-     ip address 10.0.0.5/32
+     ip address 10.0.0.3/32
     !
     interface eth1
      no shutdown
-     description r4 -> dut [external]
-     ip address 10.1.0.14/30
+     description r2 -> dut [external]
+     ip address 10.1.0.6/30
     !
     do write
     CONFIG
@@ -489,6 +511,14 @@ ok: [r1] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -523,8 +553,10 @@ ok: [r1] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -536,6 +568,7 @@ ok: [r1] =>
     cat >/tmp/config <<CONFIG
     hostname r1
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -574,6 +607,14 @@ ok: [r3] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -608,8 +649,10 @@ ok: [r3] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -621,6 +664,7 @@ ok: [r3] =>
     cat >/tmp/config <<CONFIG
     hostname r3
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -661,8 +705,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for r2
 
 TASK [template] ****************************************************************
 changed: [r3]
-changed: [r4]
 changed: [r2]
+changed: [r4]
 changed: [r1]
 
 TASK [set_fact] ****************************************************************
@@ -672,10 +716,10 @@ ok: [r3]
 ok: [r1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r2]
 changed: [r4]
-changed: [r1]
 changed: [r3]
+changed: [r2]
+changed: [r1]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r2]
@@ -688,9 +732,9 @@ PLAY [Deploy module-specific configurations] ***********************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [r1]
 ok: [r2]
-ok: [r4]
 ok: [dut]
 ok: [r3]
+ok: [r4]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4 => (item=bgp)
@@ -714,16 +758,16 @@ ok: [r4]
 TASK [fail] ********************************************************************
 skipping: [dut]
 skipping: [r1]
-skipping: [r3]
 skipping: [r2]
+skipping: [r3]
 skipping: [r4]
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 skipping: [r1]
 skipping: [r3]
-ok: [dut]
 ok: [r2]
 ok: [r4]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r1]
@@ -736,20 +780,22 @@ ok: [dut] =>
       autonomous-system 65000;
       router-id 10.0.0.1
     }
+  
+  
+    policy-options community x-route-permit-mark members large:65535:0:65536;
+  
     policy-options {
-      delete: policy-statement ibgp-export;
-      delete: policy-statement ebgp-export;
+      delete: policy-statement bgp-advertise;
+      delete: policy-statement bgp-redistribute;
+      delete: route-filter-list bgp-announce;
     }
+  
     policy-options {
-      policy-statement ibgp-export {
-        term advertise {
-          from {
-            protocol direct;
-            interface [
-               lo0.0  ];
-          }
-          then accept;
-        }
+  
+      route-filter-list bgp-announce {
+      }
+  
+      policy-statement next-hop-self {
         term next-hop-self {
           from {
             route-type external;
@@ -759,16 +805,58 @@ ok: [dut] =>
           }
         }
       }
-      policy-statement ebgp-export {
+  
+      policy-statement bgp-advertise {
         term advertise {
           from {
             protocol direct;
-            interface [ lo0.0 ];
+            interface [
+               lo0.0  ];
           }
-          then accept;
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+  
+        term originate {
+          from {
+            protocol static;
+            route-filter-list bgp-announce;
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+  
+      }
+  
+      policy-statement bgp-redistribute {
+        term redis_bgp {
+          from protocol bgp;
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
         }
       }
+  
+      policy-statement bgp-final {
+        term final-option {
+          from community x-route-permit-mark;
+          then {
+            community delete x-route-permit-mark;
+            accept;
+          }
+        }
+        term default-reject {
+          then reject;
+        }
+      }
+  
     }
+  
     protocols {
       delete: bgp;
     }
@@ -776,12 +864,20 @@ ok: [dut] =>
       bgp {
         group ibgp-peers-ipv4 {
           type internal;
-          export ibgp-export;
+          export [
+              next-hop-self
+              bgp-advertise
+              bgp-redistribute
+              bgp-final
+            ];
           advertise-inactive;
-          local-address 10.0.0.1;
         }
         group ebgp-peers {
-          export ebgp-export;
+          export [
+              bgp-advertise
+              bgp-redistribute
+              bgp-final
+            ];
           advertise-inactive;
         }
       }
@@ -892,8 +988,8 @@ ok: [r4]
 
 TASK [Find configuration template for ospf] ************************************
 skipping: [r2]
-skipping: [r4]
 ok: [r1]
+skipping: [r4]
 ok: [dut]
 ok: [r3]
 
@@ -908,8 +1004,8 @@ TASK [Find configuration deployment deploy_script for ospf] ********************
 skipping: [r2]
 skipping: [r4]
 ok: [r1]
-ok: [dut]
 ok: [r3]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r2]
@@ -918,34 +1014,6 @@ ok: [dut] =>
   msg: |-
     ospf configuration for dut
     =========================================
-ok: [r3] => 
-  msg: |-
-    ospf configuration for r3
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.4
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! r3 -> dut
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    do write
 ok: [r1] => 
   msg: |-
     ospf configuration for r1
@@ -974,6 +1042,34 @@ ok: [r1] =>
   
     !
     do write
+ok: [r3] => 
+  msg: |-
+    ospf configuration for r3
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.4
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! r3 -> dut
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    do write
 
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [r2]
@@ -985,8 +1081,8 @@ TASK [junos_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/temp
 ok: [dut]
 
 TASK [template] ****************************************************************
-changed: [r1]
 changed: [r3]
+changed: [r1]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -997,15 +1093,15 @@ skipping: [r1]
 skipping: [r3]
 
 TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [r3]
 changed: [r1]
+changed: [r3]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [r1]
 ok: [r2]
+ok: [dut]
 ok: [r3]
 ok: [r4]
-ok: [dut]
 
 TASK [Find configuration template for vrf] *************************************
 skipping: [r1]
@@ -1042,6 +1138,12 @@ ok: [dut] =>
     policy-options {
   
       policy-statement vrf-blue-ibgp-export {
+        term redis_bgp {
+          from {
+            protocol bgp;
+          }
+          then accept;
+        }
         term redis_direct {
           from {
             protocol direct;
@@ -1060,17 +1162,15 @@ ok: [dut] =>
           }
           then accept;
         }
-        term next-hop-self {
-          from {
-            route-type external;
-          }
-          then {
-            next-hop self;
-          }
-        }
       }
   
       policy-statement vrf-blue-ebgp-export {
+        term redis_bgp {
+          from {
+            protocol bgp;
+          }
+          then accept;
+        }
         term redis_direct {
           from {
             protocol direct;
@@ -1093,6 +1193,12 @@ ok: [dut] =>
   
   
       policy-statement vrf-red-ibgp-export {
+        term redis_bgp {
+          from {
+            protocol bgp;
+          }
+          then accept;
+        }
         term redis_direct {
           from {
             protocol direct;
@@ -1111,17 +1217,15 @@ ok: [dut] =>
           }
           then accept;
         }
-        term next-hop-self {
-          from {
-            route-type external;
-          }
-          then {
-            next-hop self;
-          }
-        }
       }
   
       policy-statement vrf-red-ebgp-export {
+        term redis_bgp {
+          from {
+            protocol bgp;
+          }
+          then accept;
+        }
         term redis_direct {
           from {
             protocol direct;

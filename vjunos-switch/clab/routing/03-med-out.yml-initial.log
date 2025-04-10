@@ -308,50 +308,27 @@ ok: [dut] =>
   msg: |-
     routing configuration for dut
     =========================================
+    policy-options community x-route-permit-mark members large:65535:0:65536;
   
   
   
   
     policy-options {
-      delete: policy-statement med_42-ipv4;
+      delete: policy-statement med_42;
     }
   
     policy-options {
-      policy-statement med_42-ipv4 {
-        term seq10 {
-          then {
-            accept;
-          }
-        }
+      policy-statement med_42 {
         term seq10 {
           then metric 42;
   
-        }
   
-        term default-reject {
           then {
-            reject;
+            community add x-route-permit-mark;
+            next policy;
           }
         }
   
-      }
-    }
-  
-    policy-options {
-      delete: policy-statement med_42-ipv6;
-    }
-  
-    policy-options {
-      policy-statement med_42-ipv6 {
-        term seq10 {
-          then {
-            accept;
-          }
-        }
-        term seq10 {
-          then metric 42;
-  
-        }
   
         term default-reject {
           then {
@@ -454,24 +431,27 @@ ok: [dut] =>
   msg: |-
     bgp configuration for dut
     =========================================
+  
     routing-options {
       autonomous-system 65000;
       router-id 10.0.0.1
     }
+  
+  
+    policy-options community x-route-permit-mark members large:65535:0:65536;
+  
     policy-options {
-      delete: policy-statement ibgp-export;
-      delete: policy-statement ebgp-export;
+      delete: policy-statement bgp-advertise;
+      delete: policy-statement bgp-redistribute;
+      delete: route-filter-list bgp-announce;
     }
+  
     policy-options {
-      policy-statement ibgp-export {
-        term advertise {
-          from {
-            protocol direct;
-            interface [
-               lo0.0  ];
-          }
-          then accept;
-        }
+  
+      route-filter-list bgp-announce {
+      }
+  
+      policy-statement next-hop-self {
         term next-hop-self {
           from {
             route-type external;
@@ -481,16 +461,67 @@ ok: [dut] =>
           }
         }
       }
-      policy-statement ebgp-export {
+  
+      policy-statement bgp-advertise {
         term advertise {
           from {
             protocol direct;
-            interface [ lo0.0 ];
+            interface [
+               lo0.0  ];
           }
-          then accept;
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+  
+        term originate {
+          from {
+            protocol static;
+            route-filter-list bgp-announce;
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+  
+      }
+  
+      policy-statement bgp-redistribute {
+        term redis_bgp {
+          from protocol bgp;
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+      }
+  
+      policy-statement bgp-final {
+        term final-option {
+          from community x-route-permit-mark;
+          then {
+            community delete x-route-permit-mark;
+            accept;
+          }
+        }
+        term default-reject {
+          then reject;
+        }
+      }
+  
+      policy-statement bgp-initial {
+        term initial-cleanup {
+          from community x-route-permit-mark;
+          then {
+            community delete x-route-permit-mark;
+            next policy;
+          }
         }
       }
     }
+  
     protocols {
       delete: bgp;
     }
@@ -498,18 +529,28 @@ ok: [dut] =>
       bgp {
         group ibgp-peers-ipv4 {
           type internal;
-          export ibgp-export;
+          export [
+              next-hop-self
+              bgp-advertise bgp-redistribute bgp-final
+            ];
           advertise-inactive;
         }
         group ibgp-peers-ipv6 {
           type internal;
-          export ibgp-export;
+          export [
+              next-hop-self
+              bgp-advertise bgp-redistribute bgp-final
+            ];
           advertise-inactive;
         }
         group ebgp-peers {
-          export ebgp-export;
+          export [
+              bgp-advertise bgp-redistribute bgp-final
+            ];
           advertise-inactive;
           neighbor 10.1.0.2 {
+            export [ bgp-advertise bgp-redistribute med_42 bgp-final ];
+  
             peer-as 65100;
             description probe;
             family inet {
@@ -517,6 +558,8 @@ ok: [dut] =>
             }
           }
           neighbor 2001:db8:3::2 {
+            export [ bgp-advertise bgp-redistribute med_42 bgp-final ];
+  
             peer-as 65100;
             description probe;
             family inet6 {
@@ -573,11 +616,10 @@ TASK [Run the configuration deployment script] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
 
 TASK [junos_config: deploying bgp.policy from /home/pipi/netlab_gh/netsim/extra/bgp.policy/junos.j2] ***
-[WARNING]: mgd: statement has no contents; ignored
-changed: [dut]
+ok: [dut]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=42   changed=4    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+dut                        : ok=42   changed=3    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
 probe                      : ok=36   changed=7    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
 
 

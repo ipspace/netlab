@@ -8,16 +8,16 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [r2]
 ok: [r4]
+ok: [r1]
 ok: [dut]
 ok: [r3]
-ok: [r1]
 
 TASK [Find device readiness script] ********************************************
 ok: [r2]
 ok: [r4]
 ok: [r1]
-ok: [r3]
 ok: [dut]
+ok: [r3]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [r2]
@@ -59,15 +59,15 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [r2]
 ok: [r4]
-ok: [dut]
 ok: [r1]
+ok: [dut]
 ok: [r3]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [r2]
+ok: [r1]
 ok: [r4]
 ok: [dut]
-ok: [r1]
 ok: [r3]
 
 TASK [fail] ********************************************************************
@@ -104,14 +104,14 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [r2]
 ok: [r4]
-ok: [r1]
 ok: [dut]
+ok: [r1]
 ok: [r3]
 
 TASK [Find configuration template for initial] *********************************
 ok: [r2]
-ok: [dut]
 ok: [r4]
+ok: [dut]
 ok: [r1]
 ok: [r3]
 
@@ -124,198 +124,12 @@ skipping: [r3]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [r2]
+ok: [r1]
 ok: [dut]
 ok: [r4]
-ok: [r1]
 ok: [r3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [r2] => 
-  msg: |-
-    initial configuration for r2
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)# "
-    echo
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    #
-    # Create loopbacks, stub and lag/bond devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    sysctl -qw net.ipv6.conf.eth1.autoconf=0
-    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
-    ip link set dev eth1 mtu 1500
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-  
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname r2
-    !
-    vrf mgmt
-     exit-vrf
-    !
-    ipv6 forwarding
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ! no ip address
-     ipv6 address 2001:db8:1:3::1/64
-    !
-    interface eth1
-     no shutdown
-     description r2 -> dut [external]
-     ! no ip address
-     ipv6 address 2001:db8:3:1::2/64
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
-ok: [r3] => 
-  msg: |-
-    initial configuration for r3
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)# "
-    echo
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    #
-    # Create loopbacks, stub and lag/bond devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    sysctl -qw net.ipv6.conf.eth1.autoconf=0
-    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
-    ip link set dev eth1 mtu 1500
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-  
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname r3
-    !
-    vrf mgmt
-     exit-vrf
-    !
-    ipv6 forwarding
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ! no ip address
-     ipv6 address 2001:db8:1:4::1/64
-    !
-    interface eth1
-     no shutdown
-     description r3 -> dut
-     ! no ip address
-     ipv6 address 2001:db8:3:2::2/64
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
 ok: [r1] => 
   msg: |-
     initial configuration for r1
@@ -336,6 +150,14 @@ ok: [r1] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -370,11 +192,11 @@ ok: [r1] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -386,15 +208,16 @@ ok: [r1] =>
     cat >/tmp/config <<CONFIG
     hostname r1
     !
+    ip forwarding
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
      no shutdown
-     ! no ip address
+     ip address 10.0.0.2/32
      ipv6 address 2001:db8:1:2::1/64
     !
     interface eth1
@@ -409,99 +232,6 @@ ok: [r1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [r4] => 
-  msg: |-
-    initial configuration for r4
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)# "
-    echo
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    #
-    # Create loopbacks, stub and lag/bond devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    sysctl -qw net.ipv6.conf.eth1.autoconf=0
-    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
-    ip link set dev eth1 mtu 1500
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-  
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname r4
-    !
-    vrf mgmt
-     exit-vrf
-    !
-    ipv6 forwarding
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ! no ip address
-     ipv6 address 2001:db8:1:5::1/64
-    !
-    interface eth1
-     no shutdown
-     description r4 -> dut [external]
-     ! no ip address
-     ipv6 address 2001:db8:3:3::2/64
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
 ok: [dut] => 
   msg: |-
     initial configuration for dut
@@ -509,6 +239,10 @@ ok: [dut] =>
     system {
       host-name dut;
       static-host-mapping {
+        r2 inet 10.0.0.3;
+        r4 inet 10.0.0.5;
+        r1 inet 10.0.0.2;
+        r3 inet 10.0.0.4;
       }
     }
   
@@ -527,7 +261,7 @@ ok: [dut] =>
   
   
     policy-options {
-      policy-statement vrf-blue-export {
+      policy-statement vrf-blue-rt-export {
         term 1 {
           then {
             community add tg_65000_2;
@@ -538,7 +272,7 @@ ok: [dut] =>
   
   
   
-      policy-statement vrf-blue-import {
+      policy-statement vrf-blue-rt-import {
         term 1 {
           from community [ tg_65000_2 ];
           then accept;
@@ -547,7 +281,7 @@ ok: [dut] =>
           then reject;
         }
       }
-      policy-statement vrf-red-export {
+      policy-statement vrf-red-rt-export {
         term 1 {
           then {
             community add tg_65000_1;
@@ -558,7 +292,7 @@ ok: [dut] =>
   
   
   
-      policy-statement vrf-red-import {
+      policy-statement vrf-red-rt-import {
         term 1 {
           from community [ tg_65000_1 ];
           then accept;
@@ -575,8 +309,8 @@ ok: [dut] =>
         instance-type vrf;
         route-distinguisher 65000:2;
   
-        vrf-import vrf-blue-import;
-        vrf-export vrf-blue-export;
+        vrf-import vrf-blue-rt-import;
+        vrf-export vrf-blue-rt-export;
   
         routing-options {
           auto-export;
@@ -592,8 +326,8 @@ ok: [dut] =>
         instance-type vrf;
         route-distinguisher 65000:1;
   
-        vrf-import vrf-red-import;
-        vrf-export vrf-red-export;
+        vrf-import vrf-red-rt-import;
+        vrf-export vrf-red-rt-export;
   
         routing-options {
           auto-export;
@@ -621,6 +355,9 @@ ok: [dut] =>
   
       lo0.0 {
   
+          family inet {
+            address 10.0.0.1/32;
+          }
           family inet6 {
             address 2001:db8:1:1::1/64;
           }
@@ -673,13 +410,318 @@ ok: [dut] =>
         interface ge-0/0/3.0;
       }
     }
+ok: [r2] => 
+  msg: |-
+    initial configuration for r2
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.autoconf=0
+    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname r2
+    !
+    ip forwarding
+    ipv6 forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.3/32
+     ipv6 address 2001:db8:1:3::1/64
+    !
+    interface eth1
+     no shutdown
+     description r2 -> dut [external]
+     ! no ip address
+     ipv6 address 2001:db8:3:1::2/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
+ok: [r4] => 
+  msg: |-
+    initial configuration for r4
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.autoconf=0
+    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname r4
+    !
+    ip forwarding
+    ipv6 forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.5/32
+     ipv6 address 2001:db8:1:5::1/64
+    !
+    interface eth1
+     no shutdown
+     description r4 -> dut [external]
+     ! no ip address
+     ipv6 address 2001:db8:3:3::2/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
+ok: [r3] => 
+  msg: |-
+    initial configuration for r3
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.autoconf=0
+    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname r3
+    !
+    ip forwarding
+    ipv6 forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.4/32
+     ipv6 address 2001:db8:1:4::1/64
+    !
+    interface eth1
+     no shutdown
+     description r3 -> dut
+     ! no ip address
+     ipv6 address 2001:db8:3:2::2/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for r2, r4, r1, r3
 
 TASK [junos_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/junos.j2] ***
-[WARNING]: mgd: statement must contain additional statements
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
@@ -695,22 +737,22 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for r2, r4, r1, r3
 
 TASK [template] ****************************************************************
-changed: [r4]
-changed: [r2]
 changed: [r3]
+changed: [r4]
 changed: [r1]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
 ok: [r4]
-ok: [r3]
 ok: [r1]
+ok: [r3]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [r2]
-changed: [r1]
 changed: [r3]
 changed: [r4]
+changed: [r1]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r2]
@@ -735,9 +777,9 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [r1]
 ok: [r2]
+ok: [r4]
 ok: [r3]
 ok: [dut]
-ok: [r4]
 
 TASK [Find configuration template for bgp] *************************************
 skipping: [r1]
@@ -749,15 +791,15 @@ ok: [r4]
 TASK [fail] ********************************************************************
 skipping: [dut]
 skipping: [r1]
-skipping: [r2]
 skipping: [r3]
+skipping: [r2]
 skipping: [r4]
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 skipping: [r1]
 skipping: [r3]
-ok: [dut]
 ok: [r2]
+ok: [dut]
 ok: [r4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -771,20 +813,22 @@ ok: [dut] =>
       autonomous-system 65000;
       router-id 10.0.0.1
     }
+  
+  
+    policy-options community x-route-permit-mark members large:65535:0:65536;
+  
     policy-options {
-      delete: policy-statement ibgp-export;
-      delete: policy-statement ebgp-export;
+      delete: policy-statement bgp-advertise;
+      delete: policy-statement bgp-redistribute;
+      delete: route-filter-list bgp-announce;
     }
+  
     policy-options {
-      policy-statement ibgp-export {
-        term advertise {
-          from {
-            protocol direct;
-            interface [
-               lo0.0  ];
-          }
-          then accept;
-        }
+  
+      route-filter-list bgp-announce {
+      }
+  
+      policy-statement next-hop-self {
         term next-hop-self {
           from {
             route-type external;
@@ -794,29 +838,89 @@ ok: [dut] =>
           }
         }
       }
-      policy-statement ebgp-export {
+  
+      policy-statement bgp-advertise {
         term advertise {
           from {
             protocol direct;
-            interface [ lo0.0 ];
+            interface [
+               lo0.0  ];
           }
-          then accept;
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+  
+        term originate {
+          from {
+            protocol static;
+            route-filter-list bgp-announce;
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+  
+      }
+  
+      policy-statement bgp-redistribute {
+        term redis_bgp {
+          from protocol bgp;
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
         }
       }
+  
+      policy-statement bgp-final {
+        term final-option {
+          from community x-route-permit-mark;
+          then {
+            community delete x-route-permit-mark;
+            accept;
+          }
+        }
+        term default-reject {
+          then reject;
+        }
+      }
+  
     }
+  
     protocols {
       delete: bgp;
     }
     protocols {
       bgp {
+        group ibgp-peers-ipv4 {
+          type internal;
+          export [
+              next-hop-self
+              bgp-advertise
+              bgp-redistribute
+              bgp-final
+            ];
+          advertise-inactive;
+        }
         group ibgp-peers-ipv6 {
           type internal;
-          export ibgp-export;
+          export [
+              next-hop-self
+              bgp-advertise
+              bgp-redistribute
+              bgp-final
+            ];
           advertise-inactive;
-          local-address 2001:db8:1:1::1;
         }
         group ebgp-peers {
-          export ebgp-export;
+          export [
+              bgp-advertise
+              bgp-redistribute
+              bgp-final
+            ];
           advertise-inactive;
         }
       }
@@ -839,6 +943,14 @@ ok: [r2] =>
     !
       neighbor 2001:db8:3:1::1 remote-as 65000
       neighbor 2001:db8:3:1::1 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.3/32
+    !
+    !
     !
      address-family ipv6 unicast
     !
@@ -874,6 +986,14 @@ ok: [r4] =>
     !
       neighbor 2001:db8:3:3::1 remote-as 65000
       neighbor 2001:db8:3:3::1 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.5/32
+    !
+    !
     !
      address-family ipv6 unicast
     !
@@ -921,16 +1041,16 @@ changed: [r2]
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [r1]
 ok: [r2]
-ok: [dut]
 ok: [r3]
+ok: [dut]
 ok: [r4]
 
 TASK [Find configuration template for ospf] ************************************
 skipping: [r2]
 ok: [r1]
 skipping: [r4]
-ok: [dut]
 ok: [r3]
+ok: [dut]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -958,6 +1078,23 @@ ok: [r1] =>
     ospf configuration for r1
     =========================================
     !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.2
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+  
+    !
     ! OSPFv3 FRR configuration
     !
     interface lo
@@ -984,6 +1121,23 @@ ok: [r3] =>
   msg: |-
     ospf configuration for r3
     =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.4
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+  
     !
     ! OSPFv3 FRR configuration
     !
@@ -1018,8 +1172,8 @@ TASK [junos_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/temp
 ok: [dut]
 
 TASK [template] ****************************************************************
-changed: [r3]
 changed: [r1]
+changed: [r3]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -1030,8 +1184,8 @@ skipping: [r1]
 skipping: [r3]
 
 TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [r1]
 changed: [r3]
+changed: [r1]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [r1]
@@ -1075,6 +1229,12 @@ ok: [dut] =>
     policy-options {
   
       policy-statement vrf-blue-ibgp-export {
+        term redis_bgp {
+          from {
+            protocol bgp;
+          }
+          then accept;
+        }
         term redis_direct {
           from {
             protocol direct;
@@ -1093,17 +1253,15 @@ ok: [dut] =>
           }
           then accept;
         }
-        term next-hop-self {
-          from {
-            route-type external;
-          }
-          then {
-            next-hop self;
-          }
-        }
       }
   
       policy-statement vrf-blue-ebgp-export {
+        term redis_bgp {
+          from {
+            protocol bgp;
+          }
+          then accept;
+        }
         term redis_direct {
           from {
             protocol direct;
@@ -1126,6 +1284,12 @@ ok: [dut] =>
   
   
       policy-statement vrf-red-ibgp-export {
+        term redis_bgp {
+          from {
+            protocol bgp;
+          }
+          then accept;
+        }
         term redis_direct {
           from {
             protocol direct;
@@ -1144,17 +1308,15 @@ ok: [dut] =>
           }
           then accept;
         }
-        term next-hop-self {
-          from {
-            route-type external;
-          }
-          then {
-            next-hop self;
-          }
-        }
       }
   
       policy-statement vrf-red-ebgp-export {
+        term redis_bgp {
+          from {
+            protocol bgp;
+          }
+          then accept;
+        }
         term redis_direct {
           from {
             protocol direct;

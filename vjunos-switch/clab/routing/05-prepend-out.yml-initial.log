@@ -84,13 +84,13 @@ TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
-ok: [x2]
 ok: [x1]
+ok: [x2]
 ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
-ok: [x1]
 ok: [x2]
+ok: [x1]
 ok: [dut]
 
 TASK [fail] ********************************************************************
@@ -100,8 +100,8 @@ skipping: [x2]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [x1]
-ok: [x2]
 ok: [dut]
+ok: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [x2] => 
@@ -368,16 +368,16 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
 ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
@@ -386,8 +386,8 @@ skipping: [x2]
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [x1]
 ok: [x2]
+ok: [x1]
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
@@ -425,26 +425,28 @@ ok: [dut] =>
   msg: |-
     routing configuration for dut
     =========================================
+    policy-options community x-route-permit-mark members large:65535:0:65536;
   
   
   
   
     policy-options {
-      delete: policy-statement p_count-ipv4;
+      delete: policy-statement p_count;
     }
   
     policy-options {
-      policy-statement p_count-ipv4 {
+      policy-statement p_count {
         term seq10 {
-          then {
-            accept;
-          }
-        }
-        term seq10 {
+  
           then as-path-prepend "65000";
   
   
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
         }
+  
   
         term default-reject {
           then {
@@ -454,23 +456,23 @@ ok: [dut] =>
   
       }
     }
-  
     policy-options {
-      delete: policy-statement p_path-ipv4;
+      delete: policy-statement p_path;
     }
   
     policy-options {
-      policy-statement p_path-ipv4 {
+      policy-statement p_path {
         term seq10 {
-          then {
-            accept;
-          }
-        }
-        term seq10 {
+  
           then as-path-prepend "65000 64999";
   
   
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
         }
+  
   
         term default-reject {
           then {
@@ -496,8 +498,8 @@ TASK [junos_config: deploying routing from /home/pipi/netlab_gh/netsim/ansible/t
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -527,8 +529,8 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
-ok: [x2]
 ok: [x1]
+ok: [x2]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -567,77 +569,6 @@ ok: [x1] =>
     !
     !
     do write
-ok: [dut] => 
-  msg: |-
-    bgp configuration for dut
-    =========================================
-    routing-options {
-      autonomous-system 65000;
-      router-id 10.0.0.1
-    }
-    policy-options {
-      delete: policy-statement ibgp-export;
-      delete: policy-statement ebgp-export;
-    }
-    policy-options {
-      policy-statement ibgp-export {
-        term advertise {
-          from {
-            protocol direct;
-            interface [
-               lo0.0  ];
-          }
-          then accept;
-        }
-        term next-hop-self {
-          from {
-            route-type external;
-          }
-          then {
-            next-hop self;
-          }
-        }
-      }
-      policy-statement ebgp-export {
-        term advertise {
-          from {
-            protocol direct;
-            interface [ lo0.0 ];
-          }
-          then accept;
-        }
-      }
-    }
-    protocols {
-      delete: bgp;
-    }
-    protocols {
-      bgp {
-        group ibgp-peers-ipv4 {
-          type internal;
-          export ibgp-export;
-          advertise-inactive;
-        }
-        group ebgp-peers {
-          export ebgp-export;
-          advertise-inactive;
-          neighbor 10.1.0.2 {
-            peer-as 65100;
-            description x1;
-            family inet {
-              unicast;
-            }
-          }
-          neighbor 10.1.0.6 {
-            peer-as 65101;
-            description x2;
-            family inet {
-              unicast;
-            }
-          }
-        }
-      }
-    }
 ok: [x2] => 
   msg: |-
     bgp configuration for x2
@@ -673,6 +604,140 @@ ok: [x2] =>
     !
     !
     do write
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+  
+    routing-options {
+      autonomous-system 65000;
+      router-id 10.0.0.1
+    }
+  
+  
+    policy-options community x-route-permit-mark members large:65535:0:65536;
+  
+    policy-options {
+      delete: policy-statement bgp-advertise;
+      delete: policy-statement bgp-redistribute;
+      delete: route-filter-list bgp-announce;
+    }
+  
+    policy-options {
+  
+      route-filter-list bgp-announce {
+      }
+  
+      policy-statement next-hop-self {
+        term next-hop-self {
+          from {
+            route-type external;
+          }
+          then {
+            next-hop self;
+          }
+        }
+      }
+  
+      policy-statement bgp-advertise {
+        term advertise {
+          from {
+            protocol direct;
+            interface [
+               lo0.0  ];
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+  
+        term originate {
+          from {
+            protocol static;
+            route-filter-list bgp-announce;
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+  
+      }
+  
+      policy-statement bgp-redistribute {
+        term redis_bgp {
+          from protocol bgp;
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+      }
+  
+      policy-statement bgp-final {
+        term final-option {
+          from community x-route-permit-mark;
+          then {
+            community delete x-route-permit-mark;
+            accept;
+          }
+        }
+        term default-reject {
+          then reject;
+        }
+      }
+  
+      policy-statement bgp-initial {
+        term initial-cleanup {
+          from community x-route-permit-mark;
+          then {
+            community delete x-route-permit-mark;
+            next policy;
+          }
+        }
+      }
+    }
+  
+    protocols {
+      delete: bgp;
+    }
+    protocols {
+      bgp {
+        group ibgp-peers-ipv4 {
+          type internal;
+          export [
+              next-hop-self
+              bgp-advertise bgp-redistribute bgp-final
+            ];
+          advertise-inactive;
+        }
+        group ebgp-peers {
+          export [
+              bgp-advertise bgp-redistribute bgp-final
+            ];
+          advertise-inactive;
+          neighbor 10.1.0.2 {
+            export [ bgp-advertise bgp-redistribute p_count bgp-final ];
+  
+            peer-as 65100;
+            description x1;
+            family inet {
+              unicast;
+            }
+          }
+          neighbor 10.1.0.6 {
+            export [ bgp-advertise bgp-redistribute p_path bgp-final ];
+  
+            peer-as 65101;
+            description x2;
+            family inet {
+              unicast;
+            }
+          }
+        }
+      }
+    }
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
@@ -724,11 +789,10 @@ TASK [Run the configuration deployment script] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
 
 TASK [junos_config: deploying bgp.policy from /home/pipi/netlab_gh/netsim/extra/bgp.policy/junos.j2] ***
-[WARNING]: mgd: statement has no contents; ignored
-changed: [dut]
+ok: [dut]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=42   changed=4    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+dut                        : ok=42   changed=3    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
 x1                         : ok=36   changed=7    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
 x2                         : ok=35   changed=6    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
 

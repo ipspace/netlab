@@ -200,6 +200,59 @@ ok: [probe] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    system {
+      host-name dut;
+      static-host-mapping {
+        probe inet 10.0.0.2;
+        x1 inet 10.0.0.3;
+      }
+    }
+  
+  
+    interfaces {
+      ge-0/0/0 {
+        mtu 1514;
+      }
+      ge-0/0/1 {
+        mtu 1514;
+      }
+  
+      lo0.0 {
+  
+          family inet {
+            address 10.0.0.1/32;
+          }
+  
+      }
+      ge-0/0/0.0 {
+        description "dut -> probe [external]";
+  
+          family inet {
+            address 10.1.0.1/30;
+          }
+  
+      }
+      ge-0/0/1.0 {
+        description "dut -> x1 [external]";
+  
+          family inet {
+            address 10.1.0.5/30;
+          }
+  
+      }
+    }
+    protocols {
+      lldp {
+        interface fxp0 {
+          disable;
+        }
+        interface all;
+      }
+    }
 ok: [x1] => 
   msg: |-
     initial configuration for x1
@@ -296,59 +349,6 @@ ok: [x1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    system {
-      host-name dut;
-      static-host-mapping {
-        probe inet 10.0.0.2;
-        x1 inet 10.0.0.3;
-      }
-    }
-  
-  
-    interfaces {
-      ge-0/0/0 {
-        mtu 1514;
-      }
-      ge-0/0/1 {
-        mtu 1514;
-      }
-  
-      lo0.0 {
-  
-          family inet {
-            address 10.0.0.1/32;
-          }
-  
-      }
-      ge-0/0/0.0 {
-        description "dut -> probe [external]";
-  
-          family inet {
-            address 10.1.0.1/30;
-          }
-  
-      }
-      ge-0/0/1.0 {
-        description "dut -> x1 [external]";
-  
-          family inet {
-            address 10.1.0.5/30;
-          }
-  
-      }
-    }
-    protocols {
-      lldp {
-        interface fxp0 {
-          disable;
-        }
-        interface all;
-      }
-    }
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
@@ -368,8 +368,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for probe, x1
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [probe]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [probe]
@@ -395,8 +395,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, p
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1 => (item=bgp)
 
 TASK [Figure out whether to deploy the module routing on current device] *******
-ok: [x1]
 ok: [probe]
+ok: [x1]
 ok: [dut]
 
 TASK [Find configuration template for routing] *********************************
@@ -410,51 +410,11 @@ skipping: [probe]
 skipping: [x1]
 
 TASK [Find configuration deployment deploy_script for routing] *****************
-ok: [probe]
 ok: [x1]
+ok: [probe]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [probe] => 
-  msg: |-
-    routing configuration for probe
-    =========================================
-    !
-    !
-ok: [dut] => 
-  msg: |-
-    routing configuration for dut
-    =========================================
-  
-  
-    policy-options community x_comm_set_65000_101 members [ "65000:101" ];
-  
-  
-    policy-options {
-      delete: policy-statement set_comm-ipv4;
-    }
-  
-    policy-options {
-      policy-statement set_comm-ipv4 {
-        term seq10 {
-          then {
-            accept;
-          }
-        }
-        term seq10 {
-          then community add x_comm_set_65000_101;
-  
-  
-        }
-  
-        term default-reject {
-          then {
-            reject;
-          }
-        }
-  
-      }
-    }
 ok: [x1] => 
   msg: |-
     routing configuration for x1
@@ -464,14 +424,80 @@ ok: [x1] =>
     route-map set_comm-ipv4 permit 10
       set community 65101:17
     !
+ok: [dut] => 
+  msg: |-
+    routing configuration for dut
+    =========================================
+    policy-options community x-route-permit-mark members large:65535:0:65536;
+  
+  
+  
+    delete: policy-options policy-statement x_comm_match_x_comm_add_65000_101;
+  
+    policy-options community x_comm_add_65000_101_1 members [ "65000:101" ];
+  
+    policy-options {
+      policy-statement x_comm_match_x_comm_add_65000_101 {
+        term seq1 {
+          from community x_comm_add_65000_101_1;
+          then {
+            accept;
+          }
+        }
+      }
+    }
+    policy-options {
+      policy-statement x_comm_match_x_comm_add_65000_101 {
+        term default-reject {
+          then reject;
+        }
+      }
+    }
+  
+    policy-options {
+      delete: policy-statement set_comm;
+    }
+  
+    policy-options {
+      policy-statement set_comm {
+        term seq10 {
+          then community add x_comm_add_65000_101;
+  
+  
+  
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+  
+  
+        term default-reject {
+          then {
+            reject;
+          }
+        }
+  
+      }
+    }
+ok: [probe] => 
+  msg: |-
+    routing configuration for probe
+    =========================================
+    !
+    !
 
 TASK [Deploy routing configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for probe, x1
 
 TASK [junos_config: deploying routing from /home/pipi/netlab_gh/netsim/ansible/templates/routing/junos.j2] ***
-[WARNING]:  statement not found
-changed: [dut]
+fatal: [dut]: FAILED! => changed=false 
+  module_stderr: 'b''error: Policy error: x_comm_add_65000_101 community referenced (in term seq10) but not defined\nerror: configuration check-out failed'''
+  module_stdout: ''
+  msg: |-
+    MODULE FAILURE
+    See stdout/stderr for the exact error
 
 TASK [template] ****************************************************************
 changed: [x1]
@@ -492,22 +518,18 @@ changed: [x1]
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [probe]
 ok: [x1]
-ok: [dut]
 
 TASK [Find configuration template for bgp] *************************************
 ok: [probe]
 ok: [x1]
-ok: [dut]
 
 TASK [fail] ********************************************************************
-skipping: [dut]
 skipping: [probe]
 skipping: [x1]
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [probe]
 ok: [x1]
-ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [probe] => 
@@ -545,77 +567,6 @@ ok: [probe] =>
     !
     !
     do write
-ok: [dut] => 
-  msg: |-
-    bgp configuration for dut
-    =========================================
-    routing-options {
-      autonomous-system 65000;
-      router-id 10.0.0.1
-    }
-    policy-options {
-      delete: policy-statement ibgp-export;
-      delete: policy-statement ebgp-export;
-    }
-    policy-options {
-      policy-statement ibgp-export {
-        term advertise {
-          from {
-            protocol direct;
-            interface [
-               lo0.0  ];
-          }
-          then accept;
-        }
-        term next-hop-self {
-          from {
-            route-type external;
-          }
-          then {
-            next-hop self;
-          }
-        }
-      }
-      policy-statement ebgp-export {
-        term advertise {
-          from {
-            protocol direct;
-            interface [ lo0.0 ];
-          }
-          then accept;
-        }
-      }
-    }
-    protocols {
-      delete: bgp;
-    }
-    protocols {
-      bgp {
-        group ibgp-peers-ipv4 {
-          type internal;
-          export ibgp-export;
-          advertise-inactive;
-        }
-        group ebgp-peers {
-          export ebgp-export;
-          advertise-inactive;
-          neighbor 10.1.0.2 {
-            peer-as 65100;
-            description probe;
-            family inet {
-              unicast;
-            }
-          }
-          neighbor 10.1.0.6 {
-            peer-as 65101;
-            description x1;
-            family inet {
-              unicast;
-            }
-          }
-        }
-      }
-    }
 ok: [x1] => 
   msg: |-
     bgp configuration for x1
@@ -653,11 +604,7 @@ ok: [x1] =>
     do write
 
 TASK [Deploy bgp configuration] ************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for probe, x1
-
-TASK [junos_config: deploying bgp from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/junos.j2] ***
-changed: [dut]
 
 TASK [template] ****************************************************************
 changed: [probe]
@@ -672,45 +619,34 @@ skipping: [probe]
 skipping: [x1]
 
 TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [x1]
 changed: [probe]
+changed: [x1]
 
 PLAY [Deploy custom deployment templates] **************************************
 
 TASK [Run custom configuration deployment scripts] *****************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-custom-config.yml for dut, x1 => (item=bgp.policy)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-custom-config.yml for x1 => (item=bgp.policy)
 
 TASK [Find configuration template] *********************************************
 ok: [x1]
-ok: [dut]
 
 TASK [fail] ********************************************************************
-skipping: [dut]
 skipping: [x1]
 
 TASK [Check is the configuration template is a file] ***************************
-ok: [dut -> localhost]
 ok: [x1 -> localhost]
 
 TASK [fail] ********************************************************************
-skipping: [dut]
 skipping: [x1]
 
-TASK [Process template /home/pipi/netlab_gh/netsim/extra/bgp.policy/junos.j2 for dut] ***
+TASK [Process template /home/pipi/netlab_gh/netsim/extra/bgp.policy/frr.j2 for x1] ***
 skipping: [x1]
-skipping: [dut]
 
 TASK [Find custom configuration deployment script] *****************************
 ok: [x1]
-ok: [dut]
 
 TASK [Run the configuration deployment script] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for x1
-
-TASK [junos_config: deploying bgp.policy from /home/pipi/netlab_gh/netsim/extra/bgp.policy/junos.j2] ***
-[WARNING]: mgd: statement has no contents; ignored
-changed: [dut]
 
 TASK [template] ****************************************************************
 changed: [x1]
@@ -725,11 +661,10 @@ TASK [run vtysh to import bgp.policy config from /home/pipi/netlab_gh/netsim/ext
 changed: [x1]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=42   changed=4    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+dut                        : ok=29   changed=1    unreachable=0    failed=1    skipped=5    rescued=0    ignored=0   
 probe                      : ok=36   changed=7    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
 x1                         : ok=43   changed=8    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 
-
-
-Use this topology to test 'set.community.append' route-map option.
-
+Fatal error in netlab: Executing Ansible playbook /home/pipi/netlab_gh/netsim/ansible/initial-config.ansible failed
+Error executing ansible-playbook /home/pipi/netlab_gh/netsim/ansible/initial-config.ansible:
+  Command '['ansible-playbook', '/home/pipi/netlab_gh/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.

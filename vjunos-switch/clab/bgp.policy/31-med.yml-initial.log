@@ -303,6 +303,7 @@ ok: [dut] =>
   msg: |-
     routing configuration for dut
     =========================================
+    policy-options community x-route-permit-mark members large:65535:0:65536;
   
   
   
@@ -315,11 +316,13 @@ ok: [dut] =>
       policy-statement bp-probe-1-in-ipv4 {
         term seq10 {
           then {
-            accept;
+            community add x-route-permit-mark;
+            next policy;
           }
         }
         term seq10 {
           then local-preference 17;
+  
   
         }
   
@@ -331,7 +334,6 @@ ok: [dut] =>
   
       }
     }
-  
     policy-options {
       delete: policy-statement bp-probe-1-in-ipv6;
     }
@@ -340,11 +342,13 @@ ok: [dut] =>
       policy-statement bp-probe-1-in-ipv6 {
         term seq10 {
           then {
-            accept;
+            community add x-route-permit-mark;
+            next policy;
           }
         }
         term seq10 {
           then local-preference 17;
+  
   
         }
   
@@ -356,7 +360,6 @@ ok: [dut] =>
   
       }
     }
-  
     policy-options {
       delete: policy-statement bp-probe-1-out-ipv4;
     }
@@ -365,11 +368,13 @@ ok: [dut] =>
       policy-statement bp-probe-1-out-ipv4 {
         term seq10 {
           then {
-            accept;
+            community add x-route-permit-mark;
+            next policy;
           }
         }
         term seq10 {
           then metric 42;
+  
   
         }
   
@@ -381,7 +386,6 @@ ok: [dut] =>
   
       }
     }
-  
     policy-options {
       delete: policy-statement bp-probe-1-out-ipv6;
     }
@@ -390,11 +394,13 @@ ok: [dut] =>
       policy-statement bp-probe-1-out-ipv6 {
         term seq10 {
           then {
-            accept;
+            community add x-route-permit-mark;
+            next policy;
           }
         }
         term seq10 {
           then metric 42;
+  
   
         }
   
@@ -432,6 +438,140 @@ ok: [probe]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+    routing-options {
+      autonomous-system 65000;
+      router-id 10.0.0.1
+    }
+  
+  
+    policy-options community x-route-permit-mark members large:65535:0:65536;
+  
+    policy-options {
+      delete: policy-statement bgp-advertise;
+      delete: policy-statement bgp-redistribute;
+      delete: route-filter-list bgp-announce;
+    }
+  
+    policy-options {
+  
+      route-filter-list bgp-announce {
+      }
+  
+      policy-statement next-hop-self {
+        term next-hop-self {
+          from {
+            route-type external;
+          }
+          then {
+            next-hop self;
+          }
+        }
+      }
+  
+      policy-statement bgp-advertise {
+        term advertise {
+          from {
+            protocol direct;
+            interface [
+               lo0.0  ];
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+  
+        term originate {
+          from {
+            protocol static;
+            route-filter-list bgp-announce;
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+  
+      }
+  
+      policy-statement bgp-redistribute {
+        term redis_bgp {
+          from protocol bgp;
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+      }
+  
+      policy-statement bgp-final {
+        term final-option {
+          from community x-route-permit-mark;
+          then {
+            community delete x-route-permit-mark;
+            accept;
+          }
+        }
+        term default-reject {
+          then reject;
+        }
+      }
+  
+    }
+  
+    protocols {
+      delete: bgp;
+    }
+    protocols {
+      bgp {
+        group ibgp-peers-ipv4 {
+          type internal;
+          export [
+              next-hop-self
+              bgp-advertise
+              bgp-redistribute
+              bgp-final
+            ];
+          advertise-inactive;
+        }
+        group ibgp-peers-ipv6 {
+          type internal;
+          export [
+              next-hop-self
+              bgp-advertise
+              bgp-redistribute
+              bgp-final
+            ];
+          advertise-inactive;
+        }
+        group ebgp-peers {
+          export [
+              bgp-advertise
+              bgp-redistribute
+              bgp-final
+            ];
+          advertise-inactive;
+          neighbor 10.1.0.2 {
+            peer-as 65100;
+            description probe;
+            family inet {
+              unicast;
+            }
+          }
+          neighbor 2001:db8:3::2 {
+            peer-as 65100;
+            description probe;
+            family inet6 {
+              unicast;
+            }
+          }
+        }
+      }
+    }
 ok: [probe] => 
   msg: |-
     bgp configuration for probe
@@ -483,82 +623,6 @@ ok: [probe] =>
     !
     !
     do write
-ok: [dut] => 
-  msg: |-
-    bgp configuration for dut
-    =========================================
-    routing-options {
-      autonomous-system 65000;
-      router-id 10.0.0.1
-    }
-    policy-options {
-      delete: policy-statement ibgp-export;
-      delete: policy-statement ebgp-export;
-    }
-    policy-options {
-      policy-statement ibgp-export {
-        term advertise {
-          from {
-            protocol direct;
-            interface [
-               lo0.0  ];
-          }
-          then accept;
-        }
-        term next-hop-self {
-          from {
-            route-type external;
-          }
-          then {
-            next-hop self;
-          }
-        }
-      }
-      policy-statement ebgp-export {
-        term advertise {
-          from {
-            protocol direct;
-            interface [ lo0.0 ];
-          }
-          then accept;
-        }
-      }
-    }
-    protocols {
-      delete: bgp;
-    }
-    protocols {
-      bgp {
-        group ibgp-peers-ipv4 {
-          type internal;
-          export ibgp-export;
-          advertise-inactive;
-        }
-        group ibgp-peers-ipv6 {
-          type internal;
-          export ibgp-export;
-          advertise-inactive;
-        }
-        group ebgp-peers {
-          export ebgp-export;
-          advertise-inactive;
-          neighbor 10.1.0.2 {
-            peer-as 65100;
-            description probe;
-            family inet {
-              unicast;
-            }
-          }
-          neighbor 2001:db8:3::2 {
-            peer-as 65100;
-            description probe;
-            family inet6 {
-              unicast;
-            }
-          }
-        }
-      }
-    }
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
@@ -606,6 +670,7 @@ TASK [Run the configuration deployment script] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
 
 TASK [junos_config: deploying bgp.policy from /home/pipi/netlab_gh/netsim/extra/bgp.policy/junos.j2] ***
+[WARNING]: statement not found: export
 [WARNING]: mgd: statement has no contents; ignored
 changed: [dut]
 

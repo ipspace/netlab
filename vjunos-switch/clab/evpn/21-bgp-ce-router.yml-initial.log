@@ -61,9 +61,9 @@ ok: [s1]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [s2]
+ok: [ce2]
 ok: [ce1]
 ok: [s1]
-ok: [ce2]
 
 TASK [fail] ********************************************************************
 skipping: [s1]
@@ -72,10 +72,10 @@ skipping: [ce1]
 skipping: [ce2]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [ce2]
 ok: [s2]
 ok: [s1]
 ok: [ce1]
-ok: [ce2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [s1]
@@ -99,8 +99,8 @@ ok: [s1]
 ok: [ce2]
 
 TASK [Find configuration template for initial] *********************************
-ok: [s2]
 ok: [ce1]
+ok: [s2]
 ok: [s1]
 ok: [ce2]
 
@@ -222,6 +222,111 @@ ok: [s2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [s1] => 
+  msg: |-
+    initial configuration for s1
+    =========================================
+    system {
+      host-name s1;
+      static-host-mapping {
+        s2 inet 10.0.0.4;
+        ce1 inet 10.0.0.1;
+        ce2 inet 10.0.0.2;
+      }
+    }
+  
+  
+  
+  
+  
+  
+    policy-options {
+      community tg_65000_1 members target:65000:1;
+    }
+  
+  
+  
+    policy-options {
+      policy-statement vrf-tenant-rt-export {
+        term 1 {
+          then {
+            community add tg_65000_1;
+            accept;
+          }
+        }
+      }
+  
+  
+  
+      policy-statement vrf-tenant-rt-import {
+        term 1 {
+          from community [ tg_65000_1 ];
+          then accept;
+        }
+        term default {
+          then reject;
+        }
+      }
+    }
+  
+    routing-instances {
+  
+      tenant {
+        instance-type vrf;
+        route-distinguisher 65000:1;
+  
+        vrf-import vrf-tenant-rt-import;
+        vrf-export vrf-tenant-rt-export;
+  
+        routing-options {
+          auto-export;
+        }
+  
+        interface ge-0/0/1.0;
+  
+      }
+  
+    }
+    interfaces {
+      ge-0/0/0 {
+        mtu 1614;
+      }
+      ge-0/0/1 {
+        mtu 1514;
+      }
+  
+      lo0.0 {
+  
+          family inet {
+            address 10.0.0.3/32;
+          }
+  
+      }
+      ge-0/0/0.0 {
+        description "s1 -> s2";
+  
+          family inet {
+            address 10.1.0.1/30;
+          }
+  
+      }
+      ge-0/0/1.0 {
+        description "s1 -> ce1 [external]";
+  
+          family inet {
+            address 10.1.0.6/30;
+          }
+  
+      }
+    }
+    protocols {
+      lldp {
+        interface fxp0 {
+          disable;
+        }
+        interface all;
+      }
+    }
 ok: [ce1] => 
   msg: |-
     initial configuration for ce1
@@ -414,111 +519,6 @@ ok: [ce2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [s1] => 
-  msg: |-
-    initial configuration for s1
-    =========================================
-    system {
-      host-name s1;
-      static-host-mapping {
-        s2 inet 10.0.0.4;
-        ce1 inet 10.0.0.1;
-        ce2 inet 10.0.0.2;
-      }
-    }
-  
-  
-  
-  
-  
-  
-    policy-options {
-      community tg_65000_1 members target:65000:1;
-    }
-  
-  
-  
-    policy-options {
-      policy-statement vrf-tenant-export {
-        term 1 {
-          then {
-            community add tg_65000_1;
-            accept;
-          }
-        }
-      }
-  
-  
-  
-      policy-statement vrf-tenant-import {
-        term 1 {
-          from community [ tg_65000_1 ];
-          then accept;
-        }
-        term default {
-          then reject;
-        }
-      }
-    }
-  
-    routing-instances {
-  
-      tenant {
-        instance-type vrf;
-        route-distinguisher 65000:1;
-  
-        vrf-import vrf-tenant-import;
-        vrf-export vrf-tenant-export;
-  
-        routing-options {
-          auto-export;
-        }
-  
-        interface ge-0/0/1.0;
-  
-      }
-  
-    }
-    interfaces {
-      ge-0/0/0 {
-        mtu 1614;
-      }
-      ge-0/0/1 {
-        mtu 1514;
-      }
-  
-      lo0.0 {
-  
-          family inet {
-            address 10.0.0.3/32;
-          }
-  
-      }
-      ge-0/0/0.0 {
-        description "s1 -> s2";
-  
-          family inet {
-            address 10.1.0.1/30;
-          }
-  
-      }
-      ge-0/0/1.0 {
-        description "s1 -> ce1 [external]";
-  
-          family inet {
-            address 10.1.0.6/30;
-          }
-  
-      }
-    }
-    protocols {
-      lldp {
-        interface fxp0 {
-          disable;
-        }
-        interface all;
-      }
-    }
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for s1
@@ -609,9 +609,6 @@ ok: [s2] =>
     #
     set -e # Exit immediately when any command fails
     #
-  
-  
-    exit 0
 ok: [s1] => 
   msg: |-
     vlan configuration for s1
@@ -741,70 +738,6 @@ ok: [ce2] =>
     !
     !
     do write
-ok: [s1] => 
-  msg: |-
-    bgp configuration for s1
-    =========================================
-    routing-options {
-      autonomous-system 65000;
-      router-id 10.0.0.3
-    }
-    policy-options {
-      delete: policy-statement ibgp-export;
-      delete: policy-statement ebgp-export;
-    }
-    policy-options {
-      policy-statement ibgp-export {
-        term advertise {
-          from {
-            protocol direct;
-            interface [
-               lo0.0  ];
-          }
-          then accept;
-        }
-        term next-hop-self {
-          from {
-            route-type external;
-          }
-          then {
-            next-hop self;
-          }
-        }
-      }
-      policy-statement ebgp-export {
-        term advertise {
-          from {
-            protocol direct;
-            interface [ lo0.0 ];
-          }
-          then accept;
-        }
-      }
-    }
-    protocols {
-      delete: bgp;
-    }
-    protocols {
-      bgp {
-        group ibgp-peers-ipv4 {
-          type internal;
-          export ibgp-export;
-          advertise-inactive;
-          neighbor 10.0.0.4 {
-            local-address 10.0.0.3;
-            description s2;
-            family inet {
-              unicast;
-            }
-          }
-        }
-        group ebgp-peers {
-          export ebgp-export;
-          advertise-inactive;
-        }
-      }
-    }
 ok: [s2] => 
   msg: |-
     bgp configuration for s2
@@ -843,6 +776,130 @@ ok: [s2] =>
     !
     !
     do write
+ok: [s1] => 
+  msg: |-
+    bgp configuration for s1
+    =========================================
+  
+    routing-options {
+      autonomous-system 65000;
+      router-id 10.0.0.3
+    }
+  
+  
+    policy-options community x-route-permit-mark members large:65535:0:65536;
+  
+    policy-options {
+      delete: policy-statement bgp-advertise;
+      delete: policy-statement bgp-redistribute;
+      delete: route-filter-list bgp-announce;
+    }
+  
+    policy-options {
+  
+      route-filter-list bgp-announce {
+      }
+  
+      policy-statement next-hop-self {
+        term next-hop-self {
+          from {
+            route-type external;
+          }
+          then {
+            next-hop self;
+          }
+        }
+      }
+  
+      policy-statement bgp-advertise {
+        term advertise {
+          from {
+            protocol direct;
+            interface [
+               lo0.0  ];
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+  
+        term originate {
+          from {
+            protocol static;
+            route-filter-list bgp-announce;
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+  
+      }
+  
+      policy-statement bgp-redistribute {
+        term redis_bgp {
+          from protocol bgp;
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+      }
+  
+      policy-statement bgp-final {
+        term final-option {
+          from community x-route-permit-mark;
+          then {
+            community delete x-route-permit-mark;
+            accept;
+          }
+        }
+        term default-reject {
+          then reject;
+        }
+      }
+  
+      policy-statement bgp-initial {
+        term initial-cleanup {
+          from community x-route-permit-mark;
+          then {
+            community delete x-route-permit-mark;
+            next policy;
+          }
+        }
+      }
+    }
+  
+    protocols {
+      delete: bgp;
+    }
+    protocols {
+      bgp {
+        group ibgp-peers-ipv4 {
+          type internal;
+          export [
+              next-hop-self
+              bgp-advertise bgp-redistribute bgp-final
+            ];
+          advertise-inactive;
+          neighbor 10.0.0.4 {
+  
+            local-address 10.0.0.3;
+            description s2;
+            family inet {
+              unicast;
+            }
+          }
+        }
+        group ebgp-peers {
+          export [
+              bgp-advertise bgp-redistribute bgp-final
+            ];
+          advertise-inactive;
+        }
+      }
+    }
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for ce1, ce2, s2
@@ -850,8 +907,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for 
 
 TASK [template] ****************************************************************
 changed: [ce1]
-changed: [ce2]
 changed: [s2]
+changed: [ce2]
 
 TASK [set_fact] ****************************************************************
 ok: [ce1]
@@ -873,8 +930,8 @@ TASK [junos_config: deploying bgp from /home/pipi/netlab_gh/netsim/ansible/templ
 changed: [s1]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
-ok: [ce1]
 ok: [ce2]
+ok: [ce1]
 ok: [s2]
 ok: [s1]
 
@@ -1008,53 +1065,42 @@ ok: [s1] =>
   
     policy-options {
   
-      policy-statement vrf-tenant-ibgp-export {
-        term redis_direct {
+      policy-statement vrf-tenant-bgp-export {
+        term redis_bgp {
           from {
-            protocol direct;
-          }
-          then accept;
-        }
-        term redis_ospf {
-          from {
-            protocol ospf;
-          }
-          then accept;
-        }
-        term redis_ospf3 {
-          from {
-            protocol ospf3;
-          }
-          then accept;
-        }
-        term next-hop-self {
-          from {
-            route-type external;
+            protocol bgp;
           }
           then {
-            next-hop self;
+            community add x-route-permit-mark;
+            next policy;
           }
         }
-      }
-  
-      policy-statement vrf-tenant-ebgp-export {
         term redis_direct {
           from {
             protocol direct;
           }
-          then accept;
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
         }
         term redis_ospf {
           from {
             protocol ospf;
           }
-          then accept;
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
         }
         term redis_ospf3 {
           from {
             protocol ospf3;
           }
-          then accept;
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
         }
       }
   
@@ -1073,9 +1119,10 @@ ok: [s1] =>
           bgp {
   
             group ebgp-peers {
-              export vrf-tenant-ebgp-export;
+              export [ vrf-tenant-bgp-export bgp-final ];
               advertise-inactive;
               neighbor 10.1.0.5 {
+  
                 peer-as 65100;
                 description ce1;
               }
@@ -1205,11 +1252,12 @@ ok: [s2] =>
     #
     # Add it to the VLAN bridge (create if needed for l3 vnis); disable STP
     if [ ! -e /sys/devices/virtual/net/tvni-100 ]; then
-    brctl addbr tvni-100
+    ip link add tvni-100 type bridge
     ip link set up dev tvni-100
     fi
-    brctl addif tvni-100 vxlan5042
-    brctl stp tvni-100 off
+    ip link set dev vxlan5042 master tvni-100
+    ip link set tvni-100 type bridge stp_state 0
+  
     # Do not generate ipv6 link-local address for VXLAN devices
     ip link set mtu 1500 addrgenmode none dev vxlan5042
     # Disable dynamic MAC learning for evpn, see https://docs.frrouting.org/en/latest/evpn.html
@@ -1275,8 +1323,8 @@ TASK [run vtysh to import vxlan config from /home/pipi/netlab_gh/netsim/ansible/
 skipping: [s2]
 
 TASK [Figure out whether to deploy the module evpn on current device] **********
-ok: [ce2]
 ok: [ce1]
+ok: [ce2]
 ok: [s2]
 ok: [s1]
 
@@ -1367,6 +1415,7 @@ ok: [s1] =>
     }
   
   
+  
     routing-instances {
   
         tenant {
@@ -1379,7 +1428,7 @@ ok: [s1] =>
                         advertise direct-nexthop;
                         encapsulation vxlan;
                         vni 5042;
-                        export vrf-tenant-ebgp-export;
+                        export [ vrf-tenant-bgp-export bgp-final ];
                     }
                 }
             }
@@ -1392,23 +1441,18 @@ ok: [s1] =>
         policy-statement vrf-tenant-ospf-export {
             term redis_evpn {
                 from protocol evpn;
-                then accept;
+                then {
+                    accept;
+                }
             }
         }
-        policy-statement vrf-tenant-ibgp-export {
+        policy-statement vrf-tenant-bgp-export {
             term redis_evpn {
                 from protocol evpn;
-                then accept;
-            }
-        }
-        policy-statement vrf-tenant-ebgp-export {
-            term redis_evpn {
-                from protocol evpn;
-                then accept;
-            }
-            term redis_bgp {
-                from protocol bgp;
-                then accept;
+                then {
+                    community add x-route-permit-mark;
+                    next policy;
+                }
             }
         }
     }

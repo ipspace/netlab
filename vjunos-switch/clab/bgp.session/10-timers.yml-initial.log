@@ -350,20 +350,22 @@ ok: [dut] =>
       autonomous-system 65000;
       router-id 10.0.0.1
     }
+  
+  
+    policy-options community x-route-permit-mark members large:65535:0:65536;
+  
     policy-options {
-      delete: policy-statement ibgp-export;
-      delete: policy-statement ebgp-export;
+      delete: policy-statement bgp-advertise;
+      delete: policy-statement bgp-redistribute;
+      delete: route-filter-list bgp-announce;
     }
+  
     policy-options {
-      policy-statement ibgp-export {
-        term advertise {
-          from {
-            protocol direct;
-            interface [
-               lo0.0  ];
-          }
-          then accept;
-        }
+  
+      route-filter-list bgp-announce {
+      }
+  
+      policy-statement next-hop-self {
         term next-hop-self {
           from {
             route-type external;
@@ -373,16 +375,58 @@ ok: [dut] =>
           }
         }
       }
-      policy-statement ebgp-export {
+  
+      policy-statement bgp-advertise {
         term advertise {
           from {
             protocol direct;
-            interface [ lo0.0 ];
+            interface [
+               lo0.0  ];
           }
-          then accept;
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+  
+        term originate {
+          from {
+            protocol static;
+            route-filter-list bgp-announce;
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+  
+      }
+  
+      policy-statement bgp-redistribute {
+        term redis_bgp {
+          from protocol bgp;
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
         }
       }
+  
+      policy-statement bgp-final {
+        term final-option {
+          from community x-route-permit-mark;
+          then {
+            community delete x-route-permit-mark;
+            accept;
+          }
+        }
+        term default-reject {
+          then reject;
+        }
+      }
+  
     }
+  
     protocols {
       delete: bgp;
     }
@@ -390,11 +434,20 @@ ok: [dut] =>
       bgp {
         group ibgp-peers-ipv4 {
           type internal;
-          export ibgp-export;
+          export [
+              next-hop-self
+              bgp-advertise
+              bgp-redistribute
+              bgp-final
+            ];
           advertise-inactive;
         }
         group ebgp-peers {
-          export ebgp-export;
+          export [
+              bgp-advertise
+              bgp-redistribute
+              bgp-final
+            ];
           advertise-inactive;
           neighbor 10.1.0.2 {
             peer-as 65100;

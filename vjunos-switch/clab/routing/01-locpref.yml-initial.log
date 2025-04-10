@@ -56,14 +56,14 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, p
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [probe]
 ok: [x1]
-ok: [dut]
 ok: [x2]
+ok: [dut]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [probe]
-ok: [x2]
 ok: [x1]
 ok: [dut]
+ok: [x2]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -95,8 +95,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, p
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [probe]
 ok: [x1]
-ok: [x2]
 ok: [dut]
+ok: [x2]
 
 TASK [Find configuration template for initial] *********************************
 ok: [probe]
@@ -111,10 +111,10 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [probe]
-ok: [x1]
-ok: [dut]
 ok: [x2]
+ok: [probe]
+ok: [dut]
+ok: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [probe] => 
@@ -212,108 +212,6 @@ ok: [probe] =>
      description probe -> dut
      ip address 10.1.0.10/30
      ipv6 address 2001:db8:3:2::2/64
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
-ok: [x2] => 
-  msg: |-
-    initial configuration for x2
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)# "
-    echo
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
-    #
-    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
-    #
-    sysctl -w net.ipv4.ip_forward=1
-    sysctl -w net.ipv6.conf.all.forwarding=1
-    #
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    #
-    # Create loopbacks, stub and lag/bond devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    ip link set eth1 down
-    sysctl -qw net.ipv6.conf.eth1.autoconf=0
-    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set dev eth1 mtu 1500
-    ip link set eth1 up
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-  
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname x2
-    !
-    ip forwarding
-    ipv6 forwarding
-    vrf mgmt
-     exit-vrf
-    !
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ip address 172.42.43.1/24
-     ipv6 address 2001:db8:cafe:43::1/64
-    !
-    interface eth1
-     no shutdown
-     description x2 -> dut [external]
-     ip address 10.1.0.6/30
-     ipv6 address 2001:db8:3:1::2/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -505,6 +403,108 @@ ok: [x1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [x2] => 
+  msg: |-
+    initial configuration for x2
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.autoconf=0
+    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname x2
+    !
+    ip forwarding
+    ipv6 forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 172.42.43.1/24
+     ipv6 address 2001:db8:cafe:43::1/64
+    !
+    interface eth1
+     no shutdown
+     description x2 -> dut [external]
+     ip address 10.1.0.6/30
+     ipv6 address 2001:db8:3:1::2/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
@@ -525,9 +525,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for probe, x1, x2
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x2]
 changed: [probe]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [probe]
@@ -536,8 +536,8 @@ ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [probe]
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [probe]
@@ -558,8 +558,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, p
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1, x2 => (item=ospf)
 
 TASK [Figure out whether to deploy the module routing on current device] *******
-ok: [x1]
 ok: [probe]
+ok: [x1]
 ok: [x2]
 ok: [dut]
 
@@ -594,25 +594,27 @@ ok: [dut] =>
   msg: |-
     routing configuration for dut
     =========================================
+    policy-options community x-route-permit-mark members large:65535:0:65536;
   
   
   
   
     policy-options {
-      delete: policy-statement lp_17-ipv4;
+      delete: policy-statement lp_17;
     }
   
     policy-options {
-      policy-statement lp_17-ipv4 {
-        term seq10 {
-          then {
-            accept;
-          }
-        }
+      policy-statement lp_17 {
         term seq10 {
           then local-preference 17;
   
+  
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
         }
+  
   
         term default-reject {
           then {
@@ -622,72 +624,22 @@ ok: [dut] =>
   
       }
     }
-  
     policy-options {
-      delete: policy-statement lp_17-ipv6;
+      delete: policy-statement lp_42;
     }
   
     policy-options {
-      policy-statement lp_17-ipv6 {
-        term seq10 {
-          then {
-            accept;
-          }
-        }
-        term seq10 {
-          then local-preference 17;
-  
-        }
-  
-        term default-reject {
-          then {
-            reject;
-          }
-        }
-  
-      }
-    }
-  
-    policy-options {
-      delete: policy-statement lp_42-ipv4;
-    }
-  
-    policy-options {
-      policy-statement lp_42-ipv4 {
-        term seq10 {
-          then {
-            accept;
-          }
-        }
+      policy-statement lp_42 {
         term seq10 {
           then local-preference 42;
   
-        }
   
-        term default-reject {
           then {
-            reject;
+            community add x-route-permit-mark;
+            next policy;
           }
         }
   
-      }
-    }
-  
-    policy-options {
-      delete: policy-statement lp_42-ipv6;
-    }
-  
-    policy-options {
-      policy-statement lp_42-ipv6 {
-        term seq10 {
-          then {
-            accept;
-          }
-        }
-        term seq10 {
-          then local-preference 42;
-  
-        }
   
         term default-reject {
           then {
@@ -728,9 +680,9 @@ ok: [x2]
 
 TASK [Find configuration template for bgp] *************************************
 ok: [probe]
+ok: [x2]
 ok: [x1]
 ok: [dut]
-ok: [x2]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -739,10 +691,10 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
-ok: [x1]
+ok: [x2]
 ok: [probe]
 ok: [dut]
-ok: [x2]
+ok: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [probe] => 
@@ -806,24 +758,27 @@ ok: [dut] =>
   msg: |-
     bgp configuration for dut
     =========================================
+  
     routing-options {
       autonomous-system 65000;
       router-id 10.0.0.1
     }
+  
+  
+    policy-options community x-route-permit-mark members large:65535:0:65536;
+  
     policy-options {
-      delete: policy-statement ibgp-export;
-      delete: policy-statement ebgp-export;
+      delete: policy-statement bgp-advertise;
+      delete: policy-statement bgp-redistribute;
+      delete: route-filter-list bgp-announce;
     }
+  
     policy-options {
-      policy-statement ibgp-export {
-        term advertise {
-          from {
-            protocol direct;
-            interface [
-               lo0.0  ];
-          }
-          then accept;
-        }
+  
+      route-filter-list bgp-announce {
+      }
+  
+      policy-statement next-hop-self {
         term next-hop-self {
           from {
             route-type external;
@@ -833,16 +788,67 @@ ok: [dut] =>
           }
         }
       }
-      policy-statement ebgp-export {
+  
+      policy-statement bgp-advertise {
         term advertise {
           from {
             protocol direct;
-            interface [ lo0.0 ];
+            interface [
+               lo0.0  ];
           }
-          then accept;
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+  
+        term originate {
+          from {
+            protocol static;
+            route-filter-list bgp-announce;
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+  
+      }
+  
+      policy-statement bgp-redistribute {
+        term redis_bgp {
+          from protocol bgp;
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+      }
+  
+      policy-statement bgp-final {
+        term final-option {
+          from community x-route-permit-mark;
+          then {
+            community delete x-route-permit-mark;
+            accept;
+          }
+        }
+        term default-reject {
+          then reject;
+        }
+      }
+  
+      policy-statement bgp-initial {
+        term initial-cleanup {
+          from community x-route-permit-mark;
+          then {
+            community delete x-route-permit-mark;
+            next policy;
+          }
         }
       }
     }
+  
     protocols {
       delete: bgp;
     }
@@ -850,9 +856,13 @@ ok: [dut] =>
       bgp {
         group ibgp-peers-ipv4 {
           type internal;
-          export ibgp-export;
+          export [
+              next-hop-self
+              bgp-advertise bgp-redistribute bgp-final
+            ];
           advertise-inactive;
           neighbor 10.0.0.2 {
+  
             local-address 10.0.0.1;
             description probe;
             family inet {
@@ -862,9 +872,13 @@ ok: [dut] =>
         }
         group ibgp-peers-ipv6 {
           type internal;
-          export ibgp-export;
+          export [
+              next-hop-self
+              bgp-advertise bgp-redistribute bgp-final
+            ];
           advertise-inactive;
           neighbor 2001:db8:1:2::1 {
+  
             local-address 2001:db8:1:1::1;
             description probe;
             family inet6 {
@@ -873,9 +887,13 @@ ok: [dut] =>
           }
         }
         group ebgp-peers {
-          export ebgp-export;
+          export [
+              bgp-advertise bgp-redistribute bgp-final
+            ];
           advertise-inactive;
           neighbor 10.1.0.2 {
+            import [ bgp-initial lp_17 bgp-final ];
+  
             peer-as 65100;
             description x1;
             family inet {
@@ -883,6 +901,8 @@ ok: [dut] =>
             }
           }
           neighbor 2001:db8:3::2 {
+            import [ bgp-initial lp_17 bgp-final ];
+  
             peer-as 65100;
             description x1;
             family inet6 {
@@ -890,6 +910,8 @@ ok: [dut] =>
             }
           }
           neighbor 10.1.0.6 {
+            import [ bgp-initial lp_42 bgp-final ];
+  
             peer-as 65101;
             description x2;
             family inet {
@@ -897,6 +919,8 @@ ok: [dut] =>
             }
           }
           neighbor 2001:db8:3:1::2 {
+            import [ bgp-initial lp_42 bgp-final ];
+  
             peer-as 65101;
             description x2;
             family inet6 {
@@ -1018,13 +1042,13 @@ changed: [dut]
 
 TASK [template] ****************************************************************
 changed: [probe]
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [probe]
-ok: [x1]
 ok: [x2]
+ok: [x1]
 
 TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [probe]
@@ -1203,11 +1227,10 @@ TASK [Run the configuration deployment script] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
 
 TASK [junos_config: deploying bgp.policy from /home/pipi/netlab_gh/netsim/extra/bgp.policy/junos.j2] ***
-[WARNING]: mgd: statement has no contents; ignored
-changed: [dut]
+ok: [dut]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=49   changed=5    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+dut                        : ok=49   changed=4    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
 probe                      : ok=45   changed=9    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
 x1                         : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
 x2                         : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   

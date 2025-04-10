@@ -232,6 +232,72 @@ ok: [x1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    system {
+      host-name dut;
+      static-host-mapping {
+        x1 inet 10.42.0.1;
+        x2 inet 10.0.0.3;
+      }
+    }
+  
+  
+    interfaces {
+      ge-0/0/0 {
+        mtu 1514;
+      }
+      ge-0/0/1 {
+        mtu 1514;
+      }
+  
+      lo0.0 {
+  
+          family inet {
+            address 10.0.0.1/32;
+          }
+          family inet6 {
+            address 2001:db8:1:1::1/64;
+          }
+  
+      }
+      ge-0/0/0.0 {
+        description "dut -> x1";
+  
+          family inet {
+            address 10.1.0.1/30;
+          }
+          family inet6 {
+            address 2001:db8:3::1/64;
+          }
+  
+      }
+      ge-0/0/1.0 {
+        description "dut -> x1";
+  
+          family inet {
+            address 10.1.0.5/30;
+          }
+          family inet6 {
+            address 2001:db8:3:1::1/64;
+          }
+  
+      }
+    }
+    protocols {
+      lldp {
+        interface fxp0 {
+          disable;
+        }
+        interface all;
+      }
+      router-advertisement {
+        interface ge-0/0/0.0;
+        interface ge-0/0/1.0;
+      }
+    }
 ok: [x2] => 
   msg: |-
     initial configuration for x2
@@ -334,72 +400,6 @@ ok: [x2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    system {
-      host-name dut;
-      static-host-mapping {
-        x1 inet 10.42.0.1;
-        x2 inet 10.0.0.3;
-      }
-    }
-  
-  
-    interfaces {
-      ge-0/0/0 {
-        mtu 1514;
-      }
-      ge-0/0/1 {
-        mtu 1514;
-      }
-  
-      lo0.0 {
-  
-          family inet {
-            address 10.0.0.1/32;
-          }
-          family inet6 {
-            address 2001:db8:1:1::1/64;
-          }
-  
-      }
-      ge-0/0/0.0 {
-        description "dut -> x1";
-  
-          family inet {
-            address 10.1.0.1/30;
-          }
-          family inet6 {
-            address 2001:db8:3::1/64;
-          }
-  
-      }
-      ge-0/0/1.0 {
-        description "dut -> x1";
-  
-          family inet {
-            address 10.1.0.5/30;
-          }
-          family inet6 {
-            address 2001:db8:3:1::1/64;
-          }
-  
-      }
-    }
-    protocols {
-      lldp {
-        interface fxp0 {
-          disable;
-        }
-        interface all;
-      }
-      router-advertisement {
-        interface ge-0/0/0.0;
-        interface ge-0/0/1.0;
-      }
-    }
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for x1, x2
@@ -472,6 +472,8 @@ ok: [dut] =>
   msg: |-
     routing configuration for dut
     =========================================
+    policy-options community x-route-permit-mark members large:65535:0:65536;
+  
   
   
   
@@ -669,8 +671,8 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched

@@ -371,7 +371,7 @@ ok: [dut] =>
   
   
     policy-options {
-      policy-statement vrf-transport-export {
+      policy-statement vrf-transport-rt-export {
         term 1 {
           then {
             community add tg_65000_1;
@@ -382,7 +382,7 @@ ok: [dut] =>
   
   
   
-      policy-statement vrf-transport-import {
+      policy-statement vrf-transport-rt-import {
         term 1 {
           from community [ tg_65000_1 ];
           then accept;
@@ -399,8 +399,8 @@ ok: [dut] =>
         instance-type vrf;
         route-distinguisher 65000:1;
   
-        vrf-import vrf-transport-import;
-        vrf-export vrf-transport-export;
+        vrf-import vrf-transport-rt-import;
+        vrf-export vrf-transport-rt-export;
   
         routing-options {
           auto-export;
@@ -496,8 +496,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -527,8 +527,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=vrf)
 
 TASK [Figure out whether to deploy the module routing on current device] *******
-ok: [x1]
 ok: [x2]
+ok: [x1]
 ok: [dut]
 
 TASK [Find configuration template for routing] *********************************
@@ -553,6 +553,8 @@ ok: [dut] =>
   msg: |-
     routing configuration for dut
     =========================================
+    policy-options community x-route-permit-mark members large:65535:0:65536;
+  
   
   
   
@@ -661,55 +663,6 @@ ok: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
-ok: [x2] => 
-  msg: |-
-    ospf configuration for x2
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.3
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! x2 -> x1
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    ! OSPFv3 FRR configuration
-    !
-    interface lo
-    !
-     ipv6 ospf6 area 0.0.0.0
-    !
-    interface eth1
-    ! x2 -> x1
-     ipv6 ospf6 area 0.0.0.0
-     ipv6 ospf6 network point-to-point
-    !
-    !
-    router ospf6
-     ospf6 router-id 10.0.0.3
-     timers lsa min-arrival 100
-     timers throttle spf 10 50 500
-  
-  
-    exit
-  
-    !
-    do write
 ok: [x1] => 
   msg: |-
     ospf configuration for x1
@@ -789,14 +742,63 @@ ok: [x1] =>
   
     !
     do write
+ok: [x2] => 
+  msg: |-
+    ospf configuration for x2
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.3
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! x2 -> x1
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    ! OSPFv3 FRR configuration
+    !
+    interface lo
+    !
+     ipv6 ospf6 area 0.0.0.0
+    !
+    interface eth1
+    ! x2 -> x1
+     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 network point-to-point
+    !
+    !
+    router ospf6
+     ospf6 router-id 10.0.0.3
+     timers lsa min-arrival 100
+     timers throttle spf 10 50 500
+  
+  
+    exit
+  
+    !
+    do write
 
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [dut]
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
