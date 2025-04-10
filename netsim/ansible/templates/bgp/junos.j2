@@ -1,3 +1,5 @@
+{% import "junos.macro.j2" as bgpcfg with context %}
+
 routing-options {
   autonomous-system {{ bgp.as }};
 {% if bgp.router_id|ipv4 %}
@@ -105,6 +107,15 @@ policy-options {
     }
   }
 
+  policy-statement bgp-initial {
+    term initial-cleanup {
+      from community x-route-permit-mark;
+      then {
+        community delete x-route-permit-mark;
+        next policy;
+      }
+    }
+  }
 }
 
 protocols {
@@ -119,9 +130,7 @@ protocols {
 {%   if bgp.next_hop_self|default(false) %}
           next-hop-self
 {%   endif %}
-          bgp-advertise
-          bgp-redistribute
-          bgp-final
+          {{ (bgp._junos_policy.export|default([]))|join(' ') }}
         ];
       advertise-inactive;
 {% if bgp.rr|default(False) %}
@@ -129,6 +138,8 @@ protocols {
 {% endif %}
 {%   for n in bgp.neighbors if n[af] is defined and n.type == 'ibgp' %}
       neighbor {{ n[af] }} {
+{#     apply per-neighbor policies, if defined #}
+{{     bgpcfg.bgp_neighbor_policy(n) }}
 {%     if n._source_intf[af] is defined %}
         local-address {{ n._source_intf[af]|ipaddr('address') }};
 {%     endif %}
@@ -146,15 +157,15 @@ protocols {
 {% endfor %}
     group ebgp-peers {
       export [ 
-          bgp-advertise
-          bgp-redistribute
-          bgp-final
+          {{ (bgp._junos_policy.export|default([]))|join(' ') }}
         ];
       advertise-inactive;
 {# treat localas_ibgp as ebgp session --> no usage of local address #}
 {% for n in bgp.neighbors if (n.type == 'ebgp' or n.type == 'localas_ibgp') %}
 {%   for af in ['ipv4','ipv6'] if n[af] is defined %}
       neighbor {{ n[af] }} {
+{#     apply per-neighbor policies, if defined #}
+{{     bgpcfg.bgp_neighbor_policy(n) }}
         peer-as {{ n.as }};
         description {{ n.name }};
 {%     if n.local_as is defined %}

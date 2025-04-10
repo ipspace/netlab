@@ -1,60 +1,46 @@
+{% import "templates/bgp/junos.macro.j2" as bgpcfg with context %}
 
 {# define VRF policies #}
 
 policy-options {
 {% for vname,vdata in vrfs.items() %}
 
-  policy-statement vrf-{{vname}}-ibgp-export {
+  policy-statement vrf-{{vname}}-bgp-export {
     term redis_bgp {
       from {
         protocol bgp;
       }
-      then accept;
+      then {
+        community add x-route-permit-mark;
+        next policy;
+      }
     }
     term redis_direct {
       from {
         protocol direct;
       }
-      then accept;
+      then {
+        community add x-route-permit-mark;
+        next policy;
+      }
     }
     term redis_ospf {
       from {
         protocol ospf;
       }
-      then accept;
+      then {
+        community add x-route-permit-mark;
+        next policy;
+      }
     }
     term redis_ospf3 {
       from {
         protocol ospf3;
       }
-      then accept;
-    }
-  }
-
-  policy-statement vrf-{{vname}}-ebgp-export {
-    term redis_bgp {
-      from {
-        protocol bgp;
+      then {
+        community add x-route-permit-mark;
+        next policy;
       }
-      then accept;
-    }
-    term redis_direct {
-      from {
-        protocol direct;
-      }
-      then accept;
-    }
-    term redis_ospf {
-      from {
-        protocol ospf;
-      }
-      then accept;
-    }
-    term redis_ospf3 {
-      from {
-        protocol ospf3;
-      }
-      then accept;
     }
   }
 
@@ -83,7 +69,7 @@ routing-instances {
 {%     if bgp.next_hop_self|default(false) %}
             next-hop-self
 {%     endif %}
-            vrf-{{vname}}-ibgp-export
+            {{ (vdata.bgp._junos_policy.export|default([]))|join(' ') }}
           ];
           advertise-inactive;
           local-address {{ vdata.loopback_address[af]|ipaddr('address') }};
@@ -92,6 +78,8 @@ routing-instances {
 {%     endif %}
 {%     for n in vdata.bgp.neighbors|default([]) if n[af] is defined and n.type == 'ibgp' %}
           neighbor {{ n[af] }} {
+{#       apply per-neighbor policies, if defined #}
+{{       bgpcfg.bgp_neighbor_policy(n) }}
             description {{ n.name }};
           }
 {%     endfor %}
@@ -99,11 +87,13 @@ routing-instances {
 {%   endfor %}
 
         group ebgp-peers {
-          export vrf-{{vname}}-ebgp-export;
+          export [ {{ (vdata.bgp._junos_policy.export|default([]))|join(' ') }} ];
           advertise-inactive;
 {%   for n in vdata.bgp.neighbors|default([]) if (n.type == 'ebgp' or n.type == 'localas_ibgp') %}
 {%     for af in ['ipv4','ipv6'] if n[af] is defined %}
           neighbor {{ n[af] }} {
+{#       apply per-neighbor policies, if defined #}
+{{       bgpcfg.bgp_neighbor_policy(n) }}
             peer-as {{ n.as }};
             description {{ n.name }};
 {%       if n.local_as is defined %}

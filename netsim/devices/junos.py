@@ -10,9 +10,21 @@ from box import Box
 from . import _Quirks,report_quirk
 from ..utils import log
 from ..augment import devices
+import copy
 
 JUNOS_MTU_DEFAULT_HEADER_LENGTH = 14
 JUNOS_MTU_FLEX_VLAN_HEADER_LENGTH = 22
+
+# constants used in BGP Policies
+JUNOS_POLICY_NHS = 'next-hop-self'
+JUNOS_POLICY_DEFAULT_ORIGINATE = 'bgp-default-route'
+JUNOS_COMMON_BGP_POLICIES = [
+  'bgp-advertise',
+  'bgp-redistribute',
+]
+JUNOS_POLICY_LAST = 'bgp-final'
+JUNOS_POLICY_IN_CLEANUP = 'bgp-initial'
+JUNOS_POLICY_VRF_EXPORT = 'vrf-{}-bgp-export'
 
 def _aspath_regex_convert(r: str) -> str:
   if r.startswith("^") or r.endswith("$") or r == '.*':
@@ -216,6 +228,104 @@ def community_set_quirk(node: Box, topology: Box) -> None:
               'value': comm_list,
             }
 
+def _bgp_neigh_import_policy_chain_build(neigh: Box, node: Box, vrf_name: str) -> None:
+  need_to_have_neigh_policy = False
+  neigh_policy = []
+  neigh_policy.append(JUNOS_POLICY_IN_CLEANUP)
+  custom_policy = neigh.get('policy.in', '')
+  if custom_policy:
+    neigh_policy.append(custom_policy)
+    need_to_have_neigh_policy = True
+  neigh_policy.append(JUNOS_POLICY_LAST)
+  if need_to_have_neigh_policy:
+    # copy the object neigh_policy - (Assignment statements in Python do not copy objects)
+    neigh._junos_policy['import'] = copy.deepcopy(neigh_policy)
+  return
+
+def _bgp_neigh_export_policy_chain_build(neigh: Box, node: Box, vrf_name: str) -> None:
+  ngb_type = neigh.get('type', '')
+  need_to_have_neigh_policy = False
+  neigh_policy = []
+  if ngb_type == 'ibgp' and node.get('bgp.next_hop_self', False):
+    neigh_policy.append(JUNOS_POLICY_NHS)
+  
+  if vrf_name:
+    neigh_policy.append(JUNOS_POLICY_VRF_EXPORT.format(vrf_name))
+  else:
+    neigh_policy.extend(JUNOS_COMMON_BGP_POLICIES)
+  
+  if neigh.get('default_originate', False):
+    neigh_policy.append(JUNOS_POLICY_DEFAULT_ORIGINATE)
+    need_to_have_neigh_policy = True
+  custom_policy = neigh.get('policy.out', '')
+  if custom_policy:
+    neigh_policy.append(custom_policy)
+    need_to_have_neigh_policy = True
+  neigh_policy.append(JUNOS_POLICY_LAST)
+  # define the data structure, if needed
+  if need_to_have_neigh_policy:
+    # copy the object neigh_policy - (Assignment statements in Python do not copy objects)
+    neigh._junos_policy['export'] = copy.deepcopy(neigh_policy)
+  return
+
+def build_bgp_import_export_policy_chain(node: Box, topology: Box) -> None:
+  # build per node/vrf and per-peer import and export policy chains, based on all the different
+  #  modules and config (i.e., basic bgp, bgp.session, bgp.policy, routing)
+  #  this is to avoid multiple templates to reference multiple times (with the risk of overwriting) the same policies
+  #  (remember we use a local internal large community to control the polocy flow)
+  # IMPORT Policy chain (for now this is useful only on specific neigh, no default policy)
+  #  - drop internal flow community (for security purposes, we don't want external peers to control our flows)
+  #  - vrf specific policy, if present (not for now)
+  #  - custom policy (if neigh.policy.in - applies only to neigh) [{{ n.policy.in }}-{{ af }}]
+  #  - default last resort policy
+  # EXPORT Policy chain (needs to be improved for VRF)
+  #  [default vrf]
+  #  - next-hop-self (if ibgp and bgp.next_hop_self). 
+  #      on global level, this must be applied only on the template, cannot discriminate here
+  #  - bgp-advertise
+  #  - bgp-redistribute
+  #  - bgp-default-route (if neigh.default_originate true - only to neigh)
+  #  - custom policy (if neigh.policy.out) [{{ n.policy.out }}-{{ af }}]
+  #  - bgp-final
+  #  [specific vrf]
+  #  - next-hop-self (if ibgp and bgp.next_hop_self)
+  #  - vrf-{{n}}-bgp-export --> to be improved
+  #  - custom policy (if neigh.policy.out) [{{ n.policy.out }}-{{ af }}]
+  #  - bgp-final
+  mods = node.get('module',[])
+  if 'bgp' not in mods:
+    return
+  ## policy list is a struct, which defines if a policy is per af or not (i.e., routing/bgp.policy uses {policy}-{af} for the names)
+  # bgp for default routing table
+  # - default policy to be applied at bgp/group level
+  #  (multi steps to use constants)
+  node.bgp._junos_policy.export = []
+  node.bgp._junos_policy.export.extend(JUNOS_COMMON_BGP_POLICIES)
+  node.bgp._junos_policy.export.append(JUNOS_POLICY_LAST)
+  # - per neighbor policies
+  for ngb in node.get('bgp.neighbors',[]):
+    # export policy
+    _bgp_neigh_export_policy_chain_build(ngb, node, '')
+    # import policy
+    _bgp_neigh_import_policy_chain_build(ngb, node, '')
+
+  if 'vrf' not in mods:
+    return
+  # bgp for different VRFs
+  for vname,vdata in node.vrfs.items():
+    # common export policy chain for vrf
+    vdata.bgp._junos_policy.export = [
+      JUNOS_POLICY_VRF_EXPORT.format(vname),
+      JUNOS_POLICY_LAST
+    ]
+    for ngb in vdata.get('bgp.neighbors', []):
+      # export policy
+      _bgp_neigh_export_policy_chain_build(ngb, node, vname)
+      # import policy
+      _bgp_neigh_import_policy_chain_build(ngb, node, vname)
+
+  return
+
 class JUNOS(_Quirks):
 
   @classmethod
@@ -229,3 +339,4 @@ class JUNOS(_Quirks):
     as_prepend_quirk(node,topology)
     community_set_quirk(node,topology)
     default_originate_check(node,topology)
+    build_bgp_import_export_policy_chain(node,topology)
