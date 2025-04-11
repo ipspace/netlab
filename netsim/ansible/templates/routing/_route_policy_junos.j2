@@ -6,18 +6,20 @@
 {%   endif %}
 {%- endmacro %}
 
-{% macro community_set(cwt,comm,c_append,c_delete) -%}
+{% macro community_set(comm,c_append,c_delete) -%}
 {% if c_delete %}
-      then community delete x_comm_set_{{ comm|replace(':', '_')|replace('.', '_') }};
+      then community delete x_comm_del_{{ comm|replace(':', '_')|replace('.', '_') }};
+{% elif c_append %}
+      then community add x_comm_add_{{ comm|replace(':', '_')|replace('.', '_') }};
 {% else %}
-      then community add x_comm_set_{{ comm|replace(':', '_')|replace('.', '_') }};
+      then community set x_comm_set_{{ comm|replace(':', '_')|replace('.', '_') }};
 {% endif %}
 {%- endmacro %}
 
 {#
    This macro generates the elements of route-map entries
 #}
-{% macro common_route_map_entry(p_entry,match_af) -%}
+{% macro common_route_map_entry(p_entry,match_af='') -%}
 {# - SET entries #}
 {%   if 'set' in p_entry %}
 {%     if 'locpref' in p_entry.set %}
@@ -28,47 +30,54 @@
 {%     endif %}
 {%     if 'community' in p_entry.set %}
 {%       set cset = p_entry.set.community %}
-{%       set ckw = { 'standard': 'community', 'extended': 'extcommunity', 'large': 'large-community' } %}
 {%         for kw in ('standard','extended','large') if kw in cset %}
 {%           if cset[kw] is not string %}
 {%             for cur_com in cset[kw] %}
-{{               community_set(ckw[kw], cur_com, cset.append|default(False), cset.delete|default(False)) }}
+{{               community_set(cur_com, cset.append|default(False), cset.delete|default(False)) }}
 {%             endfor %}
 {%           else %}
-{{             community_set(ckw[kw], cur_com, cset.append|default(False), cset.delete|default(False)) }}
+{{             community_set(cset[kw], cset.append|default(False), cset.delete|default(False)) }}
 {%           endif %}
 {%         endfor %}
 {%     endif %}
+
 {%     if 'prepend' in p_entry.set %}
 {{       prepend_set(p_entry.set.prepend,bgp.as|string) }}
 {%     endif %}
 {%   endif %}
 {# - MATCH entries #}
 {%   if 'match' in p_entry %}
-{%     set ipkwd = 'ip' if match_af == 'ipv4' else 'ipv6' %}
 {%     if 'prefix' in p_entry.match %}
-{#       in case a prefix has min/max, at least set 'prefix-list-filter xxx orlonger' as a form of workaround #}
-{%       if p_entry.match.prefix in routing._junos_prefix_min_max|default([]) %}
-      from prefix-list-filter {{ p_entry.match.prefix }}-{{ match_af }} orlonger;
-{%       else %}
-      from prefix-list {{ p_entry.match.prefix }}-{{ match_af }};
-{%       endif %}
+      from route-filter-list {{ p_entry.match.prefix }}-{{ match_af }};
 {%     endif %}
 {%     if 'aspath' in p_entry.match %}
-      from as-path-group {{ p_entry.match.aspath }};
+      from policy x_aspath_match_{{ p_entry.match.aspath }};
 {%     endif %}
 {%     if 'community' in p_entry.match %}
-      from community {{ p_entry.match.community }};
+{# will call policy subrouting for allowing community permit/deny kind of match #}
+      from policy x_comm_match_{{ p_entry.match.community }};
 {%     endif %}
 {%   endif %}
 {%- endmacro %}
 
 {#
+   This macro generates the 'then' elements of policies
+#}
+{% macro common_route_map_action(p_entry) %}
+      then {
+{%     if p_entry.action|default('permit') == 'permit' %}
+        community add x-route-permit-mark;
+        next policy;
+{%     else %}
+        reject;
+{%     endif %}
+      }
+{%- endmacro %}
+
+{#
    This macro builds a single route map and uses the callback to define a route map entry.
 #}
-{% macro build_route_map(rp_name,rp_list,match_af) -%}
-
-{% set action_map = { 'permit':'accept', 'deny':'reject' } %}
+{% macro build_route_map(rp_name,rp_list) -%}
 
 {# delete a previously defined route map with the same name #}
 policy-options {
@@ -80,16 +89,23 @@ policy-options {
   policy-statement {{ rp_name }} {
 {%   for p_entry in rp_list %}
 {%     set seq = p_entry.sequence|default(loop.index * 10) %}
-{# define basic action #}
-    term seq{{seq}} {
-      then {
-        {{ action_map[p_entry.action|default('permit')] }};
-      }
-    }
-{# define real entry #}
-    term seq{{seq}} {
+{# define entry with specific actions #}
+{#  if entry contains a prefix, we must add different (term) entries for ipv4 and ipv6 #}
+{#   as per juniper documentation: Prefixes specified in a from statement must be either all IPv4 addresses or all IPv6 addresses. #}
+{%     if 'prefix' in p_entry.match|default({}) %}
+{%       for match_af in ['ipv4', 'ipv6'] %}
+    term seq{{seq}}_{{match_af}} {
 {{     common_route_map_entry(p_entry,match_af) }}
+{{     common_route_map_action(p_entry) }}
     }
+{%       endfor %}
+{%     else %}
+    term seq{{seq}} {
+{{     common_route_map_entry(p_entry) }}
+{{     common_route_map_action(p_entry) }}
+    }
+{%     endif %}
+
 {%   endfor %}
 
 {# last-resort reject #}
@@ -111,8 +127,6 @@ policy-options {
 #}
 {% macro create_route_maps(rp_dict) -%}
 {%   for rp_name,rp_list in rp_dict.items() %}
-{%     for rm_af in af %}
-{{       build_route_map('%s-%s'|format(rp_name,rm_af),rp_list,rm_af) }}
-{%     endfor %}
+{{     build_route_map(rp_name,rp_list) }}
 {%   endfor %}
 {%- endmacro %}

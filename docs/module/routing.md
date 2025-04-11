@@ -106,7 +106,7 @@ You can use these routing policy **match** parameters on devices supported by th
 | Cisco IOS/XE[^18v]  | ✅ | ❌  | ✅ | ✅ |
 | Cumulus Linux       | ✅ | ❌  | ✅ | ✅ |
 | Dell OS10           | ✅ | ❌  | ✅ | ✅ |
-| Junos               | [✅](caveats-junos) | ❌  | [✅](caveats-junos) | [✅](caveats-junos) |
+| Junos               | ✅ | ❌  | [✅](caveats-junos) | ✅ |
 | FRR                 | ✅ | ❌  | ✅ | ✅ |
 | Nokia SR Linux      | ✅ |
 | VyOS                | ✅ | ❌  | ✅ | ✅ |

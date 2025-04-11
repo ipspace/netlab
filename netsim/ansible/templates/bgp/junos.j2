@@ -1,3 +1,5 @@
+{% import "junos.macro.j2" as bgpcfg with context %}
+
 routing-options {
   autonomous-system {{ bgp.as }};
 {% if bgp.router_id|ipv4 %}
@@ -11,12 +13,49 @@ routing-options {
   }
 {% endif %}
 }
+
+{# initialize default policies #}
+
+{# internal community to handle policy flows #}
+{# 
+#  single "default" policy should never have "then accept", except for last one.
+#  policies are evaluated, and in case of "accept" we must add the internal mark community and jump to the next policy.
+#  only the last policy, if matching the internal mark community, should remove the community and accept the route.
+#  in this way we can concatenate multiple policies, and have all of them evaluated in order of priority:
+#   - next-hop-self (if needed)
+#   - advertise + announce + default originate when needed (based on a route-filter-list)
+#   - redistribute (remember to always redistribute bgp, since we are overriding the default behavior)
+#   - (custom policies - which may force accept/reject)
+#   - default final policy
+#}
+policy-options community x-route-permit-mark members large:65535:0:65536;
+
 policy-options {
-  delete: policy-statement ibgp-export;
-  delete: policy-statement ebgp-export;
+  delete: policy-statement bgp-advertise;
+  delete: policy-statement bgp-redistribute;
+  delete: route-filter-list bgp-announce;
 }
+
 policy-options {
-  policy-statement ibgp-export {
+
+  route-filter-list bgp-announce {
+{%   for pfx in bgp.originate|default([]) %}
+    {{ pfx|ipaddr('0') }} exact;
+{%   endfor %}
+  }
+
+  policy-statement next-hop-self {
+    term next-hop-self {
+      from {
+        route-type external;
+      }
+      then {
+        next-hop self;
+      }
+    }
+  }
+
+  policy-statement bgp-advertise {
     term advertise {
       from {
         protocol direct;
@@ -26,42 +65,59 @@ policy-options {
           {{ l.ifname }}
           {% endfor %} ];
       }
-      then accept;
+      then {
+        community add x-route-permit-mark;
+        next policy;
+      }
     }
-{% if bgp.originate is defined %}
+
     term originate {
-      from protocol static;
-      then accept;
-    }
-{% endif %}
-{% if bgp.next_hop_self is defined and bgp.next_hop_self %}
-    term next-hop-self {
       from {
-        route-type external;
+        protocol static;
+        route-filter-list bgp-announce;
       }
       then {
-        next-hop self;
+        community add x-route-permit-mark;
+        next policy;
       }
     }
-{% endif %}
+
   }
-  policy-statement ebgp-export {
-    term advertise {
-      from {
-        protocol direct;
-        interface [ {{ "lo0.0" if bgp.advertise_loopback }}
-        {%- for l in interfaces if l.bgp.advertise|default("") and not 'vrf' in l %} {{ l.ifname}}{%- endfor %} ];
+
+  policy-statement bgp-redistribute {
+    term redis_bgp {
+      from protocol bgp;
+      then {
+        community add x-route-permit-mark;
+        next policy;
       }
-      then accept;
     }
-{% if bgp.originate is defined %}
-    term originate {
-      from protocol static;
-      then accept;
+  }
+
+  policy-statement bgp-final {
+    term final-option {
+      from community x-route-permit-mark;
+      then {
+        community delete x-route-permit-mark;
+        accept;
+      }
     }
-{% endif %}
+    term default-reject {
+      then reject;
+    }
+  }
+
+  policy-statement bgp-initial {
+    term initial-cleanup {
+      from community x-route-permit-mark;
+      then {
+        community delete x-route-permit-mark;
+        next policy;
+      }
+    }
   }
 }
+
 protocols {
   delete: bgp;
 }
@@ -70,13 +126,20 @@ protocols {
 {% for af in ['ipv4','ipv6'] if bgp[af] is defined and loopback[af] is defined %}
     group ibgp-peers-{{ af }} {
       type internal;
-      export ibgp-export;
+      export [ 
+{%   if bgp.next_hop_self|default(false) %}
+          next-hop-self
+{%   endif %}
+          {{ (bgp._junos_policy.export|default([]))|join(' ') }}
+        ];
       advertise-inactive;
 {% if bgp.rr|default(False) %}
       cluster {{ bgp.rr_cluster_id|default(False) or bgp.router_id }};
 {% endif %}
 {%   for n in bgp.neighbors if n[af] is defined and n.type == 'ibgp' %}
       neighbor {{ n[af] }} {
+{#     apply per-neighbor policies, if defined #}
+{{     bgpcfg.bgp_neighbor_policy(n) }}
 {%     if n._source_intf[af] is defined %}
         local-address {{ n._source_intf[af]|ipaddr('address') }};
 {%     endif %}
@@ -93,12 +156,16 @@ protocols {
     }
 {% endfor %}
     group ebgp-peers {
-      export ebgp-export;
+      export [ 
+          {{ (bgp._junos_policy.export|default([]))|join(' ') }}
+        ];
       advertise-inactive;
 {# treat localas_ibgp as ebgp session --> no usage of local address #}
 {% for n in bgp.neighbors if (n.type == 'ebgp' or n.type == 'localas_ibgp') %}
 {%   for af in ['ipv4','ipv6'] if n[af] is defined %}
       neighbor {{ n[af] }} {
+{#     apply per-neighbor policies, if defined #}
+{{     bgpcfg.bgp_neighbor_policy(n) }}
         peer-as {{ n.as }};
         description {{ n.name }};
 {%     if n.local_as is defined %}

@@ -149,7 +149,7 @@ routing-instances {
                     advertise direct-nexthop;
                     encapsulation vxlan;
                     vni {{ v.evpn.transit_vni }};
-                    export vrf-{{n}}-ebgp-export;
+                    export [ vrf-{{n}}-bgp-export bgp-final ];
                 }
             }
         }
@@ -165,23 +165,18 @@ policy-options {
     policy-statement vrf-{{n}}-ospf-export {
         term redis_evpn {
             from protocol evpn;
-            then accept;
+            then {
+                accept;
+            }
         }
     }
-    policy-statement vrf-{{n}}-ibgp-export {
+    policy-statement vrf-{{n}}-bgp-export {
         term redis_evpn {
             from protocol evpn;
-            then accept;
-        }
-    }
-    policy-statement vrf-{{n}}-ebgp-export {
-        term redis_evpn {
-            from protocol evpn;
-            then accept;
-        }
-        term redis_bgp {
-            from protocol bgp;
-            then accept;
+            then {
+                community add x-route-permit-mark;
+                next policy;
+            }
         }
     }
 {%   endfor %}

@@ -308,9 +308,7 @@ diag debug application httpsd -1
 Implementation limitations in import/export route filters (reported as errors that can be disabled with topology settings):
 
 * When prepending an AS number different than the local one, JunOS puts the prepended AS at the beginning of the *AS_PATH* while other vendors perform the prepending and then add the device's own AS at the beginning. Most EBGP peers deny a BGP update that does not have the neighbor's AS number at the beginning of the *AS_PATH*. If needed, _netlab_ automatically adds the *local-as* to the prepend list to get it at the beginning of the *AS_PATH*.
-* *prefix-list* items cannot have *min*/*max* items (*ge*/*le*-equivalent). As a workaround (if you disable this specific *quirk*), the prefix-list match will be done as `prefix-list-filter XXX orlonger`.
-* *as-path* items cannot have "deny" items. Also, remember that the *as-path* regex syntax for JunOS has different rules than other vendors. For example, a *null as-path* is represented as `()`.
-* *community* matches cannot have "deny" items
+* *as-path* regex syntax for JunOS has different rules than other vendors. For example, a *null as-path* is represented as `()`. netlab tries some as-path conversion, but sometimes it could be wrong.
 
 (caveats-vmx)=
 ## Juniper vMX

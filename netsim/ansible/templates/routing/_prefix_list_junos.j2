@@ -1,14 +1,30 @@
-{# WARNING: JunOS prefix-list does not support entries with ge/le - a quirk will warn the user #}
-
 policy-options {
 
-{% for pf_af in af if pf_af in routing._prefix|default({}) %}
-{%   for p_name,p_value in routing._prefix[pf_af].items() %}
+{# always create one route-filter-list for ipv4 and one for ipv6 - even with no entries, but add items only where needed #}
+{# this will allow to have a single policy (and not per-af policies) #}
 
-  prefix-list {{ p_name }}-{{ pf_af }} {
+{% for pf_af in af %}
+{#   _prefix shall always have both ipv4 and ipv6 as "normalized" values #}
+{%   for p_name,p_value in (routing._prefix[pf_af]|default({})).items() %}
+
+  delete: route-filter-list {{ p_name }}-{{ pf_af }};
+
+  route-filter-list {{ p_name }}-{{ pf_af }} {
 
 {%     for p_entry in p_value %}
-    {{ p_entry[pf_af] }};
+{%       set ns = namespace(match_type='exact') %}
+{%       if 'min' in p_entry and 'max' in p_entry %}
+{%         set ns.match_type = 'prefix-length-range /%s-/%s'|format(p_entry.min, p_entry.max) %}
+{%       elif 'max' in p_entry %}
+{%         set ns.match_type = 'upto /%s'|format(p_entry.max) %}
+{%       endif %}
+
+    {{ p_entry[pf_af] }} {{ns.match_type}} {
+{%       if p_entry.action|default('') == 'deny' %}
+      next term;
+{%       endif %}
+    }
+
 {%     endfor %}
 
   }
