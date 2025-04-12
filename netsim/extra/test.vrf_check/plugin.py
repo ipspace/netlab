@@ -5,44 +5,47 @@
 
 from box import Box
 from netsim.augment.devices import get_device_features
+from netsim.utils import log
 
 def remove_vrf(ndata: Box, topology: Box) -> None:
   if 'vrf' in topology.module:
-    print(f'Removing vrf from topology modules')
+    log.info(f'Removing vrf from topology modules')
     topology.module.remove('vrf')
   if 'vrf' in ndata:
-    print(f'Removing vrf from node {ndata.name} modules')
+    log.info(f'Removing vrf from node {ndata.name} modules')
     ndata.module.remove('vrf')
   if 'vrfs' in topology:
-    print(f'Removing vrfs from lab topology')
+    log.info(f'Removing vrfs from lab topology')
     topology.pop('vrfs',None)
   if 'vrfs' in ndata:
-    print(f'Removing vrfs from node data')
+    log.info(f'Removing vrfs from node data')
     ndata.pop('vrfs',None)
 
   for link in topology.links:
     if 'vrf' in link:
-      print(f'Removing vrf from link {link._linkname}')
+      log.info(f'Removing vrf from link {link._linkname}')
       link.pop('vrf',None)
 
     for intf in link.interfaces:
       if 'vrf' in intf:
-        print(f'Removing vrf from interface {link._linkname}/{intf.node}')
+        log.info(f'Removing vrf from interface {link._linkname}/{intf.node}')
         intf.pop('vrf',None)
 
   for test in list(topology.validate.keys()):
     if 'vrf' in test:
-      print(f'Removing validation test {test}')
+      log.info(f'Removing validation test {test}')
       topology.validate.pop(test,None)
 
 def pre_transform(topology: Box) -> None:
   for node,ndata in topology.nodes.items():
-    if 'dut' not in node:
+    if 'vrf' not in ndata.get('module',[]):
       continue
 
     features = get_device_features(ndata,topology.defaults)
     if features.get('vrf',None):
       continue
 
-    print(f'Tested device {ndata.device}/{node} does not support VRFs')
+    log.warning(
+      text=f'Device {ndata.device}/{node} does not support VRFs',
+      module='vrf_check')
     remove_vrf(ndata,topology)
