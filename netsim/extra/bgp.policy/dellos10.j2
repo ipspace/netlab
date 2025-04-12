@@ -7,6 +7,7 @@
 {%     for direction in [ 'in','out' ] if direction in n.policy %}
    route-map {{ n.policy[direction] }}{{ '-%s'|format(af) if rm_per_af else '' }} {{ direction }}
 {%     endfor %}
+  exit
 {%-  endif %}
 {%- endmacro %}
 {% macro ebgp_neighbor(n,af) -%}
@@ -17,6 +18,7 @@
   weight {{ n.weight }}
 {%     endif %}
 {{     apply_route_map(n,af,True) }}
+ exit
 {%   endif %}
 {%- endmacro %}
 !
@@ -37,9 +39,12 @@ router bgp {{ bgp.as }}
 {%     for af in ['ipv4','ipv6'] if af in vdata.af|default({}) %}
 {%       for n in vdata.bgp.neighbors if n[af] is defined %}
 {%         if loop.first %}
-router bgp {{ bgp.as }} vrf {{ vname }}
+vrf {{ vname }}
 {%         endif %}
 {{         ebgp_neighbor(n,af) }}
+{%         if loop.last %}
+exit
+{%         endif %}
 {%       endfor %}
 {%     endfor %}
 
@@ -48,6 +53,7 @@ do clear ip bgp vrf {{ vname }} *
 
 {%   endfor %}
 {% endif %}
+exit
 !
 
 ! Clear BGP sessions to make policy changes take effect
