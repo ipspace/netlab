@@ -1,4 +1,5 @@
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+[WARNING]: Found variable using reserved name: hosts
 
 PLAY [Deploy initial device configuration] *************************************
 
@@ -44,11 +45,11 @@ TASK [fail] ********************************************************************
 skipping: [dut]
 skipping: [probe]
 
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [dut]
-skipping: [probe]
-
 TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [probe]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
 skipping: [probe]
 
@@ -71,6 +72,10 @@ TASK [fail] ********************************************************************
 skipping: [dut]
 skipping: [probe]
 
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [probe]
+ok: [dut]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [probe] => 
   msg: |-
@@ -91,6 +96,14 @@ ok: [probe] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
     #
     # Get the current next hop for the default route
     #
@@ -126,14 +139,14 @@ ok: [probe] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -141,6 +154,7 @@ ok: [probe] =>
     cat >/tmp/config <<CONFIG
     hostname probe
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -173,6 +187,8 @@ ok: [dut] =>
     !
     ip routing
     !
+    no ipv6 unicast-routing
+    !
     !
     interface Loopback0
      ip address 10.0.0.1 255.255.255.255
@@ -183,7 +199,6 @@ ok: [dut] =>
     !
     interface Ethernet0/1
      description dut -> probe [external]
-     mtu 1500
      ip address 10.1.0.1 255.255.255.252
      no shutdown
     !
@@ -194,10 +209,6 @@ ok: [dut] =>
     no banner exec
     no banner login
     no banner incoming
-
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [probe]
-ok: [dut]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
@@ -252,6 +263,10 @@ TASK [fail] ********************************************************************
 skipping: [dut]
 skipping: [probe]
 
+TASK [Find configuration deployment deploy_script for routing] *****************
+ok: [probe]
+ok: [dut]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [probe] => 
   msg: |-
@@ -274,10 +289,6 @@ ok: [dut] =>
     !
     ! Static routes
     !
-
-TASK [Find configuration deployment deploy_script for routing] *****************
-ok: [probe]
-ok: [dut]
 
 TASK [Deploy routing configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
@@ -309,6 +320,10 @@ ok: [dut]
 TASK [fail] ********************************************************************
 skipping: [dut]
 skipping: [probe]
+
+TASK [Find configuration deployment deploy_script for bgp] *********************
+ok: [probe]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [probe] => 
@@ -377,10 +392,6 @@ ok: [dut] =>
   
     !
 
-TASK [Find configuration deployment deploy_script for bgp] *********************
-ok: [probe]
-ok: [dut]
-
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for probe
@@ -430,8 +441,8 @@ TASK [ios_config: deploying bgp.policy from /home/pipi/net101/tools/netsim/extra
 changed: [dut]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=38   changed=4    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
-probe                      : ok=35   changed=7    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+dut                        : ok=39   changed=4    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+probe                      : ok=36   changed=7    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
 
 
 
