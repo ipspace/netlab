@@ -18,7 +18,7 @@ from . import external_commands, set_dry_run, is_dry_run, load_snapshot
 from . import common_parse_args, get_message
 from . import lab_status_update, lab_status_change
 from .. import providers, augment
-from ..utils import log,strings,status as _status, read as _read
+from ..utils import log,strings,status as _status, read as _read, stats
 from ..data import global_vars
 from ..devices import process_config_sw_check
 
@@ -351,6 +351,13 @@ def run_up(cli_args: typing.List[str]) -> None:
     _status.lock_directory()                          # .. to have a timestamp of when the lab was started
 
   log.repeat_warnings('netlab up')
+
+  try:
+    stats.update_topo_stats(topology)
+  except Exception as ex:
+    log.warning(
+      text=f'Cannot update usage stats: {str(ex)}',
+      module='stats')
 
   if args.validate:
     if args.no_config:

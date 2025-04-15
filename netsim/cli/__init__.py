@@ -16,7 +16,7 @@ from box import Box
 from . import usage
 from .. import augment
 from .. import __version__
-from ..utils import log, strings, status as _status, read as _read
+from ..utils import log, strings, status as _status, read as _read, stats
 from ..data import global_vars
 
 DRY_RUN: bool = False
@@ -443,9 +443,11 @@ def lab_commands(script: str) -> None:
   except Exception as ex:
     log.fatal(f"Error importing {__name__}.{cmd}: {ex}")
 
+  stats.stats_counter_update(f'cli.{cmd}.start')
   if mod:
     if hasattr(mod,'run'):
       mod.run(sys.argv[arg_start:])   # type: ignore
+      stats.stats_counter_update(f'cli.{cmd}.done')
       return
     else:
       log.fatal(f"Module {__name__}.{cmd} does not have a valid entry point")
