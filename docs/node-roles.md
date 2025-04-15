@@ -33,7 +33,11 @@ Most hosts listen to IPv6 RA messages to get the IPv6 default route. _netlab_ ca
 (node-role-bridge)=
 ## Bridges
 
-The **bridge** role is a thin abstraction layer on top of the [**vlan** configuration module](module-vlan), making deploying simple topologies with a single bridge connecting multiple routers or hosts easier. Do not try to build complex topologies with bridges; use the VLAN configuration module.
+The **bridge** role is a thin abstraction layer on top of the [**vlan** configuration module](module-vlan), making deploying simple topologies with a single bridge connecting multiple routers or hosts easier. You can also use a **bridge** node to test failover scenarios using a familiar layer-2 device[^SD].
+
+[^SD]: It's easier to shut down an interface on a familiar device than trying to figure out how to do that on a Linux bridge.
+
+Do not try to build complex topologies with bridges; use the VLAN configuration module.
 
 Bridges are simple layer-2 packet forwarding devices[^VM]. They do not have a loopback interface and might not even have a data-plane IP address. Without additional parameters, _netlab_ configures them the way non-VLAN bridges have been working for decades -- bridge interfaces do not use VLAN tagging and belong to a single layer-2 forwarding domain.
 
@@ -57,23 +61,6 @@ links: [ rtr-br, h1-br, h2-br ]
 ```
 
 In the above topology, *netlab* assigns an IP prefix from the **lan** pool to the VLAN segment connecting the four devices ([you can change that](node-bridge-details)).
-
-In the lab topology, you can use a multi-access link with a single bridge attached instead of a series of point-to-point links. The following topology is equivalent to the one above; the multi-access link is expanded into a series of point-to-point links with the **br** device.
-
-```
-nodes:
-  rtr:
-    device: eos
-  h1:
-    device: linux
-  h2:
-    device: linux
-  br:
-    device: ioll2
-    role: bridge
-
-links: [ rtr-h1-h2-br ]
-```
 
 You can also connect multiple bridges into a larger bridged network. This scenario stretches the limitations of the **bridge** nodes (using the [**vlan** configuration module](module-vlan) would be better). If you decide to use it in your topology, you SHOULD define a global **br_default** VLAN (defined as **vlans.br_default** topology attribute) to share the same IP subnet across all bridges.
 
@@ -100,7 +87,7 @@ _netlab_ does not implement multiple independent bridge domains for the same VLA
 ```
 
 (node-bridge-details)=
-### Implementation Details
+### Bridge Implementation Details
 
 _netlab_ uses the **vlan** configuration module to implement the *simple bridging* functionality -- it places all bridge interfaces without an explicit **vlan** parameter into the same access VLAN.
 
@@ -113,3 +100,27 @@ You can use the node- or global VLAN definition of the **br_default** VLAN to ch
 [^BRID]: You can change the VLAN tag of the default bridge VLAN with the `topology.defaults.const.bridge.default_vlan.id` parameter
 
 For more VLAN configuration- and implementation details, read the [**vlan** configuration module documentation](module-vlan).
+
+(node-bridge-lan)=
+### Implementing Multi-Access Links with Bridges
+
+To build a LAN segment with a hub-and-spoke topology of point-to-point links attaching nodes to the bridge, you can define a multi-access link with a single bridge attached to it.
+
+For example, you can use the following topology to create a topology equivalent to the one above; the multi-access link is expanded into a series of point-to-point links with the **br** device.
+
+```
+nodes:
+  rtr:
+    device: eos
+  h1:
+    device: linux
+  h2:
+    device: linux
+  br:
+    device: ioll2
+    role: bridge
+
+links: [ rtr-h1-h2-br ]
+```
+
+Each multi-access link implemented with a bridge node is a separate bridging domain. _netlab_ creates a separate VLAN with a topology-wide unique VLAN ID on the bridge node for every multi-access link and copies the link attributes into the VLAN attributes. Thus, it's safe to use the same bridge node to implement multiple multi-access links.

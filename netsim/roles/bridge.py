@@ -12,6 +12,7 @@ from box import Box, BoxList
 from ..utils import log
 from ..data import global_vars,append_to_list,get_box
 from ..augment import links
+from ..modules import _dataplane
 from . import select_nodes_by_role
 
 """
@@ -67,11 +68,31 @@ def add_default_access_vlan(topology: Box) -> bool:
   return link_found
 
 """
+Get next internal VLAN for an isolated bridge domain
+"""
+def get_next_internal_vlan(start: int, use: str) -> int:
+  while start < 4090:                                       # Skip some of the high-end VLANs
+    if not _dataplane.is_id_used('vlan_id',start):          # Is the VLAN used anywhere?
+      _dataplane.extend_id_set('vlan_id',set([start]))      # No, grab it
+      return start                                          # ... and return it to the caller
+    start = start + 1                                       # Otherwise, try the next one
+
+  log.error(
+    f'Cannot allocate an internal VLAN for {use} -- I ran out of VLANs',
+    category=log.IncorrectValue,
+    module='vlan')
+  return 1                                                  # We need some value, and it doesn't matter
+
+"""
 When exactly one of the nodes on link with more than two nodes is a bridge,
 expand the link into multiple P2P links with the bridge node. Print a warning
 (and do nothing) if there are more than two bridges attached to the link
 """
 def expand_multiaccess_links(topology: Box) -> None:
+  skip_linkattr = list(topology.defaults.vlan.attributes.phy_ifattr)
+  del_linkattr  = ['linkindex','interfaces']
+  int_vlan_id = global_vars.get_const('bridge.internal_vlan.start',100)
+
   for link in list(topology.get('links',[])):
     if '_br_list' not in link:                              # Is this one of the relevant links?
       continue                                              # No, move on
@@ -90,10 +111,29 @@ def expand_multiaccess_links(topology: Box) -> None:
         module='bridge')
       continue
 
-    br_intf = br_list[0]                                    # Remember the bridge interface
+    # Do we have any of the physical attributes on the link? For the moment, let's assume that's an error
+    #
+    wrong_attr = [ k for k in link.keys() if k in skip_linkattr and k not in del_linkattr ]
+    if wrong_attr:
+      log.error(
+        text=f'Attribute(s) {",".join(wrong_attr)} cannot be used on multi-access link {link._linkname}' + \
+              ' implemented with a bridge',
+        category=log.IncorrectAttr,
+        module='bridge')
+      continue
+
+    br_intf = br_list[0]                                    # Get the bridge interface
+    br_node = topology.nodes[br_intf.node]                  # And the corresponding node
+    int_vlan_id = get_next_internal_vlan(int_vlan_id,'multi-access link {link._linkname}')
+    vname = f'br_vlan_{int_vlan_id}'                        # Create the internal VLAN
+    br_node.vlans[vname] = { k:v for k,v in link.items() if k not in del_linkattr }
+    br_node.vlans[vname].id = int_vlan_id                   # ... set its ID
+    br_node.vlans[vname].mode = 'bridge'                    # ... and make it a L2-only VLAN
+    br_intf.vlan.access = vname                             # ... and use it on the bridge interface
+
     link_cnt = 0
     for intf in link.interfaces:
-      if intf != br_intf:                                   # Did we find an interesting interface?
+      if intf.node != br_intf.node:                         # Is this a non-bridge interface?
         l_data = get_box(link)                              # Copy the link data
         link_cnt += 1
         l_data._linkname = f'{link._linkname}.{link_cnt}'   # Create unique link and and linkindex
