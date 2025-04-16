@@ -45,27 +45,33 @@ def create_default_VLAN(topology: Box) -> bool:
 """
 Go through the links and add 'vlan.access: br_default' to every interface of
 a bridge node that does not have a VLAN parameter
-
-Return 'True' if we found at least one "default" link attached to a bridge
 """
-def add_default_access_vlan(topology: Box) -> bool:
+def add_default_access_vlan(topology: Box) -> None:
   BR_DEFAULT = global_vars.get_const('bridge.default_vlan.name','br_default')
-  link_found = False
 
   for link in topology.get('links',[]):
     if 'vlan' in link:                                      # A link already has VLAN parameters, skip it
       continue
     for intf in link.get('interfaces',[]):
-      if 'vlan' in intf:                                    # The interface has VLAN parameters, skip it
-        continue
       n_role = topology.nodes[intf.node].get('role','router')
       if n_role != 'bridge':                                # Not a bridge interface, skip it
         continue
+      if len(link.interfaces) == 1:
+        log.error(
+          f'Connecting a bridge node {intf.node} to a stub link {link._linkname} makes no sense',
+          category=log.IncorrectValue,
+          module='bridge')
+        continue
+      if len(link.interfaces) > 2:
+        log.error(
+          f'Use the "bridge" attribute to specify that you want to use a bridge node {intf.node}' +\
+          f' to implement a multi-access link {link._linkname}',
+          category=log.IncorrectAttr,
+          module='bridge')
+        continue
+      if 'vlan' in intf:                                    # The interface has VLAN parameters, skip it
+        continue
       intf.vlan.access = BR_DEFAULT
-      link_found = True
-      append_to_list(link,'_br_list',intf)                  # Remember the bridges we found
-
-  return link_found
 
 """
 Get next internal VLAN for an isolated bridge domain
@@ -84,70 +90,64 @@ def get_next_internal_vlan(start: int, use: str) -> int:
   return 1                                                  # We need some value, and it doesn't matter
 
 """
-When exactly one of the nodes on link with more than two nodes is a bridge,
-expand the link into multiple P2P links with the bridge node. Print a warning
-(and do nothing) if there are more than two bridges attached to the link
+A multi-access link with a "bridge" attribute specifying a bridge node is
+expanded into multiple P2P links with the bridge node.
 """
 def expand_multiaccess_links(topology: Box) -> None:
   skip_linkattr = list(topology.defaults.vlan.attributes.phy_ifattr)
-  del_linkattr  = ['linkindex','interfaces']
+  ok_phy_attr   = ['bandwidth', 'mtu', 'stp']
+  del_linkattr  = ['linkindex', 'interfaces', 'bridge']
   int_vlan_id = global_vars.get_const('bridge.internal_vlan.start',100)
 
   for link in list(topology.get('links',[])):
-    if '_br_list' not in link:                              # Is this one of the relevant links?
+    b_name = link.get('bridge',None)
+    if not b_name:                                          # Is this one of the relevant links?
       continue                                              # No, move on
 
-    br_list = link._br_list                                 # Get the list of bridges
-    link.pop('_br_list',None)                               # ... and remove it from the link
+    if b_name not in topology.nodes:                        # Is the bridge name equal to a node name?
+      continue                                              # No, it's a name of a Linux bridge
 
-    if not br_list:                                         # Empty list?
-      continue                                              # Weird, but we've seen weirder things
-
-    if len(br_list) > 1:                                    # Multiple bridges on multi-access links confuse us
-      br_names = [ intf.node for intf in br_list ]
-      log.warning(
-        text=f'Multiple bridges ({",".join(br_names)}) attached to multi-access link {link._linkname}',
-        more_hints='netlab can expand only multi-access links attached to a single bridge',
+    if topology.nodes[b_name].get('role','') != 'bridge':
+      log.error(
+        f'Node {b_name} specified in "bridge" attribute on link {link._linkname} must have "role" set to "bridge"',
+        category=log.IncorrectType,
         module='bridge')
       continue
 
     # Do we have any of the physical attributes on the link? For the moment, let's assume that's an error
     #
-    wrong_attr = [ k for k in link.keys() if k in skip_linkattr and k not in del_linkattr ]
+    wrong_attr = [ k for k in link.keys() if k in skip_linkattr and k not in del_linkattr + ok_phy_attr ]
     if wrong_attr:
       log.error(
-        text=f'Attribute(s) {",".join(wrong_attr)} cannot be used on multi-access link {link._linkname}' + \
-              ' implemented with a bridge',
+        text=f'Link attribute(s) {",".join(wrong_attr)} cannot be used on {link._linkname}',
+        more_hints=f"The link is implemented with a bridge node {b_name}",
         category=log.IncorrectAttr,
         module='bridge')
       continue
 
-    br_intf = br_list[0]                                    # Get the bridge interface
-    br_node = topology.nodes[br_intf.node]                  # And the corresponding node
+    link_data = { k:v for k,v in link.items() if k in ok_phy_attr }
+    br_intf = get_box({'node': b_name })                    # Create the interface for the bridge node
+    br_node = topology.nodes[b_name]                        # Get the node data
     int_vlan_id = get_next_internal_vlan(int_vlan_id,'multi-access link {link._linkname}')
     vname = f'br_vlan_{int_vlan_id}'                        # Create the internal VLAN
+
     br_node.vlans[vname] = { k:v for k,v in link.items() if k not in del_linkattr }
     br_node.vlans[vname].id = int_vlan_id                   # ... set its ID
     br_node.vlans[vname].mode = 'bridge'                    # ... and make it a L2-only VLAN
     br_intf.vlan.access = vname                             # ... and use it on the bridge interface
 
-    link_cnt = 0
-    for intf in link.interfaces:
-      if intf.node != br_intf.node:                         # Is this a non-bridge interface?
-        l_data = get_box(link)                              # Copy the link data
-        link_cnt += 1
-        l_data._linkname = f'{link._linkname}.{link_cnt}'   # Create unique link and and linkindex
-        l_data.linkindex = links.get_next_linkindex(topology)
-        l_data.interfaces = [ get_box(br_intf), intf ]      # ... recreate P2P interfaces
-        topology.links.append(l_data)                       # ... and append the new P2P link to the links
+    for link_cnt,intf in enumerate(link.interfaces,1):
+      l_data = get_box(link_data)                           # Copy the link data
+      l_data._linkname = f'{link._linkname}.{link_cnt}'     # Create unique link and and linkindex
+      l_data.linkindex = links.get_next_linkindex(topology)
+      l_data.interfaces = [ get_box(br_intf), intf ]        # ... recreate P2P interfaces
+      topology.links.append(l_data)                         # ... and append the new P2P link to the links
 
     topology.links.remove(link)                             # Finally, remove original link
 
 def pre_transform(topology: Box) -> None:
-  if not create_default_VLAN(topology):                     # Add default bridge VLAN
-    return                                                  # ... exit if we found no bridges
+  if create_default_VLAN(topology):                         # If we have any bridge nodes ...
+    add_default_access_vlan(topology)                       # Add 'vlan.access' to non-VLAN bridge ports  
 
-  if not add_default_access_vlan(topology):                 # Add 'vlan.access' to non-VLAN bridge ports
-    return                                                  # ... exit if we found no relevant links
-  
-  expand_multiaccess_links(topology)                        # Expand multi-access links 
+  expand_multiaccess_links(topology)                        # Unrelated, check the 'bridge' attribute on
+                                                            # ... multi-access links and expand them
