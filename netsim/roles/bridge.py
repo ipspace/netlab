@@ -45,8 +45,6 @@ def create_default_VLAN(topology: Box) -> bool:
 """
 Go through the links and add 'vlan.access: br_default' to every interface of
 a bridge node that does not have a VLAN parameter
-
-Return 'True' if we found at least one "default" link attached to a bridge
 """
 def add_default_access_vlan(topology: Box) -> None:
   BR_DEFAULT = global_vars.get_const('bridge.default_vlan.name','br_default')
@@ -148,8 +146,8 @@ def expand_multiaccess_links(topology: Box) -> None:
     topology.links.remove(link)                             # Finally, remove original link
 
 def pre_transform(topology: Box) -> None:
-  if not create_default_VLAN(topology):                     # Add default bridge VLAN
-    return                                                  # ... exit if we found no bridges
+  if create_default_VLAN(topology):                         # If we have any bridge nodes ...
+    add_default_access_vlan(topology)                       # Add 'vlan.access' to non-VLAN bridge ports  
 
-  add_default_access_vlan(topology)                         # Add 'vlan.access' to non-VLAN bridge ports  
-  expand_multiaccess_links(topology)                        # Expand multi-access links
+  expand_multiaccess_links(topology)                        # Unrelated, check the 'bridge' attribute on
+                                                            # ... multi-access links and expand them
