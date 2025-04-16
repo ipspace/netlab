@@ -136,7 +136,7 @@ The **set.community** attribute can be used to set these BGP communities on supp
 | Cumulus Linux       | ✅ | ✅ | ✅ | ✅ | ❌  |
 | Dell OS10           | ✅ | ❌ | ✅ | ✅ | ❌  |
 | Junos               | ✅ | ✅ | ✅ | ✅ | ✅ |
-| FRR                 | ✅ | ✅ | ✅ | ✅ | ❌  |
+| FRR                 | ✅ | ✅ | ✅ | ✅ | ✅  |
 | VyOS                | ✅ | ✅ | ✅ | ✅ | ❌  |
 
 ### Shortcut Routing Policy Definitions

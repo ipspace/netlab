@@ -24,6 +24,24 @@ def check_stp_on_trunks(node: Box, topology: Box) -> None:
       more_data=err_data,
       node=node)
 
+"""
+FRR supports the deleting of communities, but only through community lists.
+This method creates such named lists for any policies that delete communities
+"""
+def create_bgp_community_delete_lists(node: Box) -> None:
+  for policy,entries in node.get('routing.policy',{}).items():
+    for e in entries:
+      if not e.get('set.community.delete',False):
+        continue
+      for type in ['standard','large','extended']:
+        if type not in e.set.community:
+          continue
+        cname = f"DEL_{ policy }_{ e.sequence }"
+        values = [ { 'type': type, 'action': 'permit', '_value': i } for i in e.set.community[type] ]
+        node.routing.community[ cname ] = { 'type': type, 'action': 'permit', 'value': values }
+        e.set.community.pop( type, None )
+        e.set.community._frr_list = cname
+
 class FRR(_Quirks):
 
   @classmethod
@@ -33,3 +51,5 @@ class FRR(_Quirks):
       if log.debug_active('quirks'):
         print(f'FRR: Checking STP for {node.name}')
       check_stp_on_trunks(node,topology)
+    if 'routing' in mods:
+      create_bgp_community_delete_lists(node)

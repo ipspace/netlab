@@ -7,7 +7,11 @@
   set extcommunity bandwidth {{ p_entry.set.bandwidth }}
 {%       endif %}
 {%     endif %}
-{{     routemap.common_route_map_entry(p_entry,af_list) }}
+{%     if p_entry.set.community.delete is defined %}
+  set comm-list {{ p_entry.set.community._frr_list }} delete
+{%     else %}
+{{       routemap.common_route_map_entry(p_entry,af_list) }}
+{%     endif %}
 {%-   endcall %}
 {% endif %}
 {% if routing.prefix|default({}) %}
@@ -59,3 +63,8 @@ vrf {{ r_vrf }}
 {%     endfor %}
 {%   endfor %}
 {% endif %}
+
+router bgp {{ bgp.as }}
+  ! Allow outbound policies for reflected iBGP routes, if any
+  bgp route-reflector allow-outbound-policy
+!
