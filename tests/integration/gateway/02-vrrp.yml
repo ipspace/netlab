@@ -12,6 +12,12 @@ groups:
     device: frr
     provider: clab
     members: [ r2 ]
+  bridges:
+    _auto_create: True
+    device: linux
+    role: bridge
+    provider: clab
+    members: [ br_a ]
   hosts:
     device: linux
     role: host
@@ -46,7 +52,8 @@ nodes:
       nexthop.node: dut
 
 links:
-- h1:
+- br_a:                                       # Use an explicit Linux bridge on the client network
+  h1:
   dut:
     gateway.vrrp.priority: 30
   r2:
@@ -59,14 +66,18 @@ links:
   prefix: target
 
 validate:
-  r2_no_vrrp:
-    description: Disable VRRP on R2
-    nodes: [ r2 ]
+  r2_disconnect:
+    description: Disable R2 link on client LAN
+    nodes: [ br_a ]
     config:
-      template: ifdown
+      template: linkdown
+      variable.neighbor: r2
       variable.ifstate: 'down'
-    pass: VRRP has been disabled on R2
+    pass: R2 link has been disabled on client LAN
     stop_on_error: True
+  vrrp_wait_1:
+    description: Wait for VRRP on DUT to take over
+    wait: 5
   ping_vrrp_v4:
     description: Verify VRRP for IPv4 is enabled on DUT
     wait: 10
@@ -77,21 +88,25 @@ validate:
     wait: 5
     nodes: [ h1 ]
     plugin: ping('h2',af='ipv6',count=3)
-  r2_vrrp_up:
-    description: Enable VRRP or R2
-    nodes: [ r2 ]
+  r2_reconnect:
+    description: Reconnect R2 to the client LAN
+    nodes: [ br_a ]
     config:
-      template: ifdown
+      template: linkdown
+      variable.neighbor: r2
       variable.ifstate: 'up'
-    pass: VRRP has been reenabled on R2
+    pass: R2 has been reconnected to client LAN
     stop_on_error: True
+  vrrp_wait_2:
+    description: Wait for VRRP state to settle
+    wait: 5
   r2_v4_backup:
     description: Verify that R2 is in the backup state for IPv4
     wait: 10
     nodes: [ r2 ]
     level: warning
     show:
-      frr: vrrp interface {{ interfaces[0].ifname }} json
+      frr: vrrp interface {{ (interfaces|selectattr('gateway.protocol','eq','vrrp')|first).ifname }} json
       eos: vrrp | json
     valid:
       frr: result[0].v4.status == 'Backup'
@@ -101,7 +116,7 @@ validate:
     wait: 10
     nodes: [ r2 ]
     show:
-      frr: vrrp interface {{ interfaces[0].ifname }} json
+      frr: vrrp interface {{ (interfaces|selectattr('gateway.protocol','eq','vrrp')|first).ifname }} json
       eos: vrrp | json
     valid:
       frr: result[0].v6.status == 'Backup'
@@ -118,7 +133,7 @@ validate:
     nodes: [ r2 ]
     level: warning
     show:
-      frr: vrrp interface {{ interfaces[0].ifname }} json
+      frr: vrrp interface {{ (interfaces|selectattr('gateway.protocol','eq','vrrp')|first).ifname }} json
       eos: vrrp | json
     valid:
       frr: result[0].v4.status == 'Master'
@@ -128,7 +143,7 @@ validate:
     wait: 10
     nodes: [ r2 ]
     show:
-      frr: vrrp interface {{ interfaces[0].ifname }} json
+      frr: vrrp interface {{ (interfaces|selectattr('gateway.protocol','eq','vrrp')|first).ifname }} json
       eos: vrrp | json
     valid:
       frr: result[0].v6.status == 'Master'
@@ -144,7 +159,7 @@ validate:
     wait: 10
     nodes: [ r2 ]
     show:
-      frr: vrrp interface {{ interfaces[0].ifname }} json
+      frr: vrrp interface {{ (interfaces|selectattr('gateway.protocol','eq','vrrp')|first).ifname }} json
       eos: vrrp | json
     valid:
       frr: result[0].v4.status == 'Backup'
@@ -155,7 +170,7 @@ validate:
     wait: 10
     nodes: [ r2 ]
     show:
-      frr: vrrp interface {{ interfaces[0].ifname }} json
+      frr: vrrp interface {{ (interfaces|selectattr('gateway.protocol','eq','vrrp')|first).ifname }} json
       eos: vrrp | json
     valid:
       frr: result[0].v6.status == 'Backup'
