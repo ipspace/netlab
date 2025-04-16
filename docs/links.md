@@ -66,7 +66,7 @@ The links-as-dictionary format has only one impact: it has a different (more str
 A dictionary describing an individual link contains *node names* and *additional link attributes*. These link attributes are predefined and used by *netlab* data transformation routines:
 
 * **bandwidth** -- link bandwidth. Used to configure interface bandwidth when supported by the connected device(s).
-* **bridge** -- [name of the underlying OS network (bridge)](#bridge-names) if supported by the virtualization environment
+* **bridge** -- the [name of a bridge node](node-bridge-lan) used to implement a multi-access link or the [name of the underlying OS network (bridge)](links-bridge) if supported by the virtualization environment
 * **disable** -- remove the link from the lab topology when set to `True`. You can use this attribute to simplify the topology when debugging it[^CIN].
 * **gateway** -- sets the default gateway for hosts attached to the link. See [Hosts and Default Gateways](#hosts-and-default-gateways) and [](module-gateway) for more details.
 * **group** -- [link group](link-groups) identifier
@@ -430,9 +430,9 @@ A lab device could be a networking device or a host[^HOST]. Links with attached 
 (links-bridge)=
 ## Bridge Names
 
-Point-to-point links between network devices are implemented with P2P tunnels (assuming the virtualization environment supports them).
+Point-to-point links between network devices are implemented with P2P tunnels between virtual machines (assuming the virtualization environment supports them) or vEth pairs between containers.
 
-Multi-access and stub links are implemented with custom networks (as supported by the underlying virtualization environment). The **bridge** attribute allows you to specify the custom network name; its default value is *name_N* where:
+Multi-access links, stub links, and links between nodes using different virtualization providers are implemented with custom networks (as supported by the underlying virtualization environment) or Linux bridges. The **bridge** attribute allows you to specify the custom network- or Linux bridge name; its default value is *name_N* where:
 
 * *name* is the [topology name](topology-overview.md) or current directory name;
 * *N* is the link ID (position of link object in **links** list) starting with 1.

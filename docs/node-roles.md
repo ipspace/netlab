@@ -102,9 +102,9 @@ You can use the node- or global VLAN definition of the **br_default** VLAN to ch
 For more VLAN configuration- and implementation details, read the [**vlan** configuration module documentation](module-vlan).
 
 (node-bridge-lan)=
-### Implementing Multi-Access Links with Bridges
+### Implementing Multi-Access Links with Bridge Nodes
 
-To build a LAN segment with a hub-and-spoke topology of point-to-point links attaching nodes to the bridge, you can define a multi-access link with a single bridge attached to it.
+You can use the **bridge** link attribute to use a bridge node (instead of a Linux bridge) to build a LAN segment consisting of point-to-point links attaching link nodes to the bridge node.
 
 For example, you can use the following topology to create a topology equivalent to the one above; the multi-access link is expanded into a series of point-to-point links with the **br** device.
 
@@ -120,7 +120,9 @@ nodes:
     device: ioll2
     role: bridge
 
-links: [ rtr-h1-h2-br ]
+links:
+- interfaces: [ rtr, h1, h2 ]
+  bridge: br
 ```
 
 Each multi-access link implemented with a bridge node is a separate bridging domain. _netlab_ creates a separate VLAN with a topology-wide unique VLAN ID on the bridge node for every multi-access link and copies the link attributes into the VLAN attributes. Thus, it's safe to use the same bridge node to implement multiple multi-access links.
