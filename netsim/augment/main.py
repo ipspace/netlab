@@ -44,6 +44,7 @@ def transform_setup(topology: Box) -> None:
   log.exit_on_error()
 
   validate.init_validation(topology)
+  modules.execute_module_hooks('normalize',topology)
   log.exit_on_error()
 
   augment.topology.adjust_global_parameters(topology)

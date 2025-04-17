@@ -18,7 +18,7 @@ from ..augment import devices
 # List of attributes we don't want propagated from defaults to global/node
 #
 no_propagate_list = [
-  "attributes", "extra_attributes", "features",
+  "attributes", "extra_attributes", "features", "hooks",
   "requires", "supported_on", "no_propagate",
   "config_after", "transform_after", "warnings" ]
 
@@ -450,6 +450,9 @@ def get_effective_module_attribute(
 """
 Callback transformation routines
 
+* call_module_hook: generic function to use the specified method in the specified module
+* execute_module_hooks: execute static hooks for modules with 'hooks' attribute
+* module_transform: call specified method for every module used in lab topology
 * node_transform: for all nodes, call specified method for every module used by the node
 * link_transform: for all links, call specified method for every module used by any node on the link
 
@@ -458,38 +461,41 @@ Note: mod_load is a global cache of loaded modules
 
 mod_load: typing.Dict = {}
 
-def module_transform(method: str, topology: Box) -> None:
+def call_module_hook(module: str, method: str, topology: Box, **kwargs: typing.Any) -> None:
   global mod_load
 
+  if not mod_load.get(module):
+    mod_load[module] = _Module.load(module,topology.get(module))
+  if log.debug_active('modules'):
+    if hasattr(mod_load[module],method):
+      print(f'Calling module {module} {method}')
+      if kwargs:
+        print(f'... args: {kwargs}')
+  mod_load[module].call(method,topology=topology,**kwargs)
+
+def execute_module_hooks(method: str, topology: Box) -> None:
+  for m in list_of_modules(topology):
+    if method in topology.defaults[m].get('hooks',[]):
+      call_module_hook(m,f'module_{method}',topology)
+
+def module_transform(method: str, topology: Box) -> None:
   if log.debug_active('modules'):
     print(f'Processing module_{method} hooks')
 
-  for m in topology.get('module',[]) + topology.get('_extra_module',[]):
-    if not mod_load.get(m):
-      mod_load[m] = _Module.load(m,topology.get(m))
-    if log.debug_active('modules'):
-      if hasattr(mod_load[m],f"module_{method}"):
-        print(f'Calling module {m} module_{method}')
-    mod_load[m].call("module_"+method,topology)
+  m_list = topology.get('module',[])
+  m_list += [ m for m in topology.get('_extra_module',[]) if m not in m_list ]
+  for m in m_list:
+    call_module_hook(m,method=f'module_{method}',topology=topology)
 
 def node_transform(method: str , topology: Box) -> None:
-  global mod_load
-
   if log.debug_active('modules'):
     print(f'Processing node_{method} hooks')
 
   for name,n in topology.nodes.items():
     for m in n.get('module',[]):
-      if not mod_load.get(m):  # pragma: no cover (module should have been loaded already)
-        mod_load[m] = _Module.load(m,topology.get(m))
-      if log.debug_active('modules'):
-        if hasattr(mod_load[m],f"node_{method}"):
-          print(f'Calling module {m} node_{method} on node {name}')
-      mod_load[m].call("node_"+method,n,topology)
+      call_module_hook(m,method=f"node_{method}",topology=topology,node=n)
 
 def link_transform(method: str, topology: Box) -> None:
-  global mod_load
-
   if log.debug_active('modules'):
     print(f'Processing link_{method} hooks')
 
@@ -498,9 +504,4 @@ def link_transform(method: str, topology: Box) -> None:
     for node_data in l.get('interfaces',[]):
       mod_list.update({ m: None for m in topology.nodes[node_data.node].get("module",[]) })
     for m in mod_list.keys():
-      if not mod_load.get(m):  # pragma: no cover (module should have been loaded already)
-        mod_load[m] = _Module.load(m,topology.get(m))
-      if log.debug_active('modules'):
-        if hasattr(mod_load[m],f"link_{method}"):
-          print(f'Calling module {m} link_{method} on link {l.get("name","unnamed")}')
-      mod_load[m].call("link_"+method,l,topology)
+      call_module_hook(m,method=f"link_{method}",topology=topology,link=l)
