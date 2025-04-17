@@ -24,6 +24,7 @@ The data transformation has three major steps:
 * Adjust the nodes data structure: transform [list of strings](nodes-list-of-strings) into a dictionary with empty values (`netsim.augment.nodes.create_node_dict`)
 * Check basic group data structures and auto-create nodes from group members (`augment.groups.precheck_groups`)
 * Initialize [plugin system](../plugins.md): load all plugins listed in the **plugin** top-level element (`netsim.augment.plugin.init`)
+* Initialize [node roles](node-router-host) subsystem
 * Execute plugin **topology_expand** hook (`netsim.augment.plugin.execute`) for plugins that augment lab topology structures (example: [](../plugins/fabric.md))
 
 * Initialize the link list (`netsim.augment.links.links_init`)
@@ -33,8 +34,8 @@ The data transformation has three major steps:
   * Set **linkindex** attributes (`netsim.augment.links.set_linkindex`)
 
 * Expand topology components (`netsim.augment.components.expand_components`)
+* Initialize **groups** structure and perform basic sanity checks (`netsim.augment.groups.init_groups`)
 * Execute plugin **init** hook (`netsim.augment.plugin.execute`)
-* Process external **tools** (`augment.tools.process_tools`)
 * Check for the presence of required top-level topology elements (`netsim.augment.topology.check_required_elements`)
 
 * Initialize attribute validation (`netsim.data.validate.init_validation`)
@@ -43,20 +44,25 @@ The data transformation has three major steps:
 	* Check the attributes in the group data structures
 	* Add group members based on nodes' **group** attribute
 	* Check recursive groups
-	* Copy group **device** and **module** attribute into nodes
-	* Copy group **node_data** into nodes
-	* Process **bgp.as_list** to get **bgp.as** node attributes
-	* Create BGP autogroups (groups based on BGP AS numbers)
-	* Copy **node_data** from BGP autogroups into nodes
 
 * Adjust global parameters (`netsim.augment.topology.adjust_global_parameters`):
 
   * Set `provider` top-level element
   * Merge provider-specific device and addressing defaults with global defaults
 
-* Load provider plugin (`netsim.providers._Provider.load`)
+* Validate group parameters (`netsim.augment.groups.validate_groups`)
+* Copy group data into nodes (`netsim. augment.groups.copy_group_data`)
+
+	* Copy group **device** and **module** attribute into nodes
+	* Copy group **node_data** into nodes
+	* Process **bgp.as_list** to get **bgp.as** node attributes
+	* Create BGP autogroups (groups based on BGP AS numbers)
+	* Copy **node_data** from BGP autogroups into nodes
+
+* Select primary provider and load provider plugin(s) (`netsim.providers.select_primary_provider`)
 * Augment node provider data: set node device type, select VM/container image, copy provider-specific node data into node dictionary (`netsim.augment.nodes.augment_node_provider_data`)
 * Augment node data with global defaults that are not part of configuration modules (example: MTU) (`augment.nodes.augment_node_system_data`)
+* Process external **tools** (`augment.tools.process_tools`)
 * Setup [addressing pools](../addressing.md) (`netsim.addressing.setup`)
 
 ## Global Data Transformation
