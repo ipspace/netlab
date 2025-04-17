@@ -181,10 +181,16 @@ Initialize plugin subsystem:
 * Sort plugins based on their _execute_after dependencies
 '''
 def init(topology: Box) -> None:
-  data.types.must_be_list(parent=topology,key='defaults.plugin',path='',create_empty=True)    # defaults.plugin must be a list (if present)
-  if topology.defaults.plugin:                                                                # If we have default plugins...
-    data.types.must_be_list(parent=topology,key='plugin',path='',create_empty=True)           # ... make sure the plugin attribute is a list
-    topology.plugin.extend(topology.defaults.plugin)                                          # ... and extend it with default plugins
+  #
+  # Initial sanity checks:
+  # 
+  # * defaults.plugin must be a list
+  # * topology.plugin (when present or when we have default plugins) must be a list
+  #
+  data.types.must_be_list(parent=topology,key='defaults.plugin',path='',create_empty=True)
+  if topology.defaults.plugin or 'plugin' in topology:
+    data.types.must_be_list(parent=topology,key='plugin',path='',create_empty=True)
+    topology.plugin.extend(topology.defaults.plugin)
 
   if not 'plugin' in topology:
     return
@@ -193,6 +199,14 @@ def init(topology: Box) -> None:
   load_error = False
   search_path = topology.defaults.paths.plugin
   for pname in list(topology.plugin):                         # Iterate over all plugins
+    if not isinstance(pname,str):
+      log.error(
+        f"Plugin name must be a string, found {pname}",
+        category=log.IncorrectValue,
+        module='plugin')
+      load_error = True
+      continue
+
     for path in search_path:
       plugin = load_plugin_from_path(path,pname,topology)     # Try to load plugin from the current search path directory
       if plugin:                                              # Got it, get out of the loop
@@ -203,9 +217,10 @@ def init(topology: Box) -> None:
     else:
       load_error = True
       log.error(
-        f"Cannot find plugin {pname}\nSearch path:\n{strings.get_yaml_string(search_path)}",
-        log.IncorrectValue,
-        'plugin')
+        f"Cannot find plugin {pname}",
+        more_data = "Search path:\n{strings.get_yaml_string(search_path)}",
+        category=log.IncorrectValue,
+        module='plugin')
 
   if load_error:                                              # Skip the rest of the code on error as it might crash
     return                                                    # ... due to discrepancy between lists of plugin names and loaded plugins
