@@ -71,7 +71,7 @@ def check_group_data_sanity(
   parent = topology.get(parent_path) if parent_path else topology
   grp_namespace = f'{parent_path} ' if parent_path else ''
 
-  if must_be_dict(parent,'groups',parent_path,create_empty=True,module='groups') is None:
+  if must_be_dict(parent,'groups',parent_path,create_empty=True,module='topology') is None:
     return False
 
   '''
@@ -144,7 +144,56 @@ def check_group_data_structure(
 
     g_namespace = [ f'{g_type}_group' ]
     g_namespace.extend(topology.defaults.attributes[g_namespace[0]].get('_namespace',[]))
-    group_attr = topology.defaults.attributes[g_namespace[0]]
+
+    if not 'members' in gdata:
+      gdata.members = []
+
+    if grp == 'all' and gdata.members:
+      log.error(
+        text=f'{grp_namespace}group "all" should not have explicit members',
+        category=log.IncorrectValue,
+        module='groups')
+
+    must_be_list(gdata,'module',gpath,create_empty=False,module='groups',valid_values=sorted(list_of_modules))
+
+    if log.pending_errors():                 # If we already found errors
+      continue                               # ... then the group data structures are not safe to work on
+
+    if must_be_list(gdata,'members',gpath,create_empty=False,module='groups') is None:
+      continue
+
+    if prune_members:
+      gdata.members = [ n for n in gdata.members if n in g_objects or n in parent.groups ]
+    else:
+      for n in gdata.members:
+        if not n in g_objects and not n in parent.groups:
+          log.error(
+            text=f'Member {n} of {grp_namespace}group {grp} is not a valid {g_type} or group name',
+            category=log.IncorrectValue,
+            module='groups')
+
+def validate_group_data(
+      topology: Box,
+      parent_path: typing.Optional[str] = '') -> None:
+
+  parent = topology.get(parent_path) if parent_path else topology
+  grp_namespace = f'{parent_path} ' if parent_path else ''
+
+  if 'groups' not in parent:
+    return
+
+  extra = get_object_attributes(['providers','tools'],topology)
+
+  for grp,gdata in parent.groups.items():
+    if grp.startswith('_'):                       # Skip stuff starting with underscore
+      continue                                    # ... could be system settings
+
+    g_type = gdata.get('type','node')
+    gpath = f'{parent_path or "topology"}.groups.{grp}'
+    g_namespace = [ f'{g_type}_group' ]
+    g_namespace.extend(topology.defaults.attributes[g_namespace[0]].get('_namespace',[]))
+    group_attr = get_box(topology.defaults.attributes[g_namespace[0]])
+    group_attr._default_group = 'str'       # We have to fake internal attributes, otherwise they're copied into node_data
 
     g_modules = gdata.get('module',[])
     if g_modules:                           # Modules specified in the group -- we know what these nodes will use
@@ -164,17 +213,6 @@ def check_group_data_structure(
       module_source=gm_source,
       ignored=['_','netlab_','ansible_'],   # Ignore attributes starting with _, netlab_ or ansible_
       extra_attributes=extra)               # Allow provider- and tool-specific settings (not checked at the moment)
-
-    if not 'members' in gdata:
-      gdata.members = []
-
-    if grp == 'all' and gdata.members:
-      log.error(
-        text=f'{grp_namespace}group "all" should not have explicit members',
-        category=log.IncorrectValue,
-        module='groups')
-
-    must_be_list(gdata,'module',gpath,create_empty=False,module='groups',valid_values=sorted(list_of_modules))
 
     # Validate node_data attributes (if any)
     if 'node_data' in gdata and g_type == 'node':
@@ -210,18 +248,6 @@ def check_group_data_structure(
       gdata.node_data[k] = gdata[k]
       gdata.pop(k,None)
 
-    if must_be_list(gdata,'members',gpath,create_empty=False,module='groups') is None:
-      continue
-
-    if prune_members:
-      gdata.members = [ n for n in gdata.members if n in g_objects or n in parent.groups ]
-    else:
-      for n in gdata.members:
-        if not n in g_objects and not n in parent.groups:
-          log.error(
-            text=f'Member {n} of {grp_namespace}group {grp} is not a valid {g_type} or group name',
-            category=log.IncorrectValue,
-            module='groups')
 
 '''
 Auto-create group members
@@ -569,6 +595,12 @@ def init_groups(topology: Box) -> None:
   check_recursive_groups(topology)
   log.exit_on_error()
 
+def validate_groups(topology: Box) -> None:
+  validate_group_data(topology)
+  validate_group_data(topology,'defaults')
+  log.exit_on_error()
+
+def copy_group_data(topology: Box) -> None:
   copy_group_device_module(topology)
   copy_group_node_data(topology,'')                 # Copy all group data into nodes (potentially setting bgp.as)
   bgp.process_as_list(topology)
