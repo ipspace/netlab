@@ -651,16 +651,6 @@ def vlan_ebgp_role_set(topology: Box, EBGP_ROLE: str) -> None:
     vdata.pop('_as_set',None)                               # ... and clean up
 
 class BGP(_Module):
-
-  """
-  Module pre-default:
-
-  * process AS list
-  * create automatic BGP groups
-  """
-  def module_pre_default(self, topology: Box) -> None:
-    pass
-
   """
   Node pre-transform: set bgp.rr node attribute to _true_ if the node name is in the
   global bgp.rr attribute. Also, delete the global bgp.rr attribute so it's not propagated
