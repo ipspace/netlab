@@ -38,7 +38,6 @@ def transform_setup(topology: Box) -> None:
 
   augment.components.expand_components(topology)
   augment.groups.init_groups(topology)
-  log.exit_on_error()
 
   augment.plugin.execute('init',topology)
   augment.topology.check_required_elements(topology)
