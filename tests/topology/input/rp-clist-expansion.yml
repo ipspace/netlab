@@ -5,9 +5,25 @@ defaults.device: none
 
 module: [routing]
 
+routing:
+  community:                                      # Merge of global clist with a node clisst
+    cl4: 65000:104                                # ... regression test for #2155
+    cl5:
+    - sequence: 100
+      action: permit
+      path: 65000:100
+    cl7: 65000:106
+
 nodes:
   r1:
     routing:
+      policy:
+        m_clist:
+        - match.community: cl5
+          action: permit
+        - match.community: cl7                    # Import a clist due to a routing policy reference
+          action: permit                          # ... another regression test for #2155
+
       community:
         cl1: 65000:100                            # Single-entry ACL
         cl2: [65000:100, 65000:101]               # Single-entry multivalue ACL
@@ -15,8 +31,10 @@ nodes:
         cl4:                                      # More complex standard ACL
         - action: permit                          # Used to implement or-of-ands condition
           path: [65000:100, 65001:100]
+          sequence: 20
         - action: permit
           path: [65000:103, 65001:103]
+          sequence: 30
         cl5:                                      # A mix standard and extended conditions ==> extended
         - action: deny
           path: [65000:100, 65001:100]            # first entry is a list of communities

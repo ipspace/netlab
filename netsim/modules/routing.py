@@ -85,7 +85,7 @@ def normalize_aspath_entry(p_entry: typing.Any, p_idx: int) -> Box:
   if not isinstance(p_entry,Box):
     p_entry = get_box({ 'path': p_entry })
 
-  if 'path' not in p_entry and 'list' not in p_entry:
+  if 'path' not in p_entry and 'list' not in p_entry and 'regexp' not in p_entry:
     p_entry.path = '.*'
 
   if 'path' in p_entry:
@@ -298,6 +298,17 @@ def import_routing_policy(pname: str,o_name: str,node: Box,topology: Box) -> typ
   return p_import
 
 """
+import_community_list -- has to check whether the target clist was already fixed, which means
+the transform_dispatch has already been called
+"""
+def import_community_list(pname: str,o_name: str,node: Box,topology: Box) -> typing.Optional[list]:
+  clist = node.get(f'routing.{o_name}.{pname}',None)
+  if isinstance(clist,Box):
+    return None
+
+  return import_routing_object(pname,o_name,node,topology)
+
+"""
 include_global_static_routes: Include global static routes into node static routes
 """
 def include_global_static_routes(o_data: BoxList,o_type: str,node: Box,topology: Box) -> typing.Optional[BoxList]:
@@ -359,12 +370,11 @@ import_dispatch: typing.Dict[str,dict] = {
     'import' : import_routing_object,
     'check'  : check_routing_object },
   'community': {
-    'import' : import_routing_object,
+    'import' : import_community_list,
     'check'  : check_routing_object },
   'static': {
     'start'  : include_global_static_routes
   }
-
 }
 
 """
@@ -591,10 +601,15 @@ expand_community_list: transform BGP community lists into a dictionary that indi
 whether they use regular expressions or not
 """
 def expand_community_list(p_name: str,o_name: str,node: Box,topology: Box) -> typing.Optional[list]:
-  node.routing[o_name][p_name] = {
-    'value': node.routing[o_name][p_name]
-  }
   p_clist = node.routing[o_name][p_name]                    # Shortcut pointer to current community list
+  if isinstance(p_clist,Box) and 'value' in p_clist:        # Have we already transformed this clist?
+    return None
+
+  node.routing[o_name][p_name] = {                          # Move the permit/deny list into 'value
+    'value': p_clist
+  }
+
+  p_clist = node.routing[o_name][p_name]                    # ... and fetch the new shortcut pointer
   regexp = False                                            # Figure out whether we need expanded clist
   for (p_idx,p_entry) in enumerate(p_clist.value):
     try:
