@@ -35,16 +35,16 @@ The data transformation has three major steps:
 
 * Expand topology components (`netsim.augment.components.expand_components`)
 * Initialize **groups** structure and perform basic sanity checks (`netsim.augment.groups.init_groups`)
+
+	* Check the mandatory attributes in the group data structures
+	* Add group members based on nodes' **group** attribute
+	* Check recursive groups
+
 * Execute plugin **init** hook (`netsim.augment.plugin.execute`)
 * Check for the presence of required top-level topology elements (`netsim.augment.topology.check_required_elements`)
 
 * Initialize attribute validation (`netsim.data.validate.init_validation`)
-* Complete node group initialization (`netsim.augment.groups.init_groups`):
-
-	* Check the attributes in the group data structures
-	* Add group members based on nodes' **group** attribute
-	* Check recursive groups
-
+* Execute data normalization static module hook (`netsim.modules.execute_module_hooks`):
 * Adjust global parameters (`netsim.augment.topology.adjust_global_parameters`):
 
   * Set `provider` top-level element
