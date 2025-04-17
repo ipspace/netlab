@@ -34,17 +34,22 @@ def transform_setup(topology: Box) -> None:
   if 'links' in topology:
     augment.links.links_init(topology)
 
+  log.exit_on_error()
+
   augment.components.expand_components(topology)
+  augment.groups.init_groups(topology)
 
   augment.plugin.execute('init',topology)
   augment.topology.check_required_elements(topology)
   log.exit_on_error()
 
   validate.init_validation(topology)
-  augment.groups.init_groups(topology)
   log.exit_on_error()
 
   augment.topology.adjust_global_parameters(topology)
+  augment.groups.validate_groups(topology)
+  augment.groups.copy_group_data(topology)
+
   providers.select_primary_provider(topology)
   log.exit_on_error()
 
