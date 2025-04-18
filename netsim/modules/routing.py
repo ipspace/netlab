@@ -444,19 +444,26 @@ normalize_routing_data: execute the normalization functions for all routing obje
 def normalize_routing_data(r_object: Box, topo_object: bool = False, o_name: str = 'topology') -> None:
   global normalize_dispatch
 
-  for dp in normalize_dispatch.values():
-    if 'transform' in dp:
-      if dp['namespace'] in r_object:
-        xform = r_object[dp['namespace']]
-        xform = dp['transform'](xform,o_type=dp['object'],topo_object=topo_object,o_name=o_name)
-        if xform is not None:
-          r_object[dp['namespace']] = xform
-    elif 'callback' in dp:
-      normalize_routing_objects(
-        o_dict=r_object.get(dp['namespace'],None),
-        o_type=dp['object'],
-        normalize_callback=dp['callback'],
-        topo_object=topo_object)
+  try:
+    for dp in normalize_dispatch.values():
+      if 'transform' in dp:
+        if dp['namespace'] in r_object:
+          xform = r_object[dp['namespace']]
+          xform = dp['transform'](xform,o_type=dp['object'],topo_object=topo_object,o_name=o_name)
+          if xform is not None:
+            r_object[dp['namespace']] = xform
+      elif 'callback' in dp:
+        normalize_routing_objects(
+          o_dict=r_object.get(dp['namespace'],None),
+          o_type=dp['object'],
+          normalize_callback=dp['callback'],
+          topo_object=topo_object)
+  except Exception as ex:
+    log.warning(
+      text="Cannot normalize {o_name} routing objects",
+      more_data=str(ex),
+      more_hints="Check further error messages for more details",
+      module='routing')
 
 """
 expand_prefix_entry: Transform 'pool' and 'prefix' keywords into 'ipv4' and 'ipv6'
@@ -1096,12 +1103,27 @@ transform_dispatch: typing.Dict[str,dict] = {
 
 class Routing(_Module):
 
-  def module_pre_default(self, topology: Box) -> None:
-    topology.prefix = topology.defaults.prefix + topology.prefix
+  """
+  Normalize routing object shortcuts into data structures that will pass validation
+  This step has to be implemented as a static "normalize" hook to be executed before
+  group data validation.
+  """
+  def module_normalize(self, topology: Box) -> None:
     normalize_routing_data(topology,topo_object=True,o_name='topology')
 
-  def node_pre_default(self, node: Box, topology: Box) -> None:
-    normalize_routing_data(node,o_name=node.name)
+    for gname,gdata in topology.get('groups',{}).items():
+      normalize_routing_data(gdata,o_name=f'groups.{gname}')
+
+    for node,ndata in topology.nodes.items():
+      normalize_routing_data(ndata,o_name=f'nodes.{node}')
+
+  """
+  The routing module defines two standard prefixes in the topology defaults. These
+  prefixes have to be merged with topology prefixes before any serious transformation
+  work starts.
+  """
+  def module_pre_default(self, topology: Box) -> None:
+    topology.prefix = topology.defaults.prefix + topology.prefix
 
   def node_pre_transform(self, node: Box, topology: Box) -> None:
     global import_dispatch
