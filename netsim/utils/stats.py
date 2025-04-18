@@ -176,12 +176,15 @@ A wrapper around a bunch of other functions that increments a single counter.
 Used for simple stuff like counting commands
 '''
 def stats_counter_update(cnt: str, val: int = 1) -> None:
-  stats = lock_and_read_stats()
-  if stats is None:
-    return
-  
   try:
+    stats = lock_and_read_stats()
+    if stats is None:
+      return
+
     add_counter(stats,cnt,val)
     write_stats(stats)
-  except:
-    pass
+  except Exception as ex:
+    log.warning(
+      text=f'Cannot update usage stats {cnt}',
+      more_info=str(ex),
+      module='stats')
