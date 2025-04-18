@@ -104,8 +104,8 @@ def add_counter(stats: Box, cnt: str, value: int = 1) -> None:
   for kw in ['cnt','avg_cnt']:                                        # Increase counters by the specified value
     if isinstance(stats[cnt][kw],int):
       stats[cnt][kw] += value
-  else:                                                               # Or start from scratch
-    stats[cnt][kw] = value
+    else:                                                             # Or start from scratch
+      stats[cnt][kw] = value
 
   stats[cnt].upd = ts                                                 # Also, remember when we updated the counter
   if not isinstance(stats[cnt].avg_upd,int):                          # And start averaging if needed
@@ -129,6 +129,8 @@ absolute maximum in statistics (for example, maximum number of devices)
 '''
 def update_max_vals(stats: Box, max_vals: Box) -> None:
   if 'cnt' in max_vals:
+    if not isinstance(max_vals.cnt,int):
+      return
     if not isinstance(stats.max,int):
       stats.max = 0
     if stats.max < max_vals.cnt:
