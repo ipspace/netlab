@@ -13,9 +13,9 @@ ok: [s2]
 TASK [Find device readiness script] ********************************************
 ok: [r1]
 ok: [h1]
-ok: [s1]
 ok: [h2]
 ok: [s2]
+ok: [s1]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [r1]
@@ -25,7 +25,7 @@ skipping: [s1]
 skipping: [s2]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for r1, h1, h2, s1, s2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for r1, h1, h2, s1, s2
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [r1]
@@ -38,8 +38,8 @@ TASK [Find configuration template for normalize] *******************************
 ok: [r1]
 ok: [h1]
 ok: [h2]
-ok: [s1]
 ok: [s2]
+ok: [s1]
 
 TASK [fail] ********************************************************************
 skipping: [r1]
@@ -70,7 +70,7 @@ skipping: [s1]
 skipping: [s2]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for r1, h1, h2, s1, s2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for r1, h1, h2, s1, s2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [r1]
@@ -97,8 +97,8 @@ TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [r1]
 ok: [h1]
 ok: [h2]
-ok: [s2]
 ok: [s1]
+ok: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [h1] => 
@@ -117,10 +117,15 @@ ok: [h1] =>
   
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
     # Disable IPv4 and IPv6 forwarding
     #
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
+  
     #
     # Interface addressing, create any bond devices
     #
@@ -130,28 +135,6 @@ ok: [h1] =>
     set -e
     ip addr add 172.16.0.1/24 dev eth1
     ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.2.0.0/24 2>/dev/null; do
-      : ; done
-    #
-    #
-    echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.0.5 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.0.5 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.0.5 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.0.5 dev eth1 protocol static
-    #
-    # Print the final routing table
-    ip route
 ok: [h2] => 
   msg: |-
     initial configuration for h2
@@ -168,10 +151,15 @@ ok: [h2] =>
   
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
     # Disable IPv4 and IPv6 forwarding
     #
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
+  
     #
     # Interface addressing, create any bond devices
     #
@@ -181,28 +169,6 @@ ok: [h2] =>
     set -e
     ip addr add 172.16.1.2/24 dev eth1
     ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.2.0.0/24 2>/dev/null; do
-      : ; done
-    #
-    #
-    echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.1.5 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.1.5 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.1.5 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.1.5 dev eth1 protocol static
-    #
-    # Print the final routing table
-    ip route
 ok: [s1] => 
   msg: |-
     initial configuration for s1
@@ -246,6 +212,14 @@ ok: [r1] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -268,6 +242,12 @@ ok: [r1] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -280,10 +260,14 @@ ok: [r1] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+    ip link set eth2 down
     sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
     ip link set dev eth2 mtu 1500
+    ip link set eth2 up
   
     #
     # Add vtysh.conf file
@@ -295,6 +279,7 @@ ok: [r1] =>
     cat >/tmp/config <<CONFIG
     hostname r1
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -343,9 +328,9 @@ ok: [s2] =>
        - name: system0.0
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for r1
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for r1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [r1 -> localhost]
@@ -354,7 +339,7 @@ TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [r1]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for r1
 
 TASK [template] ****************************************************************
 changed: [r1]
@@ -362,10 +347,10 @@ changed: [r1]
 TASK [set_fact] ****************************************************************
 ok: [r1]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [r1]
 
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r1]
 
 TASK [Define script filename and determine whether to execute in netns] ********
@@ -373,10 +358,10 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
@@ -384,15 +369,15 @@ TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
 skipping: [h2]
 
-TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 skipping: [h1]
 skipping: [h2]
 
-TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
+TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-vzlztv8d.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-opzrlk0_.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -400,7 +385,7 @@ TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [s1]
 ok: [s2]
 
-TASK [Update SRL initial node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2)] ***
+TASK [Update SRL initial node configuration (template=/home/pipi/netlab_gh/netsim/ansible/templates/initial/srlinux.j2)] ***
 changed: [s2]
 changed: [s1]
 
@@ -411,29 +396,42 @@ skipping: [s2]
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
+ok: [h1]
+ok: [h2]
 ok: [s1]
 ok: [s2]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2 => (item=vlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1, s2 => (item=vlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1, s2 => (item=routing)
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
+ok: [h1]
+ok: [h2]
 ok: [s1]
 ok: [s2]
 
 TASK [Find configuration template for vlan] ************************************
+skipping: [h1]
+skipping: [h2]
 ok: [s1]
 ok: [s2]
 
 TASK [fail] ********************************************************************
+skipping: [h1]
+skipping: [h2]
 skipping: [s1]
 skipping: [s2]
 
 TASK [Find configuration deployment deploy_script for vlan] ********************
+skipping: [h1]
+skipping: [h2]
 ok: [s1]
 ok: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [h1]
+skipping: [h2]
 ok: [s1] => 
   msg: |-
     vlan configuration for s1
@@ -620,29 +618,150 @@ ok: [s2] =>
        - index: 701
 
 TASK [Deploy vlan configuration] ***********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
+skipping: [h1]
+skipping: [h2]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for s1, s2
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [s1]
 ok: [s2]
 
-TASK [Update SRL vlan node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/vlan/srlinux.j2)] ***
-changed: [s2]
+TASK [Update SRL vlan node configuration (template=/home/pipi/netlab_gh/netsim/ansible/templates/vlan/srlinux.j2)] ***
 changed: [s1]
+changed: [s2]
 
 TASK [debug] *******************************************************************
 skipping: [s1]
 skipping: [s2]
 
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [h1]
+ok: [h2]
+ok: [s1]
+ok: [s2]
+
+TASK [Find configuration template for routing] *********************************
+skipping: [s1]
+skipping: [s2]
+ok: [h1]
+ok: [h2]
+
+TASK [fail] ********************************************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [s1]
+skipping: [s2]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [s1]
+skipping: [s2]
+ok: [h1]
+ok: [h2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [s1]
+skipping: [s2]
+ok: [h1] => 
+  msg: |-
+    routing configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.0.5 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.0.5 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.0.5 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.0.5 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
+ok: [h2] => 
+  msg: |-
+    routing configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.1.5 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.1.5 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.1.5 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.1.5 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
+
+TASK [Deploy routing configuration] ********************************************
+skipping: [s1]
+skipping: [s2]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
+
+TASK [Define script filename and determine whether to execute in netns] ********
+ok: [h1]
+ok: [h2]
+
+TASK [Create a temporary file for the rendered script] *************************
+changed: [h2 -> localhost]
+changed: [h1 -> localhost]
+
+TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux.j2] ***
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [Execute /tmp/config-h1_routing.sh to deploy routing config based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux.j2] ***
+changed: [h1]
+changed: [h2]
+
+TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux.j2 executed in netns] ***
+skipping: [h1]
+skipping: [h2]
+
+TASK [Remove temporary file /tmp/h1_routing-mvcj6uq0.sh] ***********************
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-h2                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+h1                         : ok=32   changed=9    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
+h2                         : ok=32   changed=9    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
 r1                         : ok=17   changed=3    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-s1                         : ok=23   changed=2    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-s2                         : ok=23   changed=2    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+s1                         : ok=25   changed=2    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
+s2                         : ok=25   changed=2    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
 
 
 

@@ -14,8 +14,8 @@ TASK [Find device readiness script] ********************************************
 ok: [dut]
 ok: [r2]
 ok: [r4]
-ok: [r3]
 ok: [r1]
+ok: [r3]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [dut]
@@ -52,8 +52,8 @@ TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [dut]
 ok: [r2]
 ok: [r4]
-ok: [r3]
 ok: [r1]
+ok: [r3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
@@ -96,8 +96,8 @@ skipping: [r3]
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [dut]
 ok: [r2]
-ok: [r4]
 ok: [r1]
+ok: [r4]
 ok: [r3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -123,6 +123,7 @@ ok: [dut] =>
   
     - path: /interface[name=ethernet-1/1]
       value:
+       description: "dut ~ r1"
        subinterface:
         index: 0
         description: "dut ~ r1"
@@ -150,6 +151,7 @@ ok: [dut] =>
   
     - path: /interface[name=ethernet-1/2]
       value:
+       description: "dut ~ r2"
        subinterface:
         index: 0
         description: "dut ~ r2"
@@ -177,6 +179,7 @@ ok: [dut] =>
   
     - path: /interface[name=ethernet-1/3]
       value:
+       description: "dut ~ r3"
        subinterface:
         index: 0
         description: "dut ~ r3"
@@ -204,6 +207,7 @@ ok: [dut] =>
   
     - path: /interface[name=ethernet-1/4]
       value:
+       description: "dut ~ r4"
        subinterface:
         index: 0
         description: "dut ~ r4"
@@ -285,6 +289,14 @@ ok: [r2] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -307,6 +319,12 @@ ok: [r2] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -319,11 +337,11 @@ ok: [r2] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -335,10 +353,11 @@ ok: [r2] =>
     cat >/tmp/config <<CONFIG
     hostname r2
     !
+    ip forwarding
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
@@ -378,6 +397,14 @@ ok: [r4] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -400,6 +427,12 @@ ok: [r4] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -412,11 +445,11 @@ ok: [r4] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -428,10 +461,11 @@ ok: [r4] =>
     cat >/tmp/config <<CONFIG
     hostname r4
     !
+    ip forwarding
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
@@ -471,6 +505,14 @@ ok: [r1] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -493,6 +535,12 @@ ok: [r1] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -505,11 +553,11 @@ ok: [r1] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -521,10 +569,11 @@ ok: [r1] =>
     cat >/tmp/config <<CONFIG
     hostname r1
     !
+    ip forwarding
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
@@ -564,6 +613,14 @@ ok: [r3] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -586,6 +643,12 @@ ok: [r3] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -598,11 +661,11 @@ ok: [r3] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -614,10 +677,11 @@ ok: [r3] =>
     cat >/tmp/config <<CONFIG
     hostname r3
     !
+    ip forwarding
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
@@ -665,9 +729,9 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for r2
 
 TASK [template] ****************************************************************
 changed: [r4]
+changed: [r2]
 changed: [r1]
 changed: [r3]
-changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
@@ -676,10 +740,10 @@ ok: [r1]
 ok: [r3]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r4]
-changed: [r1]
 changed: [r2]
+changed: [r4]
 changed: [r3]
+changed: [r1]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r2]
@@ -732,57 +796,6 @@ ok: [r4]
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r1]
 skipping: [r3]
-ok: [r2] => 
-  msg: |-
-    bgp configuration for r2
-    =========================================
-    !
-    router bgp 65100
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.3
-    !
-      neighbor 10.1.0.5 remote-as 65000
-      neighbor 10.1.0.5 description dut
-    !
-      neighbor 2001:db8:3:1::1 remote-as 65000
-      neighbor 2001:db8:3:1::1 description dut
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-      network 10.0.0.3/32
-    !
-    !
-    !
-      neighbor 10.1.0.5 activate
-      no neighbor 10.1.0.5 send-community all
-      neighbor 10.1.0.5 send-community standard
-      neighbor 10.1.0.5 send-community large
-    !
-     address-family ipv6 unicast
-    !
-  
-    !
-      network 2001:db8:1:3::/64
-    !
-    !
-    !
-      neighbor 2001:db8:3:1::1 activate
-      no neighbor 2001:db8:3:1::1 send-community all
-      neighbor 2001:db8:3:1::1 send-community standard
-      neighbor 2001:db8:3:1::1 send-community large
-    !
-    !
-    !
-    do write
 ok: [dut] => 
   msg: |-
     bgp configuration for dut
@@ -864,6 +877,57 @@ ok: [dut] =>
         prefix:
         - ip-prefix: 2001:db8:1:1::/64
           mask-length-range: exact
+ok: [r2] => 
+  msg: |-
+    bgp configuration for r2
+    =========================================
+    !
+    router bgp 65100
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.3
+    !
+      neighbor 10.1.0.5 remote-as 65000
+      neighbor 10.1.0.5 description dut
+    !
+      neighbor 2001:db8:3:1::1 remote-as 65000
+      neighbor 2001:db8:3:1::1 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.3/32
+    !
+    !
+    !
+      neighbor 10.1.0.5 activate
+      no neighbor 10.1.0.5 send-community all
+      neighbor 10.1.0.5 send-community standard
+      neighbor 10.1.0.5 send-community large
+    !
+     address-family ipv6 unicast
+    !
+  
+    !
+      network 2001:db8:1:3::/64
+    !
+    !
+    !
+      neighbor 2001:db8:3:1::1 activate
+      no neighbor 2001:db8:3:1::1 send-community all
+      neighbor 2001:db8:3:1::1 send-community standard
+      neighbor 2001:db8:3:1::1 send-community large
+    !
+    !
+    !
+    do write
 ok: [r4] => 
   msg: |-
     bgp configuration for r4
@@ -932,8 +996,8 @@ TASK [debug] *******************************************************************
 skipping: [dut]
 
 TASK [template] ****************************************************************
-changed: [r4]
 changed: [r2]
+changed: [r4]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
@@ -944,21 +1008,21 @@ skipping: [r2]
 skipping: [r4]
 
 TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [r4]
 changed: [r2]
+changed: [r4]
 
 TASK [Figure out whether to deploy the module isis on current device] **********
 ok: [dut]
 ok: [r1]
 ok: [r2]
-ok: [r3]
 ok: [r4]
+ok: [r3]
 
 TASK [Find configuration template for isis] ************************************
 skipping: [r2]
 ok: [dut]
-skipping: [r4]
 ok: [r1]
+skipping: [r4]
 ok: [r3]
 
 TASK [fail] ********************************************************************
@@ -1226,6 +1290,9 @@ ok: [dut] =>
     - path: /network-instance[name=blue]/protocols/bgp/group[group-name=ebgp]
       value:
         admin-state: enable
+    # neighbor: {'_src_vrf': 'blue', 'activate': {'ipv4': True, 'ipv6': True}, 'as': 65101, 'ifindex': 4, 'ipv4': '10.1.0.14', 'ipv6': '2001:db8:3:3::2', 'name': 'r4', 'type': 'ebgp'}
+    # ipv4: True
+    # ipv6: True
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
@@ -1252,15 +1319,23 @@ ok: [dut] =>
         - peer-address: "10.1.0.14"
           description: r4
           peer-group: ebgp
+      # neighbor: {'_src_vrf': 'blue', 'activate': {'ipv4': True, 'ipv6': True}, 'as': 65101, 'ifindex': 4, 'ipv4': '10.1.0.14', 'ipv6': '2001:db8:3:3::2', 'name': 'r4', 'type': 'ebgp'}
+      # ipv4: True
+      # ipv6: False
           afi-safi:
           - afi-safi-name: ipv4-unicast
             admin-state: enable
+          - afi-safi-name: ipv6-unicast
+            admin-state: disable
   
           peer-as: 65101
   
     - path: /network-instance[name=blue]/protocols/bgp/group[group-name=ebgp]
       value:
         admin-state: enable
+    # neighbor: {'_src_vrf': 'blue', 'activate': {'ipv4': True, 'ipv6': True}, 'as': 65101, 'ifindex': 4, 'ipv4': '10.1.0.14', 'ipv6': '2001:db8:3:3::2', 'name': 'r4', 'type': 'ebgp'}
+    # ipv4: True
+    # ipv6: True
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
@@ -1287,7 +1362,12 @@ ok: [dut] =>
         - peer-address: "2001:db8:3:3::2"
           description: r4
           peer-group: ebgp
+      # neighbor: {'_src_vrf': 'blue', 'activate': {'ipv4': True, 'ipv6': True}, 'as': 65101, 'ifindex': 4, 'ipv4': '10.1.0.14', 'ipv6': '2001:db8:3:3::2', 'name': 'r4', 'type': 'ebgp'}
+      # ipv4: False
+      # ipv6: True
           afi-safi:
+          - afi-safi-name: ipv4-unicast
+            admin-state: disable
           - afi-safi-name: ipv6-unicast
             admin-state: enable
   
@@ -1435,6 +1515,9 @@ ok: [dut] =>
     - path: /network-instance[name=red]/protocols/bgp/group[group-name=ebgp]
       value:
         admin-state: enable
+    # neighbor: {'_src_vrf': 'red', 'activate': {'ipv4': True, 'ipv6': True}, 'as': 65100, 'ifindex': 2, 'ipv4': '10.1.0.6', 'ipv6': '2001:db8:3:1::2', 'name': 'r2', 'type': 'ebgp'}
+    # ipv4: True
+    # ipv6: True
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
@@ -1461,15 +1544,23 @@ ok: [dut] =>
         - peer-address: "10.1.0.6"
           description: r2
           peer-group: ebgp
+      # neighbor: {'_src_vrf': 'red', 'activate': {'ipv4': True, 'ipv6': True}, 'as': 65100, 'ifindex': 2, 'ipv4': '10.1.0.6', 'ipv6': '2001:db8:3:1::2', 'name': 'r2', 'type': 'ebgp'}
+      # ipv4: True
+      # ipv6: False
           afi-safi:
           - afi-safi-name: ipv4-unicast
             admin-state: enable
+          - afi-safi-name: ipv6-unicast
+            admin-state: disable
   
           peer-as: 65100
   
     - path: /network-instance[name=red]/protocols/bgp/group[group-name=ebgp]
       value:
         admin-state: enable
+    # neighbor: {'_src_vrf': 'red', 'activate': {'ipv4': True, 'ipv6': True}, 'as': 65100, 'ifindex': 2, 'ipv4': '10.1.0.6', 'ipv6': '2001:db8:3:1::2', 'name': 'r2', 'type': 'ebgp'}
+    # ipv4: True
+    # ipv6: True
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
@@ -1496,7 +1587,12 @@ ok: [dut] =>
         - peer-address: "2001:db8:3:1::2"
           description: r2
           peer-group: ebgp
+      # neighbor: {'_src_vrf': 'red', 'activate': {'ipv4': True, 'ipv6': True}, 'as': 65100, 'ifindex': 2, 'ipv4': '10.1.0.6', 'ipv6': '2001:db8:3:1::2', 'name': 'r2', 'type': 'ebgp'}
+      # ipv4: False
+      # ipv6: True
           afi-safi:
+          - afi-safi-name: ipv4-unicast
+            admin-state: disable
           - afi-safi-name: ipv6-unicast
             admin-state: enable
   
