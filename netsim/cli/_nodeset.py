@@ -46,20 +46,30 @@ were specified.
 """
 def parse_nodeset(ns: str, topology: Box) -> list:
   n_names = list(topology.nodes.keys())
+  d_names = list(topology.defaults.devices.keys())
   n_list: list = []
   for n_element in ns.split(','):
+    if n_element in n_list:
+      continue
+
     if is_glob(n_element):
       if not add_glob(n_element,n_names,n_list):
-        log.error(f'Wildcard node specification {n_element} does not match any nodes',log.IncorrectValue,'')
+        log.error(f'Wildcard node specification {n_element} does not match any nodes',module='-',skip_header=True)
     elif n_element in topology.groups:
       node_list = groups.group_members(topology,n_element)
       n_list = n_list + [ n for n in node_list if n not in n_list ]
-    else:
-      if n_element not in n_names:
-        log.error(f'Invalid node name {n_element}',log.IncorrectValue,'')
+    elif n_element in n_names:
+      n_list.append(n_element)
+    elif n_element.lower() == 'all':
+      add_glob('*',n_names,n_list)
+    elif n_element in d_names:
+      d_list = [ n_name for n_name,n_data in topology.nodes.items() if n_data.device == n_element ]
+      if d_list:
+        n_list = n_list + [ n_name for n_name in d_list if n_name not in n_list ]
       else:
-        if n_element not in n_list:
-          n_list.append(n_element)
+        log.error(f'The current lab topology has no {n_element} devices',module='-',skip_header=True)
+    else:
+      log.error(f'{n_element} is not a glob or a valid node, group, or device name',module='-',skip_header=True)
 
   log.exit_on_error()
   return n_list
