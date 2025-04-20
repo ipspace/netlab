@@ -16,7 +16,12 @@
       node_provider: "{{ provider|default(netlab_provider) }}"
       search_path: "{{ paths_templates.dirs }}"
       custom_config: "{{ config }}"
+      config_module: reload
     tags: [ always ]
+
+  - name: Remember the original deployment path(s)
+    set_fact:
+      d_paths: "{{ paths_deploy }}"
 
   - import_tasks: tasks/wait-for-ready.yml
   - include_tasks: tasks/initial-config.yml
@@ -29,4 +34,8 @@
     include_tasks: "tasks/deploy-custom-config.yml"
     args:
       apply:
+        vars:
+          paths_deploy:
+            dirs: "{{ d_paths.dirs }}"
+            tasks_generic: "{{ d_paths.tasks_generic|map('replace','deploy-','reload-') + d_paths.tasks_generic }}"
         tags: [ always ]
