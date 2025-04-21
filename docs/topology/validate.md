@@ -25,7 +25,7 @@ Each test has a name (dictionary key) and description (dictionary value) -- anot
 * **suzieq** (string or dictionary) -- the SuzieQ command to execute and the optional validation parameters ([more details](validate-suzieq)).
 * **valid** (string or dictionary, optional) -- Python code that will be executed once the **show** or **exec** command has completed. The test succeeds if the Python code returns any value that evaluates to `True` when converted to a boolean[^TEX]. The Python code can use the results of the **show** command as variables; the **exec** command printout is available in the `stdout` variable.
 * **plugin** (valid Python function call as string, optional) -- a method of a custom [validation plugin](validate-plugin) that provides either a command to execute or validation results.
-* **wait** (integer, optional) -- Time to wait (when specified as the only action in the test) or retry (when used together with other actions). The first wait/retry timeout is measured from when the lab was started; subsequent times are measured from the previous test containing the **wait** parameter.
+* **wait** (integer, optional) -- Time to wait (when specified as the only action in the test) or retry (when used together with other actions). The first wait/retry timeout is measured from when the lab was started; subsequent times are measured from the previous test containing the **wait** parameter. The wait time could also be specified as an identifier; its value has to be defined in **defaults.const.validate** dictionary ([example](validate-retry)).
 * **wait_str** (string, optional) -- Message to print before starting the wait.
 * **stop_on_error** (bool, optional) -- When set to `True`, the validation tests stop if the current test fails on at least one of the devices.
 * **level** (string, optional) -- When set to `warning,` the test failure does not indicate that the whole testing sequence has failed but generates a warning message. 
@@ -99,14 +99,16 @@ validate:
 
 Instead of waiting a fixed amount of time, you can specify the **wait** parameter together with other test parameters. **netlab validate** will keep retrying the specified action(s) and validating their results until it gets a positive outcome or the wait time expires.
 
-For example, the following validation test checks whether H1 and H2 can ping H3, retrying for at least 45 seconds.
+For example, the following validation test checks whether H1 and H2 can ping H3, retrying for at least 45 seconds. The wait time is specified as a default constant and can thus be reused across multiple validation tests.
 
 ```
+defaults.const.validate.stp_wait: 45
+
 validate:
   ping:
     description: Ping-based reachability test
-    wait_msg: Waiting for STP and OSPF to stabilize
-    wait: 45
+    wait_msg: Waiting for STP to stabilize
+    wait: stp_wait
     nodes: [ h1,h2 ]
     devices: [ linux ]
     exec: ping -c 5 -W 1 -A h3

@@ -5,8 +5,30 @@ from box import Box
 
 from ..utils import strings,log
 from .. import data
+from ..data.global_vars import get_const
 
 import typing
+
+'''
+lookup_wait_time: convert wait time to integer
+'''
+def lookup_wait_time(v_entry: Box, topology: Box) -> None:
+  if not 'wait' in v_entry:
+    return
+
+  if isinstance(v_entry.wait,int):
+    return
+
+  w_time = get_const(f'validate.{v_entry.wait}')
+  if isinstance(w_time,int):
+    v_entry.wait = w_time
+    return
+
+  log.error(
+    f'Wait time {v_entry.wait} specified in validation entry {v_entry.name} is not a validation constant',
+    more_hints='Define validation constants in defaults.const.validate',
+    category=log.IncorrectValue,
+    module='validation')
 
 '''
 validate_test_entry: Check if the test makes sense
@@ -26,6 +48,7 @@ def validate_test_entry(v_entry: Box, topology: Box) -> bool:
           module='validation')
     return False
 
+  lookup_wait_time(v_entry,topology)
   if isinstance(v_entry.get('suzieq',{}),str):          # Make sure suzieq entry (if exists) is a dictionary
     v_entry.suzieq = { 'show': v_entry.suzieq }
 

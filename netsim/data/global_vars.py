@@ -60,7 +60,7 @@ def get_topology() -> typing.Optional[Box]:
 
   return _topology
 
-def get_const(varname: str, default: typing.Any) -> typing.Any:
+def get_const(varname: str, default: typing.Any = None) -> typing.Any:
   topology = get_topology()
   if topology is None:
     return default
