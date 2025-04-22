@@ -19,13 +19,16 @@ Do sanity checks on DHCP data:
 '''
 def check_protocol_support(node: Box, topology: Box) -> bool:
   features = devices.get_device_features(node,topology.defaults)
+  d_provider = devices.get_provider(node,topology.defaults)
   OK = True
+
+  device_info = f'device {node.device}/provider {d_provider}'
 
   # Can a device configured as a DHCP server be on?
   #
   if node.get('dhcp.server',False) and not features.dhcp.server:
     log.error(
-      f'Node {node.name} (device {node.device}) cannot be a DHCP server',
+      f'Node {node.name} ({device_info}) cannot be a DHCP server',
       category=log.IncorrectValue,
       module='dhcp')
     OK = False
@@ -48,7 +51,7 @@ def check_protocol_support(node: Box, topology: Box) -> bool:
         continue        
       if not features.dhcp.client[af]:
         log.error(
-          f'Node {node.name} (device {node.device}) does not support {af} DHCP client',
+          f'Node {node.name} ({device_info}) does not support {af} DHCP client',
           more_data= [ f'DHCP client is used on interface {intf.ifname} ({intf.name})' ],
           category=log.IncorrectValue,
           module='dhcp')
@@ -62,7 +65,8 @@ def check_protocol_support(node: Box, topology: Box) -> bool:
     f_relay = features.dhcp.relay
     if not f_relay:
       log.error(
-        f'Node {node.name} (device {node.device}) cannot be a DHCP relay (interface {intf.ifname}/{intf.name})',
+        f'Node {node.name} ({device_info}) cannot be a DHCP relay',
+        more_data = f'DHCP relay is used on interface {intf.ifname}/{intf.name})',
         category=log.IncorrectValue)
       OK = False
 
@@ -70,8 +74,8 @@ def check_protocol_support(node: Box, topology: Box) -> bool:
       for af in log.AF_LIST:
         if af in intf and not af in f_relay:
           log.error(
-            f'Node {node.name} (device {node.device}) cannot be a DHCP relay for {af} '+\
-            f'(interface {intf.ifname}/{intf.name})',
+            f'Node {node.name} ({device_info}) cannot be a DHCP relay for {af}',
+            more_data = f'DHCP relay is used on interface {intf.ifname}/{intf.name})',
             category=log.IncorrectValue)
 
     for srv in intf.dhcp.server:
@@ -89,7 +93,7 @@ def check_protocol_support(node: Box, topology: Box) -> bool:
 
     if not features.dhcp.vrf:                             # Does the device support inter-VRF relaying?
       log.error(                                          # No, report an error
-        f'Node {node.name} (device {node.device}) cannot perform inter-VRF DHCP relaying',
+        f'Node {node.name} ({device_info}) cannot perform inter-VRF DHCP relaying',
         category=log.IncorrectValue,
         module='dhcp')
       OK = False
