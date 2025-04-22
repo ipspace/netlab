@@ -4,6 +4,7 @@
 
 import argparse
 import textwrap
+import math
 from box import Box
 
 from ...utils import strings
@@ -16,12 +17,34 @@ def parse() -> argparse.ArgumentParser:
   parser_add_module(parser)
   return parser
 
-def show(settings: Box, args: argparse.Namespace) -> None:
-  heading = ['device']
-  mod_list = get_modlist(settings,args)
-  heading.extend(mod_list)
+def print_table(result: Box, args: argparse.Namespace, mod_list: list) -> None:
+  if args.device == '*' or not args.device:
+    args.device = 'individual devices'
 
-  rows = []
+  if args.module:
+    print(f'{args.module} configuration module support')
+  else:
+    print(f"Configuration modules supported by {args.device}")
+
+  columns = min(max(int(strings.rich_width/10),5),10)
+  for t_cnt in range(math.ceil(len(mod_list)/columns)):
+    rows = []
+    heading = ['device']
+    heading.extend(mod_list[t_cnt * columns:][:columns])
+    for device,d_support in result.items():
+      row = [ device ]
+      for m in heading[1:]:
+        value = "x".center(len(m)) if m in d_support else ""
+        row.append(value)
+      rows.append(row)
+
+    print("")
+    strings.print_table(heading,rows)
+
+def collect_device_module_data(settings: Box, args: argparse.Namespace) -> Box:
+  mod_list = get_modlist(settings,args)
+  provider_list = settings.providers.keys()
+
   result = data.get_empty_box()
   for device in sorted(settings.devices.keys()):
     if device in DEVICES_TO_SKIP:
@@ -30,34 +53,32 @@ def show(settings: Box, args: argparse.Namespace) -> None:
     if device != args.device and args.device != '*':
       continue
 
-    if args.format == 'table':
-      row = [ device ]
-      for m in heading[1:]:
-        value = "x".center(len(m)) if device in settings[m].supported_on else ""
-        row.append(value)
-      rows.append(row)
-    else:
-      dev_mods = [ m for m in mod_list if device in settings[m].supported_on ]
-      if args.device and args.format == 'yaml':
-        for m in dev_mods:
-          f_value = settings.devices[device].features.get(m,True)
-          if f_value is None or (not f_value and isinstance(f_value,dict)):
-            f_value = True
-          result[m] = f_value
-      else:
-        result[device] = dev_mods
-      if args.format == 'text':
-        print(f'{device}: {",".join(dev_mods)}')
+    dev_mods = [ m for m in mod_list if device in settings[m].supported_on ]
+    for m in dev_mods:
+      f_value = settings.devices[device].features.get(m,True)
+      if f_value is None or (not f_value and isinstance(f_value,dict)):
+        f_value = True
+      for p_name in provider_list:
+        p_features = settings.devices[device].get(f'{p_name}.features.{m}')
+        if not p_features:
+          continue
+        p_features.pop('_provider',None)
+        if f_value is True:
+          f_value = data.get_box({p_name: p_features})
+        else:
+          f_value[p_name] = p_features
 
-  if args.device == '*' or not args.device:
-    args.device = 'individual devices'
+      result[device][m] = f_value
+  
+  return result
+
+def show(settings: Box, args: argparse.Namespace) -> None:
+  result = collect_device_module_data(settings,args)
 
   if args.format == 'table':
-    if args.module:
-      print(f'{args.module} configuration module support')
-    else:
-      print(f"Configuration modules supported by {args.device}")
-    print("")
-    strings.print_table(heading,rows)
-  elif args.format == 'yaml':
+    print_table(result,args,get_modlist(settings,args))
+  elif args.format == 'text':
+    for device,dev_mods in result.items():
+      print(f'{device}: {",".join(dev_mods)}')
+  else:
     print(strings.get_yaml_string(result))
