@@ -608,21 +608,62 @@ def bgp_transform_community_list(node: Box, topology: Box) -> None:
     clist[s_type] = data.kw_list_transform(kw_xform,clist[s_type])
 
 """
+While figuring out the BGP link role, we're also collecting the BGP attributes
+configured on relevant objects (links, interfaces, VLANs). We'll then use
+the collected attributes to generate a warning if a BGP attribute is used
+on an intra-AS link.
+"""
+def collect_bgp_attr(attr: Box, obj: Box, o_name: typing.Optional[str] = None) -> None:
+  if 'bgp' not in obj:
+    return
+  if not isinstance(obj.bgp,Box):
+    return
+  
+  for k in obj.bgp.keys():
+    data.append_to_list(attr,k,o_name)
+
+"""
+If we have BGP link/interface attributes on an object that is not an inter-AS
+link (or VLAN), we might have to generate a warning
+"""
+def warn_bgp_attributes(o_name: str, o_type: str, attr: Box, topology: Box) -> None:
+  bgp_attr = topology.defaults.bgp.attributes.link          # Get BGP link attributes
+  for a in [ a for a in bgp_attr if bgp_attr[a].get('_intra_as',None) ]:
+    attr.pop(a,None)                                        # Remove attributes that can appear on intra-as links
+  if not attr:                                              # No other attributes?
+    return                                                  # ... cool, we're done
+  
+  m_data = []
+  for a_name,a_list in attr.items():
+    a_filter = [ n for n in a_list if n ]
+    if a_filter:
+      m_data.append(f'bgp.{a_name} used on node(s) {",".join(a_filter)}')
+  
+  log.warning(
+    text=f'You cannot use BGP attribute(s) {",".join(attr)} on intra-AS {o_type} {o_name}',
+    more_data=m_data,
+    module='bgp',
+    flag='intra_as_attr')
+
+"""
 link_ebgp_role_set -- set EBGP role for a regular link
 """
 def ebgp_role_link(link: Box, topology: Box, EBGP_ROLE: str) -> None:
-  if link.get("role",None):                                 # Link already has a role, move on
-    return
-
   as_set = {}
+  attr_set = data.get_empty_box()
+  collect_bgp_attr(attr_set,link)
   for ifdata in link.get('interfaces',[]):                  # Collect BGP AS numbers from nodes
+    collect_bgp_attr(attr_set,ifdata,ifdata.node)
     ndata = topology.nodes[ifdata.node]                     # ... connected to the link
     node_as = ndata.get('bgp.as',None)
     if node_as:
       as_set[node_as] = True                                # ... and store them in a dictionary
 
   if len(as_set) > 1:                                       # If we have more than two AS numbers per link
-    link.role = EBGP_ROLE                                   # ... set link role unless it's already set
+    if not link.get("role",None):                           # ... we set the link role unless it's already set
+      link.role = EBGP_ROLE
+  elif attr_set:                                            # Generate a warning for BGP attributes on intra-AS link
+    warn_bgp_attributes(link._linkname,'link',attr_set,topology)
 
 """
 vlan_ebgp_role_collect -- collect EBGP role information from a VLAN link
@@ -632,8 +673,13 @@ def vlan_ebgp_role_collect(link: Box, topology: Box) -> None:
   if vlan_name not in topology.vlans:                       # Not a global VLAN, don't waste time
     return
 
+  vdata = topology.vlans[vlan_name]
+  if not '_bgp_attr' in vdata:                              # The first time we're encountering a VLAN...
+    collect_bgp_attr(vdata._bgp_attr,vdata)                 # ... collect global VLAN BGP attributes
   for ifdata in link.get('interfaces',[]):                  # Iterate over nodes attached to this VLAN segment
     ndata = topology.nodes[ifdata.node]
+    n_vdata = ndata.get(f'vlans.{vlan_name}',{})            # Get node VLAN data (if any)
+    collect_bgp_attr(vdata._bgp_attr,n_vdata,ifdata.node)   # ... and scan it for BGP attributes
     node_as = ndata.get('bgp.as',None)                      # Get node AS number and store it in VLAN _as_set list
     if not node_as:
       continue
@@ -644,11 +690,14 @@ vlan_ebgp_role_set -- set EBGP role on VLANs based on collected information
 """
 def vlan_ebgp_role_set(topology: Box, EBGP_ROLE: str) -> None:
   for vname,vdata in topology.vlans.items():                # Iterate over global VLANs
-    if '_as_set' not in vdata:                              # Does the VLAN have _as_set list
-      continue
-    if len(vdata._as_set) > 1 and 'role' not in vdata:      # Are there at least two ASNs in the _as_set?
-      vdata.role = EBGP_ROLE                                # ... set VLAN role unless it's already set
+    if len(vdata._as_set) > 1:                              # Did we collect at least two ASNs for the VLAN
+      if 'role' not in vdata:                               # ... and the VLAN has no role?
+        vdata.role = EBGP_ROLE                              # ... set VLAN role to EBGP role
+    elif vdata._bgp_attr:                                   # Not an inter-AS link. Does it have BGP attributes?
+      warn_bgp_attributes(vname,'vlan',vdata._bgp_attr,topology)
+
     vdata.pop('_as_set',None)                               # ... and clean up
+    vdata.pop('_bgp_attr',None)
 
 class BGP(_Module):
   """
