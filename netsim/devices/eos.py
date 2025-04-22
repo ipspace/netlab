@@ -57,19 +57,6 @@ def check_shared_mac(node: Box, topology: Box) -> None:
       category=log.IncorrectType)
     return
 
-def check_dhcp_clients(node: Box, topology: Box) -> None:
-  if devices.get_provider(node,topology) != 'clab':
-    return
-
-  for intf in node.interfaces:
-    if not intf.get('dhcp.client',False):
-      continue
-    report_quirk(
-      text=f"Arista cEOS containers (node {node.name}) cannot run DHCP clients",
-      more_hints="Use vEOS VM with libvirt provider",
-      node=node,
-      category=log.IncorrectType)
-
 def configure_ceos_attributes(node: Box, topology: Box) -> None:
   serialnumber = node.eos.get('serialnumber',None)
   systemmacaddr = node.eos.get('systemmacaddr',None)
@@ -127,8 +114,6 @@ class EOS(_Quirks):
       check_mpls_clab(node,topology)
     if 'gateway' in mods:
       check_shared_mac(node,topology)
-    if 'dhcp' in mods:
-      check_dhcp_clients(node,topology)
     if 'ospf' in mods:
       passive_stub_interfaces(node,topology)
     if 'eos' in node:
