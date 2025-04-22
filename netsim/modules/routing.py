@@ -460,7 +460,7 @@ def normalize_routing_data(r_object: Box, topo_object: bool = False, o_name: str
           topo_object=topo_object)
   except Exception as ex:
     log.warning(
-      text="Cannot normalize {o_name} routing objects",
+      text=f"Cannot normalize {o_name} routing objects",
       more_data=str(ex),
       more_hints="Check further error messages for more details",
       module='routing')
@@ -1112,6 +1112,8 @@ class Routing(_Module):
     normalize_routing_data(topology,topo_object=True,o_name='topology')
 
     for gname,gdata in topology.get('groups',{}).items():
+      if gname.startswith('_'):
+        continue
       normalize_routing_data(gdata,o_name=f'groups.{gname}')
 
     for node,ndata in topology.nodes.items():
