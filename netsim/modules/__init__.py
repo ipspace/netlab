@@ -176,14 +176,23 @@ def check_supported_node_devices(topology: Box) -> None:
           log.IncorrectValue,
           'modules')
         continue
-      mod_def = topology.defaults[m]                            # Get module defaults
-      if mod_def and "supported_on" in mod_def :                # Are they sane and do they include supported device list?
-        if not n.device in topology.defaults[m].supported_on:   # ... and is the device on the list?
-          log.error(
-            f"Device type {n.device} used by node {name} is not supported by module {m}",
-            log.IncorrectValue,
-            'modules')
-          continue
+      mod_def = topology.defaults[m]
+      if not n.device in mod_def.supported_on:                  # ... and is the device on the list?
+        log.error(
+          f"Device type {n.device} (node {name}) does not support module {m}",
+          log.IncorrectValue,
+          'modules')
+        continue
+      if not isinstance(mod_def.supported_on[n.device],Box):    # Provider-specific support?
+        continue
+
+      d_provider = devices.get_provider(n,topology.defaults)    # Check per-provider support status
+      if not mod_def.supported_on[n.device].get(d_provider,False):
+        log.error(
+          f"Device type {n.device} (node {name}) does not support module {m} with provider {d_provider}",
+          log.IncorrectValue,
+          'modules')
+        continue
 
 # Merge global module parameters with per-node module parameters
 #

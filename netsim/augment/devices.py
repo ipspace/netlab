@@ -136,6 +136,43 @@ def process_device_inheritance(topology: Box) -> None:
     process_child_device(dname,devices)
 
 """
+Add device features (optionally provider-limited) to module support list
+"""
+def add_device_module_support(
+      topology: Box,
+      features: Box,
+      dname: str,
+      provider: typing.Optional[str] = None) -> None:
+  sets = topology.defaults
+  for m in list(features.keys()):                   # Iterate over device features
+    f_value = features[m]
+    if f_value is None or f_value is True:          # Normalize features to dicts
+      features[m] = {}
+
+    if not m in sets:
+      continue                                      # Weird feature name, skip it
+
+    mdata = sets[m]                                 # Get module data
+    if not isinstance(mdata,Box):                   # Hope it's a box or something is badly messed up
+      log.fatal(f'Internal error: definition of module {mdata} is not a dictionary')
+
+    if not 'attributes' in mdata:                   # Is this a valid module?
+      continue                                      # ... not without attributes
+
+    if f_value is False:                            # Device definitely DOES NOT support the feature
+      features.pop(m)                               # Remove the feature so it won't crash the transformation
+      continue                                      # ... and skip it
+
+    if not dname in mdata.supported_on:             # Append device to module support list if needed
+      if provider:
+        mdata.supported_on[dname][provider] = True
+      else:
+        mdata.supported_on[dname] = True
+
+    if provider:
+      features[m]._provider = provider              # Remember we're dealing with provider-specific features
+
+"""
 Build module supported_on lists based on device features settings
 """
 def build_module_support_lists(topology: Box) -> None:
@@ -147,30 +184,11 @@ def build_module_support_lists(topology: Box) -> None:
     if not 'features' in ddata:                             # Skip devices without features
       continue
 
-    for m in list(ddata.features.keys()):                   # Iterate over device features
-      f_value = ddata.features[m]
-      if f_value is None or f_value is True:                # Normalize features to dicts
-        ddata.features[m] = {}
+    add_device_module_support(topology,ddata.features,dname,None)
 
-      if not m in sets:
-        continue                                            # Weird feature name, skip it
-
-      mdata = sets[m]                                       # Get module data
-      if not isinstance(mdata,Box):                         # Hope it's a box or something is badly messed up
-        log.fatal(f'Internal error: definition of module {mdata} is not a dictionary')
-
-      if not 'attributes' in mdata:                         # Is this a valid module?
-        continue                                            # ... not without attributes
-
-      if f_value is False:                                  # Device definitely DOES NOT support the feature
-        ddata.features.pop(m)                               # Remove the feature so it won't crash the transformation
-        continue                                            # ... and skip it
-
-      if not 'supported_on' in mdata:                       # Create 'supported_on' list if needed
-        mdata.supported_on = []
-
-      if not dname in mdata.supported_on:                   # Append device to module support list if needed
-        mdata.supported_on.append(dname)
+    for p_name in sets.providers.keys():                    # Finally, iterate over providers
+      if p_name in ddata and 'features' in ddata[p_name]:   # Do we have provider-specific features?
+        add_device_module_support(topology,ddata[p_name].features,dname,p_name)
 
 """
 Merge daemons definitions into device definitions

@@ -382,8 +382,9 @@ def augment_node_device_data(n: Box, defaults: Box) -> None:
     features = devices.get_device_features(n,defaults)
     allowed_roles = features.initial.get('roles',['router'])
     if role not in allowed_roles:
+      d_provider = devices.get_provider(n,defaults)
       log.warning(
-        text=f"Node {n.name} (device {n.device}) cannot have role '{role}'",
+        text=f"Node {n.name} (device {n.device}/provider {d_provider}) cannot have role '{role}'",
         more_hints=[ f'Allowed roles for this device type are: {",".join(allowed_roles) }' ],
         flag='nodes.roles',
         category=log.IncorrectType,

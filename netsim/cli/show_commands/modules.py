@@ -4,6 +4,7 @@
 
 import argparse
 import textwrap
+import typing
 from box import Box
 
 from ...utils import strings
@@ -31,41 +32,72 @@ def get_feature_list(features: Box,prefix: str = '') -> list:
 
   return f_list
 
+def device_module_feature_row(
+      settings: Box, *,
+      rows: list,
+      heading: list,
+      device: str,
+      module: str,
+      provider: typing.Optional[str]) -> bool:
+
+  d_data = settings.devices[device]
+  if provider:
+    features = d_data.get(f'{provider}.features',None)
+    if not features or module not in features:
+      return True
+    features = d_data.get('features',{}) + features
+  else:
+    features = d_data.features
+
+  if features is None:
+    return True
+
+  if module not in features:
+    return True
+
+  row = [ f'{device}/{provider}' if provider else device ]
+  has_feature = False
+  for f in heading[1:]:
+    value = features[module].get(f,None)
+    if value is None:
+      value = ""
+    elif isinstance(value,bool):
+      value = "x" if value else ""
+    elif isinstance(value,list):
+      value = ",".join(value)
+    elif isinstance(value,Box):
+      value = ",".join(value.keys())
+    else:
+      value = str(value)
+
+    if value:
+      has_feature = True
+
+    value = value.center(len(f))
+    row.append(value)
+
+  rows.append(row)
+  return has_feature
+
 def show_module_features(settings: Box, args: argparse.Namespace,dev_list: list) -> None:
   m = args.module
   heading = ['device']
   heading.extend(get_feature_list(settings[m].features))
+  providers = settings.providers.keys()
 
-  rows = []
+  rows: list = []
   need_notes = False
 
   for d in sorted(dev_list):
     if d in DEVICES_TO_SKIP:
       continue
-    row = [ d ]
 
-    has_feature = False
-    for f in heading[1:]:
-      value = settings.devices[d].features[m].get(f,None)
-      if value is None:
-        value = ""
-      elif isinstance(value,bool):
-        value = "x" if value else ""
-      elif isinstance(value,list):
-        value = ",".join(value)
-      elif isinstance(value,Box):
-        value = ",".join(value.keys())
-      else:
-        value = str(value)
-
-      if value:
-        has_feature = True
-
-      value = value.center(len(f))
-      row.append(value)
-    rows.append(row)
-    if not has_feature:
+    if not device_module_feature_row(settings,rows=rows,heading=heading,device=d,module=m,provider=None):
       need_notes = True
+
+    for p_name in providers:
+      if not device_module_feature_row(settings,rows=rows,heading=heading,device=d,module=m,provider=p_name):
+        need_notes = True
 
   strings.print_table(heading,rows)
 
