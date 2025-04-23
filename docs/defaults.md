@@ -47,7 +47,7 @@ Create a YAML file specifying user defaults if you want the same defaults change
 
 * **topology-defaults.yml** file in the lab directory
 * **.netlab.yml** file in the user home directory.
-* System-wide **/etc/defaults/netlab.yml** file
+* System-wide **/etc/netlab/defaults.yml** file
 
 The default settings in the user defaults files are identical to the ones you'd use in the network topology file but without the `defaults.` prefix[^MD].
 
