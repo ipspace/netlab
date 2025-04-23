@@ -1,4 +1,5 @@
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+[WARNING]: Found variable using reserved name: hosts
 
 PLAY [Deploy initial device configuration] *************************************
 
@@ -14,8 +15,8 @@ ok: [relay]
 TASK [Find device readiness script] ********************************************
 ok: [c1]
 ok: [c2]
-ok: [c4]
 ok: [c3]
+ok: [c4]
 ok: [s1]
 ok: [s2]
 ok: [relay]
@@ -45,8 +46,8 @@ TASK [Find configuration template for normalize] *******************************
 ok: [c1]
 ok: [c2]
 ok: [c3]
-ok: [s1]
 ok: [c4]
+ok: [s1]
 ok: [s2]
 ok: [relay]
 
@@ -58,6 +59,15 @@ skipping: [c4]
 skipping: [s1]
 skipping: [s2]
 skipping: [relay]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [c1]
+ok: [c2]
+ok: [c3]
+ok: [c4]
+ok: [s1]
+ok: [s2]
+ok: [relay]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [c1]
@@ -72,29 +82,20 @@ ok: [relay] =>
     =========================================
     !
     interface Ethernet1
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0101
     !
     interface Ethernet2
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0102
     !
     interface Ethernet3
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0103
     !
     interface Ethernet4
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0104
-
-TASK [Find configuration deployment deploy_script for normalize] ***************
-skipping: [c1]
-skipping: [c2]
-skipping: [c3]
-skipping: [c4]
-skipping: [s1]
-skipping: [s2]
-ok: [relay]
 
 TASK [Deploy normalize configuration] ******************************************
 skipping: [c1]
@@ -141,7 +142,86 @@ skipping: [s1]
 skipping: [s2]
 skipping: [relay]
 
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [c1]
+ok: [c2]
+ok: [c3]
+ok: [c4]
+ok: [s1]
+ok: [s2]
+ok: [relay]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [s1] => 
+  msg: |-
+    initial configuration for s1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+  
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.2.6/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.2.6/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+ok: [s2] => 
+  msg: |-
+    initial configuration for s2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+  
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.3.7/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.3.7/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
 ok: [c1] => 
   msg: |-
     initial configuration for c1
@@ -257,57 +337,6 @@ ok: [c1] =>
     configure system interface pattern *,!eth0,swp*
     CONFIG
     service lldpd restart
-ok: [s1] => 
-  msg: |-
-    initial configuration for s1
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.2.6/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.2.6/24 dev eth1
-    ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.2.0.0/24 2>/dev/null; do
-      : ; done
-    #
-    #
-    echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.2.1 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.2.1 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.2.1 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.2.1 dev eth1 protocol static
-    #
-    # Print the final routing table
-    ip route
 ok: [c2] => 
   msg: |-
     initial configuration for c2
@@ -409,172 +438,6 @@ ok: [c2] =>
     interface swp1
     ! no shutdown
      description c2 -> [c1,relay]
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    #
-    # Enable LLDP
-    #
-    echo "INIT: enabling LLDP"
-    cat <<CONFIG >/etc/lldpd.d/system.conf
-    configure lldp tx-interval 30
-    configure lldp tx-hold 3
-    configure system interface pattern *,!eth0,swp*
-    CONFIG
-    service lldpd restart
-ok: [s2] => 
-  msg: |-
-    initial configuration for s2
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.3.7/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.3.7/24 dev eth1
-    ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.2.0.0/24 2>/dev/null; do
-      : ; done
-    #
-    #
-    echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.3.1 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.3.1 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.3.1 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.3.1 dev eth1 protocol static
-    #
-    # Print the final routing table
-    ip route
-ok: [c4] => 
-  msg: |-
-    initial configuration for c4
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)#"
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "INIT: setting hostname"
-    hostname c4
-    #
-    #
-    # Build hosts file
-    #
-    #
-    cat <<SCRIPT >/tmp/hosts
-    #
-    # Created by netlab initial
-    #
-    10.0.0.2 c1
-    10.0.0.3 c2
-    10.0.0.4 c3
-    10.0.0.5 c4
-    172.16.2.6 s1 eth1.s1
-    172.16.3.7 s2 eth1.s2
-    10.0.0.1 relay
-    172.16.0.1 Ethernet1.relay
-    172.16.1.1 Ethernet2.relay
-    172.16.2.1 Ethernet3.relay
-    172.16.3.1 Ethernet4.relay
-    SCRIPT
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
-    #
-    # Disable ZTP
-    #
-    ztp --disable
-    #
-    #
-  
-    echo "INIT: Configuring system wide default MTU policy"
-    cat > /etc/network/ifupdown2/policy.d/mtu.json <<CONFIG
-    { "address": { "defaults": { "mtu": "1500" } } }
-    CONFIG
-    #
-    echo "INIT: creating loopback interface"
-    #
-    # Create loopback interface entry
-    #
-    cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
-    auto lo
-    iface lo inet loopback
-      address 10.0.0.5/32
-  
-    CONFIG
-    #
-    until ifreload -a; do
-      sleep 1
-    done
-    #
-    echo "INIT: creating other interface"
-    cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
-    auto swp1
-    CONFIG
-    #
-    echo "INIT: executing ifreload"
-    until ifreload -a; do
-      sleep 1
-    done
-    #
-    # For whatever crazy reason, I had to enable IPv6 in containers
-    #
-    #
-    # Enable FRR modules for ['dhcp']
-    #
-    #
-    # Enable FRR daemons
-    #
-  
-    systemctl enable frr.service
-    systemctl start frr.service
-    systemctl reload frr.service
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    !
-    interface swp1
-    ! no shutdown
-     description c4 -> [c3,relay]
     !
     do write
     CONFIG
@@ -704,6 +567,121 @@ ok: [c3] =>
     configure system interface pattern *,!eth0,swp*
     CONFIG
     service lldpd restart
+ok: [c4] => 
+  msg: |-
+    initial configuration for c4
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Build hosts file
+    #
+    echo "INIT: setting hostname"
+    hostname c4
+    #
+    #
+    # Build hosts file
+    #
+    #
+    cat <<SCRIPT >/tmp/hosts
+    #
+    # Created by netlab initial
+    #
+    10.0.0.2 c1
+    10.0.0.3 c2
+    10.0.0.4 c3
+    10.0.0.5 c4
+    172.16.2.6 s1 eth1.s1
+    172.16.3.7 s2 eth1.s2
+    10.0.0.1 relay
+    172.16.0.1 Ethernet1.relay
+    172.16.1.1 Ethernet2.relay
+    172.16.2.1 Ethernet3.relay
+    172.16.3.1 Ethernet4.relay
+    SCRIPT
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
+    #
+    # Disable ZTP
+    #
+    ztp --disable
+    #
+    #
+  
+    echo "INIT: Configuring system wide default MTU policy"
+    cat > /etc/network/ifupdown2/policy.d/mtu.json <<CONFIG
+    { "address": { "defaults": { "mtu": "1500" } } }
+    CONFIG
+    #
+    echo "INIT: creating loopback interface"
+    #
+    # Create loopback interface entry
+    #
+    cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
+    auto lo
+    iface lo inet loopback
+      address 10.0.0.5/32
+  
+    CONFIG
+    #
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    echo "INIT: creating other interface"
+    cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
+    auto swp1
+    CONFIG
+    #
+    echo "INIT: executing ifreload"
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    # For whatever crazy reason, I had to enable IPv6 in containers
+    #
+    #
+    # Enable FRR modules for ['dhcp']
+    #
+    #
+    # Enable FRR daemons
+    #
+  
+    systemctl enable frr.service
+    systemctl start frr.service
+    systemctl reload frr.service
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    !
+    interface swp1
+    ! no shutdown
+     description c4 -> [c3,relay]
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    #
+    # Enable LLDP
+    #
+    echo "INIT: enabling LLDP"
+    cat <<CONFIG >/etc/lldpd.d/system.conf
+    configure lldp tx-interval 30
+    configure lldp tx-hold 3
+    configure system interface pattern *,!eth0,swp*
+    CONFIG
+    service lldpd restart
 ok: [relay] => 
   msg: |-
     initial configuration for relay
@@ -715,6 +693,7 @@ ok: [relay] =>
     !
     lldp run
     ip routing
+    no ipv6 unicast-routing
     !
     !
     ip host c1 10.0.0.2
@@ -764,15 +743,6 @@ ok: [relay] =>
      no shutdown
     !
 
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [c1]
-ok: [c2]
-ok: [c3]
-ok: [s1]
-ok: [c4]
-ok: [s2]
-ok: [relay]
-
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for c1, c2, c3, c4
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for s1, s2
@@ -786,27 +756,27 @@ ok: [c4]
 
 TASK [Create local temporary file] *********************************************
 changed: [c1 -> localhost]
-changed: [c4 -> localhost]
 changed: [c3 -> localhost]
+changed: [c4 -> localhost]
 changed: [c2 -> localhost]
 
 TASK [Create initial config script in local temporary file] ********************
-changed: [c1 -> localhost]
 changed: [c2 -> localhost]
-changed: [c4 -> localhost]
+changed: [c1 -> localhost]
 changed: [c3 -> localhost]
+changed: [c4 -> localhost]
 
 TASK [Execute local config script on Cumulus node] *****************************
+changed: [c1]
+changed: [c3]
 changed: [c2]
 changed: [c4]
-changed: [c3]
-changed: [c1]
 
-TASK [Remove temporary file /tmp/ansible.c1.bisu9klwtemp] **********************
+TASK [Remove temporary file /tmp/ansible.c1.mf1_wlhxtemp] **********************
 changed: [c1 -> localhost]
+changed: [c3 -> localhost]
 changed: [c4 -> localhost]
 changed: [c2 -> localhost]
-changed: [c3 -> localhost]
 
 TASK [Define script filename and determine whether to execute in netns] ********
 ok: [s1]
@@ -817,8 +787,8 @@ changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [s2 -> localhost]
 changed: [s1 -> localhost]
+changed: [s2 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-s1_initial.sh] *********
 skipping: [s1]
@@ -832,7 +802,7 @@ TASK [Container configuration for initial based on /home/pipi/net101/tools/netsi
 changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 
-TASK [Remove temporary file /tmp/s1_initial-vmn5__yy.sh] ***********************
+TASK [Remove temporary file /tmp/s1_initial-jmrq54em.sh] ***********************
 changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 
@@ -852,6 +822,7 @@ ok: [relay]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for c1, c2, c3, c4, relay, s1, s2 => (item=dhcp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for c1, c2, c3, c4, relay, s1, s2 => (item=routing)
 
 TASK [Figure out whether to deploy the module dhcp on current device] **********
 ok: [c1]
@@ -865,10 +836,10 @@ ok: [relay]
 TASK [Find configuration template for dhcp] ************************************
 ok: [c1]
 ok: [c2]
-skipping: [s1]
 ok: [c3]
-skipping: [s2]
+skipping: [s1]
 ok: [c4]
+skipping: [s2]
 ok: [relay]
 
 TASK [fail] ********************************************************************
@@ -879,6 +850,15 @@ skipping: [c4]
 skipping: [relay]
 skipping: [s1]
 skipping: [s2]
+
+TASK [Find configuration deployment deploy_script for dhcp] ********************
+ok: [c1]
+ok: [c2]
+skipping: [s1]
+ok: [c3]
+skipping: [s2]
+ok: [c4]
+ok: [relay]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [c1] => 
@@ -976,15 +956,6 @@ ok: [relay] =>
     interface Ethernet2
       ip helper-address 172.16.3.7
 
-TASK [Find configuration deployment deploy_script for dhcp] ********************
-ok: [c1]
-skipping: [s1]
-ok: [c2]
-ok: [c3]
-skipping: [s2]
-ok: [c4]
-ok: [relay]
-
 TASK [Deploy dhcp configuration] ***********************************************
 skipping: [s1]
 skipping: [s2]
@@ -1006,16 +977,16 @@ changed: [c4 -> localhost]
 TASK [Create dhcp config script in local temporary file] ***********************
 changed: [c2 -> localhost]
 changed: [c1 -> localhost]
-changed: [c4 -> localhost]
 changed: [c3 -> localhost]
+changed: [c4 -> localhost]
 
 TASK [Execute local config script on Cumulus node] *****************************
-changed: [c2]
-changed: [c3]
-changed: [c4]
 changed: [c1]
+changed: [c2]
+changed: [c4]
+changed: [c3]
 
-TASK [Remove temporary file /tmp/ansible.c1.piytrf7jtemp] **********************
+TASK [Remove temporary file /tmp/ansible.c1.cznyufwltemp] **********************
 changed: [c1 -> localhost]
 changed: [c2 -> localhost]
 changed: [c3 -> localhost]
@@ -1023,6 +994,143 @@ changed: [c4 -> localhost]
 
 TASK [eos_config: deploying dhcp from /home/pipi/net101/tools/netsim/ansible/templates/dhcp/eos.j2] ***
 changed: [relay]
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [c1]
+ok: [c2]
+ok: [c3]
+ok: [c4]
+ok: [s1]
+ok: [s2]
+ok: [relay]
+
+TASK [Find configuration template for routing] *********************************
+skipping: [c1]
+skipping: [c2]
+skipping: [c3]
+skipping: [c4]
+skipping: [relay]
+ok: [s1]
+ok: [s2]
+
+TASK [fail] ********************************************************************
+skipping: [c1]
+skipping: [c2]
+skipping: [c3]
+skipping: [c4]
+skipping: [relay]
+skipping: [s1]
+skipping: [s2]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [c1]
+skipping: [c2]
+skipping: [c3]
+skipping: [c4]
+skipping: [relay]
+ok: [s1]
+ok: [s2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [c1]
+skipping: [c2]
+skipping: [c3]
+skipping: [c4]
+skipping: [relay]
+ok: [s1] => 
+  msg: |-
+    routing configuration for s1
+    =========================================
+    #!/bin/bash
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.2.1 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.2.1 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.2.1 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.2.1 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
+ok: [s2] => 
+  msg: |-
+    routing configuration for s2
+    =========================================
+    #!/bin/bash
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.3.1 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.3.1 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.3.1 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.3.1 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
+
+TASK [Deploy routing configuration] ********************************************
+skipping: [c1]
+skipping: [c2]
+skipping: [c3]
+skipping: [c4]
+skipping: [relay]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for s1, s2
+
+TASK [Define script filename and determine whether to execute in netns] ********
+ok: [s1]
+ok: [s2]
+
+TASK [Create a temporary file for the rendered script] *************************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
+
+TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
+
+TASK [Copy script into running container at /tmp/config-s1_routing.sh] *********
+skipping: [s1]
+skipping: [s2]
+
+TASK [Execute /tmp/config-s1_routing.sh to deploy routing config based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
+skipping: [s1]
+skipping: [s2]
+
+TASK [Container configuration for routing based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
+
+TASK [Remove temporary file /tmp/s1_routing-1qiicugs.sh] ***********************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
 
 PLAY [Deploy custom deployment templates] **************************************
 
@@ -1070,42 +1178,42 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml
 
 TASK [Render device configuration from /home/pipi/net101/tools/tests/integration/dhcp/bounce.cumulus.j2] ***
 ok: [c1]
-ok: [c3]
 ok: [c2]
+ok: [c3]
 ok: [c4]
 
 TASK [Create local temporary file] *********************************************
 changed: [c1 -> localhost]
 changed: [c2 -> localhost]
-changed: [c4 -> localhost]
 changed: [c3 -> localhost]
+changed: [c4 -> localhost]
 
 TASK [Create bounce config script in local temporary file] *********************
 changed: [c1 -> localhost]
 changed: [c2 -> localhost]
-changed: [c4 -> localhost]
 changed: [c3 -> localhost]
+changed: [c4 -> localhost]
 
 TASK [Execute local config script on Cumulus node] *****************************
-changed: [c3]
-changed: [c4]
 changed: [c1]
 changed: [c2]
+changed: [c4]
+changed: [c3]
 
-TASK [Remove temporary file /tmp/ansible.c1.e_1tig00temp] **********************
+TASK [Remove temporary file /tmp/ansible.c1.f5ra3cngtemp] **********************
 changed: [c1 -> localhost]
 changed: [c2 -> localhost]
 changed: [c3 -> localhost]
 changed: [c4 -> localhost]
 
 PLAY RECAP *********************************************************************
-c1                         : ok=38   changed=12   unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
-c2                         : ok=38   changed=12   unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
-c3                         : ok=38   changed=12   unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
-c4                         : ok=38   changed=12   unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
-relay                      : ok=24   changed=3    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-s1                         : ok=19   changed=4    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
-s2                         : ok=19   changed=4    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
+c1                         : ok=41   changed=12   unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
+c2                         : ok=41   changed=12   unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
+c3                         : ok=41   changed=12   unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
+c4                         : ok=41   changed=12   unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
+relay                      : ok=26   changed=3    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+s1                         : ok=31   changed=8    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+s2                         : ok=31   changed=8    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 
 
 
