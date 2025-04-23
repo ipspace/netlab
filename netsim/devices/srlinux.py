@@ -90,14 +90,6 @@ class SRLINUX(_Quirks):
 
     if 'bgp' in mods:
       cleanup_neighbor_transport(node,topology)
-      for c,vals in topology.get('bgp.community',[]).items():
-        if 'extended' not in vals:
-          report_quirk(
-            text=f'SR Linux on ({node.name}) does not support filtering out extended communities for BGP.',
-            more_data= [ f'{c}:{vals}' ],
-            node=node,
-            category=Warning,
-            quirk='bgp_community')
 
     if 'mpls' in mods or 'sr' in mods:
       if dt not in ['ixr6','ixr10','ixr6e','ixr10e']:

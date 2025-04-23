@@ -21,6 +21,7 @@
 {%   if 'connected' not in import %}
     - name: prefixes
       match:
+       prefix:
         prefix-set: {{ vrf }}_bgp_advertise
       action:
         policy-result: next-policy
@@ -74,8 +75,13 @@
 {%   endfor %}
 {% endmacro %}
 
+{% macro send_communities(comm_list) %}
+      send-community-type: {{ comm_list if comm_list else [ "none" ] }}
+{% endmacro %}
+
 {% macro bgp_families(neighbor,ipv4=True,ipv6=True,import=None,export=None) %}
 {%   set activate = neighbor.activate|default( {'ipv4': True,'ipv6': True } ) %}
+{%   set comm_list = bgp.community[neighbor.type]|default([]) %}
 # neighbor: {{ neighbor }}
 # ipv4: {{ ipv4 }}
 # ipv6: {{ ipv6 }}
@@ -83,6 +89,7 @@
 {%   if ipv4 %}
     - afi-safi-name: ipv4-unicast
       admin-state: {{ 'enable' if activate.ipv4|default(False) else 'disable' }}
+{{    send_communities(comm_list) }}
 {%     if neighbor.ipv4_rfc8950|default(False) %}
       ipv4-unicast:
         advertise-ipv6-next-hops: True
@@ -101,6 +108,7 @@
 {%   if ipv6 %}
     - afi-safi-name: ipv6-unicast
       admin-state: {{ 'enable' if activate.ipv6|default(False) else 'disable' }}
+{{    send_communities(comm_list) }}
 {%     if import %}
       import-policy: {{ import }}
 {%     endif %}
@@ -114,6 +122,7 @@
 {%   if 'evpn' in neighbor and neighbor.evpn %}
     - afi-safi-name: evpn
       admin-state: enable
+{{    send_communities(comm_list) }}
 {%   endif %}
 {% endmacro %}
 
@@ -129,11 +138,6 @@
       connect-retry: 10
       _annotate_connect-retry: "Reduce default 120s to 10s"
       minimum-advertisement-interval: 1
-{% set list = bgp.community[type]|default([]) %}
-    send-community:
-      standard: {{ 'standard' in list }}
-      large: {{ 'standard' in list }}
-      _annotate_large: "Assuming 'standard' implies 'large' here"
 {% if 'ibgp' in type %}
     peer-as: {{ neighbor.as }}
 {%   if transport_ip %}
