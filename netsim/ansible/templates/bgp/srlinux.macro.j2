@@ -21,7 +21,9 @@
 {%   if 'connected' not in import %}
     - name: prefixes
       match:
+{%     if _srl_version >= 25.3 %}
        prefix:
+{%     endif %}
         prefix-set: {{ vrf }}_bgp_advertise
       action:
         policy-result: next-policy
@@ -76,7 +78,9 @@
 {% endmacro %}
 
 {% macro send_communities(comm_list) %}
+{%   if _srl_version >= 25.3 %}
       send-community-type: {{ comm_list if comm_list else [ "none" ] }}
+{%   endif %}
 {% endmacro %}
 
 {% macro bgp_families(neighbor,ipv4=True,ipv6=True,import=None,export=None) %}
@@ -138,6 +142,12 @@
       connect-retry: 10
       _annotate_connect-retry: "Reduce default 120s to 10s"
       minimum-advertisement-interval: 1
+{% if _srl_version < 25.3 %}
+{%   set list = bgp.community[type]|default([]) %}
+    send-community:
+      standard: {{ 'standard' in list }}
+      large: {{ 'large' in list }}
+{% endif %}
 {% if 'ibgp' in type %}
     peer-as: {{ neighbor.as }}
 {%   if transport_ip %}

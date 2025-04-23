@@ -8,6 +8,7 @@ from box import Box
 
 from . import _Quirks,need_ansible_collection,report_quirk
 from ..utils import log,routing as _routing
+import re
 
 def check_prefix_deny(node: Box) -> None:
   for pf_name,pf_list in node.get('routing.prefix',{}).items():
@@ -54,11 +55,21 @@ def cleanup_neighbor_transport(node: Box, topology: Box) -> None:
         category=Warning)
       ngb.pop(af)
 
+"""
+Determines the SRL version based on the box
+"""
+def set_api_version(node: Box) -> None:
+  # Take only major.minor parts
+  version = re.search(r'^.*/srlinux:([\d]+.[\d]+).*$', node.box)
+  # Assume latest (25.3.1) if unable to determine
+  node._srl_version = float( version.group(1) ) if version else 25.3
+
 class SRLINUX(_Quirks):
 
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
     dt = node.clab.type
+    set_api_version(node)
     if dt in ['ixr6','ixr10','ixr6e','ixr10e'] and not node.clab.get('license',None):
       report_quirk(
         text=f'You need a valid SR Linux license to run {dt} container on node {node.name}',
@@ -90,6 +101,15 @@ class SRLINUX(_Quirks):
 
     if 'bgp' in mods:
       cleanup_neighbor_transport(node,topology)
+      if node._srl_version < 25.3:
+        for c,vals in topology.get('bgp.community',[]).items():
+          if 'extended' not in vals:
+            report_quirk(
+              text=f'SR Linux on ({node.name}) before version 25.3.1 does not support filtering out extended communities for BGP.',
+              more_data= [ f'{c}:{vals}' ],
+              node=node,
+              category=Warning,
+              quirk='bgp_community')
 
     if 'mpls' in mods or 'sr' in mods:
       if dt not in ['ixr6','ixr10','ixr6e','ixr10e']:
