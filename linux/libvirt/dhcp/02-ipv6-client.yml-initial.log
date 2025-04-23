@@ -70,8 +70,8 @@ skipping: [c1]
 skipping: [c2]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [server]
 ok: [c1]
+ok: [server]
 ok: [c2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -91,10 +91,15 @@ ok: [server] =>
   
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
     # Disable IPv4 and IPv6 forwarding
     #
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
+  
     #
     # Interface addressing, create any bond devices
     #
@@ -105,14 +110,6 @@ ok: [server] =>
     set -e
     ip -6 addr add 2001:db8:cafe::3/64 dev eth1
     ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    #
-    #
-    #
-    # Print the final routing table
-    ip route
 ok: [c1] => 
   msg: |-
     initial configuration for c1
@@ -180,9 +177,11 @@ ok: [c1] =>
     # Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA
     #
     cat <<SCRIPT > /etc/sysctl.d/10-netsim.conf
+    net.ipv4.conf.all.arp_announce=2
     net.ipv4.ip_forward=0
     net.ipv6.conf.all.forwarding=0
   
+    net.ipv6.conf.eth1.disable_ipv6=1
   
     SCRIPT
     sysctl -p /etc/sysctl.d/10-netsim.conf
@@ -198,6 +197,20 @@ ok: [c1] =>
         eth1:
           dhcp6: true
     SCRIPT
+  
+    # Disable auto-negotiation on Ethernet interfaces, needed to make LACP work correctly
+    cat <<SCRIPT > /etc/systemd/network/98-eth.link
+  
+    [Match]
+    OriginalName=eth*
+  
+    [Link]
+    BitsPerSecond=1G
+    AutoNegotiation=no
+    Duplex=full
+    SCRIPT
+  
+    chmod 600 /etc/netplan/*
   
     echo -n 'Starting netplan generate ' && date
     netplan generate
@@ -270,9 +283,11 @@ ok: [c2] =>
     # Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA
     #
     cat <<SCRIPT > /etc/sysctl.d/10-netsim.conf
+    net.ipv4.conf.all.arp_announce=2
     net.ipv4.ip_forward=0
     net.ipv6.conf.all.forwarding=0
   
+    net.ipv6.conf.eth1.disable_ipv6=1
   
     SCRIPT
     sysctl -p /etc/sysctl.d/10-netsim.conf
@@ -288,6 +303,20 @@ ok: [c2] =>
         eth1:
           dhcp6: true
     SCRIPT
+  
+    # Disable auto-negotiation on Ethernet interfaces, needed to make LACP work correctly
+    cat <<SCRIPT > /etc/systemd/network/98-eth.link
+  
+    [Match]
+    OriginalName=eth*
+  
+    [Link]
+    BitsPerSecond=1G
+    AutoNegotiation=no
+    Duplex=full
+    SCRIPT
+  
+    chmod 600 /etc/netplan/*
   
     echo -n 'Starting netplan generate ' && date
     netplan generate
@@ -316,7 +345,7 @@ skipping: [server]
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [server -> localhost]
 
-TASK [Remove temporary file /tmp/server_initial-pt2v8uzk.sh] *******************
+TASK [Remove temporary file /tmp/server_initial-dc8k1z3x.sh] *******************
 changed: [server -> localhost]
 
 TASK [template] ****************************************************************
@@ -397,8 +426,8 @@ skipping: [c1]
 skipping: [c2]
 
 TASK [Create DHCP deployment script] *******************************************
-changed: [c1]
 changed: [c2]
+changed: [c1]
 
 TASK [Execute /tmp/config.sh to deploy dhcp config from /home/pipi/net101/tools/netsim/ansible/templates/dhcp/linux.j2] ***
 changed: [c1]
