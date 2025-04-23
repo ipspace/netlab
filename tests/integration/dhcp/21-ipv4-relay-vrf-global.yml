@@ -2,12 +2,12 @@ groups:
   _auto_create: true
   clients:
     members: [ c1, c2 ]
-    device: cumulus
+    device: linux
     provider: libvirt
-    config: [ bounce ]
   servers:
     members: [ server ]
-    device: csr
+    device: iol
+    provider: clab
     module: [ dhcp ]
     dhcp.server: true
     role: host
@@ -32,7 +32,13 @@ links:
 - relay-server
 
 validate:
-  address:
+  get_lease:
+    description: Renew DHCP lease on Linux clients
+    nodes: [ c1, c2 ]
+    devices: [ linux ]
+    exec: sudo networkctl forcerenew eth1
+
+  ck_lease:
     description: Check for DHCP address assignments
     wait: 30
     wait_msg: Wait for DHCP clients
@@ -40,9 +46,9 @@ validate:
     pass: The DHCP clients got dynamic IPv4 addresses
     fail: No IPv4 address assigned
     exec:
-      cumulus: "ip addr show swp1 | grep inet | grep dynamic || true"
+      linux: "ip addr show eth1 | grep inet | grep dynamic || true"
     valid:
-      cumulus: stdout.rstrip()
+      linux: stdout.rstrip()
 
 message: |
   Use this topology to test the inter-VRF DHCPv4 relay functionality of your

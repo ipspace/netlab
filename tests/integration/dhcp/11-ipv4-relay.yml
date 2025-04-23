@@ -4,9 +4,8 @@ groups:
   _auto_create: true
   clients:
     members: [ c1, c2, c3, c4 ]
-    device: cumulus
+    device: linux
     provider: libvirt
-    config: [ bounce ]
   servers:
     members: [ s1, s2 ]
     device: dnsmasq
@@ -35,7 +34,14 @@ links:
 - relay-s2
 
 validate:
-  address:
+  get_lease:
+    description: Renew DHCP lease on Linux clients
+    nodes: [ c1, c2 ]
+    devices: [ linux ]
+    exec:
+      linux: sudo networkctl forcerenew eth1
+
+  ck_lease:
     description: Check for DHCP address assignments
     wait: 30
     wait_msg: Wait for DHCP clients
@@ -43,10 +49,11 @@ validate:
     pass: The DHCP clients got dynamic IPv4 addresses
     fail: No IPv4 address assigned
     exec:
-      cumulus: "ip addr show swp1 | grep inet | grep dynamic || true"
+      linux: "ip addr show eth1 | grep inet | grep dynamic || true"
     valid:
-      cumulus: stdout.rstrip()
-  lease:
+      linux: stdout.rstrip()
+
+  srv_lease:
     description: Check for DHCP server lease
     level: warning
     nodes: [ s1, s2 ]
@@ -59,6 +66,7 @@ validate:
     valid:
       eos: vrfs.default.ipv4ActiveLeases
       dnsmasq: stdout.rstrip() > '0'
+
   lease_all:
     description: Check for DHCP server lease
     level: warning

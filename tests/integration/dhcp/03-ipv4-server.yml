@@ -2,7 +2,7 @@ groups:
   clients:
     members: [ c1, c2 ]
     provider: libvirt
-    device: cumulus
+    device: linux
 
 nodes:
   c1:
@@ -19,7 +19,13 @@ links:
   server:
 
 validate:
-  lease:
+  get_lease:
+    description: Renew DHCP lease on Linux clients
+    nodes: [ c1, c2 ]
+    devices: [ linux ]
+    exec: sudo networkctl forcerenew eth1
+
+  ck_lease:
     description: Check for DHCP address assignments
     nodes: [ c1, c2 ]
     wait: 60
@@ -27,9 +33,9 @@ validate:
     pass: The DHCP clients got dynamic IPv4 addresses
     fail: No IPv4 address assigned
     exec:
-      cumulus: "ip addr show swp1 | grep inet | grep dynamic || true"
+      linux: "ip addr show eth1 | grep inet | grep dynamic || true"
     valid:
-      cumulus: stdout.rstrip()
+      linux: stdout.rstrip()
 
 message: |
   Use this topology to test the DHCPv4 server on your device. Use 'netlab
