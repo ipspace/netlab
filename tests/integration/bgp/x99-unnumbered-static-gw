@@ -1,0 +1,95 @@
+---
+
+# Source: https://blog.bott.im/bgp-unnumbered-in-2025-same-idea-different-implementations/
+
+provider: clab
+
+defaults.device: frr
+
+module: [ bgp ]
+
+addressing:
+  unnum:
+    ipv4: True
+    ipv6: True
+
+groups:
+  _auto_create: True
+  spines:
+    members: [ spine1, spine2 ]
+    module: [ bgp, ospf ]
+    bgp.as: 65000
+  leaves:
+    members: [ leaf1, leaf2, leaf3, leaf4 ]
+    device: srlinux
+    # bgp.as: {{ 65000 + id }}
+  servers:
+    members: [ s1, s2 ]
+    # device: bird does not support lla-only
+    device: frr
+    # role: host disables bgp
+    bgp.as: 65100
+    bgp.sessions:
+      ipv4: [ebgp]
+      ipv6: [ebgp]
+
+nodes:
+  spine1:
+  spine2:
+  leaf1:
+    bgp.as: 65001
+  leaf2:
+    bgp.as: 65002
+  leaf3:
+    bgp.as: 65003
+  leaf4:
+    bgp.as: 65004
+
+links:
+- spine1:
+  spine2:
+  pool: unnum
+
+- spine1:
+  leaf1:
+  pool: unnum
+- spine1:
+  leaf2:
+  pool: unnum
+- spine1:
+  leaf3:
+  pool: unnum
+- spine1:
+  leaf4:
+  pool: unnum
+
+- spine2:
+  leaf1:
+  pool: unnum
+- spine2:
+  leaf2:
+  pool: unnum
+- spine2:
+  leaf3:
+  pool: unnum
+- spine2:
+  leaf4:
+  pool: unnum
+
+- leaf1:
+    ipv6: fe80::1/64
+  s1:
+  pool: unnum
+- leaf2:
+    ipv6: fe80::1/64
+  s1:
+  pool: unnum
+
+- leaf3:
+    ipv6: fe80::1/64
+  s2:
+  pool: unnum
+- leaf4:
+    ipv6: fe80::1/64
+  s2:
+  pool: unnum
