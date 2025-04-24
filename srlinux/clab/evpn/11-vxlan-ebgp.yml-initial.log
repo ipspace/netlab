@@ -38,8 +38,8 @@ TASK [Find configuration template for normalize] *******************************
 ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 
 TASK [fail] ********************************************************************
 skipping: [spine]
@@ -83,8 +83,8 @@ TASK [Find configuration template for initial] *********************************
 ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 
 TASK [fail] ********************************************************************
 skipping: [spine]
@@ -97,8 +97,8 @@ TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [spine] => 
@@ -208,6 +208,7 @@ ok: [h2] =>
     ip addr del 172.31.1.5/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.31.1.5/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
 ok: [h1] => 
   msg: |-
@@ -242,6 +243,7 @@ ok: [h1] =>
     ip addr del 172.31.1.4/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.31.1.4/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
 ok: [l1] => 
   msg: |-
@@ -525,8 +527,8 @@ changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -540,17 +542,17 @@ TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/a
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-70yc6d88.sh] ***********************
-changed: [h2 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-xrx5_y07.sh] ***********************
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [spine]
 ok: [h1]
 ok: [h2]
 ok: [l1]
+ok: [spine]
 ok: [l2]
 
 TASK [Deploy individual configuration modules] *********************************
@@ -655,15 +657,15 @@ TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [h1]
 ok: [h2]
 ok: [l1]
-ok: [spine]
 ok: [l2]
+ok: [spine]
 
 TASK [Find configuration template for routing] *********************************
 skipping: [l1]
 skipping: [l2]
 ok: [h1]
-ok: [h2]
 skipping: [spine]
+ok: [h2]
 
 TASK [fail] ********************************************************************
 skipping: [h1]
@@ -729,12 +731,12 @@ changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux.j2] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Execute /tmp/config-h1_routing.sh to deploy routing config based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux.j2] ***
 changed: [h1]
@@ -744,16 +746,16 @@ TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/a
 skipping: [h1]
 skipping: [h2]
 
-TASK [Remove temporary file /tmp/h1_routing-v1umxo1t.sh] ***********************
-changed: [h1 -> localhost]
+TASK [Remove temporary file /tmp/h1_routing-7pw8ggru.sh] ***********************
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [h1]
 ok: [h2]
 ok: [l1]
-ok: [spine]
 ok: [l2]
+ok: [spine]
 
 TASK [Find configuration template for bgp] *************************************
 skipping: [h1]
@@ -889,6 +891,7 @@ ok: [spine] =>
         statement:
         - name: prefixes
           match:
+           prefix:
             prefix-set: default_bgp_advertise
           action:
             policy-result: next-policy
@@ -935,23 +938,25 @@ ok: [spine] =>
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
+          send-community-type: ['standard', 'large', 'extended']
+  
           import-policy: ['accept_all']
           export-policy: ['default_bgp_export', 'accept_all']
         - afi-safi-name: ipv6-unicast
           admin-state: disable
+          send-community-type: ['standard', 'large', 'extended']
+  
           import-policy: ['accept_all']
           export-policy: ['default_bgp_export', 'accept_all']
         - afi-safi-name: evpn
           admin-state: enable
+          send-community-type: ['standard', 'large', 'extended']
+  
   
         timers:
           connect-retry: 10
           _annotate_connect-retry: "Reduce default 120s to 10s"
           minimum-advertisement-interval: 1
-        send-community:
-          standard: True
-          large: True
-          _annotate_large: "Assuming 'standard' implies 'large' here"
   
   
     - path: /network-instance[name=default]/protocols/bgp
@@ -966,10 +971,14 @@ ok: [spine] =>
           afi-safi:
           - afi-safi-name: ipv4-unicast
             admin-state: enable
+            send-community-type: ['standard', 'large', 'extended']
+  
           - afi-safi-name: ipv6-unicast
             admin-state: disable
           - afi-safi-name: evpn
             admin-state: enable
+            send-community-type: ['standard', 'large', 'extended']
+  
   
           peer-as: 65201
   
@@ -982,23 +991,25 @@ ok: [spine] =>
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
+          send-community-type: ['standard', 'large', 'extended']
+  
           import-policy: ['accept_all']
           export-policy: ['default_bgp_export', 'accept_all']
         - afi-safi-name: ipv6-unicast
           admin-state: disable
+          send-community-type: ['standard', 'large', 'extended']
+  
           import-policy: ['accept_all']
           export-policy: ['default_bgp_export', 'accept_all']
         - afi-safi-name: evpn
           admin-state: enable
+          send-community-type: ['standard', 'large', 'extended']
+  
   
         timers:
           connect-retry: 10
           _annotate_connect-retry: "Reduce default 120s to 10s"
           minimum-advertisement-interval: 1
-        send-community:
-          standard: True
-          large: True
-          _annotate_large: "Assuming 'standard' implies 'large' here"
   
   
     - path: /network-instance[name=default]/protocols/bgp
@@ -1013,10 +1024,14 @@ ok: [spine] =>
           afi-safi:
           - afi-safi-name: ipv4-unicast
             admin-state: enable
+            send-community-type: ['standard', 'large', 'extended']
+  
           - afi-safi-name: ipv6-unicast
             admin-state: disable
           - afi-safi-name: evpn
             admin-state: enable
+            send-community-type: ['standard', 'large', 'extended']
+  
   
           peer-as: 65202
 
@@ -1027,8 +1042,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for l1
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for spine
 
 TASK [template] ****************************************************************
-changed: [l1]
 changed: [l2]
+changed: [l1]
 
 TASK [set_fact] ****************************************************************
 ok: [l1]
@@ -1039,8 +1054,8 @@ skipping: [l1]
 skipping: [l2]
 
 TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [l1]
 changed: [l2]
+changed: [l1]
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [spine]
@@ -1161,16 +1176,16 @@ skipping: [spine]
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for l1, l2
 
 TASK [template] ****************************************************************
-changed: [l2]
 changed: [l1]
+changed: [l2]
 
 TASK [set_fact] ****************************************************************
 ok: [l1]
 ok: [l2]
 
 TASK [run /tmp/config.sh to deploy vxlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vxlan/frr.j2] ***
-changed: [l1]
 changed: [l2]
+changed: [l1]
 
 TASK [run vtysh to import vxlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vxlan/frr.j2] ***
 skipping: [l1]
@@ -1306,8 +1321,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for l1
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for spine
 
 TASK [template] ****************************************************************
-changed: [l2]
 changed: [l1]
+changed: [l2]
 
 TASK [set_fact] ****************************************************************
 ok: [l1]

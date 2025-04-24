@@ -38,8 +38,8 @@ TASK [Find configuration template for normalize] *******************************
 ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 
 TASK [fail] ********************************************************************
 skipping: [spine]
@@ -257,6 +257,7 @@ ok: [h1] =>
     ip addr del 172.31.1.4/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.31.1.4/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
 ok: [h2] => 
   msg: |-
@@ -291,6 +292,7 @@ ok: [h2] =>
     ip addr del 172.31.1.5/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.31.1.5/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
 ok: [l2] => 
   msg: |-
@@ -419,8 +421,8 @@ ok: [spine]
 ok: [l1]
 
 TASK [Update SRL initial node configuration (template=/home/pipi/netlab_gh/netsim/ansible/templates/initial/srlinux.j2)] ***
-changed: [spine]
 changed: [l1]
+changed: [spine]
 
 TASK [debug] *******************************************************************
 skipping: [spine]
@@ -452,8 +454,8 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
@@ -471,18 +473,18 @@ TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/a
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-jys7kyxj.sh] ***********************
-changed: [h1 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-_06h4xh5.sh] ***********************
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [h1]
-ok: [h2]
 ok: [l1]
-ok: [l2]
+ok: [h2]
 ok: [spine]
+ok: [l2]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, l1, l2, spine => (item=vlan)
@@ -600,15 +602,15 @@ TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [h1]
 ok: [h2]
 ok: [l1]
-ok: [l2]
 ok: [spine]
+ok: [l2]
 
 TASK [Find configuration template for routing] *********************************
 skipping: [l1]
 skipping: [l2]
 ok: [h1]
-skipping: [spine]
 ok: [h2]
+skipping: [spine]
 
 TASK [fail] ********************************************************************
 skipping: [h1]
@@ -674,8 +676,8 @@ changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux.j2] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
 changed: [h1 -> localhost]
@@ -689,16 +691,16 @@ TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/a
 skipping: [h1]
 skipping: [h2]
 
-TASK [Remove temporary file /tmp/h1_routing-leug5_dl.sh] ***********************
-changed: [h1 -> localhost]
+TASK [Remove temporary file /tmp/h1_routing-uistua7m.sh] ***********************
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [h1]
 ok: [h2]
 ok: [l1]
-ok: [l2]
 ok: [spine]
+ok: [l2]
 
 TASK [Find configuration template for bgp] *************************************
 skipping: [h1]
@@ -808,6 +810,7 @@ ok: [l1] =>
         statement:
         - name: prefixes
           match:
+           prefix:
             prefix-set: default_bgp_advertise
           action:
             policy-result: next-policy
@@ -854,10 +857,14 @@ ok: [l1] =>
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
+          send-community-type: ['standard', 'large', 'extended']
+  
           import-policy: ['accept_all']
           export-policy: ['default_bgp_export', 'accept_all']
         - afi-safi-name: ipv6-unicast
           admin-state: disable
+          send-community-type: ['standard', 'large', 'extended']
+  
           import-policy: ['accept_all']
           export-policy: ['default_bgp_export', 'accept_all']
   
@@ -865,10 +872,6 @@ ok: [l1] =>
           connect-retry: 10
           _annotate_connect-retry: "Reduce default 120s to 10s"
           minimum-advertisement-interval: 1
-        send-community:
-          standard: True
-          large: True
-          _annotate_large: "Assuming 'standard' implies 'large' here"
   
   
     - path: /network-instance[name=default]/protocols/bgp
@@ -883,6 +886,8 @@ ok: [l1] =>
           afi-safi:
           - afi-safi-name: ipv4-unicast
             admin-state: enable
+            send-community-type: ['standard', 'large', 'extended']
+  
           - afi-safi-name: ipv6-unicast
             admin-state: disable
   
@@ -897,23 +902,25 @@ ok: [l1] =>
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: disable
+          send-community-type: ['standard', 'large', 'extended']
+  
           import-policy: ['accept_all']
           export-policy: ['default_bgp_export', 'accept_all']
         - afi-safi-name: ipv6-unicast
           admin-state: disable
+          send-community-type: ['standard', 'large', 'extended']
+  
           import-policy: ['accept_all']
           export-policy: ['default_bgp_export', 'accept_all']
         - afi-safi-name: evpn
           admin-state: enable
+          send-community-type: ['standard', 'large', 'extended']
+  
   
         timers:
           connect-retry: 10
           _annotate_connect-retry: "Reduce default 120s to 10s"
           minimum-advertisement-interval: 1
-        send-community:
-          standard: True
-          large: True
-          _annotate_large: "Assuming 'standard' implies 'large' here"
   
   
     - path: /network-instance[name=default]/protocols/bgp
@@ -928,10 +935,14 @@ ok: [l1] =>
           afi-safi:
           - afi-safi-name: ipv4-unicast
             admin-state: disable
+            send-community-type: ['standard', 'large', 'extended']
+  
           - afi-safi-name: ipv6-unicast
             admin-state: disable
           - afi-safi-name: evpn
             admin-state: enable
+            send-community-type: ['standard', 'large', 'extended']
+  
   
           peer-as: 65100
 ok: [spine] => 
@@ -972,6 +983,7 @@ ok: [spine] =>
         statement:
         - name: prefixes
           match:
+           prefix:
             prefix-set: default_bgp_advertise
           action:
             policy-result: next-policy
@@ -1018,10 +1030,14 @@ ok: [spine] =>
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
+          send-community-type: ['standard', 'large', 'extended']
+  
           import-policy: ['accept_all']
           export-policy: ['default_bgp_export', 'accept_all']
         - afi-safi-name: ipv6-unicast
           admin-state: disable
+          send-community-type: ['standard', 'large', 'extended']
+  
           import-policy: ['accept_all']
           export-policy: ['default_bgp_export', 'accept_all']
   
@@ -1029,10 +1045,6 @@ ok: [spine] =>
           connect-retry: 10
           _annotate_connect-retry: "Reduce default 120s to 10s"
           minimum-advertisement-interval: 1
-        send-community:
-          standard: True
-          large: True
-          _annotate_large: "Assuming 'standard' implies 'large' here"
   
   
     - path: /network-instance[name=default]/protocols/bgp
@@ -1047,6 +1059,8 @@ ok: [spine] =>
           afi-safi:
           - afi-safi-name: ipv4-unicast
             admin-state: enable
+            send-community-type: ['standard', 'large', 'extended']
+  
           - afi-safi-name: ipv6-unicast
             admin-state: disable
   
@@ -1061,10 +1075,14 @@ ok: [spine] =>
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
+          send-community-type: ['standard', 'large', 'extended']
+  
           import-policy: ['accept_all']
           export-policy: ['default_bgp_export', 'accept_all']
         - afi-safi-name: ipv6-unicast
           admin-state: disable
+          send-community-type: ['standard', 'large', 'extended']
+  
           import-policy: ['accept_all']
           export-policy: ['default_bgp_export', 'accept_all']
   
@@ -1072,10 +1090,6 @@ ok: [spine] =>
           connect-retry: 10
           _annotate_connect-retry: "Reduce default 120s to 10s"
           minimum-advertisement-interval: 1
-        send-community:
-          standard: True
-          large: True
-          _annotate_large: "Assuming 'standard' implies 'large' here"
   
   
     - path: /network-instance[name=default]/protocols/bgp
@@ -1090,6 +1104,8 @@ ok: [spine] =>
           afi-safi:
           - afi-safi-name: ipv4-unicast
             admin-state: enable
+            send-community-type: ['standard', 'large', 'extended']
+  
           - afi-safi-name: ipv6-unicast
             admin-state: disable
   
@@ -1104,23 +1120,25 @@ ok: [spine] =>
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: disable
+          send-community-type: ['standard', 'large', 'extended']
+  
           import-policy: ['accept_all']
           export-policy: ['default_bgp_export', 'accept_all']
         - afi-safi-name: ipv6-unicast
           admin-state: disable
+          send-community-type: ['standard', 'large', 'extended']
+  
           import-policy: ['accept_all']
           export-policy: ['default_bgp_export', 'accept_all']
         - afi-safi-name: evpn
           admin-state: enable
+          send-community-type: ['standard', 'large', 'extended']
+  
   
         timers:
           connect-retry: 10
           _annotate_connect-retry: "Reduce default 120s to 10s"
           minimum-advertisement-interval: 1
-        send-community:
-          standard: True
-          large: True
-          _annotate_large: "Assuming 'standard' implies 'large' here"
   
   
     - path: /network-instance[name=default]/protocols/bgp
@@ -1135,10 +1153,14 @@ ok: [spine] =>
           afi-safi:
           - afi-safi-name: ipv4-unicast
             admin-state: disable
+            send-community-type: ['standard', 'large', 'extended']
+  
           - afi-safi-name: ipv6-unicast
             admin-state: disable
           - afi-safi-name: evpn
             admin-state: enable
+            send-community-type: ['standard', 'large', 'extended']
+  
   
           peer-as: 65200
   
@@ -1151,23 +1173,25 @@ ok: [spine] =>
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: disable
+          send-community-type: ['standard', 'large', 'extended']
+  
           import-policy: ['accept_all']
           export-policy: ['default_bgp_export', 'accept_all']
         - afi-safi-name: ipv6-unicast
           admin-state: disable
+          send-community-type: ['standard', 'large', 'extended']
+  
           import-policy: ['accept_all']
           export-policy: ['default_bgp_export', 'accept_all']
         - afi-safi-name: evpn
           admin-state: enable
+          send-community-type: ['standard', 'large', 'extended']
+  
   
         timers:
           connect-retry: 10
           _annotate_connect-retry: "Reduce default 120s to 10s"
           minimum-advertisement-interval: 1
-        send-community:
-          standard: True
-          large: True
-          _annotate_large: "Assuming 'standard' implies 'large' here"
   
   
     - path: /network-instance[name=default]/protocols/bgp
@@ -1182,10 +1206,14 @@ ok: [spine] =>
           afi-safi:
           - afi-safi-name: ipv4-unicast
             admin-state: disable
+            send-community-type: ['standard', 'large', 'extended']
+  
           - afi-safi-name: ipv6-unicast
             admin-state: disable
           - afi-safi-name: evpn
             admin-state: enable
+            send-community-type: ['standard', 'large', 'extended']
+  
   
           peer-as: 65201
 
@@ -1355,8 +1383,8 @@ TASK [Figure out whether to deploy the module evpn on current device] **********
 ok: [h1]
 ok: [l1]
 ok: [h2]
-ok: [l2]
 ok: [spine]
+ok: [l2]
 
 TASK [Find configuration template for evpn] ************************************
 skipping: [h1]
@@ -1497,8 +1525,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-custom-config.yml for
 
 TASK [Find configuration template] *********************************************
 ok: [l1]
-ok: [spine]
 ok: [l2]
+ok: [spine]
 
 TASK [fail] ********************************************************************
 skipping: [l1]

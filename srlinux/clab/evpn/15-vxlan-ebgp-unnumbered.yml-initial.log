@@ -83,8 +83,8 @@ TASK [Find configuration template for initial] *********************************
 ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 
 TASK [fail] ********************************************************************
 skipping: [spine]
@@ -97,8 +97,8 @@ TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [spine] => 
@@ -254,40 +254,6 @@ ok: [l1] =>
        type: default
        interface:
        - name: ethernet-1/1.0
-ok: [h2] => 
-  msg: |-
-    initial configuration for h2
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Send ARP requests from a sane source IP address
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-  
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.31.1.5/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.31.1.5/24 dev eth1
-    ip link set dev eth1 mtu 1500
 ok: [h1] => 
   msg: |-
     initial configuration for h1
@@ -321,6 +287,42 @@ ok: [h1] =>
     ip addr del 172.31.1.4/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.31.1.4/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+  
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.31.1.5/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.31.1.5/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
 ok: [l2] => 
   msg: |-
@@ -452,8 +454,8 @@ ok: [spine]
 ok: [l1]
 
 TASK [Update SRL initial node configuration (template=/home/pipi/netlab_gh/netsim/ansible/templates/initial/srlinux.j2)] ***
-changed: [l1]
 changed: [spine]
+changed: [l1]
 
 TASK [debug] *******************************************************************
 skipping: [spine]
@@ -504,18 +506,18 @@ TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/a
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-gzo7ncqu.sh] ***********************
-changed: [h1 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-tucp1s2k.sh] ***********************
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [h1]
-ok: [h2]
 ok: [l1]
-ok: [spine]
+ok: [h2]
 ok: [l2]
+ok: [spine]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, l1, l2, spine => (item=vlan)
@@ -526,8 +528,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [h1]
-ok: [h2]
 ok: [l1]
+ok: [h2]
 ok: [spine]
 ok: [l2]
 
@@ -633,15 +635,15 @@ TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [h1]
 ok: [h2]
 ok: [l1]
-ok: [spine]
 ok: [l2]
+ok: [spine]
 
 TASK [Find configuration template for routing] *********************************
 skipping: [l1]
-skipping: [l2]
 ok: [h1]
-skipping: [spine]
+skipping: [l2]
 ok: [h2]
+skipping: [spine]
 
 TASK [fail] ********************************************************************
 skipping: [h1]
@@ -722,7 +724,7 @@ TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/a
 skipping: [h1]
 skipping: [h2]
 
-TASK [Remove temporary file /tmp/h1_routing-uu1yx_57.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-cq28cig8.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -831,6 +833,7 @@ ok: [l1] =>
         statement:
         - name: prefixes
           match:
+           prefix:
             prefix-set: default_bgp_advertise
           action:
             policy-result: next-policy
@@ -877,6 +880,8 @@ ok: [l1] =>
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
+          send-community-type: ['standard', 'large', 'extended']
+  
           ipv4-unicast:
             advertise-ipv6-next-hops: True
             receive-ipv6-next-hops: True
@@ -884,19 +889,19 @@ ok: [l1] =>
           export-policy: ['default_bgp_export', 'accept_all']
         - afi-safi-name: ipv6-unicast
           admin-state: disable
+          send-community-type: ['standard', 'large', 'extended']
+  
           import-policy: ['accept_all']
           export-policy: ['default_bgp_export', 'accept_all']
         - afi-safi-name: evpn
           admin-state: enable
+          send-community-type: ['standard', 'large', 'extended']
+  
   
         timers:
           connect-retry: 10
           _annotate_connect-retry: "Reduce default 120s to 10s"
           minimum-advertisement-interval: 1
-        send-community:
-          standard: True
-          large: True
-          _annotate_large: "Assuming 'standard' implies 'large' here"
   
   
     - path: /network-instance[name=default]/ip-forwarding
@@ -946,6 +951,7 @@ ok: [spine] =>
         statement:
         - name: prefixes
           match:
+           prefix:
             prefix-set: default_bgp_advertise
           action:
             policy-result: next-policy
@@ -992,6 +998,8 @@ ok: [spine] =>
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
+          send-community-type: ['standard', 'large', 'extended']
+  
           ipv4-unicast:
             advertise-ipv6-next-hops: True
             receive-ipv6-next-hops: True
@@ -999,19 +1007,19 @@ ok: [spine] =>
           export-policy: ['default_bgp_export', 'accept_all']
         - afi-safi-name: ipv6-unicast
           admin-state: disable
+          send-community-type: ['standard', 'large', 'extended']
+  
           import-policy: ['accept_all']
           export-policy: ['default_bgp_export', 'accept_all']
         - afi-safi-name: evpn
           admin-state: enable
+          send-community-type: ['standard', 'large', 'extended']
+  
   
         timers:
           connect-retry: 10
           _annotate_connect-retry: "Reduce default 120s to 10s"
           minimum-advertisement-interval: 1
-        send-community:
-          standard: True
-          large: True
-          _annotate_large: "Assuming 'standard' implies 'large' here"
   
   
     - path: /network-instance[name=default]/ip-forwarding
@@ -1033,6 +1041,8 @@ ok: [spine] =>
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
+          send-community-type: ['standard', 'large', 'extended']
+  
           ipv4-unicast:
             advertise-ipv6-next-hops: True
             receive-ipv6-next-hops: True
@@ -1040,19 +1050,19 @@ ok: [spine] =>
           export-policy: ['default_bgp_export', 'accept_all']
         - afi-safi-name: ipv6-unicast
           admin-state: disable
+          send-community-type: ['standard', 'large', 'extended']
+  
           import-policy: ['accept_all']
           export-policy: ['default_bgp_export', 'accept_all']
         - afi-safi-name: evpn
           admin-state: enable
+          send-community-type: ['standard', 'large', 'extended']
+  
   
         timers:
           connect-retry: 10
           _annotate_connect-retry: "Reduce default 120s to 10s"
           minimum-advertisement-interval: 1
-        send-community:
-          standard: True
-          large: True
-          _annotate_large: "Assuming 'standard' implies 'large' here"
   
   
     - path: /network-instance[name=default]/ip-forwarding
@@ -1096,8 +1106,8 @@ TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/te
 changed: [l2]
 
 TASK [Figure out whether to deploy the module vxlan on current device] *********
-ok: [h2]
 ok: [h1]
+ok: [h2]
 ok: [l1]
 ok: [l2]
 ok: [spine]
@@ -1231,8 +1241,8 @@ TASK [Figure out whether to deploy the module evpn on current device] **********
 ok: [h1]
 ok: [l1]
 ok: [h2]
-ok: [l2]
 ok: [spine]
+ok: [l2]
 
 TASK [Find configuration template for evpn] ************************************
 skipping: [h1]
@@ -1347,8 +1357,8 @@ ok: [l1]
 ok: [spine]
 
 TASK [Update SRL evpn node configuration (template=/home/pipi/netlab_gh/netsim/ansible/templates/evpn/srlinux.j2)] ***
-changed: [spine]
 changed: [l1]
+changed: [spine]
 
 TASK [debug] *******************************************************************
 skipping: [l1]
