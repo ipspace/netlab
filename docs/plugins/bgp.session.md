@@ -183,6 +183,7 @@ The implementations of the **neighbor remove-private-as** command vary widely ac
 | Cisco IOSv/IOSvL2   |  ✅  |  ❗  |  ❗  |   ❌  |   ❌  |
 | Cisco IOS-XE        |  ✅  |  ❗  |  ❗  |   ❌  |   ❌  |
 | Cumulus Linux       |  ✅  |  ✅  |  ✅  |   ❌  |   ❌  |
+| Dell OS10           |  ✅  |  ❌  |  ❌  |   ❌  |   ❌  |
 | FRR                 |  ✅  |  ✅  |  ✅  |   ❌  |   ❌  |
 | Nokia SR Linux      |  ✅  |  ✅  |  ✅  |   ❌  |   ❌  |
 
