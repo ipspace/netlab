@@ -83,11 +83,9 @@ nodes:
 
 * You must run OSPF on the BIRD daemon for the IBGP sessions to work.
 * BIRD will not advertise (reflect) an IBGP route if it has an equivalent OSPF route.
-* You cannot configure BGP community propagation on BIRD. All BGP communities are always propagated to all neighbors.
 
 ### IPv6 Caveats
 
-* OSPFv3 does not advertise the prefix configured on the loopback interface even when the loopback interface is part of the OSPFv3 process.
 * If the BGP next hop of a reflected IBGP route is reachable as an OSPF route, BIRD advertises a link-local address as one of the next hops of the IBGP IPv6 prefix, potentially resulting in broken IPv6 connectivity.
 
 (caveats-asav)=

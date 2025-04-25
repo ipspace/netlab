@@ -49,12 +49,15 @@ filter bgp_export_{{ ntype }} {
 {% endfor %}
 
 {% for n in bgp.neighbors %}
-{%   for af in [ 'ipv4','ipv6' ] if af in n %}
+{%   for af in [ 'ipv4','ipv6' ] if af in n and n[af] is string %}
 protocol bgp bgp_{{ n.name }}_{{ af }} {
 {%     set loopback = loopback|default({}) %}
 {%     set local_ip = loopback[af]|default('') %}
   local {{ local_ip.split('/')[0] if n.type == 'ibgp' else '' }} as {{ n.local_as|default(bgp.as) }};
   neighbor {{ n[af] }} as {{ n['as'] }};
+{% if n.local_if is defined %}
+  interface "{{ n.local_if }}";
+{% endif %}
 {%     if n.password is defined %}
   password "{{ n.password }}";
 {%     endif %}
@@ -70,15 +73,17 @@ protocol bgp bgp_{{ n.name }}_{{ af }} {
   rr cluster id {{ bgp.rr_cluster_id }};
 {%       endif %}
 {%     endif %}
-{%     if af in n.activate and n.activate[af] %}
-  {{ af }} {
+{%     for _af in [ 'ipv4','ipv6' ] if _af==af or af=='ipv6' and n.ipv4_rfc8950|default(False) %}
+{%      if _af in n.activate and n.activate[_af] %}
+  {{ _af }} {
     import all;
     export filter bgp_export_{{ n.type }};
 {%       if 'next_hop_self' in bgp and bgp.next_hop_self and 'ibgp' in n.type %}
     next hop self {{ 'on' if n.type == 'localas_ibgp' else 'ebgp' }};
 {%       endif %}
   };
-{%     endif %}
+{%      endif %}
+{%     endfor %}
 }
 {%   endfor %}
 {% endfor %}
