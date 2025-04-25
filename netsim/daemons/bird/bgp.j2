@@ -49,12 +49,14 @@ filter bgp_export_{{ ntype }} {
 {% endfor %}
 
 {% for n in bgp.neighbors %}
-{%   for af in [ 'ipv4','ipv6' ] if af in n and n[af] is string %}
-protocol bgp bgp_{{ n.name }}_{{ af }} {
+{%   for af in [ 'ipv4','ipv6' ] if af in n and (n[af] is string 
+                                                 or (af=='ipv6' and n.ipv4|default(False) is sameas True)) %}
+{%     set dual_unnum = n.ipv4|default(False) is sameas True and n.ipv6|default(False) is sameas True %}
+protocol bgp bgp_{{ n.name }}_{{ 'dual_unnumbered' if dual_unnum else af }} {
 {%     set loopback = loopback|default({}) %}
 {%     set local_ip = loopback[af]|default('') %}
   local {{ local_ip.split('/')[0] if n.type == 'ibgp' else '' }} as {{ n.local_as|default(bgp.as) }};
-  neighbor {{ n[af] }} as {{ n['as'] }};
+  neighbor {{ n[af] if n[af] is string else 'range ::/0' }} as {{ n['as'] }};
 {% if n.local_if is defined %}
   interface "{{ n.local_if }}";
 {% endif %}
@@ -73,7 +75,7 @@ protocol bgp bgp_{{ n.name }}_{{ af }} {
   rr cluster id {{ bgp.rr_cluster_id }};
 {%       endif %}
 {%     endif %}
-{%     for _af in [ 'ipv4','ipv6' ] if _af==af or af=='ipv6' and n.ipv4_rfc8950|default(False) %}
+{%     for _af in [ 'ipv4','ipv6' ] if _af==af or dual_unnum %}
 {%      if _af in n.activate and n.activate[_af] %}
   {{ _af }} {
     import all;
