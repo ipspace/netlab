@@ -172,15 +172,23 @@ ok: [dut]
 ok: [x1]
 
 TASK [fail] ********************************************************************
+skipping: [dut]
 skipping: [x1]
-fatal: [dut]: FAILED! => changed=false 
-  msg: |-
-    Cannot find bfd configuration template for dellos10
 
 TASK [Find configuration deployment deploy_script for bfd] *********************
+ok: [dut]
 ok: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => 
+  msg: |-
+    bfd configuration for dut
+    =========================================
+    !
+    ! Dell OS10 only supports a single global configuration, not different timer intervals per interface
+    !
+    bfd interval 500 min_rx 500 multiplier 3 role active
+    bfd enable
 ok: [x1] => 
   msg: |-
     bfd configuration for x1
@@ -190,24 +198,80 @@ ok: [x1] =>
     !
 
 TASK [Deploy bfd configuration] ************************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/dellos10.yml for dut
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for x1
+
+TASK [wait_for_connection] *****************************************************
+skipping: [dut]
+
+TASK [dellos10_config: deploying bfd from /home/pipi/netlab_gh/netsim/ansible/templates/bfd/dellos10.j2, save to startup=yes] ***
+changed: [dut]
 
 TASK [eos_config: deploying bfd from /home/pipi/netlab_gh/netsim/ansible/templates/bfd/eos.j2] ***
 changed: [x1]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
+ok: [dut]
 ok: [x1]
 
 TASK [Find configuration template for bgp] *************************************
+ok: [dut]
 ok: [x1]
 
 TASK [fail] ********************************************************************
+skipping: [dut]
 skipping: [x1]
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
+ok: [dut]
 ok: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+    !
+    router bgp 65000
+      log-neighbor-changes
+  
+    ! define a generic unnumbered template to be used for eBGP unnumbered...
+    ! additionally, need to define link-local-only-nexthop as per Dell suggested "Cumulus workaround"
+    ! WTF Dell...
+      template unnumbered_ebgp
+        link-local-only-nexthop
+        exit
+  
+      router-id 10.0.0.1
+    !
+      neighbor 10.1.0.2
+        remote-as 65100
+  
+        description "x1"
+        send-community standard
+  
+    !
+        address-family ipv4 unicast
+          soft-reconfiguration inbound
+          activate
+        exit
+        address-family ipv6 unicast
+          no activate
+        exit
+  
+        timers 3 9
+        advertisement-interval 1
+        no shutdown
+      exit
+    !
+    !
+     address-family ipv4 unicast
+    !
+      network 10.0.0.1/32
+    !
+    !
+    !
+    !
 ok: [x1] => 
   msg: |-
     bgp configuration for x1
@@ -236,7 +300,14 @@ ok: [x1] =>
     !
 
 TASK [Deploy bgp configuration] ************************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/dellos10.yml for dut
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for x1
+
+TASK [wait_for_connection] *****************************************************
+skipping: [dut]
+
+TASK [dellos10_config: deploying bgp from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/dellos10.j2, save to startup=yes] ***
+changed: [dut]
 
 TASK [eos_config: deploying bgp from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/eos.j2] ***
 changed: [x1]
@@ -244,8 +315,37 @@ changed: [x1]
 PLAY [Deploy custom deployment templates] **************************************
 
 TASK [Run custom configuration deployment scripts] *****************************
+skipping: [dut] => (item=static_bfd) 
 skipping: [x1] => (item=bgp.session) 
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-custom-config.yml for dut => (item=bgp.session)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-custom-config.yml for x1 => (item=static_bfd)
+
+TASK [Find configuration template] *********************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Check is the configuration template is a file] ***************************
+ok: [dut -> localhost]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Process template /home/pipi/netlab_gh/netsim/extra/bgp.session/dellos10.j2 for dut] ***
+skipping: [dut]
+
+TASK [Find custom configuration deployment script] *****************************
+ok: [dut]
+
+TASK [Run the configuration deployment script] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/dellos10.yml for dut
+
+TASK [wait_for_connection] *****************************************************
+skipping: [dut]
+
+TASK [dellos10_config: deploying bgp.session from /home/pipi/netlab_gh/netsim/extra/bgp.session/dellos10.j2, save to startup=yes] ***
+changed: [dut]
 
 TASK [Find configuration template] *********************************************
 ok: [x1]
@@ -272,9 +372,11 @@ TASK [eos_config: deploying static_bfd from /home/pipi/net101/tools/tests/integr
 changed: [x1]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=18   changed=1    unreachable=0    failed=1    skipped=6    rescued=0    ignored=0   
+dut                        : ok=34   changed=4    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
 x1                         : ok=39   changed=5    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 
-Fatal error in netlab: Executing Ansible playbook /home/pipi/netlab_gh/netsim/ansible/initial-config.ansible failed
-Error executing ansible-playbook /home/pipi/netlab_gh/netsim/ansible/initial-config.ansible:
-  Command '['ansible-playbook', '/home/pipi/netlab_gh/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.
+
+
+This lab tests the BGP BFD functionality. The EBGP session between the probe
+and the lab device should trigger a BFD session between them.
+
