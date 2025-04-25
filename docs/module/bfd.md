@@ -14,7 +14,7 @@ BFD is supported on these platforms:
 | Cisco Nexus OS        | ✅  | ✅  | ✅  |
 | Cumulus Linux         | ✅[❗](caveats-frr) | ✅  |  ❌  |
 | FRR                   | ✅[❗](caveats-frr) | ✅  |  ❌  |
-| Dell OS10             |  ❌  | ✅  |  ❌  |
+| Dell OS10             | ✅  | ✅  |  ❌  |
 | Junos[^Junos]         | ✅[❗](caveats-junos) | ✅  | ✅  |
 | Mikrotik RouterOS 6   |  ❌  | ✅  | ✅  |
 | Mikrotik RouterOS 7   |  ❌  |  ❌  |  ❌  |
