@@ -62,7 +62,7 @@ The following features are only supported on a subset of platforms:
 | ------------------------ | :-: | :-: | :-: | :-: |
 | Arista EOS               |  ✅ |  ✅ |  ❌  |  ✅ |
 | Aruba AOS-CX             |  ❌  |  ❌  |  ❌  |  ✅ |
-| BIRD                     |  ❌  |  ❌  |  ❌  |  ✅ |
+| BIRD                     |  ✅  |  ❌  |  ✅  |  ✅ |
 | Cisco IOS/IOS XE[^18v]   |  ❌  |  ❌  |  ❌  |  ✅ |
 | Cisco IOS XRv            |  ❌  |  ❌  |  ❌  |  ✅ |
 | Cumulus Linux 4.x        |  ✅ |  ✅ |  ✅ |  ✅ |
