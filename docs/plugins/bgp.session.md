@@ -61,6 +61,7 @@ The plugin implements generic BGP session features for the following platforms:
 | Cisco IOS-XE[^18v]  |  ✅  |  ✅  |  ✅  |  ✅  |
 | Cisco Nexus OS      |  ✅  |  ✅  |   ❌  |  ✅  |
 | Cumulus Linux       |  ✅  |  ✅  |  ✅  |  ✅  |
+| Dell OS10           |  ✅  |  ✅  |  ✅  |  ❌  |
 | FRR                 |  ✅  |  ✅  |  ✅  |  ✅  |
 | Junos[^Junos]       |  ✅  |  ✅  |  ✅  |  ✅  |
 | Mikrotik RouterOS 7 |  ✅  |   ❌  |   ❌  |   ❌  |
@@ -80,18 +81,19 @@ The plugin implements generic BGP session features for the following platforms:
 BGP session security features are available on these platforms:
 
 | Operating system    | password | GTSM | TCP-AO |
-| ------------------- | :------: | :-: | :-: |
-| Arista EOS          |    ✅    | ✅  | ✅  |
+| ------------------- | :------: | :-: | :-:  |
+| Arista EOS          |    ✅    | ✅  |  ✅  |
 | Aruba AOS-CX        |    ✅    | ✅  |  ❌  |
 | Cisco IOSv/IOSvL2   |    ✅    | ✅  |  ❌  |
-| Cisco IOS-XE[^18v]  |    ✅    |  ✅ |  ✅ |
+| Cisco IOS-XE[^18v]  |    ✅    | ✅  |  ✅  |
 | Cisco Nexus OS      |    ✅    | ✅  |  ❌  |
 | Cumulus Linux       |    ✅    | ✅  |  ❌  |
+| Dell OS10           |    ✅    | ❌  |  ❌  |
 | FRR                 |    ✅    | ✅  |  ❌  |
-| Junos[^Junos]       |    ✅    |  ❌  |  ❌  |
-| Mikrotik RouterOS 7 |    ✅    |  ❌  |  ❌  |
-| Nokia SR Linux      |    ✅    |  ❌  |  ❌  |
-| Nokia SR OS         |    ✅    |  ❌  | ✅  |
+| Junos[^Junos]       |    ✅    | ❌  |  ❌  |
+| Mikrotik RouterOS 7 |    ✅    | ❌  |  ❌  |
+| Nokia SR Linux      |    ✅    | ❌  |  ❌  |
+| Nokia SR OS         |    ✅    | ❌  |  ✅  |
 
 BGP session security features are also available on these daemons:
 
@@ -112,6 +114,7 @@ The plugin implements AS-path-mangling nerd knobs for the following platforms:
 | Cisco Nexus OS      |  ✅  |  ✅  |  ✅  |   ❌  |   ❌  |
 | Cumulus Linux 4.x   |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
 | Cumulus 5.x (NVUE)  |  ✅  |  ❌  |  ❌  |  ❌  |  ❌  |
+| Dell OS10           |  ✅  |  ❌  |  ✅  |  ❌  |  ❌  |
 | FRR                 |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
 | Junos[^Junos]       |   ✅  |  ✅  |   ✅  |   ❌  |   ❌  |
 | Mikrotik RouterOS 7 |  ✅  |  ✅  |   ❌  |   ❌  |   ❌  |
@@ -180,6 +183,7 @@ The implementations of the **neighbor remove-private-as** command vary widely ac
 | Cisco IOSv/IOSvL2   |  ✅  |  ❗  |  ❗  |   ❌  |   ❌  |
 | Cisco IOS-XE        |  ✅  |  ❗  |  ❗  |   ❌  |   ❌  |
 | Cumulus Linux       |  ✅  |  ✅  |  ✅  |   ❌  |   ❌  |
+| Dell OS10           |  ✅  |  ❌  |  ❌  |   ❌  |   ❌  |
 | FRR                 |  ✅  |  ✅  |  ✅  |   ❌  |   ❌  |
 | Nokia SR Linux      |  ✅  |  ✅  |  ✅  |   ❌  |   ❌  |
 
