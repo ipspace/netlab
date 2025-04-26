@@ -99,7 +99,7 @@ BGP session security features are also available on these daemons:
 
 | Operating system    | password | GTSM | TCP-AO |
 | ------------------- | :------: | :-: | :-: |
-| BIRD                |    ✅    | ❌   | ❌   |
+| BIRD                |    ✅    | ✅   | ❌   |
 
 (bgp-session-as-path)=
 The plugin implements AS-path-mangling nerd knobs for the following platforms:
