@@ -68,12 +68,18 @@ $ netlab clab build -l
 
 The 'netlab build' command can be used to build the following container images
 
-┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ daemon  ┃ default tag           ┃ description                                    ┃
-┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ bird    │ netlab/bird:latest    │ BIRD Internet Routing Daemon (bird.network.cz) │
-│ dnsmasq │ netlab/dnsmasq:latest │ dnsmasq DHCP server                            │
-└─────────┴───────────────────────┴────────────────────────────────────────────────┘
+┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ daemon  ┃ default tag           ┃ description                                       ┃
+┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ bird    │ netlab/bird:latest    │ BIRD Internet Routing Daemon (bird.network.cz)    │
+│ bird.v3 │ netlab/bird.v3:latest │ BIRD Internet Routing Daemon (bird.network.cz) v3 │
+│ dnsmasq │ netlab/dnsmasq:latest │ dnsmasq DHCP server                               │
+└─────────┴───────────────────────┴───────────────────────────────────────────────────┘
+```
+
+Note how some daemons have multiple versions available. To use Bird version 3 as the default image:
+```
+$ netlab clab build bird.v3 --tag netlab/bird:latest
 ```
 
 (netlab-clab-cleanup)=
