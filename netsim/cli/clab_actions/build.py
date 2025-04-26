@@ -37,13 +37,14 @@ def build_parser(parser: argparse.ArgumentParser) -> None:
 
 def get_dockerfiles() -> dict:
   d_path = _files.get_traversable_path('package:daemons')
-  d_list = _files.get_globbed_files(d_path,'*/Dockerfile')
+  d_list = _files.get_globbed_files(d_path,'*/Dockerfile*')
 
   df_dict: dict = {}
 
   for d_file in d_list:
     daemon = os.path.basename(os.path.dirname(d_file))
-    df_dict[daemon] = d_file
+    root, ext = os.path.splitext(d_file)
+    df_dict[daemon+ext] = d_file
 
   return df_dict
 
