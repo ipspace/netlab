@@ -307,20 +307,39 @@ def merge_global_module_params(topology: Box) -> None:
   reorder_node_modules(topology,'transform_after')
 
 '''
+merge_top_attributes: Complete the merging of module-defined modifications to global data structures,
+                      postponed from read_yaml such that only attributes defined by modules *in use* are
+                      applied and validated
+'''
+def merge_top_attributes(topology: Box) -> None:
+  data = topology.defaults
+  for m in topology.module:
+    if not '_top' in data.get(m,{}):                                   # Do we have to modify parent defaults outside of include scope?
+      continue
+    for k,v in data[m]._top.items():                                   # Iterate over top-level modifications
+      if not k in topology.defaults:                                   # New item, add it
+        topology.defaults[k] = v
+      elif isinstance(v,Box) and isinstance(topology.defaults[k],Box): # Otherwise, we can only merge boxes
+        topology.defaults[k] = topology.defaults[k] + v
+
+    topology.defaults[m].pop('_top',None)                              # And remove the out-of-scope modifications
+
+'''
 adjust_modules: somewhat intricate multi-step config module adjustments
 
 * Set node default modules based on global modules
 * Adjust global module list based on node modules + copy default settings into topology settings
 * Check whether the module parameters specified globally, or on node/link level, are valid
-* Merge global module parametres into nodes
+* Merge global module parameters into nodes
 '''
 def adjust_modules(topology: Box) -> None:
   augment_node_module(topology)
   adjust_global_modules(topology)
   if not 'module' in topology:
     return
-    
+
   log.exit_on_error()
+  merge_top_attributes(topology)
   module_transform("init",topology)
   merge_node_module_params(topology)
   merge_global_module_params(topology)
