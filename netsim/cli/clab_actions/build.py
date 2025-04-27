@@ -115,7 +115,7 @@ def list_dockerfiles() -> None:
     rows.append([daemon, f'netlab/{daemon}:latest', get_description(df_dict[daemon])])
 
   print("""
-The 'netlab build' command can be used to build the following container images
+The 'netlab clab build' command can be used to build the following container images
 """)
   strings.print_table(['daemon','default tag','description'],rows,inter_row_line=False)
 
