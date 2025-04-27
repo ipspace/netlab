@@ -55,6 +55,7 @@ protocol bgp bgp_{{ n.name }}_{{ af }} {
 {%     set local_ip = loopback[af]|default('') %}
   local {{ local_ip.split('/')[0] if n.type == 'ibgp' else '' }} as {{ n.local_as|default(bgp.as) }};
   neighbor {{ n[af] }} as {{ n['as'] }};
+  connect retry time 10;
 {% if n.local_if is defined %}
   interface "{{ n.local_if }}";
 {% endif %}
@@ -71,6 +72,12 @@ protocol bgp bgp_{{ n.name }}_{{ af }} {
   rr client;
 {%       if bgp.rr|default(False) and bgp.rr_cluster_id|default(False) %}
   rr cluster id {{ bgp.rr_cluster_id }};
+{%       endif %}
+{%     endif %}
+{%     if n.gtsm is defined %}
+  ttl security on;
+{%       if n.type=='ibgp' %}
+  multihop {{ n.gtsm }};
 {%       endif %}
 {%     endif %}
 {%     for _af in [ 'ipv4','ipv6' ] if _af==af or (_af=='ipv4' and n.ipv4_rfc8950|default(False)) %}
