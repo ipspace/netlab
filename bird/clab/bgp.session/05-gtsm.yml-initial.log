@@ -85,22 +85,28 @@ ok: [dut] =>
     #
     # Disable IPv4 and IPv6 forwarding
     #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    set +e
+    ip addr del 10.0.0.17/32 dev lo 2>/dev/null
+    set -e
+    ip addr add 10.0.0.17/32 dev lo
+    sysctl -w net.ipv6.conf.lo.disable_ipv6=1
+  
   
     #
     # Interface addressing, create any bond devices
     #
     ip link set dev eth1 up
     set +e
-    ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
+    ip addr del 10.1.0.1/30 dev eth1 2>/dev/null
     set -e
-    ip addr add 172.16.0.1/24 dev eth1
+    ip addr add 10.1.0.1/30 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
     set +e
-    ip -6 addr del 2001:db8:4::1/64 dev eth1 2>/dev/null
+    ip -6 addr del 2001:db8:3::1/64 dev eth1 2>/dev/null
     set -e
-    ip -6 addr add 2001:db8:4::1/64 dev eth1
+    ip -6 addr add 2001:db8:3::1/64 dev eth1
     ip link set dev eth1 mtu 1500
   
   
@@ -199,13 +205,13 @@ ok: [x1] =>
     !
     interface lo
      no shutdown
-     ip address 10.0.0.2/32
+     ip address 10.0.0.1/32
     !
     interface eth1
      no shutdown
      description x1 -> dut [external]
-     ip address 172.16.0.2/24
-     ipv6 address 2001:db8:4::2/64
+     ip address 10.1.0.2/30
+     ipv6 address 2001:db8:3::2/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -236,7 +242,7 @@ skipping: [dut]
 TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/bird-clab.j2 executed in netns] ***
 changed: [dut -> localhost]
 
-TASK [Remove temporary file /tmp/dut_initial-cp34c7ku.sh] **********************
+TASK [Remove temporary file /tmp/dut_initial-6rdvcizm.sh] **********************
 changed: [dut -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
@@ -267,81 +273,7 @@ ok: [dut]
 ok: [x1]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1 => (item=routing)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1 => (item=bgp)
-
-TASK [Figure out whether to deploy the module routing on current device] *******
-ok: [dut]
-ok: [x1]
-
-TASK [Find configuration template for routing] *********************************
-skipping: [x1]
-ok: [dut]
-
-TASK [fail] ********************************************************************
-skipping: [dut]
-skipping: [x1]
-
-TASK [Find configuration deployment deploy_script for routing] *****************
-skipping: [x1]
-ok: [dut]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [x1]
-ok: [dut] => 
-  msg: |-
-    routing configuration for dut
-    =========================================
-    #!/bin/bash
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.2.0.0/24 2>/dev/null; do
-      : ; done
-    #
-    #
-    #
-    echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.0.2 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.0.2 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.0.2 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.0.2 dev eth1 protocol static
-    #
-    # Print the final routing table
-    ip route
-
-TASK [Deploy routing configuration] ********************************************
-skipping: [x1]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for dut
-
-TASK [Define script filename and determine whether to execute in netns] ********
-ok: [dut]
-
-TASK [Create a temporary file for the rendered script] *************************
-changed: [dut -> localhost]
-
-TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
-changed: [dut -> localhost]
-
-TASK [Copy script into running container at /tmp/config-dut_routing.sh] ********
-skipping: [dut]
-
-TASK [Execute /tmp/config-dut_routing.sh to deploy routing config based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
-skipping: [dut]
-
-TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
-changed: [dut -> localhost]
-
-TASK [Remove temporary file /tmp/dut_routing-0uhj8z54.sh] **********************
-changed: [dut -> localhost]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [dut]
@@ -375,26 +307,26 @@ ok: [x1] =>
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
-      bgp router-id 10.0.0.2
+      bgp router-id 10.0.0.1
     !
-      neighbor 172.16.0.1 remote-as 65000
-      neighbor 172.16.0.1 description dut
+      neighbor 10.1.0.1 remote-as 65000
+      neighbor 10.1.0.1 description dut
     !
-      neighbor 2001:db8:4::1 remote-as 65000
-      neighbor 2001:db8:4::1 description dut
+      neighbor 2001:db8:3::1 remote-as 65000
+      neighbor 2001:db8:3::1 description dut
     !
      address-family ipv4 unicast
     !
   
     !
-      network 10.0.0.2/32
+      network 10.0.0.1/32
     !
     !
     !
-      neighbor 172.16.0.1 activate
-      no neighbor 172.16.0.1 send-community all
-      neighbor 172.16.0.1 send-community standard
-      neighbor 172.16.0.1 send-community large
+      neighbor 10.1.0.1 activate
+      no neighbor 10.1.0.1 send-community all
+      neighbor 10.1.0.1 send-community standard
+      neighbor 10.1.0.1 send-community large
     !
      address-family ipv6 unicast
     !
@@ -402,10 +334,10 @@ ok: [x1] =>
     !
     !
     !
-      neighbor 2001:db8:4::1 activate
-      no neighbor 2001:db8:4::1 send-community all
-      neighbor 2001:db8:4::1 send-community standard
-      neighbor 2001:db8:4::1 send-community large
+      neighbor 2001:db8:3::1 activate
+      no neighbor 2001:db8:3::1 send-community all
+      neighbor 2001:db8:3::1 send-community standard
+      neighbor 2001:db8:3::1 send-community large
     !
     !
     !
@@ -468,9 +400,9 @@ TASK [run vtysh to import bgp.session config from /home/pipi/netlab_gh/netsim/ex
 skipping: [x1]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=31   changed=8    unreachable=0    failed=0    skipped=16   rescued=0    ignored=0   
-x1                         : ok=37   changed=7    unreachable=0    failed=0    skipped=18   rescued=0    ignored=0   
+dut                        : ok=20   changed=4    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
+x1                         : ok=35   changed=7    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
 
 
 
-This lab tests the BGP MD5 password functionality. The EBGP session between the probe and the lab device should be established.
+This lab tests the BGP GTSM functionality. The EBGP session between the probe and the lab device should be established.
