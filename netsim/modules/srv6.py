@@ -12,7 +12,7 @@ class SRV6(_Module):
   def node_post_transform(self, node: Box, topology: Box) -> None:
 
       # Could model this as another addressing pool too
-      locator = f'{topology.defaults.srv6.locator}:{node.id:x}::/64'
+      locator = f'{topology.defaults.srv6.locator}:{node.id:x}::/48'
       locator_net = ipaddress.IPv6Network(locator)
 
       if 'ipv6' not in node.loopback:

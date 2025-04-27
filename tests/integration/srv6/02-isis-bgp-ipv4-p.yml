@@ -1,0 +1,83 @@
+---
+message: |
+  The tested device (DUT) is a P-router running IS-IS and SRv6 to interconnect 2 IPv4-only networks.
+  The validation test checks end-to-end IPv4 connectivity across a BGP-free SRv6 core.
+  See https://www.ietf.org/archive/id/draft-mishra-idr-v4-islands-v6-core-4pe-06.html
+
+bgp.advertise_loopback: false
+
+isis.af:
+  ipv6: True
+
+addressing:
+  p2p:
+    ipv4: False       # Use ipv6-only transport
+    ipv6: 2001:1::/48 # SRv6 requires ipv6 addresses on interfaces
+
+  loopback:
+    ipv4: False       # No need for ipv4 loopbacks
+    ipv6: 2001::/48   # SRv6 requires ipv6 loopback addresses
+
+srv6:
+  locator: 2001:db8:aaaa
+  bgp: True
+  isis: True                  # Needed to resolve next hops
+  address_families: [ ipv4 ]
+
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h1, h2 ]
+    device: linux
+    provider: clab
+  pe:
+    members: [ pe1, pe2 ]
+    module: [ isis, bgp, srv6 ]
+    bgp:
+      as: 65001
+      activate:
+        ipv4: [ ibgp ]
+        ipv6: [ ibgp ]
+      sessions:
+        ipv4: []
+        ipv6: [ ibgp ]
+  p:
+    members: [ dut, p2 ]
+    module: [ isis, srv6 ]
+  x_switches:
+    members: [ pe1, pe2, p2 ]
+    device: frr
+    provider: clab
+
+links:
+- h1:
+  pe1:
+  isis: false
+- pe1-dut
+- dut-p2
+- p2-pe2
+- pe2:
+  h2:
+  isis: false
+
+validate:
+  isis:
+    description: Check ISIS sessions with DUT (wait up to 30 seconds)
+    wait: 30
+    wait_msg: Waiting for ISIS adjacency
+    nodes: [ pe1, p2 ]
+    plugin: isis_neighbor('dut',level='L2',area='49.0001')
+    stop_on_error: true
+  ibgp:
+    description: Check IBGP session
+    wait: 60
+    wait_msg: Waiting for IBGP sessions to start
+    nodes: [ pe2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'pe1',af='ipv6')
+    stop_on_error: true
+  ping:
+    description: Ping-based end-to-end reachability test
+    wait_msg: We might have to wait a bit longer
+    wait: 10
+    nodes: [ h1 ]
+    plugin: ping('h2')
