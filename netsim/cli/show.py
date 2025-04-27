@@ -12,7 +12,7 @@ from box import Box
 from .. import data
 from ..augment import main,config
 from ..utils import log,read as _read
-from .usage import print_usage
+from .help import print_usage
 
 from .show_commands import show_common_parser
 from .show_commands import devices as _devices

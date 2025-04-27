@@ -13,7 +13,7 @@ import typing
 
 from box import Box
 
-from . import usage
+from . import help
 from .. import augment
 from .. import __version__
 from ..utils import log, strings, status as _status, read as _read, stats
@@ -406,7 +406,7 @@ def error_and_exit(errmsg: str,**kwargs: typing.Any) -> typing.NoReturn:
 #
 
 quick_commands = {
-  'alias': lambda x: usage.print_usage('alias.txt')
+  'alias': lambda x: help.print_usage('alias.txt')
 }
 
 def lab_commands(script: str) -> None:
@@ -414,7 +414,7 @@ def lab_commands(script: str) -> None:
   NETLAB_SCRIPT = script
 
   if len(sys.argv) < 2:
-    usage.run([])
+    help.run([])
     sys.exit()
 
   arg_start = 2
@@ -422,7 +422,7 @@ def lab_commands(script: str) -> None:
   cmd = sys.argv[1]
 
   if cmd in ['-h','--help']:
-    cmd = 'usage'
+    cmd = 'help'
 
   if cmd == 'debug':
     arg_start = 3
@@ -435,7 +435,7 @@ def lab_commands(script: str) -> None:
   NETLAB_COMMAND = cmd
   mod_path = os.path.dirname(__file__) + f"/{cmd}.py"
   if not os.path.isfile(mod_path):
-    print("Unknown netlab command '%s'\nUse 'netlab usage' to get the list of valid commands" % cmd)
+    print("Unknown netlab command '%s'\nUse 'netlab help' to get the list of valid commands" % cmd)
     sys.exit(1)
 
   try:
