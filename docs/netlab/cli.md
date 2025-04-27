@@ -31,6 +31,7 @@ The **netlab** command is the *netlab* CLI interface. It includes data model tra
 * **[netlab graph](graph.md)** creates a graph description of physical or BGP topology in Graphviz or D2 format
 * **[netlab inspect](inspect.md)** helps you inspect data structures in transformed lab topology
 * **[netlab show](show)** displays system- or user default settings
+* **‌[netlab usage](usage)** displays usage statistics
 
 ## Device Configuration Commands
 
@@ -73,5 +74,6 @@ The **netlab** command is the *netlab* CLI interface. It includes data model tra
    netlab status <status.md>
    netlab test <test.md>
    netlab up <up.md>
+   netlab usage <usage.md>
    netlab validate <validate.md>
 ```

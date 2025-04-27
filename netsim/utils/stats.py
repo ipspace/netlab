@@ -84,7 +84,15 @@ def lock_and_read_stats() -> typing.Optional[Box]:
 '''
 write_stats: recreate the stats file from in-memory data and unlock it
 '''
-def write_stats(stats: Box) -> None:
+def write_stats(stats: Box, force: bool = False) -> None:
+  if stats.get('_disabled',True) and not force:
+    return
+
+  ts = int(time.clock_gettime(time.CLOCK_REALTIME))
+  if '_created' not in stats:
+    stats._created = ts
+
+  stats._updated = ts
   stat_name = get_filename()
   if lock_stats(stat_name):
     stats.to_json(filename=stat_name)
@@ -171,6 +179,15 @@ def update_topo_stats(topology: Box) -> None:
   update_max_vals(stats,max_vals)                                   # Move max values to statistics
   write_stats(stats)                                                # ... and update statistics
 
+def stats_update_error(ex: Exception,item: str = '') -> None:
+  if item:
+    item = ' ' + item
+
+  log.warning(
+    text=f'Cannot update usage statistics{item}',
+    more_hints=str(ex),
+    module='stats')
+
 '''
 A wrapper around a bunch of other functions that increments a single counter.
 Used for simple stuff like counting commands
@@ -184,7 +201,17 @@ def stats_counter_update(cnt: str, val: int = 1) -> None:
     add_counter(stats,cnt,val)
     write_stats(stats)
   except Exception as ex:
-    log.warning(
-      text=f'Cannot update usage stats {cnt}',
-      more_info=str(ex),
-      module='stats')
+    stats_update_error(ex,f'counter {cnt}')
+
+'''
+Change any data in usage statistics
+'''
+def stats_change_data(data: typing.Union[Box,dict]) -> None:
+  try:
+    stats = lock_and_read_stats()
+    if stats is None:
+      return
+
+    write_stats(stats+data,force=True)
+  except Exception as ex:
+    stats_update_error(ex)
