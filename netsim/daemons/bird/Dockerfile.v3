@@ -1,0 +1,19 @@
+FROM ubuntu:24.04
+ENV DEBIAN_FRONTEND=noninteractive
+
+LABEL maintainer="Netlab project <netlab.tools>"
+LABEL description="BIRD Internet Routing Daemon (bird.network.cz) v3"
+
+RUN mkdir /etc/bird && mkdir /run/bird && apt-get update && \
+    apt-get install -y iputils-ping net-tools iproute2 apt-transport-https ca-certificates wget
+
+RUN wget -O /usr/share/keyrings/cznic-labs-pkg.gpg https://pkg.labs.nic.cz/gpg
+
+RUN echo "deb [signed-by=/usr/share/keyrings/cznic-labs-pkg.gpg] https://pkg.labs.nic.cz/bird3 trixie main" \
+    | tee /etc/apt/sources.list.d/cznic-labs-bird3.list
+
+RUN apt-get update && apt-get install -y bird3
+
+WORKDIR /root
+
+CMD [ "bird", "-c", "/etc/bird/bird.conf", "-d" ]

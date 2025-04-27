@@ -17,7 +17,7 @@ The **netlab clab tarball** command:
 
 You can use this command only after starting a *containerlab*-only lab topology with devices that support the `startup-config` containerlab parameter.
 
-You can use the tar archive created by **netlab clab tarball** to recreate the lab in a *containerlab* environment without installing *netlab*.
+You can use the tar archive created by the **netlab clab tarball** to recreate the lab in a *containerlab* environment without installing *netlab*.
 
 ```
 $ netlab clab tarball -h
@@ -66,22 +66,33 @@ To list the available *Dockerfiles*, use the **netlab clab build --list** comman
 ```
 $ netlab clab build -l
 
-The 'netlab build' command can be used to build the following container images
+The 'netlab clab build' command can be used to build the following container images
 
-┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ daemon  ┃ default tag           ┃ description                                    ┃
-┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ bird    │ netlab/bird:latest    │ BIRD Internet Routing Daemon (bird.network.cz) │
-│ dnsmasq │ netlab/dnsmasq:latest │ dnsmasq DHCP server                            │
-└─────────┴───────────────────────┴────────────────────────────────────────────────┘
+┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ daemon  ┃ default tag           ┃ description                                       ┃
+┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ bird    │ netlab/bird:latest    │ BIRD Internet Routing Daemon (bird.network.cz)    │
+│ bird.v3 │ netlab/bird.v3:latest │ BIRD Internet Routing Daemon (bird.network.cz) v3 │
+│ dnsmasq │ netlab/dnsmasq:latest │ dnsmasq DHCP server                               │
+└─────────┴───────────────────────┴───────────────────────────────────────────────────┘
 ```
+
+For some daemons, you can build containers using different versions of that daemon. To use a non-default version of the daemon, you can:
+
+* Specify the default container tag with the `--tag` parameter, for example:
+
+```
+$ netlab clab build bird.v3 --tag netlab/bird:latest
+```
+
+* Change the container image with the **image** node parameter or the **defaults.daemons._daemon_.clab.image** [default setting](topo-defaults).
 
 (netlab-clab-cleanup)=
 ## Docker Cleanup
 
-Containerlab might refuse to bring down a lab when it encounters containers in an unexpected state, preventing **netlab down** to bring down a container-based lab. Alternatively, forcing a lab shutdown with **netlab down --force** might result in dangling containers or Docker networks.
+Containerlab might refuse to bring down a lab when it encounters containers in an unexpected state, preventing **netlab down** from bringing down a container-based lab. Alternatively, forcing a lab shutdown with **netlab down --force** might result in dangling containers or Docker networks.
 
-The easiest way to recover from these situations is to manually clean up the Docker containers and related objects. The **netlab clab cleanup** provides a convenient wrapper around the **docker kill** and **docker system prune** command.
+The easiest way to recover from these situations is to clean up the Docker containers and related objects manually. The **netlab clab cleanup** provides a convenient wrapper around the **docker kill** and **docker system prune** commands.
 
 ```text
 $ netlab clab cleanup -h
