@@ -212,13 +212,20 @@ def set_evpn_transport(topology: Box) -> str:
 Called when mpls transport is used; checks if user provided any global vlans with vni attribute set
 """
 def check_no_vnis_for_mpls(topology:Box) -> None:
-  for vname,vdata in topology.get('vlans',{}).items():
+
+  def check_vlan(vname: str, vdata:Box) -> None:
     if 'vni' in vdata:
       log.error(
         f'VLAN VNIs cannot be used with mpls transport',
         log.IncorrectAttr,
         'evpn',
-        more_data=f"VLAN {vname} VNI {vdata.vni}")
+        more_data=f"{vname} VNI {vdata.vni}")
+
+  for vname,vdata in topology.get('vlans',{}).items():
+    check_vlan(f"Global VLAN {vname}",vdata)
+  for node,ndata in topology.get('nodes',{}).items():
+    for vname,vdata in ndata.get('vlans',{}).items():
+      check_vlan(f"Node {node} VLAN {vname}",vdata)
 
 """
 Set transit VNI values for symmetrical IRB VRFs (REFACTOR to use _dataplane)
