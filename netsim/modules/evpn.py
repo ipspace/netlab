@@ -7,6 +7,8 @@ from .. import data
 from ..data.validate import must_be_int,must_be_dict,must_be_string
 from ..augment import devices
 
+VALID_TRANSPORTS = [ 'vxlan', 'mpls' ] # In order of preference
+
 """
 validate_evpn_list
 
@@ -183,6 +185,42 @@ def register_static_transit_vni(topology: Box) -> None:
       vni_set.add(transit_vni)
 
 """
+Check evpn.transport from user, and set based on active module(s) if not provided
+"""
+def set_evpn_transport(topology: Box) -> str:
+  user_setting = must_be_string(
+      parent=topology,
+      key='evpn.transport',
+      path='topology',
+      valid_values=VALID_TRANSPORTS,
+      module='evpn')
+  if user_setting:
+    return user_setting
+
+  for t in VALID_TRANSPORTS:            # Pick first one listed that's active
+    if t in topology.get('module',[]):
+      topology.evpn.transport = t
+      return t
+  log.error(
+    f'No supported EVPN transport module(s) active, unable to determine evpn.transport',
+    Warning,
+    'evpn',
+    more_data=f'Available transport modules: {",".join(VALID_TRANSPORTS)}')
+  return ""
+
+"""
+Called when mpls transport is used; checks if user provided any global vlans with vni attribute set
+"""
+def check_no_vnis_for_mpls(topology:Box) -> None:
+  for vname,vdata in topology.get('vlans',{}).items():
+    if 'vni' in vdata:
+      log.error(
+        f'VLAN VNIs cannot be used with mpls transport',
+        log.IncorrectAttr,
+        'evpn',
+        more_data=f"VLAN {vname} VNI {vdata.vni}")
+
+"""
 Set transit VNI values for symmetrical IRB VRFs (REFACTOR to use _dataplane)
 """
 def get_next_vni(start_vni: int, used_vni_list: typing.List[int]) -> int:
@@ -198,7 +236,8 @@ def vrf_transit_vni(topology: Box) -> None:
   vni_list: typing.List[int] = []                               # List of static transit VNIs
   vni_error = False                                             # "A horrible error" flag that causes abort after the first loop
   vni_count = 0                                                 # Number of VRFs with evpn.transit_vni
-  evpn_transport = topology.get('evpn.transport','vxlan')       # Default to VXLAN transport
+  evpn_transport = topology.get('evpn.transport',
+                                VALID_TRANSPORTS[0])            # Default to first valid transport listed, may not be active
 
   for vrf_name,vrf_data in topology.vrfs.items():               # First pass: build a list of statically configured VNIs
     vni = vrf_data.get('evpn.transit_vni',None)                 # transit_vni makes no sense with MPLS transport
@@ -342,7 +381,7 @@ Check whether VXLAN IRB mode is supported by the device
 """
 def check_node_vrf_irb(node: Box, topology: Box) -> None:
   features = devices.get_device_features(node,topology.defaults)
-  evpn_transport = node.get('evpn.transport','vxlan')
+  evpn_transport = node.get('evpn.transport',VALID_TRANSPORTS[0])
 
   for vrf_name,vrf_data in node.get('vrfs',{}).items():
     if not vrf_data.get('af',None):                             # Cannot do IRB without L3 addresses ;)
@@ -412,12 +451,8 @@ class EVPN(_Module):
 
   def module_pre_transform(self, topology: Box) -> None:
     register_static_transit_vni(topology)
-    must_be_string(
-      parent=topology,
-      key='evpn.transport',
-      path='topology',
-      valid_values=['vxlan','mpls'],
-      module='evpn')
+    if set_evpn_transport(topology)=='mpls':
+      check_no_vnis_for_mpls(topology)
 
   def node_pre_transform(self, node: Box, topology: Box) -> None:
     validate_no_node_vrf_attributes(node,topology)

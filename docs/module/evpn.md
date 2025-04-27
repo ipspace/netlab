@@ -108,6 +108,7 @@ Most EVPN/VXLAN implementations support only IPv4 VXLAN transport; some can run 
 
 EVPN module supports these default/global/node parameters:
 
+* **evpn.transport** (global): Transport to use, `vxlan` (default) or `mpls`. Guessed based on modules in use if not set
 * **evpn.vrfs** (global or node parameter): A list of EVPN-enabled VRFs. The default value with VXLAN transport: all global VRFs with **evpn.transit_vni** parameter. There is no default value with MPLS transport.
 * **evpn.vlans** (global or node parameter): A list of EVPN-enabled VLANs. The default value with VXLAN transport: all global VLANs with **vni** parameter. There is no default value with MPLS transport.
 * **evpn.session** (global or node parameter): A list of BGP session types on which the EVPN address family is enabled (default: `ibgp`)
