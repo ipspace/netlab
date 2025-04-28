@@ -447,8 +447,6 @@ def build_bgp_sessions(node: Box, topology: Box) -> None:
   activate = node.bgp.get('activate') or data.get_box(BGP_DEFAULT_SESSIONS)
   if not validate_bgp_sessions(node,activate,'activate'):
     return
-  if 'ibgp' in activate and 'localas_ibgp' not in activate:                     # Make 'ibgp' imply 'localas_ibgp'
-    activate.append('localas_ibgp')
 
   activate_bgp_default_af(node,activate,topology)
 
