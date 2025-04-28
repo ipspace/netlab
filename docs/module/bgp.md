@@ -176,8 +176,17 @@ Finally, the BGP configuration module supports these advanced node parameters th
 
 * **bgp.rr_cluster_id** -- set static route reflector cluster-ID. The default value is the lowest router ID of all route reflectors within the autonomous system.
 * **bgp.replace_global_as** (default: True) -- the default implementation of **neighbor local-as** command replaces the real autonomous system (**bgp.as**) with the *local* autonomous system. Set this parameter to *false* to turn off that functionality and include both autonomous systems in the AS path[^RAS_P].
-* **bgp.sessions** (node or global parameter) -- specifies which transport sessions (IPv4, IPv6) should be created for each BGP session type (IBGP, EBGP, or IBGP created through *local-as*)[^SESS_DM]. See *[bgp-sessions](https://github.com/ipspace/netlab/blob/dev/tests/topology/input/bgp-sessions.yml)* test case for an example.
-* **bgp.activate** (node or global parameter) -- specifies which default address families (IPv4 AF on IPv4 session, IPv6 on IPv6 session) should be created for each BGP session type (IBGP, EBGP, or IBGP created through *local-as*)[^ACT_CFG]. See *[EVPN IBGP-over-EBGP](https://github.com/ipspace/netlab/blob/dev/tests/integration/evpn/12-vxlan-ibgp-ebgp.yml)* test case for an example.
+* **bgp.sessions** (node or global parameter) -- specifies which transport sessions (IPv4, IPv6) should be created for each BGP session type[^SESS_DM] (default: create all transport sessions). This parameter is a dictionary of address families (**ipv4** and **ipv6**) with values being a list of desired session types (**ibgp**, **ebgp**, **localas_ibgp**). See *[bgp-sessions](https://github.com/ipspace/netlab/blob/dev/tests/topology/input/bgp-sessions.yml)* test case for an example.
+* **bgp.activate** (node or global parameter) -- specifies which default address families (IPv4 AF on IPv4 session, IPv6 on IPv6 session) should be activated for each BGP session type[^ACT_CFG] (default: activate default address families on all BGP sessions). The format of this parameter is identical to the **bgp.sessions** parameter. See *[EVPN IBGP-over-EBGP](https://github.com/ipspace/netlab/blob/dev/tests/integration/evpn/12-vxlan-ibgp-ebgp.yml)* test case for an example.
+
+```{warning}
+* The **‌bgp.sessions** parameter controls which IPv4 and IPv6 BGP neighbors are created.
+* The **‌bgp.activate** parameter controls whether the IPv4 AF is actived with IPv4 neighbors (and likewise for IPv6).
+* You might need **‌bgp.sessions** parameter in scenarios where you're transporting global IPv4 or IPv6 over an overlay network, for example 6PE or IPv4-over-SRv6 (requires custom configuration template).
+* The only somewhat reasonable use case for the **‌bgp.activate** parameter is the "EVPN IBGP over IPv4 EBGP" design peddled by vendors who can't fix their EVPN code to work within an EBGP-only environment. If you feel you have to use it in some other scenario, you probably should think twice ;)
+* IBGP neighbors faked with **‌local-as** functionality are a special neighbor type (**‌localas_ibgp**) and have to be explicitely specified in the **‌bgp.sessions** or **‌bgp.activate** parameters.
+* Activation of other BGP address families (EVPN, VPNv4, VPNv6...) is controlled with parameters from the corresponding modules.
+```
 
 [^SESS_DM]: This parameter influences the data structures built during the data transformation phase and is thus available on all platforms supporting the BGP configuration module.
 
