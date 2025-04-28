@@ -56,3 +56,9 @@ If you encounter bugs using release 1.7.x, please downgrade to [1.6.4](https://g
 
 **netlab show**
 : Display system settings in tabular, text, or YAML format. [More details](https://netlab.tools/netlab/show/)
+
+**netlab defaults**
+: Display and manage system defaults. [More details](https://netlab.tools/netlab/defaults/)
+
+**netlab usage**
+: Display and manage usage statistics. [More details](https://netlab.tools/netlab/usage/)
