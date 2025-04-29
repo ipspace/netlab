@@ -66,10 +66,10 @@ def multiprotocol_bfd_link_state(node: Box,proto: str) -> None:
       node[proto].bfd = {}
 
   for l in node.interfaces:
-    if proto in l and l[proto] is False:   # Skip interfaces that have disabled routing protocol
+    if proto not in l:                     # IGP active on the interface?
+      continue                             # ... nope skip it.
+    if l[proto] is False:                  # Skip interfaces that have disabled routing protocol
       continue
-    if not proto in l:                     # No protocol-specific link parameters?
-      l[proto] = {}                        # ... start with an empty dictionary
 
     if not 'bfd' in l[proto]:              # No BFD protocol-specific parameters?
       l[proto].bfd = node[proto].bfd       # ... copy from node value and move on

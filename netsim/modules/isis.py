@@ -50,7 +50,6 @@ class ISIS(_Module):
     if 'sr' in node.module:
       _routing.router_id(node,'isis',topology.pools)
 
-    bfd.multiprotocol_bfd_link_state(node,'isis')
     for l in node.get('interfaces',[]):
       if _routing.external(l,'isis') or not (l.get('ipv4',False) or l.get('ipv6',False)):
         l.pop('isis',None) # Don't run IS-IS on external interfaces, or l2-only
@@ -63,6 +62,7 @@ class ISIS(_Module):
         l,'isis.type',f'nodes.{node.name}.interfaces.{l.ifname}',module='isis',valid_values=isis_type)
 
     _routing.igp_post_transform(node,topology,proto='isis',vrf_aware=True)
+    bfd.multiprotocol_bfd_link_state(node,'isis')
     _routing.check_vrf_protocol_support(node,'isis','ipv4','isis',topology)
     _routing.check_vrf_protocol_support(node,'isis','ipv6','isis',topology)
 
