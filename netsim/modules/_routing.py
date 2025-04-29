@@ -69,6 +69,29 @@ def routing_af(node: Box, proto: str, features: typing.Optional[Box] = None) -> 
         log.IncorrectValue,
         proto)
 
+# After parsing/building the IGP AF structure an offloading VRF interfaces into VRF data
+# structure, recheck the interface status. If there's no match between interface AF and IGP AF,
+# remove IGP from the interface
+
+def check_interface_af(node: Box, proto: str) -> None:
+  for vrf_proto in routing_protocol_data(node,proto):
+    interfaces = vrf_proto.get('interfaces',node.interfaces)                # Get VRF IGP interfaces or global intf
+    if 'af' not in vrf_proto:                                               # Is this IGP instance limited by AFs?
+      continue
+    AF_mismatch = False
+    for intf in interfaces:
+      if proto not in intf:                                                 # IGP not active on this interface
+        continue
+      if any((intf.get(af,False) or intf.get(f'dhcp.client.{af}',False))
+              and vrf_proto.af.get(af,False)
+                for af in log.AF_LIST):                                     # Do we have at least one matching AF?
+        continue
+      intf.pop(proto,None)                                                  # No, remove IGP from the interface
+      AF_mismatch = True                                                    # And remember we did that
+
+    if AF_mismatch and 'interfaces' in vrf_proto:                           # Do we have to rebuild VRF intf list?
+      vrf_proto.interfaces = [ intf for intf in vrf_proto.interfaces if proto in intf ]
+
 # Set network type for an interface:
 #
 # * If the network type is specified, validate it against a list of allowed network types
@@ -339,7 +362,7 @@ def remove_unused_igp(node: Box, proto: str, remove_module: bool = True) -> bool
     return False                                                            # ... OK, we're good
 
   for vdata in node.get('vrfs',{}).values():                                # Is protocol active in at least one VRF?
-    if proto in vdata:
+    if proto in vdata and vdata[proto].interfaces:                          # ... and at least on one interface?
       return False                                                          # ... OK, we're good
 
   if not remove_module:                                                     # Did the caller ask us to keep the module
@@ -790,6 +813,7 @@ def igp_post_transform(
   if propagate is not None:
     propagate(node,topology)
   
+  check_interface_af(node,proto)
   if remove_unused_igp(node,proto):
     return
 
