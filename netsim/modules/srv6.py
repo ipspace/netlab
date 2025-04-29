@@ -12,13 +12,16 @@ Checks for iBGP neighbors that require the IPv4 address family but do not have a
 """
 def ibgp_enable_rfc8950(node: Box) -> None:
    for nb in node.get('bgp.neighbors',[]):
-      if nb.type == 'ebgp':                               # Skip eBGP neihgbors
+      if nb.type == 'ebgp':                          # Skip eBGP neihgbors
          continue
-      if not nb.get('ipv4') and nb.activate.get('ipv4'):  # Check if neighbor has no ipv4 address but IPv4 AF enabled
-         nb.ipv4_rfc8950 = True
+      if not nb.get('ipv4'):
+         if nb.activate.get('ipv4'):                 # Check if neighbor has no ipv4 address but IPv4 AF enabled
+           nb.ipv4_rfc8950 = True
+         for af in log.AF_LIST:
+           if af in node.mpls.vpn:
+             nb['vpn'+af.replace('ip','')] = nb.ipv6 # Netlab only supports ipv4
 
 def configure_bgp_for_srv6(node: Box) -> None:
-   
    ibgp_enable_rfc8950(node)
 
 class SRV6(_Module):
@@ -40,7 +43,8 @@ class SRV6(_Module):
           category=log.IncorrectValue,
           module='srv6')
 
-      node.srv6.locator = locator
+      if node.get('srv6.locator')==topology.defaults.srv6.locator: # Allow user to specify one per node
+        node.srv6.locator = locator
 
       if 'bgp' in node and node.srv6.get('bgp'):
          configure_bgp_for_srv6(node)
