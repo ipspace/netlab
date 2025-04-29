@@ -1,21 +1,32 @@
-# SRv6 default settings and attributes
+# SRv6 over IS-IS (optionally using L3VPN v4/v6) default settings and attributes
+#
+# Modeled similar to the MPLS module
 #
 requires: [ isis ]
-transform_after: [ vlan ]
-locator: 2001:db8:aaaa # 2001:db8::/32 see RFC 6890 – Documentation Set
-address_families: [ ipv4, ipv6 ]
-# protocols: [ isis ] # Could model like this too
-bgp: False
-isis: True
+config_after: [ vlan, isis, bgp ]
+transform_after: [ vlan, bgp, vrf ]
+locator: 2001:db8                    # 2001:db8::/48 see RFC 6890 – Documentation Set
+
 attributes:
   global:
+    af:
+      _list_to_dict: True
+      _alt_types: [ NoneType ]
+      ipv4: bool
+      ipv6: bool
     locator: str
     address_families: { type: list, true_value: [ ipv4, ipv6 ] }
-    bgp: bool
-    isis: bool
+    vpn: # BGP VPN v4/v6
+      _alt_types: [ bool, BoxList ]
+      ipv4: { type: list, true_value: [ ibgp ] }
+      ipv6: { type: list, true_value: [ ibgp ] }
+
   node:
-    locator: str
+    af:
+    locator:
     address_families:
-    bgp: bool
-    isis: bool
+    vpn:
     transit_only: bool
+
+features:
+  vpn: Supports BGP L3VPN v4/v6 over SRv6
