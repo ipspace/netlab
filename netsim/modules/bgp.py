@@ -203,6 +203,12 @@ def build_ibgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
       more_hints=[ f'Add a supported IGP {igp_text} to the list of modules' ])
 
 """
+get_interface_as -- given an interface and a node, find the real AS that would be used in an EBGP session
+"""
+def get_interface_as(node: Box, intf: Box) -> typing.Optional[typing.Union[int,str]]:
+  return intf.get('bgp.local_as',None) or node.get('bgp.local_as',None) or node.get('bgp.as',None)
+
+"""
 build_ebgp_sessions: create EBGP session data structure
 
 * EBGP sessions are established whenever two nodes on the same link have different AS
@@ -218,12 +224,12 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
       l.pop('bgp',None)                                               # Cleanup the flag
       continue                                                        # ... and skip interfaces with 'bgp: False'
 
-    node_as =  node.bgp.get("as")                                     # Get our real AS number and the AS number of the peering session
-    node_local_as = l.get('bgp.local_as',None) or node.get('bgp.local_as',None) or node_as
-
-    af_list = [ af for af in ('ipv4','ipv6') if af in l ]             # Get interface address families
+    af_list = [ af for af in log.AF_LIST if af in l ]                 # Get interface address families
     if not af_list:                                                   # This interface has no usable address
       continue
+
+    node_as =  node.bgp.get("as")                                     # Get our real AS number and the AS number of the peering session
+    node_local_as = get_interface_as(node,l)
 
     intf_vrf = l.get('vrf',None)
     if node_as != node_local_as:
@@ -653,9 +659,9 @@ def ebgp_role_link(link: Box, topology: Box, EBGP_ROLE: str) -> None:
   for ifdata in link.get('interfaces',[]):                  # Collect BGP AS numbers from nodes
     collect_bgp_attr(attr_set,ifdata,ifdata.node)
     ndata = topology.nodes[ifdata.node]                     # ... connected to the link
-    node_as = ndata.get('bgp.as',None)
-    if node_as:
-      as_set[node_as] = True                                # ... and store them in a dictionary
+    intf_as = get_interface_as(ndata,ifdata)
+    if intf_as:
+      as_set[intf_as] = True                                # ... and store them in a dictionary
 
   if len(as_set) > 1:                                       # If we have more than two AS numbers per link
     if not link.get("role",None):                           # ... we set the link role unless it's already set
@@ -678,10 +684,10 @@ def vlan_ebgp_role_collect(link: Box, topology: Box) -> None:
     ndata = topology.nodes[ifdata.node]
     n_vdata = ndata.get(f'vlans.{vlan_name}',{})            # Get node VLAN data (if any)
     collect_bgp_attr(vdata._bgp_attr,n_vdata,ifdata.node)   # ... and scan it for BGP attributes
-    node_as = ndata.get('bgp.as',None)                      # Get node AS number and store it in VLAN _as_set list
-    if not node_as:
+    intf_as = get_interface_as(ndata,ifdata)                # Get node AS number and store it in VLAN _as_set list
+    if not intf_as:
       continue
-    data.append_to_list(topology.vlans[vlan_name],'_as_set',node_as)
+    data.append_to_list(topology.vlans[vlan_name],'_as_set',intf_as)
 
 """
 vlan_ebgp_role_set -- set EBGP role on VLANs based on collected information
