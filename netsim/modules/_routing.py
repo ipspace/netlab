@@ -69,7 +69,7 @@ def routing_af(node: Box, proto: str, features: typing.Optional[Box] = None) -> 
         log.IncorrectValue,
         proto)
 
-# After parsing/building the IGP AF structure an offloading VRF interfaces into VRF data
+# After parsing/building the IGP AF structure and offloading VRF interfaces into VRF data
 # structure, recheck the interface status. If there's no match between interface AF and IGP AF,
 # remove IGP from the interface
 
@@ -362,7 +362,7 @@ def remove_unused_igp(node: Box, proto: str, remove_module: bool = True) -> bool
     return False                                                            # ... OK, we're good
 
   for vdata in node.get('vrfs',{}).values():                                # Is protocol active in at least one VRF?
-    if proto in vdata and vdata[proto].interfaces:                          # ... and at least on one interface?
+    if proto in vdata and vdata[proto].get('interfaces',[]):                # ... and at least on one interface?
       return False                                                          # ... OK, we're good
 
   if not remove_module:                                                     # Did the caller ask us to keep the module
