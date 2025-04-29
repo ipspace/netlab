@@ -236,7 +236,7 @@ The following interface addresses are supported on various platforms:
 | Operating system      | IPv4<br />addresses | IPv6<br />addresses | Unnumbered<br />IPv4 interfaces |
 | --------------------- | :-: | :-: | :-: |
 | Arista EOS            | ✅  | ✅  | ✅  |
-| Aruba AOS-CX          | ✅  | ✅  |  ❌  |
+| Aruba AOS-CX          | ✅  | ✅  |  ✅  |
 | Cisco ASAv            | ✅  | ✅  |  ❌  |
 | Cisco IOSv/IOSvL2     | ✅  | ✅  |  ❌  |
 | Cisco IOS XE[^18v]    | ✅  | ✅  | ✅  |
