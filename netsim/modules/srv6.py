@@ -7,6 +7,20 @@ from . import _Module
 from ..utils import log
 import ipaddress
 
+"""
+Checks for iBGP neighbors that require the IPv4 address family but do not have an IPv4 transport
+"""
+def ibgp_enable_rfc8950(node: Box) -> None:
+   for nb in node.get('bgp.neighbors',[]):
+      if nb.type == 'ebgp':                               # Skip eBGP neihgbors
+         continue
+      if not nb.get('ipv4') and nb.activate.get('ipv4'):  # Check if neighbor has no ipv4 address but IPv4 AF enabled
+         nb.ipv4_rfc8950 = True
+
+def configure_bgp_for_srv6(node: Box) -> None:
+   
+   ibgp_enable_rfc8950(node)
+
 class SRV6(_Module):
 
   def node_post_transform(self, node: Box, topology: Box) -> None:
@@ -27,3 +41,6 @@ class SRV6(_Module):
           module='srv6')
 
       node.srv6.locator = locator
+
+      if 'bgp' in node and node.srv6.get('bgp'):
+         configure_bgp_for_srv6(node)

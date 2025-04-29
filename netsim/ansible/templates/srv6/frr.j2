@@ -26,7 +26,7 @@ segment-routing
    source-address {{ loopback.ipv6|ipaddr('address') }}
   locators
    locator {{ inventory_hostname }}
-    prefix {{ srv6.locator }} block-len 32 node-len 16 func-bits 16
+    prefix {{ srv6.locator }}
     behavior usid
     format usid-f3216
    exit
@@ -37,6 +37,7 @@ segment-routing
 
 {% if srv6.isis|default(False) %}
 router isis {{ isis.instance }}
+ no topology ipv6-unicast
  metric-style wide
  segment-routing srv6
    locator {{ inventory_hostname }}
@@ -52,6 +53,14 @@ router bgp {{ bgp.as }}
   locator {{ inventory_hostname }}
  exit
  !
+
+{%   for vname,vdata in vrfs.items() %}
+router bgp {{ vdata.as|default(bgp.as) }} vrf {{ vname }}
+ sid vpn per-vrf export auto
+ no bgp network import-check
+!
+{%   endfor %}
+
 {% endif %}
 do write
 CONFIG
