@@ -203,7 +203,7 @@ def build_ibgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
       more_hints=[ f'Add a supported IGP {igp_text} to the list of modules' ])
 
 """
-get_interface_as -- given an interface and a node, find the 
+get_interface_as -- given an interface and a node, find the real AS that would be used in an EBGP session
 """
 def get_interface_as(node: Box, intf: Box) -> typing.Optional[typing.Union[int,str]]:
   return intf.get('bgp.local_as',None) or node.get('bgp.local_as',None) or node.get('bgp.as',None)
@@ -224,12 +224,12 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
       l.pop('bgp',None)                                               # Cleanup the flag
       continue                                                        # ... and skip interfaces with 'bgp: False'
 
-    node_as =  node.bgp.get("as")                                     # Get our real AS number and the AS number of the peering session
-    node_local_as = get_interface_as(node,l)
-
-    af_list = [ af for af in ('ipv4','ipv6') if af in l ]             # Get interface address families
+    af_list = [ af for af in log.AF_LIST if af in l ]                 # Get interface address families
     if not af_list:                                                   # This interface has no usable address
       continue
+
+    node_as =  node.bgp.get("as")                                     # Get our real AS number and the AS number of the peering session
+    node_local_as = get_interface_as(node,l)
 
     intf_vrf = l.get('vrf',None)
     if node_as != node_local_as:
