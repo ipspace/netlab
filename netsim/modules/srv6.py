@@ -25,16 +25,15 @@ def configure_bgp_for_srv6(node: Box, topology: Box) -> None:
   srv6_af = node.get('srv6.af',{})
   srv6_vpn = node.get('srv6.vpn')
   for nb in node.get('bgp.neighbors',[]):
+    if 'ipv6' not in nb:           # Skip IPv4-only neighbors
+      continue
+    nb.ipv4_rfc8950 = True         # Enable extended next hops by default
     for af in DEFAULT_VPN_AF.keys():
       nb.activate[af] = srv6_af.get(af,False)
-      if af=='ipv4' and srv6_af.get(af):
-        nb.ipv4_rfc8950 = True
       if srv6_vpn and nb.type in srv6_vpn[af]:
         vpn_af = 'vpn'+af.replace('ip','')
         if node.af.get(vpn_af):    # Check if the VPN AF is enabled
           nb[vpn_af] = nb.ipv6     # ...and enable it over IPv6 (only)
-          if af=='ipv4':
-            nb.ipv4_rfc8950 = True # VPNv4 needs extended next hops
 
 class SRV6(_Module):
   """
