@@ -1,0 +1,28 @@
+{% for af in ['ipv4','ipv6'] if srv6.vpn.get(af) %}
+{%   set vpnaf = 'vpn' + af.replace('ip','') %}
+{%   for n in bgp.neighbors if n[vpnaf] is defined %}
+{%     set peer = n[vpnaf] %}
+{%     if loop.first %}
+ address-family {{ af }} vpn
+{%     endif %}
+  neighbor {{ peer }} activate
+{%     if n.type in bgp.community|default({}) %}
+  no neighbor {{ peer }} send-community all
+{%       for c_type in bgp.community[n.type] %}
+  neighbor {{ peer }} send-community {{ c_type }}
+{%       endfor %}
+{%     endif %}
+{%     if n.type == 'ibgp' and bgp.next_hop_self|default(True) %}
+  neighbor {{ peer }} next-hop-self
+{%     endif %}
+{%   endfor %}
+ !
+{% endfor %}
+
+{% for vname,vdata in vrfs|default({}).items() %}
+router bgp {{ vdata.as|default(bgp.as) }} vrf {{ vname }}
+ sid vpn per-vrf export auto
+ no bgp network import-check
+!
+{% endfor %}
+

@@ -22,25 +22,30 @@ POOL_NAME = "srv6_locator"
 Configures BGP VPN address families for neighbors, and extended nexthop where needed
 """
 def configure_bgp_for_srv6(node: Box, topology: Box) -> None:
-   srv6_bgp = node.get('srv6.vpn', {})
+   srv6_vpn = node.get('srv6.vpn')
+   bgp_activate = node.get('bgp.activate',{})
    for nb in node.get('bgp.neighbors',[]):
       for af in DEFAULT_VPN_AF.keys():
-        if nb.type in srv6_bgp[af]:
+        if af in bgp_activate and nb.type in bgp_activate[af]:
+          if af=='ipv4' and 'ipv4' not in nb: # Check for IPv4 over IPv6, not supported by bgp module
+            nb.activate.ipv4 = True
+            nb.ipv4_rfc8950 = True
+        if srv6_vpn and nb.type in srv6_vpn[af]:
           vpn_af = 'vpn'+af.replace('ip','')
           if node.af.get(vpn_af): # Check if the VPN AF is enabled
             if af in nb:
               nb[vpn_af] = nb[af] # Use the corresponding transport if available
             elif af=='ipv4':      # VPNv4 over ipv6 requires RFC8950 extended next hops
               nb[vpn_af] = nb.ipv6
-              nb.ipv4_rfc8950 = True     
+              nb.ipv4_rfc8950 = True
 
 class SRV6(_Module):
   """
-  module_pre_transform - create the 'srv6_locator' address pool
+  module_pre_default - create the 'srv6_locator' address pool
   """
-  def module_pre_transform(self, topology: Box) -> None:
+  def module_pre_default(self, topology: Box) -> None:
     # Defining this as _top addressing includes it in *every* topology
-    topology.pools[ POOL_NAME ] = {
+    topology.defaults.addressing[ POOL_NAME ] = {
       'ipv6': topology.defaults.srv6.locator_pool,
       'prefix6': 48
     }
@@ -90,5 +95,5 @@ class SRV6(_Module):
         f"Node {node.name} ipv6 loopback address {node.loopback.ipv6} overlaps with locator {locator}",
         category=log.IncorrectValue,
         module='srv6')
-    if 'bgp' in node and node.srv6.get('vpn'):
+    if 'bgp' in node and node.srv6.get('bgp'):
       configure_bgp_for_srv6(node,topology)
