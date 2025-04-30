@@ -72,7 +72,7 @@ class SRV6(_Module):
     data.bool_to_defaults(node.srv6,'vpn',DEFAULT_VPN_AF)
     if node.srv6.get('vpn') and 'vrf' not in mods:
       log.error(
-          f"Node {node.name} does not have the VRF module enabled to support BGP VPN",
+          f"Node {node.name} does not have the VRF module enabled to support BGP L3VPN",
           category=log.MissingDependency,
           module='srv6')
 
