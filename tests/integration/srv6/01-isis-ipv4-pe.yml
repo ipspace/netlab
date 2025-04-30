@@ -6,18 +6,24 @@ message: |
 
 addressing:
   p2p:
-    ipv4: 10.1.0.0/24 # could do ipv6-only, but that doesn't work for some reason
+    ipv4: False       # ipv6-only
     ipv6: 2001:1::/48 # SRv6 requires ipv6 addresses on interfaces
 
   loopback:
     ipv4: 10.0.0.0/24 # No need for ipv4 loopbacks
     ipv6: 2001::/48   # SRv6 requires ipv6 loopback addresses
 
+srv6.af:
+  ipv4: True
 srv6.vpn: False
 
 bgp.as: 65000
-
 bgp.advertise_loopback: False # Using IS-IS for this
+
+# Implied by use of SRv6: Only create IPv6 BGP sessions
+# bgp.sessions:
+#   ipv4: []
+#   ipv6: [ ibgp ] # Only create ipv6 session with ipv4 prefixes and extended nexthop, not ipv4
 
 groups:
   _auto_create: True
@@ -29,12 +35,6 @@ groups:
     members: [ dut, pe2 ]
     module: [ isis, bgp, srv6 ]
     bgp.import: [ connected ]
-    bgp.sessions:
-      ipv4: []
-      ipv6: [ ibgp ]
-    bgp.activate: # Only BGP v4 AF over IPv6
-      ipv4: [ ibgp ]
-      ipv6: []
   x_switches:
     members: [ pe2 ]
     device: frr
@@ -59,7 +59,7 @@ validate:
     stop_on_error: true
   ibgp:
     description: Check IBGP session
-    wait: 60
+    wait: 10
     wait_msg: Waiting for IBGP sessions to start
     nodes: [ pe2 ]
     plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6',activate='ipv4')
