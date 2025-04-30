@@ -11,6 +11,11 @@ from ..utils import log
 from .. import data
 import ipaddress
 
+BGP_DEFAULT_SESSIONS: typing.Final[dict] = {
+  'ipv4': [], # No IPv4 sessions, only IPv6
+  'ipv6': [ 'ibgp', 'ebgp', 'localas_ibgp' ]
+}
+
 DEFAULT_VPN_AF: typing.Final[dict] = {
   'ipv4': [ 'ibgp' ],
   'ipv6': [ 'ibgp' ]
@@ -22,22 +27,20 @@ POOL_NAME = "srv6_locator"
 Configures BGP address families for neighbors, including extended nexthop where needed
 """
 def configure_bgp_for_srv6(node: Box, topology: Box) -> None:
-   srv6_vpn = node.get('srv6.vpn')
-   bgp_activate = node.get('bgp.activate',{})
-   for nb in node.get('bgp.neighbors',[]):
-      for af in DEFAULT_VPN_AF.keys():
-        if af in bgp_activate and nb.type in bgp_activate[af]:
-          if af=='ipv4' and 'ipv4' not in nb: # Check for IPv4 over IPv6, not supported by bgp module
-            nb.activate.ipv4 = True
-            nb.ipv4_rfc8950 = True
-        if srv6_vpn and nb.type in srv6_vpn[af]:
-          vpn_af = 'vpn'+af.replace('ip','')
-          if node.af.get(vpn_af): # Check if the VPN AF is enabled
-            if af in nb:
-              nb[vpn_af] = nb[af] # Use the corresponding transport if available
-            elif af=='ipv4':      # VPNv4 over ipv6 requires RFC8950 extended next hops
-              nb[vpn_af] = nb.ipv6
-              nb.ipv4_rfc8950 = True
+  srv6_af = node.get('srv6.af',{})
+  srv6_vpn = node.get('srv6.vpn')
+  for nb in node.get('bgp.neighbors',[]):
+    for af in DEFAULT_VPN_AF.keys():
+      nb.activate[af] = srv6_af.get(af,False)
+      if af=='ipv4' and srv6_af.get(af):
+        nb.ipv4_rfc8950 = True
+      if srv6_vpn and nb.type in srv6_vpn[af]:
+        vpn_af = 'vpn'+af.replace('ip','')
+        if node.af.get(vpn_af): # Check if the VPN AF is enabled
+          if af in nb:
+            nb[vpn_af] = nb[af] # Use the corresponding transport if available
+          elif af=='ipv4':      # VPNv4 over ipv6 using RFC8950 extended next hops
+            nb[vpn_af] = nb.ipv6
 
 class SRV6(_Module):
   """
@@ -77,6 +80,8 @@ class SRV6(_Module):
           f"Node {node.name} does not have the VRF module enabled to support BGP VPN",
           category=log.MissingDependency,
           module='srv6')
+    if 'bgp' in node and node.srv6.get('bgp'):
+      node.bgp.sessions = BGP_DEFAULT_SESSIONS
 
   def node_post_transform(self, node: Box, topology: Box) -> None:
     locator = node.get('srv6.locator')
