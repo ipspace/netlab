@@ -4,13 +4,12 @@
 import typing
 
 from box import Box
-from netsim.augment import addressing
+from ..augment import addressing,devices
 
 from . import _Module
 from ..utils import log
 from .. import data
 import ipaddress
-import netaddr
 
 DEFAULT_VPN_AF: typing.Final[dict] = {
   'ipv4': [ 'ibgp' ],
@@ -35,6 +34,20 @@ def configure_bgp_for_srv6(node: Box, topology: Box) -> None:
 
 class SRV6(_Module):
   def node_pre_transform(self, node: Box, topology: Box) -> None:
+    mods = node.get('module',[])
+    d_features = devices.get_device_features(node,topology.defaults)
+    for igp in node.get('srv6.igp',[]):
+      if igp not in mods:
+        log.error(
+          f"Node {node.name} does not have the {igp} IGP module enabled to run SRv6",
+          category=log.MissingDependency,
+          module='srv6')
+      if not d_features.srv6.get(igp):
+        log.error(
+          f"Node {node.name} (device {node.device}) does not support {igp} as IGP for SRv6",
+          category=log.IncorrectValue,
+          module='srv6')
+      
     data.bool_to_defaults(node.srv6,'vpn',DEFAULT_VPN_AF)
 
   def node_post_transform(self, node: Box, topology: Box) -> None:
