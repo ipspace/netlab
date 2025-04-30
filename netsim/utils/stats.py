@@ -19,12 +19,18 @@ def get_filename() -> str:
   return os.path.expanduser(fname)
 
 '''
+timestamp as int
+'''
+def ts_int() -> int:
+  return int(time.clock_gettime(time.CLOCK_REALTIME))
+
+'''
 read_stats -- read the stats file into a Box data structure
 '''
 def read_stats(fname: typing.Optional[str] = None) -> Box:
   fname = fname or get_filename()
   if not os.path.exists(fname):
-    return get_empty_box()
+    return get_box({'_created': ts_int() })
   try:
     return Box.from_json(filename=fname,default_box=True,box_dots=True)
   except Exception as ex:
@@ -61,6 +67,7 @@ def unlock_stats() -> None:
   global STAT_LOCK
   if STAT_LOCK:
     STAT_LOCK.release()
+    STAT_LOCK = None
 
 '''
 lock_and_read_stats: get a lock on the stats file and read it
@@ -77,7 +84,8 @@ def lock_and_read_stats() -> typing.Optional[Box]:
     log.fatal(f'Cannot create lab status directory {status_dir}')
 
   if lock_stats(stat_name):
-    return read_stats(stat_name)
+    s_data = read_stats(stat_name)
+    return s_data
   else:
     return None
 
@@ -85,10 +93,10 @@ def lock_and_read_stats() -> typing.Optional[Box]:
 write_stats: recreate the stats file from in-memory data and unlock it
 '''
 def write_stats(stats: Box, force: bool = False) -> None:
-  if stats.get('_disabled',True) and not force:
+  if stats.get('_disabled',False) and not force:
     return
 
-  ts = int(time.clock_gettime(time.CLOCK_REALTIME))
+  ts = ts_int()
   if '_created' not in stats:
     stats._created = ts
 
@@ -108,13 +116,13 @@ avg_decay = (1/2) ** (1/90)                                           # The half
 
 def add_counter(stats: Box, cnt: str, value: int = 1) -> None:
   global avg_decay
-  ts = int(time.clock_gettime(time.CLOCK_REALTIME))                   # The easy part
   for kw in ['cnt','avg_cnt']:                                        # Increase counters by the specified value
     if isinstance(stats[cnt][kw],int):
       stats[cnt][kw] += value
     else:                                                             # Or start from scratch
       stats[cnt][kw] = value
 
+  ts = ts_int()
   stats[cnt].upd = ts                                                 # Also, remember when we updated the counter
   if not isinstance(stats[cnt].avg_upd,int):                          # And start averaging if needed
     stats[cnt].avg_upd = ts
@@ -196,6 +204,7 @@ def stats_counter_update(cnt: str, val: int = 1) -> None:
   try:
     stats = lock_and_read_stats()
     if stats is None:
+      unlock_stats()
       return
 
     add_counter(stats,cnt,val)
@@ -210,6 +219,7 @@ def stats_change_data(data: typing.Union[Box,dict]) -> None:
   try:
     stats = lock_and_read_stats()
     if stats is None:
+      unlock_stats()
       return
 
     write_stats(stats+data,force=True)
