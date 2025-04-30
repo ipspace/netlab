@@ -7,6 +7,7 @@ Supported SRv6 features:
 * End SIDs (nodes) and End-x SIDs (links), all statically allocated
 * IS-IS routing protocol with SRv6 TLVs
 * Dynamic BGP Service SIDs
+* BGP L3VPN v4/v6 over SRv6
 
 The module currently depends on IS-IS module and will trigger a configuration error if the **isis** module is not enabled in the network topology.
 
@@ -24,6 +25,7 @@ The following table describes per-platform support of individual router-level SR
 | Operating system      | VPNv4 | VPNv6 |
 | ----------------------| :---: | :---: |
 | FRR                   |   ✅  |   ✅  |
+| Nokia SR OS           |   ❌  |   ❌  |
 
 **Notes**
 * VPNv4 and VPNv6 address families are enabled on IPv6 IBGP/EBGP sessions
