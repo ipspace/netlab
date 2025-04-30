@@ -11,11 +11,6 @@ from ..utils import log
 from .. import data
 import ipaddress
 
-BGP_DEFAULT_SESSIONS: typing.Final[dict] = {
-  'ipv4': [], # No IPv4 sessions, only IPv6
-  'ipv6': [ 'ibgp', 'ebgp', 'localas_ibgp' ]
-}
-
 DEFAULT_VPN_AF: typing.Final[dict] = {
   'ipv4': [ 'ibgp' ],
   'ipv6': [ 'ibgp' ]
@@ -80,8 +75,6 @@ class SRV6(_Module):
           f"Node {node.name} does not have the VRF module enabled to support BGP VPN",
           category=log.MissingDependency,
           module='srv6')
-    if 'bgp' in node and node.srv6.get('bgp'):
-      node.bgp.sessions = BGP_DEFAULT_SESSIONS
 
   def node_post_transform(self, node: Box, topology: Box) -> None:
     locator = node.get('srv6.locator')
