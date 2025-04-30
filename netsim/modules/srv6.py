@@ -18,16 +18,20 @@ DEFAULT_VPN_AF: typing.Final[dict] = {
 }
 
 """
-Checks for iBGP neighbors that require the IPv4 address family but do not have an IPv4 transport
+Configures BGP VPN address families for neighbors, and extended nexthop where needed
 """
 def configure_bgp_for_srv6(node: Box, topology: Box) -> None:
    srv6_bgp = node.get('srv6.vpn', {})
    for nb in node.get('bgp.neighbors',[]):
-      for af in log.AF_LIST:
-        if af in nb and nb.type in srv6_bgp[af]:
-          nb['vpn'+af.replace('ip','')] = nb[af]
-      if not nb.get('ipv4') and nb.activate.get('ipv4'): # Check if neighbor has no ipv4 address but IPv4 AF enabled
-         nb.ipv4_rfc8950 = True
+      for af in DEFAULT_VPN_AF.keys():
+        if nb.type in srv6_bgp[af]:
+          vpn_af = 'vpn'+af.replace('ip','')
+          if node.af.get(vpn_af): # Check if the VPN AF is enabled
+            if af in nb:
+              nb[vpn_af] = nb[af]
+            elif af=='ipv4':      # VPNv4 over ipv6 requires RFC8950 extended next hops
+              nb[vpn_af] = nb.ipv6
+              nb.ipv4_rfc8950 = True     
 
 class SRV6(_Module):
   def node_pre_transform(self, node: Box, topology: Box) -> None:

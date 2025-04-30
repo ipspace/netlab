@@ -17,7 +17,6 @@ sysctl -w net.vrf.strict_mode=1
 #
 # Rest of SRv6 configuration done through VTYSH
 #
-{# set srv6_src = srv6.locator|ipaddr('next_usable')|ipaddr('address') #}
 cat >/tmp/srv6_config <<CONFIG
 
 segment-routing
@@ -35,9 +34,8 @@ segment-routing
   !
  exit
 
-{% if srv6.isis|default(False) %}
 router isis {{ isis.instance }}
- no topology ipv6-unicast
+ # no topology ipv6-unicast
  metric-style wide
  segment-routing srv6
    locator {{ inventory_hostname }}
@@ -45,21 +43,15 @@ router isis {{ isis.instance }}
    interface ${SRv6_DEV}
  exit
 exit
-{% endif %}
 
-{% if srv6.bgp|default(False) and bgp.as is defined %}
+{% if srv6.vpn|default({}) and bgp.as is defined %}
 router bgp {{ bgp.as }}
  segment-routing srv6
   locator {{ inventory_hostname }}
  exit
- !
-
-{%   for vname,vdata in vrfs.items() %}
-router bgp {{ vdata.as|default(bgp.as) }} vrf {{ vname }}
- sid vpn per-vrf export auto
- no bgp network import-check
 !
-{%   endfor %}
+
+{% include "frr.bgpvpn.j2" %}
 
 {% endif %}
 do write
