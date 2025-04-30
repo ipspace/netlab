@@ -32,10 +32,7 @@ def configure_bgp_for_srv6(node: Box, topology: Box) -> None:
       if srv6_vpn and nb.type in srv6_vpn[af]:
         vpn_af = 'vpn'+af.replace('ip','')
         if node.af.get(vpn_af): # Check if the VPN AF is enabled
-          if af in nb:
-            nb[vpn_af] = nb[af] # Use the corresponding transport if available
-          elif af=='ipv4':      # VPNv4 over ipv6 using RFC8950 extended next hops
-            nb[vpn_af] = nb.ipv6
+          nb[vpn_af] = nb.ipv6  # ...and enable it over IPv6 (only)
 
 class SRV6(_Module):
   """
@@ -43,19 +40,21 @@ class SRV6(_Module):
   """
   def module_pre_default(self, topology: Box) -> None:
     # Defining this as _top addressing includes it in *every* topology
-    topology.defaults.addressing[ POOL_NAME ] = {
-      'ipv6': topology.defaults.srv6.locator_pool,
-      'prefix6': 48
-    }
+    if POOL_NAME not in topology.defaults.addressing:
+      topology.defaults.addressing[ POOL_NAME ] = {
+        'ipv6': topology.defaults.srv6.locator_pool,
+        'prefix6': 48
+      }
 
   def node_pre_transform(self, node: Box, topology: Box) -> None:
     mods = node.get('module',[])
     d_features = devices.get_device_features(node,topology.defaults)
     if node.srv6.get('bgp'):
-      if not d_features.srv6.get('bgp') or 'bgp' not in mods:
-        log.warning(
-          text=f"Node {node.name} does not support BGP with SRv6, or has the module disabled",
+      if not d_features.srv6.get('bgp') and 'bgp' in mods:
+        log.error(
+          f"Node {node.name} does not support BGP with SRv6",
           module='srv6')
+      elif 'bgp' not in mods:
         node.srv6.bgp = False
     for igp in node.get('srv6.igp',[]):
       if igp not in mods:
