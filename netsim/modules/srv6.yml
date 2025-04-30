@@ -4,9 +4,11 @@
 #
 config_after: [ vlan, isis, ospf, bgp ]
 transform_after: [ vlan, bgp, vrf ]
+no_propagate: [ locator_pool ]
 
-igp: [ isis ]  # By default, enable SRv6 over IS-IS
-bgp: True      # Enable SRv6 for BGP when available
+locator_pool: 2001:db8::/40 # Default address pool for locators, see RFC 6890 – Documentation Set
+igp: [ isis ]               # By default, enable SRv6 over IS-IS
+bgp: True                   # Enable SRv6 for BGP when available
 
 attributes:
   global:
@@ -21,6 +23,7 @@ attributes:
       _alt_types: [ bool, BoxList ]
       ipv4: { type: list, true_value: [ ibgp ] }
       ipv6: { type: list, true_value: [ ibgp ] }
+    locator_pool: { type: ipv6, use: subnet_prefix }
 
   node:
     af:
@@ -30,11 +33,14 @@ attributes:
     vpn:
     transit_only: bool
 
-_top:
-  addressing:
-    srv6_locator:
-      ipv6: 2001:db8::/40  # Default address pool to allocate SRv6 locators from, see RFC 6890 – Documentation Set
-      prefix6: 48
+#
+# XXX this gets added to all topologies, even when srv6 module is not used
+#
+# _top:
+#   addressing:
+#     srv6_locator:
+#       ipv6: 2001:db8::/40  # Default address pool to allocate SRv6 locators from, see RFC 6890 – Documentation Set
+#       prefix6: 48
 
 features:
   bgp: Supports BGP v4/v6 over SRv6

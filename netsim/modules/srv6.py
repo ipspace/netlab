@@ -16,6 +16,8 @@ DEFAULT_VPN_AF: typing.Final[dict] = {
   'ipv6': [ 'ibgp' ]
 }
 
+POOL_NAME = "srv6_locator"
+
 """
 Configures BGP VPN address families for neighbors, and extended nexthop where needed
 """
@@ -33,6 +35,16 @@ def configure_bgp_for_srv6(node: Box, topology: Box) -> None:
               nb.ipv4_rfc8950 = True     
 
 class SRV6(_Module):
+  """
+  module_pre_transform - create the 'srv6_locator' address pool
+  """
+  def module_pre_transform(self, topology: Box) -> None:
+    # Defining this as _top addressing includes it in *every* topology
+    topology.pools[ POOL_NAME ] = {
+      'ipv6': topology.defaults.srv6.locator_pool,
+      'prefix6': 48
+    }
+
   def node_pre_transform(self, node: Box, topology: Box) -> None:
     mods = node.get('module',[])
     d_features = devices.get_device_features(node,topology.defaults)
@@ -64,7 +76,7 @@ class SRV6(_Module):
   def node_post_transform(self, node: Box, topology: Box) -> None:
     locator = node.get('srv6.locator')
     if not locator:
-       prefix = addressing.get(topology.pools,['srv6_locator'])['ipv6']
+       prefix = addressing.get(topology.pools,[POOL_NAME])['ipv6']
        locator = str(prefix)
        node.srv6.locator = locator
     locator_net = ipaddress.IPv6Network(locator)
