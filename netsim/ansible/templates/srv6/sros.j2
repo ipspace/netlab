@@ -45,7 +45,7 @@ updates:
    origination-fpe: [1]
 {% endif %}
 
-{% if 'isis' in module and srv6.isis|default(False) %}
+{% if 'isis' in srv6.igp %}
 - path: configure/router[router-name=Base]/isis[isis-instance=0]
   val:
    advertise-router-capability: area
@@ -72,13 +72,13 @@ updates:
 
 {# Enable BGP SRv6 and/or extended NH encoding #}
 {% if 'bgp' in module %}
-{% if srv6.bgp|default(False) %}
+{% if srv6.bgp %}
 - path: configure/router[router-name=Base]/bgp
   val:
    segment-routing-v6:
     source-address: "{{ loopback.ipv6 | ipaddr('address') }}"
     family:
-{%  for af in srv6.address_families %}
+{%  for af in ['ipv4','ipv6'] if srv6.af.get(af) %}
     - family-type: {{ af }}
       ignore-received-srv6-tlvs: False # default: True
       add-srv6-tlvs:
@@ -86,7 +86,7 @@ updates:
 {%  endfor %}
 {% endif %}
 
-{% if 'ipv4' in srv6.address_families and (srv6.bgp|default(False) or bgp.rr|default(False)) %}
+{% if 'ipv4' in srv6.af and (srv6.bgp or bgp.rr|default(False)) %}
 - path: configure/router[router-name=Base]/bgp
   val:
    extended-nh-encoding:

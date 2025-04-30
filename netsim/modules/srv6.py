@@ -27,7 +27,7 @@ def configure_bgp_for_srv6(node: Box, topology: Box) -> None:
           vpn_af = 'vpn'+af.replace('ip','')
           if node.af.get(vpn_af): # Check if the VPN AF is enabled
             if af in nb:
-              nb[vpn_af] = nb[af]
+              nb[vpn_af] = nb[af] # Use the corresponding transport if available
             elif af=='ipv4':      # VPNv4 over ipv6 requires RFC8950 extended next hops
               nb[vpn_af] = nb.ipv6
               nb.ipv4_rfc8950 = True     
@@ -36,6 +36,12 @@ class SRV6(_Module):
   def node_pre_transform(self, node: Box, topology: Box) -> None:
     mods = node.get('module',[])
     d_features = devices.get_device_features(node,topology.defaults)
+    if node.srv6.get('bgp'):
+      if not d_features.srv6.get('bgp') or 'bgp' not in mods:
+        log.warning(
+          f"Node {node.name} does not support BGP with SRv6, or has the module disabled",
+          module='srv6')
+        node.srv6.bgp = False
     for igp in node.get('srv6.igp',[]):
       if igp not in mods:
         log.error(
@@ -49,6 +55,11 @@ class SRV6(_Module):
           module='srv6')
       
     data.bool_to_defaults(node.srv6,'vpn',DEFAULT_VPN_AF)
+    if node.srv6.get('vpn') and 'vrf' not in mods:
+      log.error(
+          f"Node {node.name} does not have the VRF module enabled to support BGP VPN",
+          category=log.MissingDependency,
+          module='srv6')
 
   def node_post_transform(self, node: Box, topology: Box) -> None:
     locator = node.get('srv6.locator')
