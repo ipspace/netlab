@@ -179,7 +179,7 @@ def node_adjust_mplsvpn(node: Box, topology: Box, features: Box) -> None:
   for n in node.bgp.neighbors:
     if 'ipv4' in n:
       for af in AF_LIST:
-        if af in node.mpls.vpn:
+        if af in node.mpls.vpn and n.type in node.mpls.vpn[af]:
           n['vpn'+af.replace('ip','')] = n.ipv4
 
 '''

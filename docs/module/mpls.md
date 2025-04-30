@@ -1,6 +1,6 @@
 # MPLS Configuration Module
 
-MPLS configuration module implements:
+The MPLS configuration module implements:
 
 * LDP-based label distribution
 * BGP labeled unicast over IBGP and/or EBGP sessions for IPv4 and IPv6
@@ -18,7 +18,7 @@ Segment routing for MPLS is implemented in a [separate configuration module](sr-
 
 ## Platform Support
 
-The following table describes per-platform support of individual MPLS label distribution features:
+The following table describes the per-platform support of individual MPLS label distribution features:
 
 ### Label Distribution Protocol (LDP)
 
@@ -40,7 +40,7 @@ The following table describes per-platform support of individual MPLS label dist
 
 **Notes:**
 * LDP is enabled on all non-VRF intra-AS interfaces with IPv4 addresses.
-* To disable LDP on an intra-AS interface, or to enabled it on a VRF interface, use **ldp** link/interface parameter.
+* To disable LDP on an intra-AS interface or enable it on a VRF interface, use the **ldp** link/interface parameter.
 
 ### BGP Labeled Unicast (BGP-LU)
 
@@ -56,7 +56,6 @@ The following table describes per-platform support of individual MPLS label dist
 **Notes**
 * Cisco IOS merges labeled and unlabeled BGP routes.
 * You might have to disable unlabeled address families on Arista EOS
-* Nokia SR OS supports these features, but not implemented in Netlab yet
 
 (mpls-l3vpn-supported-platforms)=
 ### BGP/MPLS L3VPN
@@ -97,13 +96,17 @@ The following table describes per-platform support of individual MPLS label dist
 * **mpls.vpn** -- enable VPNv4 and VPNv6 address families. BGP/MPLS L3VPN is disabled by default.
 * **mpls.6pe** -- enable 6PE on IBGP and/or EBGP sessions (default: IBGP only). 6PE is disabled by default.
 
-LDP is enabled by default on all nodes using **mpls** configuration module, and can be disabled by setting **mpls.ldp** node parameter to *False*.
+LDP is enabled by default on all nodes using the **mpls** configuration module, and can be disabled by setting **mpls.ldp** node parameter to *False*.
+
+```{warning}
+MPLS-based BGP services are not supported over IBGP local-as sessions due to the required BGP next-hop changes on IBGP sessions.
+```
 
 ## Configurable Link and Interface Parameters
 
 * **mpls.ldp** (boolean) -- enable or disable LDP and MPLS encapsulation on the interface.
 
-LDP is enabled by default on all intra-AS interfaces in global routing table. To enable LDP on a VRF interface, set **mpls.ldp** link- or interface parameter to *True*.
+LDP is enabled by default on all intra-AS interfaces in the global routing table. To enable LDP on a VRF interface, set the **mpls.ldp** link- or interface parameter to *True*.
 
 ## Configurable LDP Parameters
 
@@ -157,7 +160,7 @@ To enable intra-AS MPLS/VPN, set **mpls.vpn** to *True*. The VPN address familie
 mpls.vpn: True
 ```
 
-To enable inter-AS MPLS/VPN (Option B), set **mpls.vpn** to `[ ibgp, ebgp ]`. You can enable inter-AS MPLS/VPN for an individual address family or for all address families configured in VRFs.
+To enable inter-AS MPLS/VPN (Option B), set **mpls.vpn** to `[ ibgp, ebgp ]`. You can configure inter-AS MPLS/VPN for an individual address family or all address families configured in VRFs.
 
 The following example enables inter-AS MPLS/VPN for the whole lab topology and disables it for VPNv6 address family on PE1:
 
