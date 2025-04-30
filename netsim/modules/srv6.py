@@ -54,7 +54,7 @@ class SRV6(_Module):
     if node.srv6.get('bgp'):
       if not d_features.srv6.get('bgp') or 'bgp' not in mods:
         log.warning(
-          f"Node {node.name} does not support BGP with SRv6, or has the module disabled",
+          text=f"Node {node.name} does not support BGP with SRv6, or has the module disabled",
           module='srv6')
         node.srv6.bgp = False
     for igp in node.get('srv6.igp',[]):
