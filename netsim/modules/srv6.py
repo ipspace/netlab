@@ -19,7 +19,7 @@ DEFAULT_VPN_AF: typing.Final[dict] = {
 POOL_NAME = "srv6_locator"
 
 """
-Configures BGP VPN address families for neighbors, and extended nexthop where needed
+Configures BGP address families for neighbors, including extended nexthop where needed
 """
 def configure_bgp_for_srv6(node: Box, topology: Box) -> None:
    srv6_vpn = node.get('srv6.vpn')
