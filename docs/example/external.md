@@ -13,11 +13,11 @@ _netlab_ contains several mechanisms that allow you to manage physical labs, add
 (external-connectivity-outgoing)=
 ## Outbound Connectivity
 
-*libvirt*, *VirtualBox* and *containerlab* try to add IPv4 default routes to lab devices. *libvirt* and *Virtualbox* use a DHCP option, *containerlab* installs a default route into the container network namespace[^DR_EOS]. Most network devices running in a virtual lab are thus able to reach external destinations.
+*libvirt* and *containerlab* try to add IPv4 default routes to lab devices. *libvirt* uses a DHCP option, *containerlab* installs a default route into the container network namespace[^DR_EOS]. Most network devices running in a virtual lab are thus able to reach external destinations.
 
-Most box-building recipes for *libvirt* and *Virtualbox* Vagrant plugins recommend using a management VRF for the management interface. The default route is thus installed into the management VRF, and the client you're using on the network device has to be VRF-aware to reach external destinations. For example, you'll have to use a command similar to **ping vrf _name_ _destination_** to ping external IP addresses.
+Most box-building recipes for *libvirt* Vagrant boxes recommend using a management VRF for the management interface. The default route is thus installed into the management VRF, and the client you're using on the network device has to be VRF-aware to reach external destinations. For example, you'll have to use a command similar to **ping vrf _name_ _destination_** to ping external IP addresses.
 
-[^DR_EOS]: The default route added to Linux kernel by *containerlab* might not be displayed by the network operating system. For example, if you execute **show ip route** on an Arista EOS container, you won't see a default route, but you'll still be able to reach external destinations.
+[^DR_EOS]: The default route added to the Linux kernel by *containerlab* might not be displayed by the network operating system. For example, if you execute **show ip route** on an Arista EOS container, you won't see a default route, but you'll still be able to reach external destinations.
 
 (external-connectivity-incoming)=
 ## Connecting to Lab Devices

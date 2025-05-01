@@ -25,7 +25,7 @@ Topology description file is a YAML file with these top-level elements:
 : Topology name -- used to name Linux bridges when using *libvirt* Vagrant plugin
 
 **provider** (optional)
-: Virtualization provider (*libvirt*, *virtualbox*, *clab* or *external*). Default value: *libvirt*.
+: Virtualization provider (*libvirt*, *clab* or *external*). Default value: *libvirt*.
 
 **tools** (optional)
 : [External network management tools](extools.md) deployed together with the lab topology

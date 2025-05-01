@@ -55,11 +55,10 @@ To change the user default settings:
 devices._device_.clab.image: _image_name
 ```
 
-* Add the following line(s) to that file (depending on the virtualization provider you're using) to change the Vagrant box name (it may include the software release):
+* Add the following line to that file to change the Vagrant box name (it may include the software release):
 
 ```yaml
 devices._device_.libvirt.image: _image_name
-devices._device_.virtualbox.image: _image_name
 ```
 
 ```{tip}

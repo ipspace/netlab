@@ -4,8 +4,9 @@
 
 * **[libvirt](labs/libvirt.md)** -- *libvirt* virtualization abstraction layer (tested on top of KVM/QEMU on Ubuntu) orchestrated with Vagrant using *vagrant-libvirt* Vagrant plugin.
 * **[clab](labs/clab.md)** -- Docker containers (tested on Ubuntu) orchestrated with *containerlab*.
-* **[virtualbox](labs/virtualbox.md)** -- VirtualBox virtualization orchestrated with Vagrant using built-in VirtualBox plugin.
 * **[external](labs/external.md)** -- meta-provider you can use to configure hardware devices.
+
+The **[virtualbox](labs/virtualbox.md)** provider is still available, but no longer tested or supported.
 
 ```{note}
 Use **[‌netlab show providers](netlab-show-providers)** command to display the available virtualization providers.
@@ -20,7 +21,14 @@ You can also combine [multiple virtualization providers](labs/multi-provider.md)
 
    labs/libvirt.md
    labs/clab.md
-   labs/virtualbox.md
    labs/external.md
    labs/multi-provider.md
 ```
+```eval_rst
+.. toctree::
+   :caption: Obsolete Virtualization Providers
+   :maxdepth: 1
+
+   labs/virtualbox.md
+```
+

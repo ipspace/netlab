@@ -19,7 +19,7 @@ Adding new devices to *netlab* shouldn't be too hard:
 
 ## Device Images
 
-*netlab* supports three virtualization providers: *Vagrant* with *libvirt* and *Virtualbox*, and *containerlab* running Docker container images. 
+*netlab* supports two VM/container virtualization providers: *Vagrant* to run *libvirt/KVM* VMs, and *containerlab* to run Docker container images. 
 
 If you can create a Vagrant box for the network device you want to use, or get a Docker container, it makes sense to proceed. Otherwise, yell at your vendor.
 
@@ -53,8 +53,6 @@ Here's the device parameters file for the dummy device (`none.yml`):
 ```
 interface_name: eth{ifindex}
 loopback_interface_name: Loopback{ifindex}
-virtualbox:
-  image: none
 libvirt:
   image: none
 clab:
@@ -188,7 +186,7 @@ description: Cisco CSR 1000v
 parent: iosv
 interface_name: GigabitEthernet{ifindex}
 ifindex_offset: 2
-virtualbox:
+libvirt:
   image: cisco/csr1000v
 group_vars:
   netlab_device_type: csr

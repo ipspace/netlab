@@ -2,13 +2,13 @@
 
 *[netlab](https://netlab.tools)* is bringing infrastructure-as-code concepts to networking labs. You'll describe your high-level network topology and routing design in a YAML file, and the tools in this repository will
 
-* Create *Vagrantfile* configuration file for *libvirt* or *VirtualBox* environment
-* Create *containerlab* configuration file
+* Create *Vagrantfile* configuration file for *libvirt/KVM* environment
+* Create *containerlab* configuration file to run Docker containers
 * Create Ansible inventory and configuration file
 * Create IPv4 and IPv6 addressing plan and OSPFv2, OSPFv3, EIGRP, IS-IS, RIPv2, RIPng, and BGP routing design
 * Configure IPv4, IPv6, DHCP, DHCPv6, VLANs, VRFs, VXLAN, LLDP, BFD, OSPFv2, OSPFv3, EIGRP, IS-IS, BGP, RIPv2, RIPng, VRRP, LACP, LAG, MLAG, link bonding, STP, anycast gateways, static routes, route maps, prefix lists, AS-path prefix lists, route redistribution, default route origination, MPLS, BGP-LU, L3VPN (VPNv4 + VPNv6), 6PE, EVPN, SR-MPLS, or SRv6 on your lab devices.
 
-Instead of wasting time creating lab topology in a GUI and configuring boring details, you'll start with a lab preconfigured according to your specifications.
+Instead of wasting time creating a lab topology in a GUI and configuring boring details, you'll start with a lab preconfigured according to your specifications.
 
 Interested? [Read the documentation](https://netlab.tools) and [installation guidelines](https://netlab.tools/install/).
 

@@ -1,3 +1,4 @@
+(supported-platforms)=
 # Supported Platforms
 
 ```eval_rst

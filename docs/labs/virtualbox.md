@@ -1,15 +1,12 @@
-# Virtualbox-Based Lab on Windows or MacOS
+(lab-virtualbox)=
+# VirtualBox-Based Lab on Windows or MacOS
 
-Virtualbox-based Vagrant lab is the only option to run *netlab* directly on Windows or MacOS. Do not use VirtualBox on Linux; KVM/libvirt is a much better alternative fully supported by _netlab_.
+VirtualBox-based Vagrant lab was an interesting option to run *netlab* directly on Windows or macOS on x86 hardware. It is no longer supported; we stopped developing new features when Apple started shipping ARM-based hardware and never ran integration tests with VirtualBox. Use Windows Subsystem for Linux, Multipass-provisioned Ubuntu VM on macOS (you'll be limited to a few ARM-based containers), or an external Ubuntu server or VM.
 
 ```{warning}
-* We no longer have the infrastructure to test _netlab_ on VirtualBox. It probably still works.
-* While _netlab_ has no problem running on Apple silicon, you won't be able to start x86-based virtual machines or containers. As of late 2023, there are no network devices available for ARM CPU[^FRR].
-* If your system supports nested virtualization, run _netlab_ [within a Ubuntu VM](../install/ubuntu-vm.md).
-* We don't test _netlab_ on Windows and have no experience with Windows Subsystem for Linux. It might work, but if it doesn't, you're on your own[^NVNS].
+* While _netlab_ still has a VirtualBox provider, we no longer have the infrastructure to run tests.
+* VirtualBox cannot run x86 VMs on Apple silicon, making it useless in an environment where most vendors ship only x86-based VM images.
 ```
-
-[^FRR]: If you insist, you can build an ARM FRR container.
 
 When running _netlab_ with `virtualbox` provider:
 
@@ -26,8 +23,6 @@ The VirtualBox environment is pretty easy to set up:
 * Assuming you already have Python3 installed, install *netlab* Python package with `pip3 install networklab`
 * [Install Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)[^1] and related device-specific requirements (see Ansible documentation for details).
 * Test the installation with **[netlab test virtualbox](../netlab/test.md)** command
-
-[^NVNS]: If we were a networking vendor, we would have said, "Running _netlab_ on Windows is not supported."
 
 ## Creating a New Lab
 To create a new lab:
