@@ -185,9 +185,9 @@ def register_static_transit_vni(topology: Box) -> None:
       vni_set.add(transit_vni)
 
 """
-Check evpn.transport from user, and set to default VXLAN if not provided
+Check evpn.transport from user, default to VXLAN if not provided
 """
-def set_evpn_transport(topology: Box) -> str:
+def check_evpn_transport(topology: Box) -> str:
   setting = must_be_string(
       parent=topology,
       key='evpn.transport',
@@ -195,9 +195,8 @@ def set_evpn_transport(topology: Box) -> str:
       valid_values=topology.defaults.evpn.attributes.transport.valid_values,
       module='evpn')
   if not setting:
-    setting = VALID_TRANSPORTS[0]                # Default to VXLAN
-    topology.evpn.transport = setting
-  elif setting not in topology.get('module',[]): # Warn if user sets it without adding the module
+    return VALID_TRANSPORTS[0]                 # Default to VXLAN
+  if setting not in topology.get('module',[]): # Warn if user sets it without adding the module
     log.error(
       f"Selected EVPN transport module evpn.transport='{setting}' not active in topology",
       log.MissingDependency,
@@ -455,7 +454,7 @@ class EVPN(_Module):
 
   def module_pre_transform(self, topology: Box) -> None:
     register_static_transit_vni(topology)
-    if set_evpn_transport(topology)=='mpls':
+    if check_evpn_transport(topology)=='mpls':
       check_no_vnis_for_mpls(topology)
 
   def node_pre_transform(self, node: Box, topology: Box) -> None:
