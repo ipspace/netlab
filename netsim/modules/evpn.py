@@ -201,7 +201,6 @@ def check_evpn_transport(topology: Box) -> str:
       f"Selected EVPN transport module evpn.transport='{setting}' not active in topology",
       log.MissingDependency,
       'evpn')
-    return ""
   return setting
 
 """
