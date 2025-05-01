@@ -46,6 +46,10 @@ class SRV6(_Module):
         'ipv6': topology.defaults.srv6.locator_pool,
         'prefix6': 48
       }
+    elif 'ipv6' not in topology.defaults.addressing[ POOL_NAME ]:
+      log.error(
+          f"Custom SRv6 addressing pool '{POOL_NAME}' must provide IPv6 prefixes",
+          module='srv6')
 
   def node_pre_transform(self, node: Box, topology: Box) -> None:
     mods = node.get('module',[])
