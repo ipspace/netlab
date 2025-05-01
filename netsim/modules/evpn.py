@@ -185,28 +185,27 @@ def register_static_transit_vni(topology: Box) -> None:
       vni_set.add(transit_vni)
 
 """
-Check evpn.transport from user, and set based on active module(s) if not provided
+Check evpn.transport from user, and set to default VXLAN if not provided
 """
 def set_evpn_transport(topology: Box) -> str:
-  user_setting = must_be_string(
+  setting = must_be_string(
       parent=topology,
       key='evpn.transport',
       path='topology',
-      valid_values=VALID_TRANSPORTS,
+      valid_values=topology.defaults.evpn.attributes.transport.valid_values,
       module='evpn')
-  if user_setting:
-    return user_setting
+  if not setting:
+    setting = VALID_TRANSPORTS[0]       # Default to VXLAN
+    topology.evpn.transport = setting
 
-  for t in VALID_TRANSPORTS:            # Pick first one listed that's active
-    if t in topology.get('module',[]):
-      topology.evpn.transport = t
-      return t
-  log.error(
-    f'No supported EVPN transport module(s) active, unable to determine evpn.transport',
-    Warning,
-    'evpn',
-    more_data=f'Available transport modules: {",".join(VALID_TRANSPORTS)}')
-  return ""
+  if setting not in topology.get('module',[]):
+    log.error(
+      f"EVPN transport module evpn.transport='{setting}' not active in topology",
+      log.MissingDependency,
+      'evpn',
+      more_data=f'Available transport modules: {",".join(VALID_TRANSPORTS)}')
+    return ""
+  return setting
 
 """
 Called when mpls transport is used; checks if user provided any global vlans with vni attribute set
