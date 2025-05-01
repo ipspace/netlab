@@ -63,17 +63,6 @@ class SRV6(_Module):
   def node_pre_transform(self, node: Box, topology: Box) -> None:
     mods = node.get('module',[])
     d_features = devices.get_device_features(node,topology.defaults)
-    if node.srv6.get('bgp'):
-      if not d_features.srv6.get('bgp') and 'bgp' in mods:
-        log.error(
-          f"Node {node.name} does not support BGP with SRv6",
-          category=log.IncorrectValue,
-          module='srv6')
-      elif 'bgp' not in mods:
-        log.warning(
-          text=f"The BGP module is not active on node {node.name}, setting srv6.bgp to 'False'",
-          module='srv6')
-        node.srv6.bgp = False
     for igp in node.get('srv6.igp',[]):
       if igp not in mods:
         log.error(
@@ -116,5 +105,5 @@ class SRV6(_Module):
         f"Node {node.name} ipv6 loopback address {node.loopback.ipv6} overlaps with locator {locator}",
         category=log.IncorrectValue,
         module='srv6')
-    if 'bgp' in node and node.srv6.get('bgp'):
+    if 'bgp' in node:
       configure_bgp_for_srv6(node,topology)

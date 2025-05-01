@@ -1,6 +1,6 @@
 # Segment Routing over IPv6 (srv6) Configuration Module
 
-This configuration module configures SRv6 over IS-IS and (optionally) BGP and L3VPN
+This configuration module configures SRv6 over IS-IS with BGP to advertise SID reachability
 
 Supported SRv6 features:
 
@@ -9,7 +9,7 @@ Supported SRv6 features:
 * Dynamic BGP Service SIDs
 * BGP L3VPN v4/v6 over SRv6
 
-The module currently depends on IS-IS module and will trigger a configuration error if the **isis** module is not enabled in the network topology.
+The module currently depends on IS-IS and will trigger a configuration error if the **isis** module is not enabled in the network topology.
 
 ## Platform Support
 The following table describes per-platform support of individual router-level SRv6 features:
@@ -33,8 +33,7 @@ The following table describes per-platform support of individual router-level SR
 ## Configurable Global and Node Parameters
 
 * **addressing.srv6_locator** -- global address pool[^poolname] for allocation of SRv6 locator prefixes, default prefix defined by `topology.defaults.srv6.locator_pool` (2001:db8::/40)
-* **srv6.af**  -- IP address families to support in the SRv6 overlay, default IPv4 + IPv6
-* **srv6.bgp** -- enable SRv6 support for BGP when module is available, default `True`
+* **srv6.af**  -- IP address families to transport in the SRv6 overlay, default IPv4 + IPv6
 * **srv6.vpn** -- enable VPNv4 and VPNv6 address families over SRv6. BGP/SRv6 L3VPN is disabled by default.
 * **srv6.igp** -- list of IGP protocols for which to enable SRv6, default `[isis]`
 

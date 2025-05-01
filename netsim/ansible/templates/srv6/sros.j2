@@ -32,13 +32,13 @@ updates:
          protection: protected
          interface-name: {{ 'i' + i.ifname }}
 {%     endfor %}
-{%     if 'bgp' in module and srv6.bgp|default(False) and not srv6.transit_only|default(False) %}
-{%     if 'ipv4' in srv6.af %}
+{%     if 'bgp' in module and not srv6.transit_only|default(False) %}
+{%       if 'ipv4' in srv6.af %}
        end-dt4: { }
-{%     endif %}
-{%     if 'ipv6' in srv6.af %}
+{%       endif %}
+{%       if 'ipv6' in srv6.af %}
        end-dt6: { }
-{%     endif %}
+{%       endif %}
 {%     endif %}
    source-address: "{{ loopback.ipv6 | ipaddr('address') }}"
 {% if not srv6.transit_only|default(False) %}
@@ -72,7 +72,6 @@ updates:
 
 {# Enable BGP SRv6 and/or extended NH encoding #}
 {% if 'bgp' in module %}
-{% if srv6.bgp %}
 - path: configure/router[router-name=Base]/bgp
   val:
    segment-routing-v6:
@@ -84,16 +83,15 @@ updates:
       add-srv6-tlvs:
        locator-name: {{ locator_name }}
 {%  endfor %}
-{% endif %}
 
-{% if srv6.af.get('ipv4') and (srv6.bgp or bgp.rr|default(False)) %}
+{%  if srv6.af.get('ipv4') %}
 - path: configure/router[router-name=Base]/bgp
   val:
    extended-nh-encoding:
     ipv4: True
    advertise-ipv6-next-hops:
     ipv4: True
-{% endif %}
+{%  endif %}
 {% endif %}
 
 {# Provision SRv6 FPE resources at edges of SRv6 domain #}
