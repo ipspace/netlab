@@ -195,15 +195,13 @@ def set_evpn_transport(topology: Box) -> str:
       valid_values=topology.defaults.evpn.attributes.transport.valid_values,
       module='evpn')
   if not setting:
-    setting = VALID_TRANSPORTS[0]       # Default to VXLAN
+    setting = VALID_TRANSPORTS[0]                # Default to VXLAN
     topology.evpn.transport = setting
-
-  if setting not in topology.get('module',[]):
+  elif setting not in topology.get('module',[]): # Warn if user sets it without adding the module
     log.error(
-      f"EVPN transport module evpn.transport='{setting}' not active in topology",
+      f"Selected EVPN transport module evpn.transport='{setting}' not active in topology",
       log.MissingDependency,
-      'evpn',
-      more_data=f'Available transport modules: {",".join(VALID_TRANSPORTS)}')
+      'evpn')
     return ""
   return setting
 
