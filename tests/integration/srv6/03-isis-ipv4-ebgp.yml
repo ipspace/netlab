@@ -1,0 +1,74 @@
+---
+message: |
+  The tested device (DUT) is a PE-router running IS-IS, inter-AS eBGP and SRv6 across an IPv6-only network to interconnect
+  two IPv4-only networks. The validation test checks end-to-end IPv4 connectivity across a SRv6 core.
+  See https://www.ietf.org/archive/id/draft-mishra-idr-v4-islands-v6-core-4pe-06.html
+
+addressing:
+  p2p:
+    ipv4: False               # ipv6-only
+    ipv6: 2001:1::/48         # SRv6 requires ipv6 addresses on interfaces
+
+  loopback:
+    ipv4: False               # No need for ipv4 loopbacks, this avoids creating ipv4 ibgp sessions too
+    ipv6: 2001::/48           # SRv6 requires ipv6 loopback addresses
+
+srv6.af:
+  ipv4: True                  # Enable IPv4 in the overlay
+srv6.vpn: False
+
+bgp.advertise_loopback: False # Using IS-IS for this
+
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h1, h2 ]
+    device: linux
+    provider: clab
+  pe:
+    members: [ dut, pe2 ]
+    module: [ isis, bgp, srv6 ]
+    bgp.import: [ connected ]
+  x_switches:
+    members: [ pe2 ]
+    device: frr
+    provider: clab
+
+nodes:
+  dut:
+    bgp.as: 65001             # Tests inter-AS SIDs
+  pe2:
+    bgp.as: 65002
+
+links:
+- h1:
+  dut:
+  isis: False                 # Using BGP to announce these prefixes
+- dut:
+  pe2:
+  role: internal              # Enable IS-IS on this link
+- pe2:
+  isis: False
+  h2:
+
+validate:
+  isis:
+    description: Check ISIS sessions with DUT (wait up to 30 seconds)
+    wait: 30
+    wait_msg: Waiting for ISIS adjacency
+    nodes: [ pe2 ]
+    plugin: isis_neighbor('dut',level='L2',area='49.0001')
+    stop_on_error: true
+  ebgp:
+    description: Check EBGP session with activation of IPv4 over IPv6
+    wait: 10
+    wait_msg: Waiting for EBGP sessions to start
+    nodes: [ pe2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6',activate='ipv4')
+    stop_on_error: true
+  ping:
+    description: Ping-based end-to-end reachability test
+    wait_msg: We might have to wait a bit longer
+    wait: 10
+    nodes: [ h1 ]
+    plugin: ping('h2')

@@ -10,13 +10,18 @@ from . import _Module
 from ..utils import log
 from .. import data
 import ipaddress
+from ..data.global_vars import get_const
 
 DEFAULT_VPN_AF: typing.Final[dict] = {
   'ipv4': [ 'ibgp' ],
   'ipv6': [ 'ibgp' ]
 }
 
-POOL_NAME = "srv6_locator"
+"""
+Returns the name for the SRv6 locator address pool, default 'srv6_locator'
+"""
+def get_pool_name() -> str:
+  return get_const('srv6.locator_pool.name','srv6_locator')
 
 """
 Configures BGP address families for neighbors, including extended nexthop where needed
@@ -27,20 +32,23 @@ def configure_bgp_for_srv6(node: Box, topology: Box) -> None:
   for nb in node.get('bgp.neighbors',[]):
     if 'ipv6' not in nb:           # Skip IPv4-only neighbors
       continue
-    nb.ipv4_rfc8950 = True         # Enable extended next hops by default
     for af in DEFAULT_VPN_AF.keys():
       nb.activate[af] = srv6_af.get(af,False)
       if srv6_vpn and nb.type in srv6_vpn[af]:
         vpn_af = 'vpn'+af.replace('ip','')
         if node.af.get(vpn_af):    # Check if the VPN AF is enabled
           nb[vpn_af] = nb.ipv6     # ...and enable it over IPv6 (only)
+    if 'ipv4' not in nb and nb.activate.get('ipv4'):
+      nb.ipv4_rfc8950 = True       # Enable extended next hops when IPv4 AF is used without IPv4 transport
+
 
 class SRV6(_Module):
   """
-  module_pre_default - create the 'srv6_locator' address pool
+  module_pre_default - create the default SRv6 locator address pool
   """
   def module_pre_default(self, topology: Box) -> None:
     # Defining this as _top addressing includes it in *every* topology
+    POOL_NAME = get_pool_name()
     if POOL_NAME not in topology.defaults.addressing:
       topology.defaults.addressing[ POOL_NAME ] = {
         'ipv6': topology.defaults.srv6.locator_pool,
@@ -60,6 +68,9 @@ class SRV6(_Module):
           f"Node {node.name} does not support BGP with SRv6",
           module='srv6')
       elif 'bgp' not in mods:
+        log.warning(
+          text=f"The BGP module is not active on node {node.name}, setting srv6.bgp to 'False'",
+          module='srv6')
         node.srv6.bgp = False
     for igp in node.get('srv6.igp',[]):
       if igp not in mods:
@@ -81,9 +92,15 @@ class SRV6(_Module):
           module='srv6')
 
   def node_post_transform(self, node: Box, topology: Box) -> None:
+    mods = node.get('module',[])
+    for igp in node.get('srv6.igp',[]): # Check if the IGP module is still active, it may have been removed
+      if igp not in mods:
+        log.warning(
+          text=f"The IGP module for {igp} on node {node.name} has been removed, SRv6 will likely not work",
+          module='srv6')
     locator = node.get('srv6.locator')
     if not locator:
-       prefix = addressing.get(topology.pools,[POOL_NAME])['ipv6']
+       prefix = addressing.get(topology.pools,[get_pool_name()])['ipv6']
        locator = str(prefix)
        node.srv6.locator = locator
     locator_net = ipaddress.IPv6Network(locator)
