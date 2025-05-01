@@ -57,6 +57,7 @@ class SRV6(_Module):
     elif 'ipv6' not in topology.defaults.addressing[ POOL_NAME ]:
       log.error(
           f"Custom SRv6 addressing pool '{POOL_NAME}' must provide IPv6 prefixes",
+          category=log.MissingValue,
           module='srv6')
 
   def node_pre_transform(self, node: Box, topology: Box) -> None:
@@ -66,6 +67,7 @@ class SRV6(_Module):
       if not d_features.srv6.get('bgp') and 'bgp' in mods:
         log.error(
           f"Node {node.name} does not support BGP with SRv6",
+          category=log.IncorrectValue,
           module='srv6')
       elif 'bgp' not in mods:
         log.warning(
