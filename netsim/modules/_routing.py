@@ -198,13 +198,6 @@ def add_loopback_igp(node: Box, proto: str, topology: Box) -> None:
   if 'loopback' not in node:                                # Node working in host mode, no loopback
     return
 
-  # common_afs = []
-  # for af in topology[proto].af:
-  #   if af in node.loopback:
-  #     common_afs.append( af )
-  # if not common_afs:
-  #   return                                                  # No common AFs -> exit
-
   d_feature = devices.get_device_features(node,topology.defaults)
   lb_data = d_feature[proto].get('loopback',{})             # Get device-specific loopback info (if present)
   if not isinstance(lb_data,Box):                           # Sanity check
