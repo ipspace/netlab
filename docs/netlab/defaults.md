@@ -7,9 +7,18 @@
 * Display the source of each default setting
 * Change a default setting in the specified default datastore.
 
+```eval_rst
+.. contents:: Table of Contents
+   :depth: 2
+   :local:
+   :backlinks: none
+```
+
+## Usage
+
 ```text
-usage: netlab defaults [-h] [-r] [-s] [--directory] [--project] [--user] [--system]
-                       [--package] [--yes] [--yaml]
+usage: netlab defaults [-h] [-r] [--delete] [-s] [--directory] [--project] [--user]
+                       [--system] [--package] [--yes] [--yaml]
                        [setting]
 
 Manage netlab default settings
@@ -20,6 +29,8 @@ positional arguments:
 options:
   -h, --help    show this help message and exit
   -r, --regex   Display default settings matching a regular expression
+  --delete      Delete the settings matching the specified pattern from the specified
+                datastore
   -s, --source  Display the source of the default setting
   --directory   Display or store settings from the current directory
   --project     Display or store settings from the current project defaults
@@ -28,6 +39,11 @@ options:
   --package     Display settings included in netlab package
   --yes         Overwrite existing settings without a confirmation
   --yaml        Store changed defaults in expanded YAML format
+```
+
+```{note}
+* When you use the `--project` parameter, **‌netlab defaults** tries to find the defaults used in the current project (for example, BGP or IS-IS labs), either **‌defaults.yml** in the current directory or the first element in the **‌defaults.sources.extra** list in the default lab topology file (**topology.yml**) in the current directory.
+* Do not use `--yaml` with `--delete`. Empty parent dictionaries of the deleted settings would not be removed, resulting in potentially incorrect data structures.
 ```
 
 ## Displaying the Default Settings
@@ -103,14 +119,14 @@ For example, with no per-user default information, the **netlab defaults provide
 $ netlab defaults provider=clab
 The default setting provider is already set in netlab defaults
 Do you want to change that setting in user defaults [y/n]: y
-provider set to clab in /Users/me/.netlab.yml
+provider set to clab in /home/me/.netlab.yml
 ```
 
 You can specify the default datastore to modify with the `--directory` through `--system` parameter. For example, use **netlab defaults --directory device=eos** to set the default device for topologies in the current directory:
 
 ```
 $ netlab defaults --directory device=eos
-device set to eos in /Users/me/SomePath/topology-defaults.yml
+device set to eos in /home/me/SomePath/topology-defaults.yml
 ```
 
 The **netlab defaults** command accepts scalar and list values. You can use the following commands to inspect and modify the **bgp.warnings.igp_list** parameter:
@@ -125,4 +141,23 @@ bgp.warnings.igp_list set to ['ospf', 'isis'] in /Users/me/.netlab.yml
 $ netlab defaults bgp.warnings.igp_list --source
 bgp.warnings.igp_list = ['ospf', 'eigrp', 'isis', 'ripv2'] (netlab)
 bgp.warnings.igp_list = ['ospf', 'isis'] (user)
+```
+
+## Deleting Default Settings
+
+**netlab defaults --delete** allows you to delete one or more default parameters from all default files but the built-in system defaults. The command expects two arguments:
+
+* The default file you want to change (`--directory` through `--system`)
+* A pattern specifying one or more default settings to delete.
+
+For example, use **netlab defaults --delete --project device** to delete the default device setting from the project defaults:
+
+```
+$ netlab defaults --project --delete device
+The following settings will be deleted from the project defaults:
+
+device: frr
+
+Do you want to delete these settings [y/n]: y
+The specified settings were deleted from /home/me/BGP/defaults.yml
 ```

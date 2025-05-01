@@ -12,7 +12,7 @@ from box import Box
 
 from . import error_and_exit
 from ..utils import files as _files, log, read as _read,strings
-from ..data import get_empty_box
+from ..data import get_box,get_empty_box
 
 def defaults_parse(args: typing.List[str]) -> argparse.Namespace:
   parser = argparse.ArgumentParser(
@@ -23,6 +23,11 @@ def defaults_parse(args: typing.List[str]) -> argparse.Namespace:
     dest='regex',
     action='store_true',
     help='Display default settings matching a regular expression')
+  parser.add_argument(
+    '--delete',
+    dest='delete',
+    action='store_true',
+    help='Delete the settings matching the specified pattern from the specified datastore')
   parser.add_argument(
     '-s','--source',
     dest='source',
@@ -266,6 +271,20 @@ def path_value_settings(data: Box) -> str:
   return list_data.to_yaml()
 
 """
+Update defaults datastore
+"""
+def update_datastore(data: Box, path: str, store_as_yaml: bool) -> None:
+  d_comments = read_comments(path)
+  d_comments[0].append('---')
+  if store_as_yaml:
+    contents = data.to_yaml()
+  else:
+    contents = path_value_settings(data)
+
+  txt = "\n".join(["\n".join(d_comments[0]),contents,"\n".join(d_comments[1])]) + "\n"
+  pathlib.Path(path).write_text(txt)
+
+"""
 Make the change to the specified setting
 """
 def change_default_setting(s_path: str, s_value: typing.Any, src: str, store_as_yaml: bool) -> None:
@@ -274,16 +293,8 @@ def change_default_setting(s_path: str, s_value: typing.Any, src: str, store_as_
     if d_data is None:
       d_data = get_empty_box()
 
-    d_comments = read_comments(src)
-    d_comments[0].append('---')
     d_data[s_path] = s_value
-    if store_as_yaml:
-      contents = d_data.to_yaml()
-    else:
-      contents = path_value_settings(d_data)
-
-    txt = "\n".join(["\n".join(d_comments[0]),contents,"\n".join(d_comments[1])]) + "\n"
-    pathlib.Path(src).write_text(txt)
+    update_datastore(d_data,src,store_as_yaml)
     print(f"{s_path} set to {s_value} in {src}")
   except Exception as ex:
     error_and_exit(
@@ -322,6 +333,46 @@ def default_set(args: argparse.Namespace, topology: Box) -> None:
 
   change_default_setting(s_path,s_value,w_sources[w_best_src],args.yaml)
 
+'''
+Delete specified settings
+'''
+def default_delete(args: argparse.Namespace, topology: Box) -> None:
+  if not source_specified(args):
+    error_and_exit('You have to specify the datastore from which you want to delete the settings')
+
+  d_sources = get_sources(args)
+  if len(d_sources) > 1:
+    error_and_exit('You can specify only a single datastore for the delete operation')
+  if 'netlab' in d_sources:
+    error_and_exit('You can delete settings from the built-in defaults')
+
+  reobj = get_re_pattern(args.setting,args.regex)
+  def_expanded = build_defaults_sources(reobj,d_sources)
+  if not def_expanded:
+    error_and_exit(f'No settings match the specified pattern {args.setting}')
+
+  ds_name = list(d_sources)[0]
+  print(f"The following settings will be deleted from the {ds_name} defaults:\n")
+  for k,v in def_expanded.items():
+    print(f'{k}: {list(v.values())[0]}')
+
+  if not args.yes and not strings.confirm('\nDo you want to delete these settings'):
+    return
+
+  df_name = d_sources[ds_name]
+  d_data = _read.read_yaml(df_name)
+  if d_data is None:
+    error_and_exit(f'Cannot read defaults from {df_name}')
+  if args.yaml:
+    for k in def_expanded.keys():
+      d_data.pop(k,None)
+    update_datastore(d_data,df_name,args.yaml)
+  else:
+    list_data = Box({ k:v for k,v in build_defaults_list(d_data,None,None).items() if k not in def_expanded })
+    update_datastore(list_data,df_name,args.yaml)
+
+  print(f"The specified settings were deleted from {df_name}")
+
 def run(cli_args: typing.List[str]) -> None:
   args = defaults_parse(cli_args)
   log.set_logging_flags(args)
@@ -329,7 +380,9 @@ def run(cli_args: typing.List[str]) -> None:
     error_and_exit("Remove the 'defaults' prefix, we know you're changing the defaults")
   find_project_defaults()
   topology = _read.load("package:cli/empty.yml")
-  if '=' in args.setting:
+  if args.delete:
+    default_delete(args,topology)
+  elif '=' in args.setting:
     default_set(args,topology)
   else:
     default_show(args,topology)
