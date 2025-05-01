@@ -1,8 +1,30 @@
 ---
 message: |
-  The tested device (DUT) is a PE-router running IS-IS, inter-AS eBGP and SRv6 across an IPv6-only network to
-  interconnect two IPv4-only networks. The validation test checks end-to-end IPv4 connectivity across a SRv6 core.
+  The tested device (DUT) is a PE (ASBR) running SRv6 with IS-IS, using both iBGP and inter-AS eBGP to 2 peers to form
+  an IPv6-only network to interconnect two IPv4-only networks. The validation test checks end-to-end IPv4 connectivity
+  across the resulting multi-AS SRv6 path.
   See https://www.ietf.org/archive/id/draft-mishra-idr-v4-islands-v6-core-4pe-06.html
+
+  See IETF draft https://www.ietf.org/id/draft-mishra-spring-inter-domain-routing-arch-01.html Figure 1
+
+                                           SRv6 Next SID Topology
+              
+              
+                Loc:fc00:0:1::/48             Loc:fc00:0:2::/48       Loc:fc00:0:3::/48
+                Lo0:fc00:0:1::1               Lo0:fc00:0:2::1         Lo0:fc00:0:3::1
+                 +-------+                     +-------+                    +-------+
+                 |   AS1 |2001:1::2/127        |   AS1 |       2001:1::5/127|  AS2  |
+           H1 -- |   PE1 |---------------------|   PE2 |--------------------|  PE3  | -- H2
+                 |       |        2001:1::3/127| (ASBR)|2001:1::4/127       |(ASBR) |
+                 +-------+                     +-------+                    +-------+
+                                                 *DUT*
+                           iBGP (Remote Peer)             eBGP (Local Peer)
+
+  Operational considerations:
+  * always use Next-Hop-Unchanged (NHU) on all eBGP boundaries on both sides of the eBGP peering to signal
+    "End to End SID" for SID propagation End-to-End in both directions
+  * don't use Next-Hop-Self on iBGP PE-RR peering so that the received service SID from an Ingress Domain is propagated
+   "End to End" to an Egress Domain and vice versa in both directions
 
 addressing:
   p2p:
@@ -12,12 +34,16 @@ addressing:
   loopback:
     ipv4: False               # No need for ipv4 loopbacks, this avoids creating ipv4 ibgp sessions too
     ipv6: 2001::/48           # SRv6 requires ipv6 loopback addresses
+  
+  srv6_locator:
+    ipv6: fc00::/40
+    prefix6: 48
 
 srv6.af:
   ipv4: True                  # Enable IPv4 in the overlay
 srv6.vpn: False
 
-bgp.advertise_loopback: False # Using IS-IS for this
+bgp.advertise_loopback: True  # Not using IS-IS for this here
 
 groups:
   _auto_create: True
@@ -26,29 +52,34 @@ groups:
     device: linux
     provider: clab
   pe:
-    members: [ dut, pe2 ]
+    members: [ dut, pe1, pe3 ]
     module: [ isis, bgp, srv6 ]
     bgp.import: [ connected ]
   x_switches:
-    members: [ pe2 ]
+    members: [ pe1, pe3 ]
     device: frr
     provider: clab
 
 nodes:
+  pe1:
+    bgp.as: 65001
   dut:
-    bgp.as: 65001             # Tests inter-AS SIDs
-  pe2:
-    bgp.as: 65002
+    bgp.as: 65001
+  pe3:
+    bgp.as: 65002             # Tests inter-AS SIDs
+    module: [ bgp, srv6 ]     # No IS-IS
+    srv6.igp: []
 
 links:
 - h1:
-  dut:
+  pe1:
   isis: False                 # Using BGP to announce these prefixes
+- pe1:
+  dut:
 - dut:
-  pe2:
-  role: internal              # Enable IS-IS on this link
-- pe2:
-  isis: False
+  pe3:
+  # role: internal              # Could enable IS-IS on this link
+- pe3:
   h2:
 
 validate:
@@ -56,19 +87,24 @@ validate:
     description: Check ISIS sessions with DUT (wait up to 30 seconds)
     wait: 30
     wait_msg: Waiting for ISIS adjacency
-    nodes: [ pe2 ]
+    nodes: [ pe1 ]
     plugin: isis_neighbor('dut',level='L2',area='49.0001')
     stop_on_error: true
   ebgp:
     description: Check EBGP session with activation of IPv4 over IPv6
     wait: 10
     wait_msg: Waiting for EBGP sessions to start
-    nodes: [ pe2 ]
+    nodes: [ pe3 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6',activate='ipv4')
+    stop_on_error: true
+  ibgp:
+    description: Check IBGP session with activation of IPv4 over IPv6
+    wait: 10
+    wait_msg: Waiting for IBGP sessions to start
+    nodes: [ pe1 ]
     plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6',activate='ipv4')
     stop_on_error: true
   ping:
     description: Ping-based end-to-end reachability test
-    wait_msg: We might have to wait a bit longer
-    wait: 10
     nodes: [ h1 ]
     plugin: ping('h2')

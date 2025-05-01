@@ -29,11 +29,16 @@ Configures BGP address families for neighbors, including extended nexthop where 
 def configure_bgp_for_srv6(node: Box, topology: Box) -> None:
   srv6_af = node.get('srv6.af',{})
   srv6_vpn = node.get('srv6.vpn')
+  for af in DEFAULT_VPN_AF.keys():
+    if srv6_af.get(af):
+      node.bgp[af] = True          # Enable corresponding BGP address families
   for nb in node.get('bgp.neighbors',[]):
     if 'ipv6' not in nb:           # Skip IPv4-only neighbors
       continue
     for af in DEFAULT_VPN_AF.keys():
       nb.activate[af] = srv6_af.get(af,False)
+      if nb.type=='ebgp':          # Set next hop unchanged for EBGP peers, to get end-2-end SID routing
+        nb._next_hop_unchanged = True
       if srv6_vpn and nb.type in srv6_vpn[af]:
         vpn_af = 'vpn'+af.replace('ip','')
         if node.af.get(vpn_af):    # Check if the VPN AF is enabled
