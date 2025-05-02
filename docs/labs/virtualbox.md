@@ -1,11 +1,14 @@
 (lab-virtualbox)=
 # VirtualBox-Based Lab on Windows or MacOS
 
-VirtualBox-based Vagrant lab was an interesting option to run *netlab* directly on Windows or macOS on x86 hardware. It is no longer supported; we stopped developing new features when Apple started shipping ARM-based hardware and never ran integration tests with VirtualBox. Use Windows Subsystem for Linux, Multipass-provisioned Ubuntu VM on macOS (you'll be limited to a few ARM-based containers), or an external Ubuntu server or VM.
+VirtualBox-based Vagrant lab was an interesting option to run *netlab* directly on Windows or macOS on x86 hardware. The world has moved on; Microsoft launched Windows Subsystem for Linux, and Apple started shipping ARM-based hardware (that's when we stopped developing new VirtualBox features). 
+
+Instead of VirtualBox, use Windows Subsystem for Linux, Multipass-provisioned Ubuntu VM on macOS (you'll be limited to a few ARM-based containers), or an external Ubuntu server or VM.
 
 ```{warning}
-* While _netlab_ still has a VirtualBox provider, we no longer have the infrastructure to run tests.
-* VirtualBox cannot run x86 VMs on Apple silicon, making it useless in an environment where most vendors ship only x86-based VM images.
+* The **‌virtualbox** provider will be removed in a future _netlab_ release. Do not use it for new installations.
+* We no longer have the infrastructure to test the **‌virtualbox** provider and cannot guarantee that it still works.
+* VirtualBox on macOS cannot run x86 VMs on Apple silicon, making it useless in an environment where most vendors ship only x86-based VM images.
 ```
 
 When running _netlab_ with `virtualbox` provider:
