@@ -1,4 +1,4 @@
-# SRv6 over IS-IS using BGP and/or BGP L3VPN v4/v6
+# SRv6 over IS-IS using BGP and/or BGP L3VPN v4/v6 as control plane
 #
 # Modeled similar to the MPLS module
 #
@@ -8,17 +8,16 @@ no_propagate: [ locator_pool ]
 
 locator_pool: 2001:db8::/40 # Default address pool for locators, see RFC 6890 – Documentation Set
 igp: [ isis ]               # By default, enable SRv6 over IS-IS
-af:
-  ipv4: True
-  ipv6: True
+bgp:
+  ipv4: [ ibgp ]            # By default, enable BGP v4/v6 for SRv6 on iBGP neighbors
+  ipv6: [ ibgp ]
 
 attributes:
   global:
-    af:
-      _list_to_dict: True
-      _alt_types: [ NoneType ]
-      ipv4: bool
-      ipv6: bool
+    bgp: # BGP v4/v6 AF
+      _alt_types: [ bool, BoxList ]
+      ipv4: { type: list, true_value: [ ibgp ] }
+      ipv6: { type: list, true_value: [ ibgp ] }
     igp: { type: list, valid_values: [ isis, ospf ] }
     vpn: # BGP VPN v4/v6
       _alt_types: [ bool, BoxList ]
@@ -27,10 +26,10 @@ attributes:
     locator_pool: { type: ipv6, use: subnet_prefix }
 
   node:
-    af:
+    bgp:
     igp:
-    locator: { type: ipv6, use: subnet_prefix }
     vpn:
+    locator: { type: ipv6, use: subnet_prefix }
     transit_only: bool
 
 #
@@ -44,5 +43,5 @@ attributes:
 
 features:
   vpn: Supports BGP L3VPN v4/v6 over SRv6
-  isis: Supports SRv6 over IS-IS
-  ospf: Supports SRv6 over OSPFv3
+  isis: Supports SRv6 with IS-IS
+  ospf: Supports SRv6 with OSPFv3

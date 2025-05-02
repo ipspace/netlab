@@ -32,11 +32,11 @@ updates:
          protection: protected
          interface-name: {{ 'i' + i.ifname }}
 {%     endfor %}
-{%     if 'bgp' in module and not srv6.transit_only|default(False) %}
-{%       if 'ipv4' in srv6.af %}
+{%     if 'bgp' in module and srv6.bgp and not srv6.transit_only|default(False) %}
+{%       if 'ipv4' in srv6.bgp %}
        end-dt4: { }
 {%       endif %}
-{%       if 'ipv6' in srv6.af %}
+{%       if 'ipv6' in srv6.bgp %}
        end-dt6: { }
 {%       endif %}
 {%     endif %}
@@ -71,20 +71,20 @@ updates:
 {% endif %}
 
 {# Enable BGP SRv6 and/or extended NH encoding #}
-{% if 'bgp' in module %}
+{% if 'bgp' in module and srv6.bgp %}
 - path: configure/router[router-name=Base]/bgp
   val:
    segment-routing-v6:
     source-address: "{{ loopback.ipv6 | ipaddr('address') }}"
     family:
-{%  for af in ['ipv4','ipv6'] if srv6.af.get(af) %}
+{%  for af in ['ipv4','ipv6'] if srv6.bgp.get(af) %}
     - family-type: {{ af }}
       ignore-received-srv6-tlvs: False # default: True
       add-srv6-tlvs:
        locator-name: {{ locator_name }}
 {%  endfor %}
 
-{%  if srv6.af.get('ipv4') %}
+{%  if srv6.bgp.get('ipv4') %}
 - path: configure/router[router-name=Base]/bgp
   val:
    extended-nh-encoding:

@@ -12,7 +12,8 @@ from .. import data
 import ipaddress
 from ..data.global_vars import get_const
 
-DEFAULT_VPN_AF: typing.Final[dict] = {
+# Defaults used for both srv6.bgp and srv6.vpn
+DEFAULT_BGP_AF: typing.Final[dict] = {
   'ipv4': [ 'ibgp' ],
   'ipv6': [ 'ibgp' ]
 }
@@ -27,23 +28,19 @@ def get_pool_name() -> str:
 Configures BGP address families for neighbors, including extended nexthop where needed
 """
 def configure_bgp_for_srv6(node: Box, topology: Box) -> None:
-  srv6_af = node.get('srv6.af',{})
-  srv6_vpn = node.get('srv6.vpn')
-  for af in DEFAULT_VPN_AF.keys():
-    if srv6_af.get(af):
-      node.bgp[af] = True          # Enable corresponding BGP address families
+  srv6_bgp = node.get('srv6.bgp',{})
+  srv6_vpn = node.get('srv6.vpn',{})
   for nb in node.get('bgp.neighbors',[]):
     if 'ipv6' not in nb:           # Skip IPv4-only neighbors
       continue
-    for af in DEFAULT_VPN_AF.keys():
-      nb.activate[af] = srv6_af.get(af,False)
+    for af in DEFAULT_BGP_AF.keys():
       if nb.type=='ebgp':          # Set next hop unchanged for EBGP peers, to get end-2-end SID routing
         nb._next_hop_unchanged = True
-      if srv6_vpn and nb.type in srv6_vpn[af]:
+      if srv6_vpn and nb.type in srv6_vpn.get(af,[]):
         vpn_af = 'vpn'+af.replace('ip','')
         if node.af.get(vpn_af):    # Check if the VPN AF is enabled
           nb[vpn_af] = nb.ipv6     # ...and enable it over IPv6 (only)
-    if 'ipv4' not in nb and nb.activate.get('ipv4'):
+    if 'ipv4' not in nb and nb.type in (srv6_bgp.get('ipv4',[])+srv6_vpn.get('ipv4',[])):
       nb.ipv4_rfc8950 = True       # Enable extended next hops when IPv4 AF is used without IPv4 transport
 
 
@@ -79,8 +76,14 @@ class SRV6(_Module):
           f"Node {node.name} (device {node.device}) does not support {igp} as IGP for SRv6",
           category=log.IncorrectValue,
           module='srv6')
-      
-    data.bool_to_defaults(node.srv6,'vpn',DEFAULT_VPN_AF)
+
+    data.bool_to_defaults(node.srv6,'bgp',DEFAULT_BGP_AF)
+    if node.srv6.get('bgp') and 'bgp' not in mods:
+      log.error(
+          f"Node {node.name} does not have the BGP module enabled to support BGP v4/v6",
+          category=log.MissingDependency,
+          module='srv6')
+    data.bool_to_defaults(node.srv6,'vpn',DEFAULT_BGP_AF)
     if node.srv6.get('vpn') and 'vrf' not in mods:
       log.error(
           f"Node {node.name} does not have the VRF module enabled to support BGP L3VPN",
