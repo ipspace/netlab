@@ -113,7 +113,7 @@ The following table documents the common interface-level OSPF features:
 | Operating system         | Cost  | Network<br />type | Unnumbered<br />IPv4 interfaces | Passive<br />interfaces |
 | ------------------------ |:--:|:--:|:--:|:--:|
 | Arista EOS               | ✅ | ✅ | ✅ | ✅ |
-| Aruba AOS-CX             | ✅ | ✅ | ❌  | ✅ |
+| Aruba AOS-CX             | ✅ | ✅ | ✅  | ✅ |
 | Cisco IOS                | ✅ | ✅ | ❌  | ✅ |
 | Cisco IOS XE[^18v]       | ✅ | ✅ | ✅ | ✅ |
 | Cisco IOS XRv            | ✅ | ✅ | ✅ | ✅ |
