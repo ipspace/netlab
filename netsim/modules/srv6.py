@@ -31,17 +31,18 @@ def configure_bgp_for_srv6(node: Box, topology: Box) -> None:
   srv6_bgp = node.get('srv6.bgp',{})
   srv6_vpn = node.get('srv6.vpn',{})
   for nb in node.get('bgp.neighbors',[]):
-    if 'ipv6' not in nb:           # Skip IPv4-only neighbors
+    if 'ipv6' not in nb:                               # Skip IPv4-only neighbors
       continue
     for af in DEFAULT_BGP_AF.keys():
-      if nb.type=='ebgp':          # Set next hop unchanged for EBGP peers, to get end-2-end SID routing
+      if nb.type=='ebgp':                              # Set next hop unchanged for EBGP peers, to get end-2-end SID routing
         nb._next_hop_unchanged = True
+      nb.activate[af] = nb.type in srv6_bgp.get(af,[]) # Configure bgp.activate based on srv6 AF
       if srv6_vpn and nb.type in srv6_vpn.get(af,[]):
         vpn_af = 'vpn'+af.replace('ip','')
-        if node.af.get(vpn_af):    # Check if the VPN AF is enabled
-          nb[vpn_af] = nb.ipv6     # ...and enable it over IPv6 (only)
+        if node.af.get(vpn_af):                        # Check if the VPN AF is enabled
+          nb[vpn_af] = nb.ipv6                         # ...and enable it over IPv6 (only)
     if 'ipv4' not in nb and nb.type in (srv6_bgp.get('ipv4',[])+srv6_vpn.get('ipv4',[])):
-      nb.ipv4_rfc8950 = True       # Enable extended next hops when IPv4 AF is used without IPv4 transport
+      nb.ipv4_rfc8950 = True                           # Enable extended next hops when IPv4 AF is used without IPv4 transport
 
 
 class SRV6(_Module):
