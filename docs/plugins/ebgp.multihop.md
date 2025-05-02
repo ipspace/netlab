@@ -52,7 +52,7 @@ bgp.multihop.sessions:
 EBGP multihop plugin works together with **[bgp.session](bgp.session.md)** and **[bgp.policy](bgp.policy.md)** plugins, but has to be listed after them in the list of plugins:
 
 ```
-plugins: [ bgp.session, ebgp.multihop ]
+plugin: [ bgp.session, ebgp.multihop ]
 
 bgp.multihop.sessions:
 - r1:
@@ -63,7 +63,7 @@ bgp.multihop.sessions:
 You can specify any attribute supported by the other BGP plugins on an EBGP multihop session (assuming you included both plugins in your topology).
 
 ```
-plugins: [ bgp.session, ebgp.multihop ]
+plugin: [ bgp.session, ebgp.multihop ]
 
 bgp.multihop.sessions:
 - r1:
