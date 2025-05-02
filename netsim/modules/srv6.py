@@ -112,7 +112,7 @@ class SRV6(_Module):
     elif ipaddress.IPv6Interface(node.loopback.ipv6).network.subnet_of(locator_net):
       log.error(
         f"Node {node.name} ipv6 loopback address {node.loopback.ipv6} overlaps with locator {locator}",
-        category=log.IncorrectValue,
+        category=Warning,
         module='srv6')
     if 'bgp' in node:
       configure_bgp_for_srv6(node,topology)
