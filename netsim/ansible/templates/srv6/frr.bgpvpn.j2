@@ -1,7 +1,6 @@
 {% for af in ['ipv4','ipv6'] if srv6.vpn.get(af) %}
-{%   set vpnaf = 'vpn' + af.replace('ip','') %}
-{%   for n in bgp.neighbors if n[vpnaf] is defined %}
-{%     set peer = n[vpnaf] %}
+{%   for n in bgp.neighbors if n.type in srv6.vpn.get(af) %}
+{%     set peer = n.ipv6 %}
 {%     if loop.first %}
  address-family {{ af }} vpn
 {%     endif %}
@@ -16,7 +15,7 @@
  !
 {% endfor %}
 
-{% for vname,vdata in vrfs.items() %}
+{% for vname,vdata in (vrfs|default({})).items() %}
 router bgp {{ vdata.as|default(bgp.as) }} vrf {{ vname }}
  sid vpn per-vrf export auto
  no bgp network import-check

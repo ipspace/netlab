@@ -34,13 +34,11 @@ def configure_bgp_for_srv6(node: Box, topology: Box) -> None:
     if 'ipv6' not in nb:                               # Skip IPv4-only neighbors
       continue
     for af in DEFAULT_BGP_AF.keys():
+      if nb.type not in srv6_bgp.get(af,[]):           # Skip if not activated
+        continue
       if nb.type=='ebgp':                              # Set next hop unchanged for EBGP peers, to get end-2-end SID routing
         nb._next_hop_unchanged = True
-      nb.activate[af] = nb.type in srv6_bgp.get(af,[]) # Configure bgp.activate based on srv6 AF
-      if srv6_vpn and nb.type in srv6_vpn.get(af,[]):
-        vpn_af = 'vpn'+af.replace('ip','')
-        if node.af.get(vpn_af):                        # Check if the VPN AF is enabled
-          nb[vpn_af] = nb.ipv6                         # ...and enable it over IPv6 (only)
+      nb.activate[af] = False                          # Disable regular BGP activation
     if 'ipv4' not in nb and nb.type in (srv6_bgp.get('ipv4',[])+srv6_vpn.get('ipv4',[])):
       nb.ipv4_rfc8950 = True                           # Enable extended next hops when IPv4 AF is used without IPv4 transport
 
@@ -84,12 +82,7 @@ class SRV6(_Module):
           f"Node {node.name} does not have the BGP module enabled to support BGP v4/v6",
           category=log.MissingDependency,
           module='srv6')
-    data.bool_to_defaults(node.srv6,'vpn',DEFAULT_BGP_AF)
-    if node.srv6.get('vpn') and 'vrf' not in mods:
-      log.error(
-          f"Node {node.name} does not have the VRF module enabled to support BGP L3VPN",
-          category=log.MissingDependency,
-          module='srv6')
+    data.bool_to_defaults(node.srv6,'vpn',DEFAULT_BGP_AF) # Typically used with the vrf module, but not only
 
   def node_post_transform(self, node: Box, topology: Box) -> None:
     mods = node.get('module',[])

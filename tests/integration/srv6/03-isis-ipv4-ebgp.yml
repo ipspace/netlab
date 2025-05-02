@@ -40,10 +40,15 @@ addressing:
     ipv6: fc00::/40
     prefix6: 48
 
-srv6.bgp:
-  ipv4: [ ibgp, ebgp ]        # Enable IPv4 in the overlay for both ibgp and ebgp neighbors
-  ipv6: [ ebgp ]              # For EBGP, also exchange IPv6 routes since there is no IS-IS
-srv6.vpn: False
+srv6.bgp: False
+srv6.vpn:
+  ipv4: [ ibgp, ebgp ]        # Enable IPv4 VPN in the overlay for both ibgp and ebgp neighbors
+
+# Use regular IPv6 BGP for eBGP
+bgp.sessions:
+  ipv6: [ ibgp, ebgp ]
+bgp.activate:
+  ipv6: [ ebgp ]
 
 bgp.advertise_loopback: True  # Not using IS-IS for this here
 
@@ -55,7 +60,7 @@ groups:
     provider: clab
   pe:
     members: [ dut, pe1, pe3 ]
-    module: [ isis, bgp, srv6 ]
+    module: [ bgp ]
     bgp.import: [ connected ]
   x_switches:
     members: [ pe1, pe3 ]
@@ -64,18 +69,25 @@ groups:
 
 nodes:
   pe1:
+    module: [ isis, bgp, srv6, vrf ]
     bgp.as: 65001
   dut:
+    module: [ isis, bgp, srv6 ] # No vrf
     bgp.as: 65001
-    bgp.import: [ connected, isis ]
+    bgp.import: [ connected ]  # Could add isis here
+    bgp.next_hop_self: False   # Preserve SID E2E
   pe3:
-    bgp.as: 65002             # Tests inter-AS SIDs
-    module: [ bgp, srv6 ]     # No IS-IS
+    bgp.as: 65002              # Tests inter-AS SIDs
+    module: [ bgp, srv6, vrf ] # No IS-IS
     srv6.igp: []
+
+vrfs:
+  customer:
 
 links:
 - h1:
   pe1:
+    vrf: customer
   isis: False                 # Using BGP to announce these prefixes
 - pe1:
   dut:
@@ -83,6 +95,7 @@ links:
   pe3:
   # role: internal              # Could enable IS-IS on this link
 - pe3:
+    vrf: customer
   h2:
 
 validate:
@@ -98,14 +111,14 @@ validate:
     wait: 10
     wait_msg: Waiting for EBGP sessions to start
     nodes: [ pe3 ]
-    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6',activate='ipv4')
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6',activate='vpnv4')
     stop_on_error: true
   ibgp:
     description: Check IBGP session with activation of IPv4 over IPv6
     wait: 10
     wait_msg: Waiting for IBGP sessions to start
     nodes: [ pe1 ]
-    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6',activate='ipv4')
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6',activate='vpnv4')
     stop_on_error: true
   ping:
     description: Ping-based end-to-end reachability test
