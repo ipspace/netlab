@@ -5,34 +5,49 @@ router bgp {{ bgp.as }}
 
 {#
   The core bgp module only provisions neighbors for which the transport matches the address family, i.e. IPv4 over v4
-  and IPv6 over v6. This template modifies IPv6 neighbors, adding IPv4 AF over IPv6 transport and setting various
+  and IPv6 over v6. This template modifies IPv6 neighbors, adding IPv4/VPNv4 AF over IPv6 transport and setting various
   next hop handling flags
 #}
-{% if srv6.bgp is defined %}
+{% macro bgp_neighbor(n,peer,af) %}
+  neighbor {{ peer }} activate
+  neighbor {{ peer }} send-community both
+{%   if n.next_hop_unchanged is defined %}
+  neighbor {{ peer }} attribute-unchanged next-hop
+{%   endif %}
+{%   if n.type=='ibgp' and bgp.next_hop_self|default(True) %}
+  neighbor {{ peer }} next-hop-self
+{%   endif %}
+{% endmacro -%}
+
+{% if srv6.bgp is defined or srv6.vpn is defined %}
 {%   for n in bgp.neighbors|default([]) if n.ipv6 is defined %}
 {%     set peer = n.ipv6 %}
  neighbor {{ peer }} remote-as {{ n.as }}
  neighbor {{ peer }} description {{ n.name }}
+{%     if n.extended_nexthop is defined %}
+ neighbor {{ peer }} capability extended-nexthop
+{%     endif %}
 
-{%     for af in ['ipv4','ipv6'] if n.type in srv6.bgp.get(af) %}
+{%-    for af in ['ipv4','ipv6'] %} 
+{%       if srv6.bgp is defined and n.type in srv6.bgp.get(af,[]) %}
  address-family {{ af }} unicast
-  neighbor {{ peer }} activate
-  neighbor {{ peer }} send-community both
-{%       if n._next_hop_unchanged is defined %}
-  neighbor {{ peer }} attribute-unchanged next-hop
+!
+{{       bgp_neighbor(n,peer,af) -}}
 {%       endif %}
-{%       if n.type=='ibgp' %}
-  neighbor {{ peer }} next-hop-self
+{%       if srv6.vpn is defined and n.type in srv6.vpn.get(af,[]) %}
+ address-family {{ af }} vpn
+!
+{{       bgp_neighbor(n,peer,af) -}}
 {%       endif %}
-{%       if af=='ipv4' and n.ipv4_rfc8950|default(False) %}
-  neighbor {{ peer }} capability extended-nexthop
-{%       endif %}
-
-  !
 {%     endfor %}
 {%   endfor %}
 {% endif %}
-
-{% if srv6.vpn is defined %}
-{%   include "frr.bgpvpn.j2" %}
+!
+{% if srv6.vpn is defined and vrfs is defined %}
+{%   for vname,vdata in vrfs.items() %}
+router bgp {{ vdata.as|default(bgp.as) }} vrf {{ vname }}
+ sid vpn per-vrf export auto
+ no bgp network import-check
+!
+{%   endfor %}
 {% endif %}
