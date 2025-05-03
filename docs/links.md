@@ -70,7 +70,7 @@ A dictionary describing an individual link contains *node names* and *additional
 * **disable** -- remove the link from the lab topology when set to `True`. You can use this attribute to simplify the topology when debugging it[^CIN].
 * **gateway** -- sets the default gateway for hosts attached to the link. See [Hosts and Default Gateways](#hosts-and-default-gateways) and [](module-gateway) for more details.
 * **group** -- [link group](link-groups) identifier
-* **linkindex** [R/O] -- link sequence number (starting with one), used to generate internal network names in VirtualBox and default bridge names in libvirt.
+* **linkindex** [R/O] -- link sequence number (starting with one), used to generate default bridge names in libvirt.
 * **members** -- list of links in a [link group](link-groups)
 * **mtu** -- link MTU (see [Changing MTU](links-mtu) section for more details)
 * **name** -- link name (used for interface description)

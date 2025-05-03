@@ -23,7 +23,7 @@ You can influence the data model transformation with optional [configuration mod
 **netlab create** uses transformed node- and link-level data structures to create:
 
 * Snapshot of the transformed topology in the **netlab.snapshot.yml** file. This file is used by **netlab down** command to find the virtualization provider and link (bridge) names.
-* **Vagrantfile** supporting *[libvirt](../labs/libvirt.md)* or *[virtualbox](../labs/virtualbox.md)* environment
+* **Vagrantfile** supporting *[libvirt](lab-libvirt)* environment
 * **clab.yml** file used by *containerlab*.
 * Ansible inventory[^1], either as a single-file data structure, or as a minimal inventory file with data stored primarily in **host_vars** and **group_vars**
 * Various graphs in *graphviz* DOT format

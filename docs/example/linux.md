@@ -13,7 +13,7 @@ It's straightforward to add Linux hosts to _netlab_ topologies and deploy the so
 
 To add Linux hosts to a lab topology, add nodes with **device: linux**. Although it's possible to have Linux nodes with multiple interfaces, keep things simple and connect these nodes to a single link.
 
-The Linux hosts will be started as virtual machines if you use the *libvirt* or *virtualbox* provider or as containers if you use the *clab* provider. You can also [add Linux containers to a *libvirt* topology](labs-multi-provider): add **provider: clab** to node data.
+The Linux hosts will be started as virtual machines if you use the *libvirt* provider, or as containers if you use the *clab* provider. You can also [add Linux containers to a *libvirt* topology](labs-multi-provider): add **provider: clab** to node data.
 
 For example, the following topology starts two Linux containers attached to a Juniper vPTX virtual machine:
 

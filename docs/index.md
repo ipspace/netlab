@@ -5,7 +5,7 @@
 Using *netlab* you can:
 
 * Describe high-level lab topology in YAML format without worrying about the specific implementation details
-* Use the same lab topology with multiple virtualization providers (Virtualbox, KVM/libvirt, Docker containers)
+* Use the same lab topology with multiple virtualization providers (KVM/libvirt, Docker containers, or physical devices)
 * Create Vagrant- and containerlab configuration files and Ansible inventory from the lab topology
 * Configure IP addressing, routing protocols, VLANs, VRFs, and other networking technologies in your lab
 
