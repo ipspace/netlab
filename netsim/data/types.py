@@ -285,10 +285,11 @@ def get_value_to_check(
 
   # Handle boolean-to-data-type conversions if the value is bool and the caller specified true_value
   #
-  if isinstance(value,bool) and not (true_value is None):
+  if isinstance(value,bool):
     if value is True:                                   # Replace True with true_value and move on
-      value = true_value
-      parent[key] = value
+      if true_value is not None:
+        value = true_value
+        parent[key] = value
     else:
       if false_value is None:                           # If there's no false_value pop the bool option and return None
         parent.pop(key,None)
@@ -457,11 +458,11 @@ def must_be_list(value: typing.Any, make_list: bool = False) -> dict:
 def must_be_dict(value: typing.Any) -> dict:
   return { '_valid': True } if isinstance(value,dict) else { '_type': 'a dictionary' }
 
-@type_test(false_value='')
+@type_test()
 def must_be_string(value: typing.Any) -> dict:
   return { '_valid': True } if isinstance(value,str) else { '_type': 'a string' }
 
-@type_test(false_value='')
+@type_test()
 def must_be_str(value: typing.Any) -> dict:
   return { '_valid': True } if isinstance(value,str) else { '_type': 'a string' }
 
@@ -524,7 +525,7 @@ def must_be_int(
 
   return(check_int_type(value,min_value,max_value))
 
-@type_test()
+@type_test(false_value=False)
 def must_be_bool(value: typing.Any) -> dict:
 
   def transform_to_bool(value: typing.Any) -> bool:
@@ -545,7 +546,7 @@ def must_be_bool(value: typing.Any) -> dict:
 
   return { '_valid': True } if isinstance(value,bool) else { '_type': 'a boolean' }
 
-@type_test()
+@type_test(false_value=False)
 def must_be_bool_false(value: typing.Any) -> dict:
 
   return { '_valid': True } if value is False else { '_type': 'False' }
@@ -743,7 +744,7 @@ def common_addr_parse(
 '''
 IPv4 validation -- use the common code, allowing int values and named prefixes
 '''
-@type_test()
+@type_test(false_value=False)
 def must_be_ipv4(value: typing.Any, use: str, named: bool = False) -> dict:
 
   def transform_to_ipaddr(value: int) -> str:
@@ -763,7 +764,7 @@ def must_be_ipv4(value: typing.Any, use: str, named: bool = False) -> dict:
 '''
 IPv6 validation -- use the common code, but without int values or named prefixes
 '''
-@type_test()
+@type_test(false_value=False)
 def must_be_ipv6(value: typing.Any, use: str) -> dict:
   return common_addr_parse(
             value=value,use=use,named=False,af='IPv6',
