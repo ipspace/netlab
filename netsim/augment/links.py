@@ -365,10 +365,10 @@ def set_fhrp_gateway(link: Box, pfx_list: Box, nodes: Box, link_path: str) -> No
     except Exception as ex:
       log.error(
         f'Cannot generate gateway IP address on {link_path}' + \
-        f' from [af] prefix {link.prefix[af]} and gateway ID {link.gateway.id}\n' + \
-        strings.extra_data_printout(str(ex)),
-        log.IncorrectValue,
-        'links')
+        f' from [af] prefix {link.prefix[af]} and gateway ID {link.gateway.id}\n',
+        more_hints=str(ex),
+        category=log.IncorrectValue,
+        module='links')
       return
 
   if not fhrp_assigned:
@@ -569,10 +569,10 @@ def set_interface_address(intf: Box, af: str, pfx: ipaddress._BaseNetwork, node_
     return True
   except Exception as ex:
     log.error(
-      f'Cannot assign host index {node_id} in {af} from prefix {str(pfx)} to node {intf.node}\n' + \
-          strings.extra_data_printout(str(ex)),
-      log.IncorrectValue,
-      'links')
+      f'Cannot assign host index {node_id} in {af} from prefix {str(pfx)} to node {intf.node}',
+      more_hints=str(ex),
+      category=log.IncorrectValue,
+      module='links')
 
   return False
 
@@ -741,18 +741,18 @@ def cleanup_link_interface_AF_entries(link: Box) -> None:
 
       if data.is_true_int(intf[af]):            # Unprocessed int. Must be node index on an unnumbered link ==> error
         log.error(
-          f'Interface ID for node {intf.node} did not result in a usable address on {link._linkname}\n' + \
-            strings.extra_data_printout(f'{link}'),
-          log.IncorrectType,
-          'links')
+          f'Interface ID for node {intf.node} did not result in a usable address on {link._linkname}',
+          more_data=str(link),
+          category=log.IncorrectType,
+          module='links')
         continue
 
       if not '/' in intf[af]:                   # Subnet mask is unknown
         log.error(
-          f'Unknown subnet mask for {af} address {intf[af]} used by node {intf.node} on {link._linkname}\n' + \
-            strings.extra_data_printout(f'{link}'),
-          log.IncorrectType,
-          'links')
+          f'Unknown subnet mask for {af} address {intf[af]} used by node {intf.node} on {link._linkname}',
+          more_data=str(link),
+          category=log.IncorrectType,
+          module='links')
         continue
 
 """

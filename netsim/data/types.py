@@ -651,6 +651,18 @@ id            |          |    OK     |      | OK  |
 Furthermore, we can use 'named' prefixes in some scenarios.
 """
 
+RESERVED_PREFIXES: typing.Dict[str,dict] = {
+  'IPv4': {
+    'local':     ipaddress.IPv4Network('0.0.0.0/8'),
+    'loopback':  ipaddress.IPv4Network('127.0.0.0/8'),
+    'multicast': ipaddress.IPv4Network('224.0.0.0/4')
+  },
+  'IPv6': {
+    'loopback':  ipaddress.IPv6Network('::1/128'),
+    'multicast': ipaddress.IPv6Network('ff00::/8')
+  }
+}
+
 def common_addr_parse(
       value: typing.Any,
       use: str,
@@ -661,6 +673,8 @@ def common_addr_parse(
       xform_int: typing.Optional[typing.Callable] = None,
       xform_pfx: typing.Optional[typing.Callable] = None) -> dict:
 
+  global RESERVED_PREFIXES
+
   def check_int_value(value: int, xform_int: typing.Optional[typing.Callable]) -> dict:
     if value < 0 or value > 2**32-1:
       return { '_value': f'an {af} address or an integer between 0 and 2**32' }
@@ -669,6 +683,15 @@ def common_addr_parse(
         return { '_valid': True, '_transform': xform_int }
       else:
         return { '_valid': True }
+
+  def check_reserved_range(
+        ranges: dict,
+        p_addr: typing.Any) -> typing.Optional[str]:
+    for k,v in ranges.items():
+      if v.overlaps(p_addr):
+        return k
+
+    return None
 
   if isinstance(value,bool):                      # bool values are valid only on interfaces and subnets
     if use not in ('interface','subnet_prefix'):
@@ -698,16 +721,22 @@ def common_addr_parse(
 
   if use in ['id','address'] or (use in ['interface'] and '/' not in value):
     try:
-      addr_parse(value)
+      p_addr = addr_parse(value)
     except Exception as Ex:
       return { '_value': f'{af} address ({Ex})' }
 
     return { '_valid': True }
+  else:
+    try:
+      p_addr = net_parse(value,strict=use not in ['interface','host_prefix'])
+    except Exception as Ex:
+      return { '_value': f'{af} prefix ({Ex})' }
 
-  try:
-    net_parse(value,strict=use not in ['interface','host_prefix'])
-  except Exception as Ex:
-    return { '_value': f'{af} prefix ({Ex})' }
+  if use not in ['prefix','id']:
+    r_hit = check_reserved_range(RESERVED_PREFIXES[af],p_addr)
+    if r_hit:
+      return {'_value': f'{af} {"prefix" if "prefix" in use else "address"}'+
+                        f' outside of reserved ranges ({value} is in {r_hit} range)'}
 
   return { '_valid': True }
 
