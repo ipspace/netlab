@@ -880,6 +880,7 @@ def create_node_interfaces(link: Box, addr_pools: Box, ndict: Box, defaults: Box
                    link=remote_ifdata,
                    link_attr=mods_with_attr.union(['ipv4','ipv6']),
                    ifdata=ngh_data)
+      data.cleanup_internal_attributes(ngh_data,['_removed_attr'])
       ifdata.neighbors.append(ngh_data)
 
 """

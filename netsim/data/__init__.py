@@ -45,6 +45,16 @@ def append_to_list(BX: typing.Optional[Box], list_name: str, item: typing.Any) -
 
   return BX[list_name]
 
+"""
+Cleanup specified internal attributes from a data structure
+"""
+def cleanup_internal_attributes(BX: Box, a_list: list) -> None:
+  for k in list(BX.keys()):
+    if k in a_list:
+      BX.pop(k)
+    elif isinstance(BX[k],Box):
+      cleanup_internal_attributes(BX[k],a_list)
+
 #
 # Change all NULL values in a nested dictionary structure to empty strings
 # to make them nicer in YAML printouts
