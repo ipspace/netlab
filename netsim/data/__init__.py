@@ -46,6 +46,37 @@ def append_to_list(BX: typing.Optional[Box], list_name: str, item: typing.Any) -
   return BX[list_name]
 
 """
+Check whether attributes were removed in the specified attribute path
+"""
+def removed_attributes(data: Box, path: str) -> bool:
+  p_elements = path.split('.')                      # Check individual components of the path
+  while p_elements:
+    if '_removed_attr' in data and p_elements[0] in data._removed_attr:
+      return True                                   # Looks like we removed target attribute from current node
+    if p_elements[0] not in data:                   # Can we move down the chain?
+      return False
+    data = data[p_elements[0]]                      # Yes, check the next element in the path chain
+    if not isinstance(data,Box):                    # Cannot check any further
+      return False
+    p_elements = p_elements[1:]
+
+  return False                                      # Got to the end of the chain, all good
+
+"""
+Merge two dictionaries considering removed attributes
+"""
+def merge_with_removed_attributes(d_to: Box, d_with: Box) -> Box:
+  for k in d_with.keys():
+    if k in d_to.get('_removed_attr',[]):
+      continue
+    if not k in d_to:
+      d_to[k] = d_with[k]
+    elif isinstance(d_to[k],Box) and isinstance(d_with[k],Box):
+      merge_with_removed_attributes(d_to[k],d_with[k])
+
+  return d_to
+
+"""
 Cleanup specified internal attributes from a data structure
 """
 def cleanup_internal_attributes(BX: Box, a_list: list) -> None:

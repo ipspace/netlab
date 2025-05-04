@@ -440,16 +440,18 @@ def get_effective_module_attribute(
     merge_dict: bool = True) -> typing.Optional[typing.Any]:
 
   composite_value: typing.Optional[Box] = None
-  for obj in (intf,link,node,topology,defaults):
+  for obj in (intf,link,node,topology,defaults):            # Iterate over all supplied objects
     if obj is None:
       continue
-    value = obj.get(path,None)
+    if data.removed_attributes(obj,path):                   # Was the specified item removed from this object?
+      return composite_value                                # ... that breaks the inheritance chain, return what we got
+    value = obj.get(path,None)                              # Try to get the value from current object
     if not value:
       continue
-    if not isinstance(value,Box) or not merge_dict:
+    if not isinstance(value,Box) or not merge_dict:         # We got the value, but cannot/wont merge
       return value
     if composite_value:
-      composite_value = value + composite_value
+      composite_value = data.merge_with_removed_attributes(d_to=composite_value,d_with=value)
     else:
       composite_value = value
 

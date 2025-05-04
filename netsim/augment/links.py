@@ -338,23 +338,6 @@ def add_node_interface(node: Box, ifdata: Box, defaults: Box) -> Box:
   return node.interfaces[-1]
 
 """
-Add link attributes (specified in link_attr set) to interface data structure
-
-Also used to merge interface data structure with neighbor data structure when building neighbor list
-"""
-def interface_data(link: Box, link_attr: set, ifdata: Box) -> Box:
-  for k in link_attr:
-    if k in link:
-      if k in ifdata.get('_removed_attr',[]):
-        continue
-      if not k in ifdata:
-        ifdata[k] = link[k]
-      elif isinstance(link[k],dict) and isinstance(ifdata[k],dict):
-        interface_data(link[k],set(link[k].keys()),ifdata[k])
-
-  return ifdata
-
-"""
 Get gateway ID -- return None if not set or if 'gateway' is not a dict
 """
 def get_gateway_id(link: Box) -> typing.Optional[int]:
@@ -844,10 +827,11 @@ def create_node_interfaces(link: Box, addr_pools: Box, ndict: Box, defaults: Box
     #
     # Create node interface data from interfaces attributes augmented with link attributes
     # and node-relevant link module attributes
-    ifdata = interface_data(
-                link=link,
-                link_attr=link_attr_propagate.union(ndict[node].get('module',[])) - set(defaults.attributes.link_module_no_propagate),
-                ifdata=data.get_box(value))
+    link_attr = link_attr_propagate.union(ndict[node].get('module',[])) - \
+                set(defaults.attributes.link_module_no_propagate)
+    ifdata = data.merge_with_removed_attributes(
+                d_to = data.get_box(value),
+                d_with = data.get_box({ k:v for k,v in link.items() if k in link_attr}))
     set_interface_name(ifdata,link,intf_cnt)
     set_parent_interface(ifdata,ndict[node])
     ifdata.pop('node',None)                                       # Remove the node name (not needed within the node)
@@ -879,10 +863,8 @@ def create_node_interfaces(link: Box, addr_pools: Box, ndict: Box, defaults: Box
                                   defaults[m].attributes.get('intf_to_neighbor',True) ])
       #
       # Merge neighbor module data + AF with baseline neighbor data
-      ngh_data = interface_data(
-                   link=remote_ifdata,
-                   link_attr=mods_with_attr.union(['ipv4','ipv6']),
-                   ifdata=ngh_data)
+      link_attr=mods_with_attr.union(['ipv4','ipv6'])
+      ngh_data = data.get_box({ k:v for k,v in remote_ifdata.items() if k in link_attr}) + ngh_data
       data.cleanup_internal_attributes(ngh_data,['_removed_attr'])
       ifdata.neighbors.append(ngh_data)
 
