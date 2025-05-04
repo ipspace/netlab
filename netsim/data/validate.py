@@ -646,7 +646,7 @@ def validate_attributes(
 
   check_required_keys(data,valid,data_path,module)
   check_valid_with(data,valid,data_path,data_name,module)
-  for k in data.keys():
+  for k in list(data.keys()):
     if any(k.startswith(i) for i in ignored):           # Skip internal attributes
       continue
 

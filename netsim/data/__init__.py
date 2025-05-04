@@ -4,7 +4,6 @@
 
 import typing,typing_extensions
 from box import Box
-from . import types
 
 #
 # I had enough -- here's a function that returns a box with proper default settings

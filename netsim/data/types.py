@@ -11,7 +11,7 @@ import textwrap
 
 from box import Box
 from ..utils import log
-from . import global_vars
+from . import global_vars,append_to_list
 
 """
 Common error checking routines:
@@ -292,6 +292,7 @@ def get_value_to_check(
     else:
       if false_value is None:                           # If there's no false_value pop the bool option and return None
         parent.pop(key,None)
+        append_to_list(parent,'_removed_attr',key)
         return None
       else:
         value = false_value                             # ... otherwise set the false value
