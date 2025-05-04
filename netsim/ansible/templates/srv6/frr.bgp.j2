@@ -13,6 +13,9 @@ router bgp {{ bgp.as }}
   neighbor {{ peer }} send-community both
 {%   if n.next_hop_unchanged is defined %}
   neighbor {{ peer }} attribute-unchanged next-hop
+{%     if af == 'ipv6' %}
+  neighbor {{ peer }} nexthop-local unchanged
+{%     endif %}
 {%   endif %}
 {%   if n.type=='ibgp' and bgp.next_hop_self|default(True) %}
   neighbor {{ peer }} next-hop-self
@@ -48,6 +51,11 @@ router bgp {{ bgp.as }}
 router bgp {{ vdata.as|default(bgp.as) }} vrf {{ vname }}
  sid vpn per-vrf export auto
  no bgp network import-check
+
+{%     for af in ['ipv4','ipv6'] if 'ebgp' in srv6.vpn.get(af,[]) %}
+ address-family {{ af }} unicast
+  nexthop vpn export {{ loopback.ipv6|ipaddr('address') }}
+{%     endfor %}
 !
 {%   endfor %}
 {% endif %}

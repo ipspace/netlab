@@ -32,7 +32,9 @@ The following table describes per-platform support of individual router-level SR
 
 ## Configurable Global and Node Parameters
 
-* **addressing.srv6_locator** -- global address pool[^poolname] for allocation of SRv6 locator prefixes, default prefix defined by `topology.defaults.srv6.locator_pool` (2001:db8::/40)
+* **addressing.srv6_locator** -- global address pool[^poolname] for allocation of SRv6 locator prefixes, default prefix defined by `topology.defaults.srv6.locator_pool` 
+                                 (5F00::/16, the IANA reserved range defined by [RFC9602](https://datatracker.ietf.org/doc/rfc9602/)
+* **srv6.allocate_loopback** -- global flag (default: `True`) to replace the IPv6 loopback address of each SRv6-enabled node with an IP allocated from the locator range
 * **srv6.bgp** -- enable BGP with IPv4 and IPv6 address families over SRv6, default IPv4 + IPv6 over iBGP.
 * **srv6.vpn** -- enable BGP with VPNv4 and VPNv6 address families over SRv6. BGP/SRv6 L3VPN is disabled by default.
 * **srv6.igp** -- list of IGP protocols for which to enable SRv6, default `[isis]`
@@ -82,12 +84,12 @@ addressing:
   lan:
     ipv4: 10.0.0.0/24
     ipv6: False
+  srv6_locator:
+    ipv6: 5F00::/40          # Must not overlap with interfaces, this is from the IANA reserved range
+    prefix6: 48              # Assign a /48 to each node
   loopback:
     ipv4: False
-    ipv6: 2001:db8:cafe::/48
-  srv6_locator:
-    ipv6: 2001:aa::/40       # Must not overlap with interfaces
-    prefix6: 48              # Assign a /48 to each node
+    ipv6: FC00::/48          # Gets replaced by an address from the per-node locator range
 
 provider: clab
 defaults.device: frr

@@ -82,30 +82,36 @@ class SRV6(_Module):
           f"Node {node.name} does not have the BGP module enabled to support BGP v4/v6",
           category=log.MissingDependency,
           module='srv6')
-    data.bool_to_defaults(node.srv6,'vpn',DEFAULT_BGP_AF) # Typically used with the vrf module, but not only
+    data.bool_to_defaults(node.srv6,'vpn',DEFAULT_BGP_AF)   # Typically used with the vrf module, but not only
 
-  def node_post_transform(self, node: Box, topology: Box) -> None:
-    mods = node.get('module',[])
-    for igp in node.get('srv6.igp',[]): # Check if the IGP module is still active, it may have been removed
-      if igp not in mods:
-        log.warning(
-          text=f"The IGP module for {igp} on node {node.name} has been removed, SRv6 will likely not work",
-          module='srv6')
     locator = node.get('srv6.locator')
     if not locator:
        prefix = addressing.get(topology.pools,[get_pool_name()])['ipv6']
        locator = str(prefix)
        node.srv6.locator = locator
     locator_net = ipaddress.IPv6Network(locator)
-    if 'ipv6' not in node.loopback:
+    if 'ipv6' not in node.loopback or topology.defaults.srv6.allocate_loopback:
+      if topology.defaults.srv6.allocate_loopback:          # Auto-assign a loopback from locator range
+        node.loopback.ipv6 = locator.split("/")[0] + "1/48" # Use /48 to advertise the full range, not mere /64
+      else:
+        log.error(
+          f"Node {node.name} does not have an IPv6 loopback required for SRv6, and auto-allocation is disabled",
+          category=log.MissingValue,
+          module='srv6')
+    elif not ipaddress.IPv6Interface(node.loopback.ipv6).network.subnet_of(locator_net):
       log.error(
-        f"SRv6 requires an ipv6 loopback address on node {node.name}",
-        category=log.MissingValue,
-        module='srv6')
-    elif ipaddress.IPv6Interface(node.loopback.ipv6).network.subnet_of(locator_net):
-      log.error(
-        f"Node {node.name} ipv6 loopback address {node.loopback.ipv6} overlaps with locator {locator}",
+        f"Node {node.name} ipv6 loopback address {node.loopback.ipv6} is not part of locator {locator}",
+        hint="Having the loopback as part of the locator space simplifies prefix distribution, and is recommended",
         category=Warning,
         module='srv6')
+
+
+  def node_post_transform(self, node: Box, topology: Box) -> None:
+    mods = node.get('module',[])
+    for igp in node.get('srv6.igp',[]):                   # Check if the IGP module is still active, it may have been removed
+      if igp not in mods:
+        log.warning(
+          text=f"The IGP module for {igp} on node {node.name} has been removed, SRv6 will likely not work",
+          module='srv6')
     if 'bgp' in node:
       configure_bgp_for_srv6(node,topology)
