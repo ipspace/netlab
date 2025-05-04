@@ -82,7 +82,7 @@ class SRV6(_Module):
           f"Node {node.name} does not have the BGP module enabled to support BGP v4/v6",
           category=log.MissingDependency,
           module='srv6')
-    data.bool_to_defaults(node.srv6,'vpn',DEFAULT_BGP_AF)   # Typically used with the vrf module, but not only
+    data.bool_to_defaults(node.srv6,'vpn',DEFAULT_BGP_AF)    # Typically used with the vrf module, but not only
 
     locator = node.get('srv6.locator')
     if not locator:
@@ -90,9 +90,10 @@ class SRV6(_Module):
        locator = str(prefix)
        node.srv6.locator = locator
     locator_net = ipaddress.IPv6Network(locator)
-    if node.get('srv6.allocate_loopback'):                  # Auto-assign a loopback from locator range
-      first_host = next(locator_net.hosts())
-      node.loopback.ipv6 = ipaddress.IPv6Interface((first_host, locator_net.prefixlen)).with_prefixlen
+    if node.get('srv6.allocate_loopback'):                   # Auto-assign a loopback from locator range
+      first_host = next(locator_net.hosts())                 # Use first usable address
+      prefix6 = topology.pools['loopback'].get('prefix6',64) # Use loopback.prefix6, default /64
+      node.loopback.ipv6 = ipaddress.IPv6Interface((first_host, prefix6)).with_prefixlen
 
   def node_post_transform(self, node: Box, topology: Box) -> None:
     if 'ipv6' not in node.loopback:
@@ -101,7 +102,7 @@ class SRV6(_Module):
           category=log.MissingValue,
           module='srv6')
     mods = node.get('module',[])
-    for igp in node.get('srv6.igp',[]):                   # Check if the IGP module is still active, it may have been removed
+    for igp in node.get('srv6.igp',[]):                      # Check if the IGP module is still active, it may have been removed
       if igp not in mods:
         log.warning(
           text=f"The IGP module for {igp} on node {node.name} has been removed, SRv6 will likely not work",
