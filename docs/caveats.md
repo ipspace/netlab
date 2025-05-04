@@ -197,19 +197,23 @@ ansible-galaxy collection install git+https://github.com/jmussmann/ansible_colle
 
 [^DD]: See [](topology/hierarchy.md) for an in-depth explanation of why attributes with hierarchical names work in *netlab*
 
-[^NXOM]: The platform limit is 3967. _netlab_ uses another VLAN as fake native VLAN.
+[^NXOM]: The platform limit is 3967. _netlab_ uses another VLAN as a fake native VLAN.
 
 (caveats-cumulus)=
 ## Cumulus Linux
 
+```{warning}
+Cumulus Linux 4.x is retired. While there are no plans to remove it from _netlab_, we will not add new features or run integration tests.
+```
+
 * The Cumulus VX 4.4.0 Vagrant box for VirtualBox is broken. *netlab* is using Cumulus VX 4.3.0 with *virtualbox* virtualization provider.
-* The Cumulus VX 4.x uses Python version 3.7, which recent versions of Ansible refuse to work with. The permanent fix is coming in release 1.9.3. Until then, use the **frrouting** device or [Cumulus VX 5.x image](caveats-cumulus-5x).
-* Both Cumulus VX 4.x and 5.x use relatively old versions of FRR (7.5 on 4.x, 8.4.3 on 5.x). One issue that was observed is that these older versions don't support OSPF passive interfaces inside VRFs (the config in the FRR template is silently ignored)
+* The Cumulus VX 4.x uses Python version 3.7, which recent versions of Ansible refuse to work with. We have to use the **raw** module to communicate with Cumulus VX 4.x virtual machines.
+* Cumulus VX 4.x uses an ancient versions of FRR (7.5; current release is 10.2) with numerous issues or. For example, it silently ignores OSPF passive interfaces inside VRFs
 
 _netlab_ uses the VLAN-aware bridge paradigm to configure VLANs on Cumulus Linux. That decision results in the following restrictions:
 
 * The _netlab_-generated Cumulus Linux VLAN configuration cannot use routed subinterfaces; *ifupdown2* version shipping with Cumulus Linux 4.4.0 refuses to create VLAN subinterfaces in combination with a VLAN-aware bridge.
-* The _netlab_-generated Cumulus Linux VLAN configuration cannot use routed native VLAN; *ifupdown2* enslaves physical ports to the bridge and cannot configure IP addresses on physical ports.
+* The _netlab_-generated Cumulus Linux VLAN configuration cannot use a routed native VLAN; *ifupdown2* enslaves physical ports to the bridge and cannot configure IP addresses on physical ports.
 * FRRouting version bundled with Cumulus Linux 4.4 cannot run OSPFv3 in VRFs and fails to advertise local IPv6 prefixes in other areas.
 
 See also [other FRRouting caveats](caveats-frr).
