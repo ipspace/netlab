@@ -90,24 +90,16 @@ class SRV6(_Module):
        locator = str(prefix)
        node.srv6.locator = locator
     locator_net = ipaddress.IPv6Network(locator)
-    if 'ipv6' not in node.loopback or node.get('srv6.allocate_loopback'):
-      if node.get('srv6.allocate_loopback'):                # Auto-assign a loopback from locator range
-        first_host = next(locator_net.hosts())
-        node.loopback.ipv6 = ipaddress.IPv6Interface((first_host, locator_net.prefixlen)).with_prefixlen
-      else:
+    if node.get('srv6.allocate_loopback'):                  # Auto-assign a loopback from locator range
+      first_host = next(locator_net.hosts())
+      node.loopback.ipv6 = ipaddress.IPv6Interface((first_host, locator_net.prefixlen)).with_prefixlen
+
+  def node_post_transform(self, node: Box, topology: Box) -> None:
+    if 'ipv6' not in node.loopback:
         log.error(
           f"Node {node.name} does not have an IPv6 loopback required for SRv6, and auto-allocation is disabled",
           category=log.MissingValue,
           module='srv6')
-    elif not ipaddress.IPv6Interface(node.loopback.ipv6).network.subnet_of(locator_net):
-      log.error(
-        f"Node {node.name} ipv6 loopback address {node.loopback.ipv6} is not part of locator {locator}",
-        hint="Having the loopback as part of the locator space simplifies prefix distribution, and is recommended",
-        category=Warning,
-        module='srv6')
-
-
-  def node_post_transform(self, node: Box, topology: Box) -> None:
     mods = node.get('module',[])
     for igp in node.get('srv6.igp',[]):                   # Check if the IGP module is still active, it may have been removed
       if igp not in mods:
