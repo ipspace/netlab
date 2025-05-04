@@ -632,11 +632,15 @@ link (or VLAN), we might have to generate a warning
 """
 def warn_bgp_attributes(o_name: str, o_type: str, attr: Box, topology: Box) -> None:
   bgp_attr = topology.defaults.bgp.attributes.link          # Get BGP link attributes
-  for a in [ a for a in bgp_attr if bgp_attr[a].get('_intra_as',None) ]:
-    attr.pop(a,None)                                        # Remove attributes that can appear on intra-as links
+  for a_name in list(attr.keys()):
+    if a_name.startswith('_'):                              # Remove internal attributes
+      attr.pop(a_name,None)
+    elif bgp_attr.get(f'{a_name}._intra_as',None):          # ... and attributes that can appear on intra-as links
+      attr.pop(a_name,None)
+
   if not attr:                                              # No other attributes?
     return                                                  # ... cool, we're done
-  
+
   m_data = []
   for a_name,a_list in attr.items():
     a_filter = [ n for n in a_list if n ]
