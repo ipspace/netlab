@@ -1,7 +1,7 @@
 import typing
 from box import Box
 from netsim.utils import log,routing as _bgp
-from netsim import api,data
+from netsim import api,data,modules
 from netsim.augment import devices
 
 _config_name = 'bgp.session'
@@ -45,10 +45,8 @@ def apply_neighbor_attributes(node: Box, ngb: Box, intf: typing.Optional[Box], a
 
   OK = True
   for attr in apply_list:
-    attr_value = None if intf is None else \
-                 intf.get('bgp',{}).get(attr,None)      # Get attribute value from interface if specified
-    attr_value = attr_value or node.bgp.get(attr,None)  # ... and try node attribute value if there's no interface value
-    if not attr_value:                                  # Attribute not defined in node or interface, move on
+    attr_value = modules.get_effective_module_attribute(path=f'bgp.{attr}',intf=intf,node=node)
+    if not attr_value:                                  # Attribute not defined in interface or node, move on
       continue
 
     # Check that the node(device) supports the desired attribute
