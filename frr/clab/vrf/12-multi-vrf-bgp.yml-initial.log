@@ -6,16 +6,16 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
 ok: [r1]
-ok: [r2]
 ok: [r4]
 ok: [r3]
+ok: [r2]
 
 TASK [Find device readiness script] ********************************************
 ok: [dut]
 ok: [r1]
 ok: [r2]
-ok: [r3]
 ok: [r4]
+ok: [r3]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [dut]
@@ -23,9 +23,9 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/eos-clab.
 
 TASK [Wait for cEOS SSH daemon to start] ***************************************
 ok: [r1]
-ok: [r4]
 ok: [r2]
 ok: [r3]
+ok: [r4]
 
 TASK [Normalize config on bridge-like devices] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4
@@ -34,8 +34,8 @@ TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [dut]
 ok: [r1]
 ok: [r2]
-ok: [r4]
 ok: [r3]
+ok: [r4]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [dut]
@@ -101,9 +101,9 @@ TASK [eos_config: deploying normalize from /home/pipi/net101/tools/netsim/ansibl
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
 should be similar to how they appear if present in the running configuration on
 device including the indentation
-changed: [r4]
-changed: [r3]
 changed: [r2]
+changed: [r3]
+changed: [r4]
 changed: [r1]
 
 TASK [Deploy initial configuration] ********************************************
@@ -158,6 +158,14 @@ ok: [dut] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -180,6 +188,12 @@ ok: [dut] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -192,14 +206,22 @@ ok: [dut] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+    ip link set eth2 down
     sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
     ip link set dev eth2 mtu 1500
+    ip link set eth2 up
+    ip link set eth3 down
     sysctl -qw net.ipv6.conf.eth3.disable_ipv6=1
     ip link set dev eth3 mtu 1500
+    ip link set eth3 up
+    ip link set eth4 down
     sysctl -qw net.ipv6.conf.eth4.disable_ipv6=1
     ip link set dev eth4 mtu 1500
+    ip link set eth4 up
   
     #
     # Add vtysh.conf file
@@ -211,10 +233,11 @@ ok: [dut] =>
     cat >/tmp/config <<CONFIG
     hostname dut
     !
+    ip forwarding
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
@@ -246,49 +269,6 @@ ok: [dut] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [r1] => 
-  msg: |-
-    initial configuration for r1
-    =========================================
-    hostname r1
-    !
-    logging monitor debugging
-    aaa authorization exec default local
-    !
-    lldp run
-    ip routing
-    ipv6 unicast-routing
-    !
-    !
-    ip host dut 10.0.0.1
-    ip host dut-blue 10.1.0.9 10.1.0.13
-    ip host dut-red 10.1.0.1 10.1.0.5
-    ip host r2 10.0.0.12 10.1.0.6
-    ip host r3 10.0.0.23 10.1.0.10
-    ip host r4 10.0.0.24 10.1.0.14
-    ipv6 host dut 2001:db8:1:1::1
-    ipv6 host r2 2001:db8:1:c::1
-    ipv6 host r3 2001:db8:1:17::1
-    ipv6 host r4 2001:db8:1:18::1
-    !
-    interface Management0
-     no lldp transmit
-     no lldp receive
-    !
-    interface Loopback0
-     ip address 10.0.0.11/32
-     ipv6 nd ra interval 5
-     ipv6 address 2001:db8:1:b::1/64
-    !
-    interface Ethernet1
-     no switchport
-     platform tfa phy control-frame disabled
-     description r1 -> dut [external]
-     ip address 10.1.0.2/30
-    !
-     mac-address 52dc.cafe.0b01
-     no shutdown
-    !
 ok: [r2] => 
   msg: |-
     initial configuration for r2
@@ -330,6 +310,49 @@ ok: [r2] =>
      ip address 10.1.0.6/30
     !
      mac-address 52dc.cafe.0c01
+     no shutdown
+    !
+ok: [r1] => 
+  msg: |-
+    initial configuration for r1
+    =========================================
+    hostname r1
+    !
+    logging monitor debugging
+    aaa authorization exec default local
+    !
+    lldp run
+    ip routing
+    ipv6 unicast-routing
+    !
+    !
+    ip host dut 10.0.0.1
+    ip host dut-blue 10.1.0.9 10.1.0.13
+    ip host dut-red 10.1.0.1 10.1.0.5
+    ip host r2 10.0.0.12 10.1.0.6
+    ip host r3 10.0.0.23 10.1.0.10
+    ip host r4 10.0.0.24 10.1.0.14
+    ipv6 host dut 2001:db8:1:1::1
+    ipv6 host r2 2001:db8:1:c::1
+    ipv6 host r3 2001:db8:1:17::1
+    ipv6 host r4 2001:db8:1:18::1
+    !
+    interface Management0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     ip address 10.0.0.11/32
+     ipv6 nd ra interval 5
+     ipv6 address 2001:db8:1:b::1/64
+    !
+    interface Ethernet1
+     no switchport
+     platform tfa phy control-frame disabled
+     description r1 -> dut [external]
+     ip address 10.1.0.2/30
+    !
+     mac-address 52dc.cafe.0b01
      no shutdown
     !
 ok: [r4] => 
@@ -445,19 +468,19 @@ TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ans
 skipping: [dut]
 
 TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
-changed: [r2]
-changed: [r4]
 changed: [r1]
+changed: [r4]
 changed: [r3]
+changed: [r2]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
 ok: [r1]
-ok: [r3]
 ok: [r2]
 ok: [r4]
+ok: [r3]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4 => (item=bgp)
@@ -467,15 +490,15 @@ TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [dut]
 ok: [r1]
 ok: [r4]
-ok: [r2]
 ok: [r3]
+ok: [r2]
 
 TASK [Find configuration template for bgp] *************************************
 ok: [dut]
 ok: [r4]
+ok: [r3]
 ok: [r1]
 ok: [r2]
-ok: [r3]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -487,9 +510,9 @@ skipping: [r4]
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [dut]
 ok: [r1]
-ok: [r3]
-ok: [r4]
 ok: [r2]
+ok: [r4]
+ok: [r3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -685,15 +708,15 @@ changed: [r4]
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [dut]
 ok: [r1]
-ok: [r2]
 ok: [r3]
 ok: [r4]
+ok: [r2]
 
 TASK [Find configuration template for vrf] *************************************
 skipping: [r1]
 skipping: [r2]
-ok: [dut]
 skipping: [r3]
+ok: [dut]
 skipping: [r4]
 
 TASK [fail] ********************************************************************
@@ -706,9 +729,9 @@ skipping: [r4]
 TASK [Find configuration deployment deploy_script for vrf] *********************
 skipping: [r1]
 skipping: [r2]
-ok: [dut]
 skipping: [r3]
 skipping: [r4]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r1]
@@ -848,8 +871,8 @@ skipping: [r3]
 skipping: [r4]
 
 TASK [Check is the configuration template is a file] ***************************
-ok: [r1 -> localhost]
 ok: [r2 -> localhost]
+ok: [r1 -> localhost]
 ok: [r3 -> localhost]
 ok: [r4 -> localhost]
 
@@ -877,8 +900,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for
 TASK [eos_config: deploying bgp-xact from /home/pipi/net101/tools/tests/integration/vrf/bgp-xact.j2] ***
 changed: [r2]
 changed: [r3]
-changed: [r4]
 changed: [r1]
+changed: [r4]
 
 PLAY RECAP *********************************************************************
 dut                        : ok=36   changed=7    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   

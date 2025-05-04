@@ -95,6 +95,14 @@ ok: [dut] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -117,6 +125,12 @@ ok: [dut] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -129,16 +143,16 @@ ok: [dut] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+    ip link set eth2 down
     sysctl -qw net.ipv6.conf.eth2.autoconf=0
     sysctl -qw net.ipv6.conf.eth2.accept_ra=0
-    ip link set eth2 down
-    ip link set eth2 up
     ip link set dev eth2 mtu 1500
+    ip link set eth2 up
   
     #
     # Add vtysh.conf file
@@ -150,10 +164,11 @@ ok: [dut] =>
     cat >/tmp/config <<CONFIG
     hostname dut
     !
+    ip forwarding
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
@@ -201,6 +216,14 @@ ok: [x1] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -223,6 +246,12 @@ ok: [x1] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -235,11 +264,11 @@ ok: [x1] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -251,10 +280,11 @@ ok: [x1] =>
     cat >/tmp/config <<CONFIG
     hostname x1
     !
+    ip forwarding
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
@@ -294,6 +324,14 @@ ok: [x2] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -316,6 +354,12 @@ ok: [x2] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -328,11 +372,11 @@ ok: [x2] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -344,10 +388,11 @@ ok: [x2] =>
     cat >/tmp/config <<CONFIG
     hostname x2
     !
+    ip forwarding
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
@@ -384,8 +429,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for
 
 TASK [template] ****************************************************************
 changed: [x1]
-changed: [dut]
 changed: [x2]
+changed: [dut]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
@@ -608,9 +653,9 @@ TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for dut, x1, x2
 
 TASK [template] ****************************************************************
+changed: [x2]
 changed: [dut]
 changed: [x1]
-changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
@@ -623,9 +668,9 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+changed: [x1]
 changed: [dut]
 changed: [x2]
-changed: [x1]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [dut]
@@ -753,8 +798,8 @@ skipping: [x2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for dut, x1
 
 TASK [template] ****************************************************************
-changed: [dut]
 changed: [x1]
+changed: [dut]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
@@ -765,8 +810,8 @@ skipping: [dut]
 skipping: [x1]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [x1]
 changed: [dut]
+changed: [x1]
 
 PLAY [Deploy custom deployment templates] **************************************
 
@@ -813,8 +858,8 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [run vtysh to import bgp-xact config from /home/pipi/net101/tools/tests/integration/bgp/bgp-xact.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 PLAY RECAP *********************************************************************
 dut                        : ok=36   changed=7    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
@@ -825,4 +870,7 @@ x2                         : ok=36   changed=6    unreachable=0    failed=0    s
 
 Use this topology to test the selective activation of IPv4 and IPv6 address
 families on IPv4 and IPv6 IBGP and EBGP sessions.
+
+The 'session should not be established' error could be triggered by overly
+generous activation of address families on the tested device.
 

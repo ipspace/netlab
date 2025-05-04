@@ -22,7 +22,7 @@ skipping: [h2]
 skipping: [srv]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, h1, h2, srv
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, h1, h2, srv
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [dut]
@@ -61,7 +61,7 @@ skipping: [h2]
 skipping: [srv]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, h1, h2, srv
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, h1, h2, srv
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
@@ -104,10 +104,15 @@ ok: [h1] =>
   
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
     # Disable IPv4 and IPv6 forwarding
     #
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
+  
     #
     # Interface addressing, create any bond devices
     #
@@ -118,14 +123,6 @@ ok: [h1] =>
     set -e
     ip -6 addr add 2001:db8:2::1/64 dev eth1
     ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    #
-    #
-    #
-    # Print the final routing table
-    ip route
 ok: [h2] => 
   msg: |-
     initial configuration for h2
@@ -142,10 +139,15 @@ ok: [h2] =>
   
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
     # Disable IPv4 and IPv6 forwarding
     #
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
+  
     #
     # Interface addressing, create any bond devices
     #
@@ -156,14 +158,6 @@ ok: [h2] =>
     set -e
     ip -6 addr add 2001:db8:2:1::2/64 dev eth1
     ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    #
-    #
-    #
-    # Print the final routing table
-    ip route
 ok: [srv] => 
   msg: |-
     initial configuration for srv
@@ -180,10 +174,15 @@ ok: [srv] =>
   
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
     # Disable IPv4 and IPv6 forwarding
     #
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
+  
     #
     # Interface addressing, create any bond devices
     #
@@ -194,14 +193,6 @@ ok: [srv] =>
     set -e
     ip -6 addr add 2001:db8:2:2::3/64 dev eth1
     ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    #
-    #
-    #
-    # Print the final routing table
-    ip route
 ok: [dut] => 
   msg: |-
     initial configuration for dut
@@ -221,6 +212,14 @@ ok: [dut] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
     #
     # Get the current next hop for the default route
     #
@@ -244,6 +243,12 @@ ok: [dut] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -256,21 +261,21 @@ ok: [dut] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+    ip link set eth2 down
     sysctl -qw net.ipv6.conf.eth2.autoconf=0
     sysctl -qw net.ipv6.conf.eth2.accept_ra=0
-    ip link set eth2 down
-    ip link set eth2 up
     ip link set dev eth2 mtu 1500
+    ip link set eth2 up
+    ip link set eth3 down
     sysctl -qw net.ipv6.conf.eth3.autoconf=0
     sysctl -qw net.ipv6.conf.eth3.accept_ra=0
-    ip link set eth3 down
-    ip link set eth3 up
     ip link set dev eth3 mtu 1500
+    ip link set eth3 up
   
     #
     # Add vtysh.conf file
@@ -282,15 +287,16 @@ ok: [dut] =>
     cat >/tmp/config <<CONFIG
     hostname dut
     !
+    ip forwarding
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
      no shutdown
-     ! no ip address
+     ip address 10.0.0.4/32
      ipv6 address 2001:db8:1:4::1/64
     !
     interface eth1
@@ -323,8 +329,8 @@ ok: [dut] =>
     exit 0
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2, srv
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2, srv
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [dut -> localhost]
@@ -333,7 +339,7 @@ TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [dut]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for dut
 
 TASK [template] ****************************************************************
 changed: [dut]
@@ -341,10 +347,10 @@ changed: [dut]
 TASK [set_fact] ****************************************************************
 ok: [dut]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [dut]
 
-TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [dut]
 
 TASK [Define script filename and determine whether to execute in netns] ********
@@ -354,33 +360,33 @@ ok: [srv]
 
 TASK [Create a temporary file for the rendered script] *************************
 changed: [h1 -> localhost]
-changed: [h2 -> localhost]
 changed: [srv -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
+TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
-changed: [h2 -> localhost]
 changed: [srv -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
 skipping: [h2]
 skipping: [srv]
 
-TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
+TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 skipping: [h1]
 skipping: [h2]
 skipping: [srv]
 
-TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h1 -> localhost]
+TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 changed: [srv -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-v2gnbol2.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-1b98cl4b.sh] ***********************
+changed: [h1 -> localhost]
 changed: [srv -> localhost]
 changed: [h2 -> localhost]
-changed: [h1 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -388,7 +394,7 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut => (item=vrf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut => (item=vrf)
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [dut]
@@ -500,7 +506,7 @@ ok: [dut] =>
     exit $?
 
 TASK [Deploy vrf configuration] ************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for dut
 
 TASK [template] ****************************************************************
 changed: [dut]
@@ -508,10 +514,10 @@ changed: [dut]
 TASK [set_fact] ****************************************************************
 ok: [dut]
 
-TASK [run /tmp/config.sh to deploy vrf config from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/frr.j2] ***
+TASK [run /tmp/config.sh to deploy vrf config from /home/pipi/net101/tools/netsim/ansible/templates/vrf/frr.j2] ***
 changed: [dut]
 
-TASK [run vtysh to import vrf config from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/frr.j2] ***
+TASK [run vtysh to import vrf config from /home/pipi/net101/tools/netsim/ansible/templates/vrf/frr.j2] ***
 skipping: [dut]
 
 PLAY [Deploy custom deployment templates] **************************************

@@ -104,10 +104,15 @@ ok: [h1] =>
   
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
     # Disable IPv4 and IPv6 forwarding
     #
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
+  
     #
     # Interface addressing, create any bond devices
     #
@@ -138,10 +143,15 @@ ok: [h2] =>
   
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
     # Disable IPv4 and IPv6 forwarding
     #
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
+  
     #
     # Interface addressing, create any bond devices
     #
@@ -205,6 +215,12 @@ ok: [s1] =>
     #
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
   
     #
     # Create loopbacks, stub and lag/bond devices
@@ -321,6 +337,12 @@ ok: [s2] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -402,8 +424,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for s1, s2
 
 TASK [template] ****************************************************************
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [set_fact] ****************************************************************
 ok: [s1]
@@ -438,12 +460,12 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-b491zqz4.sh] ***********************
-changed: [h2 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-h5gvn7vl.sh] ***********************
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -571,40 +593,6 @@ ok: [s2]
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
 skipping: [h2]
-ok: [s2] => 
-  msg: |-
-    vxlan configuration for s2
-    =========================================
-    #!/bin/bash
-    #
-    set -e # Exit immediately when any command fails
-    #
-  
-  
-  
-    # Create L3 VNIs with bridges and add to correct vrf table
-  
-    # Create VXLAN L2 interface per vni
-    ip link add vxlan101000 type vxlan \
-      id 101000 \
-      dstport 4789 \
-      local 2001:db8:0:4::1
-    #
-    # Add it to the VLAN bridge (create if needed for l3 vnis); disable STP
-    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
-    ip link add vlan1000 type bridge
-    ip link set up dev vlan1000
-    fi
-    ip link set dev vxlan101000 master vlan1000
-    ip link set vlan1000 type bridge stp_state 0
-  
-    # Do not generate ipv6 link-local address for VXLAN devices
-    ip link set mtu 1500 addrgenmode none dev vxlan101000
-    ip link set up dev vxlan101000
-  
-    bridge fdb append 00:00:00:00:00:00 dev vxlan101000 dst 2001:db8:0:3::1
-  
-    exit $?
 ok: [s1] => 
   msg: |-
     vxlan configuration for s1
@@ -639,6 +627,40 @@ ok: [s1] =>
     bridge fdb append 00:00:00:00:00:00 dev vxlan101000 dst 2001:db8:0:4::1
   
     exit $?
+ok: [s2] => 
+  msg: |-
+    vxlan configuration for s2
+    =========================================
+    #!/bin/bash
+    #
+    set -e # Exit immediately when any command fails
+    #
+  
+  
+  
+    # Create L3 VNIs with bridges and add to correct vrf table
+  
+    # Create VXLAN L2 interface per vni
+    ip link add vxlan101000 type vxlan \
+      id 101000 \
+      dstport 4789 \
+      local 2001:db8:0:4::1
+    #
+    # Add it to the VLAN bridge (create if needed for l3 vnis); disable STP
+    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
+    ip link add vlan1000 type bridge
+    ip link set up dev vlan1000
+    fi
+    ip link set dev vxlan101000 master vlan1000
+    ip link set vlan1000 type bridge stp_state 0
+  
+    # Do not generate ipv6 link-local address for VXLAN devices
+    ip link set mtu 1500 addrgenmode none dev vxlan101000
+    ip link set up dev vxlan101000
+  
+    bridge fdb append 00:00:00:00:00:00 dev vxlan101000 dst 2001:db8:0:3::1
+  
+    exit $?
 
 TASK [Deploy vxlan configuration] **********************************************
 skipping: [h1]
@@ -654,8 +676,8 @@ ok: [s1]
 ok: [s2]
 
 TASK [run /tmp/config.sh to deploy vxlan config from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/frr.j2] ***
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [run vtysh to import vxlan config from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/frr.j2] ***
 skipping: [s1]
@@ -729,26 +751,26 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
-TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux.j2] ***
+TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
-changed: [h1 -> localhost]
-changed: [h2 -> localhost]
-
-TASK [Execute /tmp/config-h1_routing.sh to deploy routing config based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux.j2] ***
-changed: [h1]
-changed: [h2]
-
-TASK [Container configuration for routing based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux.j2 executed in netns] ***
 skipping: [h1]
 skipping: [h2]
 
-TASK [Remove temporary file /tmp/h1_routing-lfa_uwxk.sh] ***********************
+TASK [Execute /tmp/config-h1_routing.sh to deploy routing config based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
+skipping: [h1]
+skipping: [h2]
+
+TASK [Container configuration for routing based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [Remove temporary file /tmp/h1_routing-4s7vx_dh.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -852,15 +874,15 @@ skipping: [s1]
 skipping: [s2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=36   changed=9    unreachable=0    failed=0    skipped=24   rescued=0    ignored=0   
-h2                         : ok=36   changed=9    unreachable=0    failed=0    skipped=24   rescued=0    ignored=0   
+h1                         : ok=35   changed=8    unreachable=0    failed=0    skipped=25   rescued=0    ignored=0   
+h2                         : ok=35   changed=8    unreachable=0    failed=0    skipped=25   rescued=0    ignored=0   
 s1                         : ok=47   changed=9    unreachable=0    failed=0    skipped=18   rescued=0    ignored=0   
 s2                         : ok=46   changed=8    unreachable=0    failed=0    skipped=18   rescued=0    ignored=0   
 

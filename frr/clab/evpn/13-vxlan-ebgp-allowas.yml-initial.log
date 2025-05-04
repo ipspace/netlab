@@ -117,10 +117,15 @@ ok: [h2] =>
   
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
     # Disable IPv4 and IPv6 forwarding
     #
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
+  
     #
     # Interface addressing, create any bond devices
     #
@@ -129,6 +134,7 @@ ok: [h2] =>
     ip addr del 172.31.1.5/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.31.1.5/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
 ok: [h1] => 
   msg: |-
@@ -146,10 +152,15 @@ ok: [h1] =>
   
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
     # Disable IPv4 and IPv6 forwarding
     #
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
+  
     #
     # Interface addressing, create any bond devices
     #
@@ -158,6 +169,7 @@ ok: [h1] =>
     ip addr del 172.31.1.4/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.31.1.4/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
 ok: [spine] => 
   msg: |-
@@ -208,6 +220,12 @@ ok: [spine] =>
     #
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
   
     #
     # Create loopbacks, stub and lag/bond devices
@@ -313,6 +331,12 @@ ok: [l1] =>
     #
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
   
     #
     # Create loopbacks, stub and lag/bond devices
@@ -424,6 +448,12 @@ ok: [l2] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -511,8 +541,8 @@ ok: [l1]
 ok: [l2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [l1]
 changed: [spine]
+changed: [l1]
 changed: [l2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -525,8 +555,8 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
@@ -544,9 +574,9 @@ TASK [Container configuration for initial based on /home/pipi/net101/tools/netsi
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-h9z88a_k.sh] ***********************
-changed: [h2 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-il5wy_n0.sh] ***********************
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -640,8 +670,8 @@ skipping: [spine]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l1, l2
 
 TASK [template] ****************************************************************
-changed: [l1]
 changed: [l2]
+changed: [l1]
 
 TASK [set_fact] ****************************************************************
 ok: [l1]
@@ -666,8 +696,8 @@ TASK [Find configuration template for routing] *********************************
 skipping: [l1]
 skipping: [l2]
 ok: [h1]
-skipping: [spine]
 ok: [h2]
+skipping: [spine]
 
 TASK [fail] ********************************************************************
 skipping: [h1]
@@ -729,26 +759,26 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
-TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux.j2] ***
+TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
-changed: [h1 -> localhost]
-changed: [h2 -> localhost]
-
-TASK [Execute /tmp/config-h1_routing.sh to deploy routing config based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux.j2] ***
-changed: [h2]
-changed: [h1]
-
-TASK [Container configuration for routing based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux.j2 executed in netns] ***
 skipping: [h1]
 skipping: [h2]
 
-TASK [Remove temporary file /tmp/h1_routing-ubnh1eiq.sh] ***********************
+TASK [Execute /tmp/config-h1_routing.sh to deploy routing config based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
+skipping: [h1]
+skipping: [h2]
+
+TASK [Container configuration for routing based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [Remove temporary file /tmp/h1_routing-nawqnryt.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -907,9 +937,9 @@ skipping: [h2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l1, l2, spine
 
 TASK [template] ****************************************************************
-changed: [l2]
-changed: [spine]
 changed: [l1]
+changed: [spine]
+changed: [l2]
 
 TASK [set_fact] ****************************************************************
 ok: [l1]
@@ -1036,16 +1066,16 @@ skipping: [spine]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l1, l2
 
 TASK [template] ****************************************************************
-changed: [l1]
 changed: [l2]
+changed: [l1]
 
 TASK [set_fact] ****************************************************************
 ok: [l1]
 ok: [l2]
 
 TASK [run /tmp/config.sh to deploy vxlan config from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/frr.j2] ***
-changed: [l1]
 changed: [l2]
+changed: [l1]
 
 TASK [run vtysh to import vxlan config from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/frr.j2] ***
 skipping: [l1]
@@ -1082,41 +1112,6 @@ ok: [spine]
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
 skipping: [h2]
-ok: [l1] => 
-  msg: |-
-    evpn configuration for l1
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    cat >/tmp/evpn_config <<CONFIG
-    router bgp 65200
-     address-family l2vpn evpn
-      advertise-all-vni
-      advertise-svi-ip
-      advertise ipv4 unicast
-  
-    ! Configure explicit Route Targets and RD per L2 VNI; auto-derived differs
-      vni 1000
-       rd 10.0.0.2:1000
-       route-target import 65000:1000
-       route-target export 65000:1000
-      exit-vni
-  
-      neighbor 10.1.0.2 activate
-    #  neighbor 10.1.0.2 soft-reconfiguration inbound
-  
-     exit-address-family
-    !
-  
-    exit
-  
-    ! L3 VRF EVPN handling
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/evpn_config
-    vtysh -c 'clear bgp *'
 ok: [l2] => 
   msg: |-
     evpn configuration for l2
@@ -1140,6 +1135,41 @@ ok: [l2] =>
   
       neighbor 10.1.0.6 activate
     #  neighbor 10.1.0.6 soft-reconfiguration inbound
+  
+     exit-address-family
+    !
+  
+    exit
+  
+    ! L3 VRF EVPN handling
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/evpn_config
+    vtysh -c 'clear bgp *'
+ok: [l1] => 
+  msg: |-
+    evpn configuration for l1
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    cat >/tmp/evpn_config <<CONFIG
+    router bgp 65200
+     address-family l2vpn evpn
+      advertise-all-vni
+      advertise-svi-ip
+      advertise ipv4 unicast
+  
+    ! Configure explicit Route Targets and RD per L2 VNI; auto-derived differs
+      vni 1000
+       rd 10.0.0.2:1000
+       route-target import 65000:1000
+       route-target export 65000:1000
+      exit-vni
+  
+      neighbor 10.1.0.2 activate
+    #  neighbor 10.1.0.2 soft-reconfiguration inbound
   
      exit-address-family
     !
@@ -1191,9 +1221,9 @@ skipping: [h2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l1, l2, spine
 
 TASK [template] ****************************************************************
+changed: [l1]
 changed: [l2]
 changed: [spine]
-changed: [l1]
 
 TASK [set_fact] ****************************************************************
 ok: [l1]
@@ -1201,9 +1231,9 @@ ok: [l2]
 ok: [spine]
 
 TASK [run /tmp/config.sh to deploy evpn config from /home/pipi/net101/tools/netsim/ansible/templates/evpn/frr.j2] ***
-changed: [l1]
-changed: [l2]
 changed: [spine]
+changed: [l2]
+changed: [l1]
 
 TASK [run vtysh to import evpn config from /home/pipi/net101/tools/netsim/ansible/templates/evpn/frr.j2] ***
 skipping: [l1]
@@ -1243,8 +1273,8 @@ TASK [Run the configuration deployment script] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l1, l2
 
 TASK [template] ****************************************************************
-changed: [l1]
 changed: [l2]
+changed: [l1]
 
 TASK [set_fact] ****************************************************************
 ok: [l1]
@@ -1259,8 +1289,8 @@ skipping: [l1]
 skipping: [l2]
 
 PLAY RECAP *********************************************************************
-h1                         : ok=38   changed=9    unreachable=0    failed=0    skipped=29   rescued=0    ignored=0   
-h2                         : ok=38   changed=9    unreachable=0    failed=0    skipped=29   rescued=0    ignored=0   
+h1                         : ok=37   changed=8    unreachable=0    failed=0    skipped=30   rescued=0    ignored=0   
+h2                         : ok=37   changed=8    unreachable=0    failed=0    skipped=30   rescued=0    ignored=0   
 l1                         : ok=63   changed=12   unreachable=0    failed=0    skipped=24   rescued=0    ignored=0   
 l2                         : ok=63   changed=12   unreachable=0    failed=0    skipped=24   rescued=0    ignored=0   
 spine                      : ok=42   changed=7    unreachable=0    failed=0    skipped=26   rescued=0    ignored=0   

@@ -15,14 +15,14 @@ ok: [x2]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [dut]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/eos-clab.yml for x1, x2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/eos-clab.yml for x1, x2
 
 TASK [Wait for cEOS SSH daemon to start] ***************************************
 ok: [x1]
 ok: [x2]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x1, x2, dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for x1, x2, dut
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [dut]
@@ -73,17 +73,17 @@ ok: [x2] =>
 
 TASK [Deploy normalize configuration] ******************************************
 skipping: [dut]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for x1, x2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for x1, x2
 
-TASK [eos_config: deploying normalize from /home/pipi/netlab_gh/netsim/ansible/templates/normalize/eos.j2] ***
+TASK [eos_config: deploying normalize from /home/pipi/net101/tools/netsim/ansible/templates/normalize/eos.j2] ***
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
 should be similar to how they appear if present in the running configuration on
 device including the indentation
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x1, x2, dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for x1, x2, dut
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
@@ -126,6 +126,14 @@ ok: [dut] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -147,6 +155,12 @@ ok: [dut] =>
     #
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
   
     #
     # Create loopbacks, stub and lag/bond devices
@@ -178,18 +192,30 @@ ok: [dut] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set bond1 down
     sysctl -qw net.ipv6.conf.bond1.disable_ipv6=1
     ip link set dev bond1 mtu 1500
+    ip link set bond1 up
+    ip link set bond2 down
     sysctl -qw net.ipv6.conf.bond2.disable_ipv6=1
     ip link set dev bond2 mtu 1400
+    ip link set bond2 up
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+    ip link set eth2 down
     sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
     ip link set dev eth2 mtu 1500
+    ip link set eth2 up
+    ip link set eth3 down
     sysctl -qw net.ipv6.conf.eth3.disable_ipv6=1
     ip link set dev eth3 mtu 1400
+    ip link set eth3 up
+    ip link set eth4 down
     sysctl -qw net.ipv6.conf.eth4.disable_ipv6=1
     ip link set dev eth4 mtu 1400
+    ip link set eth4 up
   
     #
     # Add vtysh.conf file
@@ -201,6 +227,7 @@ ok: [dut] =>
     cat >/tmp/config <<CONFIG
     hostname dut
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -254,7 +281,8 @@ ok: [x1] =>
     aaa authorization exec default local
     !
     lldp run
-    ip routing
+    no ip routing
+    no ipv6 unicast-routing
     !
     !
     ip host dut 10.0.0.1 172.16.0.1 172.16.1.1
@@ -296,7 +324,8 @@ ok: [x2] =>
     aaa authorization exec default local
     !
     lldp run
-    ip routing
+    no ip routing
+    no ipv6 unicast-routing
     !
     !
     ip host dut 10.0.0.1 172.16.0.1 172.16.1.1
@@ -330,10 +359,10 @@ ok: [x2] =>
     !
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for x1, x2
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for x1, x2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for dut
 
-TASK [eos_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/eos.j2] ***
+TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
 changed: [x2]
 changed: [x1]
 
@@ -344,7 +373,7 @@ TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [dut]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for dut
 
 TASK [template] ****************************************************************
 changed: [dut]
@@ -352,10 +381,10 @@ changed: [dut]
 TASK [set_fact] ****************************************************************
 ok: [dut]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [dut]
 
-TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [dut]
 
 PLAY [Deploy module-specific configurations] ***********************************
@@ -366,8 +395,8 @@ ok: [x1]
 ok: [x2]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=lag)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=routing)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=lag)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=routing)
 
 TASK [Figure out whether to deploy the module lag on current device] ***********
 ok: [dut]
@@ -453,8 +482,8 @@ ok: [x2] =>
      lacp timer fast
 
 TASK [Deploy lag configuration] ************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for x1, x2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for x1, x2
 
 TASK [template] ****************************************************************
 changed: [dut]
@@ -462,13 +491,13 @@ changed: [dut]
 TASK [set_fact] ****************************************************************
 ok: [dut]
 
-TASK [run /tmp/config.sh to deploy lag config from /home/pipi/netlab_gh/netsim/ansible/templates/lag/frr.j2] ***
+TASK [run /tmp/config.sh to deploy lag config from /home/pipi/net101/tools/netsim/ansible/templates/lag/frr.j2] ***
 changed: [dut]
 
-TASK [run vtysh to import lag config from /home/pipi/netlab_gh/netsim/ansible/templates/lag/frr.j2] ***
+TASK [run vtysh to import lag config from /home/pipi/net101/tools/netsim/ansible/templates/lag/frr.j2] ***
 skipping: [dut]
 
-TASK [eos_config: deploying lag from /home/pipi/netlab_gh/netsim/ansible/templates/lag/eos.j2] ***
+TASK [eos_config: deploying lag from /home/pipi/net101/tools/netsim/ansible/templates/lag/eos.j2] ***
 changed: [x1]
 changed: [x2]
 
@@ -521,9 +550,9 @@ ok: [x2] =>
 
 TASK [Deploy routing configuration] ********************************************
 skipping: [dut]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for x1, x2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for x1, x2
 
-TASK [eos_config: deploying routing from /home/pipi/netlab_gh/netsim/ansible/templates/routing/eos.j2] ***
+TASK [eos_config: deploying routing from /home/pipi/net101/tools/netsim/ansible/templates/routing/eos.j2] ***
 changed: [x1]
 changed: [x2]
 
