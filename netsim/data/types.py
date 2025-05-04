@@ -650,7 +650,7 @@ id            |          |    OK     |      | OK  |
 Furthermore, we can use 'named' prefixes in some scenarios.
 """
 
-RESERVED_PREFIX: typing.Dict[str,dict] = {
+RESERVED_PREFIXES: typing.Dict[str,dict] = {
   'IPv4': {
     'local':     ipaddress.IPv4Network('0.0.0.0/8'),
     'loopback':  ipaddress.IPv4Network('127.0.0.0/8'),
@@ -672,7 +672,7 @@ def common_addr_parse(
       xform_int: typing.Optional[typing.Callable] = None,
       xform_pfx: typing.Optional[typing.Callable] = None) -> dict:
 
-  global RESERVED_PREFIX
+  global RESERVED_PREFIXES
 
   def check_int_value(value: int, xform_int: typing.Optional[typing.Callable]) -> dict:
     if value < 0 or value > 2**32-1:
@@ -732,7 +732,7 @@ def common_addr_parse(
       return { '_value': f'{af} prefix ({Ex})' }
 
   if use not in ['prefix','id']:
-    r_hit = check_reserved_range(RESERVED_PREFIX[af],p_addr)
+    r_hit = check_reserved_range(RESERVED_PREFIXES[af],p_addr)
     if r_hit:
       return {'_value': f'{af} {"prefix" if "prefix" in use else "address"}'+
                         f' outside of reserved ranges ({value} is in {r_hit} range)'}
