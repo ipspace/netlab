@@ -1,0 +1,381 @@
+bgp:
+  advertise_loopback: true
+  community:
+    ebgp:
+    - standard
+    ibgp:
+    - standard
+    - extended
+  gtsm: 22
+  next_hop_self: true
+groups:
+  as65000:
+    members:
+    - r1
+  as65001:
+    members:
+    - r2
+  as65002:
+    members:
+    - r3
+input:
+- topology/input/removed-attr-inheritance.yml
+- package:topology-defaults.yml
+links:
+- _linkname: links[1]
+  interfaces:
+  - bgp:
+      description: GTSM = 17 (node value)
+    ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.1/30
+    node: r1
+  - bgp:
+      description: GTSM = 2 (interface value)
+      gtsm: 2
+    ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.2/30
+    node: r2
+  linkindex: 1
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.0/30
+  role: external
+  type: p2p
+- _linkname: links[2]
+  bgp:
+    gtsm: 3
+  interfaces:
+  - bgp:
+      description: GTSM = 3 (link value)
+    ifindex: 2
+    ifname: eth2
+    ipv4: 10.1.0.5/30
+    node: r1
+  - bgp:
+      _removed_attr:
+      - gtsm
+      description: GTSM missing
+    ifindex: 2
+    ifname: eth2
+    ipv4: 10.1.0.6/30
+    node: r2
+  linkindex: 2
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.4/30
+  role: external
+  type: p2p
+- _linkname: links[3]
+  interfaces:
+  - bgp:
+      _removed_attr:
+      - gtsm
+      description: GTSM missing
+    ifindex: 3
+    ifname: eth3
+    ipv4: 10.1.0.9/30
+    node: r1
+  - bgp:
+      description: GTSM 22 (inherited from node)
+    ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.10/30
+    node: r3
+  linkindex: 3
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.8/30
+  role: external
+  type: p2p
+module:
+- bgp
+name: input
+nodes:
+  r1:
+    af:
+      ipv4: true
+    bgp:
+      _session_clear:
+      - 10.1.0.2
+      - 10.1.0.6
+      - 10.1.0.10
+      advertise_loopback: true
+      as: 65000
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+        localas_ibgp:
+        - standard
+        - extended
+      gtsm: 17
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65001
+        description: GTSM = 17 (node value)
+        gtsm: 17
+        ifindex: 1
+        ipv4: 10.1.0.2
+        name: r2
+        type: ebgp
+      - activate:
+          ipv4: true
+        as: 65001
+        description: GTSM = 3 (link value)
+        gtsm: 3
+        ifindex: 2
+        ipv4: 10.1.0.6
+        name: r2
+        type: ebgp
+      - activate:
+          ipv4: true
+        as: 65002
+        description: GTSM missing
+        ifindex: 3
+        ipv4: 10.1.0.10
+        name: r3
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.1
+    box: none
+    config:
+    - bgp.session
+    device: none
+    hostname: clab-input-r1
+    id: 1
+    interfaces:
+    - bgp:
+        description: GTSM = 17 (node value)
+      ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.1/30
+      linkindex: 1
+      name: r1 -> r2
+      neighbors:
+      - bgp:
+          description: GTSM = 2 (interface value)
+          gtsm: 2
+        ifname: eth1
+        ipv4: 10.1.0.2/30
+        node: r2
+      role: external
+      type: p2p
+    - bgp:
+        description: GTSM = 3 (link value)
+        gtsm: 3
+      ifindex: 2
+      ifname: eth2
+      ipv4: 10.1.0.5/30
+      linkindex: 2
+      name: r1 -> r2
+      neighbors:
+      - bgp:
+          description: GTSM missing
+        ifname: eth2
+        ipv4: 10.1.0.6/30
+        node: r2
+      role: external
+      type: p2p
+    - bgp:
+        _removed_attr:
+        - gtsm
+        description: GTSM missing
+      ifindex: 3
+      ifname: eth3
+      ipv4: 10.1.0.9/30
+      linkindex: 3
+      name: r1 -> r3
+      neighbors:
+      - bgp:
+          description: GTSM 22 (inherited from node)
+        ifname: eth1
+        ipv4: 10.1.0.10/30
+        node: r3
+      role: external
+      type: p2p
+    loopback:
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.1/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.101
+      mac: 08:4f:a9:01:00:00
+    module:
+    - bgp
+    name: r1
+  r2:
+    af:
+      ipv4: true
+    bgp:
+      _removed_attr:
+      - gtsm
+      _session_clear:
+      - 10.1.0.1
+      - 10.1.0.5
+      advertise_loopback: true
+      as: 65001
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+        localas_ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65000
+        description: GTSM = 2 (interface value)
+        gtsm: 2
+        ifindex: 1
+        ipv4: 10.1.0.1
+        name: r1
+        type: ebgp
+      - activate:
+          ipv4: true
+        as: 65000
+        description: GTSM missing
+        ifindex: 2
+        ipv4: 10.1.0.5
+        name: r1
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.2
+    box: none
+    config:
+    - bgp.session
+    device: none
+    hostname: clab-input-r2
+    id: 2
+    interfaces:
+    - bgp:
+        description: GTSM = 2 (interface value)
+        gtsm: 2
+      ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.2/30
+      linkindex: 1
+      name: r2 -> r1
+      neighbors:
+      - bgp:
+          description: GTSM = 17 (node value)
+        ifname: eth1
+        ipv4: 10.1.0.1/30
+        node: r1
+      role: external
+      type: p2p
+    - bgp:
+        _removed_attr:
+        - gtsm
+        description: GTSM missing
+      ifindex: 2
+      ifname: eth2
+      ipv4: 10.1.0.6/30
+      linkindex: 2
+      name: r2 -> r1
+      neighbors:
+      - bgp:
+          description: GTSM = 3 (link value)
+          gtsm: 3
+        ifname: eth2
+        ipv4: 10.1.0.5/30
+        node: r1
+      role: external
+      type: p2p
+    loopback:
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.2/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.102
+      mac: 08:4f:a9:02:00:00
+    module:
+    - bgp
+    name: r2
+  r3:
+    af:
+      ipv4: true
+    bgp:
+      _session_clear:
+      - 10.1.0.9
+      advertise_loopback: true
+      as: 65002
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+        localas_ibgp:
+        - standard
+        - extended
+      gtsm: 22
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65000
+        description: GTSM 22 (inherited from node)
+        gtsm: 22
+        ifindex: 1
+        ipv4: 10.1.0.9
+        name: r1
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.3
+    box: none
+    config:
+    - bgp.session
+    device: none
+    hostname: clab-input-r3
+    id: 3
+    interfaces:
+    - bgp:
+        description: GTSM 22 (inherited from node)
+      ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.10/30
+      linkindex: 3
+      name: r3 -> r1
+      neighbors:
+      - bgp:
+          description: GTSM missing
+        ifname: eth3
+        ipv4: 10.1.0.9/30
+        node: r1
+      role: external
+      type: p2p
+    loopback:
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.3/32
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.103
+      mac: 08:4f:a9:03:00:00
+    module:
+    - bgp
+    name: r3
+plugin:
+- bgp.session
+provider: clab
