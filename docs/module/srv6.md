@@ -89,7 +89,7 @@ addressing:
     prefix6: 48              # Assign a /48 to each node
   loopback:
     ipv4: False
-    ipv6: FC00::/48          # Gets replaced by an address from the per-node locator range
+    ipv6: 5F00::/40          # Using loopbacks in the locator range (different for each SRv6 node)
 
 provider: clab
 defaults.device: frr
