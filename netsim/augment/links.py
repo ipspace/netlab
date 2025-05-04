@@ -345,10 +345,13 @@ Also used to merge interface data structure with neighbor data structure when bu
 def interface_data(link: Box, link_attr: set, ifdata: Box) -> Box:
   for k in link_attr:
     if k in link:
+      if k in ifdata.get('_removed_attr',[]):
+        continue
       if not k in ifdata:
         ifdata[k] = link[k]
       elif isinstance(link[k],dict) and isinstance(ifdata[k],dict):
-        ifdata[k] = link[k] + ifdata[k]
+        interface_data(link[k],set(link[k].keys()),ifdata[k])
+
   return ifdata
 
 """
