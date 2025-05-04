@@ -92,8 +92,8 @@ class SRV6(_Module):
     locator_net = ipaddress.IPv6Network(locator)
     if 'ipv6' not in node.loopback or node.get('srv6.allocate_loopback'):
       if node.get('srv6.allocate_loopback'):                # Auto-assign a loopback from locator range
-        node.loopback.ipv6 = locator.split("/")[0] + "1/48" # Use /48 to advertise the full range, not mere /64
-        # next(locator_net.subnets(new_prefix=48)).network_address
+        first_host = next(locator_net.hosts())
+        node.loopback.ipv6 = ipaddress.IPv6Interface((first_host, locator_net.prefixlen)).with_prefixlen
       else:
         log.error(
           f"Node {node.name} does not have an IPv6 loopback required for SRv6, and auto-allocation is disabled",
