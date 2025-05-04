@@ -277,6 +277,7 @@ def select_primary_provider(topology: Box) -> None:
         flag='providers.change',
         module='providers')
       topology.provider = p_used
+      topology.defaults.provider = p_used
       return
 
   # Now build the list of providers that can be mixed (in relative order)
