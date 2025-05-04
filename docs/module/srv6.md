@@ -1,6 +1,6 @@
 # Segment Routing over IPv6 (srv6) Configuration Module
 
-This configuration module configures SRv6 over IS-IS with BGP to advertise SID reachability
+This configuration module configures SRv6 over IS-IS with IBGP to advertise SID reachability
 
 Supported SRv6 features:
 
@@ -10,6 +10,7 @@ Supported SRv6 features:
 * BGP L3VPN v4/v6 over SRv6
 
 The module currently depends on IS-IS and will trigger a configuration error if the **isis** module is not enabled in the network topology.
+It is initially focused around intra-AS IBGP scenarios, EBGP can be configured but may require additional configuration.
 
 ## Platform Support
 The following table describes per-platform support of individual router-level SRv6 features:
