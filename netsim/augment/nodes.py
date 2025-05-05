@@ -76,7 +76,7 @@ Validate node attributes
 """
 def validate(topology: Box) -> None:
   # Allow provider- and tool- specific node attributes
-  extra = get_object_attributes(['providers','tools'],topology)
+  extra = get_object_attributes(['providers','tools','outputs'],topology)
   for n_name,n_data in topology.nodes.items():
     must_be_id(
       parent=None,
