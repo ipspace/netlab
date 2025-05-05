@@ -16,14 +16,19 @@ addressing:
     ipv6: 5F00::/16           # Using loopbacks within the SRv6 locator range
 
   lb_ce:
-    ipv4: 192.168.0.0/24
+    ipv6: 2001:db8:0:1::/32
     prefix: 32
+
+  lan:
+    ipv4: False
+    ipv6: 2001:db8:42:0::/32
 
 srv6.allocate_loopback: True  # Override the ipv6 loopback address and allocate one from the per-node locator range
 
 srv6.bgp:
-  ipv4: True                  # Enable IPv4 in the overlay (for IBGP)
-  ipv6: False
+  ipv4: False                  # Enable IPv4 in the overlay (for IBGP)
+  ipv6: True
+
 srv6.vpn: False
 
 bgp.as: 65000                 # single iBGP AS
@@ -41,8 +46,7 @@ groups:
     bgp.advertise_loopback: False # Using IS-IS for this
   core:
     members: [ p ]
-    module: [ isis, srv6 ]
-    srv6.bgp: False
+    module: [ isis ]
   ce:
     members: [ ce1, ce2 ]
     module: [ bgp ]
@@ -90,35 +94,35 @@ validate:
     wait: ebgp_session
     wait_msg: Waiting for EBGP session DUT-CE1
     nodes: [ ce1 ]
-    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv4')
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6')
   ebgp_pe2:
     description: Check EBGP session PE2-CE2
     wait: ebgp_session
     wait_msg: Waiting for EBGP session PE2-CE2
     nodes: [ ce2 ]
-    plugin: bgp_neighbor(node.bgp.neighbors,'pe2',af='ipv4')
+    plugin: bgp_neighbor(node.bgp.neighbors,'pe2',af='ipv6')
   ibgp:
     description: Check IBGP session with activation of IPv4 over IPv6
     wait: 10
     wait_msg: Waiting for IBGP sessions to start
     nodes: [ pe2 ]
-    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6',activate='ipv4')
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6')
     stop_on_error: true
   ping_hh:
     description: Ping-based host-to-host reachability test
     wait_msg: We might have to wait a bit longer
     wait: 10
     nodes: [ h1 ]
-    plugin: ping('h2')
+    plugin: ping('h2',af='ipv6')
   ping_h_ce:
     description: Ping-based host-to-CE reachability test
     wait_msg: We might have to wait a bit longer
     wait: 10
     nodes: [ h1, h2 ]
-    plugin: ping('ce1')
+    plugin: ping('ce1',af='ipv6')
   ping_ce_ce:
     description: Ping-based CE-to-CE reachability test
     wait_msg: We might have to wait a bit longer
     wait: 10
     nodes: [ ce1 ]
-    plugin: ping(nodes.ce2.loopback.ipv4,src=nodes.ce1.loopback.ipv4)
+    plugin: ping(nodes.ce2.loopback.ipv6,src=nodes.ce1.loopback.ipv6,af='ipv6')
