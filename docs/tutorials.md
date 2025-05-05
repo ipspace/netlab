@@ -30,6 +30,7 @@ Once you want to know more, check out these lab topology tutorials:
 * [Simplify netlab Topologies with Link Groups](https://blog.ipspace.net/2023/05/netlab-link-groups/)
 * [Mix Containers and VMs in the Same Lab Topology](https://blog.ipspace.net/2023/02/netlab-vm-containers/)
 * [Using VLAN and VRF Links](https://blog.ipspace.net/2023/04/netlab-vrf-vlan-links/)
+* [](example-bridge)
 
 ## User Interface Tutorials
 
@@ -93,4 +94,5 @@ Documentation of individual configuration modules includes sample lab topology f
    example/github.md
    example/release.md
    example/linux.md
+   example/bridge.md
 ```
