@@ -4,14 +4,26 @@ message: |
   two IPv4-only networks. The validation test checks end-to-end IPv4 connectivity across a SRv6 core.
   See https://www.ietf.org/archive/id/draft-mishra-idr-v4-islands-v6-core-4pe-06.html
 
+defaults.sources.extra: [ ../wait_times.yml ]
+
 addressing:
-  p2p:
+  core:
     ipv4: False                      # ipv6-only
     ipv6: 2001:1::/48                # SRv6 requires ipv6 addresses on interfaces
+
+  p2p:
+    ipv6: False
 
   loopback:
     ipv4: False                      # No need for ipv4 loopbacks, this avoids creating ipv4 ibgp sessions too
     ipv6: 5F00::/16                  # Using loopbacks within the SRv6 locator range
+
+  lb_ce:
+    ipv4: 192.168.0.0/24
+    prefix: 32
+
+  lan:
+    ipv6: False
 
 srv6.allocate_loopback: True         # Override the ipv6 loopback address
 
@@ -20,7 +32,6 @@ srv6.vpn:
   ipv4: True                         # Different from 01 scenario
 
 bgp.as: 65000                        # single iBGP AS
-bgp.advertise_loopback: False        # Using IS-IS for this
 
 groups:
   _auto_create: True
@@ -32,32 +43,50 @@ groups:
     members: [ dut, pe2 ]
     module: [ isis, bgp, srv6, vrf ] # Added the vrf module
     bgp.import: [ connected ]
+    bgp.advertise_loopback: False        # Using IS-IS for this
+  core:
+    members: [ p ]
+    module: [ isis, srv6 ]
+  ce:
+    members: [ ce1, ce2 ]
+    module: [ bgp ]
+    loopback.pool: lb_ce
   x_switches:
-    members: [ pe2 ]
+    members: [ p, pe2, ce1, ce2 ]
     device: frr
     provider: clab
 
 vrfs:
   overlay:
+    links: [ h1-dut, h2-pe2, ce1-dut, ce2-pe2 ]
+
+nodes:
+  dut:
+  pe2:
+  ce1:
+    bgp.as: 65101
+  ce2:
+    bgp.as: 65102
 
 links:
-- h1:
-  dut:
-    vrf: overlay                     # IPv4 networks added to the VRF
-  isis: False                        # Using BGP to announce these prefixes
-- dut-pe2
-- pe2:
-    vrf: overlay
-  h2:
-  isis: False
+- group: core
+  pool: core
+  members: [ dut-p, p-pe2 ]
 
 validate:
-  isis:
+  isis_dut:
     description: Check ISIS sessions with DUT (wait up to 30 seconds)
     wait: 30
     wait_msg: Waiting for ISIS adjacency
-    nodes: [ pe2 ]
+    nodes: [ p ]
     plugin: isis_neighbor('dut',level='L2',area='49.0001')
+    stop_on_error: true
+  isis_pe2:
+    description: Check ISIS sessions with DUT (wait up to 30 seconds)
+    wait: 30
+    wait_msg: Waiting for ISIS adjacency
+    nodes: [ p ]
+    plugin: isis_neighbor('pe2',level='L2',area='49.0001')
     stop_on_error: true
   ibgp:
     description: Check IBGP session with activation of VPN IPv4 over IPv6
@@ -66,9 +95,33 @@ validate:
     nodes: [ pe2 ]
     plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6',activate='vpnv4')
     stop_on_error: true
-  ping:
-    description: Ping-based end-to-end reachability test
+  ebgp_dut:
+    description: Check EBGP session DUT-CE1
+    wait: ebgp_session
+    wait_msg: Waiting for EBGP session DUT-CE1
+    nodes: [ ce1 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv4')
+  ebgp_pe2:
+    description: Check EBGP session PE2-CE2
+    wait: ebgp_session
+    wait_msg: Waiting for EBGP session PE2-CE2
+    nodes: [ ce2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'pe2',af='ipv4')
+  ping_hh:
+    description: Ping-based host-to-host reachability test
     wait_msg: We might have to wait a bit longer
     wait: 10
     nodes: [ h1 ]
     plugin: ping('h2')
+  ping_h_ce:
+    description: Ping-based host-to-CE reachability test
+    wait_msg: We might have to wait a bit longer
+    wait: 10
+    nodes: [ h1, h2 ]
+    plugin: ping('ce1')
+  ping_ce_ce:
+    description: Ping-based CE-to-CE reachability test
+    wait_msg: We might have to wait a bit longer
+    wait: 10
+    nodes: [ ce1 ]
+    plugin: ping(nodes.ce2.loopback.ipv4,src=nodes.ce1.loopback.ipv4)
