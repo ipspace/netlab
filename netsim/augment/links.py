@@ -164,7 +164,7 @@ Validate link attributes
 """
 def validate(topology: Box) -> None:
   # Allow provider-specific global attributes
-  providers = get_object_attributes(['providers'],topology)
+  providers = get_object_attributes(['providers','outputs'],topology)
 
   for l_data in topology.links:
     validate_attributes(

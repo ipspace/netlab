@@ -44,12 +44,25 @@ def d2_node_attr(f : typing.TextIO, n: Box, settings: Box, indent: str = '') -> 
   copy_d2_attr(f,d2_type,settings,indent)
 
 '''
+Add D2 styling information from d2.* link/node attributes
+'''
+STYLE_MAP: Box
+
+def d2_style(f : typing.TextIO, obj: Box, indent: str) -> None:
+  if 'd2' not in obj:
+    return
+  d2_data = { STYLE_MAP[k]:v for k,v in obj.d2.items() if k in STYLE_MAP }
+  if d2_data:
+    dump_d2_dict(f,{ 'style': d2_data },indent)
+
+'''
 Create a node in D2 graph and add a label and styling attributes to it
 
 indent parameter is used to create indented definitions within containers
 '''
 def node_with_label(f : typing.TextIO, n: Box, settings: Box, indent: str = '') -> None:
   f.write(f'{indent}{n.d2.name} {{\n')
+  d2_style(f,n,indent + '  ')
   node_ip_str = ""
   node_ip = n.loopback.ipv4 or n.loopback.ipv6
   if settings.node_address_label and not settings.node_interfaces:
@@ -96,6 +109,7 @@ Create a P2P connection between two nodes
 '''
 def edge_p2p(f : typing.TextIO, l: Box, labels: typing.Optional[bool] = False) -> None:
   f.write(f"{l.interfaces[0].node} -- {l.interfaces[1].node} {{\n")
+  d2_style(f,l,'  ')
   if labels:
     edge_label(f,'source',l.interfaces[0],True)
     edge_label(f,'target',l.interfaces[1],True)
@@ -106,6 +120,7 @@ Create a connection between a node and a LAN segment
 '''
 def edge_node_net(f : typing.TextIO, link: Box, ifdata: Box, labels: typing.Optional[bool] = False) -> None:
   f.write(f"{ifdata.node} -> {link.bridge} {{\n")
+  d2_style(f,link,'  ')
   if labels:
     edge_label(f,'source',ifdata,False)
   f.write("}\n")
@@ -189,7 +204,7 @@ def graph_topology(topology: Box, fname: str, settings: Box,g_format: typing.Opt
     for name,n in topology.nodes.items():
       node_with_label(f,n,settings)
 
-  for l in topology.links:
+  for l in sorted(topology.links,key=lambda x: x.get('d2.linkorder',100)):
     for intf in l.interfaces:
       intf._topo_node = intf.node
       intf.node = topology.nodes[intf.node].d2.name
@@ -262,6 +277,9 @@ Set node attributes needed by D2 output module:
 * D2 shape type -- used to copy D2 style attributes from system defaults to D2 graph file
 '''
 def set_d2_attr(topology: Box) -> None:
+  global STYLE_MAP
+  STYLE_MAP = topology.defaults.outputs.d2.styles
+
   for n,ndata in topology.nodes.items():
     dev_data = topology.defaults.devices[ndata.device]
     ndata.d2.type = dev_data.graphite.icon or 'router'
