@@ -5,7 +5,7 @@ router bgp {{ bgp.as }}
 
 {#
   The core bgp module only provisions neighbors for which the transport matches the address family, i.e. IPv4 over v4
-  and IPv6 over v6. This template modifies IPv6 neighbors, adding IPv4/VPNv4 AF over IPv6 transport and setting various
+  and IPv6 over v6. This template modifies IPv6 neighbors, adding VPNv4/6 AF over IPv6 transport and setting various
   next hop handling flags
 #}
 {% macro bgp_neighbor(n,peer,af) %}
@@ -19,7 +19,7 @@ router bgp {{ bgp.as }}
 {%   endif %}
 {% endmacro -%}
 
-{% if srv6.bgp is defined or srv6.vpn is defined %}
+{% if srv6.vpn is defined %}
 {%   for n in bgp.neighbors|default([]) if n.ipv6 is defined %}
 {%     set peer = n.ipv6 %}
  neighbor {{ peer }} remote-as {{ n.as }}
@@ -28,31 +28,26 @@ router bgp {{ bgp.as }}
  neighbor {{ peer }} capability extended-nexthop
 {%     endif %}
 
-{%-    for af in ['ipv4','ipv6'] %} 
-{%       if srv6.bgp is defined and n.type in srv6.bgp.get(af,[]) %}
- address-family {{ af }} unicast
-!
-{{       bgp_neighbor(n,peer,af) -}}
-{%       endif %}
-{%       if srv6.vpn is defined and n.type in srv6.vpn.get(af,[]) %}
+{%-    for af in ['ipv4','ipv6'] %}
+{%       if n.type in srv6.vpn.get(af,[]) %}
  address-family {{ af }} vpn
 !
-{{       bgp_neighbor(n,peer,af) -}}
+{{         bgp_neighbor(n,peer,af) -}}
 {%       endif %}
 {%     endfor %}
 {%   endfor %}
-{% endif %}
 !
-{% if srv6.vpn is defined and vrfs is defined %}
-{%   for vname,vdata in vrfs.items() %}
+{%   if vrfs is defined %}
+{%     for vname,vdata in vrfs.items() %}
 router bgp {{ vdata.as|default(bgp.as) }} vrf {{ vname }}
  sid vpn per-vrf export auto
  no bgp network import-check
 
-{%     for af in ['ipv4','ipv6'] if 'ebgp' in srv6.vpn.get(af,[]) %}
+{%       for af in ['ipv4','ipv6'] if 'ebgp' in srv6.vpn.get(af,[]) %}
  address-family {{ af }} unicast
   nexthop vpn export {{ loopback.ipv6|ipaddr('address') }}
-{%     endfor %}
+{%       endfor %}
 !
-{%   endfor %}
+{%     endfor %}
+{%   endif %}
 {% endif %}
