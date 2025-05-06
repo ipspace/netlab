@@ -23,7 +23,7 @@ The following table describes the per-platform support of individual router-leve
 
 | Operating system      | VPNv4 | VPNv6 |
 | ----------------------| :---: | :---: |
-| FRR                   |   ✅  |   ✅  |
+| FRR                   |   ✅  |   ✅ [❗️](caveats-frr)  |
 | Nokia SR OS           |   ❌  |   ❌  |
 
 **Notes**

@@ -33,13 +33,18 @@ def configure_bgp_for_srv6(node: Box, topology: Box) -> None:
   for nb in list(node.get('bgp.neighbors',[])):
     if 'ipv6' not in nb:                               # Skip IPv4-only neighbors
       continue
+
     for af in DEFAULT_BGP_AF.keys():
       if nb.type in srv6_bgp.get(af,[]) or nb.type in srv6_vpn.get(af,[]):
-        nb.activate[af] = False                        # Disable regular BGP activation
+# If anything, deactivating BGP AFs would break SR-OS and not achieve anything on FRR
+#        nb.activate[af] = False                        # Disable regular BGP activation
+        pass
       else:
         continue                                       # Skip if neither AF is activated
-      if nb.type=='ebgp':                              # Set next hop unchanged for EBGP peers, to get end-2-end SID routing
-        nb.next_hop_unchanged = True
+
+# The following code is untested and thus commented out
+#      if nb.type=='ebgp':                              # Set next hop unchanged for EBGP peers, to get end-2-end SID routing
+#        nb.next_hop_unchanged = True
       if af=='ipv4' and 'ipv4' not in nb:
         nb.extended_nexthop = True                     # Enable extended next hops when IPv4 AF is used without IPv4 transport
 

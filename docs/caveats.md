@@ -291,9 +291,9 @@ diag debug application httpsd -1
 * You cannot load kernel modules in GitHub Codespaces and thus cannot use *vrf*, *mpls*, or *vxlan* modules on FRRouting nodes in that environment.
 * FRR containers have a management VRF. Use `ip vrf exec mgmt <command>` to run a CLI command that needs access to the outside world through the management interface. To disable the management VRF, set the **netlab_mgmt_vrf** node parameter to *False*.
 * FRR initial container configuration might fail if your Ubuntu distribution does not include the VRF kernel module. Install the VRF kernel module with the `sudo apt install linux-generic` and reboot the server.
-* FRR 9.0 and later creates malformed IS-IS LSPs; the bug has been fixed in release 10.0.1 ([details](https://github.com/FRRouting/frr/issues/14514)). You cannot build an IS-IS network using Arista EOS and FRR if you're running an affected version of FRR.
 * FRR configures BFD as part of OSPFv2/OSPFv3 configuration.
-* STP is *disabled* on Linux bridges used to implement VLANs on this platform, so FRR devices cannot be used in topologies that include L2 loops. Cumulus (with FRR inside) may work better in that case
+* IPv6 L3VPN over SRv6 works only for directly-connected IPv6 subnets. IPv6 EBGP routes received from CE-routers are not propagated across the IPv6 L3VPN IBGP session.
+* IPv6 L3VPN over SRv6 does not work in parallel with the IPv6 AF. You have to disable the IPv6 AF on IPv6 IBGP sessions with **bgp.activate.ipv6: []**.
 
 (caveats-junos)=
 ## Common Junos caveats

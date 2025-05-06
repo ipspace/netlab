@@ -1,8 +1,8 @@
 ---
 message: |
   The tested device (DUT) is a PE-router running IS-IS, BGP L3VPN and SRv6
-  across an IPv6-only network to interconnect two IPv4-only networks. The
-  validation test checks end-to-end L3VPN IPv4 connectivity across a SRv6 core.
+  across an IPv6-only network to interconnect two IPv6-only networks. The
+  validation test checks end-to-end L3VPN IPv6 connectivity across a SRv6 core.
 
 defaults.sources.extra: [ ../wait_times.yml ]
 
@@ -12,24 +12,26 @@ addressing:
     ipv6: 2001:1::/48                # SRv6 requires ipv6 addresses on interfaces
 
   p2p:
-    ipv6: False
+    ipv4: False
+    ipv6: 2001:db8:1::/48
 
   loopback:
     ipv4: False                      # No need for ipv4 loopbacks, this avoids creating ipv4 ibgp sessions too
     ipv6: 5F00::/16                  # Using loopbacks within the SRv6 locator range
 
   lb_ce:
-    ipv4: 192.168.0.0/24
+    ipv6: 2001:db8::/48
     prefix: 32
 
   lan:
-    ipv6: False
+    ipv4: False
+    ipv6: 2001:db8:2::/48
 
 srv6.allocate_loopback: True         # Override the ipv6 loopback address
 
 srv6.bgp: False                      # No plain IPv4/6 in the overlay
 srv6.vpn:
-  ipv4: True                         # Different from 01 scenario
+  ipv6: True                         # Different from 01 scenario
 
 bgp.as: 65000                        # single iBGP AS
 
@@ -44,6 +46,7 @@ groups:
     module: [ isis, bgp, srv6, vrf ] # Added the vrf module
     bgp.import: [ connected ]
     bgp.advertise_loopback: False        # Using IS-IS for this
+    bgp.activate.ipv6: []
   core:
     members: [ p ]
     module: [ isis, srv6 ]
@@ -93,20 +96,20 @@ validate:
     wait: 10
     wait_msg: Waiting for IBGP sessions to start
     nodes: [ pe2 ]
-    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6',activate='vpnv4')
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6',activate='vpnv6')
     stop_on_error: true
   ebgp_dut:
     description: Check EBGP session DUT-CE1
     wait: ebgp_session
     wait_msg: Waiting for EBGP session DUT-CE1
     nodes: [ ce1 ]
-    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv4')
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6')
   ebgp_pe2:
     description: Check EBGP session PE2-CE2
     wait: ebgp_session
     wait_msg: Waiting for EBGP session PE2-CE2
     nodes: [ ce2 ]
-    plugin: bgp_neighbor(node.bgp.neighbors,'pe2',af='ipv4')
+    plugin: bgp_neighbor(node.bgp.neighbors,'pe2',af='ipv6')
   ping_hh:
     description: Ping-based host-to-host reachability test
     wait_msg: We might have to wait a bit longer
@@ -124,4 +127,4 @@ validate:
     wait_msg: We might have to wait a bit longer
     wait: 10
     nodes: [ ce1 ]
-    plugin: ping(nodes.ce2.loopback.ipv4,src=nodes.ce1.loopback.ipv4)
+    plugin: ping(nodes.ce2.loopback.ipv6,src=nodes.ce1.loopback.ipv6)
