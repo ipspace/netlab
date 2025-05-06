@@ -1,21 +1,43 @@
-# SRv6 default settings and attributes
+# SRv6 over IS-IS using BGP and/or BGP L3VPN v4/v6 as control plane
 #
-requires: [ isis ]
-transform_after: [ vlan ]
-locator: 2001:db8:aaaa # 2001:db8::/32 see RFC 6890 – Documentation Set
-address_families: [ ipv4, ipv6 ]
-# protocols: [ isis ] # Could model like this too
-bgp: False
-isis: True
+# Modeled similar to the MPLS module
+#
+config_after: [ vlan, isis, ospf, bgp ]
+transform_after: [ vlan, bgp, vrf ]
+no_propagate: [ locator_pool ]
+
+allocate_loopback: True     # Replace the IPv6 loopback address with an IP from locator pool range, for each SRv6 node
+locator_pool: 5F00::/16     # Default address pool for locators based on the IANA reserved range in RFC9602
+                            # See https://datatracker.ietf.org/doc/html/rfc9602
+igp: [ isis ]               # By default, enable SRv6 over IS-IS
+bgp:
+  ipv4: [ ibgp ]            # By default, enable BGP v4/v6 for SRv6 on iBGP neighbors
+  ipv6: [ ibgp ]
+
 attributes:
   global:
-    locator: str
-    address_families: { type: list, true_value: [ ipv4, ipv6 ] }
-    bgp: bool
-    isis: bool
+    allocate_loopback: bool
+    bgp: # BGP v4/v6 AF
+      _alt_types: [ bool, BoxList ]
+      ipv4: { type: list, true_value: [ ibgp ] }
+      ipv6: { type: list, true_value: [ ibgp ] }
+    igp: { type: list, valid_values: [ isis, ospf ] }
+    vpn: # BGP VPN v4/v6
+      _alt_types: [ bool, BoxList ]
+      ipv4: { type: list, true_value: [ ibgp ] }
+      ipv6: { type: list, true_value: [ ibgp ] }
+    locator_pool: { type: ipv6, use: subnet_prefix }
+
   node:
-    locator: str
-    address_families:
-    bgp: bool
-    isis: bool
+    allocate_loopback:
+    bgp:
+    igp:
+    vpn:
+    locator: { type: ipv6, use: subnet_prefix }
     transit_only: bool
+
+features:
+  bgp: Supports BGP v4/v6 over SRv6
+  vpn: Supports BGP L3VPN v4/v6 over SRv6
+  isis: Supports SRv6 with IS-IS
+  ospf: Supports SRv6 with OSPFv3

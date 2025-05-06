@@ -1,0 +1,54 @@
+#!/bin/bash
+#
+set -e
+
+export SRv6_DEV="sr0"
+
+if [ ! -e /sys/devices/virtual/net/${SRv6_DEV} ]; then
+ip link add ${SRv6_DEV} type dummy
+ip link set ${SRv6_DEV} up
+fi
+
+# See https://onvox.net/2024/12/16/srv6-frr/
+sysctl -w net.ipv6.seg6_flowlabel=1
+sysctl -w net.ipv6.conf.all.seg6_enabled=1
+sysctl -w net.vrf.strict_mode=1
+
+#
+# Rest of SRv6 configuration done through VTYSH
+#
+cat >/tmp/srv6_config <<CONFIG
+segment-routing
+ srv6
+  encapsulation
+   source-address {{ loopback.ipv6|ipaddr('address') }}
+  locators
+   locator {{ inventory_hostname }}
+    prefix {{ srv6.locator }}
+    behavior usid
+    format usid-f3216
+   exit
+   !
+  exit
+  !
+ exit
+
+{% if 'isis' in srv6.igp|default([]) and isis.instance is defined %}
+router isis {{ isis.instance }}
+ metric-style wide
+ segment-routing srv6
+   locator {{ inventory_hostname }}
+   # node-msd max-end-d 8
+   interface ${SRv6_DEV}
+ exit
+exit
+{% endif %}
+
+{% if srv6.vpn is defined and bgp.as is defined %}
+{%   include "frr.bgp.j2" %}
+{% endif %}
+
+do write
+CONFIG
+vtysh -f /tmp/srv6_config
+exit 0

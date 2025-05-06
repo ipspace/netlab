@@ -32,20 +32,20 @@ updates:
          protection: protected
          interface-name: {{ 'i' + i.ifname }}
 {%     endfor %}
-{%     if 'bgp' in module and srv6.bgp|default(False) and not srv6.transit_only|default(False) %}
-{%     if 'ipv4' in srv6.address_families %}
+{%     if 'bgp' in module and srv6.bgp is defined and not srv6.transit_only|default(False) %}
+{%       if 'ipv4' in srv6.bgp %}
        end-dt4: { }
-{%     endif %}
-{%     if 'ipv6' in srv6.address_families %}
+{%       endif %}
+{%       if 'ipv6' in srv6.bgp %}
        end-dt6: { }
-{%     endif %}
+{%       endif %}
 {%     endif %}
    source-address: "{{ loopback.ipv6 | ipaddr('address') }}"
 {% if not srv6.transit_only|default(False) %}
    origination-fpe: [1]
 {% endif %}
 
-{% if 'isis' in module and srv6.isis|default(False) %}
+{% if 'isis' in srv6.igp %}
 - path: configure/router[router-name=Base]/isis[isis-instance=0]
   val:
    advertise-router-capability: area
@@ -71,29 +71,27 @@ updates:
 {% endif %}
 
 {# Enable BGP SRv6 and/or extended NH encoding #}
-{% if 'bgp' in module %}
-{% if srv6.bgp|default(False) %}
+{% if 'bgp' in module and srv6.bgp is defined %}
 - path: configure/router[router-name=Base]/bgp
   val:
    segment-routing-v6:
     source-address: "{{ loopback.ipv6 | ipaddr('address') }}"
     family:
-{%  for af in srv6.address_families %}
+{%  for af in ['ipv4','ipv6'] if srv6.bgp.get(af) %}
     - family-type: {{ af }}
       ignore-received-srv6-tlvs: False # default: True
       add-srv6-tlvs:
        locator-name: {{ locator_name }}
 {%  endfor %}
-{% endif %}
 
-{% if 'ipv4' in srv6.address_families and (srv6.bgp|default(False) or bgp.rr|default(False)) %}
+{%  if srv6.bgp.get('ipv4') %}
 - path: configure/router[router-name=Base]/bgp
   val:
    extended-nh-encoding:
     ipv4: True
    advertise-ipv6-next-hops:
     ipv4: True
-{% endif %}
+{%  endif %}
 {% endif %}
 
 {# Provision SRv6 FPE resources at edges of SRv6 domain #}
