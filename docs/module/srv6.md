@@ -15,10 +15,10 @@ It is initially focused around intra-AS IBGP scenarios, EBGP can be configured b
 ## Platform Support
 The following table describes per-platform support of individual router-level SRv6 features:
 
-| Operating system         | IS-IS | OSPFv3 | BGP v4/v6 | Transit only
-| ------------------------ |:-----:|:------:|:---------:|:---------:
-| FRR                      |   ✅  |   ❌   |     ✅    |     ❌   | 
-| Nokia SR OS              |   ✅  |   ❌   |     ✅    |     ✅   |
+| Operating system         | IS-IS | OSPFv3 | BGP v4/v6 | Transit only |
+| ------------------------ |:-----:|:------:|:---------:|:-------------:
+| FRR                      |   ✅  |   ❌   |    ❌     |      ❌      | 
+| Nokia SR OS              |   ✅  |   ❌   |    ✅     |      ✅      |
 
 (srv6-l3vpn-supported-platforms)=
 ### BGP/SRv6 L3VPN

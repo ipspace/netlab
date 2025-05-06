@@ -77,12 +77,23 @@ class SRV6(_Module):
           module='srv6')
 
     data.bool_to_defaults(node.srv6,'bgp',DEFAULT_BGP_AF)
-    if node.srv6.get('bgp') and 'bgp' not in mods:
-      log.error(
+    if node.srv6.get('bgp'):
+      if not d_features.srv6.get('bgp'):
+        log.error(
+          f"Node {node.name} (device {node.device}) does not support BGP v4/v6 with SRv6",
+          category=log.IncorrectValue,
+          module='srv6')
+      if 'bgp' not in mods:
+        log.error(
           f"Node {node.name} does not have the BGP module enabled to support BGP v4/v6",
           category=log.MissingDependency,
           module='srv6')
     data.bool_to_defaults(node.srv6,'vpn',DEFAULT_BGP_AF)    # Typically used with the vrf module, but not only
+    if node.srv6.get('vpn') and not d_features.srv6.get('vpn'):
+      log.error(
+        f"Node {node.name} (device {node.device}) does not support L3VPN BGP v4/v6 with SRv6",
+        category=log.IncorrectValue,
+        module='srv6')
 
     locator = node.get('srv6.locator')
     if not locator:
