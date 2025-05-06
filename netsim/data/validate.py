@@ -216,7 +216,7 @@ def validate_dictionary(
   if not '_keys' in data_type:                    # If the dictionary does not have the valid keys
     return return_value                           # ... there's nothing further to validate, return what we accumulated so far
 
-  for k in data.keys():                           # Iterate over the elements
+  for k in list(data.keys()):                     # Iterate over the elements
     if not k in data_type._keys:                  # ... and report elements with invalid name
       log.error(
         f"Incorrect {data_name} attribute '{k}' in {parent_path}",
