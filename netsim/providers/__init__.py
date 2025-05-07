@@ -244,6 +244,8 @@ class _Provider(Callback):
 
         p_name = topology.provider                          # Get primary and secondary provider
         s_name = node.provider                              # ... to make the rest of the code more readable
+        if p_name == s_name:                                # ... nothing to do if they're the same
+          continue
 
         l[p_name].provider[s_name] = True                   # Collect secondary link provider(s)
         if 'uplink' in l[p_name]:                           # ... and copy primary uplink to secondary uplink
