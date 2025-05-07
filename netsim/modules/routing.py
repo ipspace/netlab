@@ -259,29 +259,28 @@ import_policy_filters: Import all routing filters (prefix lists, community lists
 needed by the just-imported routing policy
 """
 match_object_map: dict = {
-  'prefix': 'prefix',                                       # Prefix match requires a 'prefix' object
-  'nexthop': 'prefix',                                      # Next-hop match requires a 'prefix' object
-  'aspath': 'aspath',                                       # AS path match requires an 'aspath' object
-  'community': 'community'                                  # Community match requires a 'community' object
+  'match.prefix': 'prefix',                                 # Prefix match requires a 'prefix' object
+  'match.nexthop': 'prefix',                                # Next-hop match requires a 'prefix' object
+  'match.aspath': 'aspath',                                 # AS path match requires an 'aspath' object
+  'match.community': 'community',                           # Community match requires a 'community' object
+  'set.community.delete_list': 'community'                  # Community delete_list requires a 'community' object
 }
 
 def import_policy_filters(pname: str, o_name: str, node: Box, topology: Box) -> None:
   global match_object_map, normalize_dispatch, transform_dispatch, import_dispatch
 
   for p_entry in node.routing.policy[pname]:                # Iterate over routing policy entries
-    if not 'match' in p_entry:                              # No match condition, nothing to check
-      continue
     for kw in match_object_map.keys():                      # Iterate over match keywords
-      if kw in p_entry.match:                               # A filter is used in the route-map ==> import it
+      if kw in p_entry:                                     # A filter is used in the route-map ==> import it
         r_object = match_object_map[kw]
-        f_import = import_routing_object(p_entry.match[kw],r_object,node,topology)
+        f_import = import_routing_object(p_entry[kw],r_object,node,topology)
         if f_import:                                        # If we imported any new data...
           if r_object in normalize_dispatch:                # ... normalize the filter entries
             normalize_routing_object(f_import,normalize_dispatch[r_object]['callback'])
           if r_object in import_dispatch and 'check' in import_dispatch[r_object]:
-            import_dispatch[r_object]['check'](p_entry.match[kw],r_object,node,topology)
+            import_dispatch[r_object]['check'](p_entry[kw],r_object,node,topology)
           if r_object in transform_dispatch:                # ... and transform the filter into its final form
-            transform_dispatch[r_object]['import'](p_entry.match[kw],r_object,node,topology)
+            transform_dispatch[r_object]['import'](p_entry[kw],r_object,node,topology)
 
 """
 Import/merge a single global routing policy into node routing policy table
@@ -464,6 +463,52 @@ def normalize_routing_data(r_object: Box, topo_object: bool = False, o_name: str
       more_data=str(ex),
       more_hints="Check further error messages for more details",
       module='routing')
+
+"""
+replace_community_delete:
+
+* replace 'delete: true' with 'delete_list' if the 'set.community.delete' feature is set to 'clist'
+* create a new community list if needed
+"""
+def replace_community_delete(node: Box, p_name: str, p_entry: Box, topology: Box) -> None:
+  if not p_entry.get('set.community.delete',False):
+    return
+  features = devices.get_device_features(node,topology.defaults)
+  if features.get('routing.policy.set.community.delete') != 'clist':
+    return
+
+  clist = []
+  for type in ['standard','large','extended']:
+    if type not in p_entry.set.community:
+      continue
+    elif type in ['large','extended']:
+      log.error(
+        f'Node {node.name} (device {node.device}) cannot delete {type} BGP communities in a routing policy',
+        more_data=f'Policy {p_name} sequence# {p_entry.sequence}',
+        category=log.IncorrectType,
+        module='routing')
+    else:
+      clist += [ { 'type': 'standard', 'action': 'permit', '_value': i } for i in p_entry.set.community[type] ]
+
+  if clist:
+    cname = f"DEL_{p_name}_{p_entry.sequence}"
+    node.routing.community[cname] = { 'action': 'permit', 'type': 'standard', 'value': clist }
+    p_entry.set.community.delete_list = cname
+  
+  for kw in ['standard','large','extended','delete']:
+    p_entry.set.community.pop(kw, None)
+
+"""
+adjust_routing_policy: Make routing policy adjustments
+
+  * Replace 'set.community.delete' with 'set.community.delete_list' for devices that don't support
+    the 'set community delete' configuration command
+"""
+def adjust_routing_policy(p_name: str,o_name: str,node: Box,topology: Box) -> typing.Optional[list]:
+  for (p_idx,p_entry) in enumerate(node.routing[o_name][p_name]):
+    replace_community_delete(node,p_name,p_entry,topology)
+  
+  return None
 
 """
 expand_prefix_entry: Transform 'pool' and 'prefix' keywords into 'ipv4' and 'ipv6'
@@ -1084,6 +1129,9 @@ Dispatch table for post-transform processing. Currently used only to
 expand the prefixes/pools in prefix list.
 """
 transform_dispatch: typing.Dict[str,dict] = {
+  'policy': {
+    'import': adjust_routing_policy
+  },
   'prefix': {
     'import': expand_prefix_list
   },

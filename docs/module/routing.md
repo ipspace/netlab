@@ -72,6 +72,7 @@ The **set.community** dictionary has these parameters:
 * **extended**: Extended BGP communities to set. The value is passed to the network device as-is (the same value might not work on all devices).
 * **append**: Add communities to existing BGP communities
 * **delete**: Remove specified communities from the BGP route
+* **delete_list**: Remove communities matching the specified community list from the BGP route. Cannot be used with any other **set.community** parameters.
 
 Routing policies are specified in the global- or node-level **routing.policy** dictionary (see [](routing-object-import) and  [](routing-object-merge) for more details).
 
@@ -128,16 +129,32 @@ You can use these routing policy **set** parameters on devices supported by the 
 
 The **set.community** attribute can be used to set these BGP communities on supported devices:
 
-| Operating system    | Standard<br>community | Large<br>community | Extended<br>community | Append | Delete |
-|---------------------|:--:|:--:|:--:|:--:|:--:|
-| Arista EOS          | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Aruba AOS-CX        | ✅ | ❌  | ❌  | ✅ | ✅ |
-| Cisco IOS/XE[^18v]  | ✅ | ❌  | ❌  | ✅ | ❌  |
-| Cumulus Linux       | ✅ | ✅ | ✅ | ✅ | ❌  |
-| Dell OS10           | ✅ | ❌ | ✅ | ✅ | ❌  |
-| Junos               | ✅ | ✅ | ✅ | ✅ | ✅ |
-| FRR                 | ✅ | ✅ | ✅ | ✅ | ❌  |
-| VyOS                | ✅ | ✅ | ✅ | ✅ | ❌  |
+| Operating system    | Standard<br>community | Large<br>community | Extended<br>community |
+|---------------------|:--:|:--:|:--:|
+| Arista EOS          | ✅ | ✅ | ✅ |
+| Aruba AOS-CX        | ✅ | ❌  | ❌  |
+| Cisco IOS/XE[^18v]  | ✅ | ❌  | ❌  |
+| Cumulus Linux       | ✅ | ✅ | ✅ |
+| Dell OS10           | ✅ | ❌ | ✅ |
+| Junos               | ✅ | ✅ | ✅ |
+| FRR                 | ✅ | ✅ | ✅ |
+| VyOS                | ✅ | ✅ | ✅ |
+
+Apart from setting BGP communities on BGP routes, these devices can execute additional operations on BGP communities:
+
+| Operating system    | Append | Delete | Delete list |
+|---------------------|:--:|:--:| :--:|
+| Arista EOS          | ✅ | ✅ | ❌  |
+| Aruba AOS-CX        | ✅ | ✅ | ❌  |
+| Cisco IOS/XE[^18v]  | ✅ | ❌  | ❌  |
+| Cumulus Linux       | ✅ | ❌  | ❌  |
+| Dell OS10           | ✅ | ❌  | ❌  |
+| Junos               | ✅ | ✅ | ❌  |
+| FRR                 | ✅ | ✅❗️ | ✅ |
+| VyOS                | ✅ | ❌  | ❌  |
+
+**Notes:**
+* FRR is creating an internal BGP community list to delete BGP communities specified together with the **set.community.delete** routing policy parameter. This approach is currently limited to standard BGP communities; FRR cannot delete extended or large communities from a BGP route.
 
 ### Shortcut Routing Policy Definitions
 
