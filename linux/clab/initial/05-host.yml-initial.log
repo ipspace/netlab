@@ -15,8 +15,8 @@ TASK [Find device readiness script] ********************************************
 ok: [rtr]
 ok: [h1]
 ok: [h2]
-ok: [h4]
 ok: [h3]
+ok: [h4]
 ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
@@ -43,8 +43,8 @@ ok: [rtr]
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [dut]
 ok: [h4]
+ok: [dut]
 
 TASK [fail] ********************************************************************
 skipping: [rtr]
@@ -110,8 +110,8 @@ ok: [rtr]
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [dut]
 ok: [h4]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [h1] => 
@@ -192,6 +192,45 @@ ok: [h2] =>
     set -e
     ip -6 addr add 2001:db8:1::4/64 dev eth1
     ip link set dev eth1 mtu 1500
+ok: [h3] => 
+  msg: |-
+    initial configuration for h3
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+  
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 192.168.43.5/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 192.168.43.5/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:cafe:2::5/64 dev eth1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:cafe:2::5/64 dev eth1
+    ip link set dev eth1 mtu 1500
 ok: [dut] => 
   msg: |-
     initial configuration for dut
@@ -243,84 +282,6 @@ ok: [dut] =>
     set -e
     ip -6 addr add 2001:db8:cafe:2::1/64 dev eth2
     ip link set dev eth2 mtu 1500
-ok: [h3] => 
-  msg: |-
-    initial configuration for h3
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Send ARP requests from a sane source IP address
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-  
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 192.168.43.5/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 192.168.43.5/24 dev eth1
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
-    set +e
-    ip -6 addr del 2001:db8:cafe:2::5/64 dev eth1 2>/dev/null
-    set -e
-    ip -6 addr add 2001:db8:cafe:2::5/64 dev eth1
-    ip link set dev eth1 mtu 1500
-ok: [h4] => 
-  msg: |-
-    initial configuration for h4
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Send ARP requests from a sane source IP address
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-  
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 192.168.43.6/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 192.168.43.6/24 dev eth1
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
-    set +e
-    ip -6 addr del 2001:db8:cafe:2::6/64 dev eth1 2>/dev/null
-    set -e
-    ip -6 addr add 2001:db8:cafe:2::6/64 dev eth1
-    ip link set dev eth1 mtu 1500
 ok: [rtr] => 
   msg: |-
     initial configuration for rtr
@@ -442,6 +403,45 @@ ok: [rtr] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [h4] => 
+  msg: |-
+    initial configuration for h4
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+  
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 192.168.43.6/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 192.168.43.6/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:cafe:2::6/64 dev eth1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:cafe:2::6/64 dev eth1
+    ip link set dev eth1 mtu 1500
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for rtr
@@ -472,21 +472,21 @@ TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [dut]
 ok: [h4]
+ok: [dut]
 
 TASK [Create a temporary file for the rendered script] *************************
 changed: [h3 -> localhost]
+changed: [dut -> localhost]
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 changed: [h4 -> localhost]
-changed: [dut -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
-changed: [dut -> localhost]
 changed: [h3 -> localhost]
+changed: [dut -> localhost]
+changed: [h1 -> localhost]
 changed: [h4 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
@@ -504,18 +504,18 @@ skipping: [h4]
 skipping: [dut]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 changed: [h3 -> localhost]
-changed: [h4 -> localhost]
 changed: [dut -> localhost]
+changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-cpuqa6ks.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-wd8dwied.sh] ***********************
 changed: [h4 -> localhost]
-changed: [h1 -> localhost]
-changed: [h2 -> localhost]
 changed: [dut -> localhost]
+changed: [h1 -> localhost]
 changed: [h3 -> localhost]
+changed: [h2 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -691,39 +691,39 @@ ok: [h4]
 TASK [Create a temporary file for the rendered script] *************************
 changed: [dut -> localhost]
 changed: [h1 -> localhost]
-changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux.j2] ***
+TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
 changed: [h1 -> localhost]
+changed: [h3 -> localhost]
 changed: [dut -> localhost]
 changed: [h2 -> localhost]
 changed: [h4 -> localhost]
-changed: [h3 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-dut_routing.sh] ********
-changed: [dut -> localhost]
-changed: [h2 -> localhost]
-changed: [h3 -> localhost]
-changed: [h4 -> localhost]
-changed: [h1 -> localhost]
-
-TASK [Execute /tmp/config-dut_routing.sh to deploy routing config based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux.j2] ***
-changed: [dut]
-changed: [h1]
-changed: [h2]
-changed: [h3]
-changed: [h4]
-
-TASK [Container configuration for routing based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux.j2 executed in netns] ***
 skipping: [dut]
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
 
-TASK [Remove temporary file /tmp/dut_routing-lnovc23w.sh] **********************
+TASK [Execute /tmp/config-dut_routing.sh to deploy routing config based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
+skipping: [dut]
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+
+TASK [Container configuration for routing based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
+changed: [dut -> localhost]
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+changed: [h3 -> localhost]
+changed: [h4 -> localhost]
+
+TASK [Remove temporary file /tmp/dut_routing-7z_xb9_3.sh] **********************
 changed: [dut -> localhost]
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
@@ -734,11 +734,11 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=30   changed=9    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
-h1                         : ok=30   changed=9    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
-h2                         : ok=30   changed=9    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
-h3                         : ok=30   changed=9    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
-h4                         : ok=30   changed=9    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+dut                        : ok=29   changed=8    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+h1                         : ok=29   changed=8    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+h2                         : ok=29   changed=8    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+h3                         : ok=29   changed=8    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+h4                         : ok=29   changed=8    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
 rtr                        : ok=17   changed=3    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 
 

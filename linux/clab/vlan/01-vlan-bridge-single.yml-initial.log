@@ -104,10 +104,15 @@ ok: [h1] =>
   
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
     # Disable IPv4 and IPv6 forwarding
     #
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
+  
     #
     # Interface addressing, create any bond devices
     #
@@ -116,6 +121,7 @@ ok: [h1] =>
     ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.0.1/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
 ok: [h2] => 
   msg: |-
@@ -133,10 +139,15 @@ ok: [h2] =>
   
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
     # Disable IPv4 and IPv6 forwarding
     #
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
+  
     #
     # Interface addressing, create any bond devices
     #
@@ -145,6 +156,7 @@ ok: [h2] =>
     ip addr del 172.16.0.2/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.0.2/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
 ok: [h3] => 
   msg: |-
@@ -162,10 +174,15 @@ ok: [h3] =>
   
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
     # Disable IPv4 and IPv6 forwarding
     #
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
+  
     #
     # Interface addressing, create any bond devices
     #
@@ -174,6 +191,7 @@ ok: [h3] =>
     ip addr del 172.16.1.3/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.1.3/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
 ok: [s1] => 
   msg: |-
@@ -191,10 +209,15 @@ ok: [s1] =>
   
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
     # Disable IPv4 and IPv6 forwarding
     #
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
+  
     #
     # Interface addressing, create any bond devices
     #
@@ -203,12 +226,15 @@ ok: [s1] =>
     ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.1.4/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
   
     ip link set dev eth2 up
+    sysctl -w net.ipv6.conf.eth2.disable_ipv6=1
     ip link set dev eth2 mtu 1500
   
     ip link set dev eth3 up
+    sysctl -w net.ipv6.conf.eth3.disable_ipv6=1
     ip link set dev eth3 mtu 1500
 
 TASK [Deploy initial configuration] ********************************************
@@ -227,9 +253,9 @@ changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [s1 -> localhost]
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+changed: [s1 -> localhost]
 changed: [h3 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
@@ -246,15 +272,15 @@ skipping: [s1]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [h2 -> localhost]
-changed: [h3 -> localhost]
 changed: [h1 -> localhost]
+changed: [h3 -> localhost]
 changed: [s1 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-xpphbjv5.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-9882udgl.sh] ***********************
 changed: [s1 -> localhost]
 changed: [h1 -> localhost]
-changed: [h2 -> localhost]
 changed: [h3 -> localhost]
+changed: [h2 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -305,16 +331,18 @@ ok: [s1] =>
     set -e # Exit immediately when any command fails
     #
     if [ ! -e /sys/devices/virtual/net/vlan700 ]; then
-      brctl addbr vlan700
+      ip link add vlan700 type bridge
       ip link set dev vlan700 address 52:dc:ca:fd:04:00
   
       ip addr flush dev vlan700
     fi
   
-    brctl addif vlan700 eth2
-    brctl addif vlan700 eth3
+    ip link set dev eth2 master vlan700
+    ip link set dev eth3 master vlan700
   
     ip link set dev vlan700 up
+  
+    sysctl -w net.ipv6.conf.vlan700.disable_ipv6=1
 
 TASK [Deploy vlan configuration] ***********************************************
 skipping: [h1]
@@ -340,7 +368,7 @@ changed: [s1]
 TASK [Container configuration for vlan based on /home/pipi/net101/tools/netsim/ansible/templates/vlan/linux.j2 executed in netns] ***
 skipping: [s1]
 
-TASK [Remove temporary file /tmp/s1_vlan-s9d13xwg.sh] **************************
+TASK [Remove temporary file /tmp/s1_vlan-niu0v6pe.sh] **************************
 changed: [s1 -> localhost]
 
 TASK [Figure out whether to deploy the module routing on current device] *******
@@ -444,31 +472,31 @@ changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [s1 -> localhost]
 
-TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux.j2] ***
+TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
-changed: [s1 -> localhost]
 changed: [h3 -> localhost]
+changed: [s1 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
-changed: [h1 -> localhost]
-changed: [h2 -> localhost]
-changed: [h3 -> localhost]
-changed: [s1 -> localhost]
-
-TASK [Execute /tmp/config-h1_routing.sh to deploy routing config based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux.j2] ***
-changed: [h2]
-changed: [h1]
-changed: [h3]
-changed: [s1]
-
-TASK [Container configuration for routing based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux.j2 executed in netns] ***
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [s1]
 
-TASK [Remove temporary file /tmp/h1_routing-mi_3_j1g.sh] ***********************
+TASK [Execute /tmp/config-h1_routing.sh to deploy routing config based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [s1]
+
+TASK [Container configuration for routing based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+changed: [h3 -> localhost]
+changed: [s1 -> localhost]
+
+TASK [Remove temporary file /tmp/h1_routing-3_llv1w9.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
@@ -478,10 +506,10 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=32   changed=9    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
-h2                         : ok=32   changed=9    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
-h3                         : ok=32   changed=9    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
-s1                         : ok=42   changed=14   unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
+h1                         : ok=31   changed=8    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+h2                         : ok=31   changed=8    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+h3                         : ok=31   changed=8    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+s1                         : ok=41   changed=13   unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
 
 
 
