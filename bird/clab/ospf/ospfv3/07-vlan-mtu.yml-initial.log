@@ -22,7 +22,7 @@ skipping: [x2]
 skipping: [x3]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [dut]
@@ -61,7 +61,7 @@ skipping: [x2]
 skipping: [x3]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
@@ -92,6 +92,7 @@ ok: [dut] =>
   msg: |-
     initial configuration for dut
     =========================================
+    set -x
     #!/bin/bash
     #
     # This script contains the 'ip' commands needed to set up container
@@ -104,26 +105,33 @@ ok: [dut] =>
   
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
     # Disable IPv4 and IPv6 forwarding
     #
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
+  
     #
     # Interface addressing, create any bond devices
     #
     ip link set dev eth1 up
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1400
   
     ip link set dev eth2 up
+    sysctl -w net.ipv6.conf.eth2.disable_ipv6=1
     ip link set dev eth2 mtu 1400
   
     ip link set dev eth3 up
+    sysctl -w net.ipv6.conf.eth3.disable_ipv6=1
     ip link set dev eth3 mtu 1280
   
   
     #
     set -e
-    ip addr add fe80::1/64 dev lo scope link
 ok: [x1] => 
   msg: |-
     initial configuration for x1
@@ -173,6 +181,12 @@ ok: [x1] =>
     #
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
   
     #
     # Create loopbacks, stub and lag/bond devices
@@ -279,6 +293,12 @@ ok: [x2] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -384,6 +404,12 @@ ok: [x3] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -446,8 +472,8 @@ ok: [x3] =>
     exit 0
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for x1, x2, x3
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for x1, x2, x3
 
 TASK [Define script filename and determine whether to execute in netns] ********
 ok: [dut]
@@ -455,19 +481,19 @@ ok: [dut]
 TASK [Create a temporary file for the rendered script] *************************
 changed: [dut -> localhost]
 
-TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/bird-clab.j2] ***
+TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/bird-clab.j2] ***
 changed: [dut -> localhost]
 
 TASK [Copy script into running container at /tmp/config-dut_initial.sh] ********
 skipping: [dut]
 
-TASK [Execute /tmp/config-dut_initial.sh to deploy initial config based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/bird-clab.j2] ***
+TASK [Execute /tmp/config-dut_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/bird-clab.j2] ***
 skipping: [dut]
 
-TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/bird-clab.j2 executed in netns] ***
+TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/bird-clab.j2 executed in netns] ***
 changed: [dut -> localhost]
 
-TASK [Remove temporary file /tmp/dut_initial-6l2mu96j.sh] **********************
+TASK [Remove temporary file /tmp/dut_initial-zvedr2rz.sh] **********************
 changed: [dut -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
@@ -479,24 +505,24 @@ skipping: [x2]
 skipping: [x3]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2, x3
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2, x3
 
 TASK [template] ****************************************************************
 changed: [x2]
-changed: [x3]
 changed: [x1]
+changed: [x3]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
 ok: [x2]
 ok: [x3]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [x2]
-changed: [x3]
 changed: [x1]
+changed: [x3]
 
-TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
 skipping: [x2]
 skipping: [x3]
@@ -510,8 +536,8 @@ ok: [x2]
 ok: [x3]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3 => (item=vlan)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3 => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3 => (item=vlan)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3 => (item=ospf)
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [dut]
@@ -559,6 +585,27 @@ ok: [x1] =>
     ip link set dev eth1 master vlan500
   
     ip link set dev vlan500 up
+ok: [x2] => 
+  msg: |-
+    vlan configuration for x2
+    =========================================
+    #!/bin/bash
+    #
+    set -e # Exit immediately when any command fails
+    #
+    if [ ! -e /sys/devices/virtual/net/vlan501 ]; then
+      ip link add vlan501 type bridge
+      ip link set dev vlan501 address 52:dc:ca:fd:03:00
+  
+      ip link set dev vlan501 mtu 1280
+      ip addr flush dev vlan501
+      sysctl -w net.ipv6.conf.vlan501.addr_gen_mode=3
+      ip addr add 2001:db8:2:1::3/64 dev vlan501
+    fi
+  
+    ip link set dev eth1 master vlan501
+  
+    ip link set dev vlan501 up
 ok: [dut] => 
   msg: |-
     vlan configuration for dut
@@ -627,27 +674,6 @@ ok: [dut] =>
     set -e
     ip -6 addr add 2001:db8:2:2::1/64 dev vlan502
     ip link set dev vlan502 mtu 1320
-ok: [x2] => 
-  msg: |-
-    vlan configuration for x2
-    =========================================
-    #!/bin/bash
-    #
-    set -e # Exit immediately when any command fails
-    #
-    if [ ! -e /sys/devices/virtual/net/vlan501 ]; then
-      ip link add vlan501 type bridge
-      ip link set dev vlan501 address 52:dc:ca:fd:03:00
-  
-      ip link set dev vlan501 mtu 1280
-      ip addr flush dev vlan501
-      sysctl -w net.ipv6.conf.vlan501.addr_gen_mode=3
-      ip addr add 2001:db8:2:1::3/64 dev vlan501
-    fi
-  
-    ip link set dev eth1 master vlan501
-  
-    ip link set dev vlan501 up
 ok: [x3] => 
   msg: |-
     vlan configuration for x3
@@ -675,8 +701,8 @@ ok: [x3] =>
     ip link set dev vlan502 up
 
 TASK [Deploy vlan configuration] ***********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2, x3
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2, x3
 
 TASK [Define script filename and determine whether to execute in netns] ********
 ok: [dut]
@@ -684,24 +710,24 @@ ok: [dut]
 TASK [Create a temporary file for the rendered script] *************************
 changed: [dut -> localhost]
 
-TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/linux.j2] ***
+TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/vlan/linux.j2] ***
 changed: [dut -> localhost]
 
 TASK [Copy script into running container at /tmp/config-dut_vlan.sh] ***********
 changed: [dut -> localhost]
 
-TASK [Execute /tmp/config-dut_vlan.sh to deploy vlan config based on /home/pipi/netlab_gh/netsim/ansible/templates/vlan/linux.j2] ***
+TASK [Execute /tmp/config-dut_vlan.sh to deploy vlan config based on /home/pipi/net101/tools/netsim/ansible/templates/vlan/linux.j2] ***
 changed: [dut]
 
-TASK [Container configuration for vlan based on /home/pipi/netlab_gh/netsim/ansible/templates/vlan/linux.j2 executed in netns] ***
+TASK [Container configuration for vlan based on /home/pipi/net101/tools/netsim/ansible/templates/vlan/linux.j2 executed in netns] ***
 skipping: [dut]
 
-TASK [Remove temporary file /tmp/dut_vlan-alovc7nw.sh] *************************
+TASK [Remove temporary file /tmp/dut_vlan-6ky35zm4.sh] *************************
 changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 changed: [x3]
 
 TASK [set_fact] ****************************************************************
@@ -709,12 +735,12 @@ ok: [x1]
 ok: [x2]
 ok: [x3]
 
-TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/frr.j2] ***
-changed: [x2]
+TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
 changed: [x1]
+changed: [x2]
 changed: [x3]
 
-TASK [run vtysh to import vlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/frr.j2] ***
+TASK [run vtysh to import vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
 skipping: [x1]
 skipping: [x2]
 skipping: [x3]
@@ -829,11 +855,11 @@ ok: [x3] =>
 
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [dut]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2, x3
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2, x3
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 changed: [x3]
 
 TASK [set_fact] ****************************************************************
@@ -841,15 +867,15 @@ ok: [x1]
 ok: [x2]
 ok: [x3]
 
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 skipping: [x1]
 skipping: [x2]
 skipping: [x3]
 
-TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [x1]
-changed: [x3]
 changed: [x2]
+changed: [x3]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched

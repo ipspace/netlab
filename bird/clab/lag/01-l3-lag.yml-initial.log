@@ -110,6 +110,7 @@ ok: [dut] =>
   msg: |-
     initial configuration for dut
     =========================================
+    set -x
     #!/bin/bash
     #
     # This script contains the 'ip' commands needed to set up container
@@ -122,59 +123,75 @@ ok: [dut] =>
   
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
     # Disable IPv4 and IPv6 forwarding
     #
     sysctl -w net.ipv4.ip_forward=1
     sysctl -w net.ipv6.conf.all.forwarding=1
-    #
-    # Loopback addressing
-    #
     set +e
     ip addr del 10.0.0.1/32 dev lo 2>/dev/null
     set -e
     ip addr add 10.0.0.1/32 dev lo
+    sysctl -w net.ipv6.conf.lo.disable_ipv6=1
+  
+  
     #
     # Interface addressing, create any bond devices
     #
     if [ ! -e /sys/class/net/bond1 ]; then
+      if [ ! -e /sys/devices/virtual/net/bond1 ]; then
+    if [ ! -e /sys/class/net/bond1 ]; then
     ip link add dev bond1 type bond mode 802.3ad lacp_rate fast lacp_active on
     fi
   
+      fi
+    fi
     ip link set dev bond1 up
     set +e
     ip addr del 172.16.0.1/24 dev bond1 2>/dev/null
     set -e
     ip addr add 172.16.0.1/24 dev bond1
+    sysctl -w net.ipv6.conf.bond1.disable_ipv6=1
     ip link set dev bond1 mtu 1500
+  
+    if [ ! -e /sys/class/net/bond2 ]; then
+      if [ ! -e /sys/devices/virtual/net/bond2 ]; then
     if [ ! -e /sys/class/net/bond2 ]; then
     ip link add dev bond2 type bond mode 802.3ad lacp_rate fast lacp_active on
     fi
   
+      fi
+    fi
     ip link set dev bond2 up
     set +e
     ip addr del 172.16.1.1/24 dev bond2 2>/dev/null
     set -e
     ip addr add 172.16.1.1/24 dev bond2
+    sysctl -w net.ipv6.conf.bond2.disable_ipv6=1
     ip link set dev bond2 mtu 1400
+  
     ip link set dev eth1 up
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+  
     ip link set dev eth2 up
+    sysctl -w net.ipv6.conf.eth2.disable_ipv6=1
     ip link set dev eth2 mtu 1500
+  
     ip link set dev eth3 up
+    sysctl -w net.ipv6.conf.eth3.disable_ipv6=1
     ip link set dev eth3 mtu 1400
+  
     ip link set dev eth4 up
+    sysctl -w net.ipv6.conf.eth4.disable_ipv6=1
     ip link set dev eth4 mtu 1400
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    #
-    #
-    #
-    # Print the final routing table
-    ip route
+  
+  
     #
     set -e
-    ip addr add fe80::1/64 dev lo scope link
 ok: [x1] => 
   msg: |-
     initial configuration for x1
@@ -185,7 +202,8 @@ ok: [x1] =>
     aaa authorization exec default local
     !
     lldp run
-    ip routing
+    no ip routing
+    no ipv6 unicast-routing
     !
     !
     ip host dut 10.0.0.1 172.16.0.1 172.16.1.1
@@ -227,7 +245,8 @@ ok: [x2] =>
     aaa authorization exec default local
     !
     lldp run
-    ip routing
+    no ip routing
+    no ipv6 unicast-routing
     !
     !
     ip host dut 10.0.0.1 172.16.0.1 172.16.1.1
@@ -282,12 +301,12 @@ skipping: [dut]
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/bird-clab.j2 executed in netns] ***
 changed: [dut -> localhost]
 
-TASK [Remove temporary file /tmp/dut_initial-0awcuhy7.sh] **********************
+TASK [Remove temporary file /tmp/dut_initial-718e4izd.sh] **********************
 changed: [dut -> localhost]
 
 TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -408,7 +427,7 @@ skipping: [dut]
 TASK [Container configuration for lag based on /home/pipi/net101/tools/netsim/ansible/templates/lag/linux-clab.j2 executed in netns] ***
 changed: [dut -> localhost]
 
-TASK [Remove temporary file /tmp/dut_lag-exink9db.sh] **************************
+TASK [Remove temporary file /tmp/dut_lag-75sh09tc.sh] **************************
 changed: [dut -> localhost]
 
 TASK [eos_config: deploying lag from /home/pipi/net101/tools/netsim/ansible/templates/lag/eos.j2] ***

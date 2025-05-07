@@ -83,8 +83,8 @@ TASK [Find configuration template for initial] *********************************
 ok: [r1]
 ok: [r2]
 ok: [ros]
-ok: [s2]
 ok: [s1]
+ok: [s2]
 
 TASK [fail] ********************************************************************
 skipping: [r1]
@@ -305,9 +305,9 @@ ok: [r2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [s1] => 
+ok: [ros] => 
   msg: |-
-    initial configuration for s1
+    initial configuration for ros
     =========================================
     #!/bin/bash
     #
@@ -377,14 +377,6 @@ ok: [s1] =>
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
     ip link set eth1 up
-    ip link set eth2 down
-    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
-    ip link set dev eth2 mtu 1500
-    ip link set eth2 up
-    ip link set eth3 down
-    sysctl -qw net.ipv6.conf.eth3.disable_ipv6=1
-    ip link set dev eth3 mtu 1500
-    ip link set eth3 up
   
     #
     # Add vtysh.conf file
@@ -394,7 +386,7 @@ ok: [s1] =>
     # Rest of initial configuration done through VTYSH
     #
     cat >/tmp/config <<CONFIG
-    hostname s1
+    hostname ros
     !
     ip forwarding
     vrf mgmt
@@ -404,42 +396,17 @@ ok: [s1] =>
     !
     interface lo
      no shutdown
-     ip address 10.0.0.2/32
+     ip address 10.0.0.1/32
     !
     interface eth1
      no shutdown
-     description s1 -> s2
-     ! no ip address
-    !
-    interface eth2
-     no shutdown
-     description [Access VLAN red] s1 -> r1
-     ! no ip address
-    !
-    interface eth3
-     no shutdown
-     description [Access VLAN blue] s1 -> r2
-     ! no ip address
+     description ros -> [r1,s1,s2]
+     ip address 172.16.0.1/24
     !
     interface eth1.701
      no shutdown
-     description [SubIf VLAN blue] s1 -> s2
-     ! no ip address
-    !
-    interface eth1.700
-     no shutdown
-     description [SubIf VLAN red] s1 -> s2
-     ! no ip address
-    !
-    interface vlan700
-     no shutdown
-     description VLAN red (700) -> [r1,s2,ros]
-     ip address 172.16.0.2/24
-    !
-    interface vlan701
-     no shutdown
-     description VLAN blue (701) -> [ros,r2,s2]
-     ip address 172.16.1.2/24
+     description ros -> [r2,s1,s2]
+     ip address 172.16.1.1/24
     !
     do write
     CONFIG
@@ -581,9 +548,9 @@ ok: [s2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [ros] => 
+ok: [s1] => 
   msg: |-
-    initial configuration for ros
+    initial configuration for s1
     =========================================
     #!/bin/bash
     #
@@ -653,6 +620,14 @@ ok: [ros] =>
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
     ip link set eth1 up
+    ip link set eth2 down
+    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+    ip link set dev eth2 mtu 1500
+    ip link set eth2 up
+    ip link set eth3 down
+    sysctl -qw net.ipv6.conf.eth3.disable_ipv6=1
+    ip link set dev eth3 mtu 1500
+    ip link set eth3 up
   
     #
     # Add vtysh.conf file
@@ -662,7 +637,7 @@ ok: [ros] =>
     # Rest of initial configuration done through VTYSH
     #
     cat >/tmp/config <<CONFIG
-    hostname ros
+    hostname s1
     !
     ip forwarding
     vrf mgmt
@@ -672,17 +647,42 @@ ok: [ros] =>
     !
     interface lo
      no shutdown
-     ip address 10.0.0.1/32
+     ip address 10.0.0.2/32
     !
     interface eth1
      no shutdown
-     description ros -> [r1,s1,s2]
-     ip address 172.16.0.1/24
+     description s1 -> s2
+     ! no ip address
+    !
+    interface eth2
+     no shutdown
+     description [Access VLAN red] s1 -> r1
+     ! no ip address
+    !
+    interface eth3
+     no shutdown
+     description [Access VLAN blue] s1 -> r2
+     ! no ip address
     !
     interface eth1.701
      no shutdown
-     description ros -> [r2,s1,s2]
-     ip address 172.16.1.1/24
+     description [SubIf VLAN blue] s1 -> s2
+     ! no ip address
+    !
+    interface eth1.700
+     no shutdown
+     description [SubIf VLAN red] s1 -> s2
+     ! no ip address
+    !
+    interface vlan700
+     no shutdown
+     description VLAN red (700) -> [r1,s2,ros]
+     ip address 172.16.0.2/24
+    !
+    interface vlan701
+     no shutdown
+     description VLAN blue (701) -> [ros,r2,s2]
+     ip address 172.16.1.2/24
     !
     do write
     CONFIG
@@ -707,24 +707,24 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for
 
 TASK [template] ****************************************************************
 changed: [ros]
+changed: [r2]
+changed: [r1]
 changed: [s2]
 changed: [s1]
-changed: [r1]
-changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
 ok: [r2]
 ok: [ros]
-ok: [s2]
 ok: [s1]
+ok: [s2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [ros]
 changed: [r1]
-changed: [s2]
-changed: [s1]
 changed: [r2]
+changed: [s1]
+changed: [s2]
+changed: [ros]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r1]
@@ -880,8 +880,8 @@ skipping: [r2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for ros, s1, s2
 
 TASK [template] ****************************************************************
-changed: [ros]
 changed: [s1]
+changed: [ros]
 changed: [s2]
 
 TASK [set_fact] ****************************************************************
@@ -907,10 +907,10 @@ ok: [s1]
 ok: [s2]
 
 TASK [Find configuration template for ospf] ************************************
-skipping: [s1]
 ok: [r1]
-skipping: [s2]
+skipping: [s1]
 ok: [r2]
+skipping: [s2]
 ok: [ros]
 
 TASK [fail] ********************************************************************
@@ -1022,8 +1022,8 @@ skipping: [s2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2, ros
 
 TASK [template] ****************************************************************
-changed: [r1]
 changed: [r2]
+changed: [r1]
 changed: [ros]
 
 TASK [set_fact] ****************************************************************
@@ -1037,9 +1037,9 @@ skipping: [r2]
 skipping: [ros]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [r2]
 changed: [r1]
 changed: [ros]
+changed: [r2]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched

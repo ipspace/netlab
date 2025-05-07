@@ -1,20 +1,24 @@
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+[WARNING]: Found variable using reserved name: hosts
 
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
+ok: [br_a]
 ok: [r2]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 ok: [dut]
 
 TASK [Find device readiness script] ********************************************
-ok: [h1]
+ok: [br_a]
 ok: [r2]
+ok: [h1]
 ok: [h2]
 ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
+skipping: [br_a]
 skipping: [r2]
 skipping: [h1]
 skipping: [h2]
@@ -24,27 +28,38 @@ TASK [Wait for cEOS SSH daemon to start] ***************************************
 ok: [dut]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, h1, h2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for br_a, dut, r2, h1, h2
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [br_a]
 ok: [r2]
 ok: [h1]
 ok: [h2]
 ok: [dut]
 
 TASK [Find configuration template for normalize] *******************************
+ok: [br_a]
 ok: [r2]
 ok: [h1]
 ok: [h2]
 ok: [dut]
 
 TASK [fail] ********************************************************************
+skipping: [br_a]
 skipping: [dut]
 skipping: [r2]
 skipping: [h1]
 skipping: [h2]
 
+TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [br_a]
+ok: [r2]
+ok: [h1]
+ok: [h2]
+ok: [dut]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [br_a]
 skipping: [r2]
 skipping: [h1]
 skipping: [h2]
@@ -54,20 +69,15 @@ ok: [dut] =>
     =========================================
     !
     interface Ethernet1
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0101
     !
     interface Ethernet2
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0102
 
-TASK [Find configuration deployment deploy_script for normalize] ***************
-skipping: [r2]
-skipping: [h1]
-skipping: [h2]
-ok: [dut]
-
 TASK [Deploy normalize configuration] ******************************************
+skipping: [br_a]
 skipping: [r2]
 skipping: [h1]
 skipping: [h2]
@@ -80,27 +90,76 @@ device including the indentation
 changed: [dut]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, h1, h2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for br_a, dut, r2, h1, h2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [br_a]
 ok: [r2]
 ok: [h1]
 ok: [h2]
 ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
+ok: [br_a]
 ok: [r2]
 ok: [h1]
 ok: [h2]
 ok: [dut]
 
 TASK [fail] ********************************************************************
+skipping: [br_a]
 skipping: [dut]
 skipping: [r2]
 skipping: [h1]
 skipping: [h2]
 
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [br_a]
+ok: [r2]
+ok: [h1]
+ok: [h2]
+ok: [dut]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [br_a] => 
+  msg: |-
+    initial configuration for br_a
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+  
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+  
+    ip link set dev eth2 up
+    sysctl -w net.ipv6.conf.eth2.disable_ipv6=1
+    ip link set dev eth2 mtu 1500
+  
+    ip link set dev eth3 up
+    sysctl -w net.ipv6.conf.eth3.disable_ipv6=1
+    ip link set dev eth3 mtu 1500
 ok: [h1] => 
   msg: |-
     initial configuration for h1
@@ -117,10 +176,15 @@ ok: [h1] =>
   
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
     # Disable IPv4 and IPv6 forwarding
     #
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
+  
     #
     # Interface addressing, create any bond devices
     #
@@ -135,24 +199,6 @@ ok: [h1] =>
     set -e
     ip -6 addr add 2001:db8:cafe:33::3/64 dev eth1
     ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.44.0/24 2>/dev/null; do
-      : ; done
-    #
-    set +e
-    echo Removing existing IPv6 routes
-    while ip route del 2001:db8:cafe:44::/64 2>/dev/null; do
-      : ; done
-    #
-    echo Adding direct static routes
-    ip route add 172.16.44.0/24 via 172.16.33.42 dev eth1 protocol static
-    ip route add 2001:db8:cafe:44::/64 via 2001:db8:cafe:33::2a dev eth1 protocol static
-    #
-    # Print the final routing table
-    ip route
 ok: [h2] => 
   msg: |-
     initial configuration for h2
@@ -169,10 +215,15 @@ ok: [h2] =>
   
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
     # Disable IPv4 and IPv6 forwarding
     #
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
+  
     #
     # Interface addressing, create any bond devices
     #
@@ -187,24 +238,6 @@ ok: [h2] =>
     set -e
     ip -6 addr add 2001:db8:cafe:44::4/64 dev eth1
     ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.33.0/24 2>/dev/null; do
-      : ; done
-    #
-    set +e
-    echo Removing existing IPv6 routes
-    while ip route del 2001:db8:cafe:33::/64 2>/dev/null; do
-      : ; done
-    #
-    echo Adding direct static routes
-    ip route add 172.16.33.0/24 via 172.16.44.1 dev eth1 protocol static
-    ip route add 2001:db8:cafe:33::/64 via 2001:db8:cafe:44::1 dev eth1 protocol static
-    #
-    # Print the final routing table
-    ip route
 ok: [r2] => 
   msg: |-
     initial configuration for r2
@@ -224,6 +257,14 @@ ok: [r2] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
     #
     # Get the current next hop for the default route
     #
@@ -247,6 +288,12 @@ ok: [r2] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -259,22 +306,20 @@ ok: [r2] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
+    ip link set dev eth1 mtu 1500
     ip link set eth1 up
+    ip link set eth2 down
     sysctl -qw net.ipv6.conf.eth2.autoconf=0
     sysctl -qw net.ipv6.conf.eth2.accept_ra=0
-    ip link set eth2 down
+    ip link set dev eth2 mtu 1500
     ip link set eth2 up
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
-    ip link set dev eth2 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -282,10 +327,11 @@ ok: [r2] =>
     cat >/tmp/config <<CONFIG
     hostname r2
     !
+    ip forwarding
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
@@ -294,17 +340,17 @@ ok: [r2] =>
     !
     interface eth1
      no shutdown
-     description r2 -> [h1,dut]
-     ip address 172.16.33.2/24
-     ipv6 address 2001:db8:cafe:33::2/64
+     description r2 -> [dut,h2]
+     ip address 172.16.44.2/24
+     ipv6 address 2001:db8:cafe:44::2/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
     interface eth2
      no shutdown
-     description r2 -> [dut,h2]
-     ip address 172.16.44.2/24
-     ipv6 address 2001:db8:cafe:44::2/64
+     description r2 -> [h1,br_a,dut]
+     ip address 172.16.33.2/24
+     ipv6 address 2001:db8:cafe:33::2/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -328,10 +374,10 @@ ok: [dut] =>
     !
     ip host h1 172.16.33.3
     ip host h2 172.16.44.4
-    ip host r2 10.0.0.2 172.16.33.2 172.16.44.2
+    ip host r2 10.0.0.2 172.16.44.2 172.16.33.2
     ipv6 host h1 2001:db8:cafe:33::3
     ipv6 host h2 2001:db8:cafe:44::4
-    ipv6 host r2 2001:db8:cafe:33::2
+    ipv6 host r2 2001:db8:cafe:44::2
     !
     interface Management0
      no lldp transmit
@@ -342,35 +388,64 @@ ok: [dut] =>
     !
     interface Ethernet1
      no switchport
-     description dut -> [h1,r2]
-     ip address 172.16.33.1/24
+     description dut -> [r2,h2]
+     ip address 172.16.44.1/24
      ipv6 nd ra interval 5
-     ipv6 address 2001:db8:cafe:33::1/64
+     ipv6 address 2001:db8:cafe:44::1/64
     !
      mac-address 52dc.cafe.0101
      no shutdown
     !
     interface Ethernet2
      no switchport
-     description dut -> [r2,h2]
-     ip address 172.16.44.1/24
+     description dut -> [h1,br_a,r2]
+     ip address 172.16.33.1/24
      ipv6 nd ra interval 5
-     ipv6 address 2001:db8:cafe:44::1/64
+     ipv6 address 2001:db8:cafe:33::1/64
     !
      mac-address 52dc.cafe.0102
      no shutdown
     !
 
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [r2]
-ok: [h1]
-ok: [h2]
-ok: [dut]
-
 TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for br_a, h1, h2
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for r2
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
+
+TASK [Define script filename and determine whether to execute in netns] ********
+ok: [br_a]
+ok: [h1]
+ok: [h2]
+
+TASK [Create a temporary file for the rendered script] *************************
+changed: [br_a -> localhost]
+changed: [h2 -> localhost]
+changed: [h1 -> localhost]
+
+TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+changed: [br_a -> localhost]
+changed: [h2 -> localhost]
+changed: [h1 -> localhost]
+
+TASK [Copy script into running container at /tmp/config-br_a_initial.sh] *******
+skipping: [br_a]
+skipping: [h1]
+skipping: [h2]
+
+TASK [Execute /tmp/config-br_a_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+skipping: [br_a]
+skipping: [h1]
+skipping: [h2]
+
+TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
+changed: [br_a -> localhost]
+changed: [h2 -> localhost]
+changed: [h1 -> localhost]
+
+TASK [Remove temporary file /tmp/br_a_initial-x8x5g_u7.sh] *********************
+changed: [br_a -> localhost]
+changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
 changed: [dut]
@@ -396,65 +471,134 @@ changed: [r2]
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r2]
 
-TASK [Define script filename and determine whether to execute in netns] ********
-ok: [h1]
-ok: [h2]
-
-TASK [Create a temporary file for the rendered script] *************************
-changed: [h2 -> localhost]
-changed: [h1 -> localhost]
-
-TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
-changed: [h1 -> localhost]
-
-TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
-skipping: [h1]
-skipping: [h2]
-
-TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-skipping: [h1]
-skipping: [h2]
-
-TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h1 -> localhost]
-changed: [h2 -> localhost]
-
-TASK [Remove temporary file /tmp/h1_initial-__wjsaja.sh] ***********************
-changed: [h1 -> localhost]
-changed: [h2 -> localhost]
-
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
+ok: [br_a]
 ok: [h1]
 ok: [h2]
 ok: [r2]
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, h1, h2, r2 => (item=gateway)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, h1, h2, r2 => (item=routing)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for br_a, dut, h1, h2, r2 => (item=vlan)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for br_a, dut, h1, h2, r2 => (item=gateway)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for br_a, dut, h1, h2, r2 => (item=routing)
+
+TASK [Figure out whether to deploy the module vlan on current device] **********
+ok: [br_a]
+ok: [h1]
+ok: [h2]
+ok: [r2]
+ok: [dut]
+
+TASK [Find configuration template for vlan] ************************************
+skipping: [dut]
+skipping: [h1]
+skipping: [h2]
+ok: [br_a]
+skipping: [r2]
+
+TASK [fail] ********************************************************************
+skipping: [br_a]
+skipping: [dut]
+skipping: [h1]
+skipping: [h2]
+skipping: [r2]
+
+TASK [Find configuration deployment deploy_script for vlan] ********************
+skipping: [dut]
+skipping: [h1]
+skipping: [h2]
+skipping: [r2]
+ok: [br_a]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+skipping: [h1]
+skipping: [h2]
+skipping: [r2]
+ok: [br_a] => 
+  msg: |-
+    vlan configuration for br_a
+    =========================================
+    #!/bin/bash
+    #
+    set -e # Exit immediately when any command fails
+    #
+    if [ ! -e /sys/devices/virtual/net/vlan100 ]; then
+      ip link add vlan100 type bridge
+      ip link set dev vlan100 address 52:dc:ca:fd:05:00
+  
+      ip addr flush dev vlan100
+    fi
+  
+    ip link set dev eth1 master vlan100
+    ip link set dev eth2 master vlan100
+    ip link set dev eth3 master vlan100
+  
+    ip link set dev vlan100 up
+  
+    sysctl -w net.ipv6.conf.vlan100.disable_ipv6=1
+
+TASK [Deploy vlan configuration] ***********************************************
+skipping: [dut]
+skipping: [h1]
+skipping: [h2]
+skipping: [r2]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for br_a
+
+TASK [Define script filename and determine whether to execute in netns] ********
+ok: [br_a]
+
+TASK [Create a temporary file for the rendered script] *************************
+changed: [br_a -> localhost]
+
+TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/vlan/linux.j2] ***
+changed: [br_a -> localhost]
+
+TASK [Copy script into running container at /tmp/config-br_a_vlan.sh] **********
+changed: [br_a -> localhost]
+
+TASK [Execute /tmp/config-br_a_vlan.sh to deploy vlan config based on /home/pipi/net101/tools/netsim/ansible/templates/vlan/linux.j2] ***
+changed: [br_a]
+
+TASK [Container configuration for vlan based on /home/pipi/net101/tools/netsim/ansible/templates/vlan/linux.j2 executed in netns] ***
+skipping: [br_a]
+
+TASK [Remove temporary file /tmp/br_a_vlan-4ixr4iq6.sh] ************************
+changed: [br_a -> localhost]
 
 TASK [Figure out whether to deploy the module gateway on current device] *******
+ok: [br_a]
 ok: [h1]
 ok: [h2]
 ok: [r2]
 ok: [dut]
 
 TASK [Find configuration template for gateway] *********************************
+skipping: [br_a]
 skipping: [h1]
 skipping: [h2]
 ok: [r2]
 ok: [dut]
 
 TASK [fail] ********************************************************************
+skipping: [br_a]
 skipping: [dut]
 skipping: [h1]
 skipping: [h2]
 skipping: [r2]
 
+TASK [Find configuration deployment deploy_script for gateway] *****************
+skipping: [br_a]
+skipping: [h1]
+skipping: [h2]
+ok: [r2]
+ok: [dut]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [br_a]
 skipping: [h1]
 skipping: [h2]
 ok: [r2] => 
@@ -465,23 +609,26 @@ ok: [r2] =>
     #
     set -e # Exit immediately when any command fails
     #
-    if [ ! -e /sys/class/net/vrrp-1-217 ]; then
-      ip link add vrrp-1-217 link eth1 type macvlan mode bridge
-      ip link set dev vrrp-1-217 address 00:00:5e:00:01:d9 addrgenmode none
-      ip addr add 172.16.33.42/24 dev vrrp-1-217
-      sysctl -w net.ipv4.conf.eth1.arp_announce=1
-      sysctl -w net.ipv4.conf.eth1.arp_ignore=2
-      ip link set dev vrrp-1-217 up
+    sysctl -w net.ipv6.conf.all.enhanced_dad=0
+    sysctl -w net.ipv6.conf.default.enhanced_dad=0
+    if [ ! -e /sys/class/net/vrrp-2-217 ]; then
+      ip link add vrrp-2-217 link eth2 type macvlan mode bridge
+      ip link set dev vrrp-2-217 address 00:00:5e:00:01:d9 addrgenmode none
+      ip addr add 172.16.33.42/24 dev vrrp-2-217
+      sysctl -w net.ipv4.conf.eth2.arp_announce=2
+      sysctl -w net.ipv4.conf.eth2.arp_ignore=2
+      sysctl -w net.ipv4.conf.eth2.arp_accept=1
+      ip link set dev vrrp-2-217 up
     fi
-    if [ ! -e /sys/class/net/vrrp6-1-217 ]; then
-      ip link add vrrp6-1-217 link eth1 type macvlan mode bridge
-      ip link set dev vrrp6-1-217 address 00:00:5e:00:02:d9 addrgenmode random
-      ip addr add 2001:db8:cafe:33::2a/64 dev vrrp6-1-217
-      ip link set dev vrrp6-1-217 up
+    if [ ! -e /sys/class/net/vrrp6-2-217 ]; then
+      ip link add vrrp6-2-217 link eth2 type macvlan mode bridge
+      ip link set dev vrrp6-2-217 address 00:00:5e:00:02:d9 addrgenmode random
+      ip addr add 2001:db8:cafe:33::2a/64 dev vrrp6-2-217
+      ip link set dev vrrp6-2-217 up
     fi
     #!/bin/bash
     cat >/tmp/vrrp_config <<CONFIG
-    interface eth1
+    interface eth2
       vrrp 217 shutdown
       no vrrp 217 checksum-with-ipv4-pseudoheader
       vrrp 217 priority 20
@@ -499,7 +646,7 @@ ok: [dut] =>
     =========================================
     no ip icmp redirect
     !
-    interface Ethernet1
+    interface Ethernet2
       vrrp 217 ipv4 version 3
       vrrp 217 ipv4 checksum pseudo-header exclude
       vrrp 217 ipv4 172.16.33.42
@@ -507,13 +654,8 @@ ok: [dut] =>
       vrrp 217 priority-level 30
       vrrp 217 preempt
 
-TASK [Find configuration deployment deploy_script for gateway] *****************
-skipping: [h1]
-skipping: [h2]
-ok: [r2]
-ok: [dut]
-
 TASK [Deploy gateway configuration] ********************************************
+skipping: [br_a]
 skipping: [h1]
 skipping: [h2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for dut
@@ -535,24 +677,35 @@ TASK [run vtysh to import gateway config from /home/pipi/net101/tools/netsim/ans
 skipping: [r2]
 
 TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [br_a]
 ok: [h1]
 ok: [h2]
 ok: [r2]
 ok: [dut]
 
 TASK [Find configuration template for routing] *********************************
+skipping: [br_a]
 skipping: [dut]
 skipping: [r2]
 ok: [h1]
 ok: [h2]
 
 TASK [fail] ********************************************************************
+skipping: [br_a]
 skipping: [dut]
 skipping: [h1]
 skipping: [h2]
 skipping: [r2]
 
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [br_a]
+skipping: [dut]
+skipping: [r2]
+ok: [h1]
+ok: [h2]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [br_a]
 skipping: [dut]
 skipping: [r2]
 ok: [h1] => 
@@ -561,9 +714,24 @@ ok: [h1] =>
     =========================================
     #!/bin/bash
     #
-    echo "Static routes are configured as part of the initial configuration template"
-    echo
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.44.0/24 2>/dev/null; do
+      : ; done
+    #
+    set +e
+    echo Removing existing IPv6 routes
+    while ip route del 2001:db8:cafe:44::/64 2>/dev/null; do
+      : ; done
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.44.0/24 via 172.16.33.42 dev eth1 protocol static
+    ip route add 2001:db8:cafe:44::/64 via 2001:db8:cafe:33::2a dev eth1 protocol static
+    #
+    # Print the final routing table
     ip route
 ok: [h2] => 
   msg: |-
@@ -571,18 +739,28 @@ ok: [h2] =>
     =========================================
     #!/bin/bash
     #
-    echo "Static routes are configured as part of the initial configuration template"
-    echo
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
     #
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.33.0/24 2>/dev/null; do
+      : ; done
+    #
+    set +e
+    echo Removing existing IPv6 routes
+    while ip route del 2001:db8:cafe:33::/64 2>/dev/null; do
+      : ; done
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.33.0/24 via 172.16.44.1 dev eth1 protocol static
+    ip route add 2001:db8:cafe:33::/64 via 2001:db8:cafe:44::1 dev eth1 protocol static
+    #
+    # Print the final routing table
     ip route
 
-TASK [Find configuration deployment deploy_script for routing] *****************
-skipping: [dut]
-skipping: [r2]
-ok: [h1]
-ok: [h2]
-
 TASK [Deploy routing configuration] ********************************************
+skipping: [br_a]
 skipping: [dut]
 skipping: [r2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
@@ -595,23 +773,23 @@ TASK [Create a temporary file for the rendered script] *************************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux.j2] ***
+TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
-changed: [h2 -> localhost]
-changed: [h1 -> localhost]
-
-TASK [Execute /tmp/config-h1_routing.sh to deploy routing config based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux.j2] ***
-changed: [h1]
-changed: [h2]
-
-TASK [Container configuration for routing based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux.j2 executed in netns] ***
 skipping: [h1]
 skipping: [h2]
 
-TASK [Remove temporary file /tmp/h1_routing-uik2dw42.sh] ***********************
+TASK [Execute /tmp/config-h1_routing.sh to deploy routing config based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
+skipping: [h1]
+skipping: [h2]
+
+TASK [Container configuration for routing based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [Remove temporary file /tmp/h1_routing-xejo2y4o.sh] ***********************
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
@@ -619,10 +797,11 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=28   changed=3    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-h1                         : ok=31   changed=9    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
-h2                         : ok=31   changed=9    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
-r2                         : ok=28   changed=5    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+br_a                       : ok=34   changed=9    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+dut                        : ok=30   changed=3    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
+h1                         : ok=33   changed=8    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+h2                         : ok=33   changed=8    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+r2                         : ok=31   changed=5    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
 
 
 
