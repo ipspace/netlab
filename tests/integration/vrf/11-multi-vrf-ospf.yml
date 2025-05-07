@@ -10,6 +10,7 @@ message: |
   * r1 should not be able to reach r3
 
 defaults.interfaces.mtu: 1500
+defaults.sources.extra: [ ../wait_times.yml ]
 
 groups:
   _auto_create: True
@@ -36,41 +37,53 @@ validate:
   red_adj:
     description: Check OSPF adjacencies in red VRF
     wait_msg: Waiting for OSPF adjacencies to form
-    wait: 70
+    wait: ospfv2_adj_p2p
     nodes: [ r1, r2 ]
     plugin: ospf_neighbor(nodes.dut.vrfs.red.ospf.router_id)
     stop_on_error: true
   blue_adj:
     description: Check OSPF adjacencies in blue VRF
     wait_msg: Waiting for OSPF adjacencies to form
-    wait: 30
+    wait: ospfv2_adj_p2p
     nodes: [ r3, r4 ]
     plugin: ospf_neighbor(nodes.dut.vrfs.blue.ospf.router_id)
     stop_on_error: true
-  red_route:
-    description: Check OSPF routes in red VRF
-    wait: 10
+  red_r1:
+    description: Check OSPF routes in red VRF (R1)
+    wait: ospfv2_spf
     wait_msg: Waiting for OSPF SPF run
     nodes: [ r1 ]
     plugin: ospf_prefix(nodes.r2.loopback.ipv4)
-  blue_route:
+  red_r2:
+    description: Check OSPF routes in red VRF (R2)
+    wait: ospfv2_spf
+    wait_msg: Waiting for OSPF SPF run
+    nodes: [ r2 ]
+    plugin: ospf_prefix(nodes.r1.loopback.ipv4)
+  blue_r3:
     description: Check OSPF routes in blue VRF
     wait_msg: Waiting for OSPF SPF run
-    wait: 10
+    wait: ospfv2_spf
     nodes: [ r3 ]
     plugin: ospf_prefix(nodes.r4.loopback.ipv4)
+  blue_r4:
+    description: Check OSPF routes in blue VRF
+    wait_msg: Waiting for OSPF SPF run
+    wait: ospfv2_spf
+    nodes: [ r4 ]
+    plugin: ospf_prefix(nodes.r3.loopback.ipv4)
   inter_route:
     description: Check for blue OSPF routes in red VRF
     nodes: [ r1 ]
     plugin: ospf_prefix(nodes.r4.loopback.ipv4,state='missing')
   ping_red:
     description: Ping-based reachability test in VRF red
-    wait: 5
+    wait: 15
     nodes: [ r1 ]
     plugin: ping('r2')
   ping_blue:
     description: Ping-based reachability test in VRF blue
-    wait: 5
+    wait: ospfv2_spf
     nodes: [ r3 ]
     plugin: ping('r4')
   inter_ping:
