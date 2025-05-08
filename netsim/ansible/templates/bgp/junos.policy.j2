@@ -1,0 +1,126 @@
+{# initialize default policies #}
+
+{# internal community to handle policy flows #}
+{# 
+#  single "default" policy should never have "then accept", except for last one.
+#  policies are evaluated, and in case of "accept" we must add the internal mark community and jump to the next policy.
+#  only the last policy, if matching the internal mark community, should remove the community and accept the route.
+#  in this way we can concatenate multiple policies, and have all of them evaluated in order of priority:
+#   - next-hop-self (if needed)
+#   - advertise + announce + default originate when needed (based on a route-filter-list)
+#   - redistribute (remember to always redistribute bgp, since we are overriding the default behavior)
+#   - (custom policies - which may force accept/reject)
+#   - default final policy
+#}
+policy-options community x-route-permit-mark members large:65535:0:65536;
+
+policy-options {
+  delete: policy-statement bgp-advertise;
+  delete: policy-statement bgp-redistribute;
+  delete: route-filter-list bgp-announce;
+}
+
+policy-options {
+
+  route-filter-list bgp-announce {
+{%   for pfx in bgp.originate|default([]) %}
+    {{ pfx|ipaddr('0') }} exact;
+{%   endfor %}
+  }
+
+  policy-statement next-hop-self {
+    term next-hop-self {
+      from {
+        route-type external;
+      }
+      then {
+        next-hop self;
+      }
+    }
+  }
+
+  policy-statement bgp-advertise {
+    term advertise {
+      from {
+        protocol direct;
+        interface [ 
+          {% if bgp.advertise_loopback %} lo0.0 {% endif %}
+          {%- for l in interfaces if l.bgp.advertise|default("") and not 'vrf' in l %}
+          {{ l.ifname }}
+          {% endfor %} ];
+      }
+      then {
+        community add x-route-permit-mark;
+        next policy;
+      }
+    }
+
+    term originate {
+      from {
+        protocol static;
+        route-filter-list bgp-announce;
+      }
+      then {
+        community add x-route-permit-mark;
+        next policy;
+      }
+    }
+
+  }
+
+  policy-statement bgp-redistribute {
+    term redis_bgp {
+      from protocol bgp;
+      then {
+        community add x-route-permit-mark;
+        next policy;
+      }
+    }
+  }
+
+  policy-statement bgp-final {
+    term final-option {
+      from community x-route-permit-mark;
+      then {
+        community delete x-route-permit-mark;
+        accept;
+      }
+    }
+    term default-reject {
+      then reject;
+    }
+  }
+
+  policy-statement bgp-initial {
+    term initial-cleanup {
+      from community x-route-permit-mark;
+      then {
+        community delete x-route-permit-mark;
+        next policy;
+      }
+    }
+  }
+
+{% if bgp._junos_default_originate|default(False) %}
+  policy-statement bgp-default-route {
+    term default-route-v4 {
+      from {
+        route-filter 0.0.0.0/0 exact;
+      }
+      then {
+        community add x-route-permit-mark;
+        next policy;
+      }
+    }
+    term default-route-v6 {
+      from {
+        route-filter ::/0 exact;
+      }
+      then {
+        community add x-route-permit-mark;
+        next policy;
+      }
+    }
+  }
+{% endif %}
+}
