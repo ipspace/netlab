@@ -5,7 +5,7 @@ from box import Box, BoxList
 from . import _Module, _dataplane
 from .. import data
 from ..data import types as _types
-from ..utils import log
+from ..utils import log, strings
 from ..augment import devices, links
 
 ID_SET = 'lag_id'
@@ -63,17 +63,24 @@ def check_lag_config(node: str, linkname: str, topology: Box) -> bool:
   return True
 
 """
-check_mlag_support - check if the given node supports mlag
+check_mlag_support - check if the given node supports mlag, returns mlag feature flags if supported
 """
-def check_mlag_support(node: str, linkname: str, topology: Box) -> bool:
+def check_mlag_support(node: str, linkname: str, topology: Box) -> typing.Optional[Box]:
   _n = topology.nodes[node]
   features = devices.get_device_features(_n,topology.defaults)
   if not features.lag.get('mlag',False):
     log.error(f'Node {_n.name} ({_n.device}) does not support MLAG, cannot be part of peerlink or M-side of LAG {linkname}',
       category=log.IncorrectValue,
       module='lag')
-    return False
-  return True
+    return None
+  
+  # Check that the VLAN module is enabled for MLAG nodes that use a VLAN on their peerlink
+  if 'vlan' in features.lag.mlag.peer and not 'vlan' in _n.module:
+    log.error(f'Node {_n.name} ({_n.device}) does not have the VLAN module enabled, required for MLAG peerlink',
+      category=log.MissingDependency,
+      module='lag')
+    return None
+  return features.lag.mlag.peer
 
 """
 normalized_members - builds a normalized list of lag member links. It also checks that:
@@ -108,7 +115,7 @@ def normalized_members(l: Box, topology: Box, peerlink: bool = False) -> list:
   return members
 
 """
-set_lag_ifindex - Assign lag.ifindex, check for overlap with any reserved values
+set_lag_ifindex - Assign lag.ifindex, check for overlap with mlag port-channel if any
 """
 def set_lag_ifindex(bond: Box, intf: Box, topology: Box) -> bool:
   intf_lag_ifindex = intf.get('lag.ifindex',None)              # Use user provided lag.ifindex, if any
@@ -123,7 +130,7 @@ def set_lag_ifindex(bond: Box, intf: Box, topology: Box) -> bool:
       if is_mside:                                             # For M: side we need matching lag.ifindex
         if next_ifindex is None:                               # Do we have a local preference?
           next_ifindex = _dataplane.get_next_id(ID_SET)        # No -> allocate globally
-        bond.lag.ifindex = link_lag_ifindex = next_ifindex  # Put on the link for the other M side to match
+        bond.lag.ifindex = link_lag_ifindex = next_ifindex     # Put on the link for the other M side to match
       else:
         if next_ifindex is None:
           next_ifindex = topology.defaults.lag.start_lag_id    # Start at start_lag_id (default 1)
@@ -139,20 +146,19 @@ def set_lag_ifindex(bond: Box, intf: Box, topology: Box) -> bool:
     bond.lag.ifindex = link_lag_ifindex = intf_lag_ifindex
 
   features = devices.get_device_features(_n,topology.defaults)
-  if 'reserved_ifindex_range' in features.lag:                 # Exclude any reserved port channel IDs
-    if intf_lag_ifindex in features.lag.reserved_ifindex_range:
-      log.error(f'Selected lag.ifindex({intf_lag_ifindex}) conflicts with device specific reserved range ' +
-                f'{features.lag.reserved_ifindex_range} for node {_n.name} ({_n.device})',
-        category=log.IncorrectValue,
-        module='lag')
-      return False
+  if features.get('lag.mlag.peer.ifindex',None)==intf_lag_ifindex:
+    log.error(f'Selected lag.ifindex({intf_lag_ifindex}) conflicts with device specific reserved MLAG ' +
+              f'port-channel for node {_n.name} ({_n.device})',
+      category=log.IncorrectValue,
+      module='lag')
+    return False
   return True
 
 """
 create_lag_member_links -- expand lag.members for link l and create physical p2p links
 """
-def create_lag_member_links(l: Box, topology: Box) -> bool:
-  members = normalized_members(l,topology)                 # Build list of normalized member links
+def create_lag_member_links(l: Box, topology: Box, peerlink: bool = False) -> bool:
+  members = normalized_members(l,topology,peerlink)        # Build list of normalized member links
   if not members:
     return False
   l.lag.members = members                                  # Update for create_lag_interfaces
@@ -234,54 +240,84 @@ def create_lag_interfaces(link: Box, mlag_pairs: dict, topology: Box) -> None:
       link.interfaces.append( ifatts )
 
 """
+create_peer_vlan - create a global VLAN for the peerlink (if supported), to enable features like OSPF
+"""
+def create_peer_vlan(peerlink: Box, mlag_peer_features: Box, topology: Box) -> None:
+  if peerlink.get('prefix',None) is False:                     # Skip VLAN creation if prefix is set to False
+    return
+
+  if 'vlan' in mlag_peer_features and mlag_peer_features.vlan: # Check if device supports an explicit peering VLAN
+    vlan_name = f"peervlan_{ peerlink[PEERLINK_ID_ATT] }"
+    vlan = data.get_box({ 'id': mlag_peer_features.vlan, 'mode': 'irb', '_mlag_peer': True })
+    if 'stp' in topology.module:
+      vlan.stp.enable = False
+    lag_peervlan_attr = list(topology.defaults.lag.attributes.lag_peervlan_attr)
+    for a in list(peerlink.keys()):
+      if a in lag_peervlan_attr:                               # Move all l3 attributes to the vlan interface
+        vlan[a] = peerlink.pop(a,None)
+
+    if 'pool' not in vlan:                                     # Configure a default pool if device needs it
+      vlan_pool = mlag_peer_features.get('pool',None)
+      if vlan_pool:
+        vlan.pool = vlan_pool
+
+    vlan_trunk = peerlink.get('vlan.trunk',[])
+    if not vlan_trunk:
+      peerlink.vlan._allow_all = True                          # Unless the user configured a trunk, allow all vlans
+                                                               # including native VLAN
+    peerlink.vlan.trunk = vlan_trunk + [ vlan_name ]
+    topology.vlans[ vlan_name ] = vlan
+    node_mode = mlag_peer_features.get('vlan_mode','route')
+    if node_mode=='route':                                     # Override 'irb' mode at each mlag peer node
+      for intf in peerlink.interfaces:
+        intf.vlan.trunk[vlan_name].vlan.mode = 'route'
+
+    if log.debug_active('lag'):
+      print(f'create_peer_vlan: {vlan_name} = {vlan}')
+
+  if log.debug_active('lag'):
+    print(f'create_peer_vlan: peerlink = {peerlink}')
+
+"""
 create_peer_links: creates and configures physical link(s) for given peer link from peer link's lag.members
 """
-def create_peer_links(l: Box, mlag_pairs: dict, topology: Box) -> bool:
+def create_peer_links(peerlink: Box, mlag_pairs: dict, topology: Box) -> bool:
 
-  """
-  check_same_pair - Verifies that the given member connects the same pair of nodes as the first
-  """
+  # Create the peerlink as a regular virtual lag link, add physical links for the members
+  if not create_lag_member_links(peerlink,topology,peerlink=True):
+    return False
   first_pair : typing.List[str] = []
-  def check_same_pair(member: Box) -> bool:
-    others = { n.node for n in member.interfaces if n.node not in first_pair }
-    if others:
-      log.error(f'All member links must connect the same pair of nodes({first_pair}), found {others}',
-        category=log.IncorrectValue,
-        module='lag')
-      return False
-    return True
-
-  members = normalized_members(l,topology,peerlink=True)
-  l2_linkdata = create_l2_link_base(l,topology)
-
-  for idx,member in enumerate(members):
-    member = l2_linkdata + member                 # Copy L2 data into member link
-    if idx==0:                                    # For the first member, use the existing link
-      topology.links[l.linkindex-1] = l + member  # Update topology (l is a copy)
+  for idx,member in enumerate(peerlink.lag.members):
+    if idx==0:
       first_pair = [ i.node for i in member.interfaces ]
-      _devs = { topology.nodes[n].device for n in first_pair }
-      if len(_devs)!=1:                           # Check that both are the same device type
-        log.error(f'Nodes {first_pair} on MLAG peerlink {member._linkname} have different device types ({_devs})',
+      node = topology.nodes[ first_pair[0] ]
+      if node.device != topology.nodes[ first_pair[1] ].device:     # Check that both are the same device type
+        log.error(f'Nodes {first_pair} on MLAG peerlink {member._linkname} have different device types',
           category=log.IncorrectValue,
           module='lag')
         return False
-      for node in first_pair:
-        if not check_mlag_support(node,l._linkname,topology):
-          return False
-      mlag_pairs[ first_pair[0] ] = first_pair[1] # Keep track of mlag peers
-      mlag_pairs[ first_pair[1] ] = first_pair[0]
-      if log.debug_active('lag'):
-        print(f'LAG create_peer_links -> updated first link {l} from {member} -> {topology.links[l.linkindex-1]}')
-    else:
-      if not check_same_pair(member):             # Check that any additional links connect the same nodes
+      mlag_features = check_mlag_support(node.name,peerlink._linkname,topology)
+      if not mlag_features:
         return False
-      member.linkindex = len(topology.links)+1
-      member.lag._peerlink = l.linkindex          # Keep track of parent
-      if log.debug_active('lag'):
-        print(f'LAG create_peer_links -> adding link {member}')
-      topology.links.append(member)
+      ifname = strings.eval_format(mlag_features.get('ifname','peerlink'),mlag_features)
+      peerlink.interfaces = [ { 'node': i.node, 'ifname': ifname, '_type': 'lag' } for i in member.interfaces ]
+      peerlink.lag.ifindex = mlag_features.get('ifindex',0)         # Set lag.ifindex, default to 0 if not provided
+      create_peer_vlan(peerlink, mlag_features, topology)
+      if 'prefix' not in peerlink:
+        peerlink.prefix = False
 
-  topology.links[l.linkindex-1].pop("lag.members",None)  # Cleanup
+      topology.links[peerlink.linkindex-1] = peerlink               # Update topology
+      mlag_pairs[ first_pair[0] ] = first_pair[1]                   # Keep track of mlag peers
+      mlag_pairs[ first_pair[1] ] = first_pair[0]
+    else:
+      others = { n.node for n in member.interfaces if n.node not in first_pair }
+      if others:
+        log.error(f'All peerlinks must connect the same pair of nodes({first_pair}), found {others}',
+          category=log.IncorrectValue,
+          module='lag')
+        return False
+
+  topology.links[peerlink.linkindex-1].pop("lag.members",None)      # Cleanup
   return True
 
 """
@@ -303,8 +339,7 @@ def process_lag_link(link: Box, mlag_pairs: dict, topology: Box) -> bool:
   if peerlink_id:
     if peerlink_id is True:                      # Auto-assign peerlink ID if requested
       link[PEERLINK_ID_ATT] = _dataplane.get_next_id(PEERLINK_ID_SET)
-    link.type = 'p2p'
-    link.prefix = False                          # L2-only
+    link._peerlink = True                        # Mark it as a virtual peerlink, to be removed
     return create_peer_links(link,mlag_pairs,topology)
   else:
     link._virtual_lag = True                     # Temporary virtual link, removed in module_post_link_transform
@@ -314,26 +349,26 @@ def process_lag_link(link: Box, mlag_pairs: dict, topology: Box) -> bool:
 # populate_mlag_peer - Lookup the IPv4 loopback address for the mlag peer, and derive a virtual MAC to use
 #
 def populate_mlag_peer(node: Box, intf: Box, topology: Box) -> None:
-  peer = topology.nodes[intf.neighbors[0].node]
+  nbs = intf.get('_vlan_saved_neighbors', intf.get('neighbors',[]))
+  if not nbs:
+    log.error("Internal error: Unable to determine neighbors",module='lag')
+    return
+  peer = topology.nodes[nbs[0].node]
   features = devices.get_device_features(node,topology.defaults)
   mlag_peer = features.get('lag.mlag.peer',{})
-  _target = node.lag if mlag_peer.get('global',False) else intf.lag         # Set at node or intf level?
-  if 'ip' in mlag_peer:
-    if mlag_peer.ip == 'linklocal':
-      _target.mlag.peer = 'linklocal'
-    elif 'loopback' in mlag_peer.ip:                                        # Could check if an IGP is configured
-      ip = peer.get(mlag_peer.ip,None)
-      if ip:
-        _target.mlag.peer = str(netaddr.IPNetwork(ip).ip)
-      else:
-        log.error(f'Node {peer.name} must have {mlag_peer.ip} defined to support MLAG',
-          category=log.IncorrectValue,
-          module='lag')
+  _target = node.lag if mlag_peer.get('global',False) else intf.lag  # Set at node or intf level?
+
+  for i in node.interfaces:                                      # Figure out which IP Netlab assigned to the peer
+    if not i.pop('_mlag_peer',None):
+      continue
+    if i.neighbors and 'ipv4' in i.neighbors[0] and i.neighbors[0].get('ipv6',None) is not True:
+      _ip = i.neighbors[0].ipv4
+      if isinstance(_ip,bool):
+        _ip = peer.loopback.ipv4
+      _target.mlag.peer = str(netaddr.IPNetwork(_ip).ip)
     else:
-      net = netaddr.IPNetwork(mlag_peer.ip)
-      id = 0 if node.id < peer.id else 1
-      _target.mlag.peer = str(net[1-id])                                    # Higher node ID gets .1
-      _target.mlag.self = f"{net[id]}/{net.prefixlen}"                      # including /prefix
+      _target.mlag.peer = 'linklocal'
+    break
 
   if 'backup_ip' in mlag_peer:
     bk_ip = peer.get(mlag_peer.backup_ip,None)
@@ -345,15 +380,13 @@ def populate_mlag_peer(node: Box, intf: Box, topology: Box) -> None:
                 module='lag')
 
   if 'mac' in mlag_peer and not isinstance(_target.get('mlag.mac',None),str):
-    mac = netaddr.EUI(mlag_peer.mac)                                        # Generate unique virtual MAC per MLAG group
-    mac._set_value(mac.value + intf.get(PEERLINK_ID_ATT,0) % 65536 )        # ...based on lag.mlag.peergroup
+    mac = netaddr.EUI(mlag_peer.mac)                                 # Generate unique virtual MAC per MLAG group
+    mac._set_value(mac.value + intf.get(PEERLINK_ID_ATT,0) % 65536 ) # ...based on lag.mlag.peergroup
     _target.mlag.mac = str(mac)
 
   for v in ['vlan','ifindex']:
     if v in mlag_peer:
       _target.mlag[v] = mlag_peer[v]
-  
-  intf.pop('vlan',None)                                                     # Remove any VLANs provisioned on peerlinks
 
 """
 Sanity check: LAG links that are configured to use a Linux bridge do not support LACP
@@ -422,13 +455,12 @@ class LAG(_Module):
         intf.type = intf.pop('_type')
 
   """
-  module_post_transform - remove temporary 'virtual_lag' links, and check for links with Linux bridges
-                        - e.g. mixed provider links - that would block LACP
+  module_post_transform - remove temporary 'virtual_lag' links and check for Linux bridges blocking LACP
   """
   def module_post_transform(self, topology: Box) -> None:
     if log.debug_active('lag'):
-      print(f'LAG module_post_transform: Cleanup "virtual_lag" links')
-    topology.links = [ link for link in topology.links if '_virtual_lag' not in link ]
+      print(f'LAG module_post_transform: Cleanup "virtual_lag" and "_peerlink" links')
+    topology.links = [ link for link in topology.links if '_virtual_lag' not in link and '_peerlink' not in link ]
     check_bridge_links(topology)
 
   """
@@ -442,36 +474,35 @@ class LAG(_Module):
     has_peerlink = False
     uses_mlag = False
     for i in node.interfaces:
+      if i.type!='lag':
+        continue
+
       if i.get(PEERLINK_ID_ATT,None):          # Fill in peer loopback IP and vMAC for MLAG peer links
         populate_mlag_peer(node,i,topology)
         has_peerlink = True
-      elif i.type=='lag':
-        node_atts = { k:v for k,v in node.get('lag',{}).items() if k!='mlag'}
-        i.lag = node_atts + i.lag              # Merge node level settings with interface overrides
-
-        if 'mode' in i.lag:
-          log.warning(
-            text=f'lag.mode {i.lag.mode} used by node {node.name} is deprecated, use only 802.3ad',
-            module='lag')
-          if i.lag.mode != '802.3ad':
-            i.lag.lacp = 'off'                 # Disable LACP for other modes
-
-        linkindex = i.pop('linkindex',None)    # Remove linkindex (copied from link that no longer exists)
-        for m in node.interfaces:              # Update members to point to lag.ifindex, replacing linkindex
-          if m.get('lag._parentindex',None)==linkindex:
+      node_atts = { k:v for k,v in node.get('lag',{}).items() if k!='mlag'}
+      i.lag = node_atts + i.lag              # Merge node level settings with interface overrides
+      if 'mode' in i.lag:
+        log.warning(
+          text=f'lag.mode {i.lag.mode} used by node {node.name} is deprecated, use only 802.3ad',
+          module='lag')
+        if i.lag.mode != '802.3ad':
+          i.lag.lacp = 'off'                   # Disable LACP for other modes
+      linkindex = i.pop('linkindex',None)      # Remove linkindex (copied from link that no longer exists)
+      for m in node.interfaces:                # Update members to point to lag.ifindex, replacing linkindex
+        if m.get('lag._parentindex',None)==linkindex:
             m.lag._parentindex = i.lag.ifindex # Make _parentindex point to lag.ifindex instead
-
-        lacp_mode = i.get('lag.lacp_mode')
-        if lacp_mode=='passive' and not features.lag.get('passive',False):
-          log.error(f'Node {node.name}({node.device}) does not support passive LACP configured on interface {i.ifname}',
+      lacp_mode = i.get('lag.lacp_mode')
+      if lacp_mode=='passive' and not features.lag.get('passive',False):
+        log.error(f'Node {node.name}({node.device}) does not support passive LACP configured on interface {i.ifname}',
+          category=log.IncorrectAttr,
+          module='lag')
+      if i.lag.get('_mlag',False) is True:
+        uses_mlag = True
+        if 'ipv4' in i or 'ipv6' in i:
+          log.error(f'Node {node.name}: IP address directly on MLAG interface {i.ifname} is not supported, use a VLAN instead',
             category=log.IncorrectAttr,
             module='lag')
-        if i.lag.get('_mlag',False) is True:
-          uses_mlag = True
-          if 'ipv4' in i or 'ipv6' in i:
-            log.error(f'Node {node.name}: IP address directly on MLAG interface {i.ifname} is not supported, use a VLAN instead',
-              category=log.IncorrectAttr,
-              module='lag')
     
     if uses_mlag and not has_peerlink:
       log.error(f'Node {node.name} uses MLAG but has no peerlink (lag with {PEERLINK_ID_ATT}) configured',

@@ -34,7 +34,7 @@ The following parameters can be set on individual links:
 * **lag.ifindex**: Optional parameter that controls the naming of the LAG (bonding, port-channel) interface.
 * **lag.mlag**: Optional dictionary with peer link parameters; see [below](lag-mlag)
 
-This configuration module creates a virtual link with the link type set to **lag** between the **lag.members** and appends the links described in the **lag.members** list to the topology **links** list.
+This configuration module creates virtual **lag** type interfaces on nodes that are listed in **lag.members** and appends the links described in the **lag.members** list to the topology **links** list.
 
 ## Example
 
@@ -111,6 +111,38 @@ links:
 - lag:
     members: [s1-s2]     # Note that multiple physical links are allowed here
     mlag.peergroup: True # (also) used to derive a unique MAC address for this group of MLAG peers
+```
+
+### Peerlink configuration
+
+The **peerlink** between mlag peers is modeled as a one-to-one lag link, and hence all the various *Netlab* features - such as IP addressing, OSPF and BGP - can be configured on it. Different platforms use different approaches and defaults for implementing the peerlink - e.g. different vlan numbers, irb versus routed mode, etc.; some of these defaults can be changed through _device features_.
+
+By default, *Netlab* will configure the peerlink as a trunk that allows all VLANs. To restrict this, include a VLAN trunk definition on the peerlink:
+```
+links:
+- lag:
+    mlag.peergroup: True
+  vlan.trunk: [ vlan1000 ]  # This will allow only vlan1000 plus the device-specific peerlink vlan and the default vlan
+```
+
+By default, on most platforms the global `lan` pool will be used to allocate IP addresses similar to regular IRB VLANs. If different addressing is desired, set a custom 'pool' or 'prefix' attribute on the peerlink:
+```
+addressing:
+  custom_peerlink:
+    ipv4: 169.254.0.0/16
+    prefix: 31
+    allocation: p2p
+
+links:
+- lag:
+    mlag.peergroup: True
+  pool: custom_peerlink
+
+- lag:
+    mlag.peergroup: True
+  prefix:
+    ipv4: 169.254.127.0/31
+    allocation: p2p
 ```
 
 ### Advanced MLAG Parameters
