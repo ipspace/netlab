@@ -15,9 +15,9 @@ TASK [Find device readiness script] ********************************************
 ok: [s1]
 ok: [s2]
 ok: [h1]
+ok: [h3]
 ok: [h2]
 ok: [h4]
-ok: [h3]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [s1]
@@ -59,8 +59,8 @@ ok: [s1]
 ok: [s2]
 ok: [h1]
 ok: [h2]
-ok: [h3]
 ok: [h4]
+ok: [h3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [s1]
@@ -94,8 +94,8 @@ ok: [s1]
 ok: [s2]
 ok: [h1]
 ok: [h2]
-ok: [h4]
 ok: [h3]
+ok: [h4]
 
 TASK [fail] ********************************************************************
 skipping: [s1]
@@ -147,6 +147,41 @@ ok: [h1] =>
     ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.0.1/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+ok: [h4] => 
+  msg: |-
+    initial configuration for h4
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+  
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.2.4/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.2.4/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
 ok: [h3] => 
@@ -217,41 +252,6 @@ ok: [h2] =>
     ip addr del 172.16.0.2/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.0.2/24 dev eth1
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
-ok: [h4] => 
-  msg: |-
-    initial configuration for h4
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Send ARP requests from a sane source IP address
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-  
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.2.4/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.2.4/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
 ok: [s1] => 
@@ -525,15 +525,15 @@ ok: [h3]
 ok: [h4]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
-changed: [h4 -> localhost]
 changed: [h2 -> localhost]
+changed: [h4 -> localhost]
+changed: [h1 -> localhost]
 changed: [h3 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 changed: [h3 -> localhost]
-changed: [h2 -> localhost]
 changed: [h4 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
@@ -554,11 +554,11 @@ changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-1gat4jix.sh] ***********************
-changed: [h4 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-oksnsyy9.sh] ***********************
+changed: [h1 -> localhost]
 changed: [h3 -> localhost]
 changed: [h2 -> localhost]
-changed: [h1 -> localhost]
+changed: [h4 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -584,8 +584,8 @@ TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [h4]
 ok: [s1]
+ok: [h4]
 ok: [s2]
 
 TASK [Find configuration template for vlan] ************************************
@@ -725,8 +725,8 @@ ok: [s2]
 TASK [Find configuration template for routing] *********************************
 ok: [h1]
 ok: [h2]
-ok: [h3]
 skipping: [s1]
+ok: [h3]
 skipping: [s2]
 ok: [h4]
 
@@ -739,9 +739,9 @@ skipping: [s1]
 skipping: [s2]
 
 TASK [Find configuration deployment deploy_script for routing] *****************
-skipping: [s1]
 ok: [h1]
 ok: [h2]
+skipping: [s1]
 skipping: [s2]
 ok: [h3]
 ok: [h4]
@@ -878,14 +878,14 @@ ok: [h3]
 ok: [h4]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
@@ -907,7 +907,7 @@ changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-u_02ttwk.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-a4ofdnbz.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
@@ -950,6 +950,41 @@ skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
+ok: [s1] => 
+  msg: |-
+    bgp configuration for s1
+    =========================================
+    - set:
+        router:
+          bgp:
+            enable: on
+            autonomous-system: 65000
+            router-id: 10.0.0.5
+    - set:
+        vrf:
+          default:
+            router:
+              bgp:
+                enable: on
+                autonomous-system: 65000
+                router-id: 10.0.0.5
+                address-family:
+                  ipv4-unicast:
+                    enable: on
+  
+                neighbor:
+                  10.0.0.6:
+                    description: "s2"
+                    update-source: lo
+                    remote-as: internal
+                    address-family:
+                      ipv4-unicast:
+                        enable: on
+                        nexthop-setting: self
+                        community-advertise:
+                          regular: on
+                          extended: on
+                          large: off
 ok: [s2] => 
   msg: |-
     bgp configuration for s2
@@ -988,43 +1023,6 @@ ok: [s2] =>
     !
     !
     do write
-ok: [s1] => 
-  msg: |-
-    bgp configuration for s1
-    =========================================
-    - set:
-        router:
-          bgp:
-            enable: on
-            autonomous-system: 65000
-            router-id: 10.0.0.5
-    - set:
-        vrf:
-          default:
-            router:
-              bgp:
-                enable: on
-                autonomous-system: 65000
-                router-id: 10.0.0.5
-                address-family:
-                  ipv4-unicast:
-                    enable: on
-  
-                    network:
-                      10.0.0.5/32: {}
-                neighbor:
-                  10.0.0.6:
-                    description: "s2"
-                    update-source: lo
-                    remote-as: internal
-                    address-family:
-                      ipv4-unicast:
-                        enable: on
-                        nexthop-setting: self
-                        community-advertise:
-                          regular: on
-                          extended: on
-                          large: off
 
 TASK [Deploy bgp configuration] ************************************************
 skipping: [h1]
