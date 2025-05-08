@@ -78,24 +78,6 @@ systemctl enable lldpd
 systemctl restart lldpd
 {% endif %}
 
-# Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA
-#
-{% set pkt_fwd = "1" if role|default("host") == "router" else "0" %}
-cat <<SCRIPT > /etc/sysctl.d/10-netsim.conf
-net.ipv4.conf.all.arp_announce=2
-net.ipv4.ip_forward={{ pkt_fwd }}
-net.ipv6.conf.all.forwarding={{ pkt_fwd }}
-
-{%   if loopback.ipv6 is defined %}
-net.ipv6.conf.lo.disable_ipv6=0
-{%   endif %}
-{% for intf in interfaces|default([]) %}
-net.ipv6.conf.{{ intf.ifname }}.disable_ipv6={{ '0' if intf.ipv6 is defined else '1' }}
-{% endfor %}
-
-SCRIPT
-sysctl -p /etc/sysctl.d/10-netsim.conf
-
 # Loopback addressing
 {% if loopback.ipv4 is defined or loopback.ipv6 is defined %}
 cat <<SCRIPT > /etc/netplan/02-loopback.yaml
@@ -188,9 +170,29 @@ AutoNegotiation=no
 Duplex=full
 SCRIPT
 
-chmod 600 /etc/netplan/*
+chmod 400 /etc/netplan/*
 
 echo -n 'Starting netplan generate ' && date
 netplan generate
 echo -n 'Starting netplan apply ' && date
-nohup netplan apply &
+netplan apply
+
+#
+# Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA
+# Do this after 'netplan apply', e.g. bond devices won't exist before that
+#
+{% set pkt_fwd = "1" if role|default("host") == "router" else "0" %}
+cat <<SCRIPT > /etc/sysctl.d/10-netsim.conf
+net.ipv4.conf.all.arp_announce=2
+net.ipv4.ip_forward={{ pkt_fwd }}
+net.ipv6.conf.all.forwarding={{ pkt_fwd }}
+
+{%   if loopback.ipv6 is defined %}
+net.ipv6.conf.lo.disable_ipv6=0
+{%   endif %}
+{% for intf in interfaces|default([]) %}
+net.ipv6.conf.{{ intf.ifname }}.disable_ipv6={{ '0' if intf.ipv6 is defined else '1' }}
+{% endfor %}
+
+SCRIPT
+sysctl -p /etc/sysctl.d/10-netsim.conf
