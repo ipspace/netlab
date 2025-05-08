@@ -32,18 +32,12 @@
               {{ af }}-unicast:
                 enable: on
 {{              redistribute.config(vrf_bgp,af=af)|indent(16,first=True) }}
-{%     set _loopback = [ vrf.loopback[af]|ipaddr(0) ] if vrf.loopback[af] is defined and bgp.advertise_loopback|default(True) else [] %}
-{%     set data = namespace(networks=_loopback) %}
-{%     for l in interfaces|default([]) if l.bgp.advertise|default("") and l[af] is defined and l.vrf|default('default')==vrf_name %}
-{%       set data.networks = data.networks + [ l[af]|ipaddr(0) ] %}
-{%     endfor %}
-{%     for pfx in vrf_bgp.originate|default([]) if af == 'ipv4' %}
-{%       set data.networks = data.networks + [ pfx|ipaddr(0) ] %}
-{%     endfor %}
-{%     if data.networks!=[] %}
+{%     if vrf.networks|default([]) %}
+{%       for pfx in vrf.networks if af in pfx %}
+{%         if loop.first %}
                 network:
-{%       for pfx in data.networks|unique %}
-                  {{ pfx }}: {}
+{%         endif %}
+                  {{ pfx[af] }}: {}
 {%       endfor %}
 {%     endif %}
 {%   endfor %}
