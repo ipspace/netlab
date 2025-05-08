@@ -65,13 +65,17 @@ router bgp {{ bgp.as }}
                   else False %}
 {%     if peer %}
   neighbor {{ peer }} activate
-{%       if 'ibgp' in n.type %}
+{%       if n.type == 'ibgp' %}
 {%         if bgp.next_hop_self is defined and bgp.next_hop_self %}
   neighbor {{ peer }} next-hop-self
 {%         endif %}
 {%         if bgp.rr|default('') and not n.rr|default('') %}
   neighbor {{ peer }} route-reflector-client
 {%         endif %}
+{%       endif %}
+{%       if n.type == 'localas_ibgp' %}
+  neighbor {{ peer }} route-reflector-client
+  neighbor {{ peer }} next-hop-self force
 {%       endif %}
 {%       if n.type in bgp.community|default({}) %}
   no neighbor {{ peer }} send-community all
