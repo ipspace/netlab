@@ -156,10 +156,10 @@ def build_ibgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
     
     if 'loopback' in node:
       neighbor_data._source_intf = node.loopback
-    if node.bgp.get('next_hop_self',True):
-      neighbor_data.next_hop_self = True
     if node.bgp.get('rr') and not n.get('rr'):
       neighbor_data.rr_client = True
+    elif node.bgp.get('next_hop_self',True):      # Route reflectors should not apply next-hop-self
+      neighbor_data.next_hop_self = True
     node.bgp.neighbors.append(neighbor_data)
     return True
 
