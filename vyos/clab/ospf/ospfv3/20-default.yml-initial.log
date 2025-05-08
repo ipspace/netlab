@@ -1,4 +1,5 @@
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+[WARNING]: Found variable using reserved name: hosts
 
 PLAY [Deploy initial device configuration] *************************************
 
@@ -31,8 +32,8 @@ ok: [dut_a]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [dut_c]
-ok: [xf]
 ok: [probe]
+ok: [xf]
 ok: [dut_a]
 
 TASK [fail] ********************************************************************
@@ -41,13 +42,13 @@ skipping: [xf]
 skipping: [probe]
 skipping: [dut_a]
 
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [dut_c]
-skipping: [xf]
-skipping: [probe]
-skipping: [dut_a]
-
 TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [dut_c]
+ok: [xf]
+ok: [dut_a]
+ok: [probe]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut_c]
 skipping: [xf]
 skipping: [probe]
@@ -71,14 +72,20 @@ ok: [dut_a]
 TASK [Find configuration template for initial] *********************************
 ok: [dut_c]
 ok: [xf]
-ok: [dut_a]
 ok: [probe]
+ok: [dut_a]
 
 TASK [fail] ********************************************************************
 skipping: [dut_c]
 skipping: [xf]
 skipping: [probe]
 skipping: [dut_a]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [dut_c]
+ok: [xf]
+ok: [probe]
+ok: [dut_a]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut_c] => 
@@ -122,55 +129,11 @@ ok: [dut_c] =>
   
   
     set service lldp interface all
-    set service lldp interface eth0 disable
+    >/dev/null 2>/dev/null set service lldp interface eth0 disable
+    >/dev/null 2>/dev/null set service lldp interface eth0 mode disable
   
     set service router-advert interface eth1
     set service router-advert interface eth2
-  
-    set service ssh
-  
-    # Commit, save and exit from subshell
-  
-    commit
-    save
-    exit
-  
-    # Restart FRR to pick up the new hostname
-    sudo service frr restart
-ok: [dut_a] => 
-  msg: |-
-    initial configuration for dut_a
-    =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
-  
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-    fi
-  
-    # Configuration items start here
-  
-    configure
-    set system host-name 'dut-a'
-  
-  
-    set interfaces dummy dum0 address 2001:db8:1:1::1/64
-  
-  
-  
-    set interfaces ethernet eth1 description 'dut_a -> probe'
-  
-    set interfaces ethernet eth1 mtu 1500
-  
-  
-    set interfaces ethernet eth1 address 2001:db8:3::1/64;
-  
-  
-  
-    set service lldp interface all
-    set service lldp interface eth0 disable
-  
-    set service router-advert interface eth1
   
     set service ssh
   
@@ -202,6 +165,14 @@ ok: [xf] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -224,6 +195,12 @@ ok: [xf] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -236,17 +213,15 @@ ok: [xf] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
+    ip link set dev eth1 mtu 1500
     ip link set eth1 up
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -254,10 +229,10 @@ ok: [xf] =>
     cat >/tmp/config <<CONFIG
     hostname xf
     !
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
@@ -277,6 +252,52 @@ ok: [xf] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [dut_a] => 
+  msg: |-
+    initial configuration for dut_a
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+  
+    configure
+    set system host-name 'dut-a'
+  
+  
+    set interfaces dummy dum0 address 2001:db8:1:1::1/64
+  
+  
+  
+    set interfaces ethernet eth1 description 'dut_a -> probe'
+  
+    set interfaces ethernet eth1 mtu 1500
+  
+  
+    set interfaces ethernet eth1 address 2001:db8:3::1/64;
+  
+  
+  
+    set service lldp interface all
+    >/dev/null 2>/dev/null set service lldp interface eth0 disable
+    >/dev/null 2>/dev/null set service lldp interface eth0 mode disable
+  
+    set service router-advert interface eth1
+  
+    set service ssh
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
+  
+    # Restart FRR to pick up the new hostname
+    sudo service frr restart
 ok: [probe] => 
   msg: |-
     initial configuration for probe
@@ -297,6 +318,14 @@ ok: [probe] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -319,6 +348,12 @@ ok: [probe] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -331,22 +366,20 @@ ok: [probe] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
+    ip link set dev eth1 mtu 1500
     ip link set eth1 up
+    ip link set eth2 down
     sysctl -qw net.ipv6.conf.eth2.autoconf=0
     sysctl -qw net.ipv6.conf.eth2.accept_ra=0
-    ip link set eth2 down
+    ip link set dev eth2 mtu 1500
     ip link set eth2 up
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
-    ip link set dev eth2 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -354,10 +387,10 @@ ok: [probe] =>
     cat >/tmp/config <<CONFIG
     hostname probe
     !
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
@@ -386,12 +419,6 @@ ok: [probe] =>
     vtysh -f /tmp/config
     exit 0
 
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [dut_c]
-ok: [xf]
-ok: [probe]
-ok: [dut_a]
-
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for dut_c, dut_a
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for xf, probe
@@ -401,8 +428,8 @@ ok: [dut_c]
 ok: [dut_a]
 
 TASK [wait_for] ****************************************************************
-ok: [dut_c]
 ok: [dut_a]
+ok: [dut_c]
 
 TASK [set_fact] ****************************************************************
 ok: [dut_c]
@@ -413,12 +440,12 @@ ok: [dut_c]
 ok: [dut_a]
 
 TASK [template] ****************************************************************
-changed: [dut_a]
 changed: [dut_c]
+changed: [dut_a]
 
 TASK [execute config-initial.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/vyos.j2] ***
-changed: [dut_c]
 changed: [dut_a]
+changed: [dut_c]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [xf -> localhost]
@@ -475,6 +502,12 @@ skipping: [dut_a]
 skipping: [dut_c]
 skipping: [probe]
 skipping: [xf]
+
+TASK [Find configuration deployment deploy_script for bgp] *********************
+skipping: [dut_a]
+skipping: [probe]
+ok: [dut_c]
+ok: [xf]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut_a]
@@ -566,12 +599,6 @@ ok: [xf] =>
     !
     do write
 
-TASK [Find configuration deployment deploy_script for bgp] *********************
-skipping: [dut_a]
-skipping: [probe]
-ok: [dut_c]
-ok: [xf]
-
 TASK [Deploy bgp configuration] ************************************************
 skipping: [dut_a]
 skipping: [probe]
@@ -625,6 +652,12 @@ skipping: [dut_a]
 skipping: [dut_c]
 skipping: [probe]
 skipping: [xf]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+skipping: [xf]
+ok: [dut_a]
+ok: [dut_c]
+ok: [probe]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [xf]
@@ -750,12 +783,6 @@ ok: [probe] =>
     !
     do write
 
-TASK [Find configuration deployment deploy_script for ospf] ********************
-skipping: [xf]
-ok: [dut_a]
-ok: [dut_c]
-ok: [probe]
-
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [xf]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for dut_a, dut_c
@@ -801,10 +828,10 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut_a                      : ok=30   changed=4    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
-dut_c                      : ok=38   changed=6    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
-probe                      : ok=27   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
-xf                         : ok=28   changed=5    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+dut_a                      : ok=31   changed=4    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
+dut_c                      : ok=39   changed=6    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
+probe                      : ok=28   changed=4    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
+xf                         : ok=29   changed=5    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
 
 
 

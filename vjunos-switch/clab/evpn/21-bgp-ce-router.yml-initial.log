@@ -21,10 +21,10 @@ TASK [Wait for device to become ready] *****************************************
 skipping: [s2]
 skipping: [ce1]
 skipping: [ce2]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vjunos-switch-clab.yml for s1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/vjunos-switch-clab.yml for s1
 
 TASK [Wait for SSH server] *****************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vm-clab-ssh-check.yml for s1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/vm-clab-ssh-check.yml for s1
 
 TASK [Check if 'sshpass' is installed] *****************************************
 ok: [s1 -> localhost]
@@ -45,19 +45,19 @@ ok: [s1] =>
   msg: Node s1 is ready.
 
 TASK [Wait for ge-0/0/0 interface] *********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vjunos-switch.yml for s1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/vjunos-switch.yml for s1
 
 TASK [Wait for ge-0/0/0 to appear] *********************************************
 ok: [s1]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2, ce1, ce2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, ce1, ce2
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [s2]
 ok: [ce1]
-ok: [s1]
 ok: [ce2]
+ok: [s1]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [ce1]
@@ -90,18 +90,18 @@ skipping: [ce1]
 skipping: [ce2]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2, ce1, ce2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, ce1, ce2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [s2]
+ok: [ce2]
 ok: [ce1]
 ok: [s1]
-ok: [ce2]
 
 TASK [Find configuration template for initial] *********************************
 ok: [s2]
-ok: [ce1]
 ok: [s1]
+ok: [ce1]
 ok: [ce2]
 
 TASK [fail] ********************************************************************
@@ -111,15 +111,15 @@ skipping: [ce1]
 skipping: [ce2]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [ce1]
 ok: [s2]
 ok: [s1]
+ok: [ce1]
 ok: [ce2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [ce2] => 
+ok: [ce1] => 
   msg: |-
-    initial configuration for ce2
+    initial configuration for ce1
     =========================================
     #!/bin/bash
     #
@@ -167,6 +167,12 @@ ok: [ce2] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -192,7 +198,7 @@ ok: [ce2] =>
     # Rest of initial configuration done through VTYSH
     #
     cat >/tmp/config <<CONFIG
-    hostname ce2
+    hostname ce1
     !
     ip forwarding
     vrf mgmt
@@ -202,12 +208,12 @@ ok: [ce2] =>
     !
     interface lo
      no shutdown
-     ip address 10.0.0.2/32
+     ip address 10.0.0.1/32
     !
     interface eth1
      no shutdown
-     description ce2 -> s2 [external]
-     ip address 10.1.0.9/30
+     description ce1 -> s1 [external]
+     ip address 10.1.0.5/30
     !
     do write
     CONFIG
@@ -368,6 +374,12 @@ ok: [s2] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -423,9 +435,9 @@ ok: [s2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [ce1] => 
+ok: [ce2] => 
   msg: |-
-    initial configuration for ce1
+    initial configuration for ce2
     =========================================
     #!/bin/bash
     #
@@ -473,6 +485,12 @@ ok: [ce1] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -498,7 +516,7 @@ ok: [ce1] =>
     # Rest of initial configuration done through VTYSH
     #
     cat >/tmp/config <<CONFIG
-    hostname ce1
+    hostname ce2
     !
     ip forwarding
     vrf mgmt
@@ -508,12 +526,12 @@ ok: [ce1] =>
     !
     interface lo
      no shutdown
-     ip address 10.0.0.1/32
+     ip address 10.0.0.2/32
     !
     interface eth1
      no shutdown
-     description ce1 -> s1 [external]
-     ip address 10.1.0.5/30
+     description ce2 -> s2 [external]
+     ip address 10.1.0.9/30
     !
     do write
     CONFIG
@@ -521,10 +539,10 @@ ok: [ce1] =>
     exit 0
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for s1
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for s2, ce1, ce2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for s1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for s2, ce1, ce2
 
-TASK [junos_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/junos.j2] ***
+TASK [junos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/junos.j2] ***
 changed: [s1]
 
 TASK [Attempt to load VRF kernel module] ***************************************
@@ -536,24 +554,24 @@ skipping: [ce1]
 skipping: [ce2]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for s2, ce1, ce2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for s2, ce1, ce2
 
 TASK [template] ****************************************************************
-changed: [s2]
 changed: [ce1]
 changed: [ce2]
+changed: [s2]
 
 TASK [set_fact] ****************************************************************
-ok: [ce1]
 ok: [s2]
+ok: [ce1]
 ok: [ce2]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [ce1]
-changed: [ce2]
 changed: [s2]
+changed: [ce2]
 
-TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [s2]
 skipping: [ce1]
 skipping: [ce2]
@@ -567,12 +585,12 @@ ok: [s2]
 ok: [s1]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, s1, s2 => (item=vlan)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, s1, s2 => (item=bgp)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, s1, s2 => (item=ospf)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, s1, s2 => (item=vrf)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, s1, s2 => (item=vxlan)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, s1, s2 => (item=evpn)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, s1, s2 => (item=vlan)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, s1, s2 => (item=bgp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, s1, s2 => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, s1, s2 => (item=vrf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, s1, s2 => (item=vxlan)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, s1, s2 => (item=evpn)
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [ce1]
@@ -624,10 +642,10 @@ ok: [s1] =>
 TASK [Deploy vlan configuration] ***********************************************
 skipping: [ce1]
 skipping: [ce2]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for s1
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for s1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s2
 
-TASK [junos_config: deploying vlan from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/vjunos-switch.j2] ***
+TASK [junos_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/vjunos-switch.j2] ***
 [WARNING]: mgd: statement has no contents; ignored
 ok: [s1]
 
@@ -637,10 +655,10 @@ changed: [s2]
 TASK [set_fact] ****************************************************************
 ok: [s2]
 
-TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/frr.j2] ***
+TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
 changed: [s2]
 
-TASK [run vtysh to import vlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/frr.j2] ***
+TASK [run vtysh to import vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
 skipping: [s2]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
@@ -663,8 +681,8 @@ skipping: [s2]
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [ce1]
-ok: [ce2]
 ok: [s2]
+ok: [ce2]
 ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -703,6 +721,41 @@ ok: [ce1] =>
     !
     !
     do write
+ok: [ce2] => 
+  msg: |-
+    bgp configuration for ce2
+    =========================================
+    !
+    router bgp 65101
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.2
+    !
+      neighbor 10.1.0.10 remote-as 65000
+      neighbor 10.1.0.10 description s2
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.2/32
+    !
+    !
+    !
+      neighbor 10.1.0.10 activate
+      no neighbor 10.1.0.10 send-community all
+      neighbor 10.1.0.10 send-community standard
+      neighbor 10.1.0.10 send-community large
+    !
+    !
+    !
+    do write
 ok: [s2] => 
   msg: |-
     bgp configuration for s2
@@ -737,41 +790,6 @@ ok: [s2] =>
       neighbor 10.0.0.3 send-community standard
       neighbor 10.0.0.3 send-community large
       neighbor 10.0.0.3 send-community extended
-    !
-    !
-    !
-    do write
-ok: [ce2] => 
-  msg: |-
-    bgp configuration for ce2
-    =========================================
-    !
-    router bgp 65101
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.2
-    !
-      neighbor 10.1.0.10 remote-as 65000
-      neighbor 10.1.0.10 description s2
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-      network 10.0.0.2/32
-    !
-    !
-    !
-      neighbor 10.1.0.10 activate
-      no neighbor 10.1.0.10 send-community all
-      neighbor 10.1.0.10 send-community standard
-      neighbor 10.1.0.10 send-community large
     !
     !
     !
@@ -869,8 +887,8 @@ ok: [s1] =>
           }
         }
       }
-    }
   
+    }
     protocols {
       delete: bgp;
     }
@@ -902,30 +920,30 @@ ok: [s1] =>
     }
 
 TASK [Deploy bgp configuration] ************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for ce1, ce2, s2
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for s1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for ce1, ce2, s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for s1
 
 TASK [template] ****************************************************************
+changed: [ce1]
 changed: [s2]
 changed: [ce2]
-changed: [ce1]
 
 TASK [set_fact] ****************************************************************
 ok: [ce1]
 ok: [ce2]
 ok: [s2]
 
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [ce1]
 skipping: [ce2]
 skipping: [s2]
 
-TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [ce1]
+TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [s2]
 changed: [ce2]
+changed: [ce1]
 
-TASK [junos_config: deploying bgp from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/junos.j2] ***
+TASK [junos_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/junos.j2] ***
 [WARNING]:  statement not found
 changed: [s1]
 
@@ -1012,10 +1030,10 @@ ok: [s2] =>
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [ce1]
 skipping: [ce2]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for s1
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for s1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s2
 
-TASK [junos_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/junos.j2] ***
+TASK [junos_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/junos.j2] ***
 changed: [s1]
 
 TASK [template] ****************************************************************
@@ -1024,10 +1042,10 @@ changed: [s2]
 TASK [set_fact] ****************************************************************
 ok: [s2]
 
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 skipping: [s2]
 
-TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [s2]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
@@ -1064,6 +1082,7 @@ ok: [s1] =>
   
   
     policy-options {
+      community x-route-permit-mark members large:65535:0:65536;
   
       policy-statement vrf-tenant-bgp-export {
         term redis_bgp {
@@ -1188,10 +1207,10 @@ ok: [s2] =>
 TASK [Deploy vrf configuration] ************************************************
 skipping: [ce1]
 skipping: [ce2]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for s1
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for s1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s2
 
-TASK [junos_config: deploying vrf from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/junos.j2] ***
+TASK [junos_config: deploying vrf from /home/pipi/net101/tools/netsim/ansible/templates/vrf/junos.j2] ***
 changed: [s1]
 
 TASK [template] ****************************************************************
@@ -1200,10 +1219,10 @@ changed: [s2]
 TASK [set_fact] ****************************************************************
 ok: [s2]
 
-TASK [run /tmp/config.sh to deploy vrf config from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/frr.j2] ***
+TASK [run /tmp/config.sh to deploy vrf config from /home/pipi/net101/tools/netsim/ansible/templates/vrf/frr.j2] ***
 changed: [s2]
 
-TASK [run vtysh to import vrf config from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/frr.j2] ***
+TASK [run vtysh to import vrf config from /home/pipi/net101/tools/netsim/ansible/templates/vrf/frr.j2] ***
 skipping: [s2]
 
 TASK [Figure out whether to deploy the module vxlan on current device] *********
@@ -1304,10 +1323,10 @@ ok: [s1] =>
 TASK [Deploy vxlan configuration] **********************************************
 skipping: [ce1]
 skipping: [ce2]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for s1
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for s1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s2
 
-TASK [junos_config: deploying vxlan from /home/pipi/netlab_gh/netsim/ansible/templates/vxlan/vjunos-switch.j2] ***
+TASK [junos_config: deploying vxlan from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/vjunos-switch.j2] ***
 changed: [s1]
 
 TASK [template] ****************************************************************
@@ -1316,10 +1335,10 @@ changed: [s2]
 TASK [set_fact] ****************************************************************
 ok: [s2]
 
-TASK [run /tmp/config.sh to deploy vxlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vxlan/frr.j2] ***
+TASK [run /tmp/config.sh to deploy vxlan config from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/frr.j2] ***
 changed: [s2]
 
-TASK [run vtysh to import vxlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vxlan/frr.j2] ***
+TASK [run vtysh to import vxlan config from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/frr.j2] ***
 skipping: [s2]
 
 TASK [Figure out whether to deploy the module evpn on current device] **********
@@ -1463,10 +1482,10 @@ ok: [s1] =>
 TASK [Deploy evpn configuration] ***********************************************
 skipping: [ce1]
 skipping: [ce2]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for s1
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for s1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s2
 
-TASK [junos_config: deploying evpn from /home/pipi/netlab_gh/netsim/ansible/templates/evpn/vjunos-switch.j2] ***
+TASK [junos_config: deploying evpn from /home/pipi/net101/tools/netsim/ansible/templates/evpn/vjunos-switch.j2] ***
 changed: [s1]
 
 TASK [template] ****************************************************************
@@ -1475,10 +1494,10 @@ changed: [s2]
 TASK [set_fact] ****************************************************************
 ok: [s2]
 
-TASK [run /tmp/config.sh to deploy evpn config from /home/pipi/netlab_gh/netsim/ansible/templates/evpn/frr.j2] ***
+TASK [run /tmp/config.sh to deploy evpn config from /home/pipi/net101/tools/netsim/ansible/templates/evpn/frr.j2] ***
 changed: [s2]
 
-TASK [run vtysh to import evpn config from /home/pipi/netlab_gh/netsim/ansible/templates/evpn/frr.j2] ***
+TASK [run vtysh to import evpn config from /home/pipi/net101/tools/netsim/ansible/templates/evpn/frr.j2] ***
 skipping: [s2]
 
 PLAY [Deploy custom deployment templates] **************************************

@@ -19,7 +19,7 @@ skipping: [p_global]
 skipping: [p_vrf]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, p_global, p_vrf
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, p_global, p_vrf
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [dut]
@@ -52,7 +52,7 @@ skipping: [p_global]
 skipping: [p_vrf]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, p_global, p_vrf
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, p_global, p_vrf
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
@@ -75,6 +75,76 @@ ok: [p_global]
 ok: [p_vrf]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+  
+    configure
+    set system host-name 'dut'
+  
+    set vrf name customer table 100
+  
+    set interfaces dummy dum0 address 10.0.0.1/32
+    set interfaces dummy dum0 address 2001:db8:1:1::1/64
+  
+  
+  
+    set interfaces ethernet eth1 description 'dut -> p_global [external]'
+  
+  
+    set interfaces ethernet eth1 address 10.1.0.1/30
+  
+    set interfaces ethernet eth1 address 2001:db8:3::1/64;
+  
+  
+  
+  
+    set interfaces ethernet eth2 description 'dut -> p_vrf [external]'
+  
+  
+    set interfaces ethernet eth2 address 10.1.0.5/30
+  
+    set interfaces ethernet eth2 address 2001:db8:3:1::1/64;
+  
+    set interfaces ethernet eth2 vrf customer
+  
+  
+  
+    set interfaces dummy dum1 description 'VRF Loopback customer'
+  
+  
+    set interfaces dummy dum1 address 10.2.0.1/32
+  
+    set interfaces dummy dum1 address 2001:db8:4::1/64;
+  
+    set interfaces dummy dum1 vrf customer
+  
+  
+    set service lldp interface all
+    >/dev/null 2>/dev/null set service lldp interface eth0 disable
+    >/dev/null 2>/dev/null set service lldp interface eth0 mode disable
+  
+    set service router-advert interface eth1
+    set service router-advert interface eth2
+  
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
+  
+    # Restart FRR to pick up the new hostname
+    sudo service frr restart
 ok: [p_global] => 
   msg: |-
     initial configuration for p_global
@@ -124,6 +194,12 @@ ok: [p_global] =>
     #
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
   
     #
     # Create loopbacks, stub and lag/bond devices
@@ -227,6 +303,12 @@ ok: [p_vrf] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -279,79 +361,10 @@ ok: [p_vrf] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
-  
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-    fi
-  
-    # Configuration items start here
-  
-    configure
-    set system host-name 'dut'
-  
-    set vrf name customer table 100
-  
-    set interfaces dummy dum0 address 10.0.0.1/32
-    set interfaces dummy dum0 address 2001:db8:1:1::1/64
-  
-  
-  
-    set interfaces ethernet eth1 description 'dut -> p_global [external]'
-  
-  
-    set interfaces ethernet eth1 address 10.1.0.1/30
-  
-    set interfaces ethernet eth1 address 2001:db8:3::1/64;
-  
-  
-  
-  
-    set interfaces ethernet eth2 description 'dut -> p_vrf [external]'
-  
-  
-    set interfaces ethernet eth2 address 10.1.0.5/30
-  
-    set interfaces ethernet eth2 address 2001:db8:3:1::1/64;
-  
-    set interfaces ethernet eth2 vrf customer
-  
-  
-  
-    set interfaces dummy dum1 description 'VRF Loopback customer'
-  
-  
-    set interfaces dummy dum1 address 10.2.0.1/32
-  
-    set interfaces dummy dum1 address 2001:db8:4::1/64;
-  
-    set interfaces dummy dum1 vrf customer
-  
-  
-    set service lldp interface all
-    set service lldp interface eth0 disable
-  
-    set service router-advert interface eth1
-    set service router-advert interface eth2
-  
-  
-    # Commit, save and exit from subshell
-  
-    commit
-    save
-    exit
-  
-    # Restart FRR to pick up the new hostname
-    sudo service frr restart
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/vyos.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for p_global, p_vrf
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for p_global, p_vrf
 
 TASK [wait_for_connection] *****************************************************
 skipping: [dut]
@@ -368,7 +381,7 @@ ok: [dut]
 TASK [template] ****************************************************************
 changed: [dut]
 
-TASK [execute config-initial.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/vyos.j2] ***
+TASK [execute config-initial.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/vyos.j2] ***
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
@@ -379,7 +392,7 @@ skipping: [p_global]
 skipping: [p_vrf]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for p_global, p_vrf
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for p_global, p_vrf
 
 TASK [template] ****************************************************************
 changed: [p_vrf]
@@ -389,11 +402,11 @@ TASK [set_fact] ****************************************************************
 ok: [p_global]
 ok: [p_vrf]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [p_vrf]
 changed: [p_global]
 
-TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [p_global]
 skipping: [p_vrf]
 
@@ -405,9 +418,9 @@ ok: [p_global]
 ok: [p_vrf]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, p_global, p_vrf => (item=routing)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, p_global, p_vrf => (item=bgp)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, p_global, p_vrf => (item=vrf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, p_global, p_vrf => (item=routing)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, p_global, p_vrf => (item=bgp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, p_global, p_vrf => (item=vrf)
 
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [dut]
@@ -484,6 +497,9 @@ ok: [dut] =>
   
   
   
+    # Static routing
+  
+  
     commit
     save
     exit
@@ -491,7 +507,7 @@ ok: [dut] =>
 TASK [Deploy routing configuration] ********************************************
 skipping: [p_global]
 skipping: [p_vrf]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/vyos.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for dut
 
 TASK [wait_for_connection] *****************************************************
 skipping: [dut]
@@ -508,7 +524,7 @@ ok: [dut]
 TASK [template] ****************************************************************
 changed: [dut]
 
-TASK [execute config-routing.sh to deploy routing config from /home/pipi/netlab_gh/netsim/ansible/templates/routing/vyos.j2] ***
+TASK [execute config-routing.sh to deploy routing config from /home/pipi/net101/tools/netsim/ansible/templates/routing/vyos.j2] ***
 changed: [dut]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
@@ -711,8 +727,8 @@ ok: [p_vrf] =>
     do write
 
 TASK [Deploy bgp configuration] ************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/vyos.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for p_global, p_vrf
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for p_global, p_vrf
 
 TASK [wait_for_connection] *****************************************************
 skipping: [dut]
@@ -729,7 +745,7 @@ ok: [dut]
 TASK [template] ****************************************************************
 changed: [dut]
 
-TASK [execute config-bgp.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/vyos.j2] ***
+TASK [execute config-bgp.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/vyos.j2] ***
 changed: [dut]
 
 TASK [template] ****************************************************************
@@ -740,13 +756,13 @@ TASK [set_fact] ****************************************************************
 ok: [p_global]
 ok: [p_vrf]
 
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [p_global]
 skipping: [p_vrf]
 
-TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [p_vrf]
+TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [p_global]
+changed: [p_vrf]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [dut]
@@ -864,7 +880,7 @@ ok: [dut] =>
 TASK [Deploy vrf configuration] ************************************************
 skipping: [p_global]
 skipping: [p_vrf]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/vyos.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for dut
 
 TASK [wait_for_connection] *****************************************************
 skipping: [dut]
@@ -881,13 +897,13 @@ ok: [dut]
 TASK [template] ****************************************************************
 changed: [dut]
 
-TASK [execute config-vrf.sh to deploy vrf config from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/vyos.j2] ***
+TASK [execute config-vrf.sh to deploy vrf config from /home/pipi/net101/tools/netsim/ansible/templates/vrf/vyos.j2] ***
 changed: [dut]
 
 PLAY [Deploy custom deployment templates] **************************************
 
 TASK [Run custom configuration deployment scripts] *****************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-custom-config.yml for dut => (item=bgp.policy)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-custom-config.yml for dut => (item=bgp.policy)
 
 TASK [Find configuration template] *********************************************
 ok: [dut]
@@ -901,14 +917,14 @@ ok: [dut -> localhost]
 TASK [fail] ********************************************************************
 skipping: [dut]
 
-TASK [Process template /home/pipi/netlab_gh/netsim/extra/bgp.policy/vyos.j2 for dut] ***
+TASK [Process template /home/pipi/net101/tools/netsim/extra/bgp.policy/vyos.j2 for dut] ***
 skipping: [dut]
 
 TASK [Find custom configuration deployment script] *****************************
 ok: [dut]
 
 TASK [Run the configuration deployment script] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/vyos.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for dut
 
 TASK [wait_for_connection] *****************************************************
 skipping: [dut]
@@ -925,7 +941,7 @@ ok: [dut]
 TASK [template] ****************************************************************
 changed: [dut]
 
-TASK [execute config-bgp.policy.sh to deploy bgp.policy config from /home/pipi/netlab_gh/netsim/extra/bgp.policy/vyos.j2] ***
+TASK [execute config-bgp.policy.sh to deploy bgp.policy config from /home/pipi/net101/tools/netsim/extra/bgp.policy/vyos.j2] ***
 changed: [dut]
 
 PLAY RECAP *********************************************************************

@@ -15,10 +15,10 @@ ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [x1]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vjunos-switch-clab.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/vjunos-switch-clab.yml for dut
 
 TASK [Wait for SSH server] *****************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vm-clab-ssh-check.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/vm-clab-ssh-check.yml for dut
 
 TASK [Check if 'sshpass' is installed] *****************************************
 ok: [dut -> localhost]
@@ -38,13 +38,13 @@ ok: [dut] =>
   msg: Node dut is ready.
 
 TASK [Wait for ge-0/0/0 interface] *********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vjunos-switch.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/vjunos-switch.yml for dut
 
 TASK [Wait for ge-0/0/0 to appear] *********************************************
 ok: [dut]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [x1]
@@ -71,7 +71,7 @@ skipping: [dut]
 skipping: [x1]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [x1]
@@ -139,6 +139,12 @@ ok: [x1] =>
     #
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
   
     #
     # Create loopbacks, stub and lag/bond devices
@@ -240,10 +246,10 @@ ok: [dut] =>
     }
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for x1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for x1
 
-TASK [junos_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/junos.j2] ***
+TASK [junos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/junos.j2] ***
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
@@ -253,7 +259,7 @@ TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [x1]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for x1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1
 
 TASK [template] ****************************************************************
 changed: [x1]
@@ -261,10 +267,10 @@ changed: [x1]
 TASK [set_fact] ****************************************************************
 ok: [x1]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [x1]
 
-TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
 
 PLAY [Deploy module-specific configurations] ***********************************
@@ -274,7 +280,7 @@ ok: [x1]
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1 => (item=bgp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1 => (item=bgp)
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [x1]
@@ -344,6 +350,7 @@ ok: [dut] =>
   msg: |-
     bgp configuration for dut
     =========================================
+  
     routing-options {
       autonomous-system 65000;
       router-id 10.0.0.1
@@ -423,6 +430,15 @@ ok: [dut] =>
         }
       }
   
+      policy-statement bgp-initial {
+        term initial-cleanup {
+          from community x-route-permit-mark;
+          then {
+            community delete x-route-permit-mark;
+            next policy;
+          }
+        }
+      }
     }
   
     protocols {
@@ -434,20 +450,18 @@ ok: [dut] =>
           type internal;
           export [
               next-hop-self
-              bgp-advertise
-              bgp-redistribute
-              bgp-final
+              bgp-advertise bgp-redistribute bgp-final
             ];
           advertise-inactive;
         }
         group ebgp-peers {
           export [
-              bgp-advertise
-              bgp-redistribute
-              bgp-final
+              bgp-advertise bgp-redistribute bgp-final
             ];
           advertise-inactive;
           neighbor 10.1.0.2 {
+            export [ bgp-advertise bgp-redistribute bgp-default-route bgp-final ];
+  
             peer-as 65100;
             description x1;
             family inet {
@@ -455,6 +469,8 @@ ok: [dut] =>
             }
           }
           neighbor 2001:db8:3::2 {
+            export [ bgp-advertise bgp-redistribute bgp-default-route bgp-final ];
+  
             peer-as 65100;
             description x1;
             family inet6 {
@@ -466,12 +482,16 @@ ok: [dut] =>
     }
 
 TASK [Deploy bgp configuration] ************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for x1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1
 
-TASK [junos_config: deploying bgp from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/junos.j2] ***
-[WARNING]:  statement not found
-changed: [dut]
+TASK [junos_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/junos.j2] ***
+fatal: [dut]: FAILED! => changed=false 
+  module_stderr: 'b"warning: requires ''bgp'' license\nerror: Policy error: Policy bgp-default-route referenced but not defined\nerror: BGP: export list not applied\nerror: configuration check-out failed"'
+  module_stdout: ''
+  msg: |-
+    MODULE FAILURE
+    See stdout/stderr for the exact error
 
 TASK [template] ****************************************************************
 changed: [x1]
@@ -479,47 +499,18 @@ changed: [x1]
 TASK [set_fact] ****************************************************************
 ok: [x1]
 
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [x1]
 
-TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [x1]
 
 PLAY [Deploy custom deployment templates] **************************************
 
-TASK [Run custom configuration deployment scripts] *****************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-custom-config.yml for dut => (item=bgp.session)
-
-TASK [Find configuration template] *********************************************
-ok: [dut]
-
-TASK [fail] ********************************************************************
-skipping: [dut]
-
-TASK [Check is the configuration template is a file] ***************************
-ok: [dut -> localhost]
-
-TASK [fail] ********************************************************************
-skipping: [dut]
-
-TASK [Process template /home/pipi/netlab_gh/netsim/extra/bgp.session/junos.j2 for dut] ***
-skipping: [dut]
-
-TASK [Find custom configuration deployment script] *****************************
-ok: [dut]
-
-TASK [Run the configuration deployment script] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
-
-TASK [junos_config: deploying bgp.session from /home/pipi/netlab_gh/netsim/extra/bgp.session/junos.j2] ***
-[WARNING]: statement not found: export
-[WARNING]: mgd: statement has no contents; ignored
-changed: [dut]
-
 PLAY RECAP *********************************************************************
-dut                        : ok=35   changed=3    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+dut                        : ok=28   changed=1    unreachable=0    failed=1    skipped=5    rescued=0    ignored=0   
 x1                         : ok=27   changed=5    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
 
-
-
-This lab tests the BGP default route origination. The DUT should advertise a default route to X1.
+Fatal error in netlab: Executing Ansible playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible failed
+Error executing ansible-playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible:
+  Command '['ansible-playbook', '/home/pipi/net101/tools/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.

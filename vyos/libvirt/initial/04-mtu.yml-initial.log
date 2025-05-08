@@ -1,4 +1,5 @@
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+[WARNING]: Found variable using reserved name: hosts
 
 PLAY [Deploy initial device configuration] *************************************
 
@@ -9,8 +10,8 @@ ok: [dut]
 ok: [p1]
 
 TASK [Find device readiness script] ********************************************
-ok: [t_1400]
 ok: [t_1300]
+ok: [t_1400]
 ok: [dut]
 ok: [p1]
 
@@ -44,6 +45,12 @@ skipping: [t_1300]
 skipping: [t_1400]
 skipping: [dut]
 
+TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [t_1300]
+ok: [t_1400]
+ok: [dut]
+ok: [p1]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [t_1300]
 skipping: [t_1400]
@@ -54,14 +61,8 @@ ok: [p1] =>
     =========================================
     !
     interface Ethernet1
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0201
-
-TASK [Find configuration deployment deploy_script for normalize] ***************
-skipping: [t_1300]
-skipping: [t_1400]
-skipping: [dut]
-ok: [p1]
 
 TASK [Deploy normalize configuration] ******************************************
 skipping: [t_1300]
@@ -95,6 +96,12 @@ skipping: [p1]
 skipping: [t_1300]
 skipping: [t_1400]
 skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [t_1300]
+ok: [t_1400]
+ok: [dut]
+ok: [p1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -152,7 +159,8 @@ ok: [dut] =>
   
   
     set service lldp interface all
-    set service lldp interface eth0 disable
+    >/dev/null 2>/dev/null set service lldp interface eth0 disable
+    >/dev/null 2>/dev/null set service lldp interface eth0 mode disable
   
     set service router-advert interface eth1
     set service router-advert interface eth2
@@ -249,6 +257,7 @@ ok: [t_1300] =>
     # Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA
     #
     cat <<SCRIPT > /etc/sysctl.d/10-netsim.conf
+    net.ipv4.conf.all.arp_announce=2
     net.ipv4.ip_forward=0
     net.ipv6.conf.all.forwarding=0
   
@@ -269,16 +278,21 @@ ok: [t_1300] =>
           addresses:
             - 172.16.2.3/24
             - 2001:db8:1:2::3/64
-          routes:
-          - to: 172.16.0.0/16
-            via: 172.16.2.1
-          - to: 10.0.0.0/24
-            via: 172.16.2.1
-          - to: 10.1.0.0/16
-            via: 172.16.2.1
-          - to: 10.2.0.0/24
-            via: 172.16.2.1
     SCRIPT
+  
+    # Disable auto-negotiation on Ethernet interfaces, needed to make LACP work correctly
+    cat <<SCRIPT > /etc/systemd/network/98-eth.link
+  
+    [Match]
+    OriginalName=eth*
+  
+    [Link]
+    BitsPerSecond=1G
+    AutoNegotiation=no
+    Duplex=full
+    SCRIPT
+  
+    chmod 600 /etc/netplan/*
   
     echo -n 'Starting netplan generate ' && date
     netplan generate
@@ -366,6 +380,7 @@ ok: [t_1400] =>
     # Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA
     #
     cat <<SCRIPT > /etc/sysctl.d/10-netsim.conf
+    net.ipv4.conf.all.arp_announce=2
     net.ipv4.ip_forward=0
     net.ipv6.conf.all.forwarding=0
   
@@ -386,16 +401,21 @@ ok: [t_1400] =>
           addresses:
             - 172.16.1.4/24
             - 2001:db8:1:1::4/64
-          routes:
-          - to: 172.16.0.0/16
-            via: 172.16.1.1
-          - to: 10.0.0.0/24
-            via: 172.16.1.1
-          - to: 10.1.0.0/16
-            via: 172.16.1.1
-          - to: 10.2.0.0/24
-            via: 172.16.1.1
     SCRIPT
+  
+    # Disable auto-negotiation on Ethernet interfaces, needed to make LACP work correctly
+    cat <<SCRIPT > /etc/systemd/network/98-eth.link
+  
+    [Match]
+    OriginalName=eth*
+  
+    [Link]
+    BitsPerSecond=1G
+    AutoNegotiation=no
+    Duplex=full
+    SCRIPT
+  
+    chmod 600 /etc/netplan/*
   
     echo -n 'Starting netplan generate ' && date
     netplan generate
@@ -443,12 +463,6 @@ ok: [p1] =>
      no shutdown
     !
 
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [t_1300]
-ok: [t_1400]
-ok: [dut]
-ok: [p1]
-
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for p1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux.yml for t_1300, t_1400
@@ -458,12 +472,12 @@ TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/
 changed: [p1]
 
 TASK [template] ****************************************************************
-changed: [t_1400]
 changed: [t_1300]
+changed: [t_1400]
 
 TASK [Execute /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux.j2] ***
-changed: [t_1300]
 changed: [t_1400]
+changed: [t_1300]
 
 TASK [wait_for_connection] *****************************************************
 skipping: [dut]
@@ -486,21 +500,92 @@ changed: [dut]
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
+ok: [t_1300]
+ok: [t_1400]
 ok: [p1]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for p1 => (item=routing)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for p1, t_1300, t_1400 => (item=routing)
 
 TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [t_1300]
+ok: [t_1400]
 ok: [p1]
 
 TASK [Find configuration template for routing] *********************************
+ok: [t_1300]
+ok: [t_1400]
 ok: [p1]
 
 TASK [fail] ********************************************************************
 skipping: [p1]
+skipping: [t_1300]
+skipping: [t_1400]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+ok: [t_1300]
+ok: [t_1400]
+ok: [p1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [t_1300] => 
+  msg: |-
+    routing configuration for t_1300
+    =========================================
+    #!/bin/bash
+    # netplan static route configuration
+    #
+    cat <<SCRIPT > /etc/netplan/11-routes-eth1.yaml
+    network:
+      version: 2
+      renderer: networkd
+      ethernets:
+        eth1:
+          routes:
+          - to: 172.16.0.0/16
+            via: 172.16.2.1
+          - to: 10.0.0.0/24
+            via: 172.16.2.1
+          - to: 10.1.0.0/16
+            via: 172.16.2.1
+          - to: 10.2.0.0/24
+            via: 172.16.2.1
+    SCRIPT
+    chmod 600 /etc/netplan/*
+  
+    echo -n 'Starting netplan generate ' && date
+    netplan generate
+    echo -n 'Starting netplan apply ' && date
+    nohup netplan apply &
+ok: [t_1400] => 
+  msg: |-
+    routing configuration for t_1400
+    =========================================
+    #!/bin/bash
+    # netplan static route configuration
+    #
+    cat <<SCRIPT > /etc/netplan/11-routes-eth1.yaml
+    network:
+      version: 2
+      renderer: networkd
+      ethernets:
+        eth1:
+          routes:
+          - to: 172.16.0.0/16
+            via: 172.16.1.1
+          - to: 10.0.0.0/24
+            via: 172.16.1.1
+          - to: 10.1.0.0/16
+            via: 172.16.1.1
+          - to: 10.2.0.0/24
+            via: 172.16.1.1
+    SCRIPT
+    chmod 600 /etc/netplan/*
+  
+    echo -n 'Starting netplan generate ' && date
+    netplan generate
+    echo -n 'Starting netplan apply ' && date
+    nohup netplan apply &
 ok: [p1] => 
   msg: |-
     routing configuration for p1
@@ -515,23 +600,29 @@ ok: [p1] =>
     ip route 0.0.0.0/0 Ethernet1 172.16.0.1
     ipv6 route ::/0 Ethernet1 2001:db8:1::1
 
-TASK [Find configuration deployment deploy_script for routing] *****************
-ok: [p1]
-
 TASK [Deploy routing configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for p1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux.yml for t_1300, t_1400
 
 TASK [eos_config: deploying routing from /home/pipi/net101/tools/netsim/ansible/templates/routing/eos.j2] ***
 changed: [p1]
+
+TASK [template] ****************************************************************
+changed: [t_1400]
+changed: [t_1300]
+
+TASK [Execute /tmp/config.sh to deploy routing config from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux.j2] ***
+changed: [t_1300]
+changed: [t_1400]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=15   changed=2    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+dut                        : ok=16   changed=2    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 p1                         : ok=26   changed=3    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
-t_1300                     : ok=13   changed=2    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
-t_1400                     : ok=13   changed=2    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+t_1300                     : ok=23   changed=4    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+t_1400                     : ok=23   changed=4    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
 
 
 

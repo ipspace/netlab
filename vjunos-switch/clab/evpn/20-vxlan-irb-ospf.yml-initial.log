@@ -26,10 +26,10 @@ skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vjunos-switch-clab.yml for s1, s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/vjunos-switch-clab.yml for s1, s2
 
 TASK [Wait for SSH server] *****************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vm-clab-ssh-check.yml for s1, s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/vm-clab-ssh-check.yml for s1, s2
 
 TASK [Check if 'sshpass' is installed] *****************************************
 ok: [s1 -> localhost]
@@ -49,8 +49,8 @@ FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-
 FAILED - RETRYING: [s2 -> localhost]: Execute local ssh command to check vjunos-switch readiness (37 retries left).
 FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (36 retries left).
 FAILED - RETRYING: [s2 -> localhost]: Execute local ssh command to check vjunos-switch readiness (36 retries left).
-ok: [s1 -> localhost]
 ok: [s2 -> localhost]
+ok: [s1 -> localhost]
 
 TASK [Confirm s1 SSH server works] *********************************************
 ok: [s1] => 
@@ -59,14 +59,14 @@ ok: [s2] =>
   msg: Node s2 is ready.
 
 TASK [Wait for ge-0/0/0 interface] *********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vjunos-switch.yml for s1, s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/vjunos-switch.yml for s1, s2
 
 TASK [Wait for ge-0/0/0 to appear] *********************************************
 ok: [s2]
 ok: [s1]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2, h1, h2, h3, h4
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, h1, h2, h3, h4
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [h1]
@@ -93,10 +93,10 @@ skipping: [h3]
 skipping: [h4]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
-ok: [h3]
 ok: [h1]
-ok: [h2]
 ok: [h4]
+ok: [h2]
+ok: [h3]
 ok: [s1]
 ok: [s2]
 
@@ -117,23 +117,23 @@ skipping: [h3]
 skipping: [h4]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2, h1, h2, h3, h4
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, h1, h2, h3, h4
 
 TASK [Figure out whether to deploy the module initial on current device] *******
-ok: [s1]
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [s2]
+ok: [s1]
 ok: [h4]
+ok: [s2]
 
 TASK [Find configuration template for initial] *********************************
 ok: [h2]
-ok: [s1]
 ok: [h1]
-ok: [h3]
-ok: [h4]
 ok: [s2]
+ok: [h3]
+ok: [s1]
+ok: [h4]
 
 TASK [fail] ********************************************************************
 skipping: [s1]
@@ -145,42 +145,13 @@ skipping: [h4]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [s1]
-ok: [h2]
 ok: [h1]
-ok: [s2]
+ok: [h2]
 ok: [h3]
+ok: [s2]
 ok: [h4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [h3] => 
-  msg: |-
-    initial configuration for h3
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.2.5/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.2.5/24 dev eth1
-    ip link set dev eth1 mtu 1500
 ok: [h1] => 
   msg: |-
     initial configuration for h1
@@ -197,10 +168,15 @@ ok: [h1] =>
   
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
     # Disable IPv4 and IPv6 forwarding
     #
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
+  
     #
     # Interface addressing, create any bond devices
     #
@@ -209,6 +185,7 @@ ok: [h1] =>
     ip addr del 172.16.0.3/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.0.3/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
 ok: [h2] => 
   msg: |-
@@ -226,10 +203,15 @@ ok: [h2] =>
   
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
     # Disable IPv4 and IPv6 forwarding
     #
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
+  
     #
     # Interface addressing, create any bond devices
     #
@@ -238,6 +220,42 @@ ok: [h2] =>
     ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.1.4/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+ok: [h3] => 
+  msg: |-
+    initial configuration for h3
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+  
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.2.5/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.2.5/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
 ok: [h4] => 
   msg: |-
@@ -255,10 +273,15 @@ ok: [h4] =>
   
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
     # Disable IPv4 and IPv6 forwarding
     #
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
+  
     #
     # Interface addressing, create any bond devices
     #
@@ -267,6 +290,7 @@ ok: [h4] =>
     ip addr del 172.16.3.6/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.3.6/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
 ok: [s1] => 
   msg: |-
@@ -608,10 +632,10 @@ ok: [s2] =>
     }
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for s1, s2
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2, h3, h4
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for s1, s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2, h3, h4
 
-TASK [junos_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/junos.j2] ***
+TASK [junos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/junos.j2] ***
 [WARNING]: mgd: statement has no contents; ignored
 changed: [s1]
 changed: [s2]
@@ -628,11 +652,11 @@ changed: [h4 -> localhost]
 changed: [h3 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
+TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h2 -> localhost]
-changed: [h1 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -640,23 +664,23 @@ skipping: [h2]
 skipping: [h3]
 skipping: [h4]
 
-TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
+TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
 
-TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
+TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
-changed: [h3 -> localhost]
 changed: [h4 -> localhost]
+changed: [h3 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-bvz726oi.sh] ***********************
-changed: [h4 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-1z59bh55.sh] ***********************
 changed: [h1 -> localhost]
-changed: [h2 -> localhost]
+changed: [h4 -> localhost]
 changed: [h3 -> localhost]
+changed: [h2 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -669,29 +693,29 @@ ok: [s1]
 ok: [s2]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h3, h2, h4, s1, s2 => (item=vlan)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h3, h2, h4, s1, s2 => (item=routing)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h3, h2, h4, s1, s2 => (item=bgp)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h3, h2, h4, s1, s2 => (item=ospf)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h3, h2, h4, s1, s2 => (item=vrf)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h3, h2, h4, s1, s2 => (item=vxlan)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h3, h2, h4, s1, s2 => (item=evpn)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, h3, h4, s1, s2 => (item=vlan)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, h3, h4, s1, s2 => (item=routing)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, h3, h4, s1, s2 => (item=bgp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, h3, h4, s1, s2 => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, h3, h4, s1, s2 => (item=vrf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, h3, h4, s1, s2 => (item=vxlan)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, h3, h4, s1, s2 => (item=evpn)
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
-ok: [s2]
 ok: [s1]
+ok: [s2]
 
 TASK [Find configuration template for vlan] ************************************
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
-ok: [s1]
 ok: [s2]
+ok: [s1]
 
 TASK [fail] ********************************************************************
 skipping: [h1]
@@ -706,67 +730,14 @@ skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
-ok: [s2]
 ok: [s1]
+ok: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
-ok: [s1] => 
-  msg: |-
-    vlan configuration for s1
-    =========================================
-  
-    vlans {
-      blue {
-        vlan-id 1001;
-  
-        l3-interface irb.1001;
-  
-      }
-      green {
-        vlan-id 1002;
-  
-        l3-interface irb.1002;
-  
-      }
-      red {
-        vlan-id 1000;
-  
-        l3-interface irb.1000;
-  
-      }
-    }
-  
-    interfaces {
-  
-  
-      ge-0/0/1.0 {
-        family ethernet-switching {
-  
-          vlan {
-            members red;
-          }
-  
-        }
-      }
-  
-  
-  
-      ge-0/0/2.0 {
-        family ethernet-switching {
-  
-          vlan {
-            members green;
-          }
-  
-        }
-      }
-  
-  
-    }
 ok: [s2] => 
   msg: |-
     vlan configuration for s2
@@ -820,17 +791,70 @@ ok: [s2] =>
   
   
     }
+ok: [s1] => 
+  msg: |-
+    vlan configuration for s1
+    =========================================
+  
+    vlans {
+      blue {
+        vlan-id 1001;
+  
+        l3-interface irb.1001;
+  
+      }
+      green {
+        vlan-id 1002;
+  
+        l3-interface irb.1002;
+  
+      }
+      red {
+        vlan-id 1000;
+  
+        l3-interface irb.1000;
+  
+      }
+    }
+  
+    interfaces {
+  
+  
+      ge-0/0/1.0 {
+        family ethernet-switching {
+  
+          vlan {
+            members red;
+          }
+  
+        }
+      }
+  
+  
+  
+      ge-0/0/2.0 {
+        family ethernet-switching {
+  
+          vlan {
+            members green;
+          }
+  
+        }
+      }
+  
+  
+    }
 
 TASK [Deploy vlan configuration] ***********************************************
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for s1, s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for s1, s2
 
-TASK [junos_config: deploying vlan from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/vjunos-switch.j2] ***
-changed: [s2]
+TASK [junos_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/vjunos-switch.j2] ***
 changed: [s1]
+changed: [s2]
 
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [h1]
@@ -843,9 +867,9 @@ ok: [s2]
 TASK [Find configuration template for routing] *********************************
 ok: [h1]
 skipping: [s1]
-ok: [h3]
 ok: [h2]
 skipping: [s2]
+ok: [h3]
 ok: [h4]
 
 TASK [fail] ********************************************************************
@@ -857,14 +881,16 @@ skipping: [s1]
 skipping: [s2]
 
 TASK [Find configuration deployment deploy_script for routing] *****************
-ok: [h1]
 skipping: [s1]
 skipping: [s2]
+ok: [h1]
 ok: [h2]
-ok: [h4]
 ok: [h3]
+ok: [h4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [s1]
+skipping: [s2]
 ok: [h1] => 
   msg: |-
     routing configuration for h1
@@ -894,8 +920,6 @@ ok: [h1] =>
     #
     # Print the final routing table
     ip route
-skipping: [s1]
-skipping: [s2]
 ok: [h2] => 
   msg: |-
     routing configuration for h2
@@ -987,55 +1011,55 @@ ok: [h4] =>
 TASK [Deploy routing configuration] ********************************************
 skipping: [s1]
 skipping: [s2]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2, h3, h4
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2, h3, h4
 
 TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
 ok: [h2]
-ok: [h3]
 ok: [h4]
+ok: [h3]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h3 -> localhost]
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 changed: [h4 -> localhost]
+changed: [h3 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux.j2] ***
+TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
 changed: [h2 -> localhost]
+changed: [h4 -> localhost]
 changed: [h1 -> localhost]
 changed: [h3 -> localhost]
-changed: [h4 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
-changed: [h1 -> localhost]
-changed: [h2 -> localhost]
-changed: [h3 -> localhost]
-changed: [h4 -> localhost]
-
-TASK [Execute /tmp/config-h1_routing.sh to deploy routing config based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux.j2] ***
-changed: [h1]
-changed: [h3]
-changed: [h2]
-changed: [h4]
-
-TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux.j2 executed in netns] ***
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
 
-TASK [Remove temporary file /tmp/h1_routing-qlxg_wge.sh] ***********************
-changed: [h1 -> localhost]
+TASK [Execute /tmp/config-h1_routing.sh to deploy routing config based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+
+TASK [Container configuration for routing based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
+changed: [h1 -> localhost]
+changed: [h4 -> localhost]
+
+TASK [Remove temporary file /tmp/h1_routing-3gv0q_8b.sh] ***********************
+changed: [h2 -> localhost]
+changed: [h3 -> localhost]
+changed: [h1 -> localhost]
 changed: [h4 -> localhost]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [h1]
 ok: [h2]
-ok: [h3]
 ok: [h4]
+ok: [h3]
 ok: [s1]
 ok: [s2]
 
@@ -1044,8 +1068,8 @@ skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
-ok: [s2]
 ok: [s1]
+ok: [s2]
 
 TASK [fail] ********************************************************************
 skipping: [h1]
@@ -1161,8 +1185,8 @@ ok: [s1] =>
           }
         }
       }
-    }
   
+    }
     protocols {
       delete: bgp;
     }
@@ -1285,8 +1309,8 @@ ok: [s2] =>
           }
         }
       }
-    }
   
+    }
     protocols {
       delete: bgp;
     }
@@ -1322,20 +1346,20 @@ skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for s1, s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for s1, s2
 
-TASK [junos_config: deploying bgp from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/junos.j2] ***
+TASK [junos_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/junos.j2] ***
 [WARNING]:  statement not found
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
-ok: [s2]
 ok: [s1]
+ok: [s2]
 
 TASK [Find configuration template for ospf] ************************************
 skipping: [h1]
@@ -1420,9 +1444,9 @@ skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for s1, s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for s1, s2
 
-TASK [junos_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/junos.j2] ***
+TASK [junos_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/junos.j2] ***
 changed: [s1]
 changed: [s2]
 
@@ -1431,8 +1455,8 @@ ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
-ok: [s2]
 ok: [s1]
+ok: [s2]
 
 TASK [Find configuration template for vrf] *************************************
 skipping: [h1]
@@ -1470,6 +1494,7 @@ ok: [s1] =>
   
   
     policy-options {
+      community x-route-permit-mark members large:65535:0:65536;
   
       policy-statement vrf-tenant-bgp-export {
         term redis_bgp {
@@ -1595,6 +1620,7 @@ ok: [s2] =>
   
   
     policy-options {
+      community x-route-permit-mark members large:65535:0:65536;
   
       policy-statement vrf-tenant-bgp-export {
         term redis_bgp {
@@ -1719,9 +1745,9 @@ skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for s1, s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for s1, s2
 
-TASK [junos_config: deploying vrf from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/junos.j2] ***
+TASK [junos_config: deploying vrf from /home/pipi/net101/tools/netsim/ansible/templates/vrf/junos.j2] ***
 changed: [s1]
 changed: [s2]
 
@@ -1762,50 +1788,6 @@ skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
-ok: [s2] => 
-  msg: |-
-    vxlan configuration for s2
-    =========================================
-  
-    policy-options {
-        policy-statement ecmp {
-            then {
-                load-balance per-flow;
-            }
-        }
-    }
-    routing-options {
-        forwarding-table {
-            export ecmp;
-        }
-    }
-  
-    switch-options {
-        vtep-source-interface lo0.0;
-    }
-  
-    vlans {
-        red {
-            vxlan {
-                vni 21000;
-            }
-        }
-        blue {
-            vxlan {
-                vni 21001;
-            }
-        }
-    }
-  
-  
-  
-  
-    switch-options {
-        route-distinguisher 10.0.0.2:65535;
-        vrf-target target:65000:65535;
-    }
-  
-    protocols evpn encapsulation vxlan;
 ok: [s1] => 
   msg: |-
     vxlan configuration for s1
@@ -1850,25 +1832,69 @@ ok: [s1] =>
     }
   
     protocols evpn encapsulation vxlan;
+ok: [s2] => 
+  msg: |-
+    vxlan configuration for s2
+    =========================================
+  
+    policy-options {
+        policy-statement ecmp {
+            then {
+                load-balance per-flow;
+            }
+        }
+    }
+    routing-options {
+        forwarding-table {
+            export ecmp;
+        }
+    }
+  
+    switch-options {
+        vtep-source-interface lo0.0;
+    }
+  
+    vlans {
+        red {
+            vxlan {
+                vni 21000;
+            }
+        }
+        blue {
+            vxlan {
+                vni 21001;
+            }
+        }
+    }
+  
+  
+  
+  
+    switch-options {
+        route-distinguisher 10.0.0.2:65535;
+        vrf-target target:65000:65535;
+    }
+  
+    protocols evpn encapsulation vxlan;
 
 TASK [Deploy vxlan configuration] **********************************************
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for s1, s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for s1, s2
 
-TASK [junos_config: deploying vxlan from /home/pipi/netlab_gh/netsim/ansible/templates/vxlan/vjunos-switch.j2] ***
-changed: [s2]
+TASK [junos_config: deploying vxlan from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/vjunos-switch.j2] ***
 changed: [s1]
+changed: [s2]
 
 TASK [Figure out whether to deploy the module evpn on current device] **********
 ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
-ok: [s1]
 ok: [s2]
+ok: [s1]
 
 TASK [Find configuration template for evpn] ************************************
 skipping: [h1]
@@ -1891,110 +1917,14 @@ skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
-ok: [s1]
 ok: [s2]
+ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
-ok: [s1] => 
-  msg: |-
-    evpn configuration for s1
-    =========================================
-  
-    protocols {
-      bgp {
-        group ibgp-peers-ipv4 {
-          neighbor 10.0.0.2 {
-            delete: shutdown;
-            family evpn {
-              signaling;
-            }
-          }
-        }
-        group ebgp-peers {
-        }
-      }
-    }
-  
-    policy-options {
-    }
-  
-    vlans {
-      delete: blue;
-      delete: red;
-    }
-  
-    routing-instances {
-      vlan_blue {
-        instance-type mac-vrf;
-        service-type vlan-based;
-        vtep-source-interface lo0.0;
-        route-distinguisher 10.0.0.1:1001;
-        vrf-target import target:65000:1001;
-        vrf-target export target:65000:1001;
-        vlans {
-          blue {
-            vlan-id 1001;
-            l3-interface irb.1001;
-            vxlan {
-              vni 21001;
-            }
-          }
-        }
-        protocols {
-          evpn {
-            encapsulation vxlan;
-            default-gateway no-gateway-community;
-            extended-vni-list all;
-          }
-        }
-      }
-      vlan_red {
-        instance-type mac-vrf;
-        service-type vlan-based;
-        vtep-source-interface lo0.0;
-        route-distinguisher 10.0.0.1:1000;
-        vrf-target import target:65000:1000;
-        vrf-target export target:65000:1000;
-        interface ge-0/0/1.0;
-        vlans {
-          red {
-            vlan-id 1000;
-            l3-interface irb.1000;
-            vxlan {
-              vni 21000;
-            }
-          }
-        }
-        protocols {
-          evpn {
-            encapsulation vxlan;
-            default-gateway no-gateway-community;
-            extended-vni-list all;
-          }
-        }
-      }
-    }
-  
-    routing-instances {
-  
-  
-    }
-  
-    policy-options {
-    }
-  
-    interfaces {
-        irb.1000 {
-            proxy-macip-advertisement;
-        }
-        irb.1001 {
-            proxy-macip-advertisement;
-        }
-    }
 ok: [s2] => 
   msg: |-
     evpn configuration for s2
@@ -2091,15 +2021,111 @@ ok: [s2] =>
             proxy-macip-advertisement;
         }
     }
+ok: [s1] => 
+  msg: |-
+    evpn configuration for s1
+    =========================================
+  
+    protocols {
+      bgp {
+        group ibgp-peers-ipv4 {
+          neighbor 10.0.0.2 {
+            delete: shutdown;
+            family evpn {
+              signaling;
+            }
+          }
+        }
+        group ebgp-peers {
+        }
+      }
+    }
+  
+    policy-options {
+    }
+  
+    vlans {
+      delete: blue;
+      delete: red;
+    }
+  
+    routing-instances {
+      vlan_blue {
+        instance-type mac-vrf;
+        service-type vlan-based;
+        vtep-source-interface lo0.0;
+        route-distinguisher 10.0.0.1:1001;
+        vrf-target import target:65000:1001;
+        vrf-target export target:65000:1001;
+        vlans {
+          blue {
+            vlan-id 1001;
+            l3-interface irb.1001;
+            vxlan {
+              vni 21001;
+            }
+          }
+        }
+        protocols {
+          evpn {
+            encapsulation vxlan;
+            default-gateway no-gateway-community;
+            extended-vni-list all;
+          }
+        }
+      }
+      vlan_red {
+        instance-type mac-vrf;
+        service-type vlan-based;
+        vtep-source-interface lo0.0;
+        route-distinguisher 10.0.0.1:1000;
+        vrf-target import target:65000:1000;
+        vrf-target export target:65000:1000;
+        interface ge-0/0/1.0;
+        vlans {
+          red {
+            vlan-id 1000;
+            l3-interface irb.1000;
+            vxlan {
+              vni 21000;
+            }
+          }
+        }
+        protocols {
+          evpn {
+            encapsulation vxlan;
+            default-gateway no-gateway-community;
+            extended-vni-list all;
+          }
+        }
+      }
+    }
+  
+    routing-instances {
+  
+  
+    }
+  
+    policy-options {
+    }
+  
+    interfaces {
+        irb.1000 {
+            proxy-macip-advertisement;
+        }
+        irb.1001 {
+            proxy-macip-advertisement;
+        }
+    }
 
 TASK [Deploy evpn configuration] ***********************************************
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for s1, s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for s1, s2
 
-TASK [junos_config: deploying evpn from /home/pipi/netlab_gh/netsim/ansible/templates/evpn/vjunos-switch.j2] ***
+TASK [junos_config: deploying evpn from /home/pipi/net101/tools/netsim/ansible/templates/evpn/vjunos-switch.j2] ***
 changed: [s1]
 changed: [s2]
 
@@ -2107,10 +2133,10 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=42   changed=9    unreachable=0    failed=0    skipped=39   rescued=0    ignored=0   
-h2                         : ok=42   changed=9    unreachable=0    failed=0    skipped=39   rescued=0    ignored=0   
-h3                         : ok=42   changed=9    unreachable=0    failed=0    skipped=39   rescued=0    ignored=0   
-h4                         : ok=42   changed=9    unreachable=0    failed=0    skipped=39   rescued=0    ignored=0   
+h1                         : ok=41   changed=8    unreachable=0    failed=0    skipped=40   rescued=0    ignored=0   
+h2                         : ok=41   changed=8    unreachable=0    failed=0    skipped=40   rescued=0    ignored=0   
+h3                         : ok=41   changed=8    unreachable=0    failed=0    skipped=40   rescued=0    ignored=0   
+h4                         : ok=41   changed=8    unreachable=0    failed=0    skipped=40   rescued=0    ignored=0   
 s1                         : ok=66   changed=7    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 s2                         : ok=65   changed=7    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 
