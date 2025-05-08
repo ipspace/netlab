@@ -79,10 +79,10 @@ The following features are only supported on a subset of platforms:
 |   Operating system       | EBGP<br>local AS | IBGP<br>local AS | Route<br>import | VRF route<br>import |
 | ------------------------ | :-: | :-: | :-: | :-: |
 | Arista EOS               |  ✅ |  ✅ |  ✅ |  ✅ |
-| Aruba AOS-CX             |  ✅ |  ✅ |  ✅ |  ✅ |
+| Aruba AOS-CX             |  ✅ |  ❌  |  ✅ |  ✅ |
 | BIRD                     |  ✅ |  ✅ |  ❌  |  ❌  |
 | Cisco IOS/IOS XE[^18v]   |  ✅ |  ✅ |  ✅ |  ✅ |
-| Cumulus Linux 4.x        |  ✅ |  ✅ |  ✅ |  ✅ |
+| Cumulus Linux 4.x        |  ✅ |  ❌  |  ✅ |  ✅ |
 | Cumulus Linux 5.x (NVUE) |  ✅ |  ✅ |  ✅ |  ❌ |
 | Dell OS10                |  ✅ |  ❌  |  ❌  |  ❌  |
 | FRR                      |  ✅ |  ✅ |  ✅ |  ✅ |
