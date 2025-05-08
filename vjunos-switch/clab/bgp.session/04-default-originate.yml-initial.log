@@ -439,8 +439,28 @@ ok: [dut] =>
           }
         }
       }
-    }
   
+      policy-statement bgp-default-route {
+        term default-route-v4 {
+          from {
+            route-filter 0.0.0.0/0 exact;
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+        term default-route-v6 {
+          from {
+            route-filter ::/0 exact;
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+      }
+    }
     protocols {
       delete: bgp;
     }
@@ -486,12 +506,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml f
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1
 
 TASK [junos_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/junos.j2] ***
-fatal: [dut]: FAILED! => changed=false 
-  module_stderr: 'b"warning: requires ''bgp'' license\nerror: Policy error: Policy bgp-default-route referenced but not defined\nerror: BGP: export list not applied\nerror: configuration check-out failed"'
-  module_stdout: ''
-  msg: |-
-    MODULE FAILURE
-    See stdout/stderr for the exact error
+[WARNING]:  statement not found
+changed: [dut]
 
 TASK [template] ****************************************************************
 changed: [x1]
@@ -507,10 +523,38 @@ changed: [x1]
 
 PLAY [Deploy custom deployment templates] **************************************
 
+TASK [Run custom configuration deployment scripts] *****************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-custom-config.yml for dut => (item=bgp.session)
+
+TASK [Find configuration template] *********************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Check is the configuration template is a file] ***************************
+ok: [dut -> localhost]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Process template /home/pipi/net101/tools/netsim/extra/bgp.session/junos.j2 for dut] ***
+skipping: [dut]
+
+TASK [Find custom configuration deployment script] *****************************
+ok: [dut]
+
+TASK [Run the configuration deployment script] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for dut
+
+TASK [junos_config: deploying bgp.session from /home/pipi/net101/tools/netsim/extra/bgp.session/junos.j2] ***
+[WARNING]: mgd: statement has no contents; ignored
+changed: [dut]
+
 PLAY RECAP *********************************************************************
-dut                        : ok=28   changed=1    unreachable=0    failed=1    skipped=5    rescued=0    ignored=0   
+dut                        : ok=35   changed=3    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
 x1                         : ok=27   changed=5    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
 
-Fatal error in netlab: Executing Ansible playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible failed
-Error executing ansible-playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible:
-  Command '['ansible-playbook', '/home/pipi/net101/tools/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.
+
+
+This lab tests the BGP default route origination. The DUT should advertise a default route to X1.
