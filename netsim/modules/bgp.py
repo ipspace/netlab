@@ -663,9 +663,12 @@ def ebgp_role_link(link: Box, topology: Box, EBGP_ROLE: str) -> None:
   for ifdata in link.get('interfaces',[]):                  # Collect BGP AS numbers from nodes
     collect_bgp_attr(attr_set,ifdata,ifdata.node)
     ndata = topology.nodes[ifdata.node]                     # ... connected to the link
-    intf_as = get_interface_as(ndata,ifdata)
+    node_as = ndata.get('bgp.as',None)                      # Consider real node AS and
+    if node_as:                                             # node/interface local-as
+      as_set[node_as] = True                                # when building set of AS on the link
+    intf_as = get_interface_as(ndata,ifdata)                # That makes sure the ibgp_localas link is still external
     if intf_as:
-      as_set[intf_as] = True                                # ... and store them in a dictionary
+      as_set[intf_as] = True                                # ... and store collected AS numbers in a dictionary
 
   if len(as_set) > 1:                                       # If we have more than two AS numbers per link
     if not link.get("role",None):                           # ... we set the link role unless it's already set
@@ -688,10 +691,12 @@ def vlan_ebgp_role_collect(link: Box, topology: Box) -> None:
     ndata = topology.nodes[ifdata.node]
     n_vdata = ndata.get(f'vlans.{vlan_name}',{})            # Get node VLAN data (if any)
     collect_bgp_attr(vdata._bgp_attr,n_vdata,ifdata.node)   # ... and scan it for BGP attributes
-    intf_as = get_interface_as(ndata,ifdata)                # Get node AS number and store it in VLAN _as_set list
-    if not intf_as:
-      continue
-    data.append_to_list(topology.vlans[vlan_name],'_as_set',intf_as)
+    node_as = ndata.get('bgp.as',None)                      # As above, consider real node AS
+    if node_as:
+      data.append_to_list(topology.vlans[vlan_name],'_as_set',node_as)
+    intf_as = get_interface_as(ndata,ifdata)                # ... and node/interface local AS
+    if intf_as:
+      data.append_to_list(topology.vlans[vlan_name],'_as_set',intf_as)
 
 """
 vlan_ebgp_role_set -- set EBGP role on VLANs based on collected information
