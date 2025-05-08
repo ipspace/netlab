@@ -1,13 +1,4 @@
-{% macro ebgp_af(n) %}
-{%   if n.allowas_in is defined %}
-    allowas-in {{ n.allowas_in }}
-{%   endif %}
-{%   if n.default_originate|default(False) %}
-    default-originate
-{%   endif %}
-{% endmacro %}
-
-{%- macro ebgp_neighbor(n,af) -%}
+{% macro ebgp_neighbor(n,af) -%}
 {%   set peer = n[af] if n[af] is string else 'interface ' + n.local_if|default('?') %}
   neighbor {{ peer }}
 {%   if n.bfd|default(False) %}
@@ -24,13 +15,20 @@
 {%   endif %}
 {%   for _af in ['ipv4','ipv6'] if n.activate[_af]|default(False) %}
    address-family {{ _af }} unicast
-{{     ebgp_af(n) }}
+{%   if n.allowas_in is defined %}
+    allowas-in {{ n.allowas_in }}
+{%   endif %}
+{%   if n.default_originate|default(False) %}
+    default-originate
+{%   endif %}
    exit
 {%   endfor %}
   !
 {%   if n.evpn|default(False) %}
    address-family l2vpn evpn
-{{     ebgp_af(n) }}
+{%   if n.allowas_in is defined %}
+    allowas-in {{ n.allowas_in }}
+{%   endif %}
    exit
 {%   endif %}
   !
