@@ -56,26 +56,18 @@ router bgp {{ bgp.as }}
   network {{ pfx|ipaddr('0') }}
 {%   endfor %}
 !
-{%   for n in bgp.neighbors
-       if n[af] is defined 
-         and (n.activate[af] is defined and n.activate[af]) %}
+{%   for n in bgp.neighbors if n[af] is defined and n.activate.get(af) %}
 {%     set peer = n[af] if n[af] is string 
                   else n.local_if if n.local_if is defined
                   else n.ipv6 if af == 'ipv4' and n.ipv4_rfc8950 
                   else False %}
 {%     if peer %}
   neighbor {{ peer }} activate
-{%       if n.type == 'ibgp' %}
-{%         if bgp.next_hop_self is defined and bgp.next_hop_self %}
-  neighbor {{ peer }} next-hop-self
-{%         endif %}
-{%         if bgp.rr|default('') and not n.rr|default('') %}
-  neighbor {{ peer }} route-reflector-client
-{%         endif %}
+{%       if n.next_hop_self is defined  %}
+  neighbor {{ peer }} next-hop-self {{ 'force' if n.next_hop_self=='all' else '' }}
 {%       endif %}
-{%       if n.type == 'localas_ibgp' %}
+{%       if n.rr_client is defined %}
   neighbor {{ peer }} route-reflector-client
-  neighbor {{ peer }} next-hop-self force
 {%       endif %}
 {%       if n.type in bgp.community|default({}) %}
   no neighbor {{ peer }} send-community all

@@ -147,22 +147,32 @@ build_ibgp_sessions: create IBGP session data structure
 * Other nodes need IBGP sessions with all RRs in the same AS
 """
 def build_ibgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
-  rrlist = find_bgp_rr(node.bgp.get("as"),topology)
+
+  def add_ibgp_neighbor(n: Box) -> bool:
+    n_intf = get_remote_ibgp_endpoint(n)
+    neighbor_data = bgp_neighbor(n,n_intf,'ibgp',sessions,get_neighbor_rr(n))
+    if neighbor_data is None:
+      return False
+    
+    if 'loopback' in node:
+      neighbor_data._source_intf = node.loopback
+    if node.bgp.get('next_hop_self',True):
+      neighbor_data.next_hop_self = True
+    if node.bgp.get('rr') and not n.get('rr'):
+      neighbor_data.rr_client = True
+    node.bgp.neighbors.append(neighbor_data)
+    return True
+
   has_ibgp     = False                            # Assume we have no IBGP sessions (yet)
+  rrlist = find_bgp_rr(node.bgp.get("as"),topology)
 
   # If we don't have route reflectors, or if the current node is a route
   # reflector, we need BGP sessions to all other nodes in the same AS
   if not(rrlist) or node.bgp.get("rr",None):
     for name,n in topology.nodes.items():
-      if "bgp" in n:
-        if n.bgp.get("as") == node.bgp.get("as") and n.name != node.name:
-          n_intf = get_remote_ibgp_endpoint(n)
-          neighbor_data = bgp_neighbor(n,n_intf,'ibgp',sessions,get_neighbor_rr(n))
-          if not neighbor_data is None:
-            if 'loopback' in node:
-              neighbor_data._source_intf = node.loopback
-            node.bgp.neighbors.append(neighbor_data)
-            has_ibgp = True
+      if n.name != node.name and n.get("bgp.as") == node.bgp.get("as"):
+        if add_ibgp_neighbor(n):
+          has_ibgp = True
 
   #
   # The node is not a route reflector, and we have a non-empty RR list
@@ -170,14 +180,8 @@ def build_ibgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
   else:
     for n in rrlist:
       if n.name != node.name:
-        n_intf = get_remote_ibgp_endpoint(n)
-        neighbor_data = bgp_neighbor(n,n_intf,'ibgp',sessions,get_neighbor_rr(n))
-        if not neighbor_data is None:
-          if 'loopback' in node:
-            neighbor_data._source_intf = node.loopback
-          node.bgp.neighbors.append(neighbor_data)
+        if add_ibgp_neighbor(n):
           has_ibgp = True
-
   if not has_ibgp:
     return
 
@@ -342,6 +346,8 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
             category=log.IncorrectValue,
             module='bgp')
           continue
+        extra_data.rr_client = True
+        extra_data.next_hop_self = 'all'              # TODO subject to bgp.next_hop_self being set?
 
       ebgp_data = bgp_neighbor(neighbor,ngb_ifdata,session_type,sessions,extra_data)
       if not ebgp_data is None:

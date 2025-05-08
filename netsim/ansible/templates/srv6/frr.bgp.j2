@@ -1,3 +1,5 @@
+ipv6 route {{ srv6.locator }} Null0
+
 router bgp {{ bgp.as }}
  segment-routing srv6
   locator {{ inventory_hostname }}
@@ -14,8 +16,8 @@ router bgp {{ bgp.as }}
 {%   if n.next_hop_unchanged is defined %}
   neighbor {{ peer }} attribute-unchanged next-hop
 {%   endif %}
-{%   if n.type=='ibgp' and bgp.next_hop_self|default(True) %}
-  neighbor {{ peer }} next-hop-self
+{%   if n.next_hop_self is defined %}
+  neighbor {{ peer }} next-hop-self {{ 'force' if n.next_hop_self=='all' else '' }}
 {%   endif %}
 {% endmacro -%}
 
@@ -41,10 +43,12 @@ router bgp {{ bgp.as }}
 {%     for vname,vdata in vrfs.items() %}
 router bgp {{ vdata.as|default(bgp.as) }} vrf {{ vname }}
  sid vpn per-vrf export auto
+ no bgp ebgp-requires-policy
  no bgp network import-check
 
 {%       for af in ['ipv4','ipv6'] if 'ebgp' in srv6.vpn.get(af,[]) %}
  address-family {{ af }} unicast
+  # sid vpn export auto
   nexthop vpn export {{ loopback.ipv6|ipaddr('address') }}
 {%       endfor %}
 !
