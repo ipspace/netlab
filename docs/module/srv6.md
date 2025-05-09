@@ -14,20 +14,24 @@ The module currently depends on IS-IS and will trigger a configuration error if 
 ## Platform Support
 The following table describes the per-platform support of individual router-level SRv6 features:
 
-| Operating system         | IS-IS | OSPFv3 | BGP v4/v6 | Transit only |
-| ------------------------ |:-----:|:------:|:---------:|:-------------:
-| FRR                      |   ✅  |   ❌   |    ❌     |      ❌      | 
-| Nokia SR OS[^SROS]       |   ✅  |   ❌   |    ✅     |      ✅      |
+| Operating system   | IS-IS | OSPFv3 | BGP v4/v6 | Transit only |
+|--------------------|:--:|:-:|:-:|:-:|
+| Cisco IOS/XE[^XE]  | ✅ | ❌ | ❌ | ❌ |
+| FRR                | ✅ | ❌ | ❌ | ❌ | 
+| Nokia SR OS[^SROS] | ✅ | ❌ | ✅ | ✅ |
 
 [^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
+
+[^XE]: Includes Catalyst 8000v, Cisco IOL, and Cisco IOL layer-2 image. The minimum Cisco IOS/XE release with working SRv6 is release 17.16.01a.
 
 (srv6-l3vpn-supported-platforms)=
 ### BGP/SRv6 L3VPN
 
 | Operating system      | VPNv4 | VPNv6 |
 | ----------------------| :---: | :---: |
-| FRR                   |   ✅  |   ✅ [❗️](caveats-frr)  |
-| Nokia SR OS[^SROS]    |   ❌  |   ❌  |
+| Cisco IOS/XE[^XE]     |   ✅  |  ✅  |
+| FRR                   |   ✅  |  ✅ [❗️](caveats-frr)  |
+| Nokia SR OS[^SROS]    |   ❌   |   ❌  |
 
 **Notes**
 * VPNv4 and VPNv6 address families are enabled on IPv6 IBGP sessions
@@ -35,7 +39,7 @@ The following table describes the per-platform support of individual router-leve
 ## Configurable Global and Node Parameters
 
 * **addressing.srv6_locator** -- global address pool[^poolname] for allocation of SRv6 locator prefixes, the default prefix is defined in `topology.defaults.srv6.locator_pool` (5F00::/16, the IANA reserved range defined by [RFC9602](https://datatracker.ietf.org/doc/rfc9602/)
-* **srv6.allocate_loopback** -- global flag (default: `True`) to replace the IPv6 loopback address of each SRv6-enabled node with an IP allocated from the locator range
+* **srv6.allocate_loopback** -- global flag (default: `False`) to replace the IPv6 loopback address of each SRv6-enabled node with an IPv6 address allocated from the locator range
 * **srv6.bgp** -- enable BGP with IPv4 and IPv6 address families over SRv6, default IPv4 + IPv6 over iBGP.
 * **srv6.vpn** -- enable BGP with VPNv4 and VPNv6 address families over SRv6. BGP/SRv6 L3VPN is disabled by default.
 * **srv6.igp** -- list of IGP protocols for which to enable SRv6, default `[isis]`
