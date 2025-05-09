@@ -9,6 +9,7 @@ BFD is supported on these platforms:
 | --------------------- | :-: | :-: | :-: |
 | Arista EOS            | ✅  | ✅  | ✅  |
 | Aruba AOS-CX          | ✅  | ✅  |  ❌  |
+| BIRD                  | ✅  | ❌  |  ❌  |
 | Cisco IOS             | ✅  | ✅  | ✅  |
 | Cisco IOS XE[^18v]    | ✅  | ✅  | ✅  |
 | Cisco Nexus OS        | ✅  | ✅  | ✅  |
