@@ -405,7 +405,8 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
       log.error(
         f'Duplicate static node ID {n.id} on node {n.name}',
         log.IncorrectValue,
-        'nodes')
+        more_hints='Conflicts with gateway ID' if n.id==topology.get('gateway.id') else '', 
+        module='nodes')
 
   log.exit_on_error()
   set_id_counter('node_id',1,MAX_NODE_ID)
