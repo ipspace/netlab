@@ -38,11 +38,15 @@ function bgp_prefixes( bool originate_default ) {
   reject "not accepted:", net, " source=", source, " preference=", preference, " proto=", proto;
 }
 
+function remove_private_as() {
+  bgp_path.delete([64512..65534, 4200000000..4294967294]);
+}
+
 {#
  Build a BGP export filter per neighbor type, to filter communities
 #}
 {% for ntype in [ 'ebgp', 'ibgp', 'localas_ibgp' ] %}
-function bgp_export_{{ ntype }}( bool originate_default ) {
+function bgp_export_{{ ntype }}( bool originate_default; bool rem_private_as ) {
 {%   set list = bgp.community[ntype]|default([]) %}
 {%   if 'standard' not in list %}
   bgp_community.empty;
@@ -54,6 +58,7 @@ function bgp_export_{{ ntype }}( bool originate_default ) {
   bgp_ext_community.empty;
 {%   endif %}
 
+  if rem_private_as then remove_private_as();
   bgp_prefixes(originate_default);
 }
 {% endfor %}
@@ -105,7 +110,8 @@ protocol bgp bgp_{{ n.name }}_{{ af }} {
 {%      if _af in n.activate and n.activate[_af] %}
   {{ _af }} {
     import all;
-    export filter { bgp_export_{{ n.type }}( {{ 'true' if n.get('default_originate') else 'false' }} ); };
+    export filter { bgp_export_{{ n.type }}( {{ 'true' if n.get('default_originate') else 'false' }},
+                                             {{ 'true' if n.get('remove_private_as') else 'false' }}); };
 {%       if 'next_hop_self' in bgp and bgp.next_hop_self and 'ibgp' in n.type %}
     next hop self {{ 'on' if n.type == 'localas_ibgp' else 'ebgp' }};
 {%       endif %}

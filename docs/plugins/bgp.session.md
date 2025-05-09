@@ -114,7 +114,7 @@ The plugin implements AS-path-mangling nerd knobs for the following platforms:
 | ------------------- | :--: | :--: | :--: | :--: | :--: |
 | Arista EOS          |  ✅  |  ✅  |  ✅  |   ❌  |  ✅  |
 | Aruba AOS-CX        |  ✅  |  ❌   |  ✅  |   ❌  |   ❌  |
-| Bird                |   ❌  |   ❌  |   ❌  |  ✅  |  ✅  |
+| Bird                |   ❌  |   ❌  |   ✅  |  ✅  |  ✅  |
 | Cisco IOSv/IOSvL2   |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
 | Cisco IOS-XE[^18v]  |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
 | Cisco Nexus OS      |  ✅  |  ✅  |  ✅  |   ❌  |   ❌  |
