@@ -11,6 +11,8 @@ message: |
   Please note it might take a while for the lab to work due to
   STP learning phase
 
+defaults.sources.extra: [ ../wait_times.yml ]
+
 groups:
   _auto_create: True
   hosts:
@@ -18,31 +20,42 @@ groups:
     device: linux
     provider: clab
   switches:
-    members: [ s1, s2 ]
+    members: [ dut, s2 ]
     module: [ vlan, vxlan, ospf ]
+  probes:
+    device: frr
+    provider: clab
+    members: [ s2 ]
 
 vlans:
   red:
     mode: bridge
     prefix:
       ipv4: 172.31.1.0/24
-    links: [ s1-h1, s2-h2 ]
+    links: [ dut-h1, s2-h2 ]
   blue:
     mode: bridge
     prefix:
       ipv4: 172.31.1.0/24
-    links: [ s1-h3, s2-h4 ]
+    links: [ dut-h3, s2-h4 ]
 
 links:
-- s1:
+- dut:
   s2:
   mtu: 1600
 
 validate:
+  adj:
+    description: Check OSPF adjacencies
+    wait_msg: Waiting for OSPF adjacency process to complete
+    wait: ospfv2_adj_lan
+    nodes: [ s2 ]
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id)
+
   ping_red:
     description: Ping-based reachability test in VLAN red
-    wait_msg: Waiting for OSFP and STP to wake up
-    wait: 50
+    wait_msg: Waiting for STP to converge
+    wait: 20
     nodes: [ h1 ]
     plugin: ping('h2')
   ping_blue:
