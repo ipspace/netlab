@@ -66,8 +66,8 @@ ok: [pe2]
 ok: [p1]
 ok: [p2]
 ok: [ch]
-ok: [h1]
 ok: [dut]
+ok: [h1]
 ok: [h2]
 ok: [h3]
 
@@ -88,8 +88,8 @@ ok: [p2]
 ok: [h1]
 ok: [dut]
 ok: [ch]
-ok: [h3]
 ok: [h2]
+ok: [h3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
@@ -127,8 +127,8 @@ ok: [dut]
 TASK [Find configuration template for initial] *********************************
 ok: [pe2]
 ok: [p1]
-ok: [ch]
 ok: [p2]
+ok: [ch]
 ok: [h2]
 ok: [h1]
 ok: [h3]
@@ -151,8 +151,8 @@ ok: [p2]
 ok: [dut]
 ok: [ch]
 ok: [h1]
-ok: [h2]
 ok: [h3]
+ok: [h2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [h3] => 
@@ -190,41 +190,6 @@ ok: [h3] =>
     ip addr add 172.16.2.3/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
-ok: [h1] => 
-  msg: |-
-    initial configuration for h1
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Send ARP requests from a sane source IP address
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-  
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.0.1/24 dev eth1
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
 ok: [ch] => 
   msg: |-
     initial configuration for ch
@@ -258,6 +223,41 @@ ok: [ch] =>
     ip addr del 172.16.3.4/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.3.4/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+  
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.1/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
 ok: [pe2] => 
@@ -526,86 +526,6 @@ ok: [h2] =>
     ip addr add 172.16.1.2/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    hostname dut
-    !
-    no ip domain lookup
-    !
-    lldp run
-    !
-    ip host ch 172.16.3.4
-    ip host dut-common 172.16.3.5
-    ip host dut-t1 172.16.0.5
-    ip host h1 172.16.0.1
-    ip host h2 172.16.1.2
-    ip host h3 172.16.2.3
-    ip host p1 10.0.0.7 10.1.0.2 10.1.0.5
-    ip host p2 10.0.0.8 10.1.0.6 10.1.0.9
-    ip host pe2 10.0.0.6 10.1.0.10
-    ip host pe2-t2 172.16.1.6
-    ip host pe2-t3 172.16.2.6
-    !
-    ip routing
-    !
-    no ipv6 unicast-routing
-    !
-    vrf definition common
-     rd 65000:4
-     route-target import 65000:1
-     route-target import 65000:2
-     route-target import 65000:3
-     route-target import 65000:4
-     route-target export 65000:4
-    !
-     address-family ipv4
-     exit-address-family
-    !
-    vrf definition t1
-     rd 65000:1
-     route-target import 65000:1
-     route-target import 65000:4
-     route-target export 65000:1
-    !
-     address-family ipv4
-     exit-address-family
-    !
-  
-    !
-    !
-    interface Loopback0
-     ip address 10.0.0.5 255.255.255.255
-    !
-    interface Ethernet0/0
-     no lldp transmit
-     no lldp receive
-    !
-    interface Ethernet0/1
-     description dut -> p1
-     ip address 10.1.0.1 255.255.255.252
-     no shutdown
-    !
-    interface Ethernet0/2
-     vrf forwarding t1
-     description dut -> h1 [stub]
-     ip address 172.16.0.5 255.255.255.0
-     no shutdown
-    !
-    interface Ethernet0/3
-     vrf forwarding common
-     description dut -> ch [stub]
-     ip address 172.16.3.5 255.255.255.0
-     no shutdown
-    !
-    !
-    line vty 0 4
-     exec-timeout 0 0
-    !
-    no banner exec
-    no banner login
-    no banner incoming
 ok: [p2] => 
   msg: |-
     initial configuration for p2
@@ -717,6 +637,86 @@ ok: [p2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    hostname dut
+    !
+    no ip domain lookup
+    !
+    lldp run
+    !
+    ip host ch 172.16.3.4
+    ip host dut-common 172.16.3.5
+    ip host dut-t1 172.16.0.5
+    ip host h1 172.16.0.1
+    ip host h2 172.16.1.2
+    ip host h3 172.16.2.3
+    ip host p1 10.0.0.7 10.1.0.2 10.1.0.5
+    ip host p2 10.0.0.8 10.1.0.6 10.1.0.9
+    ip host pe2 10.0.0.6 10.1.0.10
+    ip host pe2-t2 172.16.1.6
+    ip host pe2-t3 172.16.2.6
+    !
+    ip routing
+    !
+    no ipv6 unicast-routing
+    !
+    vrf definition common
+     rd 65000:4
+     route-target import 65000:1
+     route-target import 65000:2
+     route-target import 65000:3
+     route-target import 65000:4
+     route-target export 65000:4
+    !
+     address-family ipv4
+     exit-address-family
+    !
+    vrf definition t1
+     rd 65000:1
+     route-target import 65000:1
+     route-target import 65000:4
+     route-target export 65000:1
+    !
+     address-family ipv4
+     exit-address-family
+    !
+  
+    !
+    !
+    interface Loopback0
+     ip address 10.0.0.5 255.255.255.255
+    !
+    interface Ethernet0/0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Ethernet0/1
+     description dut -> p1
+     ip address 10.1.0.1 255.255.255.252
+     no shutdown
+    !
+    interface Ethernet0/2
+     vrf forwarding t1
+     description dut -> h1 [stub]
+     ip address 172.16.0.5 255.255.255.0
+     no shutdown
+    !
+    interface Ethernet0/3
+     vrf forwarding common
+     description dut -> ch [stub]
+     ip address 172.16.3.5 255.255.255.0
+     no shutdown
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
+    !
+    no banner exec
+    no banner login
+    no banner incoming
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
@@ -741,9 +741,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for pe2, p1, p2
 
 TASK [template] ****************************************************************
+changed: [p2]
 changed: [pe2]
 changed: [p1]
-changed: [p2]
 
 TASK [set_fact] ****************************************************************
 ok: [pe2]
@@ -767,15 +767,15 @@ ok: [h2]
 ok: [h3]
 
 TASK [Create a temporary file for the rendered script] *************************
+changed: [ch -> localhost]
 changed: [h3 -> localhost]
 changed: [h2 -> localhost]
-changed: [ch -> localhost]
 changed: [h1 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [ch -> localhost]
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-ch_initial.sh] *********
@@ -791,16 +791,16 @@ skipping: [h2]
 skipping: [h3]
 
 TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h1 -> localhost]
 changed: [ch -> localhost]
+changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 
-TASK [Remove temporary file /tmp/ch_initial-zxg2qr9a.sh] ***********************
-changed: [ch -> localhost]
-changed: [h3 -> localhost]
+TASK [Remove temporary file /tmp/ch_initial-mynzv433.sh] ***********************
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [ch -> localhost]
+changed: [h3 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -809,9 +809,9 @@ ok: [ch]
 ok: [h1]
 ok: [h3]
 ok: [h2]
-ok: [p2]
 ok: [p1]
 ok: [dut]
+ok: [p2]
 ok: [pe2]
 
 TASK [Deploy individual configuration modules] *********************************
@@ -826,8 +826,8 @@ ok: [ch]
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [p1]
 ok: [dut]
+ok: [p1]
 ok: [p2]
 ok: [pe2]
 
@@ -838,8 +838,8 @@ ok: [h1]
 skipping: [p1]
 ok: [h2]
 skipping: [p2]
-skipping: [pe2]
 ok: [h3]
+skipping: [pe2]
 
 TASK [fail] ********************************************************************
 skipping: [ch]
@@ -855,8 +855,8 @@ TASK [Find configuration deployment deploy_script for routing] *****************
 skipping: [dut]
 ok: [ch]
 skipping: [p1]
-skipping: [p2]
 ok: [h1]
+skipping: [p2]
 ok: [h2]
 skipping: [pe2]
 ok: [h3]
@@ -893,7 +893,6 @@ ok: [ch] =>
     # Print the final routing table
     ip route
 skipping: [p1]
-skipping: [p2]
 ok: [h1] => 
   msg: |-
     routing configuration for h1
@@ -923,7 +922,7 @@ ok: [h1] =>
     #
     # Print the final routing table
     ip route
-skipping: [pe2]
+skipping: [p2]
 ok: [h2] => 
   msg: |-
     routing configuration for h2
@@ -953,6 +952,7 @@ ok: [h2] =>
     #
     # Print the final routing table
     ip route
+skipping: [pe2]
 ok: [h3] => 
   msg: |-
     routing configuration for h3
@@ -1003,8 +1003,8 @@ changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
-changed: [ch -> localhost]
 changed: [h1 -> localhost]
+changed: [ch -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 
@@ -1021,12 +1021,12 @@ skipping: [h2]
 skipping: [h3]
 
 TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
-changed: [h1 -> localhost]
 changed: [ch -> localhost]
+changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 
-TASK [Remove temporary file /tmp/ch_routing-9mtyf5o1.sh] ***********************
+TASK [Remove temporary file /tmp/ch_routing-0ugc3z00.sh] ***********************
 changed: [ch -> localhost]
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
@@ -1212,8 +1212,8 @@ skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 ok: [p1]
-ok: [p2]
 ok: [dut]
+ok: [p2]
 ok: [pe2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -1254,24 +1254,6 @@ ok: [p1] =>
   
     !
     do write
-ok: [dut] => 
-  msg: |-
-    ospf configuration for dut
-    =========================================
-    router ospf 1
-     router-id 10.0.0.5
-  
-  
-    !
-    interface Loopback0
-    !
-     ip ospf 1 area 0.0.0.0
-    !
-    interface Ethernet0/1
-    ! dut -> p1
-     ip ospf 1 area 0.0.0.0
-     ip ospf network point-to-point
-    !
 ok: [p2] => 
   msg: |-
     ospf configuration for p2
@@ -1305,6 +1287,24 @@ ok: [p2] =>
   
     !
     do write
+ok: [dut] => 
+  msg: |-
+    ospf configuration for dut
+    =========================================
+    router ospf 1
+     router-id 10.0.0.5
+  
+  
+    !
+    interface Loopback0
+    !
+     ip ospf 1 area 0.0.0.0
+    !
+    interface Ethernet0/1
+    ! dut -> p1
+     ip ospf 1 area 0.0.0.0
+     ip ospf network point-to-point
+    !
 ok: [pe2] => 
   msg: |-
     ospf configuration for pe2
@@ -1346,8 +1346,8 @@ TASK [ios_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/templa
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [p1]
 changed: [p2]
+changed: [p1]
 changed: [pe2]
 
 TASK [set_fact] ****************************************************************
@@ -1371,8 +1371,8 @@ ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [p1]
-ok: [dut]
 ok: [p2]
+ok: [dut]
 ok: [pe2]
 
 TASK [Find configuration template for mpls] ************************************
@@ -1382,8 +1382,8 @@ skipping: [h2]
 skipping: [h3]
 ok: [p1]
 ok: [dut]
-ok: [pe2]
 ok: [p2]
+ok: [pe2]
 
 TASK [fail] ********************************************************************
 skipping: [ch]
@@ -1539,8 +1539,8 @@ TASK [ios_config: deploying mpls from /home/pipi/netlab_gh/netsim/ansible/templa
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [p2]
 changed: [pe2]
+changed: [p2]
 changed: [p1]
 
 TASK [set_fact] ****************************************************************
@@ -1549,8 +1549,8 @@ ok: [p2]
 ok: [pe2]
 
 TASK [run /tmp/config.sh to deploy mpls config from /home/pipi/netlab_gh/netsim/ansible/templates/mpls/frr.j2] ***
-changed: [p2]
 changed: [p1]
+changed: [p2]
 changed: [pe2]
 
 TASK [run vtysh to import mpls config from /home/pipi/netlab_gh/netsim/ansible/templates/mpls/frr.j2] ***
