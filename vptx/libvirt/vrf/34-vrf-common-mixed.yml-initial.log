@@ -11,8 +11,8 @@ ok: [dut]
 
 TASK [Find device readiness script] ********************************************
 ok: [srv]
-ok: [r1]
 ok: [r2]
+ok: [r1]
 ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
@@ -67,9 +67,9 @@ TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, srv, r1, r2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
-ok: [srv]
 ok: [r1]
 ok: [r2]
+ok: [srv]
 ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
@@ -91,9 +91,9 @@ ok: [r2]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [r1] => 
+ok: [srv] => 
   msg: |-
-    initial configuration for r1
+    initial configuration for srv
     =========================================
     #!/bin/bash
     #
@@ -110,6 +110,14 @@ ok: [r1] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
     #
     # Get the current next hop for the default route
     #
@@ -133,6 +141,12 @@ ok: [r1] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -145,8 +159,112 @@ ok: [r1] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname srv
+    !
+    ip forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.4/32
+    !
+    interface eth1
+     no shutdown
+     description srv -> dut [external]
+     ip address 10.1.0.10/30
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
+ok: [r1] => 
+  msg: |-
+    initial configuration for r1
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -158,6 +276,7 @@ ok: [r1] =>
     cat >/tmp/config <<CONFIG
     hostname r1
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -196,6 +315,14 @@ ok: [r2] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -218,6 +345,12 @@ ok: [r2] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -230,8 +363,10 @@ ok: [r2] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -243,6 +378,7 @@ ok: [r2] =>
     cat >/tmp/config <<CONFIG
     hostname r2
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -256,91 +392,6 @@ ok: [r2] =>
      no shutdown
      description r2 -> dut
      ip address 10.1.0.6/30
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
-ok: [srv] => 
-  msg: |-
-    initial configuration for srv
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)# "
-    echo
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    #
-    # Create loopbacks, stub and lag/bond devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-  
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname srv
-    !
-    vrf mgmt
-     exit-vrf
-    !
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ip address 10.0.0.4/32
-    !
-    interface eth1
-     no shutdown
-     description srv -> dut [external]
-     ip address 10.1.0.10/30
     !
     do write
     CONFIG
@@ -381,7 +432,7 @@ ok: [dut] =>
   
   
     policy-options {
-      policy-statement vrf-blue-export {
+      policy-statement vrf-blue-rt-export {
         term 1 {
           then {
             community add tg_65000_2;
@@ -393,7 +444,7 @@ ok: [dut] =>
   
   
   
-      policy-statement vrf-blue-import {
+      policy-statement vrf-blue-rt-import {
         term 1 {
           from community [ tg_65000_2 tg_65000_3 ];
           then accept;
@@ -402,7 +453,7 @@ ok: [dut] =>
           then reject;
         }
       }
-      policy-statement vrf-common-export {
+      policy-statement vrf-common-rt-export {
         term 1 {
           then {
             community add tg_65000_3;
@@ -415,7 +466,7 @@ ok: [dut] =>
   
   
   
-      policy-statement vrf-common-import {
+      policy-statement vrf-common-rt-import {
         term 1 {
           from community [ tg_65000_1 tg_65000_2 tg_65000_3 ];
           then accept;
@@ -424,7 +475,7 @@ ok: [dut] =>
           then reject;
         }
       }
-      policy-statement vrf-red-export {
+      policy-statement vrf-red-rt-export {
         term 1 {
           then {
             community add tg_65000_1;
@@ -436,7 +487,7 @@ ok: [dut] =>
   
   
   
-      policy-statement vrf-red-import {
+      policy-statement vrf-red-rt-import {
         term 1 {
           from community [ tg_65000_1 tg_65000_3 ];
           then accept;
@@ -453,8 +504,8 @@ ok: [dut] =>
         instance-type vrf;
         route-distinguisher 65000:2;
   
-        vrf-import vrf-blue-import;
-        vrf-export vrf-blue-export;
+        vrf-import vrf-blue-rt-import;
+        vrf-export vrf-blue-rt-export;
   
         routing-options {
           auto-export;
@@ -469,8 +520,8 @@ ok: [dut] =>
         instance-type vrf;
         route-distinguisher 65000:3;
   
-        vrf-import vrf-common-import;
-        vrf-export vrf-common-export;
+        vrf-import vrf-common-rt-import;
+        vrf-export vrf-common-rt-export;
   
         routing-options {
           auto-export;
@@ -485,8 +536,8 @@ ok: [dut] =>
         instance-type vrf;
         route-distinguisher 65000:1;
   
-        vrf-import vrf-red-import;
-        vrf-export vrf-red-export;
+        vrf-import vrf-red-rt-import;
+        vrf-export vrf-red-rt-export;
   
         routing-options {
           auto-export;
@@ -568,9 +619,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for srv, r1, r2
 
 TASK [template] ****************************************************************
-changed: [r2]
 changed: [r1]
 changed: [srv]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [srv]
@@ -578,8 +629,8 @@ ok: [r1]
 ok: [r2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r1]
 changed: [srv]
+changed: [r1]
 changed: [r2]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
@@ -627,64 +678,6 @@ ok: [dut]
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r1]
 skipping: [r2]
-ok: [dut] => 
-  msg: |-
-    bgp configuration for dut
-    =========================================
-    routing-options {
-      autonomous-system 65000;
-      router-id 10.0.0.1
-    }
-    policy-options {
-      delete: policy-statement ibgp-export;
-      delete: policy-statement ebgp-export;
-    }
-    policy-options {
-      policy-statement ibgp-export {
-        term advertise {
-          from {
-            protocol direct;
-            interface [
-               lo0.0  ];
-          }
-          then accept;
-        }
-        term next-hop-self {
-          from {
-            route-type external;
-          }
-          then {
-            next-hop self;
-          }
-        }
-      }
-      policy-statement ebgp-export {
-        term advertise {
-          from {
-            protocol direct;
-            interface [ lo0.0 ];
-          }
-          then accept;
-        }
-      }
-    }
-    protocols {
-      delete: bgp;
-    }
-    protocols {
-      bgp {
-        group ibgp-peers-ipv4 {
-          type internal;
-          export ibgp-export;
-          advertise-inactive;
-          local-address 10.0.0.1;
-        }
-        group ebgp-peers {
-          export ebgp-export;
-          advertise-inactive;
-        }
-      }
-    }
 ok: [srv] => 
   msg: |-
     bgp configuration for srv
@@ -720,6 +713,122 @@ ok: [srv] =>
     !
     !
     do write
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+  
+    routing-options {
+      autonomous-system 65000;
+      router-id 10.0.0.1
+    }
+  
+  
+    policy-options community x-route-permit-mark members large:65535:0:65536;
+  
+    policy-options {
+      delete: policy-statement bgp-advertise;
+      delete: policy-statement bgp-redistribute;
+      delete: route-filter-list bgp-announce;
+    }
+  
+    policy-options {
+  
+      route-filter-list bgp-announce {
+      }
+  
+      policy-statement next-hop-self {
+        term next-hop-self {
+          from {
+            route-type external;
+          }
+          then {
+            next-hop self;
+          }
+        }
+      }
+  
+      policy-statement bgp-advertise {
+        term advertise {
+          from {
+            protocol direct;
+            interface [
+               lo0.0  ];
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+  
+        term originate {
+          from {
+            protocol static;
+            route-filter-list bgp-announce;
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+  
+      }
+  
+      policy-statement bgp-redistribute {
+        term redis_bgp {
+          from protocol bgp;
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+      }
+  
+      policy-statement bgp-final {
+        term final-option {
+          from community x-route-permit-mark;
+          then {
+            community delete x-route-permit-mark;
+            accept;
+          }
+        }
+        term default-reject {
+          then reject;
+        }
+      }
+  
+      policy-statement bgp-initial {
+        term initial-cleanup {
+          from community x-route-permit-mark;
+          then {
+            community delete x-route-permit-mark;
+            next policy;
+          }
+        }
+      }
+  
+    }
+    protocols {
+      delete: bgp;
+    }
+    protocols {
+      bgp {
+        group ibgp-peers-ipv4 {
+          type internal;
+          export [
+              next-hop-self
+              bgp-advertise bgp-redistribute bgp-final
+            ];
+          advertise-inactive;
+        }
+        group ebgp-peers {
+          export [
+              bgp-advertise bgp-redistribute bgp-final
+            ];
+          advertise-inactive;
+        }
+      }
+    }
 
 TASK [Deploy bgp configuration] ************************************************
 skipping: [r1]
@@ -764,8 +873,8 @@ skipping: [srv]
 TASK [Find configuration deployment deploy_script for ospf] ********************
 skipping: [srv]
 ok: [r1]
-ok: [dut]
 ok: [r2]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [srv]
@@ -889,156 +998,124 @@ ok: [dut] =>
   
   
     policy-options {
+      community x-route-permit-mark members large:65535:0:65536;
   
-      policy-statement vrf-blue-ibgp-export {
-        term redis_direct {
+      policy-statement vrf-blue-bgp-export {
+        term redis_bgp {
           from {
-            protocol direct;
-          }
-          then accept;
-        }
-        term redis_ospf {
-          from {
-            protocol ospf;
-          }
-          then accept;
-        }
-        term redis_ospf3 {
-          from {
-            protocol ospf3;
-          }
-          then accept;
-        }
-        term next-hop-self {
-          from {
-            route-type external;
+            protocol bgp;
           }
           then {
-            next-hop self;
+            community add x-route-permit-mark;
+            next policy;
           }
         }
-      }
-  
-      policy-statement vrf-blue-ebgp-export {
         term redis_direct {
           from {
             protocol direct;
-          }
-          then accept;
-        }
-        term redis_ospf {
-          from {
-            protocol ospf;
-          }
-          then accept;
-        }
-        term redis_ospf3 {
-          from {
-            protocol ospf3;
-          }
-          then accept;
-        }
-      }
-  
-  
-      policy-statement vrf-common-ibgp-export {
-        term redis_direct {
-          from {
-            protocol direct;
-          }
-          then accept;
-        }
-        term redis_ospf {
-          from {
-            protocol ospf;
-          }
-          then accept;
-        }
-        term redis_ospf3 {
-          from {
-            protocol ospf3;
-          }
-          then accept;
-        }
-        term next-hop-self {
-          from {
-            route-type external;
           }
           then {
-            next-hop self;
+            community add x-route-permit-mark;
+            next policy;
           }
-        }
-      }
-  
-      policy-statement vrf-common-ebgp-export {
-        term redis_direct {
-          from {
-            protocol direct;
-          }
-          then accept;
         }
         term redis_ospf {
           from {
             protocol ospf;
-          }
-          then accept;
-        }
-        term redis_ospf3 {
-          from {
-            protocol ospf3;
-          }
-          then accept;
-        }
-      }
-  
-  
-      policy-statement vrf-red-ibgp-export {
-        term redis_direct {
-          from {
-            protocol direct;
-          }
-          then accept;
-        }
-        term redis_ospf {
-          from {
-            protocol ospf;
-          }
-          then accept;
-        }
-        term redis_ospf3 {
-          from {
-            protocol ospf3;
-          }
-          then accept;
-        }
-        term next-hop-self {
-          from {
-            route-type external;
           }
           then {
-            next-hop self;
+            community add x-route-permit-mark;
+            next policy;
           }
-        }
-      }
-  
-      policy-statement vrf-red-ebgp-export {
-        term redis_direct {
-          from {
-            protocol direct;
-          }
-          then accept;
-        }
-        term redis_ospf {
-          from {
-            protocol ospf;
-          }
-          then accept;
         }
         term redis_ospf3 {
           from {
             protocol ospf3;
           }
-          then accept;
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+      }
+  
+  
+      policy-statement vrf-common-bgp-export {
+        term redis_bgp {
+          from {
+            protocol bgp;
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+        term redis_direct {
+          from {
+            protocol direct;
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+        term redis_ospf {
+          from {
+            protocol ospf;
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+        term redis_ospf3 {
+          from {
+            protocol ospf3;
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+      }
+  
+  
+      policy-statement vrf-red-bgp-export {
+        term redis_bgp {
+          from {
+            protocol bgp;
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+        term redis_direct {
+          from {
+            protocol direct;
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+        term redis_ospf {
+          from {
+            protocol ospf;
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+        term redis_ospf3 {
+          from {
+            protocol ospf3;
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
         }
       }
   
@@ -1057,7 +1134,7 @@ ok: [dut] =>
           bgp {
   
             group ebgp-peers {
-              export vrf-blue-ebgp-export;
+              export [ vrf-blue-bgp-export bgp-final ];
               advertise-inactive;
             }
           }
@@ -1075,9 +1152,10 @@ ok: [dut] =>
           bgp {
   
             group ebgp-peers {
-              export vrf-common-ebgp-export;
+              export [ vrf-common-bgp-export bgp-final ];
               advertise-inactive;
               neighbor 10.1.0.10 {
+  
                 peer-as 65100;
                 description srv;
               }
@@ -1097,7 +1175,7 @@ ok: [dut] =>
           bgp {
   
             group ebgp-peers {
-              export vrf-red-ebgp-export;
+              export [ vrf-red-bgp-export bgp-final ];
               advertise-inactive;
             }
           }

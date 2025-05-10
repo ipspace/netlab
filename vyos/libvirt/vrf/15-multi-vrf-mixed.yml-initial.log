@@ -1,4 +1,5 @@
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+[WARNING]: Found variable using reserved name: hosts
 
 PLAY [Deploy initial device configuration] *************************************
 
@@ -47,14 +48,14 @@ skipping: [r4]
 skipping: [r1]
 skipping: [r3]
 
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [dut]
-skipping: [r2]
-skipping: [r4]
-skipping: [r1]
-skipping: [r3]
-
 TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [dut]
+ok: [r2]
+ok: [r4]
+ok: [r1]
+ok: [r3]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
 skipping: [r2]
 skipping: [r4]
@@ -91,6 +92,13 @@ skipping: [r2]
 skipping: [r4]
 skipping: [r1]
 skipping: [r3]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [dut]
+ok: [r2]
+ok: [r4]
+ok: [r1]
+ok: [r3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -160,7 +168,8 @@ ok: [dut] =>
   
   
     set service lldp interface all
-    set service lldp interface eth0 disable
+    >/dev/null 2>/dev/null set service lldp interface eth0 disable
+    >/dev/null 2>/dev/null set service lldp interface eth0 mode disable
   
   
   
@@ -192,6 +201,14 @@ ok: [r2] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -214,6 +231,12 @@ ok: [r2] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -226,14 +249,14 @@ ok: [r2] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -241,6 +264,7 @@ ok: [r2] =>
     cat >/tmp/config <<CONFIG
     hostname r2
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -279,6 +303,14 @@ ok: [r4] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -301,6 +333,12 @@ ok: [r4] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -313,14 +351,14 @@ ok: [r4] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -328,6 +366,7 @@ ok: [r4] =>
     cat >/tmp/config <<CONFIG
     hostname r4
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -366,6 +405,14 @@ ok: [r1] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -388,6 +435,12 @@ ok: [r1] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -400,14 +453,14 @@ ok: [r1] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -415,6 +468,7 @@ ok: [r1] =>
     cat >/tmp/config <<CONFIG
     hostname r1
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -453,6 +507,14 @@ ok: [r3] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -475,6 +537,12 @@ ok: [r3] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -487,14 +555,14 @@ ok: [r3] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -502,6 +570,7 @@ ok: [r3] =>
     cat >/tmp/config <<CONFIG
     hostname r3
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -520,13 +589,6 @@ ok: [r3] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [dut]
-ok: [r2]
-ok: [r4]
-ok: [r3]
-ok: [r1]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for dut
@@ -563,10 +625,10 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r2, r4, r1, r3
 
 TASK [template] ****************************************************************
-changed: [r1]
-changed: [r3]
 changed: [r4]
+changed: [r1]
 changed: [r2]
+changed: [r3]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
@@ -575,8 +637,8 @@ ok: [r1]
 ok: [r3]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r4]
 changed: [r2]
+changed: [r4]
 changed: [r1]
 changed: [r3]
 
@@ -620,6 +682,13 @@ skipping: [r1]
 skipping: [r2]
 skipping: [r3]
 skipping: [r4]
+
+TASK [Find configuration deployment deploy_script for bgp] *********************
+skipping: [r1]
+skipping: [r3]
+ok: [dut]
+ok: [r2]
+ok: [r4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r1]
@@ -731,13 +800,6 @@ ok: [r4] =>
     !
     do write
 
-TASK [Find configuration deployment deploy_script for bgp] *********************
-skipping: [r1]
-skipping: [r3]
-ok: [dut]
-ok: [r2]
-ok: [r4]
-
 TASK [Deploy bgp configuration] ************************************************
 skipping: [r1]
 skipping: [r3]
@@ -763,8 +825,8 @@ TASK [execute config-bgp.sh to deploy bgp config from /home/pipi/net101/tools/ne
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [r4]
 changed: [r2]
+changed: [r4]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
@@ -775,8 +837,8 @@ skipping: [r2]
 skipping: [r4]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [r2]
 changed: [r4]
+changed: [r2]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [dut]
@@ -788,8 +850,8 @@ ok: [r4]
 TASK [Find configuration template for ospf] ************************************
 skipping: [r2]
 ok: [dut]
-skipping: [r4]
 ok: [r1]
+skipping: [r4]
 ok: [r3]
 
 TASK [fail] ********************************************************************
@@ -798,6 +860,13 @@ skipping: [r1]
 skipping: [r2]
 skipping: [r3]
 skipping: [r4]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+skipping: [r2]
+skipping: [r4]
+ok: [dut]
+ok: [r1]
+ok: [r3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r2]
@@ -878,13 +947,6 @@ ok: [r3] =>
     !
     do write
 
-TASK [Find configuration deployment deploy_script for ospf] ********************
-skipping: [r2]
-skipping: [r4]
-ok: [dut]
-ok: [r1]
-ok: [r3]
-
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [r2]
 skipping: [r4]
@@ -910,8 +972,8 @@ TASK [execute config-ospf.sh to deploy ospf config from /home/pipi/net101/tools/
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [r3]
 changed: [r1]
+changed: [r3]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -922,8 +984,8 @@ skipping: [r1]
 skipping: [r3]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [r3]
 changed: [r1]
+changed: [r3]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [dut]
@@ -944,6 +1006,13 @@ skipping: [dut]
 skipping: [r1]
 skipping: [r2]
 skipping: [r3]
+skipping: [r4]
+
+TASK [Find configuration deployment deploy_script for vrf] *********************
+skipping: [r1]
+skipping: [r2]
+skipping: [r3]
+ok: [dut]
 skipping: [r4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -1083,13 +1152,6 @@ ok: [dut] =>
     save
     exit
 
-TASK [Find configuration deployment deploy_script for vrf] *********************
-skipping: [r1]
-skipping: [r2]
-skipping: [r3]
-skipping: [r4]
-ok: [dut]
-
 TASK [Deploy vrf configuration] ************************************************
 skipping: [r1]
 skipping: [r2]
@@ -1119,11 +1181,11 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=46   changed=8    unreachable=0    failed=0    skipped=17   rescued=0    ignored=0   
-r1                         : ok=29   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
-r2                         : ok=30   changed=5    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
-r3                         : ok=29   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
-r4                         : ok=29   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+dut                        : ok=47   changed=8    unreachable=0    failed=0    skipped=16   rescued=0    ignored=0   
+r1                         : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+r2                         : ok=31   changed=5    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+r3                         : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+r4                         : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
 
 
 

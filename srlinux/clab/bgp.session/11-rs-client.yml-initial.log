@@ -106,6 +106,7 @@ ok: [dut] =>
   
     - path: /interface[name=ethernet-1/1]
       value:
+       description: "dut ~ r2,rs"
        subinterface:
         index: 0
         description: "dut ~ r2,rs"
@@ -121,6 +122,7 @@ ok: [dut] =>
   
     - path: /interface[name=ethernet-1/2]
       value:
+       description: "dut ~ r3"
        subinterface:
         index: 0
         description: "dut ~ r3"
@@ -172,6 +174,14 @@ ok: [r2] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -194,6 +204,12 @@ ok: [r2] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -206,8 +222,10 @@ ok: [r2] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -219,6 +237,7 @@ ok: [r2] =>
     cat >/tmp/config <<CONFIG
     hostname r2
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -257,6 +276,14 @@ ok: [r3] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -279,6 +306,12 @@ ok: [r3] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -291,8 +324,10 @@ ok: [r3] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -304,6 +339,7 @@ ok: [r3] =>
     cat >/tmp/config <<CONFIG
     hostname r3
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -342,6 +378,14 @@ ok: [rs] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -364,6 +408,12 @@ ok: [rs] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -376,8 +426,10 @@ ok: [rs] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -389,6 +441,7 @@ ok: [rs] =>
     cat >/tmp/config <<CONFIG
     hostname rs
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -443,9 +496,9 @@ ok: [r3]
 ok: [rs]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+changed: [rs]
 changed: [r3]
 changed: [r2]
-changed: [rs]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r2]
@@ -484,8 +537,8 @@ skipping: [rs]
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [dut]
 ok: [r2]
-ok: [rs]
 ok: [r3]
+ok: [rs]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [r2] => 
@@ -639,6 +692,7 @@ ok: [dut] =>
         statement:
         - name: prefixes
           match:
+           prefix:
             prefix-set: default_bgp_advertise
           action:
             policy-result: next-policy
@@ -679,13 +733,20 @@ ok: [dut] =>
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
       value:
         admin-state: enable
+    # neighbor: {'activate': {'ipv4': True}, 'as': 65100, 'ifindex': 1, 'ipv4': '172.16.0.3', 'name': 'rs', 'rs_client': True, 'type': 'ebgp'}
+    # ipv4: True
+    # ipv6: True
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
+          send-community-type: ['standard', 'large']
+  
           import-policy: ['accept_all']
           export-policy: ['default_bgp_export', 'accept_all']
         - afi-safi-name: ipv6-unicast
           admin-state: disable
+          send-community-type: ['standard', 'large']
+  
           import-policy: ['accept_all']
           export-policy: ['default_bgp_export', 'accept_all']
   
@@ -693,10 +754,6 @@ ok: [dut] =>
           connect-retry: 10
           _annotate_connect-retry: "Reduce default 120s to 10s"
           minimum-advertisement-interval: 1
-        send-community:
-          standard: True
-          large: True
-          _annotate_large: "Assuming 'standard' implies 'large' here"
   
   
     - path: /network-instance[name=default]/protocols/bgp
@@ -705,22 +762,36 @@ ok: [dut] =>
         - peer-address: "172.16.0.3"
           description: rs
           peer-group: ebgp
+      # neighbor: {'activate': {'ipv4': True}, 'as': 65100, 'ifindex': 1, 'ipv4': '172.16.0.3', 'name': 'rs', 'rs_client': True, 'type': 'ebgp'}
+      # ipv4: True
+      # ipv6: False
           afi-safi:
           - afi-safi-name: ipv4-unicast
             admin-state: enable
+            send-community-type: ['standard', 'large']
+  
+          - afi-safi-name: ipv6-unicast
+            admin-state: disable
   
           peer-as: 65100
   
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
       value:
         admin-state: enable
+    # neighbor: {'activate': {'ipv4': True}, 'as': 65002, 'ifindex': 2, 'ipv4': '10.1.0.2', 'name': 'r3', 'type': 'ebgp'}
+    # ipv4: True
+    # ipv6: True
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
+          send-community-type: ['standard', 'large']
+  
           import-policy: ['accept_all']
           export-policy: ['default_bgp_export', 'accept_all']
         - afi-safi-name: ipv6-unicast
           admin-state: disable
+          send-community-type: ['standard', 'large']
+  
           import-policy: ['accept_all']
           export-policy: ['default_bgp_export', 'accept_all']
   
@@ -728,10 +799,6 @@ ok: [dut] =>
           connect-retry: 10
           _annotate_connect-retry: "Reduce default 120s to 10s"
           minimum-advertisement-interval: 1
-        send-community:
-          standard: True
-          large: True
-          _annotate_large: "Assuming 'standard' implies 'large' here"
   
   
     - path: /network-instance[name=default]/protocols/bgp
@@ -740,9 +807,16 @@ ok: [dut] =>
         - peer-address: "10.1.0.2"
           description: r3
           peer-group: ebgp
+      # neighbor: {'activate': {'ipv4': True}, 'as': 65002, 'ifindex': 2, 'ipv4': '10.1.0.2', 'name': 'r3', 'type': 'ebgp'}
+      # ipv4: True
+      # ipv6: False
           afi-safi:
           - afi-safi-name: ipv4-unicast
             admin-state: enable
+            send-community-type: ['standard', 'large']
+  
+          - afi-safi-name: ipv6-unicast
+            admin-state: disable
   
           peer-as: 65002
 
@@ -760,9 +834,9 @@ TASK [debug] *******************************************************************
 skipping: [dut]
 
 TASK [template] ****************************************************************
+changed: [r3]
 changed: [r2]
 changed: [rs]
-changed: [r3]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
@@ -795,8 +869,8 @@ skipping: [r2]
 skipping: [rs]
 
 TASK [Check is the configuration template is a file] ***************************
-ok: [dut -> localhost]
 ok: [r2 -> localhost]
+ok: [dut -> localhost]
 ok: [rs -> localhost]
 
 TASK [fail] ********************************************************************
@@ -836,8 +910,8 @@ ok: [r2]
 ok: [rs]
 
 TASK [run /tmp/config.sh to deploy bgp.session config from /home/pipi/net101/tools/netsim/extra/bgp.session/frr.j2] ***
-changed: [r2]
 changed: [rs]
+changed: [r2]
 
 TASK [run vtysh to import bgp.session config from /home/pipi/net101/tools/netsim/extra/bgp.session/frr.j2] ***
 skipping: [r2]

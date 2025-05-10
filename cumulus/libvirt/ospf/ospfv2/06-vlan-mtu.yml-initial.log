@@ -1,4 +1,5 @@
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+[WARNING]: Found variable using reserved name: hosts
 
 PLAY [Deploy initial device configuration] *************************************
 
@@ -21,7 +22,7 @@ skipping: [x2]
 skipping: [x3]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [dut]
@@ -41,13 +42,13 @@ skipping: [x1]
 skipping: [x2]
 skipping: [x3]
 
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [dut]
-skipping: [x1]
-skipping: [x2]
-skipping: [x3]
-
 TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [dut]
+ok: [x1]
+ok: [x2]
+ok: [x3]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
 skipping: [x1]
 skipping: [x2]
@@ -60,7 +61,7 @@ skipping: [x2]
 skipping: [x3]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
@@ -79,6 +80,12 @@ skipping: [dut]
 skipping: [x1]
 skipping: [x2]
 skipping: [x3]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [dut]
+ok: [x1]
+ok: [x2]
+ok: [x3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [x1] => 
@@ -100,6 +107,14 @@ ok: [x1] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
     #
     # Get the current next hop for the default route
     #
@@ -123,6 +138,12 @@ ok: [x1] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -135,8 +156,10 @@ ok: [x1] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1400
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -148,6 +171,7 @@ ok: [x1] =>
     cat >/tmp/config <<CONFIG
     hostname x1
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -162,9 +186,9 @@ ok: [x1] =>
      description [Access VLAN ospf_1] x1 -> dut
      ! no ip address
     !
-    interface vlan1000
+    interface vlan500
      no shutdown
-     description VLAN ospf_1 (1000) -> [dut]
+     description VLAN ospf_1 (500) -> [dut]
      ip address 172.16.0.2/24
     !
     do write
@@ -191,6 +215,14 @@ ok: [x2] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -213,6 +245,12 @@ ok: [x2] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -225,8 +263,10 @@ ok: [x2] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1280
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -238,6 +278,7 @@ ok: [x2] =>
     cat >/tmp/config <<CONFIG
     hostname x2
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -252,9 +293,9 @@ ok: [x2] =>
      description [Access VLAN ospf_2] x2 -> dut
      ! no ip address
     !
-    interface vlan1001
+    interface vlan501
      no shutdown
-     description VLAN ospf_2 (1001) -> [dut]
+     description VLAN ospf_2 (501) -> [dut]
      ip address 172.16.1.3/24
     !
     do write
@@ -293,15 +334,15 @@ ok: [dut] =>
     # Created by netlab initial
     #
     10.0.0.1 dut
-    172.16.0.1 vlan1000.dut
-    172.16.1.1 vlan1001.dut
-    172.16.2.1 vlan1002.dut
+    172.16.0.1 vlan500.dut
+    172.16.1.1 vlan501.dut
+    172.16.2.1 vlan502.dut
     10.0.0.2 x1
-    172.16.0.2 vlan1000.x1
+    172.16.0.2 vlan500.x1
     10.0.0.3 x2
-    172.16.1.3 vlan1001.x2
+    172.16.1.3 vlan501.x2
     10.0.0.4 x3
-    172.16.2.4 vlan1002.x3
+    172.16.2.4 vlan502.x3
     SCRIPT
     grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
     #
@@ -336,18 +377,18 @@ ok: [dut] =>
     auto swp1
     auto swp2
     auto swp3
-    auto vlan1000
+    auto vlan500
   
-    iface vlan1000 inet static
+    iface vlan500 inet static
       address 172.16.0.1/24
-    auto vlan1001
+    auto vlan501
   
-    iface vlan1001 inet static
+    iface vlan501 inet static
       mtu 1280
       address 172.16.1.1/24
-    auto vlan1002
+    auto vlan502
   
-    iface vlan1002 inet static
+    iface vlan502 inet static
       mtu 1320
       address 172.16.2.1/24
     CONFIG
@@ -388,17 +429,17 @@ ok: [dut] =>
     ! no shutdown
      description [Access VLAN ospf_2] dut -> x2
     !
-    interface vlan1000
+    interface vlan500
     ! no shutdown
-     description VLAN ospf_1 (1000) -> [x1]
+     description VLAN ospf_1 (500) -> [x1]
     !
-    interface vlan1001
+    interface vlan501
     ! no shutdown
-     description VLAN ospf_2 (1001) -> [x2]
+     description VLAN ospf_2 (501) -> [x2]
     !
-    interface vlan1002
+    interface vlan502
     ! no shutdown
-     description VLAN ospf_3 (1002) -> [x3]
+     description VLAN ospf_3 (502) -> [x3]
     !
     do write
     CONFIG
@@ -433,6 +474,14 @@ ok: [x3] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -455,6 +504,12 @@ ok: [x3] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -467,8 +522,10 @@ ok: [x3] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -480,6 +537,7 @@ ok: [x3] =>
     cat >/tmp/config <<CONFIG
     hostname x3
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -494,14 +552,14 @@ ok: [x3] =>
      description x3 -> dut
      ! no ip address
     !
-    interface eth1.1002
+    interface eth1.502
      no shutdown
      description [SubIf VLAN ospf_3] x3 -> dut
      ! no ip address
     !
-    interface vlan1002
+    interface vlan502
      no shutdown
-     description VLAN ospf_3 (1002) -> [dut]
+     description VLAN ospf_3 (502) -> [dut]
      ip address 172.16.2.4/24
     !
     do write
@@ -509,17 +567,11 @@ ok: [x3] =>
     vtysh -f /tmp/config
     exit 0
 
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [dut]
-ok: [x1]
-ok: [x2]
-ok: [x3]
-
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for x1, x2, x3
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for x1, x2, x3
 
-TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
+TASK [Render device configuration from /home/pipi/netlab_gh/netsim/ansible/templates/initial/cumulus.j2] ***
 ok: [dut]
 
 TASK [Create local temporary file] *********************************************
@@ -531,7 +583,7 @@ changed: [dut -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
 
-TASK [Remove temporary file /tmp/ansible.dut.726b7z_vtemp] *********************
+TASK [Remove temporary file /tmp/ansible.dut.n87fqfmgtemp] *********************
 changed: [dut -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
@@ -543,24 +595,24 @@ skipping: [x2]
 skipping: [x3]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2, x3
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2, x3
 
 TASK [template] ****************************************************************
 changed: [x2]
-changed: [x3]
 changed: [x1]
+changed: [x3]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
 ok: [x2]
 ok: [x3]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [x1]
-changed: [x3]
 changed: [x2]
+changed: [x3]
 
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
 skipping: [x2]
 skipping: [x3]
@@ -574,8 +626,8 @@ ok: [x2]
 ok: [x3]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3 => (item=vlan)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3 => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3 => (item=vlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3 => (item=ospf)
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [dut]
@@ -595,6 +647,12 @@ skipping: [x1]
 skipping: [x2]
 skipping: [x3]
 
+TASK [Find configuration deployment deploy_script for vlan] ********************
+ok: [dut]
+ok: [x1]
+ok: [x2]
+ok: [x3]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
   msg: |-
@@ -610,7 +668,7 @@ ok: [dut] =>
     auto bridge
     iface bridge
         bridge-vlan-aware yes
-        bridge-vids 1000,1001,1002
+        bridge-vids 500,501,502
         bridge-ports swp1
         bridge-ports swp2
         bridge-ports swp3
@@ -619,24 +677,36 @@ ok: [dut] =>
     # Create VLAN interfaces
     #
     cat >/etc/network/interfaces.d/51-bridge-interfaces.intf <<CONFIG
+  
     iface swp1
-        bridge-vids 1002
+        bridge-vids 502
         bridge-allow-untagged no
+  
     iface swp2
-        bridge-access 1000
+        bridge-access 500
+  
     iface swp3
-        bridge-access 1001
-    auto vlan1000
-    iface vlan1000
-        vlan-id 1000
+        mtu 1280
+        bridge-access 501
+  
+    auto vlan500
+  
+    iface vlan500
+        vlan-id 500
         vlan-raw-device bridge
-    auto vlan1001
-    iface vlan1001
-        vlan-id 1001
+  
+    auto vlan501
+  
+    iface vlan501
+        mtu 1280
+        vlan-id 501
         vlan-raw-device bridge
-    auto vlan1002
-    iface vlan1002
-        vlan-id 1002
+  
+    auto vlan502
+  
+    iface vlan502
+        mtu 1320
+        vlan-id 502
         vlan-raw-device bridge
     CONFIG
     ifreload -a
@@ -648,19 +718,18 @@ ok: [x1] =>
     #
     set -e # Exit immediately when any command fails
     #
-    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
-      brctl addbr vlan1000
-      ip link set dev vlan1000 address 52:dc:ca:fd:02:00
+    if [ ! -e /sys/devices/virtual/net/vlan500 ]; then
+      ip link add vlan500 type bridge
+      ip link set dev vlan500 address 52:dc:ca:fd:02:00
   
-      ip link set dev vlan1000 mtu 1400
-      ip addr flush dev vlan1000
-      ip addr add 172.16.0.2/24 dev vlan1000
+      ip link set dev vlan500 mtu 1400
+      ip addr flush dev vlan500
+      ip addr add 172.16.0.2/24 dev vlan500
     fi
   
-    brctl addif vlan1000 eth1
+    ip link set dev eth1 master vlan500
   
-    ip link set dev vlan1000 up
-    exit 0
+    ip link set dev vlan500 up
 ok: [x2] => 
   msg: |-
     vlan configuration for x2
@@ -669,19 +738,18 @@ ok: [x2] =>
     #
     set -e # Exit immediately when any command fails
     #
-    if [ ! -e /sys/devices/virtual/net/vlan1001 ]; then
-      brctl addbr vlan1001
-      ip link set dev vlan1001 address 52:dc:ca:fd:03:00
+    if [ ! -e /sys/devices/virtual/net/vlan501 ]; then
+      ip link add vlan501 type bridge
+      ip link set dev vlan501 address 52:dc:ca:fd:03:00
   
-      ip link set dev vlan1001 mtu 1280
-      ip addr flush dev vlan1001
-      ip addr add 172.16.1.3/24 dev vlan1001
+      ip link set dev vlan501 mtu 1280
+      ip addr flush dev vlan501
+      ip addr add 172.16.1.3/24 dev vlan501
     fi
   
-    brctl addif vlan1001 eth1
+    ip link set dev eth1 master vlan501
   
-    ip link set dev vlan1001 up
-    exit 0
+    ip link set dev vlan501 up
 ok: [x3] => 
   msg: |-
     vlan configuration for x3
@@ -690,35 +758,28 @@ ok: [x3] =>
     #
     set -e # Exit immediately when any command fails
     #
-    if [ ! -e /sys/devices/virtual/net/eth1.1002 ]; then
-      ip link add link eth1 name eth1.1002 type vlan id 1002
-      ip link set dev eth1.1002 up
+    if [ ! -e /sys/devices/virtual/net/eth1.502 ]; then
+      ip link add link eth1 name eth1.502 type vlan id 502
+      ip link set dev eth1.502 up
     fi
-    if [ ! -e /sys/devices/virtual/net/vlan1002 ]; then
-      brctl addbr vlan1002
-      ip link set dev vlan1002 address 52:dc:ca:fd:04:00
+    if [ ! -e /sys/devices/virtual/net/vlan502 ]; then
+      ip link add vlan502 type bridge
+      ip link set dev vlan502 address 52:dc:ca:fd:04:00
   
-      ip link set dev vlan1002 mtu 1320
-      ip addr flush dev vlan1002
-      ip addr add 172.16.2.4/24 dev vlan1002
+      ip link set dev vlan502 mtu 1320
+      ip addr flush dev vlan502
+      ip addr add 172.16.2.4/24 dev vlan502
     fi
   
-    brctl addif vlan1002 eth1.1002
+    ip link set dev eth1.502 master vlan502
   
-    ip link set dev vlan1002 up
-    exit 0
-
-TASK [Find configuration deployment deploy_script for vlan] ********************
-ok: [dut]
-ok: [x1]
-ok: [x2]
-ok: [x3]
+    ip link set dev vlan502 up
 
 TASK [Deploy vlan configuration] ***********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2, x3
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2, x3
 
-TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/vlan/cumulus.j2] ***
+TASK [Render device configuration from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/cumulus.j2] ***
 ok: [dut]
 
 TASK [Create local temporary file] *********************************************
@@ -730,25 +791,25 @@ changed: [dut -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
 
-TASK [Remove temporary file /tmp/ansible.dut.24sjl_n4temp] *********************
+TASK [Remove temporary file /tmp/ansible.dut.okczsww8temp] *********************
 changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
 changed: [x1]
-changed: [x3]
 changed: [x2]
+changed: [x3]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
 ok: [x2]
 ok: [x3]
 
-TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
-changed: [x2]
+TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/frr.j2] ***
 changed: [x1]
+changed: [x2]
 changed: [x3]
 
-TASK [run vtysh to import vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
+TASK [run vtysh to import vlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/frr.j2] ***
 skipping: [x1]
 skipping: [x2]
 skipping: [x3]
@@ -771,6 +832,12 @@ skipping: [x1]
 skipping: [x2]
 skipping: [x3]
 
+TASK [Find configuration deployment deploy_script for ospf] ********************
+ok: [dut]
+ok: [x1]
+ok: [x2]
+ok: [x3]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
   msg: |-
@@ -788,18 +855,18 @@ ok: [dut] =>
     interface lo
      ip ospf area 0.0.0.0
     !
-    interface vlan1000
-    ! VLAN ospf_1 (1000) -> [x1]
+    interface vlan500
+    ! VLAN ospf_1 (500) -> [x1]
      ip ospf area 0.0.0.0
      ip ospf network point-to-point
     !
-    interface vlan1001
-    ! VLAN ospf_2 (1001) -> [x2]
+    interface vlan501
+    ! VLAN ospf_2 (501) -> [x2]
      ip ospf area 0.0.0.0
      ip ospf network point-to-point
     !
-    interface vlan1002
-    ! VLAN ospf_3 (1002) -> [x3]
+    interface vlan502
+    ! VLAN ospf_3 (502) -> [x3]
      ip ospf area 0.0.0.0
      ip ospf network point-to-point
     !
@@ -825,8 +892,8 @@ ok: [x1] =>
     !
      ip ospf area 0.0.0.0
     !
-    interface vlan1000
-    ! VLAN ospf_1 (1000) -> [dut]
+    interface vlan500
+    ! VLAN ospf_1 (500) -> [dut]
      ip ospf area 0.0.0.0
      ip ospf network point-to-point
     !
@@ -853,8 +920,8 @@ ok: [x2] =>
     !
      ip ospf area 0.0.0.0
     !
-    interface vlan1001
-    ! VLAN ospf_2 (1001) -> [dut]
+    interface vlan501
+    ! VLAN ospf_2 (501) -> [dut]
      ip ospf area 0.0.0.0
      ip ospf network point-to-point
     !
@@ -881,8 +948,8 @@ ok: [x3] =>
     !
      ip ospf area 0.0.0.0
     !
-    interface vlan1002
-    ! VLAN ospf_3 (1002) -> [dut]
+    interface vlan502
+    ! VLAN ospf_3 (502) -> [dut]
      ip ospf area 0.0.0.0
      ip ospf network point-to-point
     !
@@ -890,17 +957,11 @@ ok: [x3] =>
     !
     do write
 
-TASK [Find configuration deployment deploy_script for ospf] ********************
-ok: [dut]
-ok: [x1]
-ok: [x2]
-ok: [x3]
-
 TASK [Deploy ospf configuration] ***********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2, x3
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2, x3
 
-TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/ospf/cumulus.j2] ***
+TASK [Render device configuration from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/cumulus.j2] ***
 ok: [dut]
 
 TASK [Create local temporary file] *********************************************
@@ -912,37 +973,37 @@ changed: [dut -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
 
-TASK [Remove temporary file /tmp/ansible.dut.4vkamc8etemp] *********************
+TASK [Remove temporary file /tmp/ansible.dut.3q1iqfxstemp] *********************
 changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
+changed: [x2]
 changed: [x1]
 changed: [x3]
-changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
 ok: [x2]
 ok: [x3]
 
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
 skipping: [x1]
 skipping: [x2]
 skipping: [x3]
 
-TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [x3]
-changed: [x2]
+TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [x1]
+changed: [x2]
+changed: [x3]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=39   changed=12   unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-x1                         : ok=35   changed=7    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
-x2                         : ok=34   changed=6    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
-x3                         : ok=34   changed=6    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+dut                        : ok=40   changed=12   unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+x1                         : ok=36   changed=7    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
+x2                         : ok=35   changed=6    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
+x3                         : ok=35   changed=6    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
 
 
 

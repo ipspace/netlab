@@ -1,0 +1,489 @@
+[WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+ok: [x1]
+
+TASK [Find device readiness script] ********************************************
+ok: [dut]
+ok: [x1]
+
+TASK [Wait for device to become ready] *****************************************
+skipping: [dut]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/eos-clab.yml for x1
+
+TASK [Wait for cEOS SSH daemon to start] ***************************************
+ok: [x1]
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [dut]
+ok: [x1]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [dut]
+ok: [x1]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [dut]
+ok: [x1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+ok: [x1] => 
+  msg: |-
+    normalize configuration for x1
+    =========================================
+    !
+    interface Ethernet1
+     shutdown
+     mac-address 52dc.cafe.0201
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [dut]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for x1
+
+TASK [eos_config: deploying normalize from /home/pipi/netlab_gh/netsim/ansible/templates/normalize/eos.j2] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [x1]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [dut]
+ok: [x1]
+
+TASK [Find configuration template for initial] *********************************
+ok: [dut]
+ok: [x1]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [dut]
+ok: [x1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Build hosts file
+    #
+    echo "INIT: setting hostname"
+    hostname dut
+    #
+    #
+    # Build hosts file
+    #
+    #
+    cat <<SCRIPT >/tmp/hosts
+    #
+    # Created by netlab initial
+    #
+    10.0.0.1 dut
+    10.1.0.1 swp1.dut
+    10.0.0.2 x1
+    10.1.0.2 Ethernet1.x1
+    SCRIPT
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
+    #
+    # Disable ZTP
+    #
+    ztp --disable
+    #
+    #
+  
+    echo "INIT: Configuring system wide default MTU policy"
+    cat > /etc/network/ifupdown2/policy.d/mtu.json <<CONFIG
+    { "address": { "defaults": { "mtu": "1500" } } }
+    CONFIG
+    #
+    echo "INIT: creating loopback interface"
+    #
+    # Create loopback interface entry
+    #
+    cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
+    auto lo
+    iface lo inet loopback
+      address 10.0.0.1/32
+  
+    CONFIG
+    #
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    echo "INIT: creating other interface"
+    cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
+    auto swp1
+  
+    iface swp1 inet static
+      address 10.1.0.1/30
+    CONFIG
+    #
+    echo "INIT: executing ifreload"
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    # For whatever crazy reason, I had to enable IPv6 in containers
+    #
+    sysctl -qw net.ipv6.conf.swp1.disable_ipv6=0
+    #
+    # Enable FRR modules for ['bgp', 'bfd']
+    #
+    #
+    # Enable FRR daemons
+    #
+    echo "bgpd=yes" >>/etc/frr/daemons
+    echo "bfdd=yes" >>/etc/frr/daemons
+  
+    systemctl enable frr.service
+    systemctl start frr.service
+    systemctl reload frr.service
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    !
+    interface swp1
+    ! no shutdown
+     description dut -> x1 [external]
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    #
+    # Enable LLDP
+    #
+    echo "INIT: enabling LLDP"
+    cat <<CONFIG >/etc/lldpd.d/system.conf
+    configure lldp tx-interval 30
+    configure lldp tx-hold 3
+    configure system interface pattern *,!eth0,swp*
+    CONFIG
+    service lldpd restart
+ok: [x1] => 
+  msg: |-
+    initial configuration for x1
+    =========================================
+    hostname x1
+    !
+    logging monitor debugging
+    aaa authorization exec default local
+    !
+    lldp run
+    ip routing
+    no ipv6 unicast-routing
+    !
+    !
+    ip host dut 10.0.0.1 10.1.0.1
+    !
+    interface Management0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     ip address 10.0.0.2/32
+    !
+    interface Ethernet1
+     no switchport
+     description x1 -> dut [external]
+     ip address 10.1.0.2/30
+    !
+     mac-address 52dc.cafe.0201
+     no shutdown
+    !
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for x1
+
+TASK [Render device configuration from /home/pipi/netlab_gh/netsim/ansible/templates/initial/cumulus.j2] ***
+ok: [dut]
+
+TASK [Create local temporary file] *********************************************
+changed: [dut -> localhost]
+
+TASK [Create initial config script in local temporary file] ********************
+changed: [dut -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
+changed: [dut]
+
+TASK [Remove temporary file /tmp/ansible.dut.489tgeqgtemp] *********************
+changed: [dut -> localhost]
+
+TASK [eos_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/eos.j2] ***
+changed: [x1]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+ok: [x1]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1 => (item=bfd)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1 => (item=bgp)
+
+TASK [Figure out whether to deploy the module bfd on current device] ***********
+ok: [dut]
+ok: [x1]
+
+TASK [Find configuration template for bfd] *************************************
+ok: [dut]
+ok: [x1]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+
+TASK [Find configuration deployment deploy_script for bfd] *********************
+ok: [dut]
+ok: [x1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => 
+  msg: |-
+    bfd configuration for dut
+    =========================================
+    ! BFD is configured on OSPF interfaces and BGP neighbors
+    ! ... nothing to see here ;)
+ok: [x1] => 
+  msg: |-
+    bfd configuration for x1
+    =========================================
+    interface Ethernet1
+     bfd interval 500 min_rx 500 multiplier 3
+    !
+
+TASK [Deploy bfd configuration] ************************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for x1
+
+TASK [Render device configuration from /home/pipi/netlab_gh/netsim/ansible/templates/bfd/cumulus.j2] ***
+ok: [dut]
+
+TASK [Create local temporary file] *********************************************
+changed: [dut -> localhost]
+
+TASK [Create bfd config script in local temporary file] ************************
+changed: [dut -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
+changed: [dut]
+
+TASK [Remove temporary file /tmp/ansible.dut.yibgbw0ztemp] *********************
+changed: [dut -> localhost]
+
+TASK [eos_config: deploying bfd from /home/pipi/netlab_gh/netsim/ansible/templates/bfd/eos.j2] ***
+changed: [x1]
+
+TASK [Figure out whether to deploy the module bgp on current device] ***********
+ok: [dut]
+ok: [x1]
+
+TASK [Find configuration template for bgp] *************************************
+ok: [dut]
+ok: [x1]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+
+TASK [Find configuration deployment deploy_script for bgp] *********************
+ok: [dut]
+ok: [x1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+    !
+    router bgp 65000
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.1
+    !
+      neighbor 10.1.0.2 remote-as 65100
+      neighbor 10.1.0.2 description x1
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.1/32
+    !
+    !
+    !
+      neighbor 10.1.0.2 activate
+      no neighbor 10.1.0.2 send-community all
+      neighbor 10.1.0.2 send-community standard
+      neighbor 10.1.0.2 send-community large
+    !
+    !
+    !
+    do write
+ok: [x1] => 
+  msg: |-
+    bgp configuration for x1
+    =========================================
+    !
+    !
+    router bgp 65100
+      bgp advertise-inactive
+      bgp log-neighbor-changes
+      no bgp default ipv4-unicast
+      no bgp default ipv6-unicast
+      router-id 10.0.0.2
+    !
+      neighbor 10.1.0.1 remote-as 65000
+      neighbor 10.1.0.1 description dut
+      neighbor 10.1.0.1 send-community standard large
+    !
+    !
+     address-family ipv4
+  
+      network 10.0.0.2/32
+    !
+    !
+    !
+      neighbor 10.1.0.1 activate
+    !
+
+TASK [Deploy bgp configuration] ************************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for x1
+
+TASK [Render device configuration from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/cumulus.j2] ***
+ok: [dut]
+
+TASK [Create local temporary file] *********************************************
+changed: [dut -> localhost]
+
+TASK [Create bgp config script in local temporary file] ************************
+changed: [dut -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
+changed: [dut]
+
+TASK [Remove temporary file /tmp/ansible.dut.ksw68kmwtemp] *********************
+changed: [dut -> localhost]
+
+TASK [eos_config: deploying bgp from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/eos.j2] ***
+changed: [x1]
+
+PLAY [Deploy custom deployment templates] **************************************
+
+TASK [Run custom configuration deployment scripts] *****************************
+skipping: [dut] => (item=static_bfd) 
+skipping: [x1] => (item=bgp.session) 
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-custom-config.yml for dut => (item=bgp.session)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-custom-config.yml for x1 => (item=static_bfd)
+
+TASK [Find configuration template] *********************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Check is the configuration template is a file] ***************************
+ok: [dut -> localhost]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Process template /home/pipi/netlab_gh/netsim/extra/bgp.session/cumulus.j2 for dut] ***
+skipping: [dut]
+
+TASK [Find custom configuration deployment script] *****************************
+ok: [dut]
+
+TASK [Run the configuration deployment script] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
+
+TASK [Render device configuration from /home/pipi/netlab_gh/netsim/extra/bgp.session/cumulus.j2] ***
+ok: [dut]
+
+TASK [Create local temporary file] *********************************************
+changed: [dut -> localhost]
+
+TASK [Create bgp.session config script in local temporary file] ****************
+changed: [dut -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
+changed: [dut]
+
+TASK [Remove temporary file /tmp/ansible.dut.jtt7dzz_temp] *********************
+changed: [dut -> localhost]
+
+TASK [Find configuration template] *********************************************
+ok: [x1]
+
+TASK [fail] ********************************************************************
+skipping: [x1]
+
+TASK [Check is the configuration template is a file] ***************************
+ok: [x1 -> localhost]
+
+TASK [fail] ********************************************************************
+skipping: [x1]
+
+TASK [Process template /home/pipi/net101/tools/tests/integration/bgp.session/static_bfd/eos.j2 for x1] ***
+skipping: [x1]
+
+TASK [Find custom configuration deployment script] *****************************
+ok: [x1]
+
+TASK [Run the configuration deployment script] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for x1
+
+TASK [eos_config: deploying static_bfd from /home/pipi/net101/tools/tests/integration/bgp.session/static_bfd/eos.j2] ***
+changed: [x1]
+
+PLAY RECAP *********************************************************************
+dut                        : ok=50   changed=16   unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+x1                         : ok=39   changed=5    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+
+
+
+This lab tests the BGP BFD functionality. The EBGP session between the probe
+and the lab device should trigger a BFD session between them.
+

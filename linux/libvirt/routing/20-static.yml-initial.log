@@ -95,6 +95,14 @@ ok: [x1] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -117,6 +125,12 @@ ok: [x1] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -129,21 +143,21 @@ ok: [x1] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+    ip link set eth2 down
     sysctl -qw net.ipv6.conf.eth2.autoconf=0
     sysctl -qw net.ipv6.conf.eth2.accept_ra=0
-    ip link set eth2 down
-    ip link set eth2 up
     ip link set dev eth2 mtu 1500
+    ip link set eth2 up
+    ip link set eth3 down
     sysctl -qw net.ipv6.conf.eth3.autoconf=0
     sysctl -qw net.ipv6.conf.eth3.accept_ra=0
-    ip link set eth3 down
-    ip link set eth3 up
     ip link set dev eth3 mtu 1500
+    ip link set eth3 up
   
     #
     # Add vtysh.conf file
@@ -155,10 +169,11 @@ ok: [x1] =>
     cat >/tmp/config <<CONFIG
     hostname x1
     !
+    ip forwarding
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
@@ -214,6 +229,14 @@ ok: [x2] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -236,6 +259,12 @@ ok: [x2] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -248,13 +277,15 @@ ok: [x2] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+    ip link set eth2 down
     sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
     ip link set dev eth2 mtu 1500
+    ip link set eth2 up
   
     #
     # Add vtysh.conf file
@@ -266,10 +297,11 @@ ok: [x2] =>
     cat >/tmp/config <<CONFIG
     hostname x2
     !
+    ip forwarding
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
@@ -377,6 +409,7 @@ ok: [dut] =>
     # Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA
     #
     cat <<SCRIPT > /etc/sysctl.d/10-netsim.conf
+    net.ipv4.conf.all.arp_announce=2
     net.ipv4.ip_forward=0
     net.ipv6.conf.all.forwarding=0
   
@@ -398,17 +431,6 @@ ok: [dut] =>
           addresses:
             - 172.16.0.1/24
             - 2001:db8:2::1/64
-          routes:
-          - to: 10.0.0.2/32
-            via: 172.16.0.2
-          - to: 2001:db8:cafe:42::/64
-            via: 2001:db8:2::2
-          - to: 10.0.0.3/32
-            via: 172.16.0.2
-          - to: 2001:db8:cafe:43::/64
-            via: 2001:db8:2::2
-          - to: 172.16.42.0/24
-            via: 172.16.0.2
     SCRIPT
     cat <<SCRIPT > /etc/netplan/03-eth-eth2.yaml
     network:
@@ -419,18 +441,21 @@ ok: [dut] =>
           addresses:
             - 172.16.1.1/24
             - 2001:db8:2:1::1/64
-          routes:
-          - to: 10.0.0.2/32
-            via: 172.16.1.2
-          - to: 2001:db8:cafe:42::/64
-            via: 2001:db8:2:1::2
-          - to: 10.0.0.3/32
-            via: 172.16.1.2
-          - to: 2001:db8:cafe:43::/64
-            via: 2001:db8:2:1::2
-          - to: 172.16.42.0/24
-            via: 172.16.1.2
     SCRIPT
+  
+    # Disable auto-negotiation on Ethernet interfaces, needed to make LACP work correctly
+    cat <<SCRIPT > /etc/systemd/network/98-eth.link
+  
+    [Match]
+    OriginalName=eth*
+  
+    [Link]
+    BitsPerSecond=1G
+    AutoNegotiation=no
+    Duplex=full
+    SCRIPT
+  
+    chmod 600 /etc/netplan/*
   
     echo -n 'Starting netplan generate ' && date
     netplan generate
@@ -512,11 +537,50 @@ ok: [dut] =>
     routing configuration for dut
     =========================================
     #!/bin/bash
+    # netplan static route configuration
     #
-    echo "Static routes are configured as part of the initial configuration template"
-    echo
-    #
-    ip route
+    cat <<SCRIPT > /etc/netplan/11-routes-eth1.yaml
+    network:
+      version: 2
+      renderer: networkd
+      ethernets:
+        eth1:
+          routes:
+          - to: 10.0.0.2/32
+            via: 172.16.0.2
+          - to: 2001:db8:cafe:42::/64
+            via: 2001:db8:2::2
+          - to: 10.0.0.3/32
+            via: 172.16.0.2
+          - to: 2001:db8:cafe:43::/64
+            via: 2001:db8:2::2
+          - to: 172.16.42.0/24
+            via: 172.16.0.2
+    SCRIPT
+    cat <<SCRIPT > /etc/netplan/11-routes-eth2.yaml
+    network:
+      version: 2
+      renderer: networkd
+      ethernets:
+        eth2:
+          routes:
+          - to: 10.0.0.2/32
+            via: 172.16.1.2
+          - to: 2001:db8:cafe:42::/64
+            via: 2001:db8:2:1::2
+          - to: 10.0.0.3/32
+            via: 172.16.1.2
+          - to: 2001:db8:cafe:43::/64
+            via: 2001:db8:2:1::2
+          - to: 172.16.42.0/24
+            via: 172.16.1.2
+    SCRIPT
+    chmod 600 /etc/netplan/*
+  
+    echo -n 'Starting netplan generate ' && date
+    netplan generate
+    echo -n 'Starting netplan apply ' && date
+    nohup netplan apply &
 
 TASK [Deploy routing configuration] ********************************************
 skipping: [x1]
@@ -684,8 +748,8 @@ skipping: [dut]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]

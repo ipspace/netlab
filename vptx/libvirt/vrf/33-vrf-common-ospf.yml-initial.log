@@ -35,8 +35,8 @@ ok: [dut]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [r1]
-ok: [r2]
 ok: [srv]
+ok: [r2]
 ok: [dut]
 
 TASK [fail] ********************************************************************
@@ -111,6 +111,14 @@ ok: [r1] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -133,6 +141,12 @@ ok: [r1] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -145,8 +159,10 @@ ok: [r1] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -158,6 +174,7 @@ ok: [r1] =>
     cat >/tmp/config <<CONFIG
     hostname r1
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -196,6 +213,14 @@ ok: [r2] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -218,6 +243,12 @@ ok: [r2] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -230,8 +261,10 @@ ok: [r2] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -243,6 +276,7 @@ ok: [r2] =>
     cat >/tmp/config <<CONFIG
     hostname r2
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -281,6 +315,14 @@ ok: [srv] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -303,6 +345,12 @@ ok: [srv] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -315,8 +363,10 @@ ok: [srv] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -328,6 +378,7 @@ ok: [srv] =>
     cat >/tmp/config <<CONFIG
     hostname srv
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -381,7 +432,7 @@ ok: [dut] =>
   
   
     policy-options {
-      policy-statement vrf-blue-export {
+      policy-statement vrf-blue-rt-export {
         term 1 {
           then {
             community add tg_65000_2;
@@ -393,7 +444,7 @@ ok: [dut] =>
   
   
   
-      policy-statement vrf-blue-import {
+      policy-statement vrf-blue-rt-import {
         term 1 {
           from community [ tg_65000_2 tg_65000_3 ];
           then accept;
@@ -402,7 +453,7 @@ ok: [dut] =>
           then reject;
         }
       }
-      policy-statement vrf-common-export {
+      policy-statement vrf-common-rt-export {
         term 1 {
           then {
             community add tg_65000_3;
@@ -415,7 +466,7 @@ ok: [dut] =>
   
   
   
-      policy-statement vrf-common-import {
+      policy-statement vrf-common-rt-import {
         term 1 {
           from community [ tg_65000_1 tg_65000_2 tg_65000_3 ];
           then accept;
@@ -424,7 +475,7 @@ ok: [dut] =>
           then reject;
         }
       }
-      policy-statement vrf-red-export {
+      policy-statement vrf-red-rt-export {
         term 1 {
           then {
             community add tg_65000_1;
@@ -436,7 +487,7 @@ ok: [dut] =>
   
   
   
-      policy-statement vrf-red-import {
+      policy-statement vrf-red-rt-import {
         term 1 {
           from community [ tg_65000_1 tg_65000_3 ];
           then accept;
@@ -453,8 +504,8 @@ ok: [dut] =>
         instance-type vrf;
         route-distinguisher 65000:2;
   
-        vrf-import vrf-blue-import;
-        vrf-export vrf-blue-export;
+        vrf-import vrf-blue-rt-import;
+        vrf-export vrf-blue-rt-export;
   
         routing-options {
           auto-export;
@@ -469,8 +520,8 @@ ok: [dut] =>
         instance-type vrf;
         route-distinguisher 65000:3;
   
-        vrf-import vrf-common-import;
-        vrf-export vrf-common-export;
+        vrf-import vrf-common-rt-import;
+        vrf-export vrf-common-rt-export;
   
         routing-options {
           auto-export;
@@ -485,8 +536,8 @@ ok: [dut] =>
         instance-type vrf;
         route-distinguisher 65000:1;
   
-        vrf-import vrf-red-import;
-        vrf-export vrf-red-export;
+        vrf-import vrf-red-rt-import;
+        vrf-export vrf-red-rt-export;
   
         routing-options {
           auto-export;
@@ -565,8 +616,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, srv
 
 TASK [template] ****************************************************************
-changed: [srv]
 changed: [r2]
+changed: [srv]
 changed: [r1]
 
 TASK [set_fact] ****************************************************************
@@ -575,9 +626,9 @@ ok: [r2]
 ok: [srv]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [srv]
 changed: [r1]
 changed: [r2]
+changed: [srv]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r1]
@@ -606,8 +657,8 @@ ok: [srv]
 ok: [dut]
 
 TASK [Find configuration template for ospf] ************************************
-ok: [r1]
 ok: [r2]
+ok: [r1]
 ok: [srv]
 ok: [dut]
 
@@ -619,9 +670,9 @@ skipping: [srv]
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [r1]
-ok: [srv]
 ok: [r2]
 ok: [dut]
+ok: [srv]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -656,34 +707,6 @@ ok: [r1] =>
   
     !
     do write
-ok: [r2] => 
-  msg: |-
-    ospf configuration for r2
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.3
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! r2 -> dut
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    do write
 ok: [srv] => 
   msg: |-
     ospf configuration for srv
@@ -712,6 +735,34 @@ ok: [srv] =>
   
     !
     do write
+ok: [r2] => 
+  msg: |-
+    ospf configuration for r2
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.3
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! r2 -> dut
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    do write
 
 TASK [Deploy ospf configuration] ***********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
@@ -722,8 +773,8 @@ ok: [dut]
 
 TASK [template] ****************************************************************
 changed: [r2]
-changed: [r1]
 changed: [srv]
+changed: [r1]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -775,132 +826,124 @@ ok: [dut] =>
   
   
     policy-options {
+      community x-route-permit-mark members large:65535:0:65536;
   
-      policy-statement vrf-blue-ibgp-export {
+      policy-statement vrf-blue-bgp-export {
+        term redis_bgp {
+          from {
+            protocol bgp;
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
         term redis_direct {
           from {
             protocol direct;
           }
-          then accept;
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
         }
         term redis_ospf {
           from {
             protocol ospf;
           }
-          then accept;
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
         }
         term redis_ospf3 {
           from {
             protocol ospf3;
           }
-          then accept;
-        }
-      }
-  
-      policy-statement vrf-blue-ebgp-export {
-        term redis_direct {
-          from {
-            protocol direct;
+          then {
+            community add x-route-permit-mark;
+            next policy;
           }
-          then accept;
-        }
-        term redis_ospf {
-          from {
-            protocol ospf;
-          }
-          then accept;
-        }
-        term redis_ospf3 {
-          from {
-            protocol ospf3;
-          }
-          then accept;
-        }
-      }
-  
-  
-      policy-statement vrf-common-ibgp-export {
-        term redis_direct {
-          from {
-            protocol direct;
-          }
-          then accept;
-        }
-        term redis_ospf {
-          from {
-            protocol ospf;
-          }
-          then accept;
-        }
-        term redis_ospf3 {
-          from {
-            protocol ospf3;
-          }
-          then accept;
-        }
-      }
-  
-      policy-statement vrf-common-ebgp-export {
-        term redis_direct {
-          from {
-            protocol direct;
-          }
-          then accept;
-        }
-        term redis_ospf {
-          from {
-            protocol ospf;
-          }
-          then accept;
-        }
-        term redis_ospf3 {
-          from {
-            protocol ospf3;
-          }
-          then accept;
         }
       }
   
   
-      policy-statement vrf-red-ibgp-export {
+      policy-statement vrf-common-bgp-export {
+        term redis_bgp {
+          from {
+            protocol bgp;
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
         term redis_direct {
           from {
             protocol direct;
           }
-          then accept;
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
         }
         term redis_ospf {
           from {
             protocol ospf;
           }
-          then accept;
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
         }
         term redis_ospf3 {
           from {
             protocol ospf3;
           }
-          then accept;
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
         }
       }
   
-      policy-statement vrf-red-ebgp-export {
+  
+      policy-statement vrf-red-bgp-export {
+        term redis_bgp {
+          from {
+            protocol bgp;
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
         term redis_direct {
           from {
             protocol direct;
           }
-          then accept;
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
         }
         term redis_ospf {
           from {
             protocol ospf;
           }
-          then accept;
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
         }
         term redis_ospf3 {
           from {
             protocol ospf3;
           }
-          then accept;
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
         }
       }
   
@@ -919,7 +962,7 @@ ok: [dut] =>
           bgp {
   
             group ebgp-peers {
-              export vrf-blue-ebgp-export;
+              export [  ];
               advertise-inactive;
             }
           }
@@ -937,7 +980,7 @@ ok: [dut] =>
           bgp {
   
             group ebgp-peers {
-              export vrf-common-ebgp-export;
+              export [  ];
               advertise-inactive;
             }
           }
@@ -955,7 +998,7 @@ ok: [dut] =>
           bgp {
   
             group ebgp-peers {
-              export vrf-red-ebgp-export;
+              export [  ];
               advertise-inactive;
             }
           }

@@ -22,7 +22,7 @@ skipping: [x2]
 skipping: [x3]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [dut]
@@ -61,7 +61,7 @@ skipping: [x2]
 skipping: [x3]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
@@ -108,6 +108,14 @@ ok: [dut] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -130,6 +138,12 @@ ok: [dut] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -142,21 +156,21 @@ ok: [dut] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+    ip link set eth2 down
     sysctl -qw net.ipv6.conf.eth2.autoconf=0
     sysctl -qw net.ipv6.conf.eth2.accept_ra=0
-    ip link set eth2 down
-    ip link set eth2 up
     ip link set dev eth2 mtu 1500
+    ip link set eth2 up
+    ip link set eth3 down
     sysctl -qw net.ipv6.conf.eth3.autoconf=0
     sysctl -qw net.ipv6.conf.eth3.accept_ra=0
-    ip link set eth3 down
-    ip link set eth3 up
     ip link set dev eth3 mtu 1500
+    ip link set eth3 up
   
     #
     # Add vtysh.conf file
@@ -168,10 +182,11 @@ ok: [dut] =>
     cat >/tmp/config <<CONFIG
     hostname dut
     !
+    ip forwarding
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
@@ -226,6 +241,14 @@ ok: [x1] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -248,6 +271,12 @@ ok: [x1] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -260,11 +289,11 @@ ok: [x1] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -276,10 +305,11 @@ ok: [x1] =>
     cat >/tmp/config <<CONFIG
     hostname x1
     !
+    ip forwarding
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
@@ -318,6 +348,14 @@ ok: [x2] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -340,6 +378,12 @@ ok: [x2] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -352,11 +396,11 @@ ok: [x2] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -368,10 +412,11 @@ ok: [x2] =>
     cat >/tmp/config <<CONFIG
     hostname x2
     !
+    ip forwarding
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
@@ -411,6 +456,14 @@ ok: [x3] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -433,6 +486,12 @@ ok: [x3] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -445,11 +504,11 @@ ok: [x3] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -461,10 +520,11 @@ ok: [x3] =>
     cat >/tmp/config <<CONFIG
     hostname x3
     !
+    ip forwarding
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
@@ -486,7 +546,7 @@ ok: [x3] =>
     exit 0
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for dut, x1, x2, x3
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for dut, x1, x2, x3
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [dut -> localhost]
@@ -498,13 +558,13 @@ skipping: [x2]
 skipping: [x3]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for dut, x1, x2, x3
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for dut, x1, x2, x3
 
 TASK [template] ****************************************************************
+changed: [dut]
 changed: [x2]
 changed: [x1]
 changed: [x3]
-changed: [dut]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
@@ -512,13 +572,13 @@ ok: [x1]
 ok: [x2]
 ok: [x3]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [x1]
 changed: [x2]
 changed: [dut]
 changed: [x3]
 
-TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [dut]
 skipping: [x1]
 skipping: [x2]
@@ -533,8 +593,8 @@ ok: [x2]
 ok: [x3]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3 => (item=routing)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3 => (item=bgp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3 => (item=routing)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3 => (item=bgp)
 
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [dut]
@@ -595,21 +655,21 @@ ok: [x3] =>
 TASK [Deploy routing configuration] ********************************************
 skipping: [dut]
 skipping: [x1]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for x2, x3
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x2, x3
 
 TASK [template] ****************************************************************
-changed: [x3]
 changed: [x2]
+changed: [x3]
 
 TASK [set_fact] ****************************************************************
 ok: [x2]
 ok: [x3]
 
-TASK [run /tmp/config.sh to deploy routing config from /home/pipi/netlab_gh/netsim/ansible/templates/routing/frr.j2] ***
+TASK [run /tmp/config.sh to deploy routing config from /home/pipi/net101/tools/netsim/ansible/templates/routing/frr.j2] ***
 skipping: [x2]
 skipping: [x3]
 
-TASK [run vtysh to import routing config from /home/pipi/netlab_gh/netsim/ansible/templates/routing/frr.j2] ***
+TASK [run vtysh to import routing config from /home/pipi/net101/tools/netsim/ansible/templates/routing/frr.j2] ***
 changed: [x2]
 changed: [x3]
 
@@ -872,13 +932,13 @@ ok: [x3] =>
     do write
 
 TASK [Deploy bgp configuration] ************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for dut, x1, x2, x3
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for dut, x1, x2, x3
 
 TASK [template] ****************************************************************
 changed: [x1]
 changed: [x2]
-changed: [x3]
 changed: [dut]
+changed: [x3]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
@@ -886,26 +946,26 @@ ok: [x1]
 ok: [x2]
 ok: [x3]
 
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [dut]
 skipping: [x1]
 skipping: [x2]
 skipping: [x3]
 
-TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [dut]
+changed: [x3]
 changed: [x2]
 changed: [x1]
-changed: [x3]
 
 PLAY [Deploy custom deployment templates] **************************************
 
 TASK [Run custom configuration deployment scripts] *****************************
-skipping: [dut] => (item=bgp.policy) 
 skipping: [x2] => (item=bgp.session) 
+skipping: [dut] => (item=bgp.policy) 
 skipping: [x3] => (item=bgp.session) 
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-custom-config.yml for dut => (item=bgp.session)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-custom-config.yml for x2, x3 => (item=bgp.policy)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-custom-config.yml for dut => (item=bgp.session)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-custom-config.yml for x2, x3 => (item=bgp.policy)
 
 TASK [Find configuration template] *********************************************
 ok: [dut]
@@ -919,14 +979,14 @@ ok: [dut -> localhost]
 TASK [fail] ********************************************************************
 skipping: [dut]
 
-TASK [Process template /home/pipi/netlab_gh/netsim/extra/bgp.session/frr.j2 for dut] ***
+TASK [Process template /home/pipi/net101/tools/netsim/extra/bgp.session/frr.j2 for dut] ***
 skipping: [dut]
 
 TASK [Find custom configuration deployment script] *****************************
 ok: [dut]
 
 TASK [Run the configuration deployment script] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for dut
 
 TASK [template] ****************************************************************
 changed: [dut]
@@ -934,10 +994,10 @@ changed: [dut]
 TASK [set_fact] ****************************************************************
 ok: [dut]
 
-TASK [run /tmp/config.sh to deploy bgp.session config from /home/pipi/netlab_gh/netsim/extra/bgp.session/frr.j2] ***
+TASK [run /tmp/config.sh to deploy bgp.session config from /home/pipi/net101/tools/netsim/extra/bgp.session/frr.j2] ***
 changed: [dut]
 
-TASK [run vtysh to import bgp.session config from /home/pipi/netlab_gh/netsim/extra/bgp.session/frr.j2] ***
+TASK [run vtysh to import bgp.session config from /home/pipi/net101/tools/netsim/extra/bgp.session/frr.j2] ***
 skipping: [dut]
 
 TASK [Find configuration template] *********************************************
@@ -956,7 +1016,7 @@ TASK [fail] ********************************************************************
 skipping: [x2]
 skipping: [x3]
 
-TASK [Process template /home/pipi/netlab_gh/netsim/extra/bgp.policy/frr.j2 for x2] ***
+TASK [Process template /home/pipi/net101/tools/netsim/extra/bgp.policy/frr.j2 for x2] ***
 skipping: [x2]
 skipping: [x3]
 
@@ -965,7 +1025,7 @@ ok: [x2]
 ok: [x3]
 
 TASK [Run the configuration deployment script] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for x2, x3
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x2, x3
 
 TASK [template] ****************************************************************
 changed: [x2]
@@ -975,13 +1035,13 @@ TASK [set_fact] ****************************************************************
 ok: [x2]
 ok: [x3]
 
-TASK [run /tmp/config.sh to deploy bgp.policy config from /home/pipi/netlab_gh/netsim/extra/bgp.policy/frr.j2] ***
+TASK [run /tmp/config.sh to deploy bgp.policy config from /home/pipi/net101/tools/netsim/extra/bgp.policy/frr.j2] ***
 skipping: [x2]
 skipping: [x3]
 
-TASK [run vtysh to import bgp.policy config from /home/pipi/netlab_gh/netsim/extra/bgp.policy/frr.j2] ***
-changed: [x3]
+TASK [run vtysh to import bgp.policy config from /home/pipi/net101/tools/netsim/extra/bgp.policy/frr.j2] ***
 changed: [x2]
+changed: [x3]
 
 PLAY RECAP *********************************************************************
 dut                        : ok=37   changed=7    unreachable=0    failed=0    skipped=18   rescued=0    ignored=0   

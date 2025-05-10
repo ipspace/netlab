@@ -14,8 +14,8 @@ TASK [Find device readiness script] ********************************************
 ok: [dut]
 ok: [r1]
 ok: [r2]
-ok: [rr2]
 ok: [x1]
+ok: [rr2]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [dut]
@@ -25,7 +25,7 @@ skipping: [rr2]
 skipping: [x1]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, rr2, x1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, rr2, x1
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [dut]
@@ -70,7 +70,7 @@ skipping: [rr2]
 skipping: [x1]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, rr2, x1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, rr2, x1
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
@@ -95,8 +95,8 @@ skipping: [x1]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [dut]
-ok: [r1]
 ok: [r2]
+ok: [r1]
 ok: [rr2]
 ok: [x1]
 
@@ -125,6 +125,7 @@ ok: [dut] =>
   
     - path: /interface[name=ethernet-1/1]
       value:
+       description: "dut ~ r1"
        subinterface:
         index: 0
         description: "dut ~ r1"
@@ -140,6 +141,7 @@ ok: [dut] =>
   
     - path: /interface[name=ethernet-1/2]
       value:
+       description: "dut ~ x1"
        subinterface:
         index: 0
         description: "dut ~ x1"
@@ -191,6 +193,14 @@ ok: [r1] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -213,6 +223,12 @@ ok: [r1] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -225,12 +241,18 @@ ok: [r1] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+    ip link set eth2 down
     sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
     ip link set dev eth2 mtu 1500
+    ip link set eth2 up
+    ip link set eth3 down
     sysctl -qw net.ipv6.conf.eth3.disable_ipv6=1
     ip link set dev eth3 mtu 1500
+    ip link set eth3 up
   
     #
     # Add vtysh.conf file
@@ -242,6 +264,7 @@ ok: [r1] =>
     cat >/tmp/config <<CONFIG
     hostname r1
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -290,6 +313,14 @@ ok: [r2] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -312,6 +343,12 @@ ok: [r2] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -324,8 +361,10 @@ ok: [r2] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -337,6 +376,7 @@ ok: [r2] =>
     cat >/tmp/config <<CONFIG
     hostname r2
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -375,6 +415,14 @@ ok: [rr2] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -397,6 +445,12 @@ ok: [rr2] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -409,8 +463,10 @@ ok: [rr2] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -422,6 +478,7 @@ ok: [rr2] =>
     cat >/tmp/config <<CONFIG
     hostname rr2
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -460,6 +517,14 @@ ok: [x1] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -482,6 +547,12 @@ ok: [x1] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -494,8 +565,10 @@ ok: [x1] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -507,6 +580,7 @@ ok: [x1] =>
     cat >/tmp/config <<CONFIG
     hostname x1
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -527,13 +601,13 @@ ok: [x1] =>
     exit 0
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for r1, r2, rr2, x1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for r1, r2, rr2, x1
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [dut]
 
-TASK [Update SRL initial node configuration (template=/home/pipi/netlab_gh/netsim/ansible/templates/initial/srlinux.j2)] ***
+TASK [Update SRL initial node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2)] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
@@ -549,27 +623,27 @@ skipping: [rr2]
 skipping: [x1]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, rr2, x1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, rr2, x1
 
 TASK [template] ****************************************************************
-changed: [rr2]
+changed: [x1]
 changed: [r2]
 changed: [r1]
-changed: [x1]
+changed: [rr2]
 
 TASK [set_fact] ****************************************************************
-ok: [r2]
 ok: [r1]
+ok: [r2]
 ok: [rr2]
 ok: [x1]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [r2]
 changed: [rr2]
 changed: [r1]
 changed: [x1]
 
-TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r1]
 skipping: [r2]
 skipping: [rr2]
@@ -585,8 +659,8 @@ ok: [rr2]
 ok: [x1]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, rr2, x1 => (item=bgp)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, rr2, x1 => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, rr2, x1 => (item=bgp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, rr2, x1 => (item=ospf)
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [dut]
@@ -717,306 +791,6 @@ ok: [r2] =>
     !
     !
     do write
-ok: [dut] => 
-  msg: |-
-    bgp configuration for dut
-    =========================================
-    updates:
-  
-    - path: /routing-policy/policy[name=accept_all]
-      value:
-        default-action:
-          policy-result: accept
-  
-    - path: /routing-policy/community-set[name=ibgp-mark]
-      value:
-        member: [ "65536:0:65536" ]
-  
-    - path: /routing-policy/policy[name=ibgp-mark]
-      value:
-        default-action:
-          policy-result: reject
-        statement:
-        - name: mark-ibgp-routes
-          action:
-            bgp:
-              communities:
-                add: ibgp-mark
-            policy-result: accept
-  
-    - path: /routing-policy/prefix-set[name=default_bgp_advertise]
-      value:
-        prefix: [] # Make sure it exists
-  
-    - path: /routing-policy/policy[name=default_bgp_export]
-      value:
-        default-action:
-          policy-result: reject
-        statement:
-        - name: prefixes
-          match:
-            prefix-set: default_bgp_advertise
-          action:
-            policy-result: next-policy
-        - name: bgp
-          match:
-            protocol: bgp
-          action:
-            policy-result: next-policy
-            bgp:
-              communities:
-                remove:
-                  ibgp-mark
-  
-  
-    - path: /routing-policy/policy[name=default_ibgp-nhs_export]
-      value:
-        default-action:
-          policy-result: reject
-        statement:
-        - name: prefixes
-          match:
-            prefix-set: default_bgp_advertise
-          action:
-            policy-result: next-policy
-        - name: rr-next-hop-unchanged
-          match:
-            protocol: bgp
-            bgp:
-              community-set: ibgp-mark
-          action:
-            policy-result: next-policy
-            bgp:
-              communities:
-                remove:
-                  ibgp-mark
-        - name: ebgp-next-hop-self
-          match:
-            protocol: bgp
-          action:
-            policy-result: next-policy
-            bgp:
-              next-hop:
-                set: self
-  
-  
-    - path: /network-instance[name=default]/protocols/bgp
-      value:
-        admin-state: enable
-        autonomous-system: 65000
-        router-id: 10.0.0.1
-        ebgp-default-policy:
-          export-reject-all: False
-          import-reject-all: False
-  
-        afi-safi:
-        - afi-safi-name: ipv4-unicast
-          admin-state: enable
-  
-    - path: /routing-policy/prefix-set[name=default_bgp_advertise]
-      value:
-        prefix:
-        - ip-prefix: 10.0.0.1/32
-          mask-length-range: exact
-  
-  
-  
-  
-  
-    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
-      value:
-        admin-state: enable
-        afi-safi:
-        - afi-safi-name: ipv4-unicast
-          admin-state: enable
-          import-policy: ['ibgp-mark']
-          export-policy: ['default_ibgp-nhs_export', 'accept_all']
-        - afi-safi-name: ipv6-unicast
-          admin-state: disable
-          import-policy: ['ibgp-mark']
-          export-policy: ['default_ibgp-nhs_export', 'accept_all']
-  
-        timers:
-          connect-retry: 10
-          _annotate_connect-retry: "Reduce default 120s to 10s"
-          minimum-advertisement-interval: 1
-        send-community:
-          standard: True
-          large: True
-          _annotate_large: "Assuming 'standard' implies 'large' here"
-        peer-as: 65000
-        transport:
-          local-address: 10.0.0.1
-        route-reflector:
-          cluster-id: 10.0.0.42
-          client: True
-  
-  
-    - path: /network-instance[name=default]/protocols/bgp
-      value:
-        neighbor:
-        - peer-address: "10.0.0.2"
-          description: rr2
-          peer-group: ibgp-ipv4
-          afi-safi:
-          - afi-safi-name: ipv4-unicast
-            admin-state: enable
-  
-          route-reflector:
-            client: False # Don't reflect routes between ibgp route reflectors
-          transport:
-            passive-mode: False
-            _annotate_passive-mode: "Connect actively to other Route Reflectors"
-  
-    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
-      value:
-        admin-state: enable
-        afi-safi:
-        - afi-safi-name: ipv4-unicast
-          admin-state: enable
-          import-policy: ['ibgp-mark']
-          export-policy: ['default_ibgp-nhs_export', 'accept_all']
-        - afi-safi-name: ipv6-unicast
-          admin-state: disable
-          import-policy: ['ibgp-mark']
-          export-policy: ['default_ibgp-nhs_export', 'accept_all']
-  
-        timers:
-          connect-retry: 10
-          _annotate_connect-retry: "Reduce default 120s to 10s"
-          minimum-advertisement-interval: 1
-        send-community:
-          standard: True
-          large: True
-          _annotate_large: "Assuming 'standard' implies 'large' here"
-        peer-as: 65000
-        transport:
-          local-address: 10.0.0.1
-        route-reflector:
-          cluster-id: 10.0.0.42
-          client: True
-  
-  
-    - path: /network-instance[name=default]/protocols/bgp
-      value:
-        neighbor:
-        - peer-address: "10.0.0.10"
-          description: r1
-          peer-group: ibgp-ipv4
-          afi-safi:
-          - afi-safi-name: ipv4-unicast
-            admin-state: enable
-  
-  
-    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
-      value:
-        admin-state: enable
-        afi-safi:
-        - afi-safi-name: ipv4-unicast
-          admin-state: enable
-          import-policy: ['ibgp-mark']
-          export-policy: ['default_ibgp-nhs_export', 'accept_all']
-        - afi-safi-name: ipv6-unicast
-          admin-state: disable
-          import-policy: ['ibgp-mark']
-          export-policy: ['default_ibgp-nhs_export', 'accept_all']
-  
-        timers:
-          connect-retry: 10
-          _annotate_connect-retry: "Reduce default 120s to 10s"
-          minimum-advertisement-interval: 1
-        send-community:
-          standard: True
-          large: True
-          _annotate_large: "Assuming 'standard' implies 'large' here"
-        peer-as: 65000
-        transport:
-          local-address: 10.0.0.1
-        route-reflector:
-          cluster-id: 10.0.0.42
-          client: True
-  
-  
-    - path: /network-instance[name=default]/protocols/bgp
-      value:
-        neighbor:
-        - peer-address: "10.0.0.3"
-          description: r2
-          peer-group: ibgp-ipv4
-          afi-safi:
-          - afi-safi-name: ipv4-unicast
-            admin-state: enable
-  
-  
-    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
-      value:
-        admin-state: enable
-        afi-safi:
-        - afi-safi-name: ipv4-unicast
-          admin-state: enable
-          import-policy: ['accept_all']
-          export-policy: ['default_bgp_export', 'accept_all']
-        - afi-safi-name: ipv6-unicast
-          admin-state: disable
-          import-policy: ['accept_all']
-          export-policy: ['default_bgp_export', 'accept_all']
-  
-        timers:
-          connect-retry: 10
-          _annotate_connect-retry: "Reduce default 120s to 10s"
-          minimum-advertisement-interval: 1
-        send-community:
-          standard: True
-          large: True
-          _annotate_large: "Assuming 'standard' implies 'large' here"
-  
-  
-    - path: /network-instance[name=default]/protocols/bgp
-      value:
-        neighbor:
-        - peer-address: "10.1.0.14"
-          description: x1
-          peer-group: ebgp
-          afi-safi:
-          - afi-safi-name: ipv4-unicast
-            admin-state: enable
-  
-          peer-as: 65101
-ok: [x1] => 
-  msg: |-
-    bgp configuration for x1
-    =========================================
-    !
-    router bgp 65101
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 172.42.42.1
-    !
-      neighbor 10.1.0.13 remote-as 65000
-      neighbor 10.1.0.13 description dut
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-      network 172.42.42.0/24
-    !
-    !
-    !
-      neighbor 10.1.0.13 activate
-      no neighbor 10.1.0.13 send-community all
-      neighbor 10.1.0.13 send-community standard
-      neighbor 10.1.0.13 send-community large
-    !
-    !
-    !
-    do write
 ok: [rr2] => 
   msg: |-
     bgp configuration for rr2
@@ -1080,15 +854,357 @@ ok: [rr2] =>
     !
     !
     do write
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+    updates:
+  
+    - path: /routing-policy/policy[name=accept_all]
+      value:
+        default-action:
+          policy-result: accept
+  
+    - path: /routing-policy/community-set[name=ibgp-mark]
+      value:
+        member: [ "65536:0:65536" ]
+  
+    - path: /routing-policy/policy[name=ibgp-mark]
+      value:
+        default-action:
+          policy-result: reject
+        statement:
+        - name: mark-ibgp-routes
+          action:
+            bgp:
+              communities:
+                add: ibgp-mark
+            policy-result: accept
+  
+    - path: /routing-policy/prefix-set[name=default_bgp_advertise]
+      value:
+        prefix: [] # Make sure it exists
+  
+    - path: /routing-policy/policy[name=default_bgp_export]
+      value:
+        default-action:
+          policy-result: reject
+        statement:
+        - name: prefixes
+          match:
+           prefix:
+            prefix-set: default_bgp_advertise
+          action:
+            policy-result: next-policy
+        - name: bgp
+          match:
+            protocol: bgp
+          action:
+            policy-result: next-policy
+            bgp:
+              communities:
+                remove:
+                  ibgp-mark
+  
+  
+    - path: /routing-policy/policy[name=default_ibgp-nhs_export]
+      value:
+        default-action:
+          policy-result: reject
+        statement:
+        - name: prefixes
+          match:
+           prefix:
+            prefix-set: default_bgp_advertise
+          action:
+            policy-result: next-policy
+        - name: rr-next-hop-unchanged
+          match:
+            protocol: bgp
+            bgp:
+              community-set: ibgp-mark
+          action:
+            policy-result: next-policy
+            bgp:
+              communities:
+                remove:
+                  ibgp-mark
+        - name: ebgp-next-hop-self
+          match:
+            protocol: bgp
+          action:
+            policy-result: next-policy
+            bgp:
+              next-hop:
+                set: self
+  
+  
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
+        admin-state: enable
+        autonomous-system: 65000
+        router-id: 10.0.0.1
+        ebgp-default-policy:
+          export-reject-all: False
+          import-reject-all: False
+  
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
+  
+    - path: /routing-policy/prefix-set[name=default_bgp_advertise]
+      value:
+        prefix:
+        - ip-prefix: 10.0.0.1/32
+          mask-length-range: exact
+  
+  
+  
+  
+  
+    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
+      value:
+        admin-state: enable
+    # neighbor: {'_source_intf': {'ifindex': 0, 'ifname': 'lo0.0', 'ipv4': '10.0.0.1/32', 'neighbors': [], 'type': 'loopback', 'virtual_interface': True}, 'activate': {'ipv4': True}, 'as': 65000, 'ipv4': '10.0.0.2', 'name': 'rr2', 'rr': True, 'type': 'ibgp'}
+    # ipv4: True
+    # ipv6: True
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
+          send-community-type: ['standard', 'large', 'extended']
+  
+          import-policy: ['ibgp-mark']
+          export-policy: ['default_ibgp-nhs_export', 'accept_all']
+        - afi-safi-name: ipv6-unicast
+          admin-state: disable
+          send-community-type: ['standard', 'large', 'extended']
+  
+          import-policy: ['ibgp-mark']
+          export-policy: ['default_ibgp-nhs_export', 'accept_all']
+  
+        timers:
+          connect-retry: 10
+          _annotate_connect-retry: "Reduce default 120s to 10s"
+          minimum-advertisement-interval: 1
+        peer-as: 65000
+        transport:
+          local-address: 10.0.0.1
+        route-reflector:
+          cluster-id: 10.0.0.42
+          client: True
+  
+  
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
+        neighbor:
+        - peer-address: "10.0.0.2"
+          description: rr2
+          peer-group: ibgp-ipv4
+      # neighbor: {'_source_intf': {'ifindex': 0, 'ifname': 'lo0.0', 'ipv4': '10.0.0.1/32', 'neighbors': [], 'type': 'loopback', 'virtual_interface': True}, 'activate': {'ipv4': True}, 'as': 65000, 'ipv4': '10.0.0.2', 'name': 'rr2', 'rr': True, 'type': 'ibgp'}
+      # ipv4: True
+      # ipv6: False
+          afi-safi:
+          - afi-safi-name: ipv4-unicast
+            admin-state: enable
+            send-community-type: ['standard', 'large', 'extended']
+  
+          - afi-safi-name: ipv6-unicast
+            admin-state: disable
+  
+          route-reflector:
+            client: False # Don't reflect routes between ibgp route reflectors
+          transport:
+            passive-mode: False
+            _annotate_passive-mode: "Connect actively to other Route Reflectors"
+  
+    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
+      value:
+        admin-state: enable
+    # neighbor: {'_source_intf': {'ifindex': 0, 'ifname': 'lo0.0', 'ipv4': '10.0.0.1/32', 'neighbors': [], 'type': 'loopback', 'virtual_interface': True}, 'activate': {'ipv4': True}, 'as': 65000, 'ipv4': '10.0.0.10', 'name': 'r1', 'type': 'ibgp'}
+    # ipv4: True
+    # ipv6: True
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
+          send-community-type: ['standard', 'large', 'extended']
+  
+          import-policy: ['ibgp-mark']
+          export-policy: ['default_ibgp-nhs_export', 'accept_all']
+        - afi-safi-name: ipv6-unicast
+          admin-state: disable
+          send-community-type: ['standard', 'large', 'extended']
+  
+          import-policy: ['ibgp-mark']
+          export-policy: ['default_ibgp-nhs_export', 'accept_all']
+  
+        timers:
+          connect-retry: 10
+          _annotate_connect-retry: "Reduce default 120s to 10s"
+          minimum-advertisement-interval: 1
+        peer-as: 65000
+        transport:
+          local-address: 10.0.0.1
+        route-reflector:
+          cluster-id: 10.0.0.42
+          client: True
+  
+  
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
+        neighbor:
+        - peer-address: "10.0.0.10"
+          description: r1
+          peer-group: ibgp-ipv4
+      # neighbor: {'_source_intf': {'ifindex': 0, 'ifname': 'lo0.0', 'ipv4': '10.0.0.1/32', 'neighbors': [], 'type': 'loopback', 'virtual_interface': True}, 'activate': {'ipv4': True}, 'as': 65000, 'ipv4': '10.0.0.10', 'name': 'r1', 'type': 'ibgp'}
+      # ipv4: True
+      # ipv6: False
+          afi-safi:
+          - afi-safi-name: ipv4-unicast
+            admin-state: enable
+            send-community-type: ['standard', 'large', 'extended']
+  
+          - afi-safi-name: ipv6-unicast
+            admin-state: disable
+  
+  
+    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
+      value:
+        admin-state: enable
+    # neighbor: {'_source_intf': {'ifindex': 0, 'ifname': 'lo0.0', 'ipv4': '10.0.0.1/32', 'neighbors': [], 'type': 'loopback', 'virtual_interface': True}, 'activate': {'ipv4': True}, 'as': 65000, 'ipv4': '10.0.0.3', 'name': 'r2', 'type': 'ibgp'}
+    # ipv4: True
+    # ipv6: True
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
+          send-community-type: ['standard', 'large', 'extended']
+  
+          import-policy: ['ibgp-mark']
+          export-policy: ['default_ibgp-nhs_export', 'accept_all']
+        - afi-safi-name: ipv6-unicast
+          admin-state: disable
+          send-community-type: ['standard', 'large', 'extended']
+  
+          import-policy: ['ibgp-mark']
+          export-policy: ['default_ibgp-nhs_export', 'accept_all']
+  
+        timers:
+          connect-retry: 10
+          _annotate_connect-retry: "Reduce default 120s to 10s"
+          minimum-advertisement-interval: 1
+        peer-as: 65000
+        transport:
+          local-address: 10.0.0.1
+        route-reflector:
+          cluster-id: 10.0.0.42
+          client: True
+  
+  
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
+        neighbor:
+        - peer-address: "10.0.0.3"
+          description: r2
+          peer-group: ibgp-ipv4
+      # neighbor: {'_source_intf': {'ifindex': 0, 'ifname': 'lo0.0', 'ipv4': '10.0.0.1/32', 'neighbors': [], 'type': 'loopback', 'virtual_interface': True}, 'activate': {'ipv4': True}, 'as': 65000, 'ipv4': '10.0.0.3', 'name': 'r2', 'type': 'ibgp'}
+      # ipv4: True
+      # ipv6: False
+          afi-safi:
+          - afi-safi-name: ipv4-unicast
+            admin-state: enable
+            send-community-type: ['standard', 'large', 'extended']
+  
+          - afi-safi-name: ipv6-unicast
+            admin-state: disable
+  
+  
+    - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
+      value:
+        admin-state: enable
+    # neighbor: {'activate': {'ipv4': True}, 'as': 65101, 'ifindex': 2, 'ipv4': '10.1.0.14', 'name': 'x1', 'type': 'ebgp'}
+    # ipv4: True
+    # ipv6: True
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: enable
+          send-community-type: ['standard', 'large']
+  
+          import-policy: ['accept_all']
+          export-policy: ['default_bgp_export', 'accept_all']
+        - afi-safi-name: ipv6-unicast
+          admin-state: disable
+          send-community-type: ['standard', 'large']
+  
+          import-policy: ['accept_all']
+          export-policy: ['default_bgp_export', 'accept_all']
+  
+        timers:
+          connect-retry: 10
+          _annotate_connect-retry: "Reduce default 120s to 10s"
+          minimum-advertisement-interval: 1
+  
+  
+    - path: /network-instance[name=default]/protocols/bgp
+      value:
+        neighbor:
+        - peer-address: "10.1.0.14"
+          description: x1
+          peer-group: ebgp
+      # neighbor: {'activate': {'ipv4': True}, 'as': 65101, 'ifindex': 2, 'ipv4': '10.1.0.14', 'name': 'x1', 'type': 'ebgp'}
+      # ipv4: True
+      # ipv6: False
+          afi-safi:
+          - afi-safi-name: ipv4-unicast
+            admin-state: enable
+            send-community-type: ['standard', 'large']
+  
+          - afi-safi-name: ipv6-unicast
+            admin-state: disable
+  
+          peer-as: 65101
+ok: [x1] => 
+  msg: |-
+    bgp configuration for x1
+    =========================================
+    !
+    router bgp 65101
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 172.42.42.1
+    !
+      neighbor 10.1.0.13 remote-as 65000
+      neighbor 10.1.0.13 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 172.42.42.0/24
+    !
+    !
+    !
+      neighbor 10.1.0.13 activate
+      no neighbor 10.1.0.13 send-community all
+      neighbor 10.1.0.13 send-community standard
+      neighbor 10.1.0.13 send-community large
+    !
+    !
+    !
+    do write
 
 TASK [Deploy bgp configuration] ************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2, rr2, x1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2, rr2, x1
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [dut]
 
-TASK [Update SRL bgp node configuration (template=/home/pipi/netlab_gh/netsim/ansible/templates/bgp/srlinux.j2)] ***
+TASK [Update SRL bgp node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2)] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
@@ -1106,17 +1222,17 @@ ok: [r2]
 ok: [rr2]
 ok: [x1]
 
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [r1]
 skipping: [r2]
 skipping: [rr2]
 skipping: [x1]
 
-TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [r1]
-changed: [r2]
-changed: [x1]
 changed: [rr2]
+changed: [x1]
+changed: [r2]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [dut]
@@ -1127,8 +1243,8 @@ ok: [x1]
 
 TASK [Find configuration template for ospf] ************************************
 ok: [dut]
-ok: [r1]
 skipping: [x1]
+ok: [r1]
 ok: [r2]
 ok: [rr2]
 
@@ -1274,34 +1390,34 @@ ok: [rr2] =>
 
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [x1]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2, rr2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2, rr2
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [dut]
 
-TASK [Update SRL ospf node configuration (template=/home/pipi/netlab_gh/netsim/ansible/templates/ospf/srlinux.j2)] ***
+TASK [Update SRL ospf node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2)] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
 skipping: [dut]
 
 TASK [template] ****************************************************************
-changed: [r2]
 changed: [r1]
 changed: [rr2]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
 ok: [r2]
 ok: [rr2]
 
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 skipping: [r1]
 skipping: [r2]
 skipping: [rr2]
 
-TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [r2]
 changed: [rr2]
 changed: [r1]
@@ -1309,7 +1425,7 @@ changed: [r1]
 PLAY [Deploy custom deployment templates] **************************************
 
 TASK [Run custom configuration deployment scripts] *****************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-custom-config.yml for r1 => (item=bgp.session)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-custom-config.yml for r1 => (item=bgp.session)
 
 TASK [Find configuration template] *********************************************
 ok: [r1]
@@ -1323,14 +1439,14 @@ ok: [r1 -> localhost]
 TASK [fail] ********************************************************************
 skipping: [r1]
 
-TASK [Process template /home/pipi/netlab_gh/netsim/extra/bgp.session/frr.j2 for r1] ***
+TASK [Process template /home/pipi/net101/tools/netsim/extra/bgp.session/frr.j2 for r1] ***
 skipping: [r1]
 
 TASK [Find custom configuration deployment script] *****************************
 ok: [r1]
 
 TASK [Run the configuration deployment script] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r1
 
 TASK [template] ****************************************************************
 changed: [r1]
@@ -1338,10 +1454,10 @@ changed: [r1]
 TASK [set_fact] ****************************************************************
 ok: [r1]
 
-TASK [run /tmp/config.sh to deploy bgp.session config from /home/pipi/netlab_gh/netsim/extra/bgp.session/frr.j2] ***
+TASK [run /tmp/config.sh to deploy bgp.session config from /home/pipi/net101/tools/netsim/extra/bgp.session/frr.j2] ***
 changed: [r1]
 
-TASK [run vtysh to import bgp.session config from /home/pipi/netlab_gh/netsim/extra/bgp.session/frr.j2] ***
+TASK [run vtysh to import bgp.session config from /home/pipi/net101/tools/netsim/extra/bgp.session/frr.j2] ***
 skipping: [r1]
 
 PLAY RECAP *********************************************************************

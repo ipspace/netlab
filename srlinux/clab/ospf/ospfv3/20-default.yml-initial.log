@@ -33,8 +33,8 @@ ok: [dut_a]
 TASK [Find configuration template for normalize] *******************************
 ok: [dut_c]
 ok: [xf]
-ok: [probe]
 ok: [dut_a]
+ok: [probe]
 
 TASK [fail] ********************************************************************
 skipping: [dut_c]
@@ -102,10 +102,12 @@ ok: [dut_c] =>
         admin-state: enable
         address:
         - ip-prefix: "2001:db8:1:2::1/64"
+          type: "global-unicast"
   
   
     - path: /interface[name=ethernet-1/1]
       value:
+       description: "dut_c ~ probe"
        subinterface:
         index: 0
         description: "dut_c ~ probe"
@@ -117,6 +119,7 @@ ok: [dut_c] =>
         admin-state: enable
         address:
         - ip-prefix: "2001:db8:3:1::1/64"
+          type: "global-unicast"
         neighbor-discovery:
          learn-unsolicited: link-local
         router-advertisement:
@@ -128,6 +131,7 @@ ok: [dut_c] =>
   
     - path: /interface[name=ethernet-1/2]
       value:
+       description: "dut_c ~ xf"
        subinterface:
         index: 0
         description: "dut_c ~ xf"
@@ -139,6 +143,7 @@ ok: [dut_c] =>
         admin-state: enable
         address:
         - ip-prefix: "2001:db8:3:2::1/64"
+          type: "global-unicast"
         neighbor-discovery:
          learn-unsolicited: link-local
         router-advertisement:
@@ -166,57 +171,6 @@ ok: [dut_c] =>
        type: default
        interface:
        - name: ethernet-1/2.0
-ok: [dut_a] => 
-  msg: |-
-    initial configuration for dut_a
-    =========================================
-  
-    updates:
-  
-    - path: /interface[name=system0]/subinterface[index=0]
-      value:
-       description: "No description"
-       ipv6:
-        admin-state: enable
-        address:
-        - ip-prefix: "2001:db8:1:1::1/64"
-  
-  
-    - path: /interface[name=ethernet-1/1]
-      value:
-       subinterface:
-        index: 0
-        description: "dut_a ~ probe"
-  
-    - path: /interface[name=ethernet-1/1]/subinterface[index=0]
-      value:
-       description: "dut_a ~ probe"
-       ipv6:
-        admin-state: enable
-        address:
-        - ip-prefix: "2001:db8:3::1/64"
-        neighbor-discovery:
-         learn-unsolicited: link-local
-        router-advertisement:
-         router-role:
-          admin-state: enable             # no ipv6 nd suppress-ra
-          min-advertisement-interval: 4   # Leaving this at platform default 200..600 takes too long at startup
-          _annotate_min-advertisement-interval: "Reduced from platform default 200s"
-          max-advertisement-interval: 5
-  
-  
-  
-    - path: /network-instance[name=default]
-      value:
-       type: default
-       interface:
-       - name: system0.0
-  
-    - path: /network-instance[name=default]
-      value:
-       type: default
-       interface:
-       - name: ethernet-1/1.0
 ok: [xf] => 
   msg: |-
     initial configuration for xf
@@ -236,6 +190,14 @@ ok: [xf] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
     #
     # Get the current next hop for the default route
     #
@@ -259,6 +221,12 @@ ok: [xf] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -271,11 +239,11 @@ ok: [xf] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -287,10 +255,10 @@ ok: [xf] =>
     cat >/tmp/config <<CONFIG
     hostname xf
     !
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
@@ -330,6 +298,14 @@ ok: [probe] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -352,6 +328,12 @@ ok: [probe] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -364,16 +346,16 @@ ok: [probe] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+    ip link set eth2 down
     sysctl -qw net.ipv6.conf.eth2.autoconf=0
     sysctl -qw net.ipv6.conf.eth2.accept_ra=0
-    ip link set eth2 down
-    ip link set eth2 up
     ip link set dev eth2 mtu 1500
+    ip link set eth2 up
   
     #
     # Add vtysh.conf file
@@ -385,10 +367,10 @@ ok: [probe] =>
     cat >/tmp/config <<CONFIG
     hostname probe
     !
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
@@ -416,6 +398,60 @@ ok: [probe] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [dut_a] => 
+  msg: |-
+    initial configuration for dut_a
+    =========================================
+  
+    updates:
+  
+    - path: /interface[name=system0]/subinterface[index=0]
+      value:
+       description: "No description"
+       ipv6:
+        admin-state: enable
+        address:
+        - ip-prefix: "2001:db8:1:1::1/64"
+          type: "global-unicast"
+  
+  
+    - path: /interface[name=ethernet-1/1]
+      value:
+       description: "dut_a ~ probe"
+       subinterface:
+        index: 0
+        description: "dut_a ~ probe"
+  
+    - path: /interface[name=ethernet-1/1]/subinterface[index=0]
+      value:
+       description: "dut_a ~ probe"
+       ipv6:
+        admin-state: enable
+        address:
+        - ip-prefix: "2001:db8:3::1/64"
+          type: "global-unicast"
+        neighbor-discovery:
+         learn-unsolicited: link-local
+        router-advertisement:
+         router-role:
+          admin-state: enable             # no ipv6 nd suppress-ra
+          min-advertisement-interval: 4   # Leaving this at platform default 200..600 takes too long at startup
+          _annotate_min-advertisement-interval: "Reduced from platform default 200s"
+          max-advertisement-interval: 5
+  
+  
+  
+    - path: /network-instance[name=default]
+      value:
+       type: default
+       interface:
+       - name: system0.0
+  
+    - path: /network-instance[name=default]
+      value:
+       type: default
+       interface:
+       - name: ethernet-1/1.0
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut_c, dut_a
@@ -444,8 +480,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for xf, probe
 
 TASK [template] ****************************************************************
-changed: [xf]
 changed: [probe]
+changed: [xf]
 
 TASK [set_fact] ****************************************************************
 ok: [xf]
@@ -571,6 +607,7 @@ ok: [dut_c] =>
         statement:
         - name: prefixes
           match:
+           prefix:
             prefix-set: default_bgp_advertise
           action:
             policy-result: next-policy
@@ -611,13 +648,20 @@ ok: [dut_c] =>
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
       value:
         admin-state: enable
+    # neighbor: {'activate': {'ipv6': True}, 'as': 65100, 'ifindex': 2, 'ipv6': '2001:db8:3:2::2', 'name': 'xf', 'type': 'ebgp'}
+    # ipv4: True
+    # ipv6: True
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: disable
+          send-community-type: ['standard', 'large']
+  
           import-policy: ['accept_all']
           export-policy: ['default_bgp_export', 'accept_all']
         - afi-safi-name: ipv6-unicast
           admin-state: enable
+          send-community-type: ['standard', 'large']
+  
           import-policy: ['accept_all']
           export-policy: ['default_bgp_export', 'accept_all']
   
@@ -625,10 +669,6 @@ ok: [dut_c] =>
           connect-retry: 10
           _annotate_connect-retry: "Reduce default 120s to 10s"
           minimum-advertisement-interval: 1
-        send-community:
-          standard: True
-          large: True
-          _annotate_large: "Assuming 'standard' implies 'large' here"
   
   
     - path: /network-instance[name=default]/protocols/bgp
@@ -637,11 +677,18 @@ ok: [dut_c] =>
         - peer-address: "2001:db8:3:2::2"
           description: xf
           peer-group: ebgp
+      # neighbor: {'activate': {'ipv6': True}, 'as': 65100, 'ifindex': 2, 'ipv6': '2001:db8:3:2::2', 'name': 'xf', 'type': 'ebgp'}
+      # ipv4: True
+      # ipv6: True
           afi-safi:
           - afi-safi-name: ipv4-unicast
             admin-state: disable
+            send-community-type: ['standard', 'large']
+  
           - afi-safi-name: ipv6-unicast
             admin-state: enable
+            send-community-type: ['standard', 'large']
+  
   
           peer-as: 65100
 
@@ -728,6 +775,7 @@ ok: [dut_a] =>
         statement:
         - name: default
           match:
+           prefix:
             prefix-set: default_route
           action:
             policy-result: accept
@@ -776,6 +824,7 @@ ok: [dut_c] =>
         statement:
         - name: default
           match:
+           prefix:
             prefix-set: default_route
           action:
             policy-result: accept

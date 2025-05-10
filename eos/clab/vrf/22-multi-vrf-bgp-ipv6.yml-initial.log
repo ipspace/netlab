@@ -1,19 +1,20 @@
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+[WARNING]: Found variable using reserved name: hosts
 
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [r2]
 ok: [r1]
+ok: [r2]
 ok: [r3]
-ok: [dut]
 ok: [r4]
+ok: [dut]
 
 TASK [Find device readiness script] ********************************************
 ok: [r1]
 ok: [r2]
-ok: [r3]
 ok: [r4]
+ok: [r3]
 ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
@@ -38,8 +39,8 @@ ok: [dut]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [r1]
-ok: [r3]
 ok: [r2]
+ok: [r3]
 ok: [r4]
 ok: [dut]
 
@@ -49,6 +50,13 @@ skipping: [r1]
 skipping: [r2]
 skipping: [r3]
 skipping: [r4]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [r1]
+ok: [r2]
+ok: [r3]
+ok: [r4]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r1]
@@ -61,27 +69,20 @@ ok: [dut] =>
     =========================================
     !
     interface Ethernet1
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0101
     !
     interface Ethernet2
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0102
     !
     interface Ethernet3
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0103
     !
     interface Ethernet4
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0104
-
-TASK [Find configuration deployment deploy_script for normalize] ***************
-skipping: [r1]
-skipping: [r2]
-skipping: [r3]
-skipping: [r4]
-ok: [dut]
 
 TASK [Deploy normalize configuration] ******************************************
 skipping: [r1]
@@ -120,6 +121,13 @@ skipping: [r2]
 skipping: [r3]
 skipping: [r4]
 
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [r1]
+ok: [r2]
+ok: [r4]
+ok: [r3]
+ok: [dut]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [r1] => 
   msg: |-
@@ -140,6 +148,14 @@ ok: [r1] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
     #
     # Get the current next hop for the default route
     #
@@ -163,6 +179,12 @@ ok: [r1] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -175,17 +197,15 @@ ok: [r1] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
+    ip link set dev eth1 mtu 1500
     ip link set eth1 up
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -193,21 +213,22 @@ ok: [r1] =>
     cat >/tmp/config <<CONFIG
     hostname r1
     !
+    ip forwarding
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
      no shutdown
-     ! no ip address
+     ip address 10.0.0.2/32
      ipv6 address 2001:db8:1:2::1/64
     !
     interface eth1
      no shutdown
      description r1 -> dut [external]
-     ! no ip address
+     ip address 10.1.0.2/30
      ipv6 address 2001:db8:3::2/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
@@ -236,6 +257,14 @@ ok: [r2] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -258,6 +287,12 @@ ok: [r2] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -270,17 +305,15 @@ ok: [r2] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
+    ip link set dev eth1 mtu 1500
     ip link set eth1 up
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -288,21 +321,22 @@ ok: [r2] =>
     cat >/tmp/config <<CONFIG
     hostname r2
     !
+    ip forwarding
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
      no shutdown
-     ! no ip address
+     ip address 10.0.0.3/32
      ipv6 address 2001:db8:1:3::1/64
     !
     interface eth1
      no shutdown
      description r2 -> dut [external]
-     ! no ip address
+     ip address 10.1.0.6/30
      ipv6 address 2001:db8:3:1::2/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
@@ -311,191 +345,6 @@ ok: [r2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [r4] => 
-  msg: |-
-    initial configuration for r4
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)# "
-    echo
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    #
-    # Create loopbacks, stub and lag/bond devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    sysctl -qw net.ipv6.conf.eth1.autoconf=0
-    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
-  
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname r4
-    !
-    vrf mgmt
-     exit-vrf
-    !
-    ipv6 forwarding
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ! no ip address
-     ipv6 address 2001:db8:1:5::1/64
-    !
-    interface eth1
-     no shutdown
-     description r4 -> dut [external]
-     ! no ip address
-     ipv6 address 2001:db8:3:3::2/64
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    hostname dut
-    !
-    logging monitor debugging
-    aaa authorization exec default local
-    !
-    lldp run
-    ipv6 unicast-routing
-    !
-    vrf instance blue
-     rd 65000:2
-    !
-    ipv6 unicast-routing vrf blue
-    !
-    vrf instance red
-     rd 65000:1
-    !
-    ipv6 unicast-routing vrf red
-    !
-    !
-    ipv6 host dut-blue 2001:db8:3:2::1
-    ipv6 host dut-red 2001:db8:3::1
-    ipv6 host r1 2001:db8:1:2::1
-    ipv6 host r2 2001:db8:1:3::1
-    ipv6 host r3 2001:db8:1:4::1
-    ipv6 host r4 2001:db8:1:5::1
-    !
-    interface Management0
-     no lldp transmit
-     no lldp receive
-    !
-    interface Loopback0
-     ipv6 nd ra interval 5
-     ipv6 address 2001:db8:1:1::1/64
-    !
-    interface Ethernet1
-     no switchport
-     vrf red
-     description dut -> r1 [external]
-     ipv6 nd ra interval 5
-     ipv6 address 2001:db8:3::1/64
-    !
-     mac-address 52dc.cafe.0101
-     no shutdown
-    !
-    interface Ethernet2
-     no switchport
-     vrf red
-     description dut -> r2 [external]
-     ipv6 nd ra interval 5
-     ipv6 address 2001:db8:3:1::1/64
-    !
-     mac-address 52dc.cafe.0102
-     no shutdown
-    !
-    interface Ethernet3
-     no switchport
-     vrf blue
-     description dut -> r3 [external]
-     ipv6 nd ra interval 5
-     ipv6 address 2001:db8:3:2::1/64
-    !
-     mac-address 52dc.cafe.0103
-     no shutdown
-    !
-    interface Ethernet4
-     no switchport
-     vrf blue
-     description dut -> r4 [external]
-     ipv6 nd ra interval 5
-     ipv6 address 2001:db8:3:3::1/64
-    !
-     mac-address 52dc.cafe.0104
-     no shutdown
-    !
-    interface Loopback1
-     vrf red
-     description VRF Loopback red
-     ipv6 nd ra interval 5
-     ipv6 address 2001:db8:c001:cafe::1/64
-    !
-    interface Loopback2
-     vrf blue
-     description VRF Loopback blue
-     ipv6 nd ra interval 5
-     ipv6 address 2001:db8:c001:cafe::1/64
-    !
 ok: [r3] => 
   msg: |-
     initial configuration for r3
@@ -516,6 +365,14 @@ ok: [r3] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -538,6 +395,12 @@ ok: [r3] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -550,17 +413,15 @@ ok: [r3] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
+    ip link set dev eth1 mtu 1500
     ip link set eth1 up
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -568,21 +429,22 @@ ok: [r3] =>
     cat >/tmp/config <<CONFIG
     hostname r3
     !
+    ip forwarding
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
      no shutdown
-     ! no ip address
+     ip address 10.0.0.4/32
      ipv6 address 2001:db8:1:4::1/64
     !
     interface eth1
      no shutdown
      description r3 -> dut [external]
-     ! no ip address
+     ip address 10.1.0.10/30
      ipv6 address 2001:db8:3:2::2/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
@@ -591,13 +453,220 @@ ok: [r3] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [r1]
-ok: [r2]
-ok: [r4]
-ok: [r3]
-ok: [dut]
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    hostname dut
+    !
+    logging monitor debugging
+    aaa authorization exec default local
+    !
+    lldp run
+    ip routing
+    ipv6 unicast-routing
+    !
+    vrf instance blue
+     rd 65000:2
+    !
+    ip routing vrf blue
+    !
+    ipv6 unicast-routing vrf blue
+    !
+    vrf instance red
+     rd 65000:1
+    !
+    ip routing vrf red
+    !
+    ipv6 unicast-routing vrf red
+    !
+    !
+    ip host dut-blue 10.1.0.9 10.1.0.13
+    ip host dut-red 10.1.0.1 10.1.0.5
+    ip host r1 10.0.0.2 10.1.0.2
+    ip host r2 10.0.0.3 10.1.0.6
+    ip host r3 10.0.0.4 10.1.0.10
+    ip host r4 10.0.0.5 10.1.0.14
+    ipv6 host dut-blue 2001:db8:3:2::1
+    ipv6 host dut-red 2001:db8:3::1
+    ipv6 host r1 2001:db8:1:2::1
+    ipv6 host r2 2001:db8:1:3::1
+    ipv6 host r3 2001:db8:1:4::1
+    ipv6 host r4 2001:db8:1:5::1
+    !
+    interface Management0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     ip address 10.0.0.1/32
+     ipv6 nd ra interval 5
+     ipv6 address 2001:db8:1:1::1/64
+    !
+    interface Ethernet1
+     no switchport
+     vrf red
+     description dut -> r1 [external]
+     ip address 10.1.0.1/30
+     ipv6 nd ra interval 5
+     ipv6 address 2001:db8:3::1/64
+    !
+     mac-address 52dc.cafe.0101
+     no shutdown
+    !
+    interface Ethernet2
+     no switchport
+     vrf red
+     description dut -> r2 [external]
+     ip address 10.1.0.5/30
+     ipv6 nd ra interval 5
+     ipv6 address 2001:db8:3:1::1/64
+    !
+     mac-address 52dc.cafe.0102
+     no shutdown
+    !
+    interface Ethernet3
+     no switchport
+     vrf blue
+     description dut -> r3 [external]
+     ip address 10.1.0.9/30
+     ipv6 nd ra interval 5
+     ipv6 address 2001:db8:3:2::1/64
+    !
+     mac-address 52dc.cafe.0103
+     no shutdown
+    !
+    interface Ethernet4
+     no switchport
+     vrf blue
+     description dut -> r4 [external]
+     ip address 10.1.0.13/30
+     ipv6 nd ra interval 5
+     ipv6 address 2001:db8:3:3::1/64
+    !
+     mac-address 52dc.cafe.0104
+     no shutdown
+    !
+    interface Loopback1
+     vrf red
+     description VRF Loopback red
+     ipv6 nd ra interval 5
+     ipv6 address 2001:db8:c001:cafe::1/64
+    !
+    interface Loopback2
+     vrf blue
+     description VRF Loopback blue
+     ipv6 nd ra interval 5
+     ipv6 address 2001:db8:c001:cafe::1/64
+    !
+ok: [r4] => 
+  msg: |-
+    initial configuration for r4
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.autoconf=0
+    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname r4
+    !
+    ip forwarding
+    ipv6 forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.5/32
+     ipv6 address 2001:db8:1:5::1/64
+    !
+    interface eth1
+     no shutdown
+     description r4 -> dut [external]
+     ip address 10.1.0.14/30
+     ipv6 address 2001:db8:3:3::2/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for dut
@@ -620,8 +689,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for
 
 TASK [template] ****************************************************************
 changed: [r4]
-changed: [r2]
 changed: [r1]
+changed: [r2]
 changed: [r3]
 
 TASK [set_fact] ****************************************************************
@@ -633,8 +702,8 @@ ok: [r4]
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [r1]
 changed: [r2]
-changed: [r4]
 changed: [r3]
+changed: [r4]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r1]
@@ -676,6 +745,13 @@ skipping: [r2]
 skipping: [r3]
 skipping: [r4]
 
+TASK [Find configuration deployment deploy_script for bgp] *********************
+ok: [r1]
+ok: [r2]
+ok: [r3]
+ok: [r4]
+ok: [dut]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [r1] => 
   msg: |-
@@ -693,8 +769,24 @@ ok: [r1] =>
   
       bgp router-id 10.0.0.2
     !
+      neighbor 10.1.0.1 remote-as 65000
+      neighbor 10.1.0.1 description dut
+    !
       neighbor 2001:db8:3::1 remote-as 65000
       neighbor 2001:db8:3::1 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.2/32
+    !
+    !
+    !
+      neighbor 10.1.0.1 activate
+      no neighbor 10.1.0.1 send-community all
+      neighbor 10.1.0.1 send-community standard
+      neighbor 10.1.0.1 send-community large
     !
      address-family ipv6 unicast
     !
@@ -728,8 +820,24 @@ ok: [r2] =>
   
       bgp router-id 10.0.0.3
     !
+      neighbor 10.1.0.5 remote-as 65000
+      neighbor 10.1.0.5 description dut
+    !
       neighbor 2001:db8:3:1::1 remote-as 65000
       neighbor 2001:db8:3:1::1 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.3/32
+    !
+    !
+    !
+      neighbor 10.1.0.5 activate
+      no neighbor 10.1.0.5 send-community all
+      neighbor 10.1.0.5 send-community standard
+      neighbor 10.1.0.5 send-community large
     !
      address-family ipv6 unicast
     !
@@ -763,8 +871,24 @@ ok: [r4] =>
   
       bgp router-id 10.0.0.5
     !
+      neighbor 10.1.0.13 remote-as 65000
+      neighbor 10.1.0.13 description dut
+    !
       neighbor 2001:db8:3:3::1 remote-as 65000
       neighbor 2001:db8:3:3::1 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.5/32
+    !
+    !
+    !
+      neighbor 10.1.0.13 activate
+      no neighbor 10.1.0.13 send-community all
+      neighbor 10.1.0.13 send-community standard
+      neighbor 10.1.0.13 send-community large
     !
      address-family ipv6 unicast
     !
@@ -796,6 +920,13 @@ ok: [dut] =>
       router-id 10.0.0.1
     !
     !
+     address-family ipv4
+  
+      network 10.0.0.1/32
+    !
+    !
+    !
+    !
      address-family ipv6
   
       network 2001:db8:1:1::/64
@@ -819,8 +950,24 @@ ok: [r3] =>
   
       bgp router-id 10.0.0.4
     !
+      neighbor 10.1.0.9 remote-as 65000
+      neighbor 10.1.0.9 description dut
+    !
       neighbor 2001:db8:3:2::1 remote-as 65000
       neighbor 2001:db8:3:2::1 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.4/32
+    !
+    !
+    !
+      neighbor 10.1.0.9 activate
+      no neighbor 10.1.0.9 send-community all
+      neighbor 10.1.0.9 send-community standard
+      neighbor 10.1.0.9 send-community large
     !
      address-family ipv6 unicast
     !
@@ -839,13 +986,6 @@ ok: [r3] =>
     !
     do write
 
-TASK [Find configuration deployment deploy_script for bgp] *********************
-ok: [r1]
-ok: [r2]
-ok: [r4]
-ok: [r3]
-ok: [dut]
-
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2, r3, r4
@@ -854,16 +994,16 @@ TASK [eos_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/temp
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [r1]
 changed: [r2]
+changed: [r1]
 changed: [r4]
 changed: [r3]
 
 TASK [set_fact] ****************************************************************
-ok: [r1]
-ok: [r4]
-ok: [r2]
 ok: [r3]
+ok: [r4]
+ok: [r1]
+ok: [r2]
 
 TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [r1]
@@ -872,10 +1012,10 @@ skipping: [r3]
 skipping: [r4]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+changed: [r1]
 changed: [r3]
 changed: [r4]
 changed: [r2]
-changed: [r1]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [r1]
@@ -898,6 +1038,13 @@ skipping: [r2]
 skipping: [r3]
 skipping: [r4]
 
+TASK [Find configuration deployment deploy_script for vrf] *********************
+skipping: [r1]
+skipping: [r2]
+skipping: [r3]
+skipping: [r4]
+ok: [dut]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r1]
 skipping: [r2]
@@ -915,16 +1062,32 @@ ok: [dut] =>
      vrf blue
       router-id 10.0.0.1
       rd 65000:2
+      route-target import vpn-ipv4 65000:2
+      route-target export vpn-ipv4 65000:2
       route-target import vpn-ipv6 65000:2
       route-target export vpn-ipv6 65000:2
+    !
+      neighbor 10.1.0.10 remote-as 65103
+      neighbor 10.1.0.10 description r3
+      neighbor 10.1.0.10 send-community standard large
     !
       neighbor 2001:db8:3:2::2 remote-as 65103
       neighbor 2001:db8:3:2::2 description r3
       neighbor 2001:db8:3:2::2 send-community standard large
     !
+      neighbor 10.1.0.14 remote-as 65104
+      neighbor 10.1.0.14 description r4
+      neighbor 10.1.0.14 send-community standard large
+    !
       neighbor 2001:db8:3:3::2 remote-as 65104
       neighbor 2001:db8:3:3::2 description r4
       neighbor 2001:db8:3:3::2 send-community standard large
+    !
+      address-family ipv4
+        redistribute connected
+  
+        neighbor 10.1.0.10 activate
+        neighbor 10.1.0.14 activate
     !
       address-family ipv6
         redistribute connected
@@ -936,16 +1099,32 @@ ok: [dut] =>
      vrf red
       router-id 10.0.0.1
       rd 65000:1
+      route-target import vpn-ipv4 65000:1
+      route-target export vpn-ipv4 65000:1
       route-target import vpn-ipv6 65000:1
       route-target export vpn-ipv6 65000:1
+    !
+      neighbor 10.1.0.2 remote-as 65101
+      neighbor 10.1.0.2 description r1
+      neighbor 10.1.0.2 send-community standard large
     !
       neighbor 2001:db8:3::2 remote-as 65101
       neighbor 2001:db8:3::2 description r1
       neighbor 2001:db8:3::2 send-community standard large
     !
+      neighbor 10.1.0.6 remote-as 65102
+      neighbor 10.1.0.6 description r2
+      neighbor 10.1.0.6 send-community standard large
+    !
       neighbor 2001:db8:3:1::2 remote-as 65102
       neighbor 2001:db8:3:1::2 description r2
       neighbor 2001:db8:3:1::2 send-community standard large
+    !
+      address-family ipv4
+        redistribute connected
+  
+        neighbor 10.1.0.2 activate
+        neighbor 10.1.0.6 activate
     !
       address-family ipv6
         redistribute connected
@@ -953,13 +1132,6 @@ ok: [dut] =>
         network 2001:db8:c001:cafe::/64
         neighbor 2001:db8:3::2 activate
         neighbor 2001:db8:3:1::2 activate
-
-TASK [Find configuration deployment deploy_script for vrf] *********************
-skipping: [r1]
-skipping: [r2]
-skipping: [r3]
-skipping: [r4]
-ok: [dut]
 
 TASK [Deploy vrf configuration] ************************************************
 skipping: [r1]
@@ -972,23 +1144,94 @@ TASK [eos_config: deploying vrf from /home/pipi/net101/tools/netsim/ansible/temp
 changed: [dut]
 
 PLAY [Deploy custom deployment templates] **************************************
-skipping: no hosts matched
+
+TASK [Run custom configuration deployment scripts] *****************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-custom-config.yml for r1, r2, r3, r4 => (item=bgp-xact)
+
+TASK [Find configuration template] *********************************************
+ok: [r3]
+ok: [r4]
+ok: [r1]
+ok: [r2]
+
+TASK [fail] ********************************************************************
+skipping: [r1]
+skipping: [r2]
+skipping: [r3]
+skipping: [r4]
+
+TASK [Check is the configuration template is a file] ***************************
+ok: [r3 -> localhost]
+ok: [r1 -> localhost]
+ok: [r4 -> localhost]
+ok: [r2 -> localhost]
+
+TASK [fail] ********************************************************************
+skipping: [r1]
+skipping: [r2]
+skipping: [r3]
+skipping: [r4]
+
+TASK [Process template /home/pipi/net101/tools/tests/integration/vrf/bgp-xact.j2 for r1] ***
+skipping: [r1]
+skipping: [r2]
+skipping: [r3]
+skipping: [r4]
+
+TASK [Find custom configuration deployment script] *****************************
+ok: [r1]
+ok: [r3]
+ok: [r2]
+ok: [r4]
+
+TASK [Run the configuration deployment script] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2, r3, r4
+
+TASK [template] ****************************************************************
+changed: [r3]
+changed: [r4]
+changed: [r2]
+changed: [r1]
+
+TASK [set_fact] ****************************************************************
+ok: [r1]
+ok: [r2]
+ok: [r3]
+ok: [r4]
+
+TASK [run /tmp/config.sh to deploy bgp-xact config from /home/pipi/net101/tools/tests/integration/vrf/bgp-xact.j2] ***
+skipping: [r1]
+skipping: [r2]
+skipping: [r3]
+skipping: [r4]
+
+TASK [run vtysh to import bgp-xact config from /home/pipi/net101/tools/tests/integration/vrf/bgp-xact.j2] ***
+changed: [r1]
+changed: [r2]
+changed: [r4]
+changed: [r3]
 
 PLAY RECAP *********************************************************************
 dut                        : ok=33   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-r1                         : ok=28   changed=5    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
-r2                         : ok=27   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
-r3                         : ok=27   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
-r4                         : ok=27   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+r1                         : ok=37   changed=7    unreachable=0    failed=0    skipped=18   rescued=0    ignored=0   
+r2                         : ok=36   changed=6    unreachable=0    failed=0    skipped=18   rescued=0    ignored=0   
+r3                         : ok=36   changed=6    unreachable=0    failed=0    skipped=18   rescued=0    ignored=0   
+r4                         : ok=36   changed=6    unreachable=0    failed=0    skipped=18   rescued=0    ignored=0   
 
 
 
 The device under test has two VRFs with two interfaces in each VRF.
-Routers are attached to those interfaces and run BGP with device under test.
-Assuming the multi-vrf BGP test case succeeded, this one adds VRF loopback
-interfaces advertised into BGP with network statements.
+Routers are attached to those interfaces and run BGP with device under test
+in a dual-stack (IPv4 + IPv6) environment.
+
+The routing and connectivity tests focus on IPv6 (another test cases focuses
+on IPv4), the dual-stack addressing is used only to trigger the incorrect
+activation of BGP address families.
 
 * r1 and r2 should be able to ping each other and rtr VRF loopback
 * r3 and r4 should be able to ping each other and rtr VRF loopback
 * r1 should not be able to reach r3
+
+The test also checks whether DUT unnecessarily enables IPv4 AF over IPv6
+EBGP sessions
 

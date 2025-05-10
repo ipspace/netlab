@@ -15,10 +15,10 @@ ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [x1]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vjunos-switch-clab.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/vjunos-switch-clab.yml for dut
 
 TASK [Wait for SSH server] *****************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vm-clab-ssh-check.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/vm-clab-ssh-check.yml for dut
 
 TASK [Check if 'sshpass' is installed] *****************************************
 ok: [dut -> localhost]
@@ -31,7 +31,6 @@ FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos
 FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-switch readiness (39 retries left).
 FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-switch readiness (38 retries left).
 FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-switch readiness (37 retries left).
-FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-switch readiness (36 retries left).
 ok: [dut -> localhost]
 
 TASK [Confirm dut SSH server works] ********************************************
@@ -39,13 +38,13 @@ ok: [dut] =>
   msg: Node dut is ready.
 
 TASK [Wait for ge-0/0/0 interface] *********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vjunos-switch.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/vjunos-switch.yml for dut
 
 TASK [Wait for ge-0/0/0 to appear] *********************************************
 ok: [dut]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x1, dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for x1, dut
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [x1]
@@ -72,7 +71,7 @@ skipping: [x1]
 skipping: [dut]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x1, dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for x1, dut
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [x1]
@@ -113,6 +112,14 @@ ok: [x1] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -135,6 +142,12 @@ ok: [x1] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -147,11 +160,11 @@ ok: [x1] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -163,10 +176,10 @@ ok: [x1] =>
     cat >/tmp/config <<CONFIG
     hostname x1
     !
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
@@ -241,8 +254,8 @@ ok: [dut] =>
     }
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for x1
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for x1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for dut
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [x1 -> localhost]
@@ -251,7 +264,7 @@ TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [x1]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for x1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1
 
 TASK [template] ****************************************************************
 changed: [x1]
@@ -259,13 +272,13 @@ changed: [x1]
 TASK [set_fact] ****************************************************************
 ok: [x1]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [x1]
 
-TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
 
-TASK [junos_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/junos.j2] ***
+TASK [junos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/junos.j2] ***
 [WARNING]: mgd: statement must contain additional statements
 changed: [dut]
 
@@ -276,7 +289,7 @@ ok: [x1]
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1 => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1 => (item=ospf)
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [x1]
@@ -295,6 +308,33 @@ ok: [x1]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [x1] => 
+  msg: |-
+    ospf configuration for x1
+    =========================================
+    !
+    ! OSPFv3 FRR configuration
+    !
+    interface lo
+    !
+     ipv6 ospf6 area 0.0.0.0
+    !
+    interface eth1
+    ! x1 -> dut
+     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 network point-to-point
+    !
+    !
+    router ospf6
+     ospf6 router-id 10.0.0.2
+     timers lsa min-arrival 100
+     timers throttle spf 10 50 500
+  
+  
+    exit
+  
+    !
+    do write
 ok: [dut] => 
   msg: |-
     ospf configuration for dut
@@ -324,39 +364,12 @@ ok: [dut] =>
         }
       }
     }
-ok: [x1] => 
-  msg: |-
-    ospf configuration for x1
-    =========================================
-    !
-    ! OSPFv3 FRR configuration
-    !
-    interface lo
-    !
-     ipv6 ospf6 area 0.0.0.0
-    !
-    interface eth1
-    ! x1 -> dut
-     ipv6 ospf6 area 0.0.0.0
-     ipv6 ospf6 network point-to-point
-    !
-    !
-    router ospf6
-     ospf6 router-id 10.0.0.2
-     timers lsa min-arrival 100
-     timers throttle spf 10 50 500
-  
-  
-    exit
-  
-    !
-    do write
 
 TASK [Deploy ospf configuration] ***********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for x1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1
 
-TASK [junos_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/junos.j2] ***
+TASK [junos_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/junos.j2] ***
 [WARNING]:  statement not found
 changed: [dut]
 
@@ -366,10 +379,10 @@ changed: [x1]
 TASK [set_fact] ****************************************************************
 ok: [x1]
 
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 skipping: [x1]
 
-TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [x1]
 
 PLAY [Deploy custom deployment templates] **************************************

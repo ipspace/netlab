@@ -1,11 +1,12 @@
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+[WARNING]: Found variable using reserved name: hosts
 
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [s2]
-ok: [ce1]
 ok: [ce2]
+ok: [ce1]
 ok: [s1]
 
 TASK [Find device readiness script] ********************************************
@@ -44,6 +45,12 @@ skipping: [s2]
 skipping: [ce1]
 skipping: [ce2]
 
+TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [s2]
+ok: [ce1]
+ok: [ce2]
+ok: [s1]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [s2]
 skipping: [ce1]
@@ -54,18 +61,12 @@ ok: [s1] =>
     =========================================
     !
     interface Ethernet1
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0301
     !
     interface Ethernet2
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0302
-
-TASK [Find configuration deployment deploy_script for normalize] ***************
-skipping: [s2]
-skipping: [ce1]
-skipping: [ce2]
-ok: [s1]
 
 TASK [Deploy normalize configuration] ******************************************
 skipping: [s2]
@@ -100,6 +101,12 @@ skipping: [s2]
 skipping: [ce1]
 skipping: [ce2]
 
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [s2]
+ok: [ce1]
+ok: [ce2]
+ok: [s1]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [s2] => 
   msg: |-
@@ -120,6 +127,14 @@ ok: [s2] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
     #
     # Get the current next hop for the default route
     #
@@ -143,6 +158,12 @@ ok: [s2] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -155,16 +176,18 @@ ok: [s2] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1600
+    ip link set eth1 up
+    ip link set eth2 down
     sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+    ip link set dev eth2 mtu 1500
+    ip link set eth2 up
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1600
-    ip link set dev eth2 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -172,6 +195,7 @@ ok: [s2] =>
     cat >/tmp/config <<CONFIG
     hostname s2
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -215,6 +239,14 @@ ok: [ce1] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -237,6 +269,12 @@ ok: [ce1] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -249,14 +287,14 @@ ok: [ce1] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -264,6 +302,7 @@ ok: [ce1] =>
     cat >/tmp/config <<CONFIG
     hostname ce1
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -302,6 +341,14 @@ ok: [ce2] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -324,6 +371,12 @@ ok: [ce2] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -336,14 +389,14 @@ ok: [ce2] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -351,6 +404,7 @@ ok: [ce2] =>
     cat >/tmp/config <<CONFIG
     hostname ce2
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -380,6 +434,7 @@ ok: [s1] =>
     !
     lldp run
     ip routing
+    no ipv6 unicast-routing
     !
     vrf instance tenant
      rd 65000:1
@@ -419,12 +474,6 @@ ok: [s1] =>
      no shutdown
     !
 
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [s2]
-ok: [ce1]
-ok: [ce2]
-ok: [s1]
-
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for s1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for s2, ce1, ce2
@@ -444,9 +493,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for s2, ce1, ce2
 
 TASK [template] ****************************************************************
-changed: [ce2]
-changed: [s2]
 changed: [ce1]
+changed: [s2]
+changed: [ce2]
 
 TASK [set_fact] ****************************************************************
 ok: [s2]
@@ -486,8 +535,8 @@ ok: [s2]
 ok: [s1]
 
 TASK [Find configuration template for vlan] ************************************
-skipping: [ce2]
 skipping: [ce1]
+skipping: [ce2]
 ok: [s2]
 ok: [s1]
 
@@ -496,6 +545,12 @@ skipping: [ce1]
 skipping: [ce2]
 skipping: [s1]
 skipping: [s2]
+
+TASK [Find configuration deployment deploy_script for vlan] ********************
+skipping: [ce1]
+skipping: [ce2]
+ok: [s2]
+ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ce1]
@@ -508,18 +563,10 @@ ok: [s2] =>
     #
     set -e # Exit immediately when any command fails
     #
-  
-    exit 0
 ok: [s1] => 
   msg: |-
     vlan configuration for s1
     =========================================
-
-TASK [Find configuration deployment deploy_script for vlan] ********************
-skipping: [ce1]
-skipping: [ce2]
-ok: [s2]
-ok: [s1]
 
 TASK [Deploy vlan configuration] ***********************************************
 skipping: [ce1]
@@ -559,6 +606,12 @@ skipping: [ce1]
 skipping: [ce2]
 skipping: [s1]
 skipping: [s2]
+
+TASK [Find configuration deployment deploy_script for bgp] *********************
+skipping: [ce1]
+skipping: [ce2]
+ok: [s2]
+ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ce1]
@@ -636,12 +689,6 @@ ok: [s1] =>
       neighbor 10.0.0.4 route-map next-hop-self-ipv4 out
     !
 
-TASK [Find configuration deployment deploy_script for bgp] *********************
-skipping: [ce1]
-skipping: [ce2]
-ok: [s2]
-ok: [s1]
-
 TASK [Deploy bgp configuration] ************************************************
 skipping: [ce1]
 skipping: [ce2]
@@ -680,6 +727,12 @@ skipping: [ce1]
 skipping: [ce2]
 skipping: [s1]
 skipping: [s2]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+ok: [ce1]
+ok: [ce2]
+ok: [s2]
+ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [ce1] => 
@@ -738,31 +791,6 @@ ok: [ce2] =>
   
     !
     do write
-ok: [s1] => 
-  msg: |-
-    ospf configuration for s1
-    =========================================
-    !
-    ! OSPFv2 configuration
-    !
-    router ospf 1
-     router-id 10.0.0.3
-     interface unnumbered hello mask tx 0.0.0.0
-     timers spf delay initial 100 200 500
-     timers lsa rx min interval 100
-     timers lsa tx delay initial 100 200 500
-  
-  
-    !
-    interface Loopback0
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface Ethernet1
-    ! s1 -> s2
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
 ok: [s2] => 
   msg: |-
     ospf configuration for s2
@@ -791,21 +819,40 @@ ok: [s2] =>
   
     !
     do write
-
-TASK [Find configuration deployment deploy_script for ospf] ********************
-ok: [ce1]
-ok: [ce2]
-ok: [s2]
-ok: [s1]
+ok: [s1] => 
+  msg: |-
+    ospf configuration for s1
+    =========================================
+    !
+    ! OSPFv2 configuration
+    !
+    router ospf 1
+     router-id 10.0.0.3
+     interface unnumbered hello mask tx 0.0.0.0
+     timers spf delay initial 100 200 500
+     timers lsa rx min interval 100
+     timers lsa tx delay initial 100 200 500
+  
+  
+    !
+    interface Loopback0
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface Ethernet1
+    ! s1 -> s2
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
 
 TASK [Deploy ospf configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for ce1, ce2, s2
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for s1
 
 TASK [template] ****************************************************************
-changed: [s2]
 changed: [ce2]
 changed: [ce1]
+changed: [s2]
 
 TASK [set_fact] ****************************************************************
 ok: [ce1]
@@ -842,6 +889,12 @@ skipping: [ce1]
 skipping: [ce2]
 skipping: [s1]
 skipping: [s2]
+
+TASK [Find configuration deployment deploy_script for vrf] *********************
+skipping: [ce1]
+skipping: [ce2]
+ok: [s2]
+ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ce1]
@@ -952,12 +1005,6 @@ ok: [s1] =>
      ip ospf network point-to-point
     !
 
-TASK [Find configuration deployment deploy_script for vrf] *********************
-skipping: [ce1]
-skipping: [ce2]
-ok: [s2]
-ok: [s1]
-
 TASK [Deploy vrf configuration] ************************************************
 skipping: [ce1]
 skipping: [ce2]
@@ -997,6 +1044,12 @@ skipping: [ce2]
 skipping: [s1]
 skipping: [s2]
 
+TASK [Find configuration deployment deploy_script for vxlan] *******************
+skipping: [ce1]
+skipping: [ce2]
+ok: [s2]
+ok: [s1]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ce1]
 skipping: [ce2]
@@ -1011,8 +1064,6 @@ ok: [s2] =>
   
   
   
-    # Determine max MTU used on interfaces, to configure VXLAN interface
-  
     # Create L3 VNIs with bridges and add to correct vrf table
     ip link add vxlan5042 type vxlan \
       id 5042 \
@@ -1021,13 +1072,14 @@ ok: [s2] =>
     #
     # Add it to the VLAN bridge (create if needed for l3 vnis); disable STP
     if [ ! -e /sys/devices/virtual/net/tvni-100 ]; then
-    brctl addbr tvni-100
+    ip link add tvni-100 type bridge
     ip link set up dev tvni-100
     fi
-    brctl addif tvni-100 vxlan5042
-    brctl stp tvni-100 off
+    ip link set dev vxlan5042 master tvni-100
+    ip link set tvni-100 type bridge stp_state 0
+  
     # Do not generate ipv6 link-local address for VXLAN devices
-    ip link set mtu 1600 addrgenmode none dev vxlan5042
+    ip link set mtu 1500 addrgenmode none dev vxlan5042
     # Disable dynamic MAC learning for evpn, see https://docs.frrouting.org/en/latest/evpn.html
     bridge link set dev vxlan5042 learning off
     ip link set up dev vxlan5042
@@ -1042,12 +1094,6 @@ ok: [s1] =>
     =========================================
     interface vxlan 1
       vxlan source-interface Loopback0
-
-TASK [Find configuration deployment deploy_script for vxlan] *******************
-skipping: [ce1]
-skipping: [ce2]
-ok: [s2]
-ok: [s1]
 
 TASK [Deploy vxlan configuration] **********************************************
 skipping: [ce1]
@@ -1088,6 +1134,12 @@ skipping: [ce2]
 skipping: [s1]
 skipping: [s2]
 
+TASK [Find configuration deployment deploy_script for evpn] ********************
+skipping: [ce1]
+skipping: [ce2]
+ok: [s2]
+ok: [s1]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ce1]
 skipping: [ce2]
@@ -1095,6 +1147,10 @@ ok: [s2] =>
   msg: |-
     evpn configuration for s2
     =========================================
+    #!/bin/bash
+    #
+    set -e
+    cat >/tmp/evpn_config <<CONFIG
     router bgp 65000
      address-family l2vpn evpn
       advertise-all-vni
@@ -1104,7 +1160,7 @@ ok: [s2] =>
     ! Configure explicit Route Targets and RD per L2 VNI; auto-derived differs
   
       neighbor 10.0.0.3 activate
-      neighbor 10.0.0.3 soft-reconfiguration inbound
+    #  neighbor 10.0.0.3 soft-reconfiguration inbound
   
      exit-address-family
     !
@@ -1129,6 +1185,9 @@ ok: [s2] =>
     !
     !
     do write
+    CONFIG
+    vtysh -f /tmp/evpn_config
+    vtysh -c 'clear bgp *'
 ok: [s1] => 
   msg: |-
     evpn configuration for s1
@@ -1148,12 +1207,6 @@ ok: [s1] =>
     interface vxlan 1
      vxlan vrf tenant vni 5042
 
-TASK [Find configuration deployment deploy_script for evpn] ********************
-skipping: [ce1]
-skipping: [ce2]
-ok: [s2]
-ok: [s1]
-
 TASK [Deploy evpn configuration] ***********************************************
 skipping: [ce1]
 skipping: [ce2]
@@ -1170,19 +1223,19 @@ TASK [set_fact] ****************************************************************
 ok: [s2]
 
 TASK [run /tmp/config.sh to deploy evpn config from /home/pipi/net101/tools/netsim/ansible/templates/evpn/frr.j2] ***
-skipping: [s2]
+changed: [s2]
 
 TASK [run vtysh to import evpn config from /home/pipi/net101/tools/netsim/ansible/templates/evpn/frr.j2] ***
-changed: [s2]
+skipping: [s2]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-ce1                        : ok=35   changed=4    unreachable=0    failed=0    skipped=35   rescued=0    ignored=0   
-ce2                        : ok=35   changed=4    unreachable=0    failed=0    skipped=35   rescued=0    ignored=0   
+ce1                        : ok=36   changed=4    unreachable=0    failed=0    skipped=34   rescued=0    ignored=0   
+ce2                        : ok=36   changed=4    unreachable=0    failed=0    skipped=34   rescued=0    ignored=0   
 s1                         : ok=61   changed=7    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-s2                         : ok=71   changed=15   unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+s2                         : ok=72   changed=15   unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
 
 
 

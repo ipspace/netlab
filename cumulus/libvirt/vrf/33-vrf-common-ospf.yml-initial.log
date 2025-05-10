@@ -1,4 +1,5 @@
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+[WARNING]: Found variable using reserved name: hosts
 
 PLAY [Deploy initial device configuration] *************************************
 
@@ -21,7 +22,7 @@ skipping: [srv]
 skipping: [dut]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for r1, r2, srv, dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for r1, r2, srv, dut
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [r1]
@@ -41,13 +42,13 @@ skipping: [r2]
 skipping: [srv]
 skipping: [dut]
 
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [r1]
-skipping: [r2]
-skipping: [srv]
-skipping: [dut]
-
 TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [r1]
+ok: [r2]
+ok: [srv]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r1]
 skipping: [r2]
 skipping: [srv]
@@ -60,7 +61,7 @@ skipping: [srv]
 skipping: [dut]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for r1, r2, srv, dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for r1, r2, srv, dut
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [r1]
@@ -79,6 +80,12 @@ skipping: [r1]
 skipping: [r2]
 skipping: [srv]
 skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [r1]
+ok: [r2]
+ok: [srv]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [r1] => 
@@ -100,6 +107,14 @@ ok: [r1] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
     #
     # Get the current next hop for the default route
     #
@@ -123,6 +138,12 @@ ok: [r1] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -135,8 +156,10 @@ ok: [r1] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -148,6 +171,7 @@ ok: [r1] =>
     cat >/tmp/config <<CONFIG
     hostname r1
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -186,6 +210,14 @@ ok: [r2] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -208,6 +240,12 @@ ok: [r2] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -220,8 +258,10 @@ ok: [r2] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -233,6 +273,7 @@ ok: [r2] =>
     cat >/tmp/config <<CONFIG
     hostname r2
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -271,6 +312,14 @@ ok: [srv] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -293,6 +342,12 @@ ok: [srv] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -305,8 +360,10 @@ ok: [srv] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -318,6 +375,7 @@ ok: [srv] =>
     cat >/tmp/config <<CONFIG
     hostname srv
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -473,15 +531,9 @@ ok: [dut] =>
     CONFIG
     service lldpd restart
 
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [r1]
-ok: [r2]
-ok: [srv]
-ok: [dut]
-
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for r1, r2, srv
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for r1, r2, srv
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [r1 -> localhost]
@@ -492,29 +544,29 @@ skipping: [r2]
 skipping: [srv]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, srv
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, srv
 
 TASK [template] ****************************************************************
 changed: [r1]
-changed: [r2]
 changed: [srv]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
 ok: [r2]
 ok: [srv]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+changed: [r2]
 changed: [srv]
 changed: [r1]
-changed: [r2]
 
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r1]
 skipping: [r2]
 skipping: [srv]
 
-TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
+TASK [Render device configuration from /home/pipi/netlab_gh/netsim/ansible/templates/initial/cumulus.j2] ***
 ok: [dut]
 
 TASK [Create local temporary file] *********************************************
@@ -526,7 +578,7 @@ changed: [dut -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
 
-TASK [Remove temporary file /tmp/ansible.dut.2lcqk_8atemp] *********************
+TASK [Remove temporary file /tmp/ansible.dut._plyau39temp] *********************
 changed: [dut -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
@@ -538,8 +590,8 @@ ok: [r2]
 ok: [srv]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, srv => (item=ospf)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, srv => (item=vrf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, srv => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, srv => (item=vrf)
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [dut]
@@ -558,6 +610,12 @@ skipping: [dut]
 skipping: [r1]
 skipping: [r2]
 skipping: [srv]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+ok: [dut]
+ok: [r1]
+ok: [r2]
+ok: [srv]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -651,17 +709,11 @@ ok: [srv] =>
     !
     do write
 
-TASK [Find configuration deployment deploy_script for ospf] ********************
-ok: [dut]
-ok: [r1]
-ok: [r2]
-ok: [srv]
-
 TASK [Deploy ospf configuration] ***********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2, srv
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2, srv
 
-TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/ospf/cumulus.j2] ***
+TASK [Render device configuration from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/cumulus.j2] ***
 ok: [dut]
 
 TASK [Create local temporary file] *********************************************
@@ -673,28 +725,28 @@ changed: [dut -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
 
-TASK [Remove temporary file /tmp/ansible.dut.v_gj84agtemp] *********************
+TASK [Remove temporary file /tmp/ansible.dut.o11rskobtemp] *********************
 changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
-changed: [r2]
-changed: [srv]
 changed: [r1]
+changed: [srv]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
 ok: [r2]
 ok: [srv]
 
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
 skipping: [r1]
 skipping: [r2]
 skipping: [srv]
 
-TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [r2]
+TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [r1]
 changed: [srv]
+changed: [r2]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [dut]
@@ -713,6 +765,12 @@ skipping: [dut]
 skipping: [r1]
 skipping: [r2]
 skipping: [srv]
+
+TASK [Find configuration deployment deploy_script for vrf] *********************
+skipping: [r1]
+skipping: [r2]
+skipping: [srv]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r1]
@@ -885,19 +943,13 @@ ok: [dut] =>
     vtysh -f /tmp/vrf_config
     exit $?
 
-TASK [Find configuration deployment deploy_script for vrf] *********************
-skipping: [r1]
-skipping: [r2]
-skipping: [srv]
-ok: [dut]
-
 TASK [Deploy vrf configuration] ************************************************
 skipping: [r1]
 skipping: [r2]
 skipping: [srv]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
 
-TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/vrf/cumulus.j2] ***
+TASK [Render device configuration from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/cumulus.j2] ***
 ok: [dut]
 
 TASK [Create local temporary file] *********************************************
@@ -909,17 +961,17 @@ changed: [dut -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
 
-TASK [Remove temporary file /tmp/ansible.dut.xzjixg2ktemp] *********************
+TASK [Remove temporary file /tmp/ansible.dut.llcli5batemp] *********************
 changed: [dut -> localhost]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=39   changed=12   unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-r1                         : ok=28   changed=5    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
-r2                         : ok=27   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
-srv                        : ok=27   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+dut                        : ok=40   changed=12   unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+r1                         : ok=29   changed=5    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
+r2                         : ok=28   changed=4    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
+srv                        : ok=28   changed=4    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
 
 
 

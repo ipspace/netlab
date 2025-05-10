@@ -1,4 +1,5 @@
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+[WARNING]: Found variable using reserved name: hosts
 
 PLAY [Deploy initial device configuration] *************************************
 
@@ -18,11 +19,11 @@ skipping: [xf]
 skipping: [probe]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, xf, probe
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, xf, probe
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
-ok: [probe]
 ok: [xf]
+ok: [probe]
 ok: [dut]
 
 TASK [Find configuration template for normalize] *******************************
@@ -35,12 +36,12 @@ skipping: [dut]
 skipping: [xf]
 skipping: [probe]
 
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [dut]
-skipping: [xf]
-skipping: [probe]
-
 TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [xf]
+ok: [probe]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
 skipping: [xf]
 skipping: [probe]
@@ -51,11 +52,11 @@ skipping: [xf]
 skipping: [probe]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, xf, probe
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, xf, probe
 
 TASK [Figure out whether to deploy the module initial on current device] *******
-ok: [probe]
 ok: [xf]
+ok: [probe]
 ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
@@ -67,6 +68,11 @@ TASK [fail] ********************************************************************
 skipping: [dut]
 skipping: [xf]
 skipping: [probe]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [xf]
+ok: [probe]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [xf] => 
@@ -88,6 +94,14 @@ ok: [xf] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
     #
     # Get the current next hop for the default route
     #
@@ -111,6 +125,12 @@ ok: [xf] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -123,14 +143,14 @@ ok: [xf] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -138,6 +158,7 @@ ok: [xf] =>
     cat >/tmp/config <<CONFIG
     hostname xf
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -176,6 +197,14 @@ ok: [probe] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -198,6 +227,12 @@ ok: [probe] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -210,14 +245,14 @@ ok: [probe] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -225,6 +260,7 @@ ok: [probe] =>
     cat >/tmp/config <<CONFIG
     hostname probe
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -258,6 +294,8 @@ ok: [dut] =>
     !
     ip routing
     !
+    no ipv6 unicast-routing
+    !
     !
     interface Loopback0
      ip address 10.0.0.1 255.255.255.255
@@ -284,16 +322,11 @@ ok: [dut] =>
     no banner login
     no banner incoming
 
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [xf]
-ok: [probe]
-ok: [dut]
-
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for xf, probe
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for xf, probe
 
-TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
+TASK [ios_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/ios.j2] ***
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
 should be similar to how they appear if present in the running configuration on
 device including the indentation
@@ -307,7 +340,7 @@ skipping: [xf]
 skipping: [probe]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for xf, probe
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for xf, probe
 
 TASK [template] ****************************************************************
 changed: [probe]
@@ -317,11 +350,11 @@ TASK [set_fact] ****************************************************************
 ok: [xf]
 ok: [probe]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [xf]
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [probe]
+changed: [xf]
 
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [xf]
 skipping: [probe]
 
@@ -333,9 +366,9 @@ ok: [xf]
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe, xf => (item=routing)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe, xf => (item=bgp)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe, xf => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, probe, xf => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, probe, xf => (item=bgp)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, probe, xf => (item=ospf)
 
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [probe]
@@ -351,6 +384,11 @@ TASK [fail] ********************************************************************
 skipping: [dut]
 skipping: [probe]
 skipping: [xf]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [probe]
+skipping: [xf]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [probe]
@@ -373,17 +411,12 @@ ok: [dut] =>
     ! Static routes
     !
 
-TASK [Find configuration deployment deploy_script for routing] *****************
-skipping: [probe]
-skipping: [xf]
-ok: [dut]
-
 TASK [Deploy routing configuration] ********************************************
 skipping: [probe]
 skipping: [xf]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
 
-TASK [ios_config: deploying routing from /home/pipi/net101/tools/netsim/ansible/templates/routing/ios.j2] ***
+TASK [ios_config: deploying routing from /home/pipi/netlab_gh/netsim/ansible/templates/routing/ios.j2] ***
 changed: [dut]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
@@ -400,6 +433,11 @@ TASK [fail] ********************************************************************
 skipping: [dut]
 skipping: [probe]
 skipping: [xf]
+
+TASK [Find configuration deployment deploy_script for bgp] *********************
+skipping: [probe]
+ok: [xf]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [probe]
@@ -469,17 +507,12 @@ ok: [dut] =>
   
     !
 
-TASK [Find configuration deployment deploy_script for bgp] *********************
-skipping: [probe]
-ok: [xf]
-ok: [dut]
-
 TASK [Deploy bgp configuration] ************************************************
 skipping: [probe]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for xf
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for xf
 
-TASK [ios_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/ios.j2] ***
+TASK [ios_config: deploying bgp from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/ios.j2] ***
 changed: [dut]
 
 TASK [template] ****************************************************************
@@ -488,10 +521,10 @@ changed: [xf]
 TASK [set_fact] ****************************************************************
 ok: [xf]
 
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [xf]
 
-TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [xf]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
@@ -508,6 +541,11 @@ TASK [fail] ********************************************************************
 skipping: [dut]
 skipping: [probe]
 skipping: [xf]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+skipping: [xf]
+ok: [probe]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [xf]
@@ -559,17 +597,12 @@ ok: [dut] =>
      ip ospf network point-to-point
     !
 
-TASK [Find configuration deployment deploy_script for ospf] ********************
-skipping: [xf]
-ok: [probe]
-ok: [dut]
-
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [xf]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for probe
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for probe
 
-TASK [ios_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/ios.j2] ***
+TASK [ios_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/ios.j2] ***
 changed: [dut]
 
 TASK [template] ****************************************************************
@@ -578,19 +611,19 @@ changed: [probe]
 TASK [set_fact] ****************************************************************
 ok: [probe]
 
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
 skipping: [probe]
 
-TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [probe]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=34   changed=4    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
-probe                      : ok=29   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
-xf                         : ok=30   changed=5    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+dut                        : ok=35   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+probe                      : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+xf                         : ok=31   changed=5    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
 
 
 

@@ -22,7 +22,7 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x3, x1, x2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x3, x1, x2
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [dut]
@@ -61,7 +61,7 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x3, x1, x2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x3, x1, x2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
@@ -112,6 +112,7 @@ ok: [dut] =>
   
     - path: /interface[name=ethernet-1/1]
       value:
+       description: "dut ~ x1"
        subinterface:
         index: 0
         description: "dut ~ x1"
@@ -127,6 +128,7 @@ ok: [dut] =>
   
     - path: /interface[name=ethernet-1/2]
       value:
+       description: "dut ~ x2"
        subinterface:
         index: 0
         description: "dut ~ x2"
@@ -142,6 +144,7 @@ ok: [dut] =>
   
     - path: /interface[name=ethernet-1/3]
       value:
+       description: "dut ~ x3"
        subinterface:
         index: 0
         description: "dut ~ x3"
@@ -198,6 +201,14 @@ ok: [x3] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -220,6 +231,12 @@ ok: [x3] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -232,8 +249,10 @@ ok: [x3] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -245,6 +264,7 @@ ok: [x3] =>
     cat >/tmp/config <<CONFIG
     hostname x3
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -283,6 +303,14 @@ ok: [x1] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -305,6 +333,12 @@ ok: [x1] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -317,8 +351,10 @@ ok: [x1] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -330,6 +366,7 @@ ok: [x1] =>
     cat >/tmp/config <<CONFIG
     hostname x1
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -368,6 +405,14 @@ ok: [x2] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -390,6 +435,12 @@ ok: [x2] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -402,8 +453,10 @@ ok: [x2] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -415,6 +468,7 @@ ok: [x2] =>
     cat >/tmp/config <<CONFIG
     hostname x2
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -426,7 +480,7 @@ ok: [x2] =>
     !
     interface eth1
      no shutdown
-     description x2 -> dut [external]
+     description x2 -> dut
      ip address 10.1.0.6/30
     !
     do write
@@ -435,13 +489,13 @@ ok: [x2] =>
     exit 0
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for x3, x1, x2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for x3, x1, x2
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [dut]
 
-TASK [Update SRL initial node configuration (template=/home/pipi/netlab_gh/netsim/ansible/templates/initial/srlinux.j2)] ***
+TASK [Update SRL initial node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2)] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
@@ -456,24 +510,24 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for x3, x1, x2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x3, x1, x2
 
 TASK [template] ****************************************************************
-changed: [x3]
-changed: [x2]
 changed: [x1]
+changed: [x2]
+changed: [x3]
 
 TASK [set_fact] ****************************************************************
 ok: [x3]
 ok: [x1]
 ok: [x2]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x3]
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [x1]
+changed: [x3]
 changed: [x2]
 
-TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x3]
 skipping: [x1]
 skipping: [x2]
@@ -487,8 +541,8 @@ ok: [x2]
 ok: [x3]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3 => (item=bgp)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3 => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3 => (item=bgp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3 => (item=ospf)
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [dut]
@@ -510,8 +564,8 @@ skipping: [x3]
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [dut]
-ok: [x2]
 ok: [x1]
+ok: [x2]
 ok: [x3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -665,6 +719,7 @@ ok: [dut] =>
         statement:
         - name: prefixes
           match:
+           prefix:
             prefix-set: default_bgp_advertise
           action:
             policy-result: next-policy
@@ -711,13 +766,20 @@ ok: [dut] =>
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
       value:
         admin-state: enable
+    # neighbor: {'_source_intf': {'ifindex': 0, 'ifname': 'lo0.0', 'ipv4': '10.0.0.1/32', 'neighbors': [], 'type': 'loopback', 'virtual_interface': True}, 'activate': {'ipv4': True}, 'as': 65000, 'ipv4': '10.0.0.4', 'name': 'x3', 'type': 'ibgp'}
+    # ipv4: True
+    # ipv6: True
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
+          send-community-type: ['standard', 'large', 'extended']
+  
           import-policy: ['accept_all']
           export-policy: ['default_bgp_export', 'accept_all']
         - afi-safi-name: ipv6-unicast
           admin-state: disable
+          send-community-type: ['standard', 'large', 'extended']
+  
           import-policy: ['accept_all']
           export-policy: ['default_bgp_export', 'accept_all']
   
@@ -725,10 +787,6 @@ ok: [dut] =>
           connect-retry: 10
           _annotate_connect-retry: "Reduce default 120s to 10s"
           minimum-advertisement-interval: 1
-        send-community:
-          standard: True
-          large: True
-          _annotate_large: "Assuming 'standard' implies 'large' here"
         peer-as: 65000
         transport:
           local-address: 10.0.0.1
@@ -741,21 +799,35 @@ ok: [dut] =>
         - peer-address: "10.0.0.4"
           description: x3
           peer-group: ibgp-ipv4
+      # neighbor: {'_source_intf': {'ifindex': 0, 'ifname': 'lo0.0', 'ipv4': '10.0.0.1/32', 'neighbors': [], 'type': 'loopback', 'virtual_interface': True}, 'activate': {'ipv4': True}, 'as': 65000, 'ipv4': '10.0.0.4', 'name': 'x3', 'type': 'ibgp'}
+      # ipv4: True
+      # ipv6: False
           afi-safi:
           - afi-safi-name: ipv4-unicast
             admin-state: enable
+            send-community-type: ['standard', 'large', 'extended']
+  
+          - afi-safi-name: ipv6-unicast
+            admin-state: disable
   
   
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
       value:
         admin-state: enable
+    # neighbor: {'activate': {'ipv4': True}, 'as': 65100, 'ifindex': 1, 'ipv4': '10.1.0.2', 'local_as': 65002, 'name': 'x1', 'type': 'ebgp'}
+    # ipv4: True
+    # ipv6: True
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
+          send-community-type: ['standard', 'large']
+  
           import-policy: ['accept_all']
           export-policy: ['default_bgp_export', 'accept_all']
         - afi-safi-name: ipv6-unicast
           admin-state: disable
+          send-community-type: ['standard', 'large']
+  
           import-policy: ['accept_all']
           export-policy: ['default_bgp_export', 'accept_all']
   
@@ -763,10 +835,6 @@ ok: [dut] =>
           connect-retry: 10
           _annotate_connect-retry: "Reduce default 120s to 10s"
           minimum-advertisement-interval: 1
-        send-community:
-          standard: True
-          large: True
-          _annotate_large: "Assuming 'standard' implies 'large' here"
   
   
     - path: /network-instance[name=default]/protocols/bgp
@@ -775,9 +843,16 @@ ok: [dut] =>
         - peer-address: "10.1.0.2"
           description: x1
           peer-group: ebgp
+      # neighbor: {'activate': {'ipv4': True}, 'as': 65100, 'ifindex': 1, 'ipv4': '10.1.0.2', 'local_as': 65002, 'name': 'x1', 'type': 'ebgp'}
+      # ipv4: True
+      # ipv6: False
           afi-safi:
           - afi-safi-name: ipv4-unicast
             admin-state: enable
+            send-community-type: ['standard', 'large']
+  
+          - afi-safi-name: ipv6-unicast
+            admin-state: disable
   
           peer-as: 65100
           local-as:
@@ -787,13 +862,20 @@ ok: [dut] =>
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-local-as]
       value:
         admin-state: enable
+    # neighbor: {'activate': {'ipv4': True}, 'as': 65101, 'ifindex': 2, 'ipv4': '10.1.0.6', 'local_as': 65101, 'name': 'x2', 'type': 'localas_ibgp'}
+    # ipv4: True
+    # ipv6: True
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
+          send-community-type: ['standard', 'large', 'extended']
+  
           import-policy: ['accept_all']
           export-policy: ['default_bgp_export', 'accept_all']
         - afi-safi-name: ipv6-unicast
           admin-state: disable
+          send-community-type: ['standard', 'large', 'extended']
+  
           import-policy: ['accept_all']
           export-policy: ['default_bgp_export', 'accept_all']
   
@@ -801,10 +883,6 @@ ok: [dut] =>
           connect-retry: 10
           _annotate_connect-retry: "Reduce default 120s to 10s"
           minimum-advertisement-interval: 1
-        send-community:
-          standard: True
-          large: True
-          _annotate_large: "Assuming 'standard' implies 'large' here"
         peer-as: 65101
         next-hop-self: True
   
@@ -815,9 +893,16 @@ ok: [dut] =>
         - peer-address: "10.1.0.6"
           description: x2
           peer-group: ibgp-local-as
+      # neighbor: {'activate': {'ipv4': True}, 'as': 65101, 'ifindex': 2, 'ipv4': '10.1.0.6', 'local_as': 65101, 'name': 'x2', 'type': 'localas_ibgp'}
+      # ipv4: True
+      # ipv6: False
           afi-safi:
           - afi-safi-name: ipv4-unicast
             admin-state: enable
+            send-community-type: ['standard', 'large', 'extended']
+  
+          - afi-safi-name: ipv6-unicast
+            admin-state: disable
   
           transport:
             local-address: 10.1.0.5
@@ -836,13 +921,13 @@ ok: [dut] =>
           next-hop-group: blackhole
 
 TASK [Deploy bgp configuration] ************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2, x3
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2, x3
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [dut]
 
-TASK [Update SRL bgp node configuration (template=/home/pipi/netlab_gh/netsim/ansible/templates/bgp/srlinux.j2)] ***
+TASK [Update SRL bgp node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2)] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
@@ -858,15 +943,15 @@ ok: [x1]
 ok: [x2]
 ok: [x3]
 
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [x1]
 skipping: [x2]
 skipping: [x3]
 
-TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+changed: [x2]
 changed: [x1]
 changed: [x3]
-changed: [x2]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [dut]
@@ -918,7 +1003,12 @@ ok: [dut] =>
                 - interface-name: system0.0
                   passive: True
            # OSPF not configured on external interface ethernet-1/1
-           # OSPF not configured on external interface ethernet-1/2
+              - area-id: 0.0.0.0
+                interface:
+                - interface-name: ethernet-1/2.0
+                  interface-type: "point-to-point"
+                  failure-detection:
+                    enable-bfd: False
               - area-id: 0.0.0.0
                 interface:
                 - interface-name: ethernet-1/3.0
@@ -957,13 +1047,13 @@ ok: [x3] =>
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [x1]
 skipping: [x2]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for x3
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x3
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [dut]
 
-TASK [Update SRL ospf node configuration (template=/home/pipi/netlab_gh/netsim/ansible/templates/ospf/srlinux.j2)] ***
+TASK [Update SRL ospf node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2)] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
@@ -975,10 +1065,10 @@ changed: [x3]
 TASK [set_fact] ****************************************************************
 ok: [x3]
 
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 skipping: [x3]
 
-TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [x3]
 
 PLAY [Deploy custom deployment templates] **************************************

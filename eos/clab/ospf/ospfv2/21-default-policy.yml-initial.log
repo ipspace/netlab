@@ -1,4 +1,5 @@
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+[WARNING]: Found variable using reserved name: hosts
 
 PLAY [Deploy initial device configuration] *************************************
 
@@ -38,6 +39,11 @@ skipping: [dut]
 skipping: [xf]
 skipping: [probe]
 
+TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [xf]
+ok: [probe]
+ok: [dut]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [xf]
 skipping: [probe]
@@ -47,17 +53,12 @@ ok: [dut] =>
     =========================================
     !
     interface Ethernet1
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0101
     !
     interface Ethernet2
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0102
-
-TASK [Find configuration deployment deploy_script for normalize] ***************
-skipping: [xf]
-skipping: [probe]
-ok: [dut]
 
 TASK [Deploy normalize configuration] ******************************************
 skipping: [xf]
@@ -88,6 +89,11 @@ skipping: [dut]
 skipping: [xf]
 skipping: [probe]
 
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [xf]
+ok: [probe]
+ok: [dut]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [xf] => 
   msg: |-
@@ -108,6 +114,14 @@ ok: [xf] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
     #
     # Get the current next hop for the default route
     #
@@ -131,6 +145,12 @@ ok: [xf] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -143,14 +163,14 @@ ok: [xf] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -158,6 +178,7 @@ ok: [xf] =>
     cat >/tmp/config <<CONFIG
     hostname xf
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -196,6 +217,14 @@ ok: [probe] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -218,6 +247,12 @@ ok: [probe] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -230,14 +265,14 @@ ok: [probe] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -245,6 +280,7 @@ ok: [probe] =>
     cat >/tmp/config <<CONFIG
     hostname probe
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -274,6 +310,7 @@ ok: [dut] =>
     !
     lldp run
     ip routing
+    no ipv6 unicast-routing
     !
     !
     ip host probe 10.0.0.2 10.1.0.2
@@ -303,11 +340,6 @@ ok: [dut] =>
      no shutdown
     !
 
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [xf]
-ok: [probe]
-ok: [dut]
-
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for xf, probe
@@ -326,8 +358,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for xf, probe
 
 TASK [template] ****************************************************************
-changed: [xf]
 changed: [probe]
+changed: [xf]
 
 TASK [set_fact] ****************************************************************
 ok: [xf]
@@ -368,6 +400,11 @@ skipping: [dut]
 skipping: [probe]
 skipping: [xf]
 
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [probe]
+skipping: [xf]
+ok: [dut]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [probe]
 skipping: [xf]
@@ -391,11 +428,6 @@ ok: [dut] =>
     ! Static routes
     !
 
-TASK [Find configuration deployment deploy_script for routing] *****************
-skipping: [probe]
-skipping: [xf]
-ok: [dut]
-
 TASK [Deploy routing configuration] ********************************************
 skipping: [probe]
 skipping: [xf]
@@ -418,6 +450,11 @@ TASK [fail] ********************************************************************
 skipping: [dut]
 skipping: [probe]
 skipping: [xf]
+
+TASK [Find configuration deployment deploy_script for bgp] *********************
+skipping: [probe]
+ok: [xf]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [probe]
@@ -483,11 +520,6 @@ ok: [dut] =>
       neighbor 10.1.0.6 activate
     !
 
-TASK [Find configuration deployment deploy_script for bgp] *********************
-skipping: [probe]
-ok: [xf]
-ok: [dut]
-
 TASK [Deploy bgp configuration] ************************************************
 skipping: [probe]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for dut
@@ -522,6 +554,11 @@ TASK [fail] ********************************************************************
 skipping: [dut]
 skipping: [probe]
 skipping: [xf]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+skipping: [xf]
+ok: [probe]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [xf]
@@ -580,11 +617,6 @@ ok: [dut] =>
      ip ospf network point-to-point
     !
 
-TASK [Find configuration deployment deploy_script for ospf] ********************
-skipping: [xf]
-ok: [probe]
-ok: [dut]
-
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [xf]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for dut
@@ -610,8 +642,8 @@ skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
 dut                        : ok=40   changed=5    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
-probe                      : ok=29   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
-xf                         : ok=30   changed=5    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+probe                      : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+xf                         : ok=31   changed=5    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
 
 
 

@@ -76,15 +76,15 @@ TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
 ok: [r1]
 ok: [dut2]
-ok: [x1]
 ok: [x2]
+ok: [x1]
 
 TASK [Find configuration template for initial] *********************************
 ok: [dut]
 ok: [r1]
 ok: [dut2]
-ok: [x1]
 ok: [x2]
+ok: [x1]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -97,14 +97,15 @@ TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [dut]
 ok: [r1]
 ok: [dut2]
-ok: [x1]
 ok: [x2]
+ok: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
   msg: |-
     initial configuration for dut
     =========================================
+    set -x
     #!/bin/bash
     #
     # This script contains the 'ip' commands needed to set up container
@@ -117,10 +118,15 @@ ok: [dut] =>
   
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
     # Disable IPv4 and IPv6 forwarding
     #
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
+  
     #
     # Interface addressing, create any bond devices
     #
@@ -129,60 +135,49 @@ ok: [dut] =>
     ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.0.1/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+  
     ip link set dev eth2 up
     set +e
     ip addr del 172.16.1.1/24 dev eth2 2>/dev/null
     set -e
     ip addr add 172.16.1.1/24 dev eth2
+    sysctl -w net.ipv6.conf.eth2.disable_ipv6=1
     ip link set dev eth2 mtu 1500
+  
     ip link set dev eth3 up
     set +e
     ip addr del 172.16.2.1/24 dev eth3 2>/dev/null
     set -e
     ip addr add 172.16.2.1/24 dev eth3
+    sysctl -w net.ipv6.conf.eth3.disable_ipv6=1
     ip link set dev eth3 mtu 1500
+  
     ip link set dev eth4 up
     set +e
     ip addr del 172.0.66.1/24 dev eth4 2>/dev/null
     set -e
     ip addr add 172.0.66.1/24 dev eth4
+    sysctl -w net.ipv6.conf.eth4.disable_ipv6=1
     ip link set dev eth4 mtu 1500
+  
     ip link set dev eth5 up
     set +e
     ip addr del 172.0.42.1/24 dev eth5 2>/dev/null
     set -e
     ip addr add 172.0.42.1/24 dev eth5
+    sysctl -w net.ipv6.conf.eth5.disable_ipv6=1
     ip link set dev eth5 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.2.0.0/24 2>/dev/null; do
-      : ; done
-    #
-    #
-    echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.0.66.2 dev eth4 protocol static
-    ip route add 10.0.0.0/24 via 172.0.66.2 dev eth4 protocol static
-    ip route add 10.1.0.0/16 via 172.0.66.2 dev eth4 protocol static
-    ip route add 10.2.0.0/24 via 172.0.66.2 dev eth4 protocol static
-    #
-    # Print the final routing table
-    ip route
+  
+  
     #
     set -e
-    ip addr add fe80::1/64 dev lo scope link
 ok: [dut2] => 
   msg: |-
     initial configuration for dut2
     =========================================
+    set -x
     #!/bin/bash
     #
     # This script contains the 'ip' commands needed to set up container
@@ -195,17 +190,21 @@ ok: [dut2] =>
   
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
     # Disable IPv4 and IPv6 forwarding
     #
     sysctl -w net.ipv4.ip_forward=1
     sysctl -w net.ipv6.conf.all.forwarding=1
-    #
-    # Loopback addressing
-    #
     set +e
     ip addr del 10.0.0.2/32 dev lo 2>/dev/null
     set -e
     ip addr add 10.0.0.2/32 dev lo
+    sysctl -w net.ipv6.conf.lo.disable_ipv6=1
+  
+  
     #
     # Interface addressing, create any bond devices
     #
@@ -214,18 +213,12 @@ ok: [dut2] =>
     ip addr del 172.0.66.2/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.0.66.2/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    #
-    #
-    #
-    # Print the final routing table
-    ip route
+  
+  
     #
     set -e
-    ip addr add fe80::1/64 dev lo scope link
 ok: [r1] => 
   msg: |-
     initial configuration for r1
@@ -245,6 +238,14 @@ ok: [r1] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
     #
     # Get the current next hop for the default route
     #
@@ -268,6 +269,12 @@ ok: [r1] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -280,8 +287,10 @@ ok: [r1] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -293,6 +302,7 @@ ok: [r1] =>
     cat >/tmp/config <<CONFIG
     hostname r1
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -331,6 +341,14 @@ ok: [x2] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -353,6 +371,12 @@ ok: [x2] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -365,8 +389,10 @@ ok: [x2] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -378,6 +404,7 @@ ok: [x2] =>
     cat >/tmp/config <<CONFIG
     hostname x2
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -416,6 +443,14 @@ ok: [x1] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -438,6 +473,12 @@ ok: [x1] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -450,8 +491,10 @@ ok: [x1] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -463,6 +506,7 @@ ok: [x1] =>
     cat >/tmp/config <<CONFIG
     hostname x1
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -510,7 +554,7 @@ TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/a
 changed: [dut2 -> localhost]
 changed: [dut -> localhost]
 
-TASK [Remove temporary file /tmp/dut_initial-3lc_uu6y.sh] **********************
+TASK [Remove temporary file /tmp/dut_initial-sjxwy4gw.sh] **********************
 changed: [dut -> localhost]
 changed: [dut2 -> localhost]
 
@@ -536,8 +580,8 @@ ok: [x1]
 ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r1]
 changed: [x1]
+changed: [r1]
 changed: [x2]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
@@ -555,8 +599,100 @@ ok: [x1]
 ok: [x2]
 
 TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, dut2, r1, x1, x2 => (item=routing)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, dut2, r1, x1, x2 => (item=bgp)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, dut2, r1, x1, x2 => (item=ospf)
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [dut]
+ok: [dut2]
+ok: [r1]
+ok: [x1]
+ok: [x2]
+
+TASK [Find configuration template for routing] *********************************
+skipping: [dut2]
+skipping: [r1]
+skipping: [x1]
+ok: [dut]
+skipping: [x2]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [dut2]
+skipping: [r1]
+skipping: [x1]
+skipping: [x2]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [dut2]
+skipping: [r1]
+skipping: [x1]
+skipping: [x2]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut2]
+skipping: [r1]
+skipping: [x1]
+skipping: [x2]
+ok: [dut] => 
+  msg: |-
+    routing configuration for dut
+    =========================================
+    #!/bin/bash
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.0.5 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.0.5 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.0.5 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.0.5 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
+
+TASK [Deploy routing configuration] ********************************************
+skipping: [dut2]
+skipping: [r1]
+skipping: [x1]
+skipping: [x2]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for dut
+
+TASK [Define script filename and determine whether to execute in netns] ********
+ok: [dut]
+
+TASK [Create a temporary file for the rendered script] *************************
+changed: [dut -> localhost]
+
+TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
+changed: [dut -> localhost]
+
+TASK [Copy script into running container at /tmp/config-dut_routing.sh] ********
+skipping: [dut]
+
+TASK [Execute /tmp/config-dut_routing.sh to deploy routing config based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
+skipping: [dut]
+
+TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
+changed: [dut -> localhost]
+
+TASK [Remove temporary file /tmp/dut_routing-z68tz2u2.sh] **********************
+changed: [dut -> localhost]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [dut]
@@ -704,8 +840,8 @@ skipping: [dut2]
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r1, x1, x2
 
 TASK [template] ****************************************************************
-changed: [r1]
 changed: [x1]
+changed: [r1]
 changed: [x2]
 
 TASK [set_fact] ****************************************************************
@@ -719,9 +855,9 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [x1]
-changed: [r1]
 changed: [x2]
+changed: [r1]
+changed: [x1]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [dut]
@@ -808,11 +944,11 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=22   changed=4    unreachable=0    failed=0    skipped=17   rescued=0    ignored=0   
-dut2                       : ok=22   changed=4    unreachable=0    failed=0    skipped=17   rescued=0    ignored=0   
-r1                         : ok=36   changed=7    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
-x1                         : ok=28   changed=4    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
-x2                         : ok=28   changed=4    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
+dut                        : ok=33   changed=8    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+dut2                       : ok=24   changed=4    unreachable=0    failed=0    skipped=22   rescued=0    ignored=0   
+r1                         : ok=38   changed=7    unreachable=0    failed=0    skipped=16   rescued=0    ignored=0   
+x1                         : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+x2                         : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
 
 
 

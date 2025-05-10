@@ -1,4 +1,5 @@
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+[WARNING]: Found variable using reserved name: hosts
 
 PLAY [Deploy initial device configuration] *************************************
 
@@ -17,8 +18,41 @@ skipping: [h1]
 skipping: [h2]
 skipping: [r]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, r
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [h1]
+ok: [h2]
+ok: [r]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [h1]
+ok: [h2]
+ok: [r]
+
+TASK [fail] ********************************************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [r]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [h1]
+ok: [h2]
+ok: [r]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [h1]
+skipping: [h2]
+skipping: [r]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [r]
+
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, r
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, r
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [h1]
@@ -26,6 +60,16 @@ ok: [h2]
 ok: [r]
 
 TASK [Find configuration template for initial] *********************************
+ok: [h1]
+ok: [h2]
+ok: [r]
+
+TASK [fail] ********************************************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [r]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [h1]
 ok: [h2]
 ok: [r]
@@ -44,56 +88,32 @@ ok: [h1] =>
     #  /etc/hosts file is generated as a clab bind.
     #
     set -e
+  
     ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Disable IPv4 and IPv6 forwarding
     #
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
+  
     #
-    # Interface addressing
+    # Interface addressing, create any bond devices
     #
     ip link set dev eth1 up
     set +e
-    ip addr del 172.16.0.2/24 dev eth1 2>/dev/null
+    ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
     set -e
-    ip addr add 172.16.0.2/24 dev eth1
+    ip addr add 172.16.0.1/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
     set +e
-    ip -6 addr del 2001:db8:1::2/64 dev eth1 2>/dev/null
+    ip -6 addr del 2001:db8:1::1/64 dev eth1 2>/dev/null
     set -e
-    ip -6 addr add 2001:db8:1::2/64 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    # lan prefix: 172.16.0.0/16 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 172.16.0.0/16 2>/dev/null
-    set -e
-    ip route add 172.16.0.0/16 via 172.16.0.1
-    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.0.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.0.0.0/24 via 172.16.0.1
-    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.0.0/24
-    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.1.0.0/16 2>/dev/null
-    set -e
-    ip route add 10.1.0.0/16 via 172.16.0.1
-    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.0.0/24
-    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.0.0/24
-    set +e
-    ip route del 10.2.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.2.0.0/24 via 172.16.0.1
-    #
-    # Print the final routing table
-    ip route
+    ip -6 addr add 2001:db8:1::1/64 dev eth1
+    ip link set dev eth1 mtu 1500
 ok: [h2] => 
   msg: |-
     initial configuration for h2
@@ -107,56 +127,32 @@ ok: [h2] =>
     #  /etc/hosts file is generated as a clab bind.
     #
     set -e
+  
     ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Disable IPv4 and IPv6 forwarding
     #
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
+  
     #
-    # Interface addressing
+    # Interface addressing, create any bond devices
     #
     ip link set dev eth1 up
     set +e
-    ip addr del 172.16.1.3/24 dev eth1 2>/dev/null
+    ip addr del 172.16.1.2/24 dev eth1 2>/dev/null
     set -e
-    ip addr add 172.16.1.3/24 dev eth1
+    ip addr add 172.16.1.2/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
     set +e
-    ip -6 addr del 2001:db8:1:1::3/64 dev eth1 2>/dev/null
+    ip -6 addr del 2001:db8:1:1::2/64 dev eth1 2>/dev/null
     set -e
-    ip -6 addr add 2001:db8:1:1::3/64 dev eth1
-    ip link set eth1 mtu 1500
-    #
-    # Add routes to IPv4 address pools pointing to the first neighbor on the first link
-    #
-    # If you need anything better, use FRR instead of Linux and start routing (or use IPv6)
-    #
-    # lan prefix: 172.16.0.0/16 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 172.16.0.0/16 2>/dev/null
-    set -e
-    ip route add 172.16.0.0/16 via 172.16.1.1
-    # loopback prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 10.0.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.0.0.0/24 via 172.16.1.1
-    # mgmt prefix: 192.168.17.0/24 local subnet: 172.16.1.0/24
-    # p2p prefix: 10.1.0.0/16 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 10.1.0.0/16 2>/dev/null
-    set -e
-    ip route add 10.1.0.0/16 via 172.16.1.1
-    # router_id prefix: 10.0.0.0/24 local subnet: 172.16.1.0/24
-    # vrf_loopback prefix: 10.2.0.0/24 local subnet: 172.16.1.0/24
-    set +e
-    ip route del 10.2.0.0/24 2>/dev/null
-    set -e
-    ip route add 10.2.0.0/24 via 172.16.1.1
-    #
-    # Print the final routing table
-    ip route
+    ip -6 addr add 2001:db8:1:1::2/64 dev eth1
+    ip link set dev eth1 mtu 1500
 ok: [r] => 
   msg: |-
     initial configuration for r
@@ -186,15 +182,21 @@ ok: [r] =>
     #
     # Build hosts file
     #
-    hostname r
     #
     cat <<SCRIPT >/tmp/hosts
     #
     # Created by netlab initial
     #
-    172.16.0.2 2001:db8:1::2 h1
-    172.16.1.3 2001:db8:1:1::3 h2
-    10.0.0.1 172.16.0.1 172.16.1.1 2001:db8:0:1::1 2001:db8:1::1 2001:db8:1:1::1 r
+    172.16.0.1 h1 eth1.h1
+    2001:db8:1::1 h1 eth1.h1
+    172.16.1.2 h2 eth1.h2
+    2001:db8:1:1::2 h2 eth1.h2
+    10.0.0.132 r
+    2001:db8:0:84::1 r
+    172.16.0.132 Ethernet0.r
+    2001:db8:1::84 Ethernet0.r
+    172.16.1.132 Ethernet4.r
+    2001:db8:1:1::84 Ethernet4.r
     SCRIPT
     grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
     #
@@ -209,40 +211,40 @@ ok: [r] =>
     else
       config loopback add Loopback0
     fi
-    if show ip interface|grep Loopback0|grep 10.0.0.1/32; then
-      echo 10.0.0.1/32 already configured on Loopback0
+    if show ip interface|grep Loopback0|grep 10.0.0.132/32; then
+      echo 10.0.0.132/32 already configured on Loopback0
     else
-      config interface ip add Loopback0 10.0.0.1/32
+      config interface ip add Loopback0 10.0.0.132/32
     fi
-    if show ipv6 interface|grep Loopback0|grep 2001:db8:0:1::1/64; then
-      echo 2001:db8:0:1::1/64 already configured on Loopback0
+    if show ipv6 interface|grep Loopback0|grep 2001:db8:0:84::1/64; then
+      echo 2001:db8:0:84::1/64 already configured on Loopback0
     else
-      config interface ip add Loopback0 2001:db8:0:1::1/64
+      config interface ip add Loopback0 2001:db8:0:84::1/64
     fi
     !
-    if show ip interface|grep Ethernet0|grep 172.16.0.1/24; then
-      echo 172.16.0.1/24 already configured on Ethernet0
+    if show ip interface|grep Ethernet0|grep 172.16.0.132/24; then
+      echo 172.16.0.132/24 already configured on Ethernet0
     else
-      config interface ip add Ethernet0 172.16.0.1/24
+      config interface ip add Ethernet0 172.16.0.132/24
     fi
     config interface ipv6 enable use-link-local-only Ethernet0
-    if show ipv6 interface|grep Ethernet0|grep 2001:db8:1::1/64; then
-      echo 2001:db8:1::1/64 already configured on Ethernet0
+    if show ipv6 interface|grep Ethernet0|grep 2001:db8:1::84/64; then
+      echo 2001:db8:1::84/64 already configured on Ethernet0
     else
-      config interface ip add Ethernet0 2001:db8:1::1/64
+      config interface ip add Ethernet0 2001:db8:1::84/64
     fi
     config interface mtu Ethernet0 1548
     !
-    if show ip interface|grep Ethernet4|grep 172.16.1.1/24; then
-      echo 172.16.1.1/24 already configured on Ethernet4
+    if show ip interface|grep Ethernet4|grep 172.16.1.132/24; then
+      echo 172.16.1.132/24 already configured on Ethernet4
     else
-      config interface ip add Ethernet4 172.16.1.1/24
+      config interface ip add Ethernet4 172.16.1.132/24
     fi
     config interface ipv6 enable use-link-local-only Ethernet4
-    if show ipv6 interface|grep Ethernet4|grep 2001:db8:1:1::1/64; then
-      echo 2001:db8:1:1::1/64 already configured on Ethernet4
+    if show ipv6 interface|grep Ethernet4|grep 2001:db8:1:1::84/64; then
+      echo 2001:db8:1:1::84/64 already configured on Ethernet4
     else
-      config interface ip add Ethernet4 2001:db8:1:1::1/64
+      config interface ip add Ethernet4 2001:db8:1:1::84/64
     fi
     config interface mtu Ethernet4 1548
     !
@@ -286,28 +288,35 @@ ok: [r] =>
     docker exec bgp vtysh -f /etc/frr/do_config
     exit 0
 
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [h1]
-ok: [h2]
-ok: [r]
-
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/linux/initial-clab.yml for h1, h2
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sonic.yml for r
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sonic.yml for r
 
-TASK [set_fact] ****************************************************************
+TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
 ok: [h2]
 
-TASK [Create initial container setup from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+TASK [Create a temporary file for the rendered script] *************************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Initial container configuration via /tmp/config-xvJpSGUG-h1.sh] **********
+TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [file] ********************************************************************
+TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
+skipping: [h1]
+skipping: [h2]
+
+TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
+skipping: [h1]
+skipping: [h2]
+
+TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [Remove temporary file /tmp/h1_initial-cvlkwk06.sh] ***********************
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
@@ -317,22 +326,135 @@ changed: [r]
 TASK [set_fact] ****************************************************************
 ok: [r]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/sonic.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/sonic.j2] ***
 changed: [r]
 
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/sonic.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/sonic.j2] ***
 skipping: [r]
 
 PLAY [Deploy module-specific configurations] ***********************************
-skipping: no hosts matched
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [h1]
+ok: [h2]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2 => (item=routing)
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [h1]
+ok: [h2]
+
+TASK [Find configuration template for routing] *********************************
+ok: [h1]
+ok: [h2]
+
+TASK [fail] ********************************************************************
+skipping: [h1]
+skipping: [h2]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+ok: [h1]
+ok: [h2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [h1] => 
+  msg: |-
+    routing configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.0.132 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.0.132 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.0.132 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.0.132 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
+ok: [h2] => 
+  msg: |-
+    routing configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.1.132 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.1.132 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.1.132 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.1.132 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
+
+TASK [Deploy routing configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
+
+TASK [Define script filename and determine whether to execute in netns] ********
+ok: [h1]
+ok: [h2]
+
+TASK [Create a temporary file for the rendered script] *************************
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
+skipping: [h1]
+skipping: [h2]
+
+TASK [Execute /tmp/config-h1_routing.sh to deploy routing config based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
+skipping: [h1]
+skipping: [h2]
+
+TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [Remove temporary file /tmp/h1_routing-25cvtzvb.sh] ***********************
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-h2                         : ok=12   changed=3    unreachable=0    failed=0    skipped=1    rescued=0    ignored=0   
-r                          : ok=11   changed=2    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
+h1                         : ok=29   changed=8    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+h2                         : ok=29   changed=8    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+r                          : ok=15   changed=2    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
 
 
 

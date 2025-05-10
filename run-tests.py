@@ -152,12 +152,17 @@ def include_test(dp_data: typing.Optional[Box], test: str) -> bool:
   
   return True
 
-def device_supports_test(device: str, t_data: Box, setup: Box) -> bool:
-  d_features = setup.defaults.devices[device].features or setup.defaults.daemons[device].features
+def device_supports_test(device: str, provider: str, t_data: Box, setup: Box) -> bool:
+  devices = setup.defaults.devices
+  daemons = setup.defaults.daemons
+  d_features = devices[device].features or daemons[device].features
+  dp_features = devices[device][provider].features or daemons[device][provider].features
+  d_features = d_features + dp_features
+
   rq_feature = t_data.supports or 'missing'
 
   if rq_feature not in d_features:
-    print(f'Device {device} does not support {rq_feature}, skipping')
+    print(f'Device {device} does not support {rq_feature} with provider {provider}, skipping')
     return False
   
   return True
@@ -211,7 +216,7 @@ def run_tests(setup: Box, limit: typing.Optional[str], dry_run: bool = False) ->
       for test in setup.tests:
         if not include_test(setup.devices[device][provider],test):
           continue
-        if not device_supports_test(device,setup.tests[test],setup):
+        if not device_supports_test(device,provider,setup.tests[test],setup):
           continue
         run_single_test(device,provider,setup.tests[test].path,
           limit=limit or setup.limits[test] or None,

@@ -1,4 +1,5 @@
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+[WARNING]: Found variable using reserved name: hosts
 
 PLAY [Deploy initial device configuration] *************************************
 
@@ -41,13 +42,13 @@ skipping: [h2]
 skipping: [srv]
 skipping: [dut]
 
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [h1]
-skipping: [h2]
-skipping: [srv]
-skipping: [dut]
-
 TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [h1]
+ok: [h2]
+ok: [srv]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
 skipping: [h2]
 skipping: [srv]
@@ -80,6 +81,12 @@ skipping: [h2]
 skipping: [srv]
 skipping: [dut]
 
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [h1]
+ok: [h2]
+ok: [srv]
+ok: [dut]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [h1] => 
   msg: |-
@@ -97,10 +104,15 @@ ok: [h1] =>
   
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
     # Disable IPv4 and IPv6 forwarding
     #
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
+  
     #
     # Interface addressing, create any bond devices
     #
@@ -111,14 +123,6 @@ ok: [h1] =>
     set -e
     ip -6 addr add 2001:db8:2::1/64 dev eth1
     ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    #
-    #
-    #
-    # Print the final routing table
-    ip route
 ok: [h2] => 
   msg: |-
     initial configuration for h2
@@ -135,10 +139,15 @@ ok: [h2] =>
   
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
     # Disable IPv4 and IPv6 forwarding
     #
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
+  
     #
     # Interface addressing, create any bond devices
     #
@@ -149,14 +158,6 @@ ok: [h2] =>
     set -e
     ip -6 addr add 2001:db8:2:1::2/64 dev eth1
     ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    #
-    #
-    #
-    # Print the final routing table
-    ip route
 ok: [srv] => 
   msg: |-
     initial configuration for srv
@@ -173,10 +174,15 @@ ok: [srv] =>
   
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
     # Disable IPv4 and IPv6 forwarding
     #
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
+  
     #
     # Interface addressing, create any bond devices
     #
@@ -187,14 +193,6 @@ ok: [srv] =>
     set -e
     ip -6 addr add 2001:db8:2:2::3/64 dev eth1
     ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    #
-    #
-    #
-    # Print the final routing table
-    ip route
 ok: [dut] => 
   msg: |-
     initial configuration for dut
@@ -211,6 +209,8 @@ ok: [dut] =>
     ip host h1 2001:db8:2::1
     ip host h2 2001:db8:2:1::2
     ip host srv 2001:db8:2:2::3
+    !
+    ip routing
     !
     ipv6 unicast-routing
     !
@@ -246,6 +246,7 @@ ok: [dut] =>
     !
     !
     interface Loopback0
+     ip address 10.0.0.4 255.255.255.255
      ipv6 address 2001:DB8:1:4::1/64
     !
     interface GigabitEthernet0/0
@@ -278,12 +279,6 @@ ok: [dut] =>
     no banner login
     no banner incoming
 
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [h1]
-ok: [h2]
-ok: [srv]
-ok: [dut]
-
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2, srv
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
@@ -299,9 +294,9 @@ changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
 changed: [srv -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -314,13 +309,13 @@ skipping: [h2]
 skipping: [srv]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h1 -> localhost]
 changed: [srv -> localhost]
 changed: [h2 -> localhost]
-
-TASK [Remove temporary file /tmp/h1_initial-_1hzgx0y.sh] ***********************
 changed: [h1 -> localhost]
+
+TASK [Remove temporary file /tmp/h1_initial-e8xhtl8b.sh] ***********************
 changed: [srv -> localhost]
+changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
 TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
@@ -345,6 +340,9 @@ ok: [dut]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for vrf] *********************
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -372,9 +370,6 @@ ok: [dut] =>
     !
     !
 
-TASK [Find configuration deployment deploy_script for vrf] *********************
-ok: [dut]
-
 TASK [Deploy vrf configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
 
@@ -385,10 +380,10 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=20   changed=2    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-h1                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-h2                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-srv                        : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+dut                        : ok=21   changed=2    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+h1                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+h2                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+srv                        : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 
 
 

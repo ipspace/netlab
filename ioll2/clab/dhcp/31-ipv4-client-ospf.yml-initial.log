@@ -1,0 +1,601 @@
+[WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [server]
+ok: [c1]
+ok: [c2]
+ok: [relay]
+
+TASK [Find device readiness script] ********************************************
+ok: [server]
+ok: [c1]
+ok: [c2]
+ok: [relay]
+
+TASK [Wait for device to become ready] *****************************************
+skipping: [server]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/ioll2-clab.yml for c1, c2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/eos-clab.yml for relay
+
+TASK [Check if 'sshpass' is installed] *****************************************
+ok: [c1 -> localhost]
+
+TASK [Check for 'timeout' command] *********************************************
+ok: [c2 -> localhost]
+ok: [c1 -> localhost]
+
+TASK [Execute local ssh command to check ioll2 readiness] **********************
+ok: [c1 -> localhost]
+ok: [c2 -> localhost]
+
+TASK [Confirm c1 SSH server works] *********************************************
+ok: [c1] => 
+  msg: Node c1 is ready.
+ok: [c2] => 
+  msg: Node c2 is ready.
+
+TASK [Wait for cEOS SSH daemon to start] ***************************************
+ok: [relay]
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for c1, c2, server, relay
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [server]
+ok: [c1]
+ok: [c2]
+ok: [relay]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [server]
+ok: [c1]
+ok: [c2]
+ok: [relay]
+
+TASK [fail] ********************************************************************
+skipping: [c1]
+skipping: [c2]
+skipping: [server]
+skipping: [relay]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [server]
+ok: [c1]
+ok: [c2]
+ok: [relay]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [server]
+ok: [c1] => 
+  msg: |-
+    normalize configuration for c1
+    =========================================
+    !
+    interface Ethernet0/1
+     shutdown
+     mac-address 52dc.cafe.0201
+ok: [c2] => 
+  msg: |-
+    normalize configuration for c2
+    =========================================
+    !
+    interface Ethernet0/1
+     shutdown
+     mac-address 52dc.cafe.0301
+ok: [relay] => 
+  msg: |-
+    normalize configuration for relay
+    =========================================
+    !
+    interface Ethernet1
+     shutdown
+     mac-address 52dc.cafe.0101
+    !
+    interface Ethernet2
+     shutdown
+     mac-address 52dc.cafe.0102
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [server]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for c1, c2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for relay
+
+TASK [ios_config: deploying normalize from /home/pipi/netlab_gh/netsim/ansible/templates/normalize/ioll2.j2] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [c1]
+changed: [c2]
+
+TASK [eos_config: deploying normalize from /home/pipi/netlab_gh/netsim/ansible/templates/normalize/eos.j2] ***
+changed: [relay]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for c1, c2, server, relay
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [server]
+ok: [c1]
+ok: [c2]
+ok: [relay]
+
+TASK [Find configuration template for initial] *********************************
+ok: [server]
+ok: [c1]
+ok: [c2]
+ok: [relay]
+
+TASK [fail] ********************************************************************
+skipping: [c1]
+skipping: [c2]
+skipping: [server]
+skipping: [relay]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [server]
+ok: [c1]
+ok: [c2]
+ok: [relay]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [server] => 
+  msg: |-
+    initial configuration for server
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+  
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.1.4/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+ok: [c1] => 
+  msg: |-
+    initial configuration for c1
+    =========================================
+    hostname c1
+    !
+    no ip domain lookup
+    !
+    lldp run
+    !
+    ip host c2 10.0.0.3
+    ip host relay 10.0.0.1 172.16.0.1 172.16.1.1
+    ip host server 172.16.1.4
+    !
+    ip routing
+    !
+    no ipv6 unicast-routing
+    !
+    !
+    interface Loopback0
+     ip address 10.0.0.2 255.255.255.255
+    !
+    interface Ethernet0/0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Ethernet0/1
+     no switchport
+     description c1 -> [c2,relay]
+     no shutdown
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
+    !
+    no banner exec
+    no banner login
+    no banner incoming
+ok: [c2] => 
+  msg: |-
+    initial configuration for c2
+    =========================================
+    hostname c2
+    !
+    no ip domain lookup
+    !
+    lldp run
+    !
+    ip host c1 10.0.0.2
+    ip host relay 10.0.0.1 172.16.0.1 172.16.1.1
+    ip host server 172.16.1.4
+    !
+    ip routing
+    !
+    no ipv6 unicast-routing
+    !
+    !
+    interface Loopback0
+     ip address 10.0.0.3 255.255.255.255
+    !
+    interface Ethernet0/0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Ethernet0/1
+     no switchport
+     description c2 -> [c1,relay]
+     no shutdown
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
+    !
+    no banner exec
+    no banner login
+    no banner incoming
+ok: [relay] => 
+  msg: |-
+    initial configuration for relay
+    =========================================
+    hostname relay
+    !
+    logging monitor debugging
+    aaa authorization exec default local
+    !
+    lldp run
+    ip routing
+    no ipv6 unicast-routing
+    !
+    !
+    ip host c1 10.0.0.2
+    ip host c2 10.0.0.3
+    ip host server 172.16.1.4
+    !
+    interface Management0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     ip address 10.0.0.1/32
+    !
+    interface Ethernet1
+     no switchport
+     description relay -> [c1,c2]
+     ip address 172.16.0.1/24
+    !
+     mac-address 52dc.cafe.0101
+     no shutdown
+    !
+    interface Ethernet2
+     no switchport
+     description relay -> server
+     ip address 172.16.1.1/24
+    !
+     mac-address 52dc.cafe.0102
+     no shutdown
+    !
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for c1, c2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for server
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for relay
+
+TASK [ios_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/ios.j2] ***
+changed: [c1]
+changed: [c2]
+
+TASK [Define script filename and determine whether to execute in netns] ********
+ok: [server]
+
+TASK [Create a temporary file for the rendered script] *************************
+changed: [server -> localhost]
+
+TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
+changed: [server -> localhost]
+
+TASK [Copy script into running container at /tmp/config-server_initial.sh] *****
+skipping: [server]
+
+TASK [Execute /tmp/config-server_initial.sh to deploy initial config based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
+skipping: [server]
+
+TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
+changed: [server -> localhost]
+
+TASK [Remove temporary file /tmp/server_initial-ljp04o1l.sh] *******************
+changed: [server -> localhost]
+
+TASK [eos_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/eos.j2] ***
+changed: [relay]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [server]
+ok: [c2]
+ok: [c1]
+ok: [relay]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for c1, c2, relay, server => (item=dhcp)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for c1, c2, relay, server => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for c1, c2, relay, server => (item=ospf)
+
+TASK [Figure out whether to deploy the module dhcp on current device] **********
+ok: [server]
+ok: [c1]
+ok: [c2]
+ok: [relay]
+
+TASK [Find configuration template for dhcp] ************************************
+skipping: [server]
+ok: [c1]
+ok: [c2]
+ok: [relay]
+
+TASK [fail] ********************************************************************
+skipping: [c1]
+skipping: [c2]
+skipping: [relay]
+skipping: [server]
+
+TASK [Find configuration deployment deploy_script for dhcp] ********************
+skipping: [server]
+ok: [c1]
+ok: [c2]
+ok: [relay]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [server]
+ok: [c1] => 
+  msg: |-
+    dhcp configuration for c1
+    =========================================
+    interface Ethernet0/1
+      ip address dhcp
+ok: [c2] => 
+  msg: |-
+    dhcp configuration for c2
+    =========================================
+    interface Ethernet0/1
+      ip address dhcp
+ok: [relay] => 
+  msg: |-
+    dhcp configuration for relay
+    =========================================
+    interface Ethernet1
+      ip helper-address 172.16.1.4
+
+TASK [Deploy dhcp configuration] ***********************************************
+skipping: [server]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for c1, c2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for relay
+
+TASK [ios_config: deploying dhcp from /home/pipi/netlab_gh/netsim/ansible/templates/dhcp/ios.j2] ***
+changed: [c1]
+changed: [c2]
+
+TASK [eos_config: deploying dhcp from /home/pipi/netlab_gh/netsim/ansible/templates/dhcp/eos.j2] ***
+changed: [relay]
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [server]
+ok: [c1]
+ok: [c2]
+ok: [relay]
+
+TASK [Find configuration template for routing] *********************************
+skipping: [c1]
+skipping: [c2]
+skipping: [relay]
+ok: [server]
+
+TASK [fail] ********************************************************************
+skipping: [c1]
+skipping: [c2]
+skipping: [relay]
+skipping: [server]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [c1]
+skipping: [c2]
+skipping: [relay]
+ok: [server]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [c1]
+skipping: [c2]
+skipping: [relay]
+ok: [server] => 
+  msg: |-
+    routing configuration for server
+    =========================================
+    #!/bin/bash
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.1.1 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.1.1 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.1.1 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.1.1 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
+
+TASK [Deploy routing configuration] ********************************************
+skipping: [c1]
+skipping: [c2]
+skipping: [relay]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for server
+
+TASK [Define script filename and determine whether to execute in netns] ********
+ok: [server]
+
+TASK [Create a temporary file for the rendered script] *************************
+changed: [server -> localhost]
+
+TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
+changed: [server -> localhost]
+
+TASK [Copy script into running container at /tmp/config-server_routing.sh] *****
+skipping: [server]
+
+TASK [Execute /tmp/config-server_routing.sh to deploy routing config based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
+skipping: [server]
+
+TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
+changed: [server -> localhost]
+
+TASK [Remove temporary file /tmp/server_routing-7tiw1j49.sh] *******************
+changed: [server -> localhost]
+
+TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [server]
+ok: [c1]
+ok: [c2]
+ok: [relay]
+
+TASK [Find configuration template for ospf] ************************************
+skipping: [server]
+ok: [c1]
+ok: [c2]
+ok: [relay]
+
+TASK [fail] ********************************************************************
+skipping: [c1]
+skipping: [c2]
+skipping: [relay]
+skipping: [server]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+skipping: [server]
+ok: [c1]
+ok: [c2]
+ok: [relay]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [server]
+ok: [c1] => 
+  msg: |-
+    ospf configuration for c1
+    =========================================
+    router ospf 1
+     router-id 10.0.0.2
+  
+  
+    !
+    interface Loopback0
+    !
+     ip ospf 1 area 0.0.0.0
+    !
+    interface Ethernet0/1
+    ! c1 -> [c2,relay]
+     ip ospf 1 area 0.0.0.0
+    !
+ok: [c2] => 
+  msg: |-
+    ospf configuration for c2
+    =========================================
+    router ospf 1
+     router-id 10.0.0.3
+  
+  
+    !
+    interface Loopback0
+    !
+     ip ospf 1 area 0.0.0.0
+    !
+    interface Ethernet0/1
+    ! c2 -> [c1,relay]
+     ip ospf 1 area 0.0.0.0
+    !
+ok: [relay] => 
+  msg: |-
+    ospf configuration for relay
+    =========================================
+    !
+    ! OSPFv2 configuration
+    !
+    router ospf 1
+     router-id 10.0.0.1
+     interface unnumbered hello mask tx 0.0.0.0
+     timers spf delay initial 100 200 500
+     timers lsa rx min interval 100
+     timers lsa tx delay initial 100 200 500
+  
+  
+    !
+    interface Loopback0
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface Ethernet1
+    ! relay -> [c1,c2]
+     ip ospf area 0.0.0.0
+    !
+    interface Ethernet2
+    ! relay -> server
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+
+TASK [Deploy ospf configuration] ***********************************************
+skipping: [server]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for c1, c2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for relay
+
+TASK [ios_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/ios.j2] ***
+changed: [c1]
+changed: [c2]
+
+TASK [eos_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/eos.j2] ***
+changed: [relay]
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+c1                         : ok=38   changed=4    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+c2                         : ok=37   changed=4    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+relay                      : ok=35   changed=4    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+server                     : ok=33   changed=8    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+
+
+
+Use this topology to test the OSPF over interfaces using dynamic DHCP addresses. Use
+'netlab validate' to check whether your devices acquired dynamic IPv4 addresses and whether they
+established OSPF adjacency with the DHCP relay.
+

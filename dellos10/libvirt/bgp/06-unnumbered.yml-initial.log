@@ -22,7 +22,7 @@ skipping: [x2]
 skipping: [x3]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [x1]
@@ -61,7 +61,7 @@ skipping: [x2]
 skipping: [x3]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [x1]
@@ -110,6 +110,14 @@ ok: [x1] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -132,6 +140,12 @@ ok: [x1] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -144,11 +158,11 @@ ok: [x1] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -160,6 +174,7 @@ ok: [x1] =>
     cat >/tmp/config <<CONFIG
     hostname x1
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -200,6 +215,14 @@ ok: [x2] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -222,6 +245,12 @@ ok: [x2] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -234,11 +263,11 @@ ok: [x2] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -250,6 +279,7 @@ ok: [x2] =>
     cat >/tmp/config <<CONFIG
     hostname x2
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -290,6 +320,14 @@ ok: [x3] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -312,6 +350,12 @@ ok: [x3] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -324,8 +368,10 @@ ok: [x3] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -337,6 +383,7 @@ ok: [x3] =>
     cat >/tmp/config <<CONFIG
     hostname x3
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -411,13 +458,13 @@ ok: [dut] =>
     !
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/dellos10.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for x1, x2, x3
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/dellos10.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for x1, x2, x3
 
 TASK [wait_for_connection] *****************************************************
 skipping: [dut]
 
-TASK [dellos10_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/dellos10.j2, save to startup=yes] ***
+TASK [dellos10_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/dellos10.j2, save to startup=yes] ***
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
@@ -429,7 +476,7 @@ skipping: [x2]
 skipping: [x3]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2, x3
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2, x3
 
 TASK [template] ****************************************************************
 changed: [x1]
@@ -441,12 +488,12 @@ ok: [x1]
 ok: [x2]
 ok: [x3]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x3]
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [x1]
 changed: [x2]
+changed: [x3]
 
-TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
 skipping: [x2]
 skipping: [x3]
@@ -460,7 +507,7 @@ ok: [x3]
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3 => (item=bgp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3 => (item=bgp)
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [x1]
@@ -557,83 +604,6 @@ ok: [x2] =>
     !
     !
     do write
-ok: [dut] => 
-  msg: |-
-    bgp configuration for dut
-    =========================================
-    !
-    router bgp 65000
-      log-neighbor-changes
-  
-    ! define a generic unnumbered template to be used for eBGP unnumbered...
-    ! additionally, need to define link-local-only-nexthop as per Dell suggested "Cumulus workaround"
-    ! WTF Dell...
-      template unnumbered_ebgp
-        link-local-only-nexthop
-        exit
-  
-      router-id 10.0.0.1
-    !
-      neighbor interface ethernet1/1/1
-    ! This is an unnumbered eBGP session
-    ! WTF Remote-AS configuration not supported for unnumbered peer
-        inherit template unnumbered_ebgp inherit-type ebgp
-  
-        description "x1"
-        send-community standard
-  
-    !
-     address-family ipv4 unicast
-       soft-reconfiguration inbound
-       activate
-     exit
-  
-  
-      no shutdown
-      exit
-    !
-      neighbor interface ethernet1/1/2
-    ! This is an unnumbered eBGP session
-    ! WTF Remote-AS configuration not supported for unnumbered peer
-        inherit template unnumbered_ebgp inherit-type ebgp
-  
-        description "x2"
-        send-community standard
-  
-    !
-     address-family ipv4 unicast
-       soft-reconfiguration inbound
-       activate
-     exit
-  
-  
-      no shutdown
-      exit
-    !
-      neighbor 10.1.0.2
-        remote-as 65102
-  
-        description "x3"
-        send-community standard
-  
-    !
-     address-family ipv4 unicast
-       soft-reconfiguration inbound
-       activate
-     exit
-  
-  
-      no shutdown
-      exit
-    !
-    !
-     address-family ipv4 unicast
-    !
-      network 10.0.0.1/32
-    !
-    !
-    !
-    !
 ok: [x3] => 
   msg: |-
     bgp configuration for x3
@@ -669,36 +639,125 @@ ok: [x3] =>
     !
     !
     do write
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+    !
+    router bgp 65000
+      log-neighbor-changes
+  
+    ! define a generic unnumbered template to be used for eBGP unnumbered...
+    ! additionally, need to define link-local-only-nexthop as per Dell suggested "Cumulus workaround"
+    ! WTF Dell...
+      template unnumbered_ebgp
+        link-local-only-nexthop
+        exit
+  
+      router-id 10.0.0.1
+    !
+      neighbor interface ethernet1/1/1
+    ! This is an unnumbered eBGP session
+    ! WTF Remote-AS configuration not supported for unnumbered peer
+        inherit template unnumbered_ebgp inherit-type ebgp
+  
+        description "x1"
+        send-community standard
+  
+    !
+        address-family ipv4 unicast
+          soft-reconfiguration inbound
+          activate
+        exit
+        address-family ipv6 unicast
+          no activate
+        exit
+  
+        timers 3 9
+        advertisement-interval 1
+        no shutdown
+      exit
+    !
+      neighbor interface ethernet1/1/2
+    ! This is an unnumbered eBGP session
+    ! WTF Remote-AS configuration not supported for unnumbered peer
+        inherit template unnumbered_ebgp inherit-type ebgp
+  
+        description "x2"
+        send-community standard
+  
+    !
+        address-family ipv4 unicast
+          soft-reconfiguration inbound
+          activate
+        exit
+        address-family ipv6 unicast
+          no activate
+        exit
+  
+        timers 3 9
+        advertisement-interval 1
+        no shutdown
+      exit
+    !
+      neighbor 10.1.0.2
+        remote-as 65102
+  
+        description "x3"
+        send-community standard
+  
+    !
+        address-family ipv4 unicast
+          soft-reconfiguration inbound
+          activate
+        exit
+        address-family ipv6 unicast
+          no activate
+        exit
+  
+        timers 3 9
+        advertisement-interval 1
+        no shutdown
+      exit
+    !
+    !
+     address-family ipv4 unicast
+    !
+      network 10.0.0.1/32
+    !
+    !
+    !
+    !
 
 TASK [Deploy bgp configuration] ************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/dellos10.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2, x3
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/dellos10.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2, x3
 
 TASK [wait_for_connection] *****************************************************
 skipping: [dut]
 
-TASK [dellos10_config: deploying bgp from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/dellos10.j2, save to startup=yes] ***
+TASK [dellos10_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/dellos10.j2, save to startup=yes] ***
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [x2]
-changed: [x1]
 changed: [x3]
+changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
 ok: [x2]
 ok: [x3]
 
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [x1]
 skipping: [x2]
 skipping: [x3]
 
-TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [x2]
-changed: [x3]
 changed: [x1]
+changed: [x3]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched

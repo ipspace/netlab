@@ -30,16 +30,16 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [r1]
 ok: [r2]
-ok: [x1]
 ok: [rr2]
+ok: [x1]
 ok: [dut]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [r1]
-ok: [rr2]
 ok: [r2]
-ok: [dut]
+ok: [rr2]
 ok: [x1]
+ok: [dut]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -50,10 +50,10 @@ skipping: [x1]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [r1]
-ok: [r2]
 ok: [x1]
-ok: [dut]
+ok: [r2]
 ok: [rr2]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
@@ -82,8 +82,8 @@ ok: [dut]
 TASK [Find configuration template for initial] *********************************
 ok: [r1]
 ok: [r2]
-ok: [rr2]
 ok: [x1]
+ok: [rr2]
 ok: [dut]
 
 TASK [fail] ********************************************************************
@@ -95,8 +95,8 @@ skipping: [x1]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [r1]
-ok: [rr2]
 ok: [r2]
+ok: [rr2]
 ok: [x1]
 ok: [dut]
 
@@ -121,6 +121,14 @@ ok: [r1] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -143,6 +151,12 @@ ok: [r1] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -155,26 +169,26 @@ ok: [r1] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+    ip link set eth2 down
     sysctl -qw net.ipv6.conf.eth2.autoconf=0
     sysctl -qw net.ipv6.conf.eth2.accept_ra=0
-    ip link set eth2 down
-    ip link set eth2 up
     ip link set dev eth2 mtu 1500
+    ip link set eth2 up
+    ip link set eth3 down
     sysctl -qw net.ipv6.conf.eth3.autoconf=0
     sysctl -qw net.ipv6.conf.eth3.accept_ra=0
-    ip link set eth3 down
-    ip link set eth3 up
     ip link set dev eth3 mtu 1500
+    ip link set eth3 up
+    ip link set eth4 down
     sysctl -qw net.ipv6.conf.eth4.autoconf=0
     sysctl -qw net.ipv6.conf.eth4.accept_ra=0
-    ip link set eth4 down
-    ip link set eth4 up
     ip link set dev eth4 mtu 1500
+    ip link set eth4 up
   
     #
     # Add vtysh.conf file
@@ -186,10 +200,10 @@ ok: [r1] =>
     cat >/tmp/config <<CONFIG
     hostname r1
     !
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
@@ -253,6 +267,14 @@ ok: [x1] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -275,6 +297,12 @@ ok: [x1] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -287,11 +315,11 @@ ok: [x1] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -303,10 +331,10 @@ ok: [x1] =>
     cat >/tmp/config <<CONFIG
     hostname x1
     !
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
@@ -340,6 +368,8 @@ ok: [dut] =>
     ip host r2 2001:db8:1:3::1 2001:db8:3:2::3
     ip host rr2 2001:db8:1:2::1 2001:db8:3:1::2
     ip host x1 2001:db8:cafe:e::1 2001:db8:3:3::4
+    !
+    ip routing
     !
     ipv6 unicast-routing
     !
@@ -390,6 +420,14 @@ ok: [r2] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -412,6 +450,12 @@ ok: [r2] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -424,11 +468,11 @@ ok: [r2] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -440,10 +484,10 @@ ok: [r2] =>
     cat >/tmp/config <<CONFIG
     hostname r2
     !
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
@@ -483,6 +527,14 @@ ok: [rr2] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -505,6 +557,12 @@ ok: [rr2] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -517,11 +575,11 @@ ok: [rr2] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -533,10 +591,10 @@ ok: [rr2] =>
     cat >/tmp/config <<CONFIG
     hostname rr2
     !
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
@@ -586,10 +644,10 @@ changed: [x1]
 changed: [r1]
 
 TASK [set_fact] ****************************************************************
-ok: [r1]
 ok: [r2]
-ok: [x1]
 ok: [rr2]
+ok: [x1]
+ok: [r1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [r2]
@@ -627,8 +685,8 @@ TASK [Find configuration template for bgp] *************************************
 ok: [r1]
 ok: [r2]
 ok: [rr2]
-ok: [x1]
 ok: [dut]
+ok: [x1]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -639,10 +697,10 @@ skipping: [x1]
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [r1]
-ok: [r2]
 ok: [rr2]
-ok: [dut]
+ok: [r2]
 ok: [x1]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [r1] => 
@@ -691,6 +749,90 @@ ok: [r1] =>
       neighbor 2001:db8:1:2::1 send-community standard
       neighbor 2001:db8:1:2::1 send-community large
       neighbor 2001:db8:1:2::1 send-community extended
+    !
+    !
+    !
+    do write
+ok: [r2] => 
+  msg: |-
+    bgp configuration for r2
+    =========================================
+    !
+    router bgp 65000
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.3
+    !
+      neighbor 2001:db8:1:1::1 remote-as 65000
+      neighbor 2001:db8:1:1::1 description dut
+      neighbor 2001:db8:1:1::1 update-source lo
+    !
+      neighbor 2001:db8:1:2::1 remote-as 65000
+      neighbor 2001:db8:1:2::1 description rr2
+      neighbor 2001:db8:1:2::1 update-source lo
+    !
+     address-family ipv6 unicast
+    !
+  
+    !
+      network 2001:db8:1:3::/64
+    !
+    !
+    !
+      neighbor 2001:db8:1:1::1 activate
+      neighbor 2001:db8:1:1::1 next-hop-self
+      no neighbor 2001:db8:1:1::1 send-community all
+      neighbor 2001:db8:1:1::1 send-community standard
+      neighbor 2001:db8:1:1::1 send-community large
+      neighbor 2001:db8:1:1::1 send-community extended
+    !
+      neighbor 2001:db8:1:2::1 activate
+      neighbor 2001:db8:1:2::1 next-hop-self
+      no neighbor 2001:db8:1:2::1 send-community all
+      neighbor 2001:db8:1:2::1 send-community standard
+      neighbor 2001:db8:1:2::1 send-community large
+      neighbor 2001:db8:1:2::1 send-community extended
+    !
+    !
+    !
+    do write
+ok: [x1] => 
+  msg: |-
+    bgp configuration for x1
+    =========================================
+    !
+    router bgp 65101
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.4
+    !
+      neighbor 2001:db8:3:3::1 remote-as 65000
+      neighbor 2001:db8:3:3::1 description dut
+    !
+     address-family ipv6 unicast
+    !
+  
+    !
+      network 2001:db8:cafe:e::/64
+    !
+    !
+    !
+      neighbor 2001:db8:3:3::1 activate
+      no neighbor 2001:db8:3:3::1 send-community all
+      neighbor 2001:db8:3:3::1 send-community standard
+      neighbor 2001:db8:3:3::1 send-community large
     !
     !
     !
@@ -758,55 +900,6 @@ ok: [dut] =>
       neighbor 2001:db8:3:3::4 send-community standard
   
     !
-ok: [r2] => 
-  msg: |-
-    bgp configuration for r2
-    =========================================
-    !
-    router bgp 65000
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.3
-    !
-      neighbor 2001:db8:1:1::1 remote-as 65000
-      neighbor 2001:db8:1:1::1 description dut
-      neighbor 2001:db8:1:1::1 update-source lo
-    !
-      neighbor 2001:db8:1:2::1 remote-as 65000
-      neighbor 2001:db8:1:2::1 description rr2
-      neighbor 2001:db8:1:2::1 update-source lo
-    !
-     address-family ipv6 unicast
-    !
-  
-    !
-      network 2001:db8:1:3::/64
-    !
-    !
-    !
-      neighbor 2001:db8:1:1::1 activate
-      neighbor 2001:db8:1:1::1 next-hop-self
-      no neighbor 2001:db8:1:1::1 send-community all
-      neighbor 2001:db8:1:1::1 send-community standard
-      neighbor 2001:db8:1:1::1 send-community large
-      neighbor 2001:db8:1:1::1 send-community extended
-    !
-      neighbor 2001:db8:1:2::1 activate
-      neighbor 2001:db8:1:2::1 next-hop-self
-      no neighbor 2001:db8:1:2::1 send-community all
-      neighbor 2001:db8:1:2::1 send-community standard
-      neighbor 2001:db8:1:2::1 send-community large
-      neighbor 2001:db8:1:2::1 send-community extended
-    !
-    !
-    !
-    do write
 ok: [rr2] => 
   msg: |-
     bgp configuration for rr2
@@ -870,41 +963,6 @@ ok: [rr2] =>
     !
     !
     do write
-ok: [x1] => 
-  msg: |-
-    bgp configuration for x1
-    =========================================
-    !
-    router bgp 65101
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.4
-    !
-      neighbor 2001:db8:3:3::1 remote-as 65000
-      neighbor 2001:db8:3:3::1 description dut
-    !
-     address-family ipv6 unicast
-    !
-  
-    !
-      network 2001:db8:cafe:e::/64
-    !
-    !
-    !
-      neighbor 2001:db8:3:3::1 activate
-      no neighbor 2001:db8:3:3::1 send-community all
-      neighbor 2001:db8:3:3::1 send-community standard
-      neighbor 2001:db8:3:3::1 send-community large
-    !
-    !
-    !
-    do write
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
@@ -914,16 +972,16 @@ TASK [ios_config: deploying bgp from /home/pipi/netlab_gh/netsim/ansible/templat
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [r2]
 changed: [r1]
-changed: [x1]
+changed: [r2]
 changed: [rr2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
-ok: [r1]
 ok: [r2]
 ok: [rr2]
 ok: [x1]
+ok: [r1]
 
 TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [r1]
@@ -947,8 +1005,8 @@ ok: [dut]
 TASK [Find configuration template for ospf] ************************************
 ok: [r1]
 skipping: [x1]
-ok: [r2]
 ok: [rr2]
+ok: [r2]
 ok: [dut]
 
 TASK [fail] ********************************************************************
@@ -1004,52 +1062,6 @@ ok: [r1] =>
   
     !
     do write
-ok: [r2] => 
-  msg: |-
-    ospf configuration for r2
-    =========================================
-    !
-    ! OSPFv3 FRR configuration
-    !
-    interface lo
-    !
-     ipv6 ospf6 area 0.0.0.0
-    !
-    interface eth1
-    ! r2 -> r1
-     ipv6 ospf6 area 0.0.0.0
-     ipv6 ospf6 network point-to-point
-    !
-    !
-    router ospf6
-     ospf6 router-id 10.0.0.3
-     timers lsa min-arrival 100
-     timers throttle spf 10 50 500
-  
-  
-    exit
-  
-    !
-    do write
-ok: [dut] => 
-  msg: |-
-    ospf configuration for dut
-    =========================================
-    router ospfv3 1
-     router-id 10.0.0.1
-     address-family ipv6 unicast
-  
-  
-    !
-    interface Loopback0
-    !
-     ospfv3 1 ipv6 area 0.0.0.0
-    !
-    interface GigabitEthernet2
-    ! dut -> r1
-     ospfv3 1 ipv6 area 0.0.0.0
-     ospfv3 network point-to-point
-    !
 ok: [rr2] => 
   msg: |-
     ospf configuration for rr2
@@ -1077,6 +1089,52 @@ ok: [rr2] =>
   
     !
     do write
+ok: [dut] => 
+  msg: |-
+    ospf configuration for dut
+    =========================================
+    router ospfv3 1
+     router-id 10.0.0.1
+     address-family ipv6 unicast
+  
+  
+    !
+    interface Loopback0
+    !
+     ospfv3 1 ipv6 area 0.0.0.0
+    !
+    interface GigabitEthernet2
+    ! dut -> r1
+     ospfv3 1 ipv6 area 0.0.0.0
+     ospfv3 network point-to-point
+    !
+ok: [r2] => 
+  msg: |-
+    ospf configuration for r2
+    =========================================
+    !
+    ! OSPFv3 FRR configuration
+    !
+    interface lo
+    !
+     ipv6 ospf6 area 0.0.0.0
+    !
+    interface eth1
+    ! r2 -> r1
+     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 network point-to-point
+    !
+    !
+    router ospf6
+     ospf6 router-id 10.0.0.3
+     timers lsa min-arrival 100
+     timers throttle spf 10 50 500
+  
+  
+    exit
+  
+    !
+    do write
 
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [x1]
@@ -1087,9 +1145,9 @@ TASK [ios_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/templa
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [rr2]
-changed: [r1]
 changed: [r2]
+changed: [r1]
+changed: [rr2]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]

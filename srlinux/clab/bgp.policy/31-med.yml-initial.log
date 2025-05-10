@@ -80,10 +80,12 @@ ok: [dut] =>
         admin-state: enable
         address:
         - ip-prefix: "2001:db8:1:1::1/64"
+          type: "global-unicast"
   
   
     - path: /interface[name=ethernet-1/1]
       value:
+       description: "dut ~ probe"
        subinterface:
         index: 0
         description: "dut ~ probe"
@@ -100,6 +102,7 @@ ok: [dut] =>
         admin-state: enable
         address:
         - ip-prefix: "2001:db8:3::1/64"
+          type: "global-unicast"
         neighbor-discovery:
          learn-unsolicited: link-local
         router-advertisement:
@@ -142,6 +145,14 @@ ok: [probe] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -164,6 +175,12 @@ ok: [probe] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -176,11 +193,11 @@ ok: [probe] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -192,10 +209,11 @@ ok: [probe] =>
     cat >/tmp/config <<CONFIG
     hostname probe
     !
+    ip forwarding
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
@@ -305,7 +323,8 @@ ok: [dut] =>
             policy-result: accept
             bgp:
               med:
-                set: 42
+                operation: set
+                value: 42
 
 TASK [Deploy routing configuration] ********************************************
 skipping: [probe]
@@ -426,6 +445,7 @@ ok: [dut] =>
         statement:
         - name: prefixes
           match:
+           prefix:
             prefix-set: default_bgp_advertise
           action:
             policy-result: next-policy
@@ -477,13 +497,20 @@ ok: [dut] =>
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
       value:
         admin-state: enable
+    # neighbor: {'activate': {'ipv4': True, 'ipv6': True}, 'as': 65100, 'ifindex': 1, 'ipv4': '10.1.0.2', 'ipv6': '2001:db8:3::2', 'locpref': 17, 'med': 42, 'name': 'probe', 'policy': {'in': 'bp-probe-1-in', 'out': 'bp-probe-1-out'}, 'type': 'ebgp'}
+    # ipv4: True
+    # ipv6: True
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
+          send-community-type: ['standard', 'large']
+  
           import-policy: ['accept_all']
           export-policy: ['default_bgp_export', 'accept_all']
         - afi-safi-name: ipv6-unicast
           admin-state: enable
+          send-community-type: ['standard', 'large']
+  
           import-policy: ['accept_all']
           export-policy: ['default_bgp_export', 'accept_all']
   
@@ -491,10 +518,6 @@ ok: [dut] =>
           connect-retry: 10
           _annotate_connect-retry: "Reduce default 120s to 10s"
           minimum-advertisement-interval: 1
-        send-community:
-          standard: True
-          large: True
-          _annotate_large: "Assuming 'standard' implies 'large' here"
   
   
     - path: /network-instance[name=default]/protocols/bgp
@@ -503,22 +526,36 @@ ok: [dut] =>
         - peer-address: "10.1.0.2"
           description: probe
           peer-group: ebgp
+      # neighbor: {'activate': {'ipv4': True, 'ipv6': True}, 'as': 65100, 'ifindex': 1, 'ipv4': '10.1.0.2', 'ipv6': '2001:db8:3::2', 'locpref': 17, 'med': 42, 'name': 'probe', 'policy': {'in': 'bp-probe-1-in', 'out': 'bp-probe-1-out'}, 'type': 'ebgp'}
+      # ipv4: True
+      # ipv6: False
           afi-safi:
           - afi-safi-name: ipv4-unicast
             admin-state: enable
+            send-community-type: ['standard', 'large']
+  
+          - afi-safi-name: ipv6-unicast
+            admin-state: disable
   
           peer-as: 65100
   
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ebgp]
       value:
         admin-state: enable
+    # neighbor: {'activate': {'ipv4': True, 'ipv6': True}, 'as': 65100, 'ifindex': 1, 'ipv4': '10.1.0.2', 'ipv6': '2001:db8:3::2', 'locpref': 17, 'med': 42, 'name': 'probe', 'policy': {'in': 'bp-probe-1-in', 'out': 'bp-probe-1-out'}, 'type': 'ebgp'}
+    # ipv4: True
+    # ipv6: True
         afi-safi:
         - afi-safi-name: ipv4-unicast
           admin-state: enable
+          send-community-type: ['standard', 'large']
+  
           import-policy: ['accept_all']
           export-policy: ['default_bgp_export', 'accept_all']
         - afi-safi-name: ipv6-unicast
           admin-state: enable
+          send-community-type: ['standard', 'large']
+  
           import-policy: ['accept_all']
           export-policy: ['default_bgp_export', 'accept_all']
   
@@ -526,10 +563,6 @@ ok: [dut] =>
           connect-retry: 10
           _annotate_connect-retry: "Reduce default 120s to 10s"
           minimum-advertisement-interval: 1
-        send-community:
-          standard: True
-          large: True
-          _annotate_large: "Assuming 'standard' implies 'large' here"
   
   
     - path: /network-instance[name=default]/protocols/bgp
@@ -538,9 +571,16 @@ ok: [dut] =>
         - peer-address: "2001:db8:3::2"
           description: probe
           peer-group: ebgp
+      # neighbor: {'activate': {'ipv4': True, 'ipv6': True}, 'as': 65100, 'ifindex': 1, 'ipv4': '10.1.0.2', 'ipv6': '2001:db8:3::2', 'locpref': 17, 'med': 42, 'name': 'probe', 'policy': {'in': 'bp-probe-1-in', 'out': 'bp-probe-1-out'}, 'type': 'ebgp'}
+      # ipv4: False
+      # ipv6: True
           afi-safi:
+          - afi-safi-name: ipv4-unicast
+            admin-state: disable
           - afi-safi-name: ipv6-unicast
             admin-state: enable
+            send-community-type: ['standard', 'large']
+  
   
           peer-as: 65100
 
