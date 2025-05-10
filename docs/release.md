@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-**Release 2.0.0 (2025-05-09)**
+**Release 2.0.0 (2025-05-10)**
 
 * Well-defined [node roles](node-router-host) (**host**, **router**, **bridge**) available on [multiple platforms](platform-host)
 * **[firewall.zonebased](plugin-firewall-zonebased)** plugin
