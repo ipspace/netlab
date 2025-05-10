@@ -1,0 +1,875 @@
+[WARNING]: Invalid characters were found in group names but not replaced, use
+-vvvv to see details
+[WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [Find device readiness script] ********************************************
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [Wait for device to become ready] *****************************************
+skipping: [x1]
+skipping: [x2]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vjunos-router-clab.yml for dut
+
+TASK [Wait for SSH server] *****************************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vm-clab-ssh-check.yml for dut
+
+TASK [Check if 'sshpass' is installed] *****************************************
+ok: [dut -> localhost]
+
+TASK [Check for 'timeout' command] *********************************************
+ok: [dut -> localhost]
+
+TASK [Execute local ssh command to check vjunos-router readiness] **************
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-router readiness (60 retries left).
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-router readiness (59 retries left).
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-router readiness (58 retries left).
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-router readiness (57 retries left).
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-router readiness (56 retries left).
+ok: [dut -> localhost]
+
+TASK [Confirm dut SSH server works] ********************************************
+ok: [dut] => 
+  msg: Node dut is ready.
+
+TASK [Wait for ge-0/0/0 interface] *********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vjunos-switch.yml for dut
+
+TASK [Wait for ge-0/0/0 to appear] *********************************************
+ok: [dut]
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x1, x2, dut
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [x1]
+skipping: [x2]
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [x1]
+skipping: [x2]
+skipping: [dut]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [x1]
+skipping: [x2]
+skipping: [dut]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x1, x2, dut
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [Find configuration template for initial] *********************************
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [x1]
+skipping: [x2]
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [x1] => 
+  msg: |-
+    initial configuration for x1
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.autoconf=0
+    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+    ip link set eth2 down
+    sysctl -qw net.ipv6.conf.eth2.autoconf=0
+    sysctl -qw net.ipv6.conf.eth2.accept_ra=0
+    ip link set dev eth2 mtu 1500
+    ip link set eth2 up
+    ip link set eth3 down
+    sysctl -qw net.ipv6.conf.eth3.autoconf=0
+    sysctl -qw net.ipv6.conf.eth3.accept_ra=0
+    ip link set dev eth3 mtu 1500
+    ip link set eth3 up
+    ip link set eth4 down
+    sysctl -qw net.ipv6.conf.eth4.autoconf=0
+    sysctl -qw net.ipv6.conf.eth4.accept_ra=0
+    ip link set dev eth4 mtu 1500
+    ip link set eth4 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname x1
+    !
+    ip forwarding
+    ipv6 forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.2/32
+     ipv6 address 2001:db8:cafe:42::1/64
+    !
+    interface eth1
+     no shutdown
+     description x1 -> dut
+     ip address 10.1.0.2/30
+     ipv6 address 2001:db8:3::2/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    interface eth2
+     no shutdown
+     description x1 -> x2
+     ip address 10.1.0.5/30
+     ipv6 address 2001:db8:3:1::1/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    interface eth3
+     no shutdown
+     description x1 -> dut
+     ip address 10.1.0.10/30
+     ipv6 address 2001:db8:3:2::2/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    interface eth4
+     no shutdown
+     description x1 -> dut
+     ip address 10.1.0.14/30
+     ipv6 address 2001:db8:3:3::2/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
+ok: [x2] => 
+  msg: |-
+    initial configuration for x2
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.autoconf=0
+    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname x2
+    !
+    ip forwarding
+    ipv6 forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.3/32
+     ipv6 address 2001:db8:cafe:43::1/64
+    !
+    interface eth1
+     no shutdown
+     description x2 -> x1
+     ip address 10.1.0.6/30
+     ipv6 address 2001:db8:3:1::2/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    system {
+      host-name dut;
+      static-host-mapping {
+        x1 inet 10.0.0.2;
+        x2 inet 10.0.0.3;
+      }
+    }
+  
+  
+  
+  
+  
+  
+    policy-options {
+      community tg_65000_1 members target:65000:1;
+    }
+  
+  
+  
+    policy-options {
+      policy-statement vrf-transport-rt-export {
+        term 1 {
+          then {
+            community add tg_65000_1;
+            accept;
+          }
+        }
+      }
+  
+  
+  
+      policy-statement vrf-transport-rt-import {
+        term 1 {
+          from community [ tg_65000_1 ];
+          then accept;
+        }
+        term default {
+          then reject;
+        }
+      }
+    }
+  
+    routing-instances {
+  
+      transport {
+        instance-type vrf;
+        route-distinguisher 65000:1;
+  
+        vrf-import vrf-transport-rt-import;
+        vrf-export vrf-transport-rt-export;
+  
+        routing-options {
+          auto-export;
+        }
+  
+        interface ge-0/0/1.0;
+        interface ge-0/0/2.0;
+  
+      }
+  
+    }
+    interfaces {
+      ge-0/0/0 {
+        mtu 1514;
+      }
+      ge-0/0/1 {
+        mtu 1514;
+      }
+      ge-0/0/2 {
+        mtu 1514;
+      }
+  
+      lo0.0 {
+  
+          family inet {
+            address 10.0.0.1/32;
+          }
+          family inet6 {
+            address 2001:db8:1:1::1/64;
+          }
+  
+      }
+      ge-0/0/0.0 {
+        description "dut -> x1";
+  
+          family inet {
+            address 10.1.0.1/30;
+          }
+          family inet6 {
+            address 2001:db8:3::1/64;
+          }
+  
+      }
+      ge-0/0/1.0 {
+        description "dut -> x1";
+  
+          family inet {
+            address 10.1.0.9/30;
+          }
+          family inet6 {
+            address 2001:db8:3:2::1/64;
+          }
+  
+      }
+      ge-0/0/2.0 {
+        description "dut -> x1";
+  
+          family inet {
+            address 10.1.0.13/30;
+          }
+          family inet6 {
+            address 2001:db8:3:3::1/64;
+          }
+  
+      }
+    }
+    protocols {
+      lldp {
+        interface fxp0 {
+          disable;
+        }
+        interface all;
+      }
+      router-advertisement {
+        interface ge-0/0/0.0;
+        interface ge-0/0/1.0;
+        interface ge-0/0/2.0;
+      }
+    }
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for x1, x2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
+
+TASK [Attempt to load VRF kernel module] ***************************************
+changed: [x1 -> localhost]
+
+TASK [Disable FRR management VRF when modprobe fails] **************************
+skipping: [x1]
+skipping: [x2]
+
+TASK [include_tasks] ***********************************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
+
+TASK [template] ****************************************************************
+changed: [x2]
+changed: [x1]
+
+TASK [set_fact] ****************************************************************
+ok: [x1]
+ok: [x2]
+
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+changed: [x2]
+changed: [x1]
+
+TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+skipping: [x1]
+skipping: [x2]
+
+TASK [junos_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/junos.j2] ***
+changed: [dut]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=vrf)
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [Find configuration template for routing] *********************************
+skipping: [x1]
+skipping: [x2]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [x1]
+skipping: [x2]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [x1]
+skipping: [x2]
+ok: [dut] => 
+  msg: |-
+    routing configuration for dut
+    =========================================
+    policy-options community x-route-permit-mark members large:65535:0:65536;
+  
+  
+  
+  
+  
+  
+    routing-instances {
+      transport {
+  
+        routing-options {
+          static route 10.0.0.2/32 next-hop 10.1.0.10;
+        }
+  
+      }
+    }
+    routing-instances {
+      transport {
+  
+        routing-options {
+          static route 10.0.0.2/32 next-hop 10.1.0.14;
+        }
+  
+      }
+    }
+    routing-instances {
+      transport {
+  
+        routing-options {
+            rib transport.inet6.0 static route 2001:db8:cafe:42::/64 next-hop 2001:db8:3:2::2;
+        }
+  
+      }
+    }
+    routing-instances {
+      transport {
+  
+        routing-options {
+            rib transport.inet6.0 static route 2001:db8:cafe:42::/64 next-hop 2001:db8:3:3::2;
+        }
+  
+      }
+    }
+    routing-instances {
+      transport {
+  
+        routing-options {
+          static route 10.0.0.3/32 next-hop 10.1.0.10;
+        }
+  
+      }
+    }
+    routing-instances {
+      transport {
+  
+        routing-options {
+          static route 10.0.0.3/32 next-hop 10.1.0.14;
+        }
+  
+      }
+    }
+    routing-instances {
+      transport {
+  
+        routing-options {
+            rib transport.inet6.0 static route 2001:db8:cafe:43::/64 next-hop 2001:db8:3:2::2;
+        }
+  
+      }
+    }
+    routing-instances {
+      transport {
+  
+        routing-options {
+            rib transport.inet6.0 static route 2001:db8:cafe:43::/64 next-hop 2001:db8:3:3::2;
+        }
+  
+      }
+    }
+
+TASK [Deploy routing configuration] ********************************************
+skipping: [x1]
+skipping: [x2]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
+
+TASK [junos_config: deploying routing from /home/pipi/netlab_gh/netsim/ansible/templates/routing/junos.j2] ***
+changed: [dut]
+
+TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [Find configuration template for ospf] ************************************
+skipping: [dut]
+ok: [x1]
+ok: [x2]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+skipping: [dut]
+ok: [x1]
+ok: [x2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+ok: [x2] => 
+  msg: |-
+    ospf configuration for x2
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.3
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! x2 -> x1
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    ! OSPFv3 FRR configuration
+    !
+    interface lo
+    !
+     ipv6 ospf6 area 0.0.0.0
+    !
+    interface eth1
+    ! x2 -> x1
+     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 network point-to-point
+    !
+    !
+    router ospf6
+     ospf6 router-id 10.0.0.3
+     timers lsa min-arrival 100
+     timers throttle spf 10 50 500
+  
+  
+    exit
+  
+    !
+    do write
+ok: [x1] => 
+  msg: |-
+    ospf configuration for x1
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.2
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! x1 -> dut
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    interface eth2
+    ! x1 -> x2
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    interface eth3
+    ! x1 -> dut
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    interface eth4
+    ! x1 -> dut
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    ! OSPFv3 FRR configuration
+    !
+    interface lo
+    !
+     ipv6 ospf6 area 0.0.0.0
+    !
+    interface eth1
+    ! x1 -> dut
+     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 network point-to-point
+    !
+    interface eth2
+    ! x1 -> x2
+     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 network point-to-point
+    !
+    interface eth3
+    ! x1 -> dut
+     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 network point-to-point
+    !
+    interface eth4
+    ! x1 -> dut
+     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 network point-to-point
+    !
+    !
+    router ospf6
+     ospf6 router-id 10.0.0.2
+     timers lsa min-arrival 100
+     timers throttle spf 10 50 500
+  
+  
+    exit
+  
+    !
+    do write
+
+TASK [Deploy ospf configuration] ***********************************************
+skipping: [dut]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2
+
+TASK [template] ****************************************************************
+changed: [x1]
+changed: [x2]
+
+TASK [set_fact] ****************************************************************
+ok: [x1]
+ok: [x2]
+
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
+skipping: [x1]
+skipping: [x2]
+
+TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
+changed: [x2]
+changed: [x1]
+
+TASK [Figure out whether to deploy the module vrf on current device] ***********
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [Find configuration template for vrf] *************************************
+skipping: [x1]
+skipping: [x2]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
+TASK [Find configuration deployment deploy_script for vrf] *********************
+skipping: [x1]
+skipping: [x2]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [x1]
+skipping: [x2]
+ok: [dut] => 
+  msg: |-
+    vrf configuration for dut
+    =========================================
+
+TASK [Deploy vrf configuration] ************************************************
+skipping: [x1]
+skipping: [x2]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
+
+TASK [junos_config: deploying vrf from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/junos.j2] ***
+ok: [dut]
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+dut                        : ok=38   changed=2    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
+x1                         : ok=31   changed=5    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+x2                         : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+
+
+
+Use this topology to test VRF IPv4 and IPv6 static routes. DUT has
+to have static routes for loopback addresses of X1 and X2.
+

@@ -33,8 +33,8 @@ skipping: [h5]
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vptx.yml for r1, r3
 
 TASK [Wait for et-0/0/0 to appear] *********************************************
-ok: [r1]
 ok: [r3]
+ok: [r1]
 
 TASK [Normalize config on bridge-like devices] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for r2, h1, h2, h3, h4, h5, r1, r3
@@ -74,8 +74,8 @@ ok: [r2]
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [h5]
 ok: [h4]
+ok: [h5]
 ok: [r1]
 ok: [r3]
 
@@ -114,8 +114,8 @@ ok: [r3]
 
 TASK [Find configuration template for initial] *********************************
 ok: [r2]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 ok: [h3]
 ok: [h5]
 ok: [h4]
@@ -135,116 +135,14 @@ skipping: [r3]
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [r2]
 ok: [h1]
-ok: [h3]
 ok: [h2]
 ok: [h4]
+ok: [h3]
 ok: [h5]
-ok: [r3]
 ok: [r1]
+ok: [r3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [h2] => 
-  msg: |-
-    initial configuration for h2
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.3.5/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.3.5/24 dev eth1
-    ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.2.0.0/24 2>/dev/null; do
-      : ; done
-    #
-    #
-    echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.3.3 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.3.3 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.3.3 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.3.3 dev eth1 protocol static
-    #
-    # Print the final routing table
-    ip route
-ok: [h4] => 
-  msg: |-
-    initial configuration for h4
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.6.7/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.6.7/24 dev eth1
-    ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.2.0.0/24 2>/dev/null; do
-      : ; done
-    #
-    #
-    echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.6.3 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.6.3 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.6.3 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.6.3 dev eth1 protocol static
-    #
-    # Print the final routing table
-    ip route
 ok: [h1] => 
   msg: |-
     initial configuration for h1
@@ -261,41 +159,165 @@ ok: [h1] =>
   
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
     # Disable IPv4 and IPv6 forwarding
     #
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
+  
     #
     # Interface addressing, create any bond devices
     #
     ip link set dev eth1 up
     set +e
-    ip addr del 172.16.2.4/24 dev eth1 2>/dev/null
+    ip addr del 172.16.0.4/24 dev eth1 2>/dev/null
     set -e
-    ip addr add 172.16.2.4/24 dev eth1
+    ip addr add 172.16.0.4/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
     #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
     #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.2.0.0/24 2>/dev/null; do
-      : ; done
+    #  /etc/hosts file is generated as a clab bind.
     #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
     #
-    echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.2.1 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.2.1 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.2.1 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.2.1 dev eth1 protocol static
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
-    # Print the final routing table
-    ip route
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+  
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.1.5/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.1.5/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+ok: [h4] => 
+  msg: |-
+    initial configuration for h4
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+  
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.4.7/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.4.7/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+ok: [h5] => 
+  msg: |-
+    initial configuration for h5
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+  
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.2.8/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.2.8/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+ok: [h3] => 
+  msg: |-
+    initial configuration for h3
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+  
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.3.6/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.3.6/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
 ok: [r2] => 
   msg: |-
     initial configuration for r2
@@ -315,6 +337,14 @@ ok: [r2] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
     #
     # Get the current next hop for the default route
     #
@@ -338,6 +368,12 @@ ok: [r2] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -350,10 +386,14 @@ ok: [r2] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+    ip link set eth2 down
     sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
     ip link set dev eth2 mtu 1500
+    ip link set eth2 up
   
     #
     # Add vtysh.conf file
@@ -365,6 +405,7 @@ ok: [r2] =>
     cat >/tmp/config <<CONFIG
     hostname r2
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -408,344 +449,6 @@ ok: [r2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [h3] => 
-  msg: |-
-    initial configuration for h3
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.5.6/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.5.6/24 dev eth1
-    ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.2.0.0/24 2>/dev/null; do
-      : ; done
-    #
-    #
-    echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.5.1 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.5.1 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.5.1 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.5.1 dev eth1 protocol static
-    #
-    # Print the final routing table
-    ip route
-ok: [h5] => 
-  msg: |-
-    initial configuration for h5
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.4.8/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.4.8/24 dev eth1
-    ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.2.0.0/24 2>/dev/null; do
-      : ; done
-    #
-    #
-    echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.4.1 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.4.1 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.4.1 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.4.1 dev eth1 protocol static
-    #
-    # Print the final routing table
-    ip route
-ok: [r3] => 
-  msg: |-
-    initial configuration for r3
-    =========================================
-    system {
-      host-name r3;
-      static-host-mapping {
-        r2 inet 10.0.0.2;
-        h1 inet 172.16.2.4;
-        h2 inet 172.16.3.5;
-        h3 inet 172.16.5.6;
-        h4 inet 172.16.6.7;
-        h5 inet 172.16.4.8;
-        r1 inet 10.0.0.1;
-      }
-    }
-  
-  
-  
-  
-  
-  
-  
-  
-    policy-options {
-      community tg_65000_2 members target:65000:2;
-      community tg_65000_1 members target:65000:1;
-    }
-  
-  
-  
-    policy-options {
-      policy-statement vrf-blue-export {
-        term 1 {
-          then {
-            community add tg_65000_2;
-            accept;
-          }
-        }
-      }
-  
-  
-  
-      policy-statement vrf-blue-import {
-        term 1 {
-          from community [ tg_65000_2 ];
-          then accept;
-        }
-        term default {
-          then reject;
-        }
-      }
-      policy-statement vrf-red-export {
-        term 1 {
-          then {
-            community add tg_65000_1;
-            accept;
-          }
-        }
-      }
-  
-  
-  
-      policy-statement vrf-red-import {
-        term 1 {
-          from community [ tg_65000_1 ];
-          then accept;
-        }
-        term default {
-          then reject;
-        }
-      }
-    }
-  
-    routing-instances {
-  
-      blue {
-        instance-type vrf;
-        route-distinguisher 65000:2;
-  
-        vrf-import vrf-blue-import;
-        vrf-export vrf-blue-export;
-  
-        routing-options {
-          auto-export;
-        }
-  
-        interface et-0/0/2.0;
-        interface et-0/0/0.701;
-  
-      }
-  
-  
-      red {
-        instance-type vrf;
-        route-distinguisher 65000:1;
-  
-        vrf-import vrf-red-import;
-        vrf-export vrf-red-export;
-  
-        routing-options {
-          auto-export;
-        }
-  
-        interface et-0/0/1.0;
-        interface et-0/0/0.700;
-  
-      }
-  
-    }
-    interfaces {
-  
-  
-  
-  
-      et-0/0/0.0 {
-        vlan-id 4093;
-      }
-  
-  
-  
-  
-  
-  
-  
-      et-0/0/1 {
-        flexible-vlan-tagging;
-        native-vlan-id 1;
-      }
-  
-      et-0/0/1.0 {
-        vlan-id 1;
-      }
-  
-  
-  
-  
-  
-  
-  
-  
-      et-0/0/2 {
-        flexible-vlan-tagging;
-        native-vlan-id 1;
-      }
-  
-      et-0/0/2.0 {
-        vlan-id 1;
-      }
-  
-  
-  
-  
-  
-  
-      et-0/0/0 {
-        flexible-vlan-tagging;
-      }
-  
-      et-0/0/0.701 {
-        vlan-id 701;
-      }
-  
-  
-  
-  
-  
-  
-      et-0/0/0 {
-        flexible-vlan-tagging;
-      }
-  
-      et-0/0/0.700 {
-        vlan-id 700;
-      }
-  
-  
-  
-  
-  
-    }
-    interfaces {
-  
-      lo0.0 {
-  
-          family inet {
-            address 10.0.0.3/32;
-          }
-  
-      }
-      et-0/0/0.0 {
-        description "r3 -> r2";
-  
-  
-      }
-      et-0/0/1.0 {
-        description "r3 -> h2 [stub]";
-  
-          family inet {
-            address 172.16.3.3/24;
-          }
-  
-      }
-      et-0/0/2.0 {
-        description "r3 -> h4 [stub]";
-  
-          family inet {
-            address 172.16.6.3/24;
-          }
-  
-      }
-      et-0/0/0.701 {
-        description "r3 -> r2";
-  
-          family inet {
-            address 10.1.0.10/30;
-          }
-  
-      }
-      et-0/0/0.700 {
-        description "r3 -> r2";
-  
-          family inet {
-            address 10.1.0.14/30;
-          }
-  
-      }
-    }
-    protocols {
-      lldp {
-        interface re0:mgmt-0 {
-          disable;
-        }
-        interface all;
-      }
-    }
 ok: [r1] => 
   msg: |-
     initial configuration for r1
@@ -754,11 +457,11 @@ ok: [r1] =>
       host-name r1;
       static-host-mapping {
         r2 inet 10.0.0.2;
-        h1 inet 172.16.2.4;
-        h2 inet 172.16.3.5;
-        h3 inet 172.16.5.6;
-        h4 inet 172.16.6.7;
-        h5 inet 172.16.4.8;
+        h1 inet 172.16.0.4;
+        h2 inet 172.16.1.5;
+        h3 inet 172.16.3.6;
+        h4 inet 172.16.4.7;
+        h5 inet 172.16.2.8;
         r3 inet 10.0.0.3;
       }
     }
@@ -778,7 +481,7 @@ ok: [r1] =>
   
   
     policy-options {
-      policy-statement vrf-blue-export {
+      policy-statement vrf-blue-rt-export {
         term 1 {
           then {
             community add tg_65000_2;
@@ -789,7 +492,7 @@ ok: [r1] =>
   
   
   
-      policy-statement vrf-blue-import {
+      policy-statement vrf-blue-rt-import {
         term 1 {
           from community [ tg_65000_2 ];
           then accept;
@@ -798,7 +501,7 @@ ok: [r1] =>
           then reject;
         }
       }
-      policy-statement vrf-red-export {
+      policy-statement vrf-red-rt-export {
         term 1 {
           then {
             community add tg_65000_1;
@@ -809,7 +512,7 @@ ok: [r1] =>
   
   
   
-      policy-statement vrf-red-import {
+      policy-statement vrf-red-rt-import {
         term 1 {
           from community [ tg_65000_1 ];
           then accept;
@@ -826,8 +529,8 @@ ok: [r1] =>
         instance-type vrf;
         route-distinguisher 65000:2;
   
-        vrf-import vrf-blue-import;
-        vrf-export vrf-blue-export;
+        vrf-import vrf-blue-rt-import;
+        vrf-export vrf-blue-rt-export;
   
         routing-options {
           auto-export;
@@ -843,8 +546,8 @@ ok: [r1] =>
         instance-type vrf;
         route-distinguisher 65000:1;
   
-        vrf-import vrf-red-import;
-        vrf-export vrf-red-export;
+        vrf-import vrf-red-rt-import;
+        vrf-export vrf-red-rt-export;
   
         routing-options {
           auto-export;
@@ -962,7 +665,7 @@ ok: [r1] =>
         description "r1 -> h1 [stub]";
   
           family inet {
-            address 172.16.2.1/24;
+            address 172.16.0.1/24;
           }
   
       }
@@ -970,7 +673,7 @@ ok: [r1] =>
         description "r1 -> h5 [stub]";
   
           family inet {
-            address 172.16.4.1/24;
+            address 172.16.2.1/24;
           }
   
       }
@@ -978,7 +681,7 @@ ok: [r1] =>
         description "r1 -> h3 [stub]";
   
           family inet {
-            address 172.16.5.1/24;
+            address 172.16.3.1/24;
           }
   
       }
@@ -995,6 +698,242 @@ ok: [r1] =>
   
           family inet {
             address 10.1.0.5/30;
+          }
+  
+      }
+    }
+    protocols {
+      lldp {
+        interface re0:mgmt-0 {
+          disable;
+        }
+        interface all;
+      }
+    }
+ok: [r3] => 
+  msg: |-
+    initial configuration for r3
+    =========================================
+    system {
+      host-name r3;
+      static-host-mapping {
+        r2 inet 10.0.0.2;
+        h1 inet 172.16.0.4;
+        h2 inet 172.16.1.5;
+        h3 inet 172.16.3.6;
+        h4 inet 172.16.4.7;
+        h5 inet 172.16.2.8;
+        r1 inet 10.0.0.1;
+      }
+    }
+  
+  
+  
+  
+  
+  
+  
+  
+    policy-options {
+      community tg_65000_2 members target:65000:2;
+      community tg_65000_1 members target:65000:1;
+    }
+  
+  
+  
+    policy-options {
+      policy-statement vrf-blue-rt-export {
+        term 1 {
+          then {
+            community add tg_65000_2;
+            accept;
+          }
+        }
+      }
+  
+  
+  
+      policy-statement vrf-blue-rt-import {
+        term 1 {
+          from community [ tg_65000_2 ];
+          then accept;
+        }
+        term default {
+          then reject;
+        }
+      }
+      policy-statement vrf-red-rt-export {
+        term 1 {
+          then {
+            community add tg_65000_1;
+            accept;
+          }
+        }
+      }
+  
+  
+  
+      policy-statement vrf-red-rt-import {
+        term 1 {
+          from community [ tg_65000_1 ];
+          then accept;
+        }
+        term default {
+          then reject;
+        }
+      }
+    }
+  
+    routing-instances {
+  
+      blue {
+        instance-type vrf;
+        route-distinguisher 65000:2;
+  
+        vrf-import vrf-blue-rt-import;
+        vrf-export vrf-blue-rt-export;
+  
+        routing-options {
+          auto-export;
+        }
+  
+        interface et-0/0/2.0;
+        interface et-0/0/0.701;
+  
+      }
+  
+  
+      red {
+        instance-type vrf;
+        route-distinguisher 65000:1;
+  
+        vrf-import vrf-red-rt-import;
+        vrf-export vrf-red-rt-export;
+  
+        routing-options {
+          auto-export;
+        }
+  
+        interface et-0/0/1.0;
+        interface et-0/0/0.700;
+  
+      }
+  
+    }
+    interfaces {
+  
+  
+  
+  
+      et-0/0/0.0 {
+        vlan-id 4093;
+      }
+  
+  
+  
+  
+  
+  
+  
+      et-0/0/1 {
+        flexible-vlan-tagging;
+        native-vlan-id 1;
+      }
+  
+      et-0/0/1.0 {
+        vlan-id 1;
+      }
+  
+  
+  
+  
+  
+  
+  
+  
+      et-0/0/2 {
+        flexible-vlan-tagging;
+        native-vlan-id 1;
+      }
+  
+      et-0/0/2.0 {
+        vlan-id 1;
+      }
+  
+  
+  
+  
+  
+  
+      et-0/0/0 {
+        flexible-vlan-tagging;
+      }
+  
+      et-0/0/0.701 {
+        vlan-id 701;
+      }
+  
+  
+  
+  
+  
+  
+      et-0/0/0 {
+        flexible-vlan-tagging;
+      }
+  
+      et-0/0/0.700 {
+        vlan-id 700;
+      }
+  
+  
+  
+  
+  
+    }
+    interfaces {
+  
+      lo0.0 {
+  
+          family inet {
+            address 10.0.0.3/32;
+          }
+  
+      }
+      et-0/0/0.0 {
+        description "r3 -> r2";
+  
+  
+      }
+      et-0/0/1.0 {
+        description "r3 -> h2 [stub]";
+  
+          family inet {
+            address 172.16.1.3/24;
+          }
+  
+      }
+      et-0/0/2.0 {
+        description "r3 -> h4 [stub]";
+  
+          family inet {
+            address 172.16.4.3/24;
+          }
+  
+      }
+      et-0/0/0.701 {
+        description "r3 -> r2";
+  
+          family inet {
+            address 10.1.0.10/30;
+          }
+  
+      }
+      et-0/0/0.700 {
+        description "r3 -> r2";
+  
+          family inet {
+            address 10.1.0.14/30;
           }
   
       }
@@ -1042,18 +981,18 @@ ok: [h4]
 ok: [h5]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 changed: [h3 -> localhost]
+changed: [h1 -> localhost]
 changed: [h4 -> localhost]
 changed: [h5 -> localhost]
-changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
-changed: [h3 -> localhost]
-changed: [h5 -> localhost]
 changed: [h4 -> localhost]
 changed: [h2 -> localhost]
+changed: [h3 -> localhost]
+changed: [h5 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -1070,56 +1009,87 @@ skipping: [h4]
 skipping: [h5]
 
 TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
-changed: [h4 -> localhost]
+changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h5 -> localhost]
+changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-8aaew714.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-x4bb6ly2.sh] ***********************
 changed: [h1 -> localhost]
-changed: [h5 -> localhost]
-changed: [h4 -> localhost]
 changed: [h3 -> localhost]
+changed: [h4 -> localhost]
 changed: [h2 -> localhost]
+changed: [h5 -> localhost]
 
 TASK [junos_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/junos.j2] ***
-changed: [r1]
 changed: [r3]
+changed: [r1]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
+ok: [h1]
+ok: [h2]
+ok: [h4]
+ok: [h3]
+ok: [h5]
 ok: [r2]
 ok: [r1]
 ok: [r3]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for r1, r2, r3 => (item=vlan)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for r1, r2, r3 => (item=ospf)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for r1, r2, r3 => (item=vrf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, h3, h4, h5, r1, r2, r3 => (item=vlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, h3, h4, h5, r1, r2, r3 => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, h3, h4, h5, r1, r2, r3 => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, h3, h4, h5, r1, r2, r3 => (item=vrf)
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
+ok: [h1]
+ok: [h2]
+ok: [h3]
+ok: [h5]
+ok: [h4]
 ok: [r2]
 ok: [r1]
 ok: [r3]
 
 TASK [Find configuration template for vlan] ************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+skipping: [h5]
 ok: [r2]
 ok: [r1]
 ok: [r3]
 
 TASK [fail] ********************************************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+skipping: [h5]
 skipping: [r1]
 skipping: [r2]
 skipping: [r3]
 
 TASK [Find configuration deployment deploy_script for vlan] ********************
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+skipping: [h5]
 ok: [r2]
 ok: [r1]
 ok: [r3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+skipping: [h5]
 ok: [r2] => 
   msg: |-
     vlan configuration for r2
@@ -1144,9 +1114,6 @@ ok: [r2] =>
       ip link add link eth2 name eth2.700 type vlan id 700
       ip link set dev eth2.700 up
     fi
-  
-  
-    exit 0
 ok: [r1] => 
   msg: |-
     vlan configuration for r1
@@ -1171,13 +1138,18 @@ ok: [r3] =>
     }
 
 TASK [Deploy vlan configuration] ***********************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+skipping: [h5]
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for r1, r3
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r2
 
 TASK [junos_config: deploying vlan from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/vptx.j2] ***
 [WARNING]: mgd: statement has no contents; ignored
-ok: [r1]
 ok: [r3]
+ok: [r1]
 
 TASK [template] ****************************************************************
 changed: [r2]
@@ -1191,27 +1163,297 @@ changed: [r2]
 TASK [run vtysh to import vlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/frr.j2] ***
 skipping: [r2]
 
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [h1]
+ok: [h2]
+ok: [h3]
+ok: [h4]
+ok: [h5]
+ok: [r2]
+ok: [r1]
+ok: [r3]
+
+TASK [Find configuration template for routing] *********************************
+ok: [h1]
+ok: [h2]
+skipping: [r1]
+ok: [h3]
+skipping: [r2]
+ok: [h4]
+skipping: [r3]
+ok: [h5]
+
+TASK [fail] ********************************************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+skipping: [h5]
+skipping: [r1]
+skipping: [r2]
+skipping: [r3]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+ok: [h1]
+skipping: [r1]
+ok: [h2]
+ok: [h3]
+skipping: [r2]
+skipping: [r3]
+ok: [h4]
+ok: [h5]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [h1] => 
+  msg: |-
+    routing configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.0.1 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.0.1 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.0.1 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.0.1 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
+skipping: [r1]
+ok: [h2] => 
+  msg: |-
+    routing configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.1.3 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.1.3 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.1.3 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.1.3 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
+skipping: [r2]
+ok: [h3] => 
+  msg: |-
+    routing configuration for h3
+    =========================================
+    #!/bin/bash
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.3.1 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.3.1 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.3.1 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.3.1 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
+skipping: [r3]
+ok: [h5] => 
+  msg: |-
+    routing configuration for h5
+    =========================================
+    #!/bin/bash
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.2.1 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.2.1 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.2.1 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.2.1 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
+ok: [h4] => 
+  msg: |-
+    routing configuration for h4
+    =========================================
+    #!/bin/bash
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.4.3 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.4.3 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.4.3 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.4.3 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
+
+TASK [Deploy routing configuration] ********************************************
+skipping: [r1]
+skipping: [r2]
+skipping: [r3]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2, h3, h4, h5
+
+TASK [Define script filename and determine whether to execute in netns] ********
+ok: [h1]
+ok: [h2]
+ok: [h3]
+ok: [h4]
+ok: [h5]
+
+TASK [Create a temporary file for the rendered script] *************************
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+changed: [h4 -> localhost]
+changed: [h5 -> localhost]
+changed: [h3 -> localhost]
+
+TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
+changed: [h1 -> localhost]
+changed: [h3 -> localhost]
+changed: [h4 -> localhost]
+changed: [h5 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+skipping: [h5]
+
+TASK [Execute /tmp/config-h1_routing.sh to deploy routing config based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+skipping: [h5]
+
+TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+changed: [h3 -> localhost]
+changed: [h4 -> localhost]
+changed: [h5 -> localhost]
+
+TASK [Remove temporary file /tmp/h1_routing-xy7t0u6s.sh] ***********************
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+changed: [h3 -> localhost]
+changed: [h4 -> localhost]
+changed: [h5 -> localhost]
+
 TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [h1]
+ok: [h2]
+ok: [h3]
+ok: [h4]
+ok: [h5]
 ok: [r2]
 ok: [r1]
 ok: [r3]
 
 TASK [Find configuration template for ospf] ************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+skipping: [h5]
 ok: [r2]
 ok: [r1]
 ok: [r3]
 
 TASK [fail] ********************************************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+skipping: [h5]
 skipping: [r1]
 skipping: [r2]
 skipping: [r3]
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+skipping: [h5]
 ok: [r2]
 ok: [r1]
 ok: [r3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+skipping: [h5]
 ok: [r1] => 
   msg: |-
     ospf configuration for r1
@@ -1228,6 +1470,11 @@ ok: [r3] =>
     =========================================
 
 TASK [Deploy ospf configuration] ***********************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+skipping: [h5]
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for r1, r3
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r2
 
@@ -1248,26 +1495,51 @@ TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/t
 changed: [r2]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
+ok: [h1]
+ok: [h2]
+ok: [h3]
+ok: [h4]
+ok: [h5]
 ok: [r2]
 ok: [r1]
 ok: [r3]
 
 TASK [Find configuration template for vrf] *************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+skipping: [h5]
 ok: [r2]
 ok: [r1]
 ok: [r3]
 
 TASK [fail] ********************************************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+skipping: [h5]
 skipping: [r1]
 skipping: [r2]
 skipping: [r3]
 
 TASK [Find configuration deployment deploy_script for vrf] *********************
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+skipping: [h5]
 ok: [r2]
 ok: [r1]
 ok: [r3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+skipping: [h5]
 ok: [r1] => 
   msg: |-
     vrf configuration for r1
@@ -1589,6 +1861,11 @@ ok: [r2] =>
     exit $?
 
 TASK [Deploy vrf configuration] ************************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+skipping: [h5]
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for r1, r3
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r2
 
@@ -1613,14 +1890,14 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-h2                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-h3                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-h4                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-h5                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-r1                         : ok=37   changed=2    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-r2                         : ok=45   changed=9    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
-r3                         : ok=37   changed=2    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+h1                         : ok=35   changed=8    unreachable=0    failed=0    skipped=25   rescued=0    ignored=0   
+h2                         : ok=35   changed=8    unreachable=0    failed=0    skipped=25   rescued=0    ignored=0   
+h3                         : ok=35   changed=8    unreachable=0    failed=0    skipped=25   rescued=0    ignored=0   
+h4                         : ok=35   changed=8    unreachable=0    failed=0    skipped=25   rescued=0    ignored=0   
+h5                         : ok=35   changed=8    unreachable=0    failed=0    skipped=25   rescued=0    ignored=0   
+r1                         : ok=39   changed=2    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+r2                         : ok=47   changed=9    unreachable=0    failed=0    skipped=18   rescued=0    ignored=0   
+r3                         : ok=39   changed=2    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
 
 
 

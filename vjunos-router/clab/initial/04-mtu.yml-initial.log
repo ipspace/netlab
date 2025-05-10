@@ -39,6 +39,7 @@ TASK [Execute local ssh command to check vjunos-router readiness] **************
 FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-router readiness (60 retries left).
 FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-router readiness (59 retries left).
 FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-router readiness (58 retries left).
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-router readiness (57 retries left).
 ok: [dut -> localhost]
 
 TASK [Confirm dut SSH server works] ********************************************
@@ -61,8 +62,8 @@ ok: [p1]
 ok: [dut]
 
 TASK [Find configuration template for normalize] *******************************
-ok: [t_1400]
 ok: [t_1300]
+ok: [t_1400]
 ok: [p1]
 ok: [dut]
 
@@ -125,8 +126,8 @@ skipping: [t_1400]
 skipping: [dut]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [t_1400]
 ok: [t_1300]
+ok: [t_1400]
 ok: [p1]
 ok: [dut]
 
@@ -147,10 +148,15 @@ ok: [t_1300] =>
   
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
     # Disable IPv4 and IPv6 forwarding
     #
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
+  
     #
     # Interface addressing, create any bond devices
     #
@@ -165,28 +171,6 @@ ok: [t_1300] =>
     set -e
     ip -6 addr add 2001:db8:1:2::3/64 dev eth1
     ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.2.0.0/24 2>/dev/null; do
-      : ; done
-    #
-    #
-    echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.2.1 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.2.1 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.2.1 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.2.1 dev eth1 protocol static
-    #
-    # Print the final routing table
-    ip route
 ok: [t_1400] => 
   msg: |-
     initial configuration for t_1400
@@ -203,10 +187,15 @@ ok: [t_1400] =>
   
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
     # Disable IPv4 and IPv6 forwarding
     #
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
+  
     #
     # Interface addressing, create any bond devices
     #
@@ -221,28 +210,6 @@ ok: [t_1400] =>
     set -e
     ip -6 addr add 2001:db8:1:1::4/64 dev eth1
     ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.2.0.0/24 2>/dev/null; do
-      : ; done
-    #
-    #
-    echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.1.1 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.1.1 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.1.1 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.1.1 dev eth1 protocol static
-    #
-    # Print the final routing table
-    ip route
 ok: [p1] => 
   msg: |-
     initial configuration for p1
@@ -381,8 +348,8 @@ ok: [t_1300]
 ok: [t_1400]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [t_1400 -> localhost]
 changed: [t_1300 -> localhost]
+changed: [t_1400 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [t_1300 -> localhost]
@@ -397,10 +364,10 @@ skipping: [t_1300]
 skipping: [t_1400]
 
 TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [t_1400 -> localhost]
 changed: [t_1300 -> localhost]
+changed: [t_1400 -> localhost]
 
-TASK [Remove temporary file /tmp/t_1300_initial-24r6pd9s.sh] *******************
+TASK [Remove temporary file /tmp/t_1300_initial-popa8ydv.sh] *******************
 changed: [t_1300 -> localhost]
 changed: [t_1400 -> localhost]
 
@@ -410,24 +377,92 @@ changed: [dut]
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
+ok: [t_1300]
+ok: [t_1400]
 ok: [p1]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for p1 => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for p1, t_1300, t_1400 => (item=routing)
 
 TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [t_1400]
+ok: [t_1300]
 ok: [p1]
 
 TASK [Find configuration template for routing] *********************************
+ok: [t_1300]
+ok: [t_1400]
 ok: [p1]
 
 TASK [fail] ********************************************************************
 skipping: [p1]
+skipping: [t_1300]
+skipping: [t_1400]
 
 TASK [Find configuration deployment deploy_script for routing] *****************
+ok: [t_1400]
+ok: [t_1300]
 ok: [p1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [t_1300] => 
+  msg: |-
+    routing configuration for t_1300
+    =========================================
+    #!/bin/bash
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.2.1 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.2.1 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.2.1 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.2.1 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
+ok: [t_1400] => 
+  msg: |-
+    routing configuration for t_1400
+    =========================================
+    #!/bin/bash
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.1.1 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.1.1 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.1.1 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.1.1 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
 ok: [p1] => 
   msg: |-
     routing configuration for p1
@@ -444,9 +479,38 @@ ok: [p1] =>
 
 TASK [Deploy routing configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for p1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for t_1300, t_1400
 
 TASK [eos_config: deploying routing from /home/pipi/netlab_gh/netsim/ansible/templates/routing/eos.j2] ***
 changed: [p1]
+
+TASK [Define script filename and determine whether to execute in netns] ********
+ok: [t_1300]
+ok: [t_1400]
+
+TASK [Create a temporary file for the rendered script] *************************
+changed: [t_1300 -> localhost]
+changed: [t_1400 -> localhost]
+
+TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
+changed: [t_1300 -> localhost]
+changed: [t_1400 -> localhost]
+
+TASK [Copy script into running container at /tmp/config-t_1300_routing.sh] *****
+skipping: [t_1300]
+skipping: [t_1400]
+
+TASK [Execute /tmp/config-t_1300_routing.sh to deploy routing config based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
+skipping: [t_1300]
+skipping: [t_1400]
+
+TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
+changed: [t_1300 -> localhost]
+changed: [t_1400 -> localhost]
+
+TASK [Remove temporary file /tmp/t_1300_routing-9t3iia4e.sh] *******************
+changed: [t_1300 -> localhost]
+changed: [t_1400 -> localhost]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
@@ -454,8 +518,8 @@ skipping: no hosts matched
 PLAY RECAP *********************************************************************
 dut                        : ok=21   changed=1    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
 p1                         : ok=26   changed=3    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
-t_1300                     : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-t_1400                     : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+t_1300                     : ok=29   changed=8    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+t_1400                     : ok=29   changed=8    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
 
 
 

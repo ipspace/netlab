@@ -13,8 +13,8 @@ ok: [dut]
 
 TASK [Find device readiness script] ********************************************
 ok: [r2]
-ok: [rc]
 ok: [x1]
+ok: [rc]
 ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
@@ -37,7 +37,6 @@ FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos
 FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-router readiness (59 retries left).
 FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-router readiness (58 retries left).
 FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-router readiness (57 retries left).
-FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-router readiness (56 retries left).
 ok: [dut -> localhost]
 
 TASK [Confirm dut SSH server works] ********************************************
@@ -55,9 +54,9 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [r2]
-ok: [x1]
 ok: [rc]
 ok: [dut]
+ok: [x1]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [rc]
@@ -72,10 +71,10 @@ skipping: [rc]
 skipping: [x1]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
-ok: [x1]
 ok: [r2]
 ok: [dut]
 ok: [rc]
+ok: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
@@ -100,8 +99,8 @@ ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
 ok: [r2]
-ok: [dut]
 ok: [rc]
+ok: [dut]
 ok: [x1]
 
 TASK [fail] ********************************************************************
@@ -111,10 +110,10 @@ skipping: [rc]
 skipping: [x1]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [x1]
 ok: [r2]
 ok: [dut]
 ok: [rc]
-ok: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [r2] => 
@@ -136,6 +135,14 @@ ok: [r2] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
     #
     # Get the current next hop for the default route
     #
@@ -159,6 +166,12 @@ ok: [r2] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -171,10 +184,14 @@ ok: [r2] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+    ip link set eth2 down
     sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
     ip link set dev eth2 mtu 1500
+    ip link set eth2 up
   
     #
     # Add vtysh.conf file
@@ -186,6 +203,7 @@ ok: [r2] =>
     cat >/tmp/config <<CONFIG
     hostname r2
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -229,6 +247,14 @@ ok: [x1] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -251,6 +277,12 @@ ok: [x1] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -263,8 +295,10 @@ ok: [x1] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -276,6 +310,7 @@ ok: [x1] =>
     cat >/tmp/config <<CONFIG
     hostname x1
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -368,6 +403,14 @@ ok: [rc] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -390,6 +433,12 @@ ok: [rc] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -402,8 +451,10 @@ ok: [rc] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -415,6 +466,7 @@ ok: [rc] =>
     cat >/tmp/config <<CONFIG
     hostname rc
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -453,19 +505,19 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for r2, rc, x1
 
 TASK [template] ****************************************************************
-changed: [rc]
 changed: [x1]
 changed: [r2]
+changed: [rc]
 
 TASK [set_fact] ****************************************************************
-ok: [r2]
 ok: [rc]
 ok: [x1]
+ok: [r2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+changed: [r2]
 changed: [x1]
 changed: [rc]
-changed: [r2]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r2]
@@ -491,8 +543,8 @@ ok: [x1]
 ok: [dut]
 
 TASK [Find configuration template for bgp] *************************************
-ok: [rc]
 ok: [r2]
+ok: [rc]
 ok: [x1]
 ok: [dut]
 
@@ -505,8 +557,8 @@ skipping: [x1]
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [r2]
 ok: [x1]
-ok: [rc]
 ok: [dut]
+ok: [rc]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [r2] => 
@@ -547,85 +599,6 @@ ok: [r2] =>
     !
     !
     do write
-ok: [dut] => 
-  msg: |-
-    bgp configuration for dut
-    =========================================
-    routing-options {
-      autonomous-system 65000;
-      router-id 10.0.0.1
-    }
-    policy-options {
-      delete: policy-statement ibgp-export;
-      delete: policy-statement ebgp-export;
-    }
-    policy-options {
-      policy-statement ibgp-export {
-        term advertise {
-          from {
-            protocol direct;
-            interface [
-               lo0.0  ];
-          }
-          then accept;
-        }
-        term next-hop-self {
-          from {
-            route-type external;
-          }
-          then {
-            next-hop self;
-          }
-        }
-      }
-      policy-statement ebgp-export {
-        term advertise {
-          from {
-            protocol direct;
-            interface [ lo0.0 ];
-          }
-          then accept;
-        }
-      }
-    }
-    protocols {
-      delete: bgp;
-    }
-    protocols {
-      bgp {
-        group ibgp-peers-ipv4 {
-          type internal;
-          export ibgp-export;
-          advertise-inactive;
-          cluster 10.0.0.1;
-          neighbor 10.0.0.10 {
-            local-address 10.0.0.1;
-            description rc;
-            family inet {
-              unicast;
-            }
-          }
-          neighbor 10.0.0.2 {
-            local-address 10.0.0.1;
-            description r2;
-            family inet {
-              unicast;
-            }
-          }
-        }
-        group ebgp-peers {
-          export ebgp-export;
-          advertise-inactive;
-          neighbor 10.1.0.10 {
-            peer-as 65101;
-            description x1;
-            family inet {
-              unicast;
-            }
-          }
-        }
-      }
-    }
 ok: [x1] => 
   msg: |-
     bgp configuration for x1
@@ -661,6 +634,147 @@ ok: [x1] =>
     !
     !
     do write
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+  
+    routing-options {
+      autonomous-system 65000;
+      router-id 10.0.0.1
+    }
+  
+  
+    policy-options community x-route-permit-mark members large:65535:0:65536;
+  
+    policy-options {
+      delete: policy-statement bgp-advertise;
+      delete: policy-statement bgp-redistribute;
+      delete: route-filter-list bgp-announce;
+    }
+  
+    policy-options {
+  
+      route-filter-list bgp-announce {
+      }
+  
+      policy-statement next-hop-self {
+        term next-hop-self {
+          from {
+            route-type external;
+          }
+          then {
+            next-hop self;
+          }
+        }
+      }
+  
+      policy-statement bgp-advertise {
+        term advertise {
+          from {
+            protocol direct;
+            interface [
+               lo0.0  ];
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+  
+        term originate {
+          from {
+            protocol static;
+            route-filter-list bgp-announce;
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+  
+      }
+  
+      policy-statement bgp-redistribute {
+        term redis_bgp {
+          from protocol bgp;
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+      }
+  
+      policy-statement bgp-final {
+        term final-option {
+          from community x-route-permit-mark;
+          then {
+            community delete x-route-permit-mark;
+            accept;
+          }
+        }
+        term default-reject {
+          then reject;
+        }
+      }
+  
+      policy-statement bgp-initial {
+        term initial-cleanup {
+          from community x-route-permit-mark;
+          then {
+            community delete x-route-permit-mark;
+            next policy;
+          }
+        }
+      }
+  
+    }
+    protocols {
+      delete: bgp;
+    }
+    protocols {
+      bgp {
+        group ibgp-peers-ipv4 {
+          type internal;
+          export [
+              next-hop-self
+              bgp-advertise bgp-redistribute bgp-final
+            ];
+          advertise-inactive;
+          cluster 10.0.0.1;
+          neighbor 10.0.0.10 {
+  
+            local-address 10.0.0.1;
+            description rc;
+            family inet {
+              unicast;
+            }
+          }
+          neighbor 10.0.0.2 {
+  
+            local-address 10.0.0.1;
+            description r2;
+            family inet {
+              unicast;
+            }
+          }
+        }
+        group ebgp-peers {
+          export [
+              bgp-advertise bgp-redistribute bgp-final
+            ];
+          advertise-inactive;
+          neighbor 10.1.0.10 {
+  
+            peer-as 65101;
+            description x1;
+            family inet {
+              unicast;
+            }
+          }
+        }
+      }
+    }
 ok: [rc] => 
   msg: |-
     bgp configuration for rc
@@ -712,8 +826,8 @@ changed: [dut]
 
 TASK [template] ****************************************************************
 changed: [rc]
-changed: [r2]
 changed: [x1]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
@@ -726,20 +840,20 @@ skipping: [rc]
 skipping: [x1]
 
 TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
+changed: [x1]
 changed: [r2]
 changed: [rc]
-changed: [x1]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [r2]
 ok: [rc]
-ok: [dut]
 ok: [x1]
+ok: [dut]
 
 TASK [Find configuration template for ospf] ************************************
 skipping: [x1]
-ok: [rc]
 ok: [r2]
+ok: [rc]
 ok: [dut]
 
 TASK [fail] ********************************************************************
@@ -914,7 +1028,7 @@ x1                         : ok=28   changed=4    unreachable=0    failed=0    s
 
 Use this topology to test the BGP community propagation. The device under test
 is a BGP route reflector that should propagate standard and extended
-communities to IBGP neighbors but only extended communities to EBGP neighbors
+communities to IBGP neighbors but only standard communities to EBGP neighbors
 (the default setting).
 
 Three BGP communities are attached to the prefix advertised by RC: a standard

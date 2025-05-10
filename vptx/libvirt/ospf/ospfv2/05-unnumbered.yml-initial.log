@@ -85,6 +85,14 @@ ok: [x1] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -107,6 +115,12 @@ ok: [x1] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -119,8 +133,10 @@ ok: [x1] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -132,6 +148,7 @@ ok: [x1] =>
     cat >/tmp/config <<CONFIG
     hostname x1
     !
+    ip forwarding
     vrf mgmt
      exit-vrf
     !
@@ -304,8 +321,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for 
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for x1
 
 TASK [junos_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/junos.j2] ***
-[WARNING]:  statement not found
-changed: [dut]
+fatal: [dut]: FAILED! => changed=false 
+  msg: b'Not connected to NETCONF server'
 
 TASK [template] ****************************************************************
 changed: [x1]
@@ -323,10 +340,9 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=23   changed=2    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
+dut                        : ok=22   changed=1    unreachable=0    failed=1    skipped=5    rescued=0    ignored=0   
 x1                         : ok=27   changed=5    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
 
-
-
-This lab tests OSPF running over unnumbered IPv4 interfaces.
-
+Fatal error in netlab: Executing Ansible playbook /home/pipi/netlab_gh/netsim/ansible/initial-config.ansible failed
+Error executing ansible-playbook /home/pipi/netlab_gh/netsim/ansible/initial-config.ansible:
+  Command '['ansible-playbook', '/home/pipi/netlab_gh/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.

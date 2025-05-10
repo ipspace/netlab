@@ -1,4 +1,5 @@
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+[WARNING]: Found variable using reserved name: hosts
 
 PLAY [Deploy initial device configuration] *************************************
 
@@ -11,13 +12,40 @@ ok: [r]
 TASK [Wait for device to become ready] *****************************************
 skipping: [r]
 
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for r
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [r]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [r]
+
+TASK [fail] ********************************************************************
+skipping: [r]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [r]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [r]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [r]
+
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for r
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for r
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [r]
 
 TASK [Find configuration template for initial] *********************************
+ok: [r]
+
+TASK [fail] ********************************************************************
+skipping: [r]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [r]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -50,18 +78,21 @@ ok: [r] =>
     #
     # Build hosts file
     #
-    hostname r
     #
     cat <<SCRIPT >/tmp/hosts
     #
     # Created by netlab initial
     #
-    10.0.0.1 2001:db8:0:1::1 r
+    10.0.0.1 r
+    2001:db8:0:1::1 r
+    2001:db8:1:3::1 Ethernet12.r
+    172.16.4.1 Ethernet16.r
     SCRIPT
     grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
     #
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    config interface ipv6 disable use-link-local-only Ethernet4
     #
     # Configure interfaces
     #
@@ -90,6 +121,37 @@ ok: [r] =>
     config interface ipv6 enable use-link-local-only Ethernet0
     config interface mtu Ethernet0 1548
     !
+    if show ip interface|grep Ethernet4|grep 10.0.0.1/32; then
+      echo 10.0.0.1/32 already configured on Ethernet4
+    else
+      config interface ip add Ethernet4 10.0.0.1/32
+    fi
+    config interface mtu Ethernet4 1548
+    !
+    config interface ipv6 enable use-link-local-only Ethernet8
+    config interface mtu Ethernet8 1548
+    !
+    if show ip interface|grep Ethernet12|grep 10.0.0.1/32; then
+      echo 10.0.0.1/32 already configured on Ethernet12
+    else
+      config interface ip add Ethernet12 10.0.0.1/32
+    fi
+    config interface ipv6 enable use-link-local-only Ethernet12
+    if show ipv6 interface|grep Ethernet12|grep 2001:db8:1:3::1/64; then
+      echo 2001:db8:1:3::1/64 already configured on Ethernet12
+    else
+      config interface ip add Ethernet12 2001:db8:1:3::1/64
+    fi
+    config interface mtu Ethernet12 1548
+    !
+    if show ip interface|grep Ethernet16|grep 172.16.4.1/24; then
+      echo 172.16.4.1/24 already configured on Ethernet16
+    else
+      config interface ip add Ethernet16 172.16.4.1/24
+    fi
+    config interface ipv6 enable use-link-local-only Ethernet16
+    config interface mtu Ethernet16 1548
+    !
     #
     # Rest of initial configuration done through VTYSH
     # Make sure it's ready
@@ -113,7 +175,29 @@ ok: [r] =>
     !
     interface Ethernet0
      no shutdown
-     description r -> stub
+     description r -> stub [stub]
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    interface Ethernet4
+     no shutdown
+     description r -> stub [stub]
+    !
+    interface Ethernet8
+     no shutdown
+     description r -> stub [stub]
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    interface Ethernet12
+     no shutdown
+     description r -> stub [stub]
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    interface Ethernet16
+     no shutdown
+     description r -> stub [stub]
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -122,11 +206,8 @@ ok: [r] =>
     docker exec bgp vtysh -f /etc/frr/do_config
     exit 0
 
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [r]
-
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sonic.yml for r
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sonic.yml for r
 
 TASK [template] ****************************************************************
 changed: [r]
@@ -134,10 +215,10 @@ changed: [r]
 TASK [set_fact] ****************************************************************
 ok: [r]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/sonic.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/sonic.j2] ***
 changed: [r]
 
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/sonic.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/sonic.j2] ***
 skipping: [r]
 
 PLAY [Deploy module-specific configurations] ***********************************
@@ -147,11 +228,11 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-r                          : ok=11   changed=2    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
+r                          : ok=15   changed=2    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
 
 
 
-This test checks that the initial configuration doesn't crash when
-dealing with the unnumbered interfaces. Use OSPFv2/OSPFv3 integration
-tests to validate the unnumbered interface functionality.
+This test checks that the initial configuration doesn't crash when dealing
+with the all possible combinations of unnumbered interfaces. Use OSPFv2/OSPFv3
+integration tests to validate the unnumbered interface functionality.
 
