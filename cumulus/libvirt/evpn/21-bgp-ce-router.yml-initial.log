@@ -551,7 +551,7 @@ changed: [s1 -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [s1]
 
-TASK [Remove temporary file /tmp/ansible.s1.0kxtc2n7temp] **********************
+TASK [Remove temporary file /tmp/ansible.s1.2u3y5xbjtemp] **********************
 changed: [s1 -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
@@ -566,9 +566,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for s2, ce1, ce2
 
 TASK [template] ****************************************************************
-changed: [ce2]
-changed: [ce1]
 changed: [s2]
+changed: [ce1]
+changed: [ce2]
 
 TASK [set_fact] ****************************************************************
 ok: [s2]
@@ -576,9 +576,9 @@ ok: [ce1]
 ok: [ce2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [ce2]
-changed: [s2]
 changed: [ce1]
+changed: [s2]
+changed: [ce2]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [s2]
@@ -603,8 +603,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ce1, c
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [ce1]
-ok: [s1]
 ok: [ce2]
+ok: [s1]
 ok: [s2]
 
 TASK [Find configuration template for vlan] ************************************
@@ -676,7 +676,7 @@ changed: [s1 -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [s1]
 
-TASK [Remove temporary file /tmp/ansible.s1.hxot286atemp] **********************
+TASK [Remove temporary file /tmp/ansible.s1.fhffju5stemp] **********************
 changed: [s1 -> localhost]
 
 TASK [template] ****************************************************************
@@ -693,8 +693,8 @@ skipping: [s2]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [ce1]
-ok: [ce2]
 ok: [s1]
+ok: [ce2]
 ok: [s2]
 
 TASK [Find configuration template for bgp] *************************************
@@ -868,8 +868,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for ce
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus.yml for s1
 
 TASK [template] ****************************************************************
-changed: [ce1]
 changed: [ce2]
+changed: [ce1]
 changed: [s2]
 
 TASK [set_fact] ****************************************************************
@@ -884,8 +884,8 @@ skipping: [s2]
 
 TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [ce2]
-changed: [s2]
 changed: [ce1]
+changed: [s2]
 
 TASK [Render device configuration from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/cumulus.j2] ***
 ok: [s1]
@@ -899,13 +899,13 @@ changed: [s1 -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [s1]
 
-TASK [Remove temporary file /tmp/ansible.s1.i6kek2tetemp] **********************
+TASK [Remove temporary file /tmp/ansible.s1.nus7j_u5temp] **********************
 changed: [s1 -> localhost]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [ce1]
-ok: [s1]
 ok: [ce2]
+ok: [s1]
 ok: [s2]
 
 TASK [Find configuration template for ospf] ************************************
@@ -999,7 +999,7 @@ changed: [s1 -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [s1]
 
-TASK [Remove temporary file /tmp/ansible.s1.65wqqnrrtemp] **********************
+TASK [Remove temporary file /tmp/ansible.s1.w3ywci7mtemp] **********************
 changed: [s1 -> localhost]
 
 TASK [template] ****************************************************************
@@ -1165,7 +1165,7 @@ changed: [s1 -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [s1]
 
-TASK [Remove temporary file /tmp/ansible.s1.10ew25mttemp] **********************
+TASK [Remove temporary file /tmp/ansible.s1._oleilqqtemp] **********************
 changed: [s1 -> localhost]
 
 TASK [template] ****************************************************************
@@ -1275,7 +1275,7 @@ changed: [s1 -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [s1]
 
-TASK [Remove temporary file /tmp/ansible.s1.uug8vfh_temp] **********************
+TASK [Remove temporary file /tmp/ansible.s1.30h4p2mctemp] **********************
 changed: [s1 -> localhost]
 
 TASK [template] ****************************************************************
@@ -1317,6 +1317,51 @@ ok: [s2]
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ce1]
 skipping: [ce2]
+ok: [s2] => 
+  msg: |-
+    evpn configuration for s2
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    cat >/tmp/evpn_config <<CONFIG
+    router bgp 65000
+     address-family l2vpn evpn
+      advertise-all-vni
+      advertise-svi-ip
+      advertise ipv4 unicast
+  
+    ! Configure explicit Route Targets and RD per L2 VNI; auto-derived differs
+  
+      neighbor 10.0.0.3 activate
+    #  neighbor 10.0.0.3 soft-reconfiguration inbound
+  
+     exit-address-family
+    !
+  
+    exit
+  
+    ! L3 VRF EVPN handling
+    vrf tenant
+     vni 5042
+     exit-vrf
+  
+    router bgp 65000 vrf tenant
+     address-family l2vpn evpn
+      ! This sets the L3 VNI RD/RT for this VRF
+      rd 65000:1
+      route-target export 65000:1
+      route-target import 65000:1
+      ! Enable RT5 advertisements
+      advertise ipv4 unicast
+     exit-address-family
+    exit
+    !
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/evpn_config
+    vtysh -c 'clear bgp *'
 ok: [s1] => 
   msg: |-
     evpn configuration for s1
@@ -1384,51 +1429,6 @@ ok: [s1] =>
     CONFIG
     vtysh -f /tmp/evpn_config
     exit $?
-ok: [s2] => 
-  msg: |-
-    evpn configuration for s2
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    cat >/tmp/evpn_config <<CONFIG
-    router bgp 65000
-     address-family l2vpn evpn
-      advertise-all-vni
-      advertise-svi-ip
-      advertise ipv4 unicast
-  
-    ! Configure explicit Route Targets and RD per L2 VNI; auto-derived differs
-  
-      neighbor 10.0.0.3 activate
-    #  neighbor 10.0.0.3 soft-reconfiguration inbound
-  
-     exit-address-family
-    !
-  
-    exit
-  
-    ! L3 VRF EVPN handling
-    vrf tenant
-     vni 5042
-     exit-vrf
-  
-    router bgp 65000 vrf tenant
-     address-family l2vpn evpn
-      ! This sets the L3 VNI RD/RT for this VRF
-      rd 65000:1
-      route-target export 65000:1
-      route-target import 65000:1
-      ! Enable RT5 advertisements
-      advertise ipv4 unicast
-     exit-address-family
-    exit
-    !
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/evpn_config
-    vtysh -c 'clear bgp *'
 
 TASK [Deploy evpn configuration] ***********************************************
 skipping: [ce1]
@@ -1448,7 +1448,7 @@ changed: [s1 -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [s1]
 
-TASK [Remove temporary file /tmp/ansible.s1.xl2lrl0stemp] **********************
+TASK [Remove temporary file /tmp/ansible.s1.l9zs71kptemp] **********************
 changed: [s1 -> localhost]
 
 TASK [template] ****************************************************************

@@ -52,8 +52,8 @@ TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [s1]
 ok: [h1]
 ok: [h2]
-ok: [h4]
 ok: [h3]
+ok: [h4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [s1]
@@ -171,41 +171,6 @@ ok: [h2] =>
     ip addr add 172.31.1.2/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
-ok: [h4] => 
-  msg: |-
-    initial configuration for h4
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Send ARP requests from a sane source IP address
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-  
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.31.1.4/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.31.1.4/24 dev eth1
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
 ok: [h3] => 
   msg: |-
     initial configuration for h3
@@ -239,6 +204,41 @@ ok: [h3] =>
     ip addr del 172.31.1.3/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.31.1.3/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+ok: [h4] => 
+  msg: |-
+    initial configuration for h4
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+  
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.31.1.4/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.31.1.4/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
 ok: [s1] => 
@@ -392,7 +392,7 @@ changed: [s1 -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [s1]
 
-TASK [Remove temporary file /tmp/ansible.s1.g0me_tzatemp] **********************
+TASK [Remove temporary file /tmp/ansible.s1.5udjl1ostemp] **********************
 changed: [s1 -> localhost]
 
 TASK [Define script filename and determine whether to execute in netns] ********
@@ -408,10 +408,10 @@ changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
-changed: [h3 -> localhost]
-changed: [h4 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
+changed: [h4 -> localhost]
+changed: [h3 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -426,16 +426,16 @@ skipping: [h3]
 skipping: [h4]
 
 TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h4 -> localhost]
-changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-i1mubo9r.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-zd5p4p0s.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
-changed: [h4 -> localhost]
 changed: [h3 -> localhost]
+changed: [h4 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -454,8 +454,8 @@ TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [h4]
 ok: [s1]
+ok: [h4]
 
 TASK [Find configuration template for vlan] ************************************
 skipping: [h1]
@@ -507,19 +507,27 @@ ok: [s1] =>
     # Create VLAN interfaces
     #
     cat >/etc/network/interfaces.d/51-bridge-interfaces.intf <<CONFIG
+  
     iface swp1
         bridge-access 700
+  
     iface swp2
         bridge-access 700
+  
     iface swp3
         bridge-access 701
+  
     iface swp4
         bridge-access 701
+  
     auto vlan700
+  
     iface vlan700
         vlan-id 700
         vlan-raw-device bridge
+  
     auto vlan701
+  
     iface vlan701
         vlan-id 701
         vlan-raw-device bridge
@@ -545,20 +553,20 @@ changed: [s1 -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [s1]
 
-TASK [Remove temporary file /tmp/ansible.s1.rkdlx7owtemp] **********************
+TASK [Remove temporary file /tmp/ansible.s1.qpa93d9rtemp] **********************
 changed: [s1 -> localhost]
 
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [h4]
 ok: [s1]
+ok: [h4]
 
 TASK [Find configuration template for routing] *********************************
 ok: [h1]
-ok: [h2]
 skipping: [s1]
+ok: [h2]
 ok: [h3]
 ok: [h4]
 
@@ -656,9 +664,9 @@ changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 changed: [h3 -> localhost]
+changed: [h2 -> localhost]
 changed: [h4 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
@@ -679,7 +687,7 @@ changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-bcllt4s6.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-hdvj1iau.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]

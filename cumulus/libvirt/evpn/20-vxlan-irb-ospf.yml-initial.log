@@ -109,8 +109,8 @@ TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [s1]
 ok: [s2]
 ok: [h1]
-ok: [h2]
 ok: [h3]
+ok: [h2]
 ok: [h4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -147,6 +147,41 @@ ok: [h1] =>
     ip addr del 172.16.0.3/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.0.3/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+  
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.1.4/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
 ok: [h4] => 
@@ -217,41 +252,6 @@ ok: [h3] =>
     ip addr del 172.16.2.5/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.2.5/24 dev eth1
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
-ok: [h2] => 
-  msg: |-
-    initial configuration for h2
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Send ARP requests from a sane source IP address
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-  
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.1.4/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
 ok: [s1] => 
@@ -588,16 +588,16 @@ changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 
 TASK [Create initial config script in local temporary file] ********************
-changed: [s1 -> localhost]
 changed: [s2 -> localhost]
+changed: [s1 -> localhost]
 
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [s1]
 changed: [s2]
 
-TASK [Remove temporary file /tmp/ansible.s1.i8427wg4temp] **********************
-changed: [s1 -> localhost]
+TASK [Remove temporary file /tmp/ansible.s1.4a7aof2htemp] **********************
 changed: [s2 -> localhost]
+changed: [s1 -> localhost]
 
 TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
@@ -630,12 +630,12 @@ skipping: [h3]
 skipping: [h4]
 
 TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h4 -> localhost]
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
+changed: [h4 -> localhost]
 changed: [h3 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-18beezz7.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-143pm902.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
@@ -647,8 +647,8 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [h4]
 ok: [s1]
+ok: [h4]
 ok: [s2]
 
 TASK [Deploy individual configuration modules] *********************************
@@ -719,19 +719,27 @@ ok: [s1] =>
     # Create VLAN interfaces
     #
     cat >/etc/network/interfaces.d/51-bridge-interfaces.intf <<CONFIG
+  
     iface swp2
         bridge-access 1000
+  
     iface swp3
         bridge-access 1002
+  
     auto vlan1000
+  
     iface vlan1000
         vlan-id 1000
         vlan-raw-device bridge
+  
     auto vlan1002
+  
     iface vlan1002
         vlan-id 1002
         vlan-raw-device bridge
+  
     auto vlan1001
+  
     iface vlan1001
         vlan-id 1001
         vlan-raw-device bridge
@@ -759,19 +767,27 @@ ok: [s2] =>
     # Create VLAN interfaces
     #
     cat >/etc/network/interfaces.d/51-bridge-interfaces.intf <<CONFIG
+  
     iface swp2
         bridge-access 1001
+  
     iface swp3
         bridge-access 1003
+  
     auto vlan1001
+  
     iface vlan1001
         vlan-id 1001
         vlan-raw-device bridge
+  
     auto vlan1003
+  
     iface vlan1003
         vlan-id 1003
         vlan-raw-device bridge
+  
     auto vlan1000
+  
     iface vlan1000
         vlan-id 1000
         vlan-raw-device bridge
@@ -790,27 +806,27 @@ ok: [s1]
 ok: [s2]
 
 TASK [Create local temporary file] *********************************************
-changed: [s2 -> localhost]
 changed: [s1 -> localhost]
+changed: [s2 -> localhost]
 
 TASK [Create vlan config script in local temporary file] ***********************
-changed: [s2 -> localhost]
 changed: [s1 -> localhost]
+changed: [s2 -> localhost]
 
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [s1]
 changed: [s2]
 
-TASK [Remove temporary file /tmp/ansible.s1.ajh3jmottemp] **********************
-changed: [s2 -> localhost]
+TASK [Remove temporary file /tmp/ansible.s1.cymxobpstemp] **********************
 changed: [s1 -> localhost]
+changed: [s2 -> localhost]
 
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [s1]
 ok: [h4]
+ok: [s1]
 ok: [s2]
 
 TASK [Find configuration template for routing] *********************************
@@ -971,14 +987,14 @@ ok: [h4]
 TASK [Create a temporary file for the rendered script] *************************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
-changed: [h3 -> localhost]
 changed: [h4 -> localhost]
+changed: [h3 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
-changed: [h3 -> localhost]
 changed: [h4 -> localhost]
+changed: [h3 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
 skipping: [h1]
@@ -998,7 +1014,7 @@ changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-roa1pckq.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-a2qimlnw.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
@@ -1138,10 +1154,10 @@ changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 
 TASK [Execute local config script on Cumulus node] *****************************
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
-TASK [Remove temporary file /tmp/ansible.s1.762kfs8ttemp] **********************
+TASK [Remove temporary file /tmp/ansible.s1.8h8jxma7temp] **********************
 changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 
@@ -1149,8 +1165,8 @@ TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [s1]
 ok: [h4]
+ok: [s1]
 ok: [s2]
 
 TASK [Find configuration template for ospf] ************************************
@@ -1245,14 +1261,14 @@ changed: [s2 -> localhost]
 changed: [s1 -> localhost]
 
 TASK [Create ospf config script in local temporary file] ***********************
-changed: [s2 -> localhost]
 changed: [s1 -> localhost]
+changed: [s2 -> localhost]
 
 TASK [Execute local config script on Cumulus node] *****************************
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
-TASK [Remove temporary file /tmp/ansible.s1.9851z5rttemp] **********************
+TASK [Remove temporary file /tmp/ansible.s1.u6rqm6petemp] **********************
 changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 
@@ -1484,16 +1500,16 @@ changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 
 TASK [Create vrf config script in local temporary file] ************************
-changed: [s2 -> localhost]
 changed: [s1 -> localhost]
+changed: [s2 -> localhost]
 
 TASK [Execute local config script on Cumulus node] *****************************
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
-TASK [Remove temporary file /tmp/ansible.s1.p3keayuktemp] **********************
-changed: [s1 -> localhost]
+TASK [Remove temporary file /tmp/ansible.s1.20nhj98itemp] **********************
 changed: [s2 -> localhost]
+changed: [s1 -> localhost]
 
 TASK [Figure out whether to deploy the module vxlan on current device] *********
 ok: [h1]
@@ -1553,6 +1569,8 @@ ok: [s1] =>
         bridge-access 1000
         vxlan-id 21000
         vxlan-learning no
+        mstpctl-bpduguard yes
+        mstpctl-portbpdufilter yes
   
     #
     auto vni-21001
@@ -1560,10 +1578,11 @@ ok: [s1] =>
         bridge-access 1001
         vxlan-id 21001
         vxlan-learning no
+        mstpctl-bpduguard yes
+        mstpctl-portbpdufilter yes
   
     #
     iface bridge
-        bridge-stp no
         bridge-ports vni-21000
         bridge-ports vni-21001
     CONFIG
@@ -1589,6 +1608,8 @@ ok: [s2] =>
         bridge-access 1000
         vxlan-id 21000
         vxlan-learning no
+        mstpctl-bpduguard yes
+        mstpctl-portbpdufilter yes
   
     #
     auto vni-21001
@@ -1596,10 +1617,11 @@ ok: [s2] =>
         bridge-access 1001
         vxlan-id 21001
         vxlan-learning no
+        mstpctl-bpduguard yes
+        mstpctl-portbpdufilter yes
   
     #
     iface bridge
-        bridge-stp no
         bridge-ports vni-21000
         bridge-ports vni-21001
     CONFIG
@@ -1621,16 +1643,16 @@ changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 
 TASK [Create vxlan config script in local temporary file] **********************
-changed: [s1 -> localhost]
 changed: [s2 -> localhost]
+changed: [s1 -> localhost]
 
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [s2]
 changed: [s1]
 
-TASK [Remove temporary file /tmp/ansible.s1.hcwdyhuztemp] **********************
-changed: [s1 -> localhost]
+TASK [Remove temporary file /tmp/ansible.s1.q3_9zr69temp] **********************
 changed: [s2 -> localhost]
+changed: [s1 -> localhost]
 
 TASK [Figure out whether to deploy the module evpn on current device] **********
 ok: [h1]
@@ -1776,18 +1798,18 @@ ok: [s1]
 ok: [s2]
 
 TASK [Create local temporary file] *********************************************
-changed: [s2 -> localhost]
 changed: [s1 -> localhost]
+changed: [s2 -> localhost]
 
 TASK [Create evpn config script in local temporary file] ***********************
-changed: [s1 -> localhost]
 changed: [s2 -> localhost]
+changed: [s1 -> localhost]
 
 TASK [Execute local config script on Cumulus node] *****************************
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
-TASK [Remove temporary file /tmp/ansible.s1.boboao9ctemp] **********************
+TASK [Remove temporary file /tmp/ansible.s1.eshf4kt8temp] **********************
 changed: [s1 -> localhost]
 changed: [s2 -> localhost]
 
