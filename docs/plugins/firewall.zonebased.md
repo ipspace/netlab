@@ -1,3 +1,4 @@
+(plugin-firewall-zonebased)=
 # Zone-Based Firewall plugin
 
 This plugin creates simple Zone-Based Firewall configuration for specific nodes.

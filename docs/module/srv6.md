@@ -1,3 +1,4 @@
+(module-srv6)=
 # Segment Routing over IPv6 (srv6) Configuration Module
 
 This configuration module configures SRv6 over IS-IS with IBGP to advertise SID reachability
