@@ -1076,21 +1076,6 @@ def copy_link_gateway(link: Box, nodes: Box) -> None:
       if af in link.gateway:
         intf.gateway[af] = link.gateway[af]
 
-"""
-Set node.af flags to indicate that the node has IPv4 and/or IPv6 address family configured
-"""
-def set_node_af(nodes: Box) -> None:
-  for n in nodes.values():
-    for af in ['ipv4','ipv6']:
-      if af in n.get('loopback',{}):
-        n.af[af] = True
-        continue
-
-      for l in n.get('interfaces',[]):
-        if af in l:
-          n.af[af] = True
-          continue
-
 '''
 Link index utility functions:
 
@@ -1233,7 +1218,6 @@ def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools:
       check_duplicate_address(link)
 
   interface_feature_check(nodes,defaults)
-  set_node_af(nodes)
   return link_list
 
 """

@@ -10,7 +10,7 @@ import typing
 from box import Box, BoxList
 import netaddr
 
-from ..utils import log
+from ..utils import log,strings
 from .. import data
 from .. import utils
 from .. import providers
@@ -389,6 +389,12 @@ def augment_node_device_data(n: Box, defaults: Box) -> None:
         flag='nodes.roles',
         category=log.IncorrectType,
         module='nodes')
+  #
+  # Set loopback.ifname
+  if 'loopback' in n:
+    ifname_format  = devices.get_device_attribute(n,'loopback_interface_name',defaults)
+    if ifname_format:
+      n.loopback.ifname = strings.eval_format(ifname_format,n.loopback + { 'ifindex': 0 })
 
 '''
 Main node transformation code
@@ -426,6 +432,22 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
     providers.execute_node("augment_node_data",n,topology)
 
   check_duplicate_mgmt_addr(topology)
+
+"""
+Set node.af flags to indicate that the node has IPv4 and/or IPv6 address family configured
+Called after link transformation
+"""
+def set_node_af(nodes: Box) -> None:
+  for n in nodes.values():
+    for af in ['ipv4','ipv6']:
+      if af in n.get('loopback',{}):
+        n.af[af] = True
+        continue
+
+      for l in n.get('interfaces',[]):
+        if af in l:
+          n.af[af] = True
+          break
 
 '''
 Cleanup daemon configuration file data -- remove all daemon config mappings that
