@@ -194,10 +194,47 @@ def check_duplicate_mgmt_addr(topology: Box) -> None:
       else:
         used_addr[af][n_addr] = nname
 
+'''
+Set addresses of the main loopback interface
+'''
+def augment_loopback_interface(n: Box, topology: Box) -> None:
+  n.loopback.type = 'loopback'
+  n.loopback.neighbors = []
+  n.loopback.virtual_interface = True
+  n.loopback.ifindex = 0
+  n.loopback.ifname = devices.get_loopback_name(n,topology) or 'Loopback'
+
+  pool = n.get('loopback.pool','loopback')
+  prefix_list = addressing.get(topology.pools,[ pool ],n.id)
+
+  for af in prefix_list:
+    if prefix_list[af] is True:
+      log.error(
+        f"Address pool {pool} cannot contain unnumbered/LLA addresses",
+        category=log.IncorrectType,
+        module='nodes')
+    elif not n.loopback[af] and not (prefix_list[af] is False):
+      if af == 'ipv6':
+        if prefix_list[af].prefixlen == 128:
+          n.loopback[af] = str(prefix_list[af])
+        else:
+          n.loopback[af] = addressing.get_nth_ip_from_prefix(prefix_list[af],1)
+      else:
+        n.loopback[af] = str(prefix_list[af])
+      n.af[af] = True
+
+  for af in log.AF_LIST:
+    if af in n.loopback and not isinstance(n.loopback[af],str):
+      log.error(
+        f'{af} address on the main loopback interface of node {n.name} must be a CIDR prefix',
+        category=log.IncorrectType,
+        module='nodes')
+
+  links.check_interface_host_bits(n.loopback,n)
+
 """
 Add device data to nodes
 """
-
 def find_node_device(n: Box, topology: Box) -> bool:
   if 'device' not in n:
     n.device = topology.defaults.device
@@ -389,12 +426,6 @@ def augment_node_device_data(n: Box, defaults: Box) -> None:
         flag='nodes.roles',
         category=log.IncorrectType,
         module='nodes')
-  #
-  # Set loopback.ifname
-  if 'loopback' in n:
-    ifname = devices.get_loopback_name(n,defaults)
-    if ifname:
-      n.loopback.ifname = ifname
 
 '''
 Main node transformation code
@@ -426,9 +457,11 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
 
     augment_node_device_data(n,defaults)
 
-    n.af = {}                                                 # Nodes must have AF attribute
+    n.af = {}                                                            # Nodes must have AF attribute
 
     augment_mgmt_if(n,defaults,topology.addressing.mgmt)
+    if 'loopback' in n or n.get('role',None) not in ['host','bridge']:   # Augment loopback interface if needed
+      augment_loopback_interface(n,topology)
     providers.execute_node("augment_node_data",n,topology)
 
   check_duplicate_mgmt_addr(topology)

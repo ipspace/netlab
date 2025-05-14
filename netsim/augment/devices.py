@@ -67,8 +67,8 @@ def get_device_features(node: Box, defaults: Box) -> Box:
 """
 Get device loopback name (built-in loopback if ifindex == 0 else an additional loopback)
 """
-def get_loopback_name(node: Box, defaults: Box, ifindex: int = 0) -> typing.Optional[str]:
-  lbname = get_device_attribute(node,'loopback_interface_name',defaults)
+def get_loopback_name(node: Box, topology: Box, ifindex: int = 0) -> typing.Optional[str]:
+  lbname = get_device_attribute(node,'loopback_interface_name',topology.defaults)
   if not lbname:
     return None
   
