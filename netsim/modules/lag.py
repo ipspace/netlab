@@ -123,16 +123,12 @@ def set_lag_ifindex(bond: Box, intf: Box, topology: Box) -> bool:
       if is_mside:                                             # For M: side we need matching lag.ifindex
         if next_ifindex is None:                               # Do we have a local preference?
           next_ifindex = _dataplane.get_next_id(ID_SET)        # No -> allocate globally
-        bond.lag.ifindex = link_lag_ifindex = next_ifindex  # Put on the link for the other M side to match
+        bond.lag.ifindex = link_lag_ifindex = next_ifindex     # Put on the link for the other M side to match
       else:
         if next_ifindex is None:
           next_ifindex = topology.defaults.lag.start_lag_id    # Start at start_lag_id (default 1)
         link_lag_ifindex = next_ifindex
         intf.lag.ifindex = link_lag_ifindex                    # Put it on the interface for bond naming
-    elif next_ifindex and next_ifindex>link_lag_ifindex:
-      link_lag_ifindex = next_ifindex                          # Cannot accept link level lag.ifindex
-      if is_mside:
-        bond.lag.ifindex = next_ifindex                        # Override the unacceptable link value
     _n._lag_ifindex = link_lag_ifindex + 1                     # Track next ifindex to assign, per node
     intf.lag.ifindex = intf_lag_ifindex = link_lag_ifindex
   elif link_lag_ifindex is None or is_mside:
