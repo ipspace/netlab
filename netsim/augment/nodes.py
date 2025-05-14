@@ -392,9 +392,9 @@ def augment_node_device_data(n: Box, defaults: Box) -> None:
   #
   # Set loopback.ifname
   if 'loopback' in n:
-    ifname_format  = devices.get_device_attribute(n,'loopback_interface_name',defaults)
-    if ifname_format:
-      n.loopback.ifname = strings.eval_format(ifname_format,n.loopback + { 'ifindex': 0 })
+    ifname = devices.get_loopback_name(n, { 'defaults': defaults } )
+    if ifname:
+      n.loopback.ifname = ifname
 
 '''
 Main node transformation code
