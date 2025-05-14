@@ -392,7 +392,7 @@ def augment_node_device_data(n: Box, defaults: Box) -> None:
   #
   # Set loopback.ifname
   if 'loopback' in n:
-    ifname = devices.get_loopback_name(n, { 'defaults': defaults } )
+    ifname = devices.get_loopback_name(n,defaults)
     if ifname:
       n.loopback.ifname = ifname
 

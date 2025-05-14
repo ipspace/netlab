@@ -20,7 +20,7 @@ def loopback_interface(n: Box, pools: Box, topology: Box) -> None:
   n.loopback.neighbors = []
   n.loopback.virtual_interface = True
   n.loopback.ifindex = 0
-  n.loopback.ifname = devices.get_loopback_name(n,topology) or 'Loopback'
+  n.loopback.ifname = devices.get_loopback_name(n,topology.defaults) or 'Loopback'
 
   pool = n.get('loopback.pool','loopback')
   prefix_list = addressing.get(pools,[ pool ],n.id)
