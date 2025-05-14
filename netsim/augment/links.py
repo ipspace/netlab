@@ -878,7 +878,9 @@ or system defailts, the link type is set to loopback.
 def set_link_loopback_type(link: Box, nodes: Box, defaults: Box) -> None:
   node = link.interfaces[0].node
   ndata = nodes[node]
-  features = devices.get_device_features(ndata,defaults)
+
+  if ndata.get('role')=='host': # Don't support loopbacks in host role
+    return
 
   # If we don't know how to create loopbacks on this device, it makes no sense to proceed
   #
@@ -890,6 +892,7 @@ def set_link_loopback_type(link: Box, nodes: Box, defaults: Box) -> None:
   # one you get is True. Also note that a True feature gets translated into Box({}) early
   # in the transformation process (don't ask).
   #
+  features = devices.get_device_features(ndata,defaults)
   make_loopback = features.get('stub_loopback',defaults.get('links.stub_loopback',None))
   if make_loopback or isinstance(make_loopback,Box):
     link.type = 'loopback'

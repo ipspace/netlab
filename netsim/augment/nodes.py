@@ -10,7 +10,7 @@ import typing
 from box import Box, BoxList
 import netaddr
 
-from ..utils import log,strings
+from ..utils import log
 from .. import data
 from .. import utils
 from .. import providers
@@ -457,10 +457,10 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
 
     augment_node_device_data(n,defaults)
 
-    n.af = {}                                                            # Nodes must have AF attribute
+    n.af = {}                                              # Nodes must have AF attribute
 
     augment_mgmt_if(n,defaults,topology.addressing.mgmt)
-    if 'loopback' in n or n.get('role',None) not in ['host','bridge']:   # Augment loopback interface if needed
+    if 'loopback' in n:                                    # Augment loopback interface if present
       augment_loopback_interface(n,topology)
     providers.execute_node("augment_node_data",n,topology)
 
