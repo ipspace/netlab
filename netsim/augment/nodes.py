@@ -195,6 +195,61 @@ def check_duplicate_mgmt_addr(topology: Box) -> None:
         used_addr[af][n_addr] = nname
 
 """
+Set up the default loopback interface
+"""
+def augment_loopback_interface(n: Box, pools: Box, topology: Box) -> None:
+  lb_value = n.get('loopback',None)
+
+  if lb_value is False:                           # If 'loopback' is set to false, the user doesn't want it
+    n.pop('loopback',None)                        # ... so remove any loopback data
+    return                                        # ... and get out
+  elif lb_value is True:                          # Or maybe the user is adamant he wants a loopback?
+    n.loopback = {}                               # ... we can do that, will start with no extra data
+  elif lb_value is None:                          # Oh, the user doesn't care
+    if n.get('role','router') != 'router':        # ... so they will not get a loopback for a non-router device
+      return
+
+  n.loopback.type = 'loopback'                    # Back to regular programming: set loopback interface data
+  n.loopback.neighbors = []
+  n.loopback.virtual_interface = True
+  n.loopback.ifindex = 0
+  n.loopback.ifname = devices.get_loopback_name(n,topology)
+  if not n.loopback.ifname:                       # Did we get a usable loopback name?
+    log.fatal(f'We cannot get a loopback interface name for device {n.device}/node {n.name} ')
+
+  pool = n.get('loopback.pool','loopback')
+  prefix_list = addressing.get(pools,[ pool ],n.id)
+
+  for af in prefix_list:
+    if prefix_list[af] is True:
+      log.error(
+        f"Address pool {pool} cannot contain unnumbered/LLA addresses",
+        category=log.IncorrectType,
+        module='nodes')
+    elif not n.loopback[af] and not (prefix_list[af] is False):
+      if af == 'ipv6':
+        if prefix_list[af].prefixlen == 128:
+          n.loopback[af] = str(prefix_list[af])
+        else:
+          n.loopback[af] = addressing.get_nth_ip_from_prefix(prefix_list[af],1)
+      else:
+        n.loopback[af] = str(prefix_list[af])
+      n.af[af] = True
+
+  for af in log.AF_LIST:
+    if af in n.loopback:
+      if isinstance(n.loopback[af],str):          # If we have a valid loopback address
+        n.af[af] = True                           # ... set the node.af data structure
+        continue
+
+      log.error(
+        f'{af} address on the main loopback interface of node {n.name} must be a CIDR prefix',
+        category=log.IncorrectType,
+        module='nodes')                           # ... otherwise report an error
+
+  links.check_interface_host_bits(n.loopback,n)
+
+"""
 Add device data to nodes
 """
 
@@ -424,6 +479,7 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
 
     augment_mgmt_if(n,defaults,topology.addressing.mgmt)
     providers.execute_node("augment_node_data",n,topology)
+    augment_loopback_interface(n,pools,topology)
 
   check_duplicate_mgmt_addr(topology)
 

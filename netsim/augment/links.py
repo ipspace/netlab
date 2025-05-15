@@ -1077,15 +1077,11 @@ def copy_link_gateway(link: Box, nodes: Box) -> None:
         intf.gateway[af] = link.gateway[af]
 
 """
-Set node.af flags to indicate that the node has IPv4 and/or IPv6 address family configured
+Set node.af flags to indicate that the node has IPv4 and/or IPv6 address family configured on its interfaces
 """
 def set_node_af(nodes: Box) -> None:
   for n in nodes.values():
     for af in ['ipv4','ipv6']:
-      if af in n.get('loopback',{}):
-        n.af[af] = True
-        continue
-
       for l in n.get('interfaces',[]):
         if af in l:
           n.af[af] = True
