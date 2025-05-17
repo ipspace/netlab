@@ -1082,6 +1082,8 @@ Set node.af flags to indicate that the node has IPv4 and/or IPv6 address family 
 def set_node_af(nodes: Box) -> None:
   for n in nodes.values():
     for af in ['ipv4','ipv6']:
+      if n.af.get(af) is True:
+        continue
       for l in n.get('interfaces',[]):
         if af in l:
           n.af[af] = True
