@@ -29,7 +29,7 @@ defaults:
 nodes: [ r1, r2, r3 ]
 ```
 
-You cannot specify the device types or any other node attributes when using this format. The default device type specified in **defaults.device** is used for all nodes specified in this manner.
+You cannot specify the device types or any other node attributes when using this format. The default device type specified in **defaults.device** is used for all nodes defined in this manner.
 
 The [topology transformation process](dev/transform.md) converts the **nodes** element specified as a list of strings into a dictionary of dictionaries before further processing.
 
@@ -39,7 +39,7 @@ Node names can have up to 16 characters. To increase the maximum node name lengt
 
 ### Dictionary of Nodes
 
-When you have to specify additional node attributes, or when you're building a lab topology containing multiple device types, specify nodes as a dictionary of node objects (dictionaries). 
+When you have to specify additional node attributes or when you're building a lab topology containing multiple device types, specify nodes as a dictionary of node objects (dictionaries). 
 
 You can specify the device type (if non-default) in the **device** attribute and add any additional attributes you need (for example, BGP AS number). Per-node attributes specified in a node dictionary are copied into the Ansible inventory.
 
@@ -69,7 +69,7 @@ nodes:
 * **device** -- device type (see [supported platforms](platforms.md)). [Default device type](default-device-type) is specified in **defaults.device**.
 * **group** -- list of [groups](topo-groups) this node belongs to.
 * **id** -- static node identifier[^id] (see below)
-* **image** or **box** -- specifies the Vagrant box or Docker container used by the lab device. Default images for individual device types are specified in system defaults and can be changed with **defaults.devices...** settings ([more details](default-device-image)).
+* **image** or **box** -- specifies the Vagrant box or Docker container used by the lab device. Default images for individual device types are defined in system defaults and can be changed with **defaults.devices...** settings ([more details](default-device-image)).
 * **loopback** -- [non-standard loopback addresses](node-loopback).
 * **memory** -- memory allocated to the VM lab device. It does not apply to container-based devices.
 * **module** -- the list of [configuration modules](modules.md) used by this node.
@@ -87,12 +87,25 @@ nodes:
 (node-loopback)=
 ## Loopbacks
 
-You can use the **loopback** node attribute to change the [default allocation of loopback addresses](addressing-loopback). It's a dictionary that can contain static loopback prefixes (**ipv4** and/or **ipv6** attributes) or an alternate addressing pool (**pool** attribute[^LBIN]).
+You can use the **loopback** node attribute to change the [default allocation of loopback addresses](addressing-loopback). 
+
+The **loopback** attribute could be set to:
+
+* *True* -- add a loopback to the device even though the device wouldn't have it otherwise (for example, add loopbacks to Linux hosts)
+* *False* -- do not create a loopback interface on this device (for example, do not create a loopback interface on a router)
+* A dictionary containing loopback prefixes (**ipv4** and/or **ipv6** attributes) or an alternate addressing pool (**pool** attribute[^LBIN]).
+
+The **ipv4** and **ipv6** attributes in the **loopback** dictionary can be set to a CIDR prefix (static loopback address) or a boolean value:
+
+* *True* -- allocate a prefix from this address family from the specified addressing pool (useful to override group defaults on individual nodes)
+* *False* -- do not allocate a prefix from this address family to the loopback interface
 
 [^LBIN]: The alternate pool you use for IPv4 loopback addresses should have **loopback** in its name (to tell _netlab_ to set the allocated prefix length to /32) or a [**prefix** attribute](address-pool-specs), preferably set to 32. The IPv6 prefix length is automatically set to /64 unless you specify it with the **prefix6** attribute.
 
 (node-ansible-data)=
-In node data, you can also override Ansible group variables starting with `ansible_` or `netlab_`. For example, to use SSH instead of Docker to connect to a Linux container, set `ansible_connection` to `ssh` in node data:
+## Overriding Ansible Variables
+
+In node data, you can also override Ansible group variables starting with `ansible_` or `netlab_`. For example, to use SSH instead of Docker to connect to a Linux container, set `ansible_connection` to `ssh` in the node data:
 
 ```
 nodes:
@@ -174,7 +187,7 @@ After the initial cleanup, the *netlab* [topology transformation code](dev/trans
 
 [^HOST]: Identified by **role: host** attribute
 
-[^IDLIST]: Python 3.7 and later retains the order of elements within a dictionary. Node IDs are thus assigned to devices in the order you used in the YAML topology file. Node IDs might change sporadically if you use older Python versions; in that case, use one of the list formats of the **nodes** element.
+[^IDLIST]: Python versions supported by _netlab_ retain the order of elements within a dictionary. Node IDs are thus assigned to devices in the order you used in the YAML topology file. Node IDs might change sporadically if you use older Python versions; in that case, use one of the list formats of the **nodes** element.
 
 ### Examples
 
@@ -277,11 +290,11 @@ nodes:
   name: pe1
 ```
 
-The following topology data with one of the nodes having a static **id**...
+The following topology data, including a node with a static **id**:
 
 ```
 defaults:
-  device: cumulus
+  device: frr
 
 nodes:
   r1:
@@ -290,40 +303,16 @@ nodes:
     id: 1
 ```
 
-... results in the following node data:
+... results in the following ID assignments:
 
 ```
-nodes:
-- box: CumulusCommunity/cumulus-vx
-  device: cumulus
-  id: 2
-  loopback:
-    ipv4: 10.0.0.2/32
-  mgmt:
-    ifname: eth0
-    ipv4: 192.168.121.102
-    mac: 08-4F-A9-00-00-02
-  name: r1
-- box: CumulusCommunity/cumulus-vx
-  device: cumulus
-  id: 3
-  loopback:
-    ipv4: 10.0.0.3/32
-  mgmt:
-    ifname: eth0
-    ipv4: 192.168.121.103
-    mac: 08-4F-A9-00-00-03
-  name: r2
-- box: CumulusCommunity/cumulus-vx
-  device: cumulus
-  id: 1
-  loopback:
-    ipv4: 10.0.0.1/32
-  mgmt:
-    ifname: eth0
-    ipv4: 192.168.121.101
-    mac: 08-4F-A9-00-00-01
-  name: r3
+$ netlab create
+$ netlab inspect --node all id
+┏━━━━┳━━━━┳━━━━┓
+┃ r1 ┃ r2 ┃ r3 ┃
+┡━━━━╇━━━━╇━━━━┩
+│ 2  │ 3  │ 1  │
+└────┴────┴────┘
 ```
 
 ## Advanced Topics

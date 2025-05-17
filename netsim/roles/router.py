@@ -1,16 +1,9 @@
 '''
-Router-specific data transformation
-
-* Add loopback interface data
+Router-specific data transformation: none
 '''
 import typing
 
-from box import Box, BoxList
-
-from ..utils import log
-from ..augment import devices,addressing,links
-
-from . import select_nodes_by_role
+from box import Box
 
 def post_node_transform(topology: Box) -> None:
   pass
