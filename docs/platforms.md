@@ -215,7 +215,7 @@ The following interface parameters are configured on supported network operating
 | Aruba AOS-CX          | ✅  |  ❌  | ✅  | ✅  |
 | Cisco ASAv            | ✅  |  ❌  | ✅  |  ❌  |
 | Cisco IOS/IOS XE[^18v]| ✅  | ✅  | ✅[❗](caveats-iosv) | ✅  |
-| Cisco IOS XRv         | ✅  | ✅ [❗](caveats-iosxr) | ✅ |  ❌  |
+| Cisco IOS XRv         | ✅  | ✅ [❗](caveats-iosxr) | ✅ | ✅ |
 | Cisco Nexus OS        | ✅  | ✅  | ✅  | ✅  |
 | Cumulus Linux         | ✅  | ✅  | ✅  | ✅  |
 | Cumulus Linux 5.x (NVUE) | ✅ | ❌ | ✅  | ✅  |

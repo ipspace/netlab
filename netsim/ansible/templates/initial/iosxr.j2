@@ -15,15 +15,7 @@ domain {{ h_af }} host {{ k }} {{ v.interfaces[0][h_af]|ipaddr('address') }}
 {%   endfor %}
 {% endfor %}
 !
-interface Loopback0
-{% if 'ipv4' in loopback %}
- ipv4 address {{ loopback.ipv4|ipaddr('address') }} {{ loopback.ipv4|ipaddr('netmask') }}
-{% endif %}
-{% if 'ipv6' in loopback %}
- ipv6 address {{ loopback.ipv6|upper }}
-{% endif %}
-!
-{% for l in interfaces|default([]) %}
+{% for l in netlab_interfaces %}
 interface {{ l.ifname }}
  no shutdown
 {% if l.name is defined %}
@@ -31,11 +23,13 @@ interface {{ l.ifname }}
 {% elif l.type|default("") == "stub" %}
  description Stub interface
 {% endif %}
-{% if l.bandwidth is defined %}
+{% if l.type != 'loopback' %}
+{%   if l.bandwidth is defined %}
  bandwidth {{ l.bandwidth  }}
-{% endif %}
-{% if l.mtu is defined %}
+{%   endif %}
+{%   if l.mtu is defined %}
  mtu {{ l.mtu }}
+{%   endif %}
 {% endif %}
 {#
     Set interface addresses: IPv4
@@ -43,7 +37,7 @@ interface {{ l.ifname }}
 {% if 'ipv4' in l %}
 {%   if l.ipv4 == True %}
  ipv4 point-to-point
- ipv4 unnumbered {{ loopback_name|default('Loopback0') }}
+ ipv4 unnumbered {{ loopback_name|default(loopback.ifname) }}
 {%   elif l.ipv4|ipv4 %}
  ipv4 address {{ l.ipv4|ipaddr('address') }} {{ l.ipv4|ipaddr('netmask') }}
 {%   else %}
