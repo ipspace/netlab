@@ -14,7 +14,7 @@ Most _netlab_-supported devices act as *routers*; see the [platform support tabl
 
 The defining characteristics of devices with the **router** role   (the default device role) are:
 
-* At least one global [loopback interface](node-loopback) that can be used as the *router ID* and the control-plane endpoint
+* At least one global [loopback interface](node-loopback) that can be used as the *router ID* and the control-plane endpoint. If you don't want a router to have a loopback interface, [set the **loopback** node parameter to *False*](node-loopback).
 * Layer-3 packet forwarding for the configured address families (IPv4/IPv6)
 
 Routers usually run routing protocols but can also rely on static routing. When used with the **[vlan](module-vlan)** configuration module, they can also perform layer-2 packet forwarding and IRB.
@@ -22,7 +22,9 @@ Routers usually run routing protocols but can also rely on static routing. When 
 (node-role-host)=
 ## Hosts
 
-Hosts do not have loopback interfaces (it's easiest if they have a single interface) and use static routes toward an adjacent [default gateway](links-gateway). On devices that don't have the management VRF, Vagrant or containerlab set up the default route, and _netlab_ adds static IPv4 routes for IPv4 prefixes defined in [address pools](address-pools).
+Hosts do not have loopback interfaces (it's easiest if they have a single interface) unless you [specify **loopback** parameters in node data](node-loopback).
+
+Hosts use static routes toward an adjacent [default gateway](links-gateway). On devices that don't have the management VRF, Vagrant or containerlab sets up the default route, and _netlab_ adds static IPv4 routes for IPv4 prefixes defined in [address pools](address-pools).
 
 Hosts that have a management VRF (mostly network devices used as hosts) get two IPv4 default routes. Vagrant or containerlab sets up the IPv4 default route in the management VRF, and netlab adds a default route toward an adjacent router in the global routing table.
 
@@ -35,15 +37,17 @@ Most hosts listen to IPv6 RA messages to get the IPv6 default route. _netlab_ ca
 
 The **bridge** role is a thin abstraction layer on top of the [**vlan** configuration module](module-vlan), making deploying simple topologies with a single bridge connecting multiple routers or hosts easier. You can also use a **bridge** node to test failover scenarios using a familiar layer-2 device[^SD].
 
-[^SD]: It's easier to shut down an interface on a familiar device than trying to figure out how to do that on a Linux bridge.
+[^SD]: It's easier to shut down an interface on a familiar device than to try to figure out how to do that on a Linux bridge.
 
 Do not try to build complex topologies with bridges; use the VLAN configuration module.
 
-Bridges are simple layer-2 packet forwarding devices[^VM]. They do not have a loopback interface and might not even have a data-plane IP address. Without additional parameters, _netlab_ configures them the way non-VLAN bridges have been working for decades -- bridge interfaces do not use VLAN tagging and belong to a single layer-2 forwarding domain.
+Bridges are simple layer-2 packet forwarding devices[^VM]. They do not have a loopback interface[^BLB] and might not even have a data-plane IP address. Without additional parameters, _netlab_ configures them the way non-VLAN bridges have been working for decades -- bridge interfaces do not use VLAN tagging and belong to a single layer-2 forwarding domain.
+
+[^BLB]: Unless you [specified **loopback** data in node parameters](node-loopback). However, since the bridges usually don't have IP addresses assigned to VLAN interfaces, the loopback interface isn't particularly useful.
 
 [^VM]: The node **vlan.mode** parameter for a bridge node is set to **bridge** unless it's defined in the lab topology.
 
-You can use the **bridge** devices to implement simple small bridged segments, for example:
+You can use the **bridge** devices to implement simple, small bridged segments, for example:
 
 ```
 nodes:

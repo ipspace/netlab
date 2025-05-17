@@ -195,6 +195,74 @@ def check_duplicate_mgmt_addr(topology: Box) -> None:
         used_addr[af][n_addr] = nname
 
 """
+Set up the default loopback interface
+"""
+def augment_loopback_interface(n: Box, pools: Box, topology: Box) -> None:
+  lb_value = n.get('loopback',None)
+  lb_ifname = devices.get_loopback_name(n,topology)
+
+  if lb_value is False:                           # If 'loopback' is set to false, the user doesn't want it
+    n.pop('loopback',None)                        # ... so remove any loopback data
+    return                                        # ... and get out
+  elif lb_value is True:                          # Or maybe the user is adamant he wants a loopback?
+    n.loopback = {}                               # ... we can do that, will start with no extra data
+  elif lb_value is None:                          # Oh, the user doesn't care
+    if n.get('role','router') != 'router':        # ... so they will not get a loopback for a non-router device
+      return
+    if not lb_ifname:                             # ... we can also skip lookbacks for routers that can't configure them
+      return
+
+  if not lb_ifname:                               # We need/want a loopback. Did we get a usable loopback name?
+    log.error(
+      f'Device {n.device} (node {n.name}) cannot have loopback interfaces',
+      category=log.IncorrectType,
+      module='nodes')
+
+  n.loopback.type = 'loopback'                    # Back to regular programming: set loopback interface data
+  n.loopback.neighbors = []
+  n.loopback.virtual_interface = True
+  n.loopback.ifindex = 0
+  n.loopback.ifname = lb_ifname
+
+  pool = n.get('loopback.pool','loopback')
+  prefix_list = addressing.get(pools,[ pool ],n.id)
+
+  for af in prefix_list:                          # Merge pool-allocated loopback prefixes with static data
+    if prefix_list[af] is False:                  # AF explicitely disabled in the pool
+      continue                                    # ... skip AF allocation
+    if prefix_list[af] is True:                   # Pool specifies unnumbered/LLA address -- useless on loopbacks
+      log.error(
+        f"Address pool {pool} cannot contain unnumbered/LLA addresses",
+        category=log.IncorrectType,
+        module='nodes')
+      continue
+    if n.loopback.get(af,True) is not True:       # Static loopback address
+      continue
+    if af == 'ipv6':
+      if prefix_list[af].prefixlen == 128:
+        n.loopback[af] = str(prefix_list[af])
+      else:
+        n.loopback[af] = addressing.get_nth_ip_from_prefix(prefix_list[af],1)
+    else:
+      n.loopback[af] = str(prefix_list[af])
+
+  for af in log.AF_LIST:
+    if af in n.loopback:
+      if n.loopback[af] is False:                 # Disabled AF on loopback interface?
+        n.loopback.pop(af)                        # ... get rid of it and move on
+        continue
+      if isinstance(n.loopback[af],str):          # If we have a valid loopback address
+        n.af[af] = True                           # ... set the node.af data structure
+        continue
+
+      log.error(
+        f'{af} address on the main loopback interface of node {n.name} must be a CIDR prefix',
+        category=log.IncorrectType,
+        module='nodes')                           # ... otherwise report an error
+
+  links.check_interface_host_bits(n.loopback,n)
+
+"""
 Add device data to nodes
 """
 
@@ -424,6 +492,7 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
 
     augment_mgmt_if(n,defaults,topology.addressing.mgmt)
     providers.execute_node("augment_node_data",n,topology)
+    augment_loopback_interface(n,pools,topology)
 
   check_duplicate_mgmt_addr(topology)
 
