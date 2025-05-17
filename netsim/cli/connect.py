@@ -95,7 +95,10 @@ def ssh_connect(
       rest: typing.List[str],
       log_level: LogLevel = LogLevel.INFO) -> typing.Union[bool,int,str]:
   host = data.ansible_host or data.host
-  c_args = ['ssh','-o','UserKnownHostsFile=/dev/null','-o','StrictHostKeyChecking=no','-o','LogLevel=ERROR']
+  ssh_log_level = 'ERROR' if log.VERBOSE < 2 else 'INFO'
+  c_args = ['ssh','-o','UserKnownHostsFile=/dev/null','-o','StrictHostKeyChecking=no','-o',f'LogLevel={ssh_log_level}']
+  if log.VERBOSE >= 2:
+    c_args.append('-' + 'v' * log.VERBOSE)
 
   if data.netlab_ssh_args:
     c_args.extend(data.netlab_ssh_args.split(' '))
@@ -125,7 +128,7 @@ def ssh_connect(
     sys.stderr.write(f"Connecting to {host} using SSH port {data.ansible_port or 22}{exec_args}\n")
 
   if p_args.verbose >= 2:
-    sys.stderr.write(f'Executing: {c_args}\n')
+    sys.stderr.write(f'Executing: {" ".join(c_args)}\n')
 
   sys.stderr.flush()
   need_output = 'output' in p_args and p_args.output
