@@ -177,6 +177,8 @@ def get_sources(args: argparse.Namespace, write: bool = False) -> dict:
   if args.ds_project:
     s_list.append('project')
 
+  if s_list:
+    args.source = True
   if not s_list and write:                                      # No sources specified for a write op
     selection = { k:v for k,v in D_SOURCES.items() if k in ['user','directory','project'] }
     selection = cleanup_sources(selection)                      # Check whether we have user- or more specific src
@@ -216,29 +218,28 @@ def get_re_pattern(txt: str, regex: bool = False) -> re.Pattern:
   
   return reobj
 
-def print_def_list(def_expanded: Box) -> None:
+def print_def_list(def_expanded: Box, show_source: bool) -> None:
   for k in sorted(def_expanded):
     ns_list = list(def_expanded[k])
-    for ns in ns_list:
-      ns_text = f' ({ns})' if ns != 'default' else ''
-      txt = f'{k} = {def_expanded[k][ns]}{ns_text}'
-      if ns != ns_list[-1] and strings.rich_color:
-        strings.rich_console.print(f'[dim]{txt}[/dim]')
-      else:
-        print(txt)
+    if show_source:
+      for ns in ns_list:
+        txt = f'{k} = {def_expanded[k][ns]} ({ns})'
+        if ns != ns_list[-1] and strings.rich_color:
+          strings.rich_console.print(f'[dim]{txt}[/dim]')
+        else:
+          print(txt)
+    else:
+      print(f'{k} = {def_expanded[k][ns_list[-1]]}')
 
-def default_show(args: argparse.Namespace, topology: Box) -> None:
+def default_show(args: argparse.Namespace) -> None:
   global D_SOURCES
   reobj = get_re_pattern(args.setting,args.regex)
 
   d_sources = get_sources(args)
-  if args.source or source_specified(args):
-    def_expanded = build_defaults_sources(reobj,d_sources)
-  else:
-    def_expanded = build_defaults_list(topology.defaults,'default',reobj)
+  def_expanded = build_defaults_sources(reobj,d_sources)
   
   if def_expanded:
-    print_def_list(def_expanded)
+    print_def_list(def_expanded,args.source)
   else:
     d_src_txt = '' if d_sources == D_SOURCES else f' in {",".join(d_sources)} defaults'
     error_and_exit(f'{args.setting}{" regular expression" if args.regex else ""} not found{d_src_txt}',module='-')
@@ -304,7 +305,7 @@ def change_default_setting(s_path: str, s_value: typing.Any, src: str, store_as_
 """
 Change a default setting
 """
-def default_set(args: argparse.Namespace, topology: Box) -> None:
+def default_set(args: argparse.Namespace) -> None:
   global D_SOURCES
 
   s_params = args.setting.split('=')
@@ -319,12 +320,14 @@ def default_set(args: argparse.Namespace, topology: Box) -> None:
   w_sources = get_sources(args,write=True)
   w_best_src = list(w_sources)[-1]
   all_data = build_defaults_sources(None,cleanup_sources(D_SOURCES,False))
-  if s_path in topology.defaults and isinstance(topology.defaults[s_path],Box):
-    error_and_exit(
-      f'Cannot change a default setting {s_path} that has more-specific values',
-      more_hints=[
-        f'Use "netlab defaults {s_path}" to display the more-specific values'])
-
+  more_specific = [ src for k in all_data.keys() if k.startswith(s_path+".") for src in all_data[k] ]
+  if more_specific:
+    if isinstance(all_data[s_path],Box):
+      ms_set = set(more_specific)
+      error_and_exit(
+        f'Cannot change a default setting \'{s_path}\' that has more-specific values in {",".join(ms_set)} defaults',
+        more_hints=[
+          f'Use "netlab defaults {s_path}" to display the more-specific values'])
   if s_path in all_data:
     if not args.yes:
       print(f'The default setting {s_path} is already set in {",".join(all_data[s_path])} defaults')
@@ -336,7 +339,7 @@ def default_set(args: argparse.Namespace, topology: Box) -> None:
 '''
 Delete specified settings
 '''
-def default_delete(args: argparse.Namespace, topology: Box) -> None:
+def default_delete(args: argparse.Namespace) -> None:
   if not source_specified(args):
     error_and_exit('You have to specify the datastore from which you want to delete the settings')
 
@@ -379,10 +382,9 @@ def run(cli_args: typing.List[str]) -> None:
   if args.setting.startswith('default'):
     error_and_exit("Remove the 'defaults' prefix, we know you're changing the defaults")
   find_project_defaults()
-  topology = _read.load("package:cli/empty.yml")
   if args.delete:
-    default_delete(args,topology)
+    default_delete(args)
   elif '=' in args.setting:
-    default_set(args,topology)
+    default_set(args)
   else:
-    default_show(args,topology)
+    default_show(args)
