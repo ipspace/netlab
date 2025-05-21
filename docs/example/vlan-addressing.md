@@ -1,4 +1,4 @@
-(tutorial-vlan-addressing)=
+(example-vlan-addressing)=
 # VLAN Segment and Interface Addressing
 
 VLANs are one of the more confusing aspects of any network design and configuration, and _netlab_ is no exception. There are numerous tutorials describing the [typical VLAN and VRF topologies](tutorials-vlan-vrf); this one focuses on VLAN segment and interface addressing.

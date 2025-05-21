@@ -30,7 +30,6 @@ Once you want to know more, check out these lab topology tutorials:
 * [Simplify netlab Topologies with Link Groups](https://blog.ipspace.net/2023/05/netlab-link-groups/)
 * [Mix Containers and VMs in the Same Lab Topology](https://blog.ipspace.net/2023/02/netlab-vm-containers/)
 * [Using VLAN and VRF Links](https://blog.ipspace.net/2023/04/netlab-vrf-vlan-links/)
-* [](example/vlan-addressing.md)
 * [](example-bridge)
 
 ## User Interface Tutorials
@@ -44,11 +43,16 @@ Want to draw graphs, create reports, or use the GUI?
 (tutorials-vlan-vrf)=
 ## VRFs and VLANs
 
-VRFs and VLANs are particularly tricky, so we created numerous examples for simple- and complex topologies using them:
+VRFs and VLANs are particularly tricky, so we created numerous examples describing how you can use VLANs and VRFs with _netlab_. Here are a few basic examples:
 
 * [Simple VLAN Example](https://blog.ipspace.net/2022/05/netsim-vlan-simple/)
 * [VLAN Trunk Example](https://blog.ipspace.net/2022/06/netsim-vlan-trunk/)
 * [Combining VLANs with VRFs](https://blog.ipspace.net/2022/06/netsim-vlan-vrf/)
+* [](example-vlan-addressing)
+* [](example-vlan-mode)
+
+More complex examples:
+
 * [Creating VRF Lite Labs With netlab](https://blog.ipspace.net/2022/04/netsim-vrf-lite/)
 * [VRF Lite Topology with VLAN Trunks](https://blog.ipspace.net/2022/09/netlab-vrf-lite/)
 * [Creating MPLS/VPN Labs With netlab](https://blog.ipspace.net/2022/04/netsim-mpls-vpn/)
@@ -106,4 +110,5 @@ Documentation of individual configuration modules includes sample lab topology f
    example/linux.md
    example/bridge.md
    example/vlan-addressing.md
+   example/selecting-vlan-mode.md
 ```

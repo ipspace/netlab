@@ -126,6 +126,10 @@ VLANs with **mode** set to **bridge** or **irb** are configured as VLAN/SVI inte
 
 VLANs with **mode** set to **route** are configured as routed subinterfaces under the VLAN trunk interface. Use this mode primarily for designs using VLAN trunks to implement router-on-a-stick or [multi-hop VRF](https://github.com/ipspace/netlab-examples/tree/master/VRF/multihop-vrf-lite). Access VLAN interfaces with **mode** set to **route** are identical to non-VLAN interfaces.
 
+```{note}
+See also [](example-vlan-mode) for an introductory-level explanation.
+```
+
 You can set VLAN forwarding mode within individual links or interfaces with **vlan.mode** attribute, within a node or global **vlans** definition, or with **vlan.mode** node- or global parameter.
 
 The precedence of various **vlan.mode** parameters (from highest to lowest) is as follows:
@@ -307,7 +311,8 @@ The above rule does not apply to *routed* access interfaces or virtual links. A 
 A unique prefix is assigned to every *routed* VLAN link (access interface or trunk link VLAN member). The prefix cannot be specified with the VLAN **prefix** attribute or on a VLAN trunk; use the **pool** VLAN attribute to specify the address pool to be used for the virtual link. You can also specify the link prefix in the **prefix** attribute of an [individual VLAN trunk member](module-vlan-trunk-attributes).
 
 ```{note}
-If you want to use unnumbered VLAN member links, [define an addressing pool](address-pool-specs) that sets **‌ipv4** and/or **ipv6** to _True_ and use that pool in the VLAN **‌pool** definition.
+* See [](example-vlan-addressing) for more details and topology examples.
+* If you want to use unnumbered VLAN member links, [define an addressing pool](address-pool-specs) that sets **‌ipv4** and/or **ipv6** to _True_ and use that pool in the VLAN **‌pool** definition.
 ```
 
 ### Physical Interface and VLAN Interface Addressing
