@@ -11,48 +11,77 @@ message: |
   Please note it might take a while for the lab to work due to
   STP learning phase
 
+defaults.sources.extra: [ ../wait_times.yml ]
+
 groups:
   _auto_create: True
   hosts:
-    members: [ h1, h2, h3, h4 ]
+    members: [ h1, h2, h3, h4, h1a, h3a ]
     device: linux
     provider: clab
   switches:
-    members: [ s1, s2 ]
+    members: [ dut, s2 ]
     module: [ vlan, vxlan, ospf ]
+  probes:
+    members: [ s2 ]
+    device: frr
+    provider: clab
 
 vlans:
   red:
+    vni: 5000
     mode: bridge
     prefix:
       ipv4: 172.31.1.0/24
-    links: [ s1-h1, s2-h2 ]
+    links: [ dut-h1, dut-h1a, s2-h2 ]
   blue:
+    vni: 5001
     mode: bridge
     prefix:
       ipv4: 172.31.1.0/24
-    links: [ s1-h3, s2-h4 ]
+    links: [ dut-h3, dut-h3a, s2-h4 ]
 
 links:
-- s1:
+- dut:
   s2:
   mtu: 1600
 
 validate:
+  ospf_adj:
+    description: Check OSPF adjacencies
+    wait_msg: Waiting for OSPF adjacency process to complete
+    wait: ospfv2_adj_p2p
+    nodes: [ s2 ]
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id)
+    stop_on_error: True
+  stp_red:
+    description: Waiting for STP to enable ports in red VLAN
+    wait: stp_forwarding
+    wait_msg: Waiting for STP to go from 'learning' to 'forwarding'
+    nodes: [ h1 ]
+    plugin: ping('h1a')
+    stop_on_error: True
+  stp_blue:
+    description: Waiting for STP to enable ports in blue VLAN
+    wait: stp_forwarding
+    wait_msg: Waiting for STP to go from 'learning' to 'forwarding'
+    nodes: [ h3 ]
+    plugin: ping('h3a')
+    stop_on_error: True
   ping_red:
     description: Ping-based reachability test in VLAN red
-    wait_msg: Waiting for OSFP and STP to wake up
-    wait: 50
+    wait_msg: We might have to wait a bit longer
+    wait: vxlan_ping
     nodes: [ h1 ]
     plugin: ping('h2')
   ping_blue:
     description: Ping-based reachability test in VLAN blue
     wait_msg: We might have to wait a bit longer
-    wait: 10
+    wait: vxlan_ping
     nodes: [ h3 ]
     plugin: ping('h4')
   inter_vlan:
     description: Ping-based reachability test between blue and red VLANs
     nodes: [ h1 ]
     devices: [ linux ]
-    plugin: ping('h4',expect='fail')
+    plugin: ping('h4',expect='fail',count=3)
