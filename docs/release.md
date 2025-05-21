@@ -1,6 +1,10 @@
 Release Notes
 =============
 
+**Release 2.0.1 (2025-05-23)**
+
+Release 2.0.1 includes [bug](bug-fixes-2.0.1) and [documentation](doc-fixes-2.0.1) fixes as well as [minor device configuration improvements](release-2.0.1).
+
 **Release 2.0.0 (2025-05-10)**
 
 * Well-defined [node roles](node-router-host) (**host**, **router**, **bridge**) available on [multiple platforms](platform-host)
