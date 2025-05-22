@@ -159,6 +159,23 @@ def expand_include(n_name: str, n_data: Box, topology: Box) -> None:
   create_included_group(n_name,n_data,c_data,topology)
 
 '''
+We don't know the final node names When creating the link data structures,
+so we can do a viability check, but cannot check the actual node names
+for links involving nodes within components.
+
+Once the components are expanded, the node names are final, and we can
+do the final check.
+'''
+def validate_link_nodenames(topology: Box) -> None:
+  for link in topology.get('links',[]):
+    for intf in link.get('interfaces',[]):
+      if intf.node not in topology.nodes:
+        log.error(
+          f'{link._linkname} refers to an unknown node {intf.node}',
+          category=log.IncorrectValue,
+          module='links')
+
+'''
 Expand included components into groups, nodes and links
 
 * Validate components and exit on error
@@ -182,6 +199,7 @@ def expand_components(topology: Box) -> None:
       continue                                              # ... no, move on, will abort before exit
     expand_include(n_name,n_data,topology)                  # ... yes, do the include magic
 
+  validate_link_nodenames(topology)                         # After expanding components, revalidate node names on links
   log.exit_on_error()
   topology.pop('components',None)
 
