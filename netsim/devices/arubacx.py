@@ -15,6 +15,7 @@ class ARUBACX(_Quirks):
 
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
+    n_provider = devices.get_provider(node,topology.defaults)
     mods = node.get('module',[])
     # Checks for OSPF Process ID (index based)
     if 'ospf' in mods and 'vrf' in mods:
@@ -50,7 +51,7 @@ class ARUBACX(_Quirks):
             category=Warning)
     
     # MPLS can be used only with 'external' provider
-    if 'mpls' in mods and node.get('provider','') != 'external':
+    if 'mpls' in mods and n_provider != 'external':
        report_quirk(
           text=f'MPLS data plane used on node {node.name} works only on physical devices',
           more_hints=['Use a physical switch with the external provider'],
@@ -58,14 +59,15 @@ class ARUBACX(_Quirks):
           category=log.IncorrectType)
     
     # VNI must be below 65536
-    for vname,vdata in node.get('vlans',{}).items():
-      if vdata.get('vni',0) > 65535:
-        report_quirk(
-          text=f'VLAN {vname} used on ArubaCX node {node.name} has VXLAN VNI {vdata.vni}',
-          more_hints=['ArubaCX does not work correctly with VNI values above 65535'],
-          node=node,
-          quirk='vxlan_vni',
-          category=log.IncorrectValue)
+    if 'vlans' in node and n_provider != 'external':
+      for vname,vdata in node.get('vlans',{}).items():
+        if vdata.get('vni',0) > 65535:
+          report_quirk(
+            text=f'VLAN {vname} used on ArubaCX node {node.name} has VXLAN VNI {vdata.vni}',
+            more_hints=['ArubaCX does not work correctly with VNI values above 65535'],
+            node=node,
+            quirk='vxlan_vni',
+            category=log.IncorrectValue)
 
     # LAG + VSX quirks
     ## on VSX, you **must** configure the switch role as primary or secondary.
