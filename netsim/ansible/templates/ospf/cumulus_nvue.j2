@@ -14,6 +14,7 @@
         router:
           ospf:
             enable: on
+            area: "{{ _ospf.area|default(ospf.area) }}"
 {{     redistribute.config(_ospf,af='ipv4')|indent(12,first=True) }}
 {%     if _ospf.reference_bandwidth is defined %}
             reference-bandwidth: {{ _ospf.reference_bandwidth }}
@@ -22,7 +23,7 @@
             router-id: {{ _ospf.router_id }}
 {%     endif %}
 
-{%     for l in _intfs %}
+{%     for l in _intfs if l.type!='loopback' or l.vrf is not defined %}
 {%       if loop.first %}
     interface:
 {%       endif %}
@@ -57,7 +58,7 @@
 {% endmacro %}
 
 {% if ospf is defined %}
-{% set _lo = (loopback | combine( { 'ospf': { 'area': ospf.area|default('0.0.0.0') } } )) if 'ipv4' in loopback else {} %}
-{% set _ospf_intfs = [_lo] + interfaces|default([])|selectattr('ospf','defined')|list %}
+{% set _lo = [ loopback ] if 'ospf' in loopback and 'ipv4' in loopback else [] %}
+{% set _ospf_intfs = _lo + interfaces|default([])|selectattr('ospf','defined')|list %}
 {{ vrf_ospf("default", { 'ospf': ospf | combine( { 'interfaces': _ospf_intfs } ) } ) }}
 {% endif %}
