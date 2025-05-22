@@ -53,10 +53,20 @@ class ARUBACX(_Quirks):
     if 'mpls' in mods and node.get('provider','') != 'external':
        report_quirk(
           text=f'MPLS data plane used on node {node.name} works only on physical devices',
-          more_hints='Use a physical switch with the external provider',
+          more_hints=['Use a physical switch with the external provider'],
           node=node,
           category=log.IncorrectType)
     
+    # VNI must be below 65536
+    for vname,vdata in node.get('vlans',{}).items():
+      if vdata.get('vni',0) > 65535:
+        report_quirk(
+          text=f'VLAN {vname} used on ArubaCX node {node.name} has VXLAN VNI {vdata.vni}',
+          more_hints=['ArubaCX does not work correctly with VNI values above 65535'],
+          node=node,
+          quirk='vxlan_vni',
+          category=log.IncorrectValue)
+
     # LAG + VSX quirks
     ## on VSX, you **must** configure the switch role as primary or secondary.
     ### The roles do not indicate which device is forwarding traffic at a given time as VSX is an active-active forwarding solution.
