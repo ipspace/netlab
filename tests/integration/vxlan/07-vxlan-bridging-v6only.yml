@@ -9,22 +9,29 @@ message: |
   Please note it might take a while for the lab to work due to
   OSPF adjacency setup process and STP learning phase
 
+defaults.sources.extra: [ ../wait_times.yml ]
+
 defaults.vxlan.use_v6_vtep: true
 
 groups:
   _auto_create: True
   hosts:
-    members: [ h1, h2 ]
+    members: [ h1, h1a, h2 ]
     device: linux
     provider: clab
   switches:
-    members: [ s1, s2 ]
+    members: [ dut, s2 ]
     module: [ vlan, vxlan, ospf ]
+  probes:
+    members: [ s2 ]
+    device: frr
+    provider: clab
 
 vlans:
   red:
+    vni: 5000
     mode: bridge
-    links: [ s1-h1, s2-h2 ]
+    links: [ dut-h1, dut-h1a, s2-h2 ]
 
 addressing:
   loopback:
@@ -37,14 +44,28 @@ addressing:
     ipv6: 2001:db8:f::/48
 
 links:
-- s1:
+- dut:
   s2:
   mtu: 1600
 
 validate:
+  ospf6_adj:
+    description: Check OSPFv3 adjacencies
+    wait_msg: Waiting for OSPFv3 adjacency process to complete
+    wait: ospfv2_adj_p2p
+    nodes: [ s2 ]
+    plugin: ospf6_neighbor(nodes.dut.ospf.router_id)
+    stop_on_error: True
+  stp_red:
+    description: Waiting for STP to enable ports in red VLAN
+    wait: stp_forwarding
+    wait_msg: Waiting for STP to go from 'learning' to 'forwarding'
+    nodes: [ h1 ]
+    plugin: ping('h1a')
+    stop_on_error: True
   ping:
     description: Ping-based reachability test in VLAN red
     wait_msg: Waiting for OSFP and STP to wake up
-    wait: 50
+    wait: ospfv2_spf
     nodes: [ h1 ]
     plugin: ping('h2')

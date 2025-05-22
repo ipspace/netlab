@@ -10,23 +10,31 @@ message: |
   Please note it might take a while for the lab to work due to
   OSPF adjacency establishment and STP learning phase
 
+defaults.sources.extra: [ ../wait_times.yml ]
+
 groups:
   _auto_create: True
   hosts:
-    members: [ h1, h2, h3, h4, h5, h6 ]
+    members: [ h1, h2, h3, h4, h5, h6, h1a, h2a, h4a, h5a ]
     device: linux
     provider: clab
   switches:
     members: [ s1, s2, s3 ]
     module: [ vlan, vxlan, ospf ]
+  probes:
+    members: [ s3 ]
+    device: frr
+    provider: clab
 
 vlans:
   red:
+    vni: 5000
     mode: bridge
-    links: [ s1-h1, s2-h2, s3-h3 ]
+    links: [ s1-h1, s1-h1a, s2-h2, s2-h2a, s3-h3 ]
   blue:
+    vni: 5001
     mode: bridge
-    links: [ s1-h4, s2-h5, s3-h6 ]
+    links: [ s1-h4, s1-h4a, s2-h5, s2-h5a, s3-h6 ]
 
 links:
 - s1:
@@ -40,16 +48,58 @@ links:
   mtu: 1600
 
 validate:
+  ospf_adj_s1:
+    description: Check OSPF adjacencies
+    wait_msg: Waiting for OSPF adjacency process to complete
+    wait: ospfv2_adj_p2p
+    nodes: [ s3 ]
+    plugin: ospf_neighbor(nodes.s1.ospf.router_id)
+    stop_on_error: True
+  ospf_adj_s2:
+    description: Check OSPF adjacencies
+    wait_msg: Waiting for OSPF adjacency process to complete
+    wait: ospfv2_adj_p2p
+    nodes: [ s3 ]
+    plugin: ospf_neighbor(nodes.s2.ospf.router_id)
+    stop_on_error: True
+  stp_red_s1:
+    description: Waiting for STP to enable ports in red VLAN on S1
+    wait: stp_forwarding
+    wait_msg: Waiting for STP to go from 'learning' to 'forwarding'
+    nodes: [ h1 ]
+    plugin: ping('h1a')
+    stop_on_error: True
+  stp_red_s2:
+    description: Waiting for STP to enable ports in red VLAN on S2
+    wait: stp_forwarding
+    wait_msg: Waiting for STP to go from 'learning' to 'forwarding'
+    nodes: [ h2 ]
+    plugin: ping('h2a')
+    stop_on_error: True
+  stp_blue_s1:
+    description: Waiting for STP to enable ports in blue VLAN on S1
+    wait: stp_forwarding
+    wait_msg: Waiting for STP to go from 'learning' to 'forwarding'
+    nodes: [ h4 ]
+    plugin: ping('h4a')
+    stop_on_error: True
+  stp_blue_s2:
+    description: Waiting for STP to enable ports in blue VLAN on S2
+    wait: stp_forwarding
+    wait_msg: Waiting for STP to go from 'learning' to 'forwarding'
+    nodes: [ h5 ]
+    plugin: ping('h5a')
+    stop_on_error: True
   ping_h1:
-    description: "VLAN red: ping H1 (wait up to 30 seconds)"
+    description: "VLAN red: ping H1"
     wait_msg: Waiting for OSFP and STP to wake up
-    wait: 50
+    wait: vxlan_ping
     nodes: [ h2, h3 ]
     plugin: ping('h1')
   ping_h2:
-    description: "VLAN red: ping H2 (wait up to 10 seconds)"
+    description: "VLAN red: ping H2"
     wait_msg: We might have to wait a bit longer
-    wait: 10
+    wait: vxlan_ping
     nodes: [ h1, h3 ]
     plugin: ping('h2')
   ping_h3:
@@ -57,13 +107,13 @@ validate:
     nodes: [ h1, h2 ]
     plugin: ping('h3')
   ping_h4:
-    description: "VLAN blue: ping H4 (wait up to 10 seconds)"
-    wait: 10
+    description: "VLAN blue: ping H4"
+    wait: ping
     nodes: [ h5, h6 ]
     plugin: ping('h4')
   ping_h5:
-    description: "VLAN blue: ping H5 (wait up to 10 seconds)"
-    wait: 10
+    description: "VLAN blue: ping H5"
+    wait: ping
     nodes: [ h4, h6 ]
     plugin: ping('h5')
   ping_h6:
@@ -74,4 +124,4 @@ validate:
     description: Ping-based reachability test between blue and red VLANs
     nodes: [ h1 ]
     devices: [ linux ]
-    plugin: ping('h5',expect='fail')
+    plugin: ping('h5',expect='fail',count=3)

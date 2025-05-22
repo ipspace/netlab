@@ -9,40 +9,79 @@ message: |
   Please note it might take a while for the lab to work due to
   STP learning phase.
 
+defaults.sources.extra: [ ../wait_times.yml ]
+
 groups:
   _auto_create: True
   hosts:
-    members: [ h1, h2, h3, h4 ]
+    members: [ h1, h1a, h2, h3, h3a, h4 ]
     device: linux
     provider: clab
   switches:
-    members: [ s1, s2 ]
+    members: [ dut, s2 ]
     module: [ vlan, vxlan, ospf ]
+  probes:
+    members: [ s2 ]
+    device: frr
+    provider: clab
 
 vlans:
   red:
+    vni: 5000
     role: external
-    links: [ s1-h1, s2-h2 ]
+    links: [ dut-h1, dut-h1a, s2-h2 ]
   blue:
+    vni: 5001
     role: external
-    links: [ s1-h3, s2-h4 ]
+    links: [ dut-h3, dut-h3a, s2-h4 ]
 
 links:
-- s1:
+- dut:
   s2:
   mtu: 1600
 
 validate:
-  ping_h4:
+  ospf_adj:
+    description: Check OSPF adjacencies
+    wait_msg: Waiting for OSPF adjacency process to complete
+    wait: ospfv2_adj_p2p
+    nodes: [ s2 ]
+    plugin: ospf_neighbor(nodes.dut.ospf.router_id)
+    stop_on_error: True
+  stp_red:
+    description: Waiting for STP to enable ports in red VLAN
+    wait: stp_forwarding
+    wait_msg: Waiting for STP to go from 'learning' to 'forwarding'
+    nodes: [ h1 ]
+    plugin: ping('h1a')
+    stop_on_error: True
+  stp_blue:
+    description: Waiting for STP to enable ports in blue VLAN
+    wait: stp_forwarding
+    wait_msg: Waiting for STP to go from 'learning' to 'forwarding'
+    nodes: [ h3 ]
+    plugin: ping('h3a')
+    stop_on_error: True
+  ping_h3:
     description: Host-to-host ping-based reachability test
-    wait_msg: Waiting for OSFP and STP to wake up
-    wait: 50
+    wait_msg: We might have to wait a bit longer
+    wait: vxlan_ping
     nodes: [ h1, h2 ]
     plugin: ping('h3')
-
   ping_sw:
     description: Host-to-switch ping-based reachability test
     wait_msg: We might have to wait a bit longer
-    wait: 10
+    wait: ping
     nodes: [ h1, h2, h3, h4 ]
-    plugin: ping('s1')
+    plugin: ping('dut')
+
+plugin: [ test.fixup ]
+_fixup:
+  arubacx:
+    groups.probes.device: eos
+    validate.warning:
+      wait: 0
+      level: warning
+      fail: VXLAN-encapsulated ARP packets sent by Aruba CX have invalid IP packet length
+    _delete:
+      groups.probes.provider:
