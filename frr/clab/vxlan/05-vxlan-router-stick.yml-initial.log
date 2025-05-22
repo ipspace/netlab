@@ -223,6 +223,12 @@ ok: [ros] =>
         ip link set dev lo up
       fi
     fi
+    if [ ! -e /sys/class/net/lo1 ]; then
+      if [ ! -e /sys/devices/virtual/net/lo1 ]; then
+        ip link add lo1 type dummy
+        ip link set dev lo1 up
+      fi
+    fi
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
@@ -265,6 +271,11 @@ ok: [ros] =>
      no shutdown
      description VLAN blue (1001) -> [h2,s1]
      ip address 172.16.1.2/24
+    !
+    interface lo1
+     no shutdown
+     description VRF Loopback tenant
+     ip address 10.2.0.1/32
     !
     do write
     CONFIG
@@ -424,8 +435,8 @@ ok: [s1]
 ok: [ros]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [ros]
 changed: [s1]
+changed: [ros]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [ros]
@@ -436,12 +447,12 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -452,10 +463,10 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-wm979ihb.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-84pzbse0.sh] ***********************
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
@@ -562,8 +573,8 @@ skipping: [h2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for ros, s1
 
 TASK [template] ****************************************************************
-changed: [s1]
 changed: [ros]
+changed: [s1]
 
 TASK [set_fact] ****************************************************************
 ok: [ros]
@@ -673,12 +684,12 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
 skipping: [h1]
@@ -689,10 +700,10 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Container configuration for routing based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-6qtnwc6z.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-f5szr0z6.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -849,6 +860,8 @@ ok: [ros] =>
     ip link set vlan1000 master tenant
     sysctl -qw net.ipv6.conf.vlan1001.keep_addr_on_down=1
     ip link set vlan1001 master tenant
+    sysctl -qw net.ipv6.conf.lo1.keep_addr_on_down=1
+    ip link set lo1 master tenant
   
     cat >/tmp/vrf_config <<CONFIG
     vrf tenant
@@ -876,6 +889,10 @@ ok: [ros] =>
     !
     interface vlan1001
     ! VLAN blue (1001) -> [h2,s1]
+     ip ospf area 0.0.0.0
+    !
+    interface lo1
+    ! VRF Loopback tenant
      ip ospf area 0.0.0.0
     !
   
@@ -945,8 +962,8 @@ ok: [ros] =>
     # Create L3 VNIs with bridges and add to correct vrf table
   
     # Create VXLAN L2 interface per vni
-    ip link add vxlan101000 type vxlan \
-      id 101000 \
+    ip link add vxlan5000 type vxlan \
+      id 5000 \
       dstport 4789 \
       local 10.0.0.2
     #
@@ -955,17 +972,17 @@ ok: [ros] =>
     ip link add vlan1000 type bridge
     ip link set up dev vlan1000
     fi
-    ip link set dev vxlan101000 master vlan1000
+    ip link set dev vxlan5000 master vlan1000
     ip link set vlan1000 type bridge stp_state 0
   
     # Do not generate ipv6 link-local address for VXLAN devices
-    ip link set mtu 1500 addrgenmode none dev vxlan101000
-    ip link set up dev vxlan101000
+    ip link set mtu 1500 addrgenmode none dev vxlan5000
+    ip link set up dev vxlan5000
   
-    bridge fdb append 00:00:00:00:00:00 dev vxlan101000 dst 10.0.0.1
+    bridge fdb append 00:00:00:00:00:00 dev vxlan5000 dst 10.0.0.1
     # Create VXLAN L2 interface per vni
-    ip link add vxlan101001 type vxlan \
-      id 101001 \
+    ip link add vxlan5001 type vxlan \
+      id 5001 \
       dstport 4789 \
       local 10.0.0.2
     #
@@ -974,14 +991,14 @@ ok: [ros] =>
     ip link add vlan1001 type bridge
     ip link set up dev vlan1001
     fi
-    ip link set dev vxlan101001 master vlan1001
+    ip link set dev vxlan5001 master vlan1001
     ip link set vlan1001 type bridge stp_state 0
   
     # Do not generate ipv6 link-local address for VXLAN devices
-    ip link set mtu 1500 addrgenmode none dev vxlan101001
-    ip link set up dev vxlan101001
+    ip link set mtu 1500 addrgenmode none dev vxlan5001
+    ip link set up dev vxlan5001
   
-    bridge fdb append 00:00:00:00:00:00 dev vxlan101001 dst 10.0.0.1
+    bridge fdb append 00:00:00:00:00:00 dev vxlan5001 dst 10.0.0.1
   
     exit $?
 ok: [s1] => 
@@ -998,8 +1015,8 @@ ok: [s1] =>
     # Create L3 VNIs with bridges and add to correct vrf table
   
     # Create VXLAN L2 interface per vni
-    ip link add vxlan101000 type vxlan \
-      id 101000 \
+    ip link add vxlan5000 type vxlan \
+      id 5000 \
       dstport 4789 \
       local 10.0.0.1
     #
@@ -1008,17 +1025,17 @@ ok: [s1] =>
     ip link add vlan1000 type bridge
     ip link set up dev vlan1000
     fi
-    ip link set dev vxlan101000 master vlan1000
+    ip link set dev vxlan5000 master vlan1000
     ip link set vlan1000 type bridge stp_state 0
   
     # Do not generate ipv6 link-local address for VXLAN devices
-    ip link set mtu 1500 addrgenmode none dev vxlan101000
-    ip link set up dev vxlan101000
+    ip link set mtu 1500 addrgenmode none dev vxlan5000
+    ip link set up dev vxlan5000
   
-    bridge fdb append 00:00:00:00:00:00 dev vxlan101000 dst 10.0.0.2
+    bridge fdb append 00:00:00:00:00:00 dev vxlan5000 dst 10.0.0.2
     # Create VXLAN L2 interface per vni
-    ip link add vxlan101001 type vxlan \
-      id 101001 \
+    ip link add vxlan5001 type vxlan \
+      id 5001 \
       dstport 4789 \
       local 10.0.0.1
     #
@@ -1027,14 +1044,14 @@ ok: [s1] =>
     ip link add vlan1001 type bridge
     ip link set up dev vlan1001
     fi
-    ip link set dev vxlan101001 master vlan1001
+    ip link set dev vxlan5001 master vlan1001
     ip link set vlan1001 type bridge stp_state 0
   
     # Do not generate ipv6 link-local address for VXLAN devices
-    ip link set mtu 1500 addrgenmode none dev vxlan101001
-    ip link set up dev vxlan101001
+    ip link set mtu 1500 addrgenmode none dev vxlan5001
+    ip link set up dev vxlan5001
   
-    bridge fdb append 00:00:00:00:00:00 dev vxlan101001 dst 10.0.0.2
+    bridge fdb append 00:00:00:00:00:00 dev vxlan5001 dst 10.0.0.2
   
     exit $?
 
@@ -1052,8 +1069,8 @@ ok: [ros]
 ok: [s1]
 
 TASK [run /tmp/config.sh to deploy vxlan config from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/frr.j2] ***
-changed: [ros]
 changed: [s1]
+changed: [ros]
 
 TASK [run vtysh to import vxlan config from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/frr.j2] ***
 skipping: [ros]
@@ -1070,9 +1087,8 @@ s1                         : ok=48   changed=8    unreachable=0    failed=0    s
 
 
 
-The devices under test are VLAN-to-VXLAN bridge and VXLAN router-on-a-stick.
-Assuming 'vxlan-bridging' test case succeeded, this one tests VXLAN-to-VXLAN
-routing
+The device under test is a VXLAN router-on-a-stick. This tests check
+VXLAN-to-VXLAN routing.
 
 * h1 and h2 should be able to ping each other
 

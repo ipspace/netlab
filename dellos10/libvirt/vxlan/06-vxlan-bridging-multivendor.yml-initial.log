@@ -4,25 +4,25 @@
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [s3]
 ok: [s1]
+ok: [s3]
 ok: [h1]
 ok: [s2]
 ok: [h2]
-ok: [h4]
 ok: [h3]
+ok: [h4]
 ok: [h5]
 ok: [h6]
 
 TASK [Find device readiness script] ********************************************
-ok: [h1]
 ok: [s3]
+ok: [h1]
 ok: [s1]
 ok: [s2]
 ok: [h2]
 ok: [h3]
-ok: [h4]
 ok: [h5]
+ok: [h4]
 ok: [h6]
 
 TASK [Wait for device to become ready] *****************************************
@@ -54,10 +54,10 @@ TASK [Find configuration template for normalize] *******************************
 ok: [s3]
 ok: [s1]
 ok: [h1]
+ok: [h3]
 ok: [s2]
 ok: [h2]
 ok: [h4]
-ok: [h3]
 ok: [h5]
 ok: [h6]
 
@@ -75,11 +75,11 @@ skipping: [h6]
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [s3]
 ok: [h1]
-ok: [h4]
 ok: [h2]
 ok: [h3]
-ok: [h6]
 ok: [h5]
+ok: [h6]
+ok: [h4]
 ok: [s1]
 ok: [s2]
 
@@ -113,8 +113,8 @@ ok: [s3]
 ok: [h1]
 ok: [s1]
 ok: [h2]
-ok: [h3]
 ok: [s2]
+ok: [h3]
 ok: [h4]
 ok: [h5]
 ok: [h6]
@@ -123,8 +123,8 @@ TASK [Find configuration template for initial] *********************************
 ok: [s3]
 ok: [h1]
 ok: [s1]
-ok: [h2]
 ok: [s2]
+ok: [h2]
 ok: [h3]
 ok: [h5]
 ok: [h4]
@@ -148,9 +148,9 @@ ok: [h1]
 ok: [s2]
 ok: [h2]
 ok: [h3]
-ok: [h4]
-ok: [h6]
 ok: [h5]
+ok: [h6]
+ok: [h4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [h1] => 
@@ -186,41 +186,6 @@ ok: [h1] =>
     ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.0.1/24 dev eth1
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
-ok: [h5] => 
-  msg: |-
-    initial configuration for h5
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Send ARP requests from a sane source IP address
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-  
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.1.5/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.1.5/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
 ok: [h2] => 
@@ -482,13 +447,14 @@ ok: [s1] =>
     !
     default mtu 1532
     !
-    interface loopback0
-     ip address 10.0.0.7/32
-     no ipv6 enable
-    !
     interface mgmt1/1/1
      no lldp transmit
      no lldp receive
+    !
+    interface loopback0
+     no shutdown
+     ip address 10.0.0.7/32
+     no ipv6 enable
     !
     interface ethernet1/1/1
      no shutdown
@@ -530,6 +496,41 @@ ok: [s1] =>
      description "VLAN blue (1001) -> [h6\\,s3\\,h4\\,h5\\,s2]"
      no ipv6 enable
     !
+ok: [h5] => 
+  msg: |-
+    initial configuration for h5
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+  
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.1.5/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.1.5/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
 ok: [s2] => 
   msg: |-
     initial configuration for s2
@@ -545,13 +546,14 @@ ok: [s2] =>
     !
     default mtu 1532
     !
-    interface loopback0
-     ip address 10.0.0.8/32
-     no ipv6 enable
-    !
     interface mgmt1/1/1
      no lldp transmit
      no lldp receive
+    !
+    interface loopback0
+     no shutdown
+     ip address 10.0.0.8/32
+     no ipv6 enable
     !
     interface ethernet1/1/1
      no shutdown
@@ -639,8 +641,8 @@ skipping: [s1]
 skipping: [s2]
 
 TASK [dellos10_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/dellos10.j2, save to startup=yes] ***
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [s3 -> localhost]
@@ -672,19 +674,19 @@ ok: [h5]
 ok: [h6]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h2 -> localhost]
-changed: [h6 -> localhost]
-changed: [h1 -> localhost]
-changed: [h4 -> localhost]
-changed: [h3 -> localhost]
 changed: [h5 -> localhost]
+changed: [h6 -> localhost]
+changed: [h4 -> localhost]
+changed: [h2 -> localhost]
+changed: [h1 -> localhost]
+changed: [h3 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
-changed: [h4 -> localhost]
 changed: [h3 -> localhost]
-changed: [h6 -> localhost]
+changed: [h4 -> localhost]
 changed: [h5 -> localhost]
+changed: [h6 -> localhost]
 changed: [h2 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
@@ -704,18 +706,18 @@ skipping: [h5]
 skipping: [h6]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h2 -> localhost]
-changed: [h4 -> localhost]
-changed: [h3 -> localhost]
-changed: [h5 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+changed: [h3 -> localhost]
+changed: [h4 -> localhost]
+changed: [h5 -> localhost]
 changed: [h6 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-36o5f_7x.sh] ***********************
-changed: [h6 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-pujxz7zf.sh] ***********************
 changed: [h4 -> localhost]
-changed: [h5 -> localhost]
 changed: [h1 -> localhost]
+changed: [h5 -> localhost]
+changed: [h6 -> localhost]
 changed: [h3 -> localhost]
 changed: [h2 -> localhost]
 
@@ -741,8 +743,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1,
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [h1]
 ok: [h2]
-ok: [h3]
 ok: [h4]
+ok: [h3]
 ok: [h5]
 ok: [h6]
 ok: [s3]
@@ -789,32 +791,6 @@ skipping: [h3]
 skipping: [h4]
 skipping: [h5]
 skipping: [h6]
-ok: [s3] => 
-  msg: |-
-    vlan configuration for s3
-    =========================================
-    #!/bin/bash
-    #
-    set -e # Exit immediately when any command fails
-    #
-    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
-      ip link add vlan1000 type bridge
-      ip link set dev vlan1000 address 52:dc:ca:fd:2a:00
-  
-      ip addr flush dev vlan1000
-    fi
-    if [ ! -e /sys/devices/virtual/net/vlan1001 ]; then
-      ip link add vlan1001 type bridge
-      ip link set dev vlan1001 address 52:dc:ca:fd:2a:01
-  
-      ip addr flush dev vlan1001
-    fi
-  
-    ip link set dev eth3 master vlan1000
-    ip link set dev eth4 master vlan1001
-  
-    ip link set dev vlan1000 up
-    ip link set dev vlan1001 up
 ok: [s1] => 
   msg: |-
     vlan configuration for s1
@@ -849,6 +825,32 @@ ok: [s1] =>
     interface virtual-network1000
     !
     interface virtual-network1001
+ok: [s3] => 
+  msg: |-
+    vlan configuration for s3
+    =========================================
+    #!/bin/bash
+    #
+    set -e # Exit immediately when any command fails
+    #
+    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
+      ip link add vlan1000 type bridge
+      ip link set dev vlan1000 address 52:dc:ca:fd:2a:00
+  
+      ip addr flush dev vlan1000
+    fi
+    if [ ! -e /sys/devices/virtual/net/vlan1001 ]; then
+      ip link add vlan1001 type bridge
+      ip link set dev vlan1001 address 52:dc:ca:fd:2a:01
+  
+      ip addr flush dev vlan1001
+    fi
+  
+    ip link set dev eth3 master vlan1000
+    ip link set dev eth4 master vlan1001
+  
+    ip link set dev vlan1000 up
+    ip link set dev vlan1001 up
 ok: [s2] => 
   msg: |-
     vlan configuration for s2
@@ -1084,8 +1086,8 @@ skipping: [s3]
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [h1]
 ok: [h2]
-ok: [h3]
 ok: [h4]
+ok: [h3]
 ok: [h5]
 ok: [h6]
 ok: [s3]
@@ -1097,8 +1099,8 @@ ok: [h1]
 ok: [h2]
 ok: [h3]
 skipping: [s1]
-ok: [h4]
 ok: [h5]
+ok: [h4]
 skipping: [s2]
 ok: [h6]
 skipping: [s3]
@@ -1117,12 +1119,12 @@ skipping: [s3]
 TASK [Find configuration deployment deploy_script for routing] *****************
 ok: [h1]
 ok: [h2]
-ok: [h3]
 skipping: [s1]
+ok: [h3]
 skipping: [s2]
 skipping: [s3]
-ok: [h5]
 ok: [h4]
+ok: [h5]
 ok: [h6]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -1173,22 +1175,6 @@ ok: [h3] =>
     # Print the final routing table
     ip route
 skipping: [s2]
-skipping: [s3]
-ok: [h6] => 
-  msg: |-
-    routing configuration for h6
-    =========================================
-    #!/bin/bash
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    #
-    #
-    #
-    #
-    #
-    # Print the final routing table
-    ip route
 ok: [h4] => 
   msg: |-
     routing configuration for h4
@@ -1204,9 +1190,25 @@ ok: [h4] =>
     #
     # Print the final routing table
     ip route
+skipping: [s3]
 ok: [h5] => 
   msg: |-
     routing configuration for h5
+    =========================================
+    #!/bin/bash
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    #
+    #
+    #
+    #
+    # Print the final routing table
+    ip route
+ok: [h6] => 
+  msg: |-
+    routing configuration for h6
     =========================================
     #!/bin/bash
     #
@@ -1235,20 +1237,20 @@ ok: [h5]
 ok: [h6]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
-changed: [h3 -> localhost]
+changed: [h2 -> localhost]
 changed: [h5 -> localhost]
-changed: [h4 -> localhost]
 changed: [h6 -> localhost]
+changed: [h3 -> localhost]
+changed: [h4 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
-changed: [h1 -> localhost]
 changed: [h3 -> localhost]
-changed: [h6 -> localhost]
-changed: [h2 -> localhost]
-changed: [h4 -> localhost]
+changed: [h1 -> localhost]
 changed: [h5 -> localhost]
+changed: [h2 -> localhost]
+changed: [h6 -> localhost]
+changed: [h4 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
 skipping: [h1]
@@ -1267,20 +1269,20 @@ skipping: [h5]
 skipping: [h6]
 
 TASK [Container configuration for routing based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 changed: [h3 -> localhost]
+changed: [h4 -> localhost]
 changed: [h6 -> localhost]
 changed: [h5 -> localhost]
-changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-gaefn5u6.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-uxvp21i_.sh] ***********************
 changed: [h1 -> localhost]
-changed: [h2 -> localhost]
-changed: [h3 -> localhost]
 changed: [h4 -> localhost]
-changed: [h6 -> localhost]
+changed: [h3 -> localhost]
 changed: [h5 -> localhost]
+changed: [h2 -> localhost]
+changed: [h6 -> localhost]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [h1]
@@ -1440,8 +1442,8 @@ skipping: [s1]
 skipping: [s2]
 
 TASK [dellos10_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/dellos10.j2, save to startup=yes] ***
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [template] ****************************************************************
 changed: [s3]

@@ -4,88 +4,101 @@
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [h1]
-ok: [h2]
-ok: [s1]
 ok: [s2]
+ok: [h1]
+ok: [h1a]
+ok: [dut]
+ok: [h2]
 
 TASK [Find device readiness script] ********************************************
-ok: [h1]
-ok: [h2]
-ok: [s1]
 ok: [s2]
+ok: [h1]
+ok: [h1a]
+ok: [h2]
+ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
-skipping: [h1]
-skipping: [h2]
-skipping: [s1]
 skipping: [s2]
+skipping: [h1]
+skipping: [h1a]
+skipping: [h2]
+skipping: [dut]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1, s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s2, h1, h1a, h2, dut
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
-ok: [h1]
-ok: [h2]
-ok: [s1]
 ok: [s2]
+ok: [h1]
+ok: [h1a]
+ok: [h2]
+ok: [dut]
 
 TASK [Find configuration template for normalize] *******************************
-ok: [h1]
-ok: [h2]
-ok: [s1]
 ok: [s2]
+ok: [h1]
+ok: [h1a]
+ok: [h2]
+ok: [dut]
 
 TASK [fail] ********************************************************************
-skipping: [h1]
-skipping: [h2]
-skipping: [s1]
 skipping: [s2]
+skipping: [h1]
+skipping: [h1a]
+skipping: [h2]
+skipping: [dut]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
-ok: [h1]
-ok: [h2]
-ok: [s1]
 ok: [s2]
+ok: [h1]
+ok: [h1a]
+ok: [h2]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [h1]
-skipping: [h2]
-skipping: [s1]
 skipping: [s2]
+skipping: [h1]
+skipping: [h1a]
+skipping: [h2]
+skipping: [dut]
 
 TASK [Deploy normalize configuration] ******************************************
-skipping: [h1]
-skipping: [h2]
-skipping: [s1]
 skipping: [s2]
+skipping: [h1]
+skipping: [h1a]
+skipping: [h2]
+skipping: [dut]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1, s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s2, h1, h1a, h2, dut
 
 TASK [Figure out whether to deploy the module initial on current device] *******
-ok: [h1]
-ok: [h2]
-ok: [s1]
 ok: [s2]
+ok: [h1]
+ok: [h1a]
+ok: [h2]
+ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
-ok: [h1]
-ok: [h2]
-ok: [s1]
 ok: [s2]
+ok: [h1]
+ok: [h1a]
+ok: [dut]
+ok: [h2]
 
 TASK [fail] ********************************************************************
-skipping: [h1]
-skipping: [h2]
-skipping: [s1]
 skipping: [s2]
+skipping: [h1]
+skipping: [h1a]
+skipping: [h2]
+skipping: [dut]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [h1]
-ok: [h2]
-ok: [s1]
 ok: [s2]
+ok: [h1]
+ok: [h1a]
+ok: [h2]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [h1] => 
@@ -127,9 +140,9 @@ ok: [h1] =>
     set -e
     ip -6 addr add 2001:db8:a::1/64 dev eth1
     ip link set dev eth1 mtu 1500
-ok: [h2] => 
+ok: [h1a] => 
   msg: |-
-    initial configuration for h2
+    initial configuration for h1a
     =========================================
     #!/bin/bash
     #
@@ -166,76 +179,170 @@ ok: [h2] =>
     set -e
     ip -6 addr add 2001:db8:a::2/64 dev eth1
     ip link set dev eth1 mtu 1500
-ok: [s1] => 
+ok: [h2] => 
   msg: |-
-    initial configuration for s1
+    initial configuration for h2
     =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
   
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-    fi
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
   
-    # Configuration items start here
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
   
-    configure
-    set system host-name 's1'
-  
-  
-    set interfaces bridge br0 description 'Global Switch Bridge'
-    set interfaces bridge br0 enable-vlan
-  
-    set interfaces bridge br0 vif 1000
-  
-    set interfaces dummy dum0 address 2001:db8:0:3::1/64
-  
-  
-  
-    set interfaces ethernet eth1 description 's1 -> s2'
-  
-    set interfaces ethernet eth1 mtu 1600
-  
-  
-    set interfaces ethernet eth1 address 2001:db8:f::1/64;
-  
-  
-  
-  
-    set interfaces ethernet eth2 description '[Access VLAN red] s1 -> h1'
-  
-  
-  
-  
-  
-  
-  
-    set interfaces bridge br0 vif 1000 description 'VLAN red (1000) -> [h1,h2,s2]'
-  
-  
-  
-  
-  
-  
-    set service lldp interface all
-    >/dev/null 2>/dev/null set service lldp interface eth0 disable
-    >/dev/null 2>/dev/null set service lldp interface eth0 mode disable
-  
-    set service router-advert interface eth1
-  
-  
-    # Commit, save and exit from subshell
-  
-    commit
-    save
-    exit
-  
-    # Restart FRR to pick up the new hostname
-    sudo service frr restart
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.3/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.3/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:a::3/64 dev eth1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:a::3/64 dev eth1
+    ip link set dev eth1 mtu 1500
 ok: [s2] => 
   msg: |-
     initial configuration for s2
     =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.autoconf=0
+    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
+    ip link set dev eth1 mtu 1600
+    ip link set eth1 up
+    ip link set eth2 down
+    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+    ip link set dev eth2 mtu 1500
+    ip link set eth2 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname s2
+    !
+    ipv6 forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ! no ip address
+     ipv6 address 2001:db8:0:5::1/64
+    !
+    interface eth1
+     no shutdown
+     description s2 -> dut
+     ! no ip address
+     ipv6 address 2001:db8:f::5/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    interface eth2
+     no shutdown
+     description [Access VLAN red] s2 -> h2
+     ! no ip address
+    !
+    interface vlan1000
+     no shutdown
+     description VLAN red (1000) -> [h1,dut,h1a,h2]
+     ! no ip address
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
     #!/bin/vbash
     source /opt/vyatta/etc/functions/script-template
   
@@ -246,7 +353,7 @@ ok: [s2] =>
     # Configuration items start here
   
     configure
-    set system host-name 's2'
+    set system host-name 'dut'
   
   
     set interfaces bridge br0 description 'Global Switch Bridge'
@@ -258,17 +365,17 @@ ok: [s2] =>
   
   
   
-    set interfaces ethernet eth1 description 's2 -> s1'
+    set interfaces ethernet eth1 description 'dut -> s2'
   
     set interfaces ethernet eth1 mtu 1600
   
   
-    set interfaces ethernet eth1 address 2001:db8:f::2/64;
+    set interfaces ethernet eth1 address 2001:db8:f::4/64;
   
   
   
   
-    set interfaces ethernet eth2 description '[Access VLAN red] s2 -> h2'
+    set interfaces ethernet eth2 description '[Access VLAN red] dut -> h1'
   
   
   
@@ -276,7 +383,15 @@ ok: [s2] =>
   
   
   
-    set interfaces bridge br0 vif 1000 description 'VLAN red (1000) -> [h1,s1,h2]'
+    set interfaces ethernet eth3 description '[Access VLAN red] dut -> h1a'
+  
+  
+  
+  
+  
+  
+  
+    set interfaces bridge br0 vif 1000 description 'VLAN red (1000) -> [h1,h1a,h2,s2]'
   
   
   
@@ -300,105 +415,134 @@ ok: [s2] =>
     sudo service frr restart
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for s1, s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h1a, h2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for dut
+
+TASK [Attempt to load VRF kernel module] ***************************************
+changed: [s2 -> localhost]
+
+TASK [Disable FRR management VRF when modprobe fails] **************************
+skipping: [s2]
+
+TASK [include_tasks] ***********************************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for s2
+
+TASK [template] ****************************************************************
+changed: [s2]
+
+TASK [set_fact] ****************************************************************
+ok: [s2]
+
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+changed: [s2]
+
+TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+skipping: [s2]
 
 TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
+ok: [h1a]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1a -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
+changed: [h1a -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
+skipping: [h1a]
 skipping: [h2]
 
 TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 skipping: [h1]
+skipping: [h1a]
 skipping: [h2]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [h1 -> localhost]
+changed: [h1a -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-nvc2vx8f.sh] ***********************
-changed: [h1 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-0jk77o0z.sh] ***********************
 changed: [h2 -> localhost]
+changed: [h1a -> localhost]
+changed: [h1 -> localhost]
 
 TASK [wait_for_connection] *****************************************************
-skipping: [s1]
-skipping: [s2]
+skipping: [dut]
 
 TASK [wait_for] ****************************************************************
-skipping: [s1]
-skipping: [s2]
+skipping: [dut]
 
 TASK [set_fact] ****************************************************************
-ok: [s1]
-ok: [s2]
+ok: [dut]
 
 TASK [set_fact] ****************************************************************
-ok: [s1]
-ok: [s2]
+ok: [dut]
 
 TASK [template] ****************************************************************
-changed: [s2]
-changed: [s1]
+changed: [dut]
 
 TASK [execute config-initial.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/vyos.j2] ***
-changed: [s2]
-changed: [s1]
+changed: [dut]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
 ok: [h1]
+ok: [h1a]
 ok: [h2]
-ok: [s1]
 ok: [s2]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1, s2 => (item=vlan)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1, s2 => (item=vxlan)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1, s2 => (item=routing)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1, s2 => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, h1, h1a, h2, s2 => (item=vlan)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, h1, h1a, h2, s2 => (item=vxlan)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, h1, h1a, h2, s2 => (item=routing)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, h1, h1a, h2, s2 => (item=ospf)
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
+ok: [dut]
 ok: [h1]
+ok: [h1a]
 ok: [h2]
-ok: [s1]
 ok: [s2]
 
 TASK [Find configuration template for vlan] ************************************
 skipping: [h1]
+skipping: [h1a]
+ok: [dut]
 skipping: [h2]
-ok: [s1]
 ok: [s2]
 
 TASK [fail] ********************************************************************
+skipping: [dut]
 skipping: [h1]
+skipping: [h1a]
 skipping: [h2]
-skipping: [s1]
 skipping: [s2]
 
 TASK [Find configuration deployment deploy_script for vlan] ********************
 skipping: [h1]
+skipping: [h1a]
 skipping: [h2]
-ok: [s1]
+ok: [dut]
 ok: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
+skipping: [h1a]
 skipping: [h2]
-ok: [s1] => 
+ok: [dut] => 
   msg: |-
-    vlan configuration for s1
+    vlan configuration for dut
     =========================================
     #!/bin/vbash
     source /opt/vyatta/etc/functions/script-template
@@ -411,6 +555,7 @@ ok: [s1] =>
     configure
   
     set interfaces bridge br0 member interface eth2 native-vlan 1000
+    set interfaces bridge br0 member interface eth3 native-vlan 1000
   
     # Commit, save and exit from subshell
   
@@ -421,83 +566,93 @@ ok: [s2] =>
   msg: |-
     vlan configuration for s2
     =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
+    #!/bin/bash
+    #
+    set -e # Exit immediately when any command fails
+    #
+    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
+      ip link add vlan1000 type bridge
+      ip link set dev vlan1000 address 52:dc:ca:fd:05:00
   
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+      ip addr flush dev vlan1000
     fi
   
-    # Configuration items start here
-    configure
+    ip link set dev eth2 master vlan1000
   
-    set interfaces bridge br0 member interface eth2 native-vlan 1000
-  
-    # Commit, save and exit from subshell
-  
-    commit
-    save
-    exit
+    ip link set dev vlan1000 up
 
 TASK [Deploy vlan configuration] ***********************************************
 skipping: [h1]
+skipping: [h1a]
 skipping: [h2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for s1, s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s2
 
 TASK [wait_for_connection] *****************************************************
-skipping: [s1]
-skipping: [s2]
+skipping: [dut]
 
 TASK [wait_for] ****************************************************************
-skipping: [s1]
-skipping: [s2]
+skipping: [dut]
 
 TASK [set_fact] ****************************************************************
-ok: [s1]
-ok: [s2]
+ok: [dut]
 
 TASK [set_fact] ****************************************************************
-ok: [s1]
-ok: [s2]
+ok: [dut]
+
+TASK [template] ****************************************************************
+changed: [dut]
+
+TASK [execute config-vlan.sh to deploy vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/vyos.j2] ***
+changed: [dut]
 
 TASK [template] ****************************************************************
 changed: [s2]
-changed: [s1]
 
-TASK [execute config-vlan.sh to deploy vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/vyos.j2] ***
-changed: [s1]
+TASK [set_fact] ****************************************************************
+ok: [s2]
+
+TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
 changed: [s2]
 
+TASK [run vtysh to import vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
+skipping: [s2]
+
 TASK [Figure out whether to deploy the module vxlan on current device] *********
+ok: [dut]
 ok: [h1]
-ok: [s1]
+ok: [h1a]
 ok: [h2]
 ok: [s2]
 
 TASK [Find configuration template for vxlan] ***********************************
 skipping: [h1]
+skipping: [h1a]
+ok: [dut]
 skipping: [h2]
-ok: [s1]
 ok: [s2]
 
 TASK [fail] ********************************************************************
+skipping: [dut]
 skipping: [h1]
+skipping: [h1a]
 skipping: [h2]
-skipping: [s1]
 skipping: [s2]
 
 TASK [Find configuration deployment deploy_script for vxlan] *******************
 skipping: [h1]
+skipping: [h1a]
 skipping: [h2]
-ok: [s1]
+ok: [dut]
 ok: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
+skipping: [h1a]
 skipping: [h2]
-ok: [s1] => 
+ok: [dut] => 
   msg: |-
-    vxlan configuration for s1
+    vxlan configuration for dut
     =========================================
     #!/bin/vbash
     source /opt/vyatta/etc/functions/script-template
@@ -511,18 +666,18 @@ ok: [s1] =>
   
   
     # Create VXLAN interface
-    set interfaces vxlan vxlan101000 vni 101000
-    set interfaces vxlan vxlan101000 source-address 2001:db8:0:3::1
+    set interfaces vxlan vxlan5000 vni 5000
+    set interfaces vxlan vxlan5000 source-address 2001:db8:0:4::1
     # And set UDP port to 4789
-    set interfaces vxlan vxlan101000 port 4789
+    set interfaces vxlan vxlan5000 port 4789
   
     # Add it to the global bridge
     ## NOTE: in the future we may want to switch to one-bridge-per-vni
     ##   (still to understand if single bridge can work with EVPN controlled VXLAN)
-    set interfaces bridge br0 member interface vxlan101000 native-vlan 1000
+    set interfaces bridge br0 member interface vxlan5000 native-vlan 1000
   
     # Add VTEP Flood list
-    set interfaces vxlan vxlan101000 remote 2001:db8:0:4::1
+    set interfaces vxlan vxlan5000 remote 2001:db8:0:5::1
   
     # If flooding is based on EVPN, set 'parameters nolearning'
   
@@ -536,99 +691,123 @@ ok: [s2] =>
   msg: |-
     vxlan configuration for s2
     =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
+    #!/bin/bash
+    #
+    set -e # Exit immediately when any command fails
+    #
   
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+  
+  
+    # Create L3 VNIs with bridges and add to correct vrf table
+  
+    # Create VXLAN L2 interface per vni
+    ip link add vxlan5000 type vxlan \
+      id 5000 \
+      dstport 4789 \
+      local 2001:db8:0:5::1
+    #
+    # Add it to the VLAN bridge (create if needed for l3 vnis); disable STP
+    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
+    ip link add vlan1000 type bridge
+    ip link set up dev vlan1000
     fi
+    ip link set dev vxlan5000 master vlan1000
+    ip link set vlan1000 type bridge stp_state 0
   
-    # Configuration items start here
-    configure
+    # Do not generate ipv6 link-local address for VXLAN devices
+    ip link set mtu 1500 addrgenmode none dev vxlan5000
+    ip link set up dev vxlan5000
   
+    bridge fdb append 00:00:00:00:00:00 dev vxlan5000 dst 2001:db8:0:4::1
   
-    # Create VXLAN interface
-    set interfaces vxlan vxlan101000 vni 101000
-    set interfaces vxlan vxlan101000 source-address 2001:db8:0:4::1
-    # And set UDP port to 4789
-    set interfaces vxlan vxlan101000 port 4789
-  
-    # Add it to the global bridge
-    ## NOTE: in the future we may want to switch to one-bridge-per-vni
-    ##   (still to understand if single bridge can work with EVPN controlled VXLAN)
-    set interfaces bridge br0 member interface vxlan101000 native-vlan 1000
-  
-    # Add VTEP Flood list
-    set interfaces vxlan vxlan101000 remote 2001:db8:0:3::1
-  
-    # If flooding is based on EVPN, set 'parameters nolearning'
-  
-  
-    # Commit, save and exit from subshell
-  
-    commit
-    save
-    exit
+    exit $?
 
 TASK [Deploy vxlan configuration] **********************************************
 skipping: [h1]
+skipping: [h1a]
 skipping: [h2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for s1, s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s2
 
 TASK [wait_for_connection] *****************************************************
-skipping: [s1]
-skipping: [s2]
+skipping: [dut]
 
 TASK [wait_for] ****************************************************************
-skipping: [s1]
-skipping: [s2]
+skipping: [dut]
 
 TASK [set_fact] ****************************************************************
-ok: [s1]
-ok: [s2]
+ok: [dut]
 
 TASK [set_fact] ****************************************************************
-ok: [s1]
-ok: [s2]
+ok: [dut]
+
+TASK [template] ****************************************************************
+changed: [dut]
+
+TASK [execute config-vxlan.sh to deploy vxlan config from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/vyos.j2] ***
+changed: [dut]
 
 TASK [template] ****************************************************************
 changed: [s2]
-changed: [s1]
 
-TASK [execute config-vxlan.sh to deploy vxlan config from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/vyos.j2] ***
+TASK [set_fact] ****************************************************************
+ok: [s2]
+
+TASK [run /tmp/config.sh to deploy vxlan config from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/frr.j2] ***
 changed: [s2]
-changed: [s1]
+
+TASK [run vtysh to import vxlan config from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/frr.j2] ***
+skipping: [s2]
 
 TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [dut]
 ok: [h1]
+ok: [h1a]
 ok: [h2]
-ok: [s1]
 ok: [s2]
 
 TASK [Find configuration template for routing] *********************************
-skipping: [s1]
-skipping: [s2]
+skipping: [dut]
 ok: [h1]
+skipping: [s2]
+ok: [h1a]
 ok: [h2]
 
 TASK [fail] ********************************************************************
+skipping: [dut]
 skipping: [h1]
+skipping: [h1a]
 skipping: [h2]
-skipping: [s1]
 skipping: [s2]
 
 TASK [Find configuration deployment deploy_script for routing] *****************
-skipping: [s1]
+skipping: [dut]
 skipping: [s2]
 ok: [h1]
+ok: [h1a]
 ok: [h2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [s1]
+skipping: [dut]
 skipping: [s2]
 ok: [h1] => 
   msg: |-
     routing configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    #
+    #
+    #
+    #
+    # Print the final routing table
+    ip route
+ok: [h1a] => 
+  msg: |-
+    routing configuration for h1a
     =========================================
     #!/bin/bash
     #
@@ -658,102 +837,80 @@ ok: [h2] =>
     ip route
 
 TASK [Deploy routing configuration] ********************************************
-skipping: [s1]
+skipping: [dut]
 skipping: [s2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h1a, h2
 
 TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
+ok: [h1a]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
 changed: [h1 -> localhost]
+changed: [h1a -> localhost]
 changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
-changed: [h1 -> localhost]
+changed: [h1a -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
 skipping: [h1]
+skipping: [h1a]
 skipping: [h2]
 
 TASK [Execute /tmp/config-h1_routing.sh to deploy routing config based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
 skipping: [h1]
+skipping: [h1a]
 skipping: [h2]
 
 TASK [Container configuration for routing based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
+changed: [h1a -> localhost]
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-kkevjbrh.sh] ***********************
-changed: [h2 -> localhost]
+TASK [Remove temporary file /tmp/h1_routing-h0vhq24b.sh] ***********************
 changed: [h1 -> localhost]
+changed: [h1a -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [dut]
 ok: [h1]
-ok: [s1]
+ok: [h1a]
 ok: [h2]
 ok: [s2]
 
 TASK [Find configuration template for ospf] ************************************
 skipping: [h1]
+skipping: [h1a]
+ok: [dut]
 skipping: [h2]
-ok: [s1]
 ok: [s2]
 
 TASK [fail] ********************************************************************
+skipping: [dut]
 skipping: [h1]
+skipping: [h1a]
 skipping: [h2]
-skipping: [s1]
 skipping: [s2]
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 skipping: [h1]
+skipping: [h1a]
 skipping: [h2]
-ok: [s1]
+ok: [dut]
 ok: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
+skipping: [h1a]
 skipping: [h2]
-ok: [s1] => 
+ok: [dut] => 
   msg: |-
-    ospf configuration for s1
-    =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
-  
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-    fi
-  
-    # Configuration items start here
-  
-    configure
-  
-  
-    set protocols ospfv3 parameters router-id 10.0.0.3
-  
-  
-  
-  
-    set protocols ospfv3 interface dum0 passive
-    set protocols ospfv3 interface dum0 area 0.0.0.0
-  
-  
-    set protocols ospfv3 interface eth1 area 0.0.0.0
-  
-    set protocols ospfv3 interface eth1 network point-to-point
-  
-  
-  
-    commit
-    save
-    exit
-ok: [s2] => 
-  msg: |-
-    ospf configuration for s2
+    ospf configuration for dut
     =========================================
     #!/bin/vbash
     source /opt/vyatta/etc/functions/script-template
@@ -785,44 +942,80 @@ ok: [s2] =>
     commit
     save
     exit
+ok: [s2] => 
+  msg: |-
+    ospf configuration for s2
+    =========================================
+    !
+    ! OSPFv3 FRR configuration
+    !
+    interface lo
+    !
+     ipv6 ospf6 area 0.0.0.0
+    !
+    interface eth1
+    ! s2 -> dut
+     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 network point-to-point
+    !
+    !
+    router ospf6
+     ospf6 router-id 10.0.0.5
+     timers lsa min-arrival 100
+     timers throttle spf 10 50 500
+  
+  
+    exit
+  
+    !
+    do write
 
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [h1]
+skipping: [h1a]
 skipping: [h2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for s1, s2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s2
 
 TASK [wait_for_connection] *****************************************************
-skipping: [s1]
-skipping: [s2]
+skipping: [dut]
 
 TASK [wait_for] ****************************************************************
-skipping: [s1]
-skipping: [s2]
+skipping: [dut]
 
 TASK [set_fact] ****************************************************************
-ok: [s1]
-ok: [s2]
+ok: [dut]
 
 TASK [set_fact] ****************************************************************
-ok: [s1]
-ok: [s2]
+ok: [dut]
 
 TASK [template] ****************************************************************
-changed: [s1]
-changed: [s2]
+changed: [dut]
 
 TASK [execute config-ospf.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/vyos.j2] ***
+changed: [dut]
+
+TASK [template] ****************************************************************
 changed: [s2]
-changed: [s1]
+
+TASK [set_fact] ****************************************************************
+ok: [s2]
+
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+skipping: [s2]
+
+TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+changed: [s2]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
+dut                        : ok=49   changed=8    unreachable=0    failed=0    skipped=21   rescued=0    ignored=0   
 h1                         : ok=35   changed=8    unreachable=0    failed=0    skipped=25   rescued=0    ignored=0   
+h1a                        : ok=35   changed=8    unreachable=0    failed=0    skipped=25   rescued=0    ignored=0   
 h2                         : ok=35   changed=8    unreachable=0    failed=0    skipped=25   rescued=0    ignored=0   
-s1                         : ok=49   changed=8    unreachable=0    failed=0    skipped=21   rescued=0    ignored=0   
-s2                         : ok=49   changed=8    unreachable=0    failed=0    skipped=21   rescued=0    ignored=0   
+s2                         : ok=47   changed=9    unreachable=0    failed=0    skipped=18   rescued=0    ignored=0   
 
 
 
