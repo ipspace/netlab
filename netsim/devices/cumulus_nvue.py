@@ -102,7 +102,7 @@ def nvue_merge_ospf_loopbacks(node: Box) -> None:
   for i in node.get('interfaces',[]):
     if i.type!='loopback' or 'ospf' not in i:
       continue
-    if 'ospf' in node.loopback and 'vrf' not in i:
+    if 'ospf' in node.loopback:
       if i.ospf == node.loopback.ospf or (i.ospf == node.loopback.ospf+{'passive': False}):
         i.pop('ospf',None)
         report_quirk(
@@ -115,8 +115,30 @@ def nvue_merge_ospf_loopbacks(node: Box) -> None:
 
   if err_data:
     report_quirk(
-      f'Node {node.name} uses secondary loopback(s) with OSPF configuration that differs from the primary loopback, or is in a VRF',
+      f'Node {node.name} uses secondary loopback(s) with OSPF configuration that differs from the primary loopback',
       quirk='secondary_loopback_ospf',
+      more_data=err_data,
+      node=node)
+
+"""
+In case of loopbacks inside VRFs, checks that the OSPF attributes are consistent with the VRF
+"""
+def nvue_check_ospf_vrf_loopbacks(node: Box) -> None:
+  err_data = []
+  for vrf,vdata in node.get('vrfs',{}).items():
+    if 'ospf' not in vdata:
+      continue
+    vrf_area = vdata.get('ospf.area',node.get('ospf.area','0.0.0.0'))
+    for i in vdata.get('ospf.interfaces',[]):
+      if i.type!='loopback':
+        continue
+      if 'area' in i.ospf and i.ospf.area != vrf_area:
+        err_data.append(f'VRF {vrf} loopback with incompatible OSPF area {i.ospf.area} different from VRF area {vrf_area}')
+
+  if err_data:
+    report_quirk(
+      f'Node {node.name} uses VRF loopback(s) with a different OSPF area, not supported',
+      quirk='vrf_loopback_ospf_area',
       more_data=err_data,
       node=node)
 
@@ -142,6 +164,7 @@ class Cumulus_Nvue(_Quirks):
       if 'vrfs' in node:
         check_ospf_vrf_default(node)
         nvue_check_ospf_passive_in_vrf(node)
+        nvue_check_ospf_vrf_loopbacks(node)
       nvue_check_ospfv3(node)
       nvue_merge_ospf_loopbacks(node)
 
