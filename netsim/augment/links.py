@@ -99,9 +99,12 @@ def adjust_link_object(l: typing.Any, linkname: str, nodes: Box) -> typing.Optio
     for n in l.split('-'):                # ... split it into a list of nodes
       n = n.strip()                       # ... strip leading and trailing spaces (fixing #816)
       valid_node = n in nodes
-      if not valid_node:
-        valid_node = len([ x for x in nodes if n.startswith(x) ]) > 0
-
+      if not valid_node:                  # ... maybe its a link to a node within a component
+        valid_node = len([ 
+          x for x in nodes                # ... so check the node names with a '_' suffix
+            if n.startswith(x+"_")        # ... but only for components
+              and 'include' in nodes[x]]) > 0
+                                          # ... note this is not a final check, it's only a viability check
       if valid_node:                      # If the node name is valid
         link_intf.append({ 'node': n })   # ... append it to the list of interfaces
       else:
