@@ -25,7 +25,7 @@ These instructions and tutorials cover some of the usual early hurdles:
 Once you want to know more, check out these lab topology tutorials:
 
 * [Link definitions](example/link-definition.md)
-* [Addressing](example/addressing-tutorial.md)
+* [](example/addressing-tutorial.md)
 * [netlab Custom Groups and Deployment Templates](https://blog.ipspace.net/2021/11/netsim-groups-deployment-templates/)
 * [Simplify netlab Topologies with Link Groups](https://blog.ipspace.net/2023/05/netlab-link-groups/)
 * [Mix Containers and VMs in the Same Lab Topology](https://blog.ipspace.net/2023/02/netlab-vm-containers/)
@@ -40,13 +40,19 @@ Want to draw graphs, create reports, or use the GUI?
 * [Using Graphite as netlab GUI](https://blog.ipspace.net/2022/04/netsim-tools-better-with-gui/)
 * [Using netlab Reports](https://blog.ipspace.net/2024/07/using-netlab-reports/)
 
-## VRFs, VLANs, VXLAN, and EVPN
+(tutorials-vlan-vrf)=
+## VRFs and VLANs
 
-VRFs and VLANs are particularly tricky, so we created numerous examples for simple- and complex topologies using them:
+VRFs and VLANs are particularly tricky, so we created numerous examples describing how you can use VLANs and VRFs with _netlab_. Here are a few basic examples:
 
 * [Simple VLAN Example](https://blog.ipspace.net/2022/05/netsim-vlan-simple/)
 * [VLAN Trunk Example](https://blog.ipspace.net/2022/06/netsim-vlan-trunk/)
 * [Combining VLANs with VRFs](https://blog.ipspace.net/2022/06/netsim-vlan-vrf/)
+* [](example-vlan-addressing)
+* [](example-vlan-mode)
+
+More complex examples:
+
 * [Creating VRF Lite Labs With netlab](https://blog.ipspace.net/2022/04/netsim-vrf-lite/)
 * [VRF Lite Topology with VLAN Trunks](https://blog.ipspace.net/2022/09/netlab-vrf-lite/)
 * [Creating MPLS/VPN Labs With netlab](https://blog.ipspace.net/2022/04/netsim-mpls-vpn/)
@@ -54,15 +60,23 @@ VRFs and VLANs are particularly tricky, so we created numerous examples for simp
 * [IRB with Anycast Gateways](https://blog.ipspace.net/2022/11/netlab-anycast-gateway/)
 * [Building a Layer-2 Fabric](https://blog.ipspace.net/2023/01/netlab-l2-fabric/)
 
-There are also examples describing EVPN and VXLAN features:
+(tutorials-vxlan-evpn)=
+## VXLAN, and EVPN
+
+These examples describe VXLAN and EVPN features:
 
 * [Simple VXLAN Bridging](https://blog.ipspace.net/2022/09/netlab-vxlan-bridging/)
 * [VXLAN Leaf-and-Spine Fabric](https://blog.ipspace.net/2024/04/evpn-designs-vxlan-leaf-spine-fabric/)
 * [EVPN/VXLAN Bridging Example](https://blog.ipspace.net/2022/10/netlab-evpn-vxlan-bridging/)
 * [IBGP Full Mesh Between Leaf Switches](https://blog.ipspace.net/2024/05/evpn-designs-ibgp-full-mesh/)
 * [VXLAN Router-on-a-Stick Example](https://blog.ipspace.net/2022/11/netlab-vxlan-router-stick/)
+
+Looking for advanced examples? How about:
+
 * [VRF Lite over VXLAN Transport](https://blog.ipspace.net/2022/12/netlab-vxlan-vrf-lite/)
 * [Building Layer-3-Only EVPN Lab](https://blog.ipspace.net/2024/08/netlab-layer-3-only-evpn/)
+* [Common Services VRF with EVPN Control Plane](https://blog.ipspace.net/2024/08/evpn-common-services-vrf/)
+* [EVPN Hub-and-Spoke Layer-3 VPN](https://blog.ipspace.net/2024/09/hub-spoke-evpn/)
 
 ## Even More Examples
 
@@ -95,4 +109,6 @@ Documentation of individual configuration modules includes sample lab topology f
    example/release.md
    example/linux.md
    example/bridge.md
+   example/vlan-addressing.md
+   example/selecting-vlan-mode.md
 ```
