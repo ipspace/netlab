@@ -4,16 +4,16 @@
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [s1]
 ok: [h1]
 ok: [h2]
 ok: [ros]
+ok: [s1]
 
 TASK [Find device readiness script] ********************************************
-ok: [s1]
 ok: [h1]
 ok: [h2]
 ok: [ros]
+ok: [s1]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [ros]
@@ -25,16 +25,16 @@ TASK [Normalize config on bridge-like devices] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ros, s1, h1, h2
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
-ok: [s1]
 ok: [h1]
 ok: [h2]
 ok: [ros]
+ok: [s1]
 
 TASK [Find configuration template for normalize] *******************************
-ok: [s1]
 ok: [h1]
 ok: [h2]
 ok: [ros]
+ok: [s1]
 
 TASK [fail] ********************************************************************
 skipping: [ros]
@@ -43,37 +43,58 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
-ok: [s1]
 ok: [h1]
 ok: [h2]
 ok: [ros]
+ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ros]
-skipping: [s1]
 skipping: [h1]
 skipping: [h2]
+ok: [s1] => 
+  msg: |-
+    normalize configuration for s1
+    =========================================
+    !
+    interface Ethernet1
+     shutdown
+     mac-address 52dc.cafe.0101
+    !
+    interface Ethernet2
+     shutdown
+     mac-address 52dc.cafe.0102
+    !
+    interface Ethernet3
+     shutdown
+     mac-address 52dc.cafe.0103
 
 TASK [Deploy normalize configuration] ******************************************
 skipping: [ros]
-skipping: [s1]
 skipping: [h1]
 skipping: [h2]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for s1
+
+TASK [eos_config: deploying normalize from /home/pipi/net101/tools/netsim/ansible/templates/normalize/eos.j2] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [s1]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ros, s1, h1, h2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
-ok: [s1]
 ok: [h1]
 ok: [h2]
 ok: [ros]
+ok: [s1]
 
 TASK [Find configuration template for initial] *********************************
-ok: [s1]
 ok: [h1]
 ok: [h2]
 ok: [ros]
+ok: [s1]
 
 TASK [fail] ********************************************************************
 skipping: [ros]
@@ -82,10 +103,10 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [s1]
 ok: [h1]
 ok: [h2]
 ok: [ros]
+ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [h1] => 
@@ -158,136 +179,6 @@ ok: [h2] =>
     ip addr add 172.16.1.4/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
-ok: [s1] => 
-  msg: |-
-    initial configuration for s1
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)# "
-    echo
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
-    #
-    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
-    #
-    sysctl -w net.ipv4.ip_forward=1
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    # Set system defaults
-    #
-    # Send ARP requests from a sane source IP address
-    #
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Create loopbacks, stub and lag/bond devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    ip link set eth1 down
-    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1600
-    ip link set eth1 up
-    ip link set eth2 down
-    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
-    ip link set dev eth2 mtu 1500
-    ip link set eth2 up
-    ip link set eth3 down
-    sysctl -qw net.ipv6.conf.eth3.disable_ipv6=1
-    ip link set dev eth3 mtu 1500
-    ip link set eth3 up
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-  
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname s1
-    !
-    ip forwarding
-    vrf mgmt
-     exit-vrf
-    !
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ip address 10.0.0.1/32
-    !
-    interface eth1
-     no shutdown
-     description s1 -> ros
-     ip address 10.1.0.1/30
-    !
-    interface eth2
-     no shutdown
-     description [Access VLAN red] s1 -> h1
-     ! no ip address
-    !
-    interface eth3
-     no shutdown
-     description [Access VLAN blue] s1 -> h2
-     ! no ip address
-    !
-    interface vlan1000
-     no shutdown
-     description VLAN red (1000) -> [h1,ros]
-     ! no ip address
-    !
-    interface vlan1001
-     no shutdown
-     description VLAN blue (1001) -> [h2,ros]
-     ! no ip address
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
 ok: [ros] => 
   msg: |-
     initial configuration for ros
@@ -333,7 +224,7 @@ ok: [ros] =>
         mtu 9198
         ip mtu 1600
         description ros -> s1
-        ip address 10.1.0.2/30
+        ip address 10.1.0.1/30
         no shutdown
     !
   
@@ -355,10 +246,65 @@ ok: [ros] =>
         ip address 10.2.0.1/32
     !
     !
+ok: [s1] => 
+  msg: |-
+    initial configuration for s1
+    =========================================
+    hostname s1
+    !
+    logging monitor debugging
+    aaa authorization exec default local
+    !
+    lldp run
+    ip routing
+    no ipv6 unicast-routing
+    !
+    !
+    ip host h1 172.16.0.3
+    ip host h2 172.16.1.4
+    ip host ros 10.0.0.2 10.1.0.1
+    ip host ros-tenant 172.16.0.2 172.16.1.2 10.2.0.1
+    !
+    interface Management1
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     ip address 10.0.0.1/32
+    !
+    interface Ethernet1
+     no switchport
+     mtu 1600
+     description s1 -> ros
+     ip address 10.1.0.2/30
+    !
+     mac-address 52dc.cafe.0101
+     no shutdown
+    !
+    interface Ethernet2
+     no switchport
+     description [Access VLAN red] s1 -> h1
+    !
+     mac-address 52dc.cafe.0102
+     no shutdown
+    !
+    interface Ethernet3
+     no switchport
+     description [Access VLAN blue] s1 -> h2
+    !
+     mac-address 52dc.cafe.0103
+     no shutdown
+    !
+    interface Vlan1000
+     description VLAN red (1000) -> [h1,ros]
+    !
+    interface Vlan1001
+     description VLAN blue (1001) -> [h2,ros]
+    !
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for ros
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for s1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for s1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
 
 TASK [tempfile] ****************************************************************
@@ -373,34 +319,16 @@ changed: [ros]
 TASK [file] ********************************************************************
 changed: [ros -> localhost]
 
-TASK [Attempt to load VRF kernel module] ***************************************
-changed: [s1 -> localhost]
-
-TASK [Disable FRR management VRF when modprobe fails] **************************
-skipping: [s1]
-
-TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for s1
-
-TASK [template] ****************************************************************
+TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
 changed: [s1]
-
-TASK [set_fact] ****************************************************************
-ok: [s1]
-
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [s1]
-
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-skipping: [s1]
 
 TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
@@ -415,10 +343,10 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-41ju81wu.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-hc62w5tt.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -427,8 +355,8 @@ PLAY [Deploy module-specific configurations] ***********************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [h1]
 ok: [h2]
-ok: [s1]
 ok: [ros]
+ok: [s1]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, ros, s1 => (item=vlan)
@@ -440,14 +368,14 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1,
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [h1]
 ok: [h2]
-ok: [s1]
 ok: [ros]
+ok: [s1]
 
 TASK [Find configuration template for vlan] ************************************
 skipping: [h1]
 skipping: [h2]
-ok: [s1]
 ok: [ros]
+ok: [s1]
 
 TASK [fail] ********************************************************************
 skipping: [h1]
@@ -458,38 +386,12 @@ skipping: [s1]
 TASK [Find configuration deployment deploy_script for vlan] ********************
 skipping: [h1]
 skipping: [h2]
-ok: [s1]
 ok: [ros]
+ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
 skipping: [h2]
-ok: [s1] => 
-  msg: |-
-    vlan configuration for s1
-    =========================================
-    #!/bin/bash
-    #
-    set -e # Exit immediately when any command fails
-    #
-    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
-      ip link add vlan1000 type bridge
-      ip link set dev vlan1000 address 52:dc:ca:fd:01:00
-  
-      ip addr flush dev vlan1000
-    fi
-    if [ ! -e /sys/devices/virtual/net/vlan1001 ]; then
-      ip link add vlan1001 type bridge
-      ip link set dev vlan1001 address 52:dc:ca:fd:01:01
-  
-      ip addr flush dev vlan1001
-    fi
-  
-    ip link set dev eth2 master vlan1000
-    ip link set dev eth3 master vlan1001
-  
-    ip link set dev vlan1000 up
-    ip link set dev vlan1001 up
 ok: [ros] => 
   msg: |-
     vlan configuration for ros
@@ -499,12 +401,35 @@ ok: [ros] =>
     interface vlan1000
     !
     interface vlan1001
+ok: [s1] => 
+  msg: |-
+    vlan configuration for s1
+    =========================================
+    vlan 1001
+     name blue
+    !
+    vlan 1000
+     name red
+    !
+  
+    !
+    interface Ethernet2
+     switchport
+     switchport access vlan 1000
+    !
+    interface Ethernet3
+     switchport
+     switchport access vlan 1001
+    !
+    interface Vlan1000
+    !
+    interface Vlan1001
 
 TASK [Deploy vlan configuration] ***********************************************
 skipping: [h1]
 skipping: [h2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for ros
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for s1
 
 TASK [tempfile] ****************************************************************
 changed: [ros -> localhost]
@@ -518,28 +443,19 @@ changed: [ros]
 TASK [file] ********************************************************************
 changed: [ros -> localhost]
 
-TASK [template] ****************************************************************
+TASK [eos_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/eos.j2] ***
 changed: [s1]
-
-TASK [set_fact] ****************************************************************
-ok: [s1]
-
-TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
-changed: [s1]
-
-TASK [run vtysh to import vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
-skipping: [s1]
 
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [h1]
 ok: [h2]
-ok: [s1]
 ok: [ros]
+ok: [s1]
 
 TASK [Find configuration template for routing] *********************************
 skipping: [ros]
-ok: [h1]
 skipping: [s1]
+ok: [h1]
 ok: [h2]
 
 TASK [fail] ********************************************************************
@@ -630,8 +546,8 @@ changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
 skipping: [h1]
@@ -645,21 +561,21 @@ TASK [Container configuration for routing based on /home/pipi/net101/tools/netsi
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-9_3k2unh.sh] ***********************
-changed: [h1 -> localhost]
+TASK [Remove temporary file /tmp/h1_routing-q_1sdhqu.sh] ***********************
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [h1]
 ok: [h2]
-ok: [s1]
 ok: [ros]
+ok: [s1]
 
 TASK [Find configuration template for ospf] ************************************
 skipping: [h1]
 skipping: [h2]
-ok: [s1]
 ok: [ros]
+ok: [s1]
 
 TASK [fail] ********************************************************************
 skipping: [h1]
@@ -670,8 +586,8 @@ skipping: [s1]
 TASK [Find configuration deployment deploy_script for ospf] ********************
 skipping: [h1]
 skipping: [h2]
-ok: [s1]
 ok: [ros]
+ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
@@ -705,35 +621,32 @@ ok: [s1] =>
     ospf configuration for s1
     =========================================
     !
-    ! OSPFv2 FRR configuration
+    ! OSPFv2 configuration
     !
-    router ospf
-     ospf router-id 10.0.0.1
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
+    router ospf 1
+     router-id 10.0.0.1
+     interface unnumbered hello mask tx 0.0.0.0
+     timers spf delay initial 100 200 500
+     timers lsa rx min interval 100
+     timers lsa tx delay initial 100 200 500
   
   
-    exit
     !
-    interface lo
+    interface Loopback0
     !
      ip ospf area 0.0.0.0
     !
-    interface eth1
+    interface Ethernet1
     ! s1 -> ros
      ip ospf area 0.0.0.0
      ip ospf network point-to-point
     !
-  
-    !
-    do write
 
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [h1]
 skipping: [h2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for ros
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for s1
 
 TASK [tempfile] ****************************************************************
 changed: [ros -> localhost]
@@ -747,23 +660,14 @@ changed: [ros]
 TASK [file] ********************************************************************
 changed: [ros -> localhost]
 
-TASK [template] ****************************************************************
-changed: [s1]
-
-TASK [set_fact] ****************************************************************
-ok: [s1]
-
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-skipping: [s1]
-
-TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [eos_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/eos.j2] ***
 changed: [s1]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [h1]
 ok: [h2]
-ok: [s1]
 ok: [ros]
+ok: [s1]
 
 TASK [Find configuration template for vrf] *************************************
 skipping: [h1]
@@ -791,33 +695,6 @@ ok: [ros] =>
   msg: |-
     vrf configuration for ros
     =========================================
-  
-    !
-    router ospf 2 vrf tenant
-        router-id 10.0.0.2
-  
-  
-  
-     redistribute connected
-  
-  
-        area 0.0.0.0
-        area 0.0.0.0
-        area 0.0.0.0
-  
-    !
-    interface vlan1000
-    ! VLAN red (1000) -> [h1,s1]
-        ip ospf 2 area 0.0.0.0
-    !
-    interface vlan1001
-    ! VLAN blue (1001) -> [h2,s1]
-        ip ospf 2 area 0.0.0.0
-    !
-    interface loopback 1
-    ! VRF Loopback tenant
-        ip ospf 2 area 0.0.0.0
-    !
 
 TASK [Deploy vrf configuration] ************************************************
 skipping: [h1]
@@ -832,7 +709,7 @@ TASK [template] ****************************************************************
 changed: [ros -> localhost]
 
 TASK [aoscx_config: deploying vrf from /home/pipi/net101/tools/netsim/ansible/templates/vrf/arubacx.j2] ***
-changed: [ros]
+ok: [ros]
 
 TASK [file] ********************************************************************
 changed: [ros -> localhost]
@@ -840,14 +717,14 @@ changed: [ros -> localhost]
 TASK [Figure out whether to deploy the module vxlan on current device] *********
 ok: [h1]
 ok: [h2]
-ok: [s1]
 ok: [ros]
+ok: [s1]
 
 TASK [Find configuration template for vxlan] ***********************************
 skipping: [h1]
 skipping: [h2]
-ok: [s1]
 ok: [ros]
+ok: [s1]
 
 TASK [fail] ********************************************************************
 skipping: [h1]
@@ -858,65 +735,12 @@ skipping: [s1]
 TASK [Find configuration deployment deploy_script for vxlan] *******************
 skipping: [h1]
 skipping: [h2]
-ok: [s1]
 ok: [ros]
+ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
 skipping: [h2]
-ok: [s1] => 
-  msg: |-
-    vxlan configuration for s1
-    =========================================
-    #!/bin/bash
-    #
-    set -e # Exit immediately when any command fails
-    #
-  
-  
-  
-    # Create L3 VNIs with bridges and add to correct vrf table
-  
-    # Create VXLAN L2 interface per vni
-    ip link add vxlan5000 type vxlan \
-      id 5000 \
-      dstport 4789 \
-      local 10.0.0.1
-    #
-    # Add it to the VLAN bridge (create if needed for l3 vnis); disable STP
-    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
-    ip link add vlan1000 type bridge
-    ip link set up dev vlan1000
-    fi
-    ip link set dev vxlan5000 master vlan1000
-    ip link set vlan1000 type bridge stp_state 0
-  
-    # Do not generate ipv6 link-local address for VXLAN devices
-    ip link set mtu 1500 addrgenmode none dev vxlan5000
-    ip link set up dev vxlan5000
-  
-    bridge fdb append 00:00:00:00:00:00 dev vxlan5000 dst 10.0.0.2
-    # Create VXLAN L2 interface per vni
-    ip link add vxlan5001 type vxlan \
-      id 5001 \
-      dstport 4789 \
-      local 10.0.0.1
-    #
-    # Add it to the VLAN bridge (create if needed for l3 vnis); disable STP
-    if [ ! -e /sys/devices/virtual/net/vlan1001 ]; then
-    ip link add vlan1001 type bridge
-    ip link set up dev vlan1001
-    fi
-    ip link set dev vxlan5001 master vlan1001
-    ip link set vlan1001 type bridge stp_state 0
-  
-    # Do not generate ipv6 link-local address for VXLAN devices
-    ip link set mtu 1500 addrgenmode none dev vxlan5001
-    ip link set up dev vxlan5001
-  
-    bridge fdb append 00:00:00:00:00:00 dev vxlan5001 dst 10.0.0.2
-  
-    exit $?
 ok: [ros] => 
   msg: |-
     vxlan configuration for ros
@@ -931,12 +755,22 @@ ok: [ros] =>
       vni 5001
         vlan 1001
         vtep-peer 10.0.0.1
+ok: [s1] => 
+  msg: |-
+    vxlan configuration for s1
+    =========================================
+    interface vxlan 1
+      vxlan source-interface Loopback0
+      vxlan vlan 1000 vni 5000
+      vxlan vlan 1000 flood vtep 10.0.0.2
+      vxlan vlan 1001 vni 5001
+      vxlan vlan 1001 flood vtep 10.0.0.2
 
 TASK [Deploy vxlan configuration] **********************************************
 skipping: [h1]
 skipping: [h2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for ros
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for s1
 
 TASK [tempfile] ****************************************************************
 changed: [ros -> localhost]
@@ -950,17 +784,8 @@ changed: [ros]
 TASK [file] ********************************************************************
 changed: [ros -> localhost]
 
-TASK [template] ****************************************************************
+TASK [eos_config: deploying vxlan from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/eos.j2] ***
 changed: [s1]
-
-TASK [set_fact] ****************************************************************
-ok: [s1]
-
-TASK [run /tmp/config.sh to deploy vxlan config from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/frr.j2] ***
-changed: [s1]
-
-TASK [run vtysh to import vxlan config from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/frr.j2] ***
-skipping: [s1]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
@@ -968,8 +793,8 @@ skipping: no hosts matched
 PLAY RECAP *********************************************************************
 h1                         : ok=37   changed=8    unreachable=0    failed=0    skipped=30   rescued=0    ignored=0   
 h2                         : ok=37   changed=8    unreachable=0    failed=0    skipped=30   rescued=0    ignored=0   
-ros                        : ok=59   changed=20   unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
-s1                         : ok=49   changed=9    unreachable=0    failed=0    skipped=23   rescued=0    ignored=0   
+ros                        : ok=59   changed=19   unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
+s1                         : ok=42   changed=5    unreachable=0    failed=0    skipped=16   rescued=0    ignored=0   
 
 
 
