@@ -107,6 +107,7 @@ def include_nodes(n_name: str, c_data: Box, topology: Box) -> None:
       expand_include(node_name,inc_data,topology)           # ... yes, do the include magic
     else:
       topology.nodes[node_name] = data.get_box(inc_data)    # Regular included node, just copy it
+      topology.nodes[node_name].name = node_name            # Fix the name of the newly-generated node
       if len(topology.nodes) > nodes.MAX_NODE_ID:
         log.fatal(
           'Exceeded maximum node limit while adding node {node_name}',
