@@ -1,0 +1,50 @@
+defaults.device: frr
+
+module: [ ospf ]
+
+components:
+  site_lv:
+    nodes:
+      p:
+        provider: libvirt
+  site_cl:
+    nodes:
+      p:
+        provider: clab
+
+nodes:
+  s1:
+    include: site_lv
+  s2:
+    include: site_lv
+  s3:
+    include: site_cl
+  s4:
+    include: site_cl
+
+links:
+- group: core
+  ospf.timers:
+    hello: 1
+    dead: 3
+  members:
+  - interfaces: [ s1_p, s2_p ]
+  - interfaces: [ s1_p, s3_p ]
+  - interfaces: [ s1_p, s4_p ]
+  - interfaces: [ s2_p, s3_p ]
+  - interfaces: [ s2_p, s4_p ]
+  - interfaces: [ s3_p, s4_p ]
+
+validate:
+  ospf_1:
+    nodes: [ s2_p, s3_p, s4_p ]
+    plugin: ospf_neighbor(nodes.s1_p.ospf.router_id)
+    wait: 15
+  ospf_2:
+    nodes: [ s3_p, s4_p ]
+    plugin: ospf_neighbor(nodes.s2_p.ospf.router_id)
+    wait: 15
+  ospf_3:
+    nodes: [ s4_p ]
+    plugin: ospf_neighbor(nodes.s3_p.ospf.router_id)
+    wait: 15
