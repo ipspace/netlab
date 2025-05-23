@@ -14,8 +14,8 @@ TASK [Find device readiness script] ********************************************
 ok: [dut]
 ok: [r2]
 ok: [r4]
-ok: [r3]
 ok: [r1]
+ok: [r3]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [dut]
@@ -283,9 +283,9 @@ ok: [r2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [r4] => 
+ok: [r1] => 
   msg: |-
-    initial configuration for r4
+    initial configuration for r1
     =========================================
     #!/bin/bash
     #
@@ -364,7 +364,7 @@ ok: [r4] =>
     # Rest of initial configuration done through VTYSH
     #
     cat >/tmp/config <<CONFIG
-    hostname r4
+    hostname r1
     !
     ip forwarding
     vrf mgmt
@@ -374,12 +374,12 @@ ok: [r4] =>
     !
     interface lo
      no shutdown
-     ip address 10.0.0.5/32
+     ip address 10.0.0.2/32
     !
     interface eth1
      no shutdown
-     description r4 -> dut [external]
-     ip address 10.1.0.14/30
+     description r1 -> dut
+     ip address 10.1.0.2/30
     !
     do write
     CONFIG
@@ -487,9 +487,9 @@ ok: [r3] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [r1] => 
+ok: [r4] => 
   msg: |-
-    initial configuration for r1
+    initial configuration for r4
     =========================================
     #!/bin/bash
     #
@@ -568,7 +568,7 @@ ok: [r1] =>
     # Rest of initial configuration done through VTYSH
     #
     cat >/tmp/config <<CONFIG
-    hostname r1
+    hostname r4
     !
     ip forwarding
     vrf mgmt
@@ -578,12 +578,12 @@ ok: [r1] =>
     !
     interface lo
      no shutdown
-     ip address 10.0.0.2/32
+     ip address 10.0.0.5/32
     !
     interface eth1
      no shutdown
-     description r1 -> dut
-     ip address 10.1.0.2/30
+     description r4 -> dut [external]
+     ip address 10.1.0.14/30
     !
     do write
     CONFIG
@@ -625,10 +625,10 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for r2, r4, r1, r3
 
 TASK [template] ****************************************************************
+changed: [r1]
 changed: [r4]
 changed: [r2]
 changed: [r3]
-changed: [r1]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
@@ -637,8 +637,8 @@ ok: [r1]
 ok: [r3]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r2]
 changed: [r4]
+changed: [r2]
 changed: [r1]
 changed: [r3]
 
@@ -693,6 +693,30 @@ ok: [r4]
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r1]
 skipping: [r3]
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+    - set:
+        router:
+          bgp:
+            enable: on
+            autonomous-system: 65000
+            router-id: 10.0.0.1
+    - set:
+        vrf:
+          default:
+            router:
+              bgp:
+                enable: on
+                autonomous-system: 65000
+                router-id: 10.0.0.1
+                address-family:
+                  ipv4-unicast:
+                    enable: on
+  
+                    network:
+                      10.0.0.1/32: {}
 ok: [r2] => 
   msg: |-
     bgp configuration for r2
@@ -728,30 +752,6 @@ ok: [r2] =>
     !
     !
     do write
-ok: [dut] => 
-  msg: |-
-    bgp configuration for dut
-    =========================================
-    - set:
-        router:
-          bgp:
-            enable: on
-            autonomous-system: 65000
-            router-id: 10.0.0.1
-    - set:
-        vrf:
-          default:
-            router:
-              bgp:
-                enable: on
-                autonomous-system: 65000
-                router-id: 10.0.0.1
-                address-family:
-                  ipv4-unicast:
-                    enable: on
-  
-                    network:
-                      10.0.0.1/32: {}
 ok: [r4] => 
   msg: |-
     bgp configuration for r4
@@ -825,8 +825,8 @@ skipping: [r2]
 skipping: [r4]
 
 TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [r2]
 changed: [r4]
+changed: [r2]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [dut]
@@ -838,8 +838,8 @@ ok: [r4]
 TASK [Find configuration template for ospf] ************************************
 skipping: [r2]
 ok: [dut]
-skipping: [r4]
 ok: [r1]
+skipping: [r4]
 ok: [r3]
 
 TASK [fail] ********************************************************************
@@ -961,8 +961,8 @@ skipping: [r1]
 skipping: [r3]
 
 TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [r3]
 changed: [r1]
+changed: [r3]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [dut]
