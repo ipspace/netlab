@@ -353,16 +353,22 @@ class Libvirt(_Provider):
 
         remote_if_list = [ rif for rif in link.interfaces if rif.node != node.name or rif.ifindex != intf.ifindex ]
         if len(remote_if_list) != 1:                                # There should be only one remote interface attached to this link
-          log.fatal(
-            f'Cannot find remote interface for P2P link\n... node {node.name}\n... intf {intf}\n... link {link}\n... iflist {remote_if_list}')
+          log.error(
+            f'Cannot find remote interface for P2P link from node {node.name}',
+            more_data=[f'interface: {intf}',f'link: {link}',f'iflist {remote_if_list}'],
+            category=log.FatalError,
+            module='libvirt')
           return
 
         remote_if = remote_if_list[0]                               # Get remote interface
         intf.remote_ifindex = remote_if.ifindex                     # ... and copy its ifindex
         intf.remote_id = topology.nodes[remote_if.node].id          # ... and node ID
         if not intf.remote_id:
-          log.fatal(
-            f'Cannot find remote node ID on a P2P link\n... node {node.name}\n... intf {intf}\n... link {link}')
+          log.error(
+            f'Cannot find remote node ID on a P2P link from node {node.name}',
+            more_data=[f'interface {intf}',f'link {link}'],
+            category=log.FatalError,
+            module='libvirt')
           return
 
   def pre_start_lab(self, topology: Box) -> None:
