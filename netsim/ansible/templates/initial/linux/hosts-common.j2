@@ -1,3 +1,13 @@
+{#
+   Debian hates hostnames with underscores and will take 'forever' to enter
+   sudo mode if the hostname contains an underscore due to mismatch between
+   hostname (with dash) and /etc/hosts name (with underscore).
+   
+   To fix that, we add a bogus entry for the hostname with '-' to the first
+   related entry in /etc/hosts (the loopback interface entry or the first
+   physical interface entry for non-routers)
+#}
+{% set underscores = {} %}
 {% for hname,hdata in hostvars.items() %}
 {%   set intf_list = hdata.interfaces|default([]) %}
 {%   if hdata.loopback is defined %}
@@ -11,7 +21,12 @@
 {%     if intf.type|default('loopback') != 'loopback' %}
 {%       set h_entry = intf.ifname.replace('/','-') + '.' + h_entry %}
 {%     endif %}
-{%     set need_host = hdata.loopback is not defined %}
+{%     set underscore_fix = '_' in hname and hname not in underscores %}
+{%     set need_host = hdata.loopback is not defined or underscore_fix %}
+{%     if underscore_fix %}
+{%       set _ = underscores.update({ hname: hname }) %}
+{%       set hname = hname.replace('_','-') %}
+{%     endif %}
 {%     if intf.ipv4|default(False) is string %}
 {{ intf.ipv4|ipaddr('address') }} {% if need_host %}{{ hname }} {% endif +%}{{ h_entry }}
 {%     endif %}
