@@ -30,9 +30,9 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for r1, r2
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [r1]
 ok: [r2]
-ok: [r3]
-ok: [dut]
 ok: [r4]
+ok: [dut]
+ok: [r3]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [r1]
@@ -52,8 +52,8 @@ TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [r1]
 ok: [r2]
 ok: [r3]
-ok: [r4]
 ok: [dut]
+ok: [r4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r1]
@@ -203,6 +203,86 @@ ok: [r1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+  
+    - set:
+        system:
+          hostname: dut
+          config:
+            snippet:
+              system-mtu:
+                file: /etc/network/ifupdown2/policy.d/mtu.json
+                content: |
+                  { "address": { "defaults": { "mtu": "1500" } } }
+  
+        interface:
+          eth0:
+            ip:
+              vrf: mgmt
+              address:
+                dhcp: {}
+            type: eth
+          swp1:
+            type: swp
+            link:
+              state:
+                up : {}
+            description: "dut -> r1"
+            ip:
+              address:
+                10.1.0.1/30: {}
+              ipv6:
+                enable: off
+  
+          swp2:
+            type: swp
+            link:
+              state:
+                up : {}
+            description: "dut -> r2"
+            ip:
+              address:
+                10.1.0.5/30: {}
+              ipv6:
+                enable: off
+  
+          swp3:
+            type: swp
+            link:
+              state:
+                up : {}
+            description: "dut -> r3"
+            ip:
+              address:
+                10.1.0.9/30: {}
+              ipv6:
+                enable: off
+  
+          swp4:
+            type: swp
+            link:
+              state:
+                up : {}
+            description: "dut -> r4"
+            ip:
+              address:
+                10.1.0.13/30: {}
+              ipv6:
+                enable: off
+  
+  
+    - set:
+        interface:
+          lo:
+            type: loopback
+            ip:
+              address:
+                10.0.0.1/32: {}
+              ipv6:
+                enable: off
 ok: [r2] => 
   msg: |-
     initial configuration for r2
@@ -509,86 +589,6 @@ ok: [r4] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-  
-    - set:
-        system:
-          hostname: dut
-          config:
-            snippet:
-              system-mtu:
-                file: /etc/network/ifupdown2/policy.d/mtu.json
-                content: |
-                  { "address": { "defaults": { "mtu": "1500" } } }
-  
-        interface:
-          eth0:
-            ip:
-              vrf: mgmt
-              address:
-                dhcp: {}
-            type: eth
-          swp1:
-            type: swp
-            link:
-              state:
-                up : {}
-            description: "dut -> r1"
-            ip:
-              address:
-                10.1.0.1/30: {}
-              ipv6:
-                enable: off
-  
-          swp2:
-            type: swp
-            link:
-              state:
-                up : {}
-            description: "dut -> r2"
-            ip:
-              address:
-                10.1.0.5/30: {}
-              ipv6:
-                enable: off
-  
-          swp3:
-            type: swp
-            link:
-              state:
-                up : {}
-            description: "dut -> r3"
-            ip:
-              address:
-                10.1.0.9/30: {}
-              ipv6:
-                enable: off
-  
-          swp4:
-            type: swp
-            link:
-              state:
-                up : {}
-            description: "dut -> r4"
-            ip:
-              address:
-                10.1.0.13/30: {}
-              ipv6:
-                enable: off
-  
-  
-    - set:
-        interface:
-          lo:
-            type: loopback
-            ip:
-              address:
-                10.0.0.1/32: {}
-              ipv6:
-                enable: off
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for r1, r2, r3, r4
@@ -607,10 +607,10 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, r3, r4
 
 TASK [template] ****************************************************************
+changed: [r3]
+changed: [r1]
 changed: [r2]
 changed: [r4]
-changed: [r1]
-changed: [r3]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -621,8 +621,8 @@ ok: [r4]
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [r1]
 changed: [r2]
-changed: [r3]
 changed: [r4]
+changed: [r3]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r1]
@@ -686,8 +686,8 @@ TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [dut]
 ok: [r1]
 ok: [r2]
-ok: [r4]
 ok: [r3]
+ok: [r4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -716,11 +716,11 @@ ok: [r1] =>
     !
     interface lo
     !
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.2
     !
     interface eth1
     ! r1 -> dut
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.2
      ip ospf network point-to-point
     !
   
@@ -744,11 +744,11 @@ ok: [r2] =>
     !
     interface lo
     !
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.2
     !
     interface eth1
     ! r2 -> dut
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.2
      ip ospf network point-to-point
     !
   
@@ -772,11 +772,11 @@ ok: [r3] =>
     !
     interface lo
     !
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.3
     !
     interface eth1
     ! r3 -> dut
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.3
      ip ospf network point-to-point
     !
   
@@ -800,11 +800,11 @@ ok: [r4] =>
     !
     interface lo
     !
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.4
     !
     interface eth1
     ! r4 -> dut
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.4
      ip ospf network point-to-point
     !
   
@@ -834,10 +834,10 @@ TASK [execute on cumulus: 'nv config apply -y' for ospf config] ****************
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [r4]
 changed: [r1]
 changed: [r2]
 changed: [r3]
+changed: [r4]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -852,10 +852,10 @@ skipping: [r3]
 skipping: [r4]
 
 TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [r4]
-changed: [r3]
-changed: [r1]
 changed: [r2]
+changed: [r1]
+changed: [r3]
+changed: [r4]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [dut]
@@ -908,6 +908,8 @@ ok: [dut] =>
             router:
               ospf:
                 enable: on
+                area:
+                  0.0.0.0: {}
                 redistribute:
                   connected:
                     enable: on
@@ -918,12 +920,12 @@ ok: [dut] =>
           swp3:
             router:
               ospf:
-                area: 0.0.0.0
+                area: 0.0.0.3
                 network-type: point-to-point
           swp4:
             router:
               ospf:
-                area: 0.0.0.0
+                area: 0.0.0.4
                 network-type: point-to-point
   
   
@@ -934,6 +936,8 @@ ok: [dut] =>
             router:
               ospf:
                 enable: on
+                area:
+                  0.0.0.2: {}
                 redistribute:
                   connected:
                     enable: on
@@ -944,18 +948,29 @@ ok: [dut] =>
           swp1:
             router:
               ospf:
-                area: 0.0.0.0
+                area: 0.0.0.2
                 network-type: point-to-point
           swp2:
             router:
               ospf:
-                area: 0.0.0.0
+                area: 0.0.0.2
                 network-type: point-to-point
   
   
   
   
   
+    - set:
+        system:
+          config:
+            snippet:
+              frr.conf: |
+                interface blue
+                  ip ospf area 0.0.0.0
+                  ip ospf passive
+                interface red
+                  ip ospf area 0.0.0.2
+                  ip ospf passive
   
     - set:
         interface:
@@ -977,6 +992,26 @@ ok: [dut] =>
           swp4:
             ip:
               vrf: blue
+    - set:
+        vrf:
+          red:
+            loopback:
+              ip:
+                address:
+                  10.2.0.1/32: {}
+    # Fix for NVidia issue https://docs.nvidia.com/networking-ethernet-software/cumulus-linux-513/Whats-New/rn/#4360636
+                  127.0.0.1/8: {}
+                  127.0.1.1/8: {}
+    - set:
+        vrf:
+          blue:
+            loopback:
+              ip:
+                address:
+                  10.2.0.2/32: {}
+    # Fix for NVidia issue https://docs.nvidia.com/networking-ethernet-software/cumulus-linux-513/Whats-New/rn/#4360636
+                  127.0.0.1/8: {}
+                  127.0.1.1/8: {}
 
 TASK [Deploy vrf configuration] ************************************************
 skipping: [r1]

@@ -50,15 +50,36 @@ ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ros]
-skipping: [s1]
 skipping: [h1]
 skipping: [h2]
+ok: [s1] => 
+  msg: |-
+    normalize configuration for s1
+    =========================================
+    !
+    interface Ethernet1
+     shutdown
+     mac-address 52dc.cafe.0101
+    !
+    interface Ethernet2
+     shutdown
+     mac-address 52dc.cafe.0102
+    !
+    interface Ethernet3
+     shutdown
+     mac-address 52dc.cafe.0103
 
 TASK [Deploy normalize configuration] ******************************************
 skipping: [ros]
-skipping: [s1]
 skipping: [h1]
 skipping: [h2]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for s1
+
+TASK [eos_config: deploying normalize from /home/pipi/net101/tools/netsim/ansible/templates/normalize/eos.j2] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [s1]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ros, s1, h1, h2
@@ -158,72 +179,6 @@ ok: [h2] =>
     ip addr add 172.16.1.4/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
-ok: [s1] => 
-  msg: |-
-    initial configuration for s1
-    =========================================
-    hostname s1
-    !
-    lldp
-    !
-  
-  
-    !
-    vlan 1001
-     name blue
-    !
-    vlan 1000
-     name red
-    !
-  
-    !
-  
-    !
-    interface loopback 0
-        ip address 10.0.0.1/32
-    !
-    interface mgmt
-        no lldp transmit
-        no lldp receive
-    !
-  
-  
-  
-    interface 1/1/1
-        shutdown
-        mtu 9198
-        ip mtu 1600
-        description s1 -> ros
-        ip address 10.1.0.2/30
-        no shutdown
-    !
-  
-  
-    interface 1/1/2
-        shutdown
-        mtu 9198
-        description [Access VLAN red] s1 -> h1
-        no shutdown
-    !
-  
-  
-    interface 1/1/3
-        shutdown
-        mtu 9198
-        description [Access VLAN blue] s1 -> h2
-        no shutdown
-    !
-  
-  
-    interface vlan1000
-        description VLAN red (1000) -> [h1,ros]
-    !
-  
-  
-    interface vlan1001
-        description VLAN blue (1001) -> [h2,ros]
-    !
-    !
 ok: [ros] => 
   msg: |-
     initial configuration for ros
@@ -254,15 +209,15 @@ ok: [ros] =>
     !
   
     !
-    interface loopback 0
-        ip address 10.0.0.2/32
-    !
     interface mgmt
         no lldp transmit
         no lldp receive
     !
   
   
+    interface loopback 0
+        ip address 10.0.0.2/32
+    !
   
     interface 1/1/1
         shutdown
@@ -273,40 +228,99 @@ ok: [ros] =>
         no shutdown
     !
   
-  
     interface vlan1000
         vrf attach tenant
         description VLAN red (1000) -> [h1,s1]
         ip address 172.16.0.2/24
     !
   
-  
     interface vlan1001
         vrf attach tenant
         description VLAN blue (1001) -> [h2,s1]
         ip address 172.16.1.2/24
     !
+  
+    interface loopback 1
+        vrf attach tenant
+        description VRF Loopback tenant
+        ip address 10.2.0.1/32
+    !
+    !
+ok: [s1] => 
+  msg: |-
+    initial configuration for s1
+    =========================================
+    hostname s1
+    !
+    logging monitor debugging
+    aaa authorization exec default local
+    !
+    lldp run
+    ip routing
+    no ipv6 unicast-routing
+    !
+    !
+    ip host h1 172.16.0.3
+    ip host h2 172.16.1.4
+    ip host ros 10.0.0.2 10.1.0.1
+    ip host ros-tenant 172.16.0.2 172.16.1.2 10.2.0.1
+    !
+    interface Management1
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     ip address 10.0.0.1/32
+    !
+    interface Ethernet1
+     no switchport
+     mtu 1600
+     description s1 -> ros
+     ip address 10.1.0.2/30
+    !
+     mac-address 52dc.cafe.0101
+     no shutdown
+    !
+    interface Ethernet2
+     no switchport
+     description [Access VLAN red] s1 -> h1
+    !
+     mac-address 52dc.cafe.0102
+     no shutdown
+    !
+    interface Ethernet3
+     no switchport
+     description [Access VLAN blue] s1 -> h2
+    !
+     mac-address 52dc.cafe.0103
+     no shutdown
+    !
+    interface Vlan1000
+     description VLAN red (1000) -> [h1,ros]
+    !
+    interface Vlan1001
+     description VLAN blue (1001) -> [h2,ros]
     !
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for ros, s1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for ros
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for s1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
 
 TASK [tempfile] ****************************************************************
 changed: [ros -> localhost]
-changed: [s1 -> localhost]
 
 TASK [template] ****************************************************************
 changed: [ros -> localhost]
-changed: [s1 -> localhost]
 
 TASK [aoscx_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/arubacx.j2] ***
-changed: [s1]
 changed: [ros]
 
 TASK [file] ********************************************************************
 changed: [ros -> localhost]
-changed: [s1 -> localhost]
+
+TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
+changed: [s1]
 
 TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
@@ -317,8 +331,8 @@ changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -329,10 +343,10 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-ypbqky78.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-hc62w5tt.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -391,40 +405,46 @@ ok: [s1] =>
   msg: |-
     vlan configuration for s1
     =========================================
+    vlan 1001
+     name blue
     !
+    vlan 1000
+     name red
     !
-    interface 1/1/2
-     no routing
-     vlan access 1000
+  
     !
-    interface 1/1/3
-     no routing
-     vlan access 1001
+    interface Ethernet2
+     switchport
+     switchport access vlan 1000
     !
-    interface vlan1000
+    interface Ethernet3
+     switchport
+     switchport access vlan 1001
     !
-    interface vlan1001
+    interface Vlan1000
+    !
+    interface Vlan1001
 
 TASK [Deploy vlan configuration] ***********************************************
 skipping: [h1]
 skipping: [h2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for ros, s1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for ros
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for s1
 
 TASK [tempfile] ****************************************************************
-changed: [s1 -> localhost]
 changed: [ros -> localhost]
 
 TASK [template] ****************************************************************
 changed: [ros -> localhost]
-changed: [s1 -> localhost]
 
 TASK [aoscx_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/arubacx.j2] ***
 changed: [ros]
-changed: [s1]
 
 TASK [file] ********************************************************************
 changed: [ros -> localhost]
-changed: [s1 -> localhost]
+
+TASK [eos_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/eos.j2] ***
+changed: [s1]
 
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [h1]
@@ -541,9 +561,9 @@ TASK [Container configuration for routing based on /home/pipi/net101/tools/netsi
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-4qlhx142.sh] ***********************
-changed: [h1 -> localhost]
+TASK [Remove temporary file /tmp/h1_routing-q_1sdhqu.sh] ***********************
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [h1]
@@ -601,46 +621,47 @@ ok: [s1] =>
     ospf configuration for s1
     =========================================
     !
+    ! OSPFv2 configuration
+    !
     router ospf 1
-        router-id 10.0.0.1
+     router-id 10.0.0.1
+     interface unnumbered hello mask tx 0.0.0.0
+     timers spf delay initial 100 200 500
+     timers lsa rx min interval 100
+     timers lsa tx delay initial 100 200 500
   
-  
-  
-  
-  
-        area 0.0.0.0
-        area 0.0.0.0
   
     !
-    interface loopback 0
-        ip ospf 1 area 0.0.0.0
+    interface Loopback0
     !
-    interface 1/1/1
+     ip ospf area 0.0.0.0
+    !
+    interface Ethernet1
     ! s1 -> ros
-        ip ospf 1 area 0.0.0.0
-        ip ospf network point-to-point
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
     !
 
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [h1]
 skipping: [h2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for ros, s1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for ros
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for s1
 
 TASK [tempfile] ****************************************************************
 changed: [ros -> localhost]
-changed: [s1 -> localhost]
 
 TASK [template] ****************************************************************
-changed: [s1 -> localhost]
 changed: [ros -> localhost]
 
 TASK [aoscx_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/arubacx.j2] ***
 changed: [ros]
-changed: [s1]
 
 TASK [file] ********************************************************************
 changed: [ros -> localhost]
-changed: [s1 -> localhost]
+
+TASK [eos_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/eos.j2] ***
+changed: [s1]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [h1]
@@ -674,28 +695,6 @@ ok: [ros] =>
   msg: |-
     vrf configuration for ros
     =========================================
-  
-    !
-    router ospf 2 vrf tenant
-        router-id 10.0.0.2
-  
-  
-  
-     redistribute connected
-  
-  
-        area 0.0.0.0
-        area 0.0.0.0
-  
-    !
-    interface vlan1000
-    ! VLAN red (1000) -> [h1,s1]
-        ip ospf 2 area 0.0.0.0
-    !
-    interface vlan1001
-    ! VLAN blue (1001) -> [h2,s1]
-        ip ospf 2 area 0.0.0.0
-    !
 
 TASK [Deploy vrf configuration] ************************************************
 skipping: [h1]
@@ -710,7 +709,7 @@ TASK [template] ****************************************************************
 changed: [ros -> localhost]
 
 TASK [aoscx_config: deploying vrf from /home/pipi/net101/tools/netsim/ansible/templates/vrf/arubacx.j2] ***
-changed: [ros]
+ok: [ros]
 
 TASK [file] ********************************************************************
 changed: [ros -> localhost]
@@ -750,47 +749,43 @@ ok: [ros] =>
     interface vxlan 1
       source ip 10.0.0.2
       no shutdown
-      vni 101000
+      vni 5000
         vlan 1000
         vtep-peer 10.0.0.1
-      vni 101001
+      vni 5001
         vlan 1001
         vtep-peer 10.0.0.1
 ok: [s1] => 
   msg: |-
     vxlan configuration for s1
     =========================================
-    !
     interface vxlan 1
-      source ip 10.0.0.1
-      no shutdown
-      vni 101000
-        vlan 1000
-        vtep-peer 10.0.0.2
-      vni 101001
-        vlan 1001
-        vtep-peer 10.0.0.2
+      vxlan source-interface Loopback0
+      vxlan vlan 1000 vni 5000
+      vxlan vlan 1000 flood vtep 10.0.0.2
+      vxlan vlan 1001 vni 5001
+      vxlan vlan 1001 flood vtep 10.0.0.2
 
 TASK [Deploy vxlan configuration] **********************************************
 skipping: [h1]
 skipping: [h2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for ros, s1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for ros
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for s1
 
 TASK [tempfile] ****************************************************************
 changed: [ros -> localhost]
-changed: [s1 -> localhost]
 
 TASK [template] ****************************************************************
 changed: [ros -> localhost]
-changed: [s1 -> localhost]
 
 TASK [aoscx_config: deploying vxlan from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/arubacx.j2] ***
 changed: [ros]
-changed: [s1]
 
 TASK [file] ********************************************************************
 changed: [ros -> localhost]
-changed: [s1 -> localhost]
+
+TASK [eos_config: deploying vxlan from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/eos.j2] ***
+changed: [s1]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
@@ -798,14 +793,13 @@ skipping: no hosts matched
 PLAY RECAP *********************************************************************
 h1                         : ok=37   changed=8    unreachable=0    failed=0    skipped=30   rescued=0    ignored=0   
 h2                         : ok=37   changed=8    unreachable=0    failed=0    skipped=30   rescued=0    ignored=0   
-ros                        : ok=59   changed=20   unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
-s1                         : ok=51   changed=16   unreachable=0    failed=0    skipped=18   rescued=0    ignored=0   
+ros                        : ok=59   changed=19   unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
+s1                         : ok=42   changed=5    unreachable=0    failed=0    skipped=16   rescued=0    ignored=0   
 
 
 
-The devices under test are VLAN-to-VXLAN bridge and VXLAN router-on-a-stick.
-Assuming 'vxlan-bridging' test case succeeded, this one tests VXLAN-to-VXLAN
-routing
+The device under test is a VXLAN router-on-a-stick. This tests check
+VXLAN-to-VXLAN routing.
 
 * h1 and h2 should be able to ping each other
 
