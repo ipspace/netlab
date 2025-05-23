@@ -5,7 +5,7 @@ from pathlib import Path
 
 sys.path.append('..')
 
-version="2.0.0"
+version="2.0.1"
 
 long_description = (Path(__file__).parent / "README.md").read_text()
 
