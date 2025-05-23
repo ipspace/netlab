@@ -24,15 +24,18 @@
 
 {# Workaround for lack of NVUE support for VRF route leaking - note can only create 1 snippet for frr.conf globally #}
 {% set import_lengths = vrfs.values()|map(attribute='import',default=[])|map('length')|list %}
-{% if import_lengths|max > 1 %}
+{# Workaround for lack of control over VRF loopbacks and OSPF area config #}
+{% set ospf_loopbacks = vrfs.values()|map(attribute='ospf.interfaces',default=[])|flatten|selectattr('type','eq','loopback')|list %}
+{% if import_lengths|max > 1 or ospf_loopbacks %}
 - set:
     system:
       config:
         snippet:
           frr.conf: |
-{%   for vname,vdata in vrfs.items() %}
+{%  if import_lengths|max > 1 %}
+{%    for vname,vdata in vrfs.items() %}
             router bgp {{ bgp.as }} vrf {{ vname }}
-{%     for _af in ['ipv4','ipv6'] if _af in vdata.af %}
+{%      for _af in ['ipv4','ipv6'] if _af in vdata.af %}
               address-family {{ _af }} unicast
                 label vpn export auto
                 export vpn
@@ -41,9 +44,15 @@
                 rt vpn import {{ vdata.import|join(" ") }}
                 rt vpn export {{ vdata.export|join(" ") }}
                 exit-address-family
-{%     endfor %}
+{%      endfor %}
             !
-{%   endfor %}
+{%    endfor %}
+{%  endif %}
+{%  for intf in ospf_loopbacks if 'vrf' in intf %}
+            interface {{ intf.vrf }}
+              ip ospf area {{ intf.ospf.area }}
+              ip ospf passive
+{%  endfor %}
 {% endif %}
 
 {% for intf in netlab_interfaces if intf.vrf is defined %}
@@ -56,9 +65,13 @@
             address:
 {%     if 'ipv4' in intf %}
               {{ intf.ipv4 }}: {}
+# Fix for NVidia issue https://docs.nvidia.com/networking-ethernet-software/cumulus-linux-513/Whats-New/rn/#4360636
+              127.0.0.1/8: {}
+              127.0.1.1/8: {}
 {%     endif %}
 {%     if 'ipv6' in intf %}
               {{ intf.ipv6 }}: {}
+              ::1/128: {}
 {%     endif %}
 {%   else %}
     interface:
