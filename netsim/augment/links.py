@@ -19,38 +19,59 @@ from . import devices,addressing
 VIRTUAL_INTERFACE_TYPES: typing.Final[typing.List[str]] = [
   'loopback', 'tunnel', 'lag', 'svi' ]
 
+'''
+We cannot definitely say whether a node name is valid before the component
+expansion is complete. We can, however, do basic sanity checks.
+
+For the moment, we assume a node name is valid if it's part of the nodes
+dictionary (obviously) or if it starts with a name of a component. The final
+check of node names in links will be done after the component expansion.
+'''
+def is_nodename_valid(n: str, nodes: Box) -> bool:
+  if n in nodes:                          # Easy scenario: n is a known nodename
+    return True
+
+  c_pfx = [ x+"_" for x,d in nodes.items() 
+              if 'include' in d ]         # Otherwise, collect nodes with 'include' requests
+  c_match = [ x for x in c_pfx 
+              if n.startswith(x)]         # ... and check for a match
+
+  return bool(c_match)                    # Return True if the match list is not empty
+
 def adjust_interface_list(iflist: list, link: Box, nodes: Box) -> list:
   link_intf = []
   intf_cnt  = 0
-  for n in iflist:                      # Sanity check of interface data
+  for n in iflist:                        # Sanity check of interface data
     intf_cnt = intf_cnt + 1
-    if isinstance(n,str):               # Another shortcut: node name as string
-      if not n in nodes:                # ... is it a valid node name?
-        log.error(                   # ... it's not, get lost
+    if isinstance(n,str):                 # Another shortcut: node name as string
+      if not is_nodename_valid(n,nodes):  # ... is it a valid node name?
+        log.error(                        # ... it's not, get lost
           f'Interface {link._linkname}.interfaces.{intf_cnt} refers to an unknown node {n}',
           log.IncorrectValue,
           'links')
         continue
       n = data.get_box({ 'node': n })
+      link_intf.append(n)
+      continue
       
-    if not isinstance(n,Box):          # Still facing non-dict data type?
-      log.error(                     # ... report an error
+    if not isinstance(n,Box):             # Still facing non-dict data type?
+      log.error(                          # ... report an error
         f'Interface data in {link._linkname}.interfaces[{intf_cnt}] must be a dictionary, found {type(n).__name__}',
         log.IncorrectValue,
         'links')
-    elif not 'node' in n:               # Do we have node name in interface data?
-      log.error(                     # ... no? Too bad, throw an error
+    elif not 'node' in n:                 # Do we have node name in interface data?
+      log.error(                          # ... no? Too bad, throw an error
         text=f'Interface data {link._linkname}.interfaces[{intf_cnt}] is missing a "node" attribute',
         more_data=[ f'found {n}' ],
         category=log.MissingValue,
         module='links')
-    elif not n.node in nodes:           # Is the node name valid?
-      log.error(                     # ... it's not, get lost
+    elif not is_nodename_valid(n.node,nodes):
+      log.error(                          # ... the node name is not valid, get lost
         f'Interface data {link._linkname}.interfaces[{intf_cnt}] refers to an unknown node {n.node}',
         log.IncorrectValue,
         'links')
     else:
-      link_intf.append(n)               # Interface data is OK, append it to interface list
+      link_intf.append(n)                 # Interface data is OK, append it to interface list
 
   return link_intf
 
@@ -79,7 +100,7 @@ def adjust_link_object(l: typing.Any, linkname: str, nodes: Box) -> typing.Optio
     link_intf = []                                            # ... and a list of nodes
     link_data._linkname = linkname                            # ... set link name
     for k in l.keys():
-      if k in nodes:                                          # Node name -> interface list
+      if is_nodename_valid(k,nodes):                          # Is this a reasonable node name?
         must_be_dict(l,k,linkname,create_empty=True)
         if isinstance(l[k],dict):
           l[k].node = k
@@ -98,14 +119,7 @@ def adjust_link_object(l: typing.Any, linkname: str, nodes: Box) -> typing.Optio
     link_intf = []
     for n in l.split('-'):                # ... split it into a list of nodes
       n = n.strip()                       # ... strip leading and trailing spaces (fixing #816)
-      valid_node = n in nodes
-      if not valid_node:                  # ... maybe its a link to a node within a component
-        valid_node = len([ 
-          x for x in nodes                # ... so check the node names with a '_' suffix
-            if n.startswith(x+"_")        # ... but only for components
-              and 'include' in nodes[x]]) > 0
-                                          # ... note this is not a final check, it's only a viability check
-      if valid_node:                      # If the node name is valid
+      if is_nodename_valid(n,nodes):      # If the node name is valid
         link_intf.append({ 'node': n })   # ... append it to the list of interfaces
       else:
         log.error(
