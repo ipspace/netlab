@@ -1,0 +1,1189 @@
+[WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [r1]
+ok: [h1]
+ok: [h2]
+ok: [s1]
+ok: [s2]
+
+TASK [Find device readiness script] ********************************************
+ok: [r1]
+ok: [h1]
+ok: [h2]
+ok: [s1]
+ok: [s2]
+
+TASK [Wait for device to become ready] *****************************************
+skipping: [r1]
+skipping: [h1]
+skipping: [h2]
+skipping: [s1]
+skipping: [s2]
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for r1, h1, h2, s1, s2
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [r1]
+ok: [h1]
+ok: [h2]
+ok: [s1]
+ok: [s2]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [r1]
+ok: [h1]
+ok: [h2]
+ok: [s1]
+ok: [s2]
+
+TASK [fail] ********************************************************************
+skipping: [r1]
+skipping: [h1]
+skipping: [h2]
+skipping: [s1]
+skipping: [s2]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [r1]
+ok: [h1]
+ok: [h2]
+ok: [s2]
+ok: [s1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [r1]
+skipping: [h1]
+skipping: [h2]
+skipping: [s1]
+skipping: [s2]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [r1]
+skipping: [h1]
+skipping: [h2]
+skipping: [s1]
+skipping: [s2]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for r1, h1, h2, s1, s2
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [r1]
+ok: [h1]
+ok: [h2]
+ok: [s1]
+ok: [s2]
+
+TASK [Find configuration template for initial] *********************************
+ok: [r1]
+ok: [h1]
+ok: [h2]
+ok: [s1]
+ok: [s2]
+
+TASK [fail] ********************************************************************
+skipping: [r1]
+skipping: [h1]
+skipping: [h2]
+skipping: [s1]
+skipping: [s2]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [r1]
+ok: [h1]
+ok: [h2]
+ok: [s1]
+ok: [s2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+  
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.1/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+  
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.1.2/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.1.2/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+ok: [r1] => 
+  msg: |-
+    initial configuration for r1
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+    ip link set eth2 down
+    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+    ip link set dev eth2 mtu 1500
+    ip link set eth2 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname r1
+    !
+    ip forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.5/32
+    !
+    interface eth1
+     no shutdown
+     description r1 -> [h1,s1,s2]
+     ip address 172.16.0.5/24
+    !
+    interface eth2
+     no shutdown
+     description r1 -> [h2,s1,s2]
+     ip address 172.16.1.5/24
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
+ok: [s1] => 
+  msg: |-
+    initial configuration for s1
+    =========================================
+  
+  
+  
+  
+    updates:
+  
+    - path: configure/router[router-name=Base]
+      val:
+       ecmp: 64
+  
+  
+  
+    - path: configure/router[router-name=Base]/interface[interface-name=system]
+  
+      val:
+       admin-state: enable
+       description: "system interface vlan=0"
+       ipv4:
+        primary:
+         address: "10.0.0.3"
+         prefix-length: 32
+ok: [s2] => 
+  msg: |-
+    initial configuration for s2
+    =========================================
+  
+  
+  
+  
+    updates:
+  
+    - path: configure/router[router-name=Base]
+      val:
+       ecmp: 64
+  
+  
+  
+    - path: configure/router[router-name=Base]/interface[interface-name=system]
+  
+      val:
+       admin-state: enable
+       description: "system interface vlan=0"
+       ipv4:
+        primary:
+         address: "10.0.0.4"
+         prefix-length: 32
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for r1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for s1, s2
+
+TASK [Attempt to load VRF kernel module] ***************************************
+changed: [r1 -> localhost]
+
+TASK [Disable FRR management VRF when modprobe fails] **************************
+skipping: [r1]
+
+TASK [include_tasks] ***********************************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for r1
+
+TASK [template] ****************************************************************
+changed: [r1]
+
+TASK [set_fact] ****************************************************************
+ok: [r1]
+
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+changed: [r1]
+
+TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+skipping: [r1]
+
+TASK [Define script filename and determine whether to execute in netns] ********
+ok: [h1]
+ok: [h2]
+
+TASK [Create a temporary file for the rendered script] *************************
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
+changed: [h2 -> localhost]
+changed: [h1 -> localhost]
+
+TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
+skipping: [h1]
+skipping: [h2]
+
+TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
+skipping: [h1]
+skipping: [h2]
+
+TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [Remove temporary file /tmp/h1_initial-r9lx4g38.sh] ***********************
+changed: [h2 -> localhost]
+changed: [h1 -> localhost]
+
+TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+ok: [s2]
+ok: [s1]
+
+TASK [tempfile] ****************************************************************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
+
+TASK [Set default provisioning model to use OpenConfig (sros_use_openconfig=False)] ***
+skipping: [s1]
+skipping: [s2]
+
+TASK [Check if OpenConfig can be used as provisioning method/model (config_template=/home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2)] ***
+ok: [s1]
+ok: [s2]
+
+TASK [Select provisioning template netsim_action=initial] **********************
+ok: [s1]
+ok: [s2]
+
+TASK [Process template /home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2] ***
+changed: [s2 -> localhost]
+changed: [s1 -> localhost]
+
+TASK [Show generated config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2 based on /tmp/ansible.sros.s1.yxs61uv6temp] ***
+skipping: [s1]
+skipping: [s2]
+
+TASK [Check that prepared config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2 in /tmp/ansible.sros.s1.yxs61uv6temp is valid YAML] ***
+skipping: [s1]
+skipping: [s2]
+
+TASK [Wait up to 180s for gNMI(TCP 57400) to be ready on clab-ml_17-s1] ********
+ok: [s1 -> localhost]
+ok: [s2 -> localhost]
+
+TASK [Enable Open Config YAML modules (retry to give Containerlab a chance to finish configuration)] ***
+changed: [s1]
+changed: [s2]
+
+TASK [debug] *******************************************************************
+ok: [s1] => 
+  enable_open_config:
+    attempts: 1
+    changed: true
+    failed: false
+    output: |-
+      {
+          "prefix": "configure",
+          "response": [
+              {
+                  "path": "system/management-interface/yang-modules/openconfig-modules",
+                  "op": "UPDATE"
+              }
+          ],
+          "timestamp": "2025-05-24T08:29:47.267816"
+      }
+ok: [s2] => 
+  enable_open_config:
+    attempts: 1
+    changed: true
+    failed: false
+    output: |-
+      {
+          "prefix": "configure",
+          "response": [
+              {
+                  "path": "system/management-interface/yang-modules/openconfig-modules",
+                  "op": "UPDATE"
+              }
+          ],
+          "timestamp": "2025-05-24T08:29:47.341958"
+      }
+
+TASK [Update initial node configuration (using gNMI SET based on YAML template /home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2)] ***
+changed: [s2]
+changed: [s1]
+
+TASK [debug] *******************************************************************
+ok: [s1] => 
+  gnmi_set_result:
+    attempts: 1
+    changed: true
+    failed: false
+    output: |-
+      {
+          "response": [
+              {
+                  "path": "configure/router[router-name=Base]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/router[router-name=Base]/interface[interface-name=system]",
+                  "op": "UPDATE"
+              }
+          ],
+          "timestamp": "2025-05-24T08:29:48.122592"
+      }
+ok: [s2] => 
+  gnmi_set_result:
+    attempts: 1
+    changed: true
+    failed: false
+    output: |-
+      {
+          "response": [
+              {
+                  "path": "configure/router[router-name=Base]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/router[router-name=Base]/interface[interface-name=system]",
+                  "op": "UPDATE"
+              }
+          ],
+          "timestamp": "2025-05-24T08:29:48.198879"
+      }
+
+TASK [file] ********************************************************************
+changed: [s2 -> localhost]
+changed: [s1 -> localhost]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [h1]
+ok: [h2]
+ok: [s1]
+ok: [s2]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1, s2 => (item=vlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1, s2 => (item=routing)
+
+TASK [Figure out whether to deploy the module vlan on current device] **********
+ok: [h1]
+ok: [h2]
+ok: [s1]
+ok: [s2]
+
+TASK [Find configuration template for vlan] ************************************
+skipping: [h1]
+skipping: [h2]
+ok: [s1]
+ok: [s2]
+
+TASK [fail] ********************************************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [s1]
+skipping: [s2]
+
+TASK [Find configuration deployment deploy_script for vlan] ********************
+skipping: [h1]
+skipping: [h2]
+ok: [s1]
+ok: [s2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [h1]
+skipping: [h2]
+ok: [s1] => 
+  msg: |-
+    vlan configuration for s1
+    =========================================
+  
+    updates:
+  
+  
+    - path: configure/port[port-id=1/1/c1]
+      val:
+       admin-state: enable
+       connector:
+        breakout: "c1-100g"
+    - path: configure/port[port-id=1/1/c1/1]
+      val:
+       admin-state: enable
+       ethernet:
+        mtu: 1518 # max 9800
+        mode: network
+        encap-type: dot1q
+  
+  
+  
+  
+  
+    - path: configure/port[port-id=1/1/c2]
+      val:
+       admin-state: enable
+       connector:
+        breakout: "c1-100g"
+    - path: configure/port[port-id=1/1/c2/1]
+      val:
+       admin-state: enable
+       ethernet:
+        mtu: 1514 # max 9800
+        mode: access
+  
+  
+    - path: configure/service/vpls[service-name=vlan700]
+      val:
+       service-id: 10700
+       customer: "1"
+       description: "[Access VLAN red] s1 -> h1"
+       sap:
+       - sap-id: 1/1/c2/1
+       admin-state: enable
+  
+  
+  
+    - path: configure/port[port-id=1/1/c3]
+      val:
+       admin-state: enable
+       connector:
+        breakout: "c1-100g"
+    - path: configure/port[port-id=1/1/c3/1]
+      val:
+       admin-state: enable
+       ethernet:
+        mtu: 1514 # max 9800
+        mode: access
+  
+  
+    - path: configure/service/vpls[service-name=vlan701]
+      val:
+       service-id: 10701
+       customer: "1"
+       description: "[Access VLAN blue] s1 -> h2"
+       sap:
+       - sap-id: 1/1/c3/1
+       admin-state: enable
+  
+  
+  
+    - path: configure/port[port-id=1/1/c1]
+      val:
+       admin-state: enable
+       connector:
+        breakout: "c1-100g"
+    - path: configure/port[port-id=1/1/c1/1]
+      val:
+       admin-state: enable
+       ethernet:
+        mode: access
+        encap-type: dot1q
+  
+  
+    - path: configure/service/vpls[service-name=vlan701]
+      val:
+       service-id: 10701
+       customer: "1"
+       description: "[SubIf VLAN blue] s1 -> s2"
+       sap:
+       - sap-id: 1/1/c1/1:701
+       admin-state: enable
+  
+  
+  
+    - path: configure/port[port-id=1/1/c1]
+      val:
+       admin-state: enable
+       connector:
+        breakout: "c1-100g"
+    - path: configure/port[port-id=1/1/c1/1]
+      val:
+       admin-state: enable
+       ethernet:
+        mode: access
+        encap-type: dot1q
+  
+  
+    - path: configure/service/vpls[service-name=vlan700]
+      val:
+       service-id: 10700
+       customer: "1"
+       description: "[SubIf VLAN red] s1 -> s2"
+       sap:
+       - sap-id: 1/1/c1/1:700
+       admin-state: enable
+  
+  
+  
+  
+  
+    - path: configure/service/vpls[service-name=vlan700]
+      val:
+       service-id: 10700
+       customer: "1"
+       description: "VLAN red (700) -> [h1,s2,r1]"
+       admin-state: enable
+  
+  
+  
+  
+  
+    - path: configure/service/vpls[service-name=vlan701]
+      val:
+       service-id: 10701
+       customer: "1"
+       description: "VLAN blue (701) -> [h2,s2,r1]"
+       admin-state: enable
+ok: [s2] => 
+  msg: |-
+    vlan configuration for s2
+    =========================================
+  
+    updates:
+  
+  
+    - path: configure/port[port-id=1/1/c1]
+      val:
+       admin-state: enable
+       connector:
+        breakout: "c1-100g"
+    - path: configure/port[port-id=1/1/c1/1]
+      val:
+       admin-state: enable
+       ethernet:
+        mtu: 1518 # max 9800
+        mode: network
+        encap-type: dot1q
+  
+  
+  
+  
+  
+    - path: configure/port[port-id=1/1/c2]
+      val:
+       admin-state: enable
+       connector:
+        breakout: "c1-100g"
+    - path: configure/port[port-id=1/1/c2/1]
+      val:
+       admin-state: enable
+       ethernet:
+        mtu: 1514 # max 9800
+        mode: access
+  
+  
+    - path: configure/service/vpls[service-name=vlan700]
+      val:
+       service-id: 10700
+       customer: "1"
+       description: "[Access VLAN red] s2 -> r1"
+       sap:
+       - sap-id: 1/1/c2/1
+       admin-state: enable
+  
+  
+  
+    - path: configure/port[port-id=1/1/c3]
+      val:
+       admin-state: enable
+       connector:
+        breakout: "c1-100g"
+    - path: configure/port[port-id=1/1/c3/1]
+      val:
+       admin-state: enable
+       ethernet:
+        mtu: 1514 # max 9800
+        mode: access
+  
+  
+    - path: configure/service/vpls[service-name=vlan701]
+      val:
+       service-id: 10701
+       customer: "1"
+       description: "[Access VLAN blue] s2 -> r1"
+       sap:
+       - sap-id: 1/1/c3/1
+       admin-state: enable
+  
+  
+  
+    - path: configure/port[port-id=1/1/c1]
+      val:
+       admin-state: enable
+       connector:
+        breakout: "c1-100g"
+    - path: configure/port[port-id=1/1/c1/1]
+      val:
+       admin-state: enable
+       ethernet:
+        mode: access
+        encap-type: dot1q
+  
+  
+    - path: configure/service/vpls[service-name=vlan701]
+      val:
+       service-id: 10701
+       customer: "1"
+       description: "[SubIf VLAN blue] s2 -> s1"
+       sap:
+       - sap-id: 1/1/c1/1:701
+       admin-state: enable
+  
+  
+  
+    - path: configure/port[port-id=1/1/c1]
+      val:
+       admin-state: enable
+       connector:
+        breakout: "c1-100g"
+    - path: configure/port[port-id=1/1/c1/1]
+      val:
+       admin-state: enable
+       ethernet:
+        mode: access
+        encap-type: dot1q
+  
+  
+    - path: configure/service/vpls[service-name=vlan700]
+      val:
+       service-id: 10700
+       customer: "1"
+       description: "[SubIf VLAN red] s2 -> s1"
+       sap:
+       - sap-id: 1/1/c1/1:700
+       admin-state: enable
+  
+  
+  
+  
+  
+    - path: configure/service/vpls[service-name=vlan700]
+      val:
+       service-id: 10700
+       customer: "1"
+       description: "VLAN red (700) -> [h1,s1,r1]"
+       admin-state: enable
+  
+  
+  
+  
+  
+    - path: configure/service/vpls[service-name=vlan701]
+      val:
+       service-id: 10701
+       customer: "1"
+       description: "VLAN blue (701) -> [h2,s1,r1]"
+       admin-state: enable
+
+TASK [Deploy vlan configuration] ***********************************************
+skipping: [h1]
+skipping: [h2]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for s1, s2
+
+TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+skipping: [s1]
+skipping: [s2]
+
+TASK [tempfile] ****************************************************************
+changed: [s2 -> localhost]
+changed: [s1 -> localhost]
+
+TASK [Set default provisioning model to use OpenConfig (sros_use_openconfig=False)] ***
+skipping: [s1]
+skipping: [s2]
+
+TASK [Check if OpenConfig can be used as provisioning method/model (config_template=/home/pipi/netlab_gh/netsim/ansible/templates/vlan/sros.j2)] ***
+ok: [s1]
+ok: [s2]
+
+TASK [Select provisioning template netsim_action=vlan] *************************
+ok: [s1]
+ok: [s2]
+
+TASK [Process template /home/pipi/netlab_gh/netsim/ansible/templates/vlan/sros.j2] ***
+changed: [s2 -> localhost]
+changed: [s1 -> localhost]
+
+TASK [Show generated config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/sros.j2 based on /tmp/ansible.sros.s1.k1kmbwbitemp] ***
+skipping: [s1]
+skipping: [s2]
+
+TASK [Check that prepared config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/sros.j2 in /tmp/ansible.sros.s1.k1kmbwbitemp is valid YAML] ***
+skipping: [s1]
+skipping: [s2]
+
+TASK [Wait up to 180s for gNMI(TCP 57400) to be ready on clab-ml_17-s1] ********
+ok: [s1 -> localhost]
+ok: [s2 -> localhost]
+
+TASK [Enable Open Config YAML modules (retry to give Containerlab a chance to finish configuration)] ***
+skipping: [s1]
+skipping: [s2]
+
+TASK [debug] *******************************************************************
+ok: [s1] => 
+  enable_open_config:
+    changed: false
+    false_condition: enable_open_config is not defined and 'ixr-ec' != clab.type
+    skip_reason: Conditional result was False
+    skipped: true
+ok: [s2] => 
+  enable_open_config:
+    changed: false
+    false_condition: enable_open_config is not defined and 'ixr-ec' != clab.type
+    skip_reason: Conditional result was False
+    skipped: true
+
+TASK [Update vlan node configuration (using gNMI SET based on YAML template /home/pipi/netlab_gh/netsim/ansible/templates/vlan/sros.j2)] ***
+changed: [s1]
+changed: [s2]
+
+TASK [debug] *******************************************************************
+ok: [s1] => 
+  gnmi_set_result:
+    attempts: 1
+    changed: true
+    failed: false
+    output: |-
+      {
+          "response": [
+              {
+                  "path": "configure/port[port-id=1/1/c1]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/port[port-id=1/1/c1/1]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/port[port-id=1/1/c2]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/port[port-id=1/1/c2/1]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/service/vpls[service-name=vlan700]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/port[port-id=1/1/c3]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/port[port-id=1/1/c3/1]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/service/vpls[service-name=vlan701]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/port[port-id=1/1/c1]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/port[port-id=1/1/c1/1]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/service/vpls[service-name=vlan701]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/port[port-id=1/1/c1]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/port[port-id=1/1/c1/1]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/service/vpls[service-name=vlan700]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/service/vpls[service-name=vlan700]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/service/vpls[service-name=vlan701]",
+                  "op": "UPDATE"
+              }
+          ],
+          "timestamp": "2025-05-24T08:29:49.958448"
+      }
+ok: [s2] => 
+  gnmi_set_result:
+    attempts: 1
+    changed: true
+    failed: false
+    output: |-
+      {
+          "response": [
+              {
+                  "path": "configure/port[port-id=1/1/c1]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/port[port-id=1/1/c1/1]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/port[port-id=1/1/c2]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/port[port-id=1/1/c2/1]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/service/vpls[service-name=vlan700]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/port[port-id=1/1/c3]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/port[port-id=1/1/c3/1]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/service/vpls[service-name=vlan701]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/port[port-id=1/1/c1]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/port[port-id=1/1/c1/1]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/service/vpls[service-name=vlan701]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/port[port-id=1/1/c1]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/port[port-id=1/1/c1/1]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/service/vpls[service-name=vlan700]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/service/vpls[service-name=vlan700]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/service/vpls[service-name=vlan701]",
+                  "op": "UPDATE"
+              }
+          ],
+          "timestamp": "2025-05-24T08:29:50.032863"
+      }
+
+TASK [file] ********************************************************************
+changed: [s1 -> localhost]
+changed: [s2 -> localhost]
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [h1]
+ok: [h2]
+ok: [s1]
+ok: [s2]
+
+TASK [Find configuration template for routing] *********************************
+skipping: [s1]
+ok: [h1]
+skipping: [s2]
+ok: [h2]
+
+TASK [fail] ********************************************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [s1]
+skipping: [s2]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [s1]
+skipping: [s2]
+ok: [h1]
+ok: [h2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [s1]
+skipping: [s2]
+ok: [h1] => 
+  msg: |-
+    routing configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.0.5 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.0.5 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.0.5 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.0.5 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
+ok: [h2] => 
+  msg: |-
+    routing configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.1.5 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.1.5 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.1.5 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.1.5 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
+
+TASK [Deploy routing configuration] ********************************************
+skipping: [s1]
+skipping: [s2]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
+
+TASK [Define script filename and determine whether to execute in netns] ********
+ok: [h1]
+ok: [h2]
+
+TASK [Create a temporary file for the rendered script] *************************
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
+changed: [h2 -> localhost]
+changed: [h1 -> localhost]
+
+TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
+skipping: [h1]
+skipping: [h2]
+
+TASK [Execute /tmp/config-h1_routing.sh to deploy routing config based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
+skipping: [h1]
+skipping: [h2]
+
+TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
+changed: [h2 -> localhost]
+changed: [h1 -> localhost]
+
+TASK [Remove temporary file /tmp/h1_routing-afg4uz9_.sh] ***********************
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+h1                         : ok=31   changed=8    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+h2                         : ok=31   changed=8    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+r1                         : ok=17   changed=3    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+s1                         : ok=41   changed=9    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+s2                         : ok=41   changed=9    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+
+
+
+The devices under test are simple bridges with a VLAN trunk between them.
+An external router with two interfaces (one per VLAN) is attached to one of them.
+
+* h1 and h2 should be able to ping each other
+
+Please note it might take a while for the lab to work due to
+STP learning phase
+

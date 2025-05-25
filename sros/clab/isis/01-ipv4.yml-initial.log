@@ -1,0 +1,736 @@
+[WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [Find device readiness script] ********************************************
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [Wait for device to become ready] *****************************************
+skipping: [x1]
+skipping: [x2]
+skipping: [dut]
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x1, x2, dut
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [x1]
+skipping: [x2]
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [x1]
+skipping: [x2]
+skipping: [dut]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [x1]
+skipping: [x2]
+skipping: [dut]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x1, x2, dut
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [Find configuration template for initial] *********************************
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [x1]
+skipping: [x2]
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [x1] => 
+  msg: |-
+    initial configuration for x1
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname x1
+    !
+    ip forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.2/32
+    !
+    interface eth1
+     no shutdown
+     description x1 -> dut
+     ip address 10.1.0.2/30
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
+ok: [x2] => 
+  msg: |-
+    initial configuration for x2
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname x2
+    !
+    ip forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.3/32
+    !
+    interface eth1
+     no shutdown
+     description x2 -> dut
+     ip address 10.1.0.6/30
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+  
+  
+  
+  
+    updates:
+  
+    - path: configure/router[router-name=Base]
+      val:
+       ecmp: 64
+  
+  
+  
+    - path: configure/router[router-name=Base]/interface[interface-name=system]
+  
+      val:
+       admin-state: enable
+       description: "system interface vlan=0"
+       ipv4:
+        primary:
+         address: "10.0.0.1"
+         prefix-length: 32
+  
+  
+  
+  
+  
+    - path: configure/port[port-id=1/1/c1]
+      val:
+       admin-state: enable
+       connector:
+        breakout: "c1-100g"
+    - path: configure/port[port-id=1/1/c1/1]
+      val:
+       admin-state: enable
+       ethernet:
+        mtu: 1514 # max 9800
+        mode: network
+  
+  
+  
+    - path: configure/router[router-name=Base]/interface[interface-name=i1/1/c1]
+  
+      val:
+       admin-state: enable
+       description: "dut ~ x1 () vlan=0"
+       port: "1/1/c1/1"
+       ipv4:
+        primary:
+         address: "10.1.0.1"
+         prefix-length: 30
+  
+  
+  
+  
+  
+    - path: configure/port[port-id=1/1/c2]
+      val:
+       admin-state: enable
+       connector:
+        breakout: "c1-100g"
+    - path: configure/port[port-id=1/1/c2/1]
+      val:
+       admin-state: enable
+       ethernet:
+        mtu: 1514 # max 9800
+        mode: network
+  
+  
+  
+    - path: configure/router[router-name=Base]/interface[interface-name=i1/1/c2]
+  
+      val:
+       admin-state: enable
+       description: "dut ~ x2 () vlan=0"
+       port: "1/1/c2/1"
+       ipv4:
+        primary:
+         address: "10.1.0.5"
+         prefix-length: 30
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for x1, x2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for dut
+
+TASK [Attempt to load VRF kernel module] ***************************************
+changed: [x1 -> localhost]
+
+TASK [Disable FRR management VRF when modprobe fails] **************************
+skipping: [x1]
+skipping: [x2]
+
+TASK [include_tasks] ***********************************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
+
+TASK [template] ****************************************************************
+changed: [x1]
+changed: [x2]
+
+TASK [set_fact] ****************************************************************
+ok: [x1]
+ok: [x2]
+
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+changed: [x2]
+changed: [x1]
+
+TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+skipping: [x1]
+skipping: [x2]
+
+TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+ok: [dut]
+
+TASK [tempfile] ****************************************************************
+changed: [dut -> localhost]
+
+TASK [Set default provisioning model to use OpenConfig (sros_use_openconfig=False)] ***
+skipping: [dut]
+
+TASK [Check if OpenConfig can be used as provisioning method/model (config_template=/home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2)] ***
+ok: [dut]
+
+TASK [Select provisioning template netsim_action=initial] **********************
+ok: [dut]
+
+TASK [Process template /home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2] ***
+changed: [dut -> localhost]
+
+TASK [Show generated config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2 based on /tmp/ansible.sros.dut.vcb4m3cstemp] ***
+skipping: [dut]
+
+TASK [Check that prepared config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2 in /tmp/ansible.sros.dut.vcb4m3cstemp is valid YAML] ***
+skipping: [dut]
+
+TASK [Wait up to 180s for gNMI(TCP 57400) to be ready on clab-ml_17-dut] *******
+ok: [dut -> localhost]
+
+TASK [Enable Open Config YAML modules (retry to give Containerlab a chance to finish configuration)] ***
+changed: [dut]
+
+TASK [debug] *******************************************************************
+ok: [dut] => 
+  enable_open_config:
+    attempts: 1
+    changed: true
+    failed: false
+    output: |-
+      {
+          "prefix": "configure",
+          "response": [
+              {
+                  "path": "system/management-interface/yang-modules/openconfig-modules",
+                  "op": "UPDATE"
+              }
+          ],
+          "timestamp": "2025-05-24T08:09:46.142848"
+      }
+
+TASK [Update initial node configuration (using gNMI SET based on YAML template /home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2)] ***
+changed: [dut]
+
+TASK [debug] *******************************************************************
+ok: [dut] => 
+  gnmi_set_result:
+    attempts: 1
+    changed: true
+    failed: false
+    output: |-
+      {
+          "response": [
+              {
+                  "path": "configure/router[router-name=Base]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/router[router-name=Base]/interface[interface-name=system]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/port[port-id=1/1/c1]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/port[port-id=1/1/c1/1]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/router[router-name=Base]/interface[interface-name=i1/1/c1]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/port[port-id=1/1/c2]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/port[port-id=1/1/c2/1]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/router[router-name=Base]/interface[interface-name=i1/1/c2]",
+                  "op": "UPDATE"
+              }
+          ],
+          "timestamp": "2025-05-24T08:09:46.998185"
+      }
+
+TASK [file] ********************************************************************
+changed: [dut -> localhost]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
+ok: [x1]
+ok: [x2]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=isis)
+
+TASK [Figure out whether to deploy the module isis on current device] **********
+ok: [dut]
+ok: [x1]
+ok: [x2]
+
+TASK [Find configuration template for isis] ************************************
+ok: [dut]
+ok: [x1]
+ok: [x2]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
+TASK [Find configuration deployment deploy_script for isis] ********************
+ok: [dut]
+ok: [x1]
+ok: [x2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [x2] => 
+  msg: |-
+    isis configuration for x2
+    =========================================
+    !
+    !
+    !
+    router isis Gandalf
+     log-adjacency-changes
+     hostname dynamic
+     is-type level-1-2
+     metric-style wide
+     lsp-timers gen-interval 1 refresh-interval 900 max-lifetime 1800
+     net 49.0042.0000.0000.0003.00
+  
+  
+    !
+    interface lo
+    !
+     ip router isis Gandalf
+    !
+    interface eth1
+    ! x2 -> dut
+     ip router isis Gandalf
+     isis network point-to-point
+    !
+  
+    !
+    do write
+ok: [x1] => 
+  msg: |-
+    isis configuration for x1
+    =========================================
+    !
+    !
+    !
+    router isis Gandalf
+     log-adjacency-changes
+     hostname dynamic
+     is-type level-1
+     metric-style wide
+     lsp-timers gen-interval 1 refresh-interval 900 max-lifetime 1800
+     net 49.0042.0000.0000.0002.00
+  
+    !
+    interface lo
+    !
+     ip router isis Gandalf
+    !
+    interface eth1
+    ! x1 -> dut
+     ip router isis Gandalf
+     isis network point-to-point
+    !
+  
+    !
+    do write
+ok: [dut] => 
+  msg: |-
+    isis configuration for dut
+    =========================================
+  
+  
+    updates:
+  
+  
+    - path: configure/router[router-name=Base]
+      val:
+       isis:
+       - isis-instance: 0
+         admin-state: enable
+         area-address: ["49.0042.0000.0000.0001.00"]
+         level-capability: "1"
+         interface:
+         - interface-name: system
+           interface-type: broadcast
+           passive: True
+  
+  
+  
+  
+    - path: configure/router[router-name=Base]
+      val:
+       isis:
+       - isis-instance: 0
+         admin-state: enable
+         area-address: ["49.0042.0000.0000.0001.00"]
+         level-capability: "1"
+         interface:
+         - interface-name: i1/1/c1
+           interface-type: point-to-point
+           passive: False
+  
+  
+  
+    - path: configure/router[router-name=Base]
+      val:
+       isis:
+       - isis-instance: 0
+         admin-state: enable
+         area-address: ["49.0042.0000.0000.0001.00"]
+         level-capability: "1"
+         interface:
+         - interface-name: i1/1/c2
+           interface-type: point-to-point
+           passive: False
+
+TASK [Deploy isis configuration] ***********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2
+
+TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+skipping: [dut]
+
+TASK [tempfile] ****************************************************************
+changed: [dut -> localhost]
+
+TASK [Set default provisioning model to use OpenConfig (sros_use_openconfig=False)] ***
+skipping: [dut]
+
+TASK [Check if OpenConfig can be used as provisioning method/model (config_template=/home/pipi/netlab_gh/netsim/ansible/templates/isis/sros.j2)] ***
+ok: [dut]
+
+TASK [Select provisioning template netsim_action=isis] *************************
+ok: [dut]
+
+TASK [Process template /home/pipi/netlab_gh/netsim/ansible/templates/isis/sros.j2] ***
+changed: [dut -> localhost]
+
+TASK [Show generated config from /home/pipi/netlab_gh/netsim/ansible/templates/isis/sros.j2 based on /tmp/ansible.sros.dut.4pqx8z1qtemp] ***
+skipping: [dut]
+
+TASK [Check that prepared config from /home/pipi/netlab_gh/netsim/ansible/templates/isis/sros.j2 in /tmp/ansible.sros.dut.4pqx8z1qtemp is valid YAML] ***
+skipping: [dut]
+
+TASK [Wait up to 180s for gNMI(TCP 57400) to be ready on clab-ml_17-dut] *******
+ok: [dut -> localhost]
+
+TASK [Enable Open Config YAML modules (retry to give Containerlab a chance to finish configuration)] ***
+skipping: [dut]
+
+TASK [debug] *******************************************************************
+ok: [dut] => 
+  enable_open_config:
+    changed: false
+    false_condition: enable_open_config is not defined and 'ixr-ec' != clab.type
+    skip_reason: Conditional result was False
+    skipped: true
+
+TASK [Update isis node configuration (using gNMI SET based on YAML template /home/pipi/netlab_gh/netsim/ansible/templates/isis/sros.j2)] ***
+changed: [dut]
+
+TASK [debug] *******************************************************************
+ok: [dut] => 
+  gnmi_set_result:
+    attempts: 1
+    changed: true
+    failed: false
+    output: |-
+      {
+          "response": [
+              {
+                  "path": "configure/router[router-name=Base]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/router[router-name=Base]",
+                  "op": "UPDATE"
+              },
+              {
+                  "path": "configure/router[router-name=Base]",
+                  "op": "UPDATE"
+              }
+          ],
+          "timestamp": "2025-05-24T08:09:48.928841"
+      }
+
+TASK [file] ********************************************************************
+changed: [dut -> localhost]
+
+TASK [template] ****************************************************************
+changed: [x2]
+changed: [x1]
+
+TASK [set_fact] ****************************************************************
+ok: [x1]
+ok: [x2]
+
+TASK [run /tmp/config.sh to deploy isis config from /home/pipi/netlab_gh/netsim/ansible/templates/isis/frr.j2] ***
+skipping: [x1]
+skipping: [x2]
+
+TASK [run vtysh to import isis config from /home/pipi/netlab_gh/netsim/ansible/templates/isis/frr.j2] ***
+changed: [x1]
+changed: [x2]
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+dut                        : ok=39   changed=9    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
+x1                         : ok=27   changed=5    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+x2                         : ok=26   changed=4    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+
+
+
+This lab tests level-1 IS-IS with IPv4. The device under test is a level-1
+router with two LAN interfaces connected to adjacent IS-IS routers. One of
+the adjacent routers is a level-1-2 router to catch the potential router
+level mismatch.
+
