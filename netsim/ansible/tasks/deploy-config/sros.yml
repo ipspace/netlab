@@ -1,141 +1,26 @@
 ---
+- name: Generate gNMI YAML configuration
+  set_fact: yaml_config={{ lookup('template',config_template) }}
 
-- name: Check that required plugin exists, use 'netlab install grpc' to install it
+- name: Update {{ netsim_action }} node configuration from gNMI template {{ config_template  }}
+  when: d or u or r
   vars:
-    ansible_connection: nokia.grpc.gnmi
-  register: plugin_checked
-  when: plugin_checked is not defined
-  nokia.grpc.gnmi_config:
-    prefix: test-plugin
-
-- local_action:
-    module: tempfile
-    state: file
-    suffix: temp
-    prefix: ansible.sros.{{ inventory_hostname }}.
-  register: tempfile_1
-
-- name: Set default provisioning model to use OpenConfig (sros_use_openconfig={{sros_use_openconfig}})
-  when: sros_use_openconfig|default(true)
-  set_fact:
-    sros_provisioning_model: "sros.openconfig"
-
-# - name: Example how to check if a BGP RR is being used
-#   vars:
-#     rr: "{{ groups['all']|map('extract',hostvars)|map(attribute='bgp.rr')|list }}"
-#   set_fact:
-#     uses_route_reflector: "{{ rr != [] }}"
-
-- name: Check if OpenConfig can be used as provisioning method/model (config_template={{config_template}})
-  when: "'ospf' in config_template or 'sr' in module|default([]) or not sros_use_openconfig|default(True)"
-  set_fact:
-    sros_provisioning_model: "sros" # Default: without '.gnmi'
-
-- name: Select provisioning template netsim_action={{ netsim_action }}
-  set_fact:
-    template_to_use: "{{ config_template|replace('sros.j2',sros_provisioning_model+'.j2') }}"
-
-- name: Process template {{ template_to_use }}
-  local_action:
-    module: template
-    src: "{{ template_to_use }}"
-    dest: "{{ tempfile_1.path }}"
-
-- block:
-  - name: Show generated config from {{template_to_use}} based on {{tempfile_1.path}}
-    debug: msg="{{ cfg }}" verbosity=1
-
-  - name: Check that prepared config from {{template_to_use}} in {{tempfile_1.path}} is valid YAML
-    debug: msg="{{ cfg | from_yaml }}" verbosity=2
-
-  vars:
-    cfg: "{{ lookup('file', tempfile_1.path ) }}"
-
-- name: Wait up to 180s for gNMI(TCP {{sros_grpc_port}}) to be ready on {{ ansible_host }}
-  local_action:
-    module: wait_for
-    port: "{{ sros_grpc_port }}"
-    host: "{{ ansible_host }}"
-    connect_timeout: 60
-    timeout: 180
-    sleep: 10 # Wait 10s between attempts
-
-- block:
-  - block:
-    - name: Enable Open Config YAML modules (retry to give Containerlab a chance to finish configuration)
-      when: enable_open_config is not defined and 'ixr-ec' != clab.type
-      tags: [ initial ]
-      nokia.grpc.gnmi_config:
-        prefix: configure
-        update:
-        - path: system/management-interface/yang-modules/openconfig-modules
-          val: True # {{ sros_provisioning_model == "sros.openconfig" }}
-      register: enable_open_config
-      retries: 4
-      delay: 15
-      until: enable_open_config is success
-
-    rescue:
-    - name: reset the gNMI connection, then try one more time
-      meta: reset_connection
-
-  - debug: var=enable_open_config
-  # - debug: var=hostvars
-
-  - name: Update {{ netsim_action }} node configuration (using gNMI SET based on YAML template {{template_to_use}})
-    when: d or u or r
-    vars:
-      cfg: "{{ lookup('file', tempfile_1.path ) | from_yaml }}"
-      d: "{{ cfg.delete if 'delete' in cfg and cfg.delete is not string else [] }}"
-      u: "{{ cfg.updates if 'updates' in cfg and cfg.updates is not string else [] }}"
-      r: "{{ cfg.replace if 'replace' in cfg and cfg.replace is not string else [] }}"
-    nokia.grpc.gnmi_config:
-      # prefix: configure
-      delete: "{{ d }}"
-      replace: "{{ r }}"
-      update: "{{ u }}"
-    register: gnmi_set_result
-    retries: "{{ 2 if ansible_verbosity==0 else 0 }}"
-    until: gnmi_set_result is success
-    tags: [ print_action, always ]
-
-  - debug: var=gnmi_set_result
-
-  vars:
+    cfg: "{{ yaml_config | from_yaml }}"
+    d: "{{ cfg.delete if 'delete' in cfg and cfg.delete is not string else [] }}"
+    u: "{{ cfg.updates if 'updates' in cfg and cfg.updates is not string else [] }}"
+    r: "{{ cfg.replace if 'replace' in cfg and cfg.replace is not string else [] }}"
     ansible_connection: nokia.grpc.gnmi
     ansible_gnmi_encoding: JSON
     ansible_port: "{{ sros_grpc_port }}"
+  nokia.grpc.gnmi_config:
+    # prefix: configure
+    delete: "{{ d }}"
+    replace: "{{ r }}"
+    update: "{{ u }}"
+  register: gnmi_set_result
+  retries: "{{ 2 if ansible_verbosity==0 else 0 }}"
+  until: gnmi_set_result is success
+  tags: [ print_action, always ]
 
-# Alternative: ansible.netcommon.cli_command
-# Uses network_cli connection
-# - community.network.sros_command:
-# - nokia.sros.md:
-#   commands: "{{ lookup('file', tempfile_1.path ).splitlines() }}"
-
-# Let's use Netconf + OpenConfig
-# - name: use lookup filter to provide xml configuration
-  #netconf_config:
-  #  xml: "{{ lookup('file', tempfile_1.path) }}"
-  #  host: "{{ ansible_host }}"
-  #  username: "{{ ansible_user }}"
-  #  password: "{{ ansible_ssh_pass }}"
-#  community.yang.configure:
-
-# - name: Fetch given yang model and its dependencies from remote host
-#   community.yang.fetch:
-#     # name: Nokia
-#     dir: "{{playbook_dir}}/{{inventory_hostname}}/yang_files"
-#   register: result
-#
-# - name: configure interface using structured data in JSON format
-#   community.yang.configure:
-#    config: "{{ lookup('file', tempfile_1.path) | to_json }}"
-#    file: "{{ playbook_dir }}/{{inventory_hostname}}/yang_files/Nokia-ifmgr-cfg.yang"
-#    search_path: "{{ playbook_dir }}/{{inventory_hostname}}/yang_files"
-#   register: result
-
-- local_action:
-    module: file
-    path: "{{ tempfile_1.path }}"
-    state: absent
-  when: tempfile_1.path is defined
+- debug: var=gnmi_set_result
+  when: ansible_verbosity

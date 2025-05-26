@@ -1,7 +1,5 @@
 {% macro if_name(i,name=None) -%}
-{% set _name = name or i.ifname %}
-{% set _pre = "stub-" if i.type|default()=='stub' else 'i' if _name[0].isdigit() else "" %}
-{{- (('oc_%s%s/1_0' if sros_use_openconfig|default(true) else '%s%s')|format(_pre,_name)).replace(':','_') -}}
+{{ name or i.ifname }}
 {%- endmacro %}
 
 {% macro declare_router(i,sub_path="") -%}
@@ -46,7 +44,7 @@
 {{ declare_interface(l,name) }}
   val:
    admin-state: enable
-   description: "{{ desc }} vlan={{vlan}}"
+   description: "{{ desc }}{{ 'vlan= '+vlan|string if vlan else '' }}"
 {% if port %}
 {%  if l.vrf is defined %}
    sap:
@@ -80,13 +78,18 @@
 {%  set v6 = l.ipv6|default(False) %}
 {%  set in_base = l.vrf is not defined and (l.vlan is not defined or l.vlan.mode|default('irb')=='route') %}
 
-{%  if l.name is defined %}
+{%  if l.type == "loopback" %}
+{%   set desc = "Loopback" %}
+{%  elif l.name is defined %}
 {%   set desc = l.name|replace('->','~') + " (" + l.role|default('') + ")" %}
-{%  elif l.type|default("") == "stub" %}
+{%  elif l.ifname == "system" %}
+{%   set desc = "System interface" %}
+{%  elif l.type == "stub" %}
 {%   set desc = "Stub interface" %}
 {%  endif %}
 
 {%  set portname = l.parent_ifname if l.type=='vlan_member' else l.ifname %}
+{%  set portname = portname.replace('eth-','') %}
 {%  if 'ixr' in clab.type and clab.type != 'ixr-x' %}
 {#  Remove connector from port name for IXR platform #}
 {%  set portname = portname.replace("c","") %}
@@ -122,7 +125,7 @@
 {%  endif %}
 
 {% if v4 or v6 %}
-{%  if l.type not in ['loopback','stub','svi'] %}
+{%  if l.type not in ['loopback','svi'] %}
 {{ interface(l.ifname,desc,v4,v6,portname,l,vlan=vlan) }}
 {%  else %}
 {{ interface(l.ifname,desc,v4,v6,None,l) }}
@@ -152,13 +155,6 @@ updates:
   val:
    ecmp: {{ 1 if 'ixr' in clab.type else 64 }}
 
-{% if loopback is defined %}
-{% set _v4 = loopback.ipv4|default(False) %}
-{% set _v6 = loopback.ipv6|default(False) %}
-{# The interface name 'system' is special, also used for IP unnumbered #}
-{{ interface("system","system interface",_v4,_v6,port=None,l=loopback) }}
-{% endif %}
-
-{% for l in (interfaces|default([])) if l.vlan is not defined and l.subif_index is not defined %}
+{% for l in netlab_interfaces if l.vlan is not defined and l.subif_index is not defined %}
 {{  port(l) }}
 {% endfor %}
