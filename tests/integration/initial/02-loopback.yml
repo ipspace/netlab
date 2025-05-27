@@ -2,6 +2,8 @@
 message:
   This scenario tests additional loopback interfaces
 
+defaults.sources.extra: [ ../wait_times.yml ]
+
 addressing:
   loopback:
     ipv6: 2001:db8:0::/48
@@ -10,15 +12,23 @@ addressing:
   vrf_loopback:
     ipv6: 2001:db8:cafe::/48
 
+groups:
+  hosts:
+    members: [ h1, h2 ]
+    device: linux
+    provider: clab
+    module: [ routing ]
+    routing.static:
+    - pool: loopback
+      nexthop.node: r
+    - pool: vrf_loopback
+      nexthop.node: r
+
 nodes:
   r:
-    role: router
+    loopback: True
   h1:
-    device: linux
-    provider: clab
   h2:
-    device: linux
-    provider: clab
 
 links:
 - r:
@@ -32,20 +42,13 @@ links:
 validate:
   ping4:
     description: IPv4 ping to device loopback
-    wait: 10
+    wait: ping
     wait_msg: Waiting for IPv4 interfaces to become ready
     nodes: [ h1, h2 ]
     plugin: ping(nodes.r.loopback.ipv4)
-  ra:
-    description: Check RA-generated default route
-    wait: 30
-    wait_msg: Waiting for RA message to generate the default route
-    nodes: [ h1, h2 ]
-    plugin: default6()
-    stop_on_error: True
   ping6:
     description: IPv6 ping to device loopback
-    wait: 10
+    wait: ping
     wait_msg: Waiting for IPv6 interfaces to become ready
     nodes: [ h1, h2 ]
     plugin: ping(nodes.r.loopback.ipv6,af='ipv6')

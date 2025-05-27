@@ -11,41 +11,40 @@ addressing:
   lan:
     ipv6: 2001:db8:1::/48
 
-groups:
-  hosts:
-    members: [ h1, h2 ]
-    device: linux
-    provider: clab
-    module: [ routing ]
-    routing.static:
-    - pool: loopback
-      nexthop.node: r
-
 nodes:
   r:
     id: 132
-    loopback: True
+    role: router
   h1:
+    device: linux
+    provider: clab
   h2:
+    device: linux
+    provider: clab
 
 links:
 - r:
   h1:
-  bandwidth: 1000
 - r:
   h2:
-  bandwidth: 2000
 
 validate:
   ping:
-    description: IPv4 ping H1,H2 => R
+    description: IPv4 ping H1 => H2
     wait: ping
     wait_msg: Wait for IPv4 interfaces to become operational
+    nodes: [ h1 ]
+    plugin: ping('h2')
+  ra:
+    description: Check RA-generated default route
+    wait: ra_send
+    wait_msg: Waiting for RA message to generate the default route
     nodes: [ h1, h2 ]
-    plugin: ping(nodes.r.loopback.ipv4)
+    plugin: default6()
+    stop_on_error: True
   ping6:
-    description: IPv6 ping H1,H2 => R
+    description: IPv6 ping H1 => H2
     wait: ping
     wait_msg: Wait for IPv6 interfaces to become operational
-    nodes: [ h1, h2 ]
-    plugin: ping(nodes.r.loopback.ipv6)
+    nodes: [ h1 ]
+    plugin: ping(nodes.h2.interfaces[0].ipv6,af='ipv6')
