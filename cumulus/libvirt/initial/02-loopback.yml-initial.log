@@ -19,7 +19,7 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for r, h1, h2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for r, h1, h2
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [r]
@@ -52,7 +52,7 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for r, h1, h2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for r, h1, h2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [r]
@@ -310,10 +310,10 @@ ok: [r] =>
     service lldpd restart
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus.yml for r
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for r
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
 
-TASK [Render device configuration from /home/pipi/netlab_gh/netsim/ansible/templates/initial/cumulus.j2] ***
+TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
 ok: [r]
 
 TASK [Create local temporary file] *********************************************
@@ -325,7 +325,7 @@ changed: [r -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [r]
 
-TASK [Remove temporary file /tmp/ansible.r.buctepc3temp] ***********************
+TASK [Remove temporary file /tmp/ansible.r.4303cxnqtemp] ***********************
 changed: [r -> localhost]
 
 TASK [Define script filename and determine whether to execute in netns] ********
@@ -336,23 +336,23 @@ TASK [Create a temporary file for the rendered script] *************************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
+TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
 skipping: [h2]
 
-TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
+TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 skipping: [h1]
 skipping: [h2]
 
-TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
+TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-hsf63awo.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-3zfhehek.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -363,7 +363,7 @@ ok: [h1]
 ok: [h2]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2 => (item=routing)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2 => (item=routing)
 
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [h1]
@@ -392,22 +392,24 @@ ok: [h1] =>
     #
     #
     echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
     while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
       : ; done
     while ip route del 10.2.0.0/24 2>/dev/null; do
       : ; done
     #
+    set +e
+    echo Removing existing IPv6 routes
+    while ip route del 2001:db8::/48 2>/dev/null; do
+      : ; done
+    while ip route del 2001:db8:cafe::/48 2>/dev/null; do
+      : ; done
     #
     #
     echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.0.1 dev eth1 protocol static
     ip route add 10.0.0.0/24 via 172.16.0.1 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.0.1 dev eth1 protocol static
+    ip route add 2001:db8::/48 via 2001:db8:1::1 dev eth1 protocol static
     ip route add 10.2.0.0/24 via 172.16.0.1 dev eth1 protocol static
+    ip route add 2001:db8:cafe::/48 via 2001:db8:1::1 dev eth1 protocol static
     #
     # Print the final routing table
     ip route
@@ -421,38 +423,40 @@ ok: [h2] =>
     #
     #
     echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
     while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
       : ; done
     while ip route del 10.2.0.0/24 2>/dev/null; do
       : ; done
     #
+    set +e
+    echo Removing existing IPv6 routes
+    while ip route del 2001:db8::/48 2>/dev/null; do
+      : ; done
+    while ip route del 2001:db8:cafe::/48 2>/dev/null; do
+      : ; done
     #
     #
     echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.1.1 dev eth1 protocol static
     ip route add 10.0.0.0/24 via 172.16.1.1 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.1.1 dev eth1 protocol static
+    ip route add 2001:db8::/48 via 2001:db8:1:1::1 dev eth1 protocol static
     ip route add 10.2.0.0/24 via 172.16.1.1 dev eth1 protocol static
+    ip route add 2001:db8:cafe::/48 via 2001:db8:1:1::1 dev eth1 protocol static
     #
     # Print the final routing table
     ip route
 
 TASK [Deploy routing configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
 
 TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
+TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -460,15 +464,15 @@ TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
 skipping: [h1]
 skipping: [h2]
 
-TASK [Execute /tmp/config-h1_routing.sh to deploy routing config based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
+TASK [Execute /tmp/config-h1_routing.sh to deploy routing config based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
 skipping: [h1]
 skipping: [h2]
 
-TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
-changed: [h1 -> localhost]
+TASK [Container configuration for routing based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-70alzevb.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-tg0q4vo9.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
