@@ -29,9 +29,10 @@ def isis_net(i_data: Box, node: Box) -> bool:
       i_data.system_id = '0000.0000.%04d' % node.id
     if 'area' not in i_data:
       log.error(
-        'area or net is not defined on node {node.name}',
+        f'isis.area or isis.net is not defined on node {node.name}',
         category=log.MissingValue,
         module='isis')
+      return False
     i_data.net = f'{i_data.area}.{i_data.system_id}.00'
 
   return True
@@ -74,11 +75,6 @@ class ISIS(_Module):
     if not isis_net(node.isis,node):
       return
 
-    if 'net' not in node.isis:
-      log.error(
-        'Each node running IS-IS needs "isis.area" or "isis.net" parameter',
-        category=log.MissingValue,
-        module='isis')
     if 'sr' in node.module:
       _routing.router_id(node,'isis',topology.pools)
 
