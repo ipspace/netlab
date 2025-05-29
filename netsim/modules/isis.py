@@ -2,12 +2,40 @@
 # IS-IS transformation module
 #
 from box import Box
+import re
 
 from . import _Module,_routing
 from . import bfd
 from ..utils import log
 from ..augment import devices
 from ..data import validate
+
+"""
+Create net/area/system_id items from a subset of parameters
+"""
+def isis_net(i_data: Box, node: Box) -> bool:
+  if 'net' in i_data:
+    n_parsed = re.fullmatch('([0-9a-f.]+?)\\.((?:[0-9a-f]{4}\\.){3})[0]{2}',i_data.net)
+    if not n_parsed:
+      log.error(
+        'net attribute is not a NSAP with zero n-selector',
+        category=log.IncorrectValue,
+        module='isis')
+      return False
+    i_data.area = n_parsed[1]
+    i_data.system_id = n_parsed[2].rstrip('.')
+  else:
+    if 'system_id' not in i_data:
+      i_data.system_id = '0000.0000.%04d' % node.id
+    if 'area' not in i_data:
+      log.error(
+        f'isis.area or isis.net is not defined on node {node.name}',
+        category=log.MissingValue,
+        module='isis')
+      return False
+    i_data.net = f'{i_data.area}.{i_data.system_id}.00'
+
+  return True
 
 def isis_unnumbered(node: Box, features: Box) -> bool:
   for af in ('ipv4','ipv6'):
@@ -39,12 +67,12 @@ def isis_unnumbered(node: Box, features: Box) -> bool:
 class ISIS(_Module):
 
   def node_post_transform(self, node: Box, topology: Box) -> None:
-    isis_type = [ 'level-1', 'level-2', 'level-1-2' ]
     features = devices.get_device_features(node,topology.defaults)
 
-    validate.must_be_string(
-      node,'isis.type',f'nodes.{node.name}',module='isis',valid_values=isis_type)
     if not isis_unnumbered(node,features):
+      return
+
+    if not isis_net(node.isis,node):
       return
 
     if 'sr' in node.module:
@@ -58,8 +86,6 @@ class ISIS(_Module):
         err = _routing.network_type(l,'isis',['point-to-point'])
         if err:
           log.error(f'{err}\n... node {node.name} link {l}')
-      validate.must_be_string(
-        l,'isis.type',f'nodes.{node.name}.interfaces.{l.ifname}',module='isis',valid_values=isis_type)
 
     _routing.igp_post_transform(node,topology,proto='isis',vrf_aware=True)
     bfd.multiprotocol_bfd_link_state(node,'isis')
@@ -69,5 +95,6 @@ class ISIS(_Module):
     # Finally, change the VRF IS-IS instance name to the VRF name to make it unique
     #
     for vname,vdata in node.get('vrfs',{}).items():
-      if vdata.get('isis.instance',None):
-        vdata.isis.instance = vname
+      if 'isis' in vdata:
+        if vdata.get('isis.instance',None):
+          vdata.isis.instance = vname
