@@ -98,6 +98,20 @@
 {% elif ip_v6 == True %}
    ipv6: { }
 {% endif %}
+{% if ip_v6 and l.type != 'loopback' and role|default('router') == 'router' %}
+{{ declare_router(l) }}
+  val:
+    ipv6:
+      router-advertisement:
+        interface:
+        - ip-int-name: {{ l.ifname }}
+          admin-state: enable
+          min-advertisement-interval: 3
+          max-advertisement-interval: 5
+{%   if l.gateway.protocol|default('') == 'vrrp' %}
+          use-virtual-mac: True
+{%   endif %}
+{% endif %}
 {%- endmacro -%}
 
 {% macro port(l,vlan=0,tagged=False,native=False) %}
