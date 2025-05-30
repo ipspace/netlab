@@ -14,9 +14,15 @@ ok: [x1]
 ok: [x2]
 
 TASK [Wait for device to become ready] *****************************************
-skipping: [dut]
 skipping: [x1]
 skipping: [x2]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/sros.yml for dut
+
+TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+ok: [dut]
+
+TASK [Wait up to 180s for gNMI(TCP 57400) to be ready on clab-ml_17-dut] *******
+ok: [dut -> localhost]
 
 TASK [Normalize config on bridge-like devices] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
@@ -307,11 +313,14 @@ ok: [dut] =>
   
   
   
+  
+  
+  
     - path: configure/router[router-name=Base]/interface[interface-name=system]
   
       val:
        admin-state: enable
-       description: "system interface vlan=0"
+       description: "System interface"
        ipv4:
         primary:
          address: "10.0.0.1"
@@ -340,11 +349,12 @@ ok: [dut] =>
   
   
   
-    - path: configure/router[router-name=Base]/interface[interface-name=i1/1/c1]
+    - path: configure/router[router-name=Base]/interface[interface-name=eth-1/1/c1]
   
       val:
        admin-state: enable
-       description: "dut ~ x1 () vlan=0"
+       description: "dut ~ x1 ()"
+       ip-mtu: 1500
        port: "1/1/c1/1"
        ipv4:
         primary:
@@ -374,11 +384,12 @@ ok: [dut] =>
   
   
   
-    - path: configure/router[router-name=Base]/interface[interface-name=i1/1/c2]
+    - path: configure/router[router-name=Base]/interface[interface-name=eth-1/1/c2]
   
       val:
        admin-state: enable
-       description: "dut ~ x2 (external) vlan=0"
+       description: "dut ~ x2 (external)"
+       ip-mtu: 1500
        port: "1/1/c2/1"
        ipv4:
         primary:
@@ -394,104 +405,14 @@ TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for dut
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for x1, x2
 
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+TASK [Generate gNMI YAML configuration] ****************************************
 ok: [dut]
 
-TASK [tempfile] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [Set default provisioning model to use OpenConfig (sros_use_openconfig=False)] ***
-skipping: [dut]
-
-TASK [Check if OpenConfig can be used as provisioning method/model (config_template=/home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2)] ***
-ok: [dut]
-
-TASK [Select provisioning template netsim_action=initial] **********************
-ok: [dut]
-
-TASK [Process template /home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2] ***
-changed: [dut -> localhost]
-
-TASK [Show generated config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2 based on /tmp/ansible.sros.dut.0uhwwfsjtemp] ***
-skipping: [dut]
-
-TASK [Check that prepared config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2 in /tmp/ansible.sros.dut.0uhwwfsjtemp is valid YAML] ***
-skipping: [dut]
-
-TASK [Wait up to 180s for gNMI(TCP 57400) to be ready on clab-ml_17-dut] *******
-ok: [dut -> localhost]
-
-TASK [Enable Open Config YAML modules (retry to give Containerlab a chance to finish configuration)] ***
+TASK [Update initial node configuration from gNMI template /home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
-ok: [dut] => 
-  enable_open_config:
-    attempts: 1
-    changed: true
-    failed: false
-    output: |-
-      {
-          "prefix": "configure",
-          "response": [
-              {
-                  "path": "system/management-interface/yang-modules/openconfig-modules",
-                  "op": "UPDATE"
-              }
-          ],
-          "timestamp": "2025-05-24T07:49:18.869922"
-      }
-
-TASK [Update initial node configuration (using gNMI SET based on YAML template /home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2)] ***
-changed: [dut]
-
-TASK [debug] *******************************************************************
-ok: [dut] => 
-  gnmi_set_result:
-    attempts: 1
-    changed: true
-    failed: false
-    output: |-
-      {
-          "response": [
-              {
-                  "path": "configure/router[router-name=Base]",
-                  "op": "UPDATE"
-              },
-              {
-                  "path": "configure/router[router-name=Base]/interface[interface-name=system]",
-                  "op": "UPDATE"
-              },
-              {
-                  "path": "configure/port[port-id=1/1/c1]",
-                  "op": "UPDATE"
-              },
-              {
-                  "path": "configure/port[port-id=1/1/c1/1]",
-                  "op": "UPDATE"
-              },
-              {
-                  "path": "configure/router[router-name=Base]/interface[interface-name=i1/1/c1]",
-                  "op": "UPDATE"
-              },
-              {
-                  "path": "configure/port[port-id=1/1/c2]",
-                  "op": "UPDATE"
-              },
-              {
-                  "path": "configure/port[port-id=1/1/c2/1]",
-                  "op": "UPDATE"
-              },
-              {
-                  "path": "configure/router[router-name=Base]/interface[interface-name=i1/1/c2]",
-                  "op": "UPDATE"
-              }
-          ],
-          "timestamp": "2025-05-24T07:49:19.719638"
-      }
-
-TASK [file] ********************************************************************
-changed: [dut -> localhost]
+skipping: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [x1 -> localhost]
@@ -863,47 +784,12 @@ TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for dut
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2
 
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
-skipping: [dut]
-
-TASK [tempfile] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [Set default provisioning model to use OpenConfig (sros_use_openconfig=False)] ***
-skipping: [dut]
-
-TASK [Check if OpenConfig can be used as provisioning method/model (config_template=/home/pipi/netlab_gh/netsim/ansible/templates/bgp/sros.j2)] ***
+TASK [Generate gNMI YAML configuration] ****************************************
 ok: [dut]
 
-TASK [Select provisioning template netsim_action=bgp] **************************
-ok: [dut]
-
-TASK [Process template /home/pipi/netlab_gh/netsim/ansible/templates/bgp/sros.j2] ***
-changed: [dut -> localhost]
-
-TASK [Show generated config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/sros.j2 based on /tmp/ansible.sros.dut.oiqco5i6temp] ***
-skipping: [dut]
-
-TASK [Check that prepared config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/sros.j2 in /tmp/ansible.sros.dut.oiqco5i6temp is valid YAML] ***
-skipping: [dut]
-
-TASK [Wait up to 180s for gNMI(TCP 57400) to be ready on clab-ml_17-dut] *******
-ok: [dut -> localhost]
-
-TASK [Enable Open Config YAML modules (retry to give Containerlab a chance to finish configuration)] ***
-skipping: [dut]
-
-TASK [debug] *******************************************************************
-ok: [dut] => 
-  enable_open_config:
-    changed: false
-    false_condition: enable_open_config is not defined and 'ixr-ec' != clab.type
-    skip_reason: Conditional result was False
-    skipped: true
-
-TASK [Update bgp node configuration (using gNMI SET based on YAML template /home/pipi/netlab_gh/netsim/ansible/templates/bgp/sros.j2)] ***
-FAILED - RETRYING: [dut]: Update bgp node configuration (using gNMI SET based on YAML template /home/pipi/netlab_gh/netsim/ansible/templates/bgp/sros.j2) (2 retries left).
-FAILED - RETRYING: [dut]: Update bgp node configuration (using gNMI SET based on YAML template /home/pipi/netlab_gh/netsim/ansible/templates/bgp/sros.j2) (1 retries left).
+TASK [Update bgp node configuration from gNMI template /home/pipi/netlab_gh/netsim/ansible/templates/bgp/sros.j2] ***
+FAILED - RETRYING: [dut]: Update bgp node configuration from gNMI template /home/pipi/netlab_gh/netsim/ansible/templates/bgp/sros.j2 (2 retries left).
+FAILED - RETRYING: [dut]: Update bgp node configuration from gNMI template /home/pipi/netlab_gh/netsim/ansible/templates/bgp/sros.j2 (1 retries left).
 fatal: [dut]: FAILED! => changed=false 
   attempts: 2
   code: -32603
@@ -911,7 +797,7 @@ fatal: [dut]: FAILED! => changed=false
     <_InactiveRpcError of RPC that terminated with:
             status = StatusCode.FAILED_PRECONDITION
             details = "MINOR: BGP #12: /configure/router[router-name=Base]/bgp/neighbor[ip-address=10.0.0.2]/family/ipv4 - Inconsistent Value error - All the families cannot be set to false - gRPC: commit operation"
-            debug_error_string = "UNKNOWN:Error received from peer  {created_time:"2025-05-24T07:49:42.868225473+00:00", grpc_status:9, grpc_message:"MINOR: BGP #12: /configure/router[router-name=Base]/bgp/neighbor[ip-address=10.0.0.2]/family/ipv4 - Inconsistent Value error - All the families cannot be set to false - gRPC: commit operation"}"
+            debug_error_string = "UNKNOWN:Error received from peer  {grpc_message:"MINOR: BGP #12: /configure/router[router-name=Base]/bgp/neighbor[ip-address=10.0.0.2]/family/ipv4 - Inconsistent Value error - All the families cannot be set to false - gRPC: commit operation", grpc_status:9, created_time:"2025-05-30T06:39:15.115772643+00:00"}"
     >
 
 TASK [template] ****************************************************************
@@ -1059,11 +945,11 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [run vtysh to import bgp-xact config from /home/pipi/net101/tools/tests/integration/bgp/bgp-xact.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=37   changed=7    unreachable=0    failed=1    skipped=14   rescued=0    ignored=0   
+dut                        : ok=26   changed=1    unreachable=0    failed=1    skipped=6    rescued=0    ignored=0   
 x1                         : ok=44   changed=9    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 x2                         : ok=36   changed=6    unreachable=0    failed=0    skipped=18   rescued=0    ignored=0   
 

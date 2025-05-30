@@ -7,8 +7,8 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [r2]
 ok: [h1]
 ok: [h2]
-ok: [h4]
 ok: [h3]
+ok: [h4]
 ok: [h5]
 ok: [r1]
 ok: [r3]
@@ -18,8 +18,8 @@ ok: [r2]
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [h5]
 ok: [h4]
+ok: [h5]
 ok: [r1]
 ok: [r3]
 
@@ -51,8 +51,8 @@ ok: [r2]
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [h5]
 ok: [h4]
+ok: [h5]
 ok: [r1]
 ok: [r3]
 
@@ -71,10 +71,10 @@ ok: [r2]
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [r1]
-ok: [h5]
 ok: [h4]
+ok: [r1]
 ok: [r3]
+ok: [h5]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r2]
@@ -106,17 +106,17 @@ ok: [h2]
 ok: [h3]
 ok: [h4]
 ok: [h5]
-ok: [r3]
 ok: [r1]
+ok: [r3]
 
 TASK [Find configuration template for initial] *********************************
 ok: [r2]
 ok: [h1]
 ok: [h2]
 ok: [h3]
+ok: [h4]
 ok: [h5]
 ok: [r1]
-ok: [h4]
 ok: [r3]
 
 TASK [fail] ********************************************************************
@@ -135,8 +135,8 @@ ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [r1]
-ok: [r3]
 ok: [h4]
+ok: [r3]
 ok: [h5]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -243,6 +243,41 @@ ok: [h3] =>
     ip addr del 172.16.3.6/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.3.6/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+ok: [h4] => 
+  msg: |-
+    initial configuration for h4
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+  
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.4.7/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.4.7/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
 ok: [r2] => 
@@ -376,41 +411,6 @@ ok: [r2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [h4] => 
-  msg: |-
-    initial configuration for h4
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Send ARP requests from a sane source IP address
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-  
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.4.7/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.4.7/24 dev eth1
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
 ok: [h5] => 
   msg: |-
     initial configuration for h5
@@ -446,31 +446,6 @@ ok: [h5] =>
     ip addr add 172.16.2.8/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
-ok: [r1] => 
-  msg: |-
-    initial configuration for r1
-    =========================================
-  
-  
-  
-  
-    updates:
-  
-    - path: configure/router[router-name=Base]
-      val:
-       ecmp: 64
-  
-  
-  
-    - path: configure/router[router-name=Base]/interface[interface-name=system]
-  
-      val:
-       admin-state: enable
-       description: "system interface vlan=0"
-       ipv4:
-        primary:
-         address: "10.0.0.1"
-         prefix-length: 32
 ok: [r3] => 
   msg: |-
     initial configuration for r3
@@ -495,6 +470,31 @@ ok: [r3] =>
        ipv4:
         primary:
          address: "10.0.0.3"
+         prefix-length: 32
+ok: [r1] => 
+  msg: |-
+    initial configuration for r1
+    =========================================
+  
+  
+  
+  
+    updates:
+  
+    - path: configure/router[router-name=Base]
+      val:
+       ecmp: 64
+  
+  
+  
+    - path: configure/router[router-name=Base]/interface[interface-name=system]
+  
+      val:
+       admin-state: enable
+       description: "system interface vlan=0"
+       ipv4:
+        primary:
+         address: "10.0.0.1"
          prefix-length: 32
 
 TASK [Deploy initial configuration] ********************************************
@@ -531,11 +531,11 @@ ok: [h4]
 ok: [h5]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h3 -> localhost]
+changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 changed: [h4 -> localhost]
 changed: [h5 -> localhost]
-changed: [h2 -> localhost]
+changed: [h3 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
@@ -565,12 +565,12 @@ changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 changed: [h5 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-5laj8e9m.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-r3ktu268.sh] ***********************
+changed: [h1 -> localhost]
+changed: [h4 -> localhost]
 changed: [h3 -> localhost]
 changed: [h5 -> localhost]
 changed: [h2 -> localhost]
-changed: [h4 -> localhost]
-changed: [h1 -> localhost]
 
 TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
 ok: [r3]
@@ -593,14 +593,14 @@ ok: [r1]
 ok: [r3]
 
 TASK [Process template /home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2] ***
-changed: [r1 -> localhost]
 changed: [r3 -> localhost]
+changed: [r1 -> localhost]
 
-TASK [Show generated config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2 based on /tmp/ansible.sros.r1.f73fsp88temp] ***
+TASK [Show generated config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2 based on /tmp/ansible.sros.r1.9daf97u9temp] ***
 skipping: [r1]
 skipping: [r3]
 
-TASK [Check that prepared config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2 in /tmp/ansible.sros.r1.f73fsp88temp is valid YAML] ***
+TASK [Check that prepared config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2 in /tmp/ansible.sros.r1.9daf97u9temp is valid YAML] ***
 skipping: [r1]
 skipping: [r3]
 
@@ -627,7 +627,7 @@ ok: [r1] =>
                   "op": "UPDATE"
               }
           ],
-          "timestamp": "2025-05-24T08:38:47.771048"
+          "timestamp": "2025-05-30T15:49:06.539629"
       }
 ok: [r3] => 
   enable_open_config:
@@ -643,12 +643,12 @@ ok: [r3] =>
                   "op": "UPDATE"
               }
           ],
-          "timestamp": "2025-05-24T08:38:47.466302"
+          "timestamp": "2025-05-30T15:49:06.934084"
       }
 
 TASK [Update initial node configuration (using gNMI SET based on YAML template /home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2)] ***
-changed: [r3]
 changed: [r1]
+changed: [r3]
 
 TASK [debug] *******************************************************************
 ok: [r1] => 
@@ -668,7 +668,7 @@ ok: [r1] =>
                   "op": "UPDATE"
               }
           ],
-          "timestamp": "2025-05-24T08:38:48.638302"
+          "timestamp": "2025-05-30T15:49:07.398730"
       }
 ok: [r3] => 
   gnmi_set_result:
@@ -687,7 +687,7 @@ ok: [r3] =>
                   "op": "UPDATE"
               }
           ],
-          "timestamp": "2025-05-24T08:38:48.340158"
+          "timestamp": "2025-05-30T15:49:07.793789"
       }
 
 TASK [file] ********************************************************************
@@ -1184,14 +1184,14 @@ ok: [r1]
 ok: [r3]
 
 TASK [Process template /home/pipi/netlab_gh/netsim/ansible/templates/vlan/sros.j2] ***
-changed: [r1 -> localhost]
 changed: [r3 -> localhost]
+changed: [r1 -> localhost]
 
-TASK [Show generated config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/sros.j2 based on /tmp/ansible.sros.r1.9uj3i0eytemp] ***
+TASK [Show generated config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/sros.j2 based on /tmp/ansible.sros.r1.f0mivjahtemp] ***
 skipping: [r1]
 skipping: [r3]
 
-TASK [Check that prepared config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/sros.j2 in /tmp/ansible.sros.r1.9uj3i0eytemp is valid YAML] ***
+TASK [Check that prepared config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/sros.j2 in /tmp/ansible.sros.r1.f0mivjahtemp is valid YAML] ***
 skipping: [r1]
 skipping: [r3]
 
@@ -1319,7 +1319,7 @@ ok: [r1] =>
                   "op": "UPDATE"
               }
           ],
-          "timestamp": "2025-05-24T08:38:50.685079"
+          "timestamp": "2025-05-30T15:49:09.439679"
       }
 ok: [r3] => 
   gnmi_set_result:
@@ -1402,7 +1402,7 @@ ok: [r3] =>
                   "op": "UPDATE"
               }
           ],
-          "timestamp": "2025-05-24T08:38:50.384752"
+          "timestamp": "2025-05-30T15:49:09.833070"
       }
 
 TASK [file] ********************************************************************
@@ -1425,8 +1425,8 @@ TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [h5]
 ok: [h4]
+ok: [h5]
 ok: [r1]
 ok: [r2]
 ok: [r3]
@@ -1434,12 +1434,12 @@ ok: [r3]
 TASK [Find configuration template for routing] *********************************
 ok: [h1]
 ok: [h2]
-skipping: [r1]
 ok: [h3]
+skipping: [r1]
 skipping: [r2]
 ok: [h4]
-ok: [h5]
 skipping: [r3]
+ok: [h5]
 
 TASK [fail] ********************************************************************
 skipping: [h1]
@@ -1455,8 +1455,8 @@ TASK [Find configuration deployment deploy_script for routing] *****************
 ok: [h1]
 skipping: [r1]
 ok: [h2]
-ok: [h3]
 skipping: [r2]
+ok: [h3]
 skipping: [r3]
 ok: [h4]
 ok: [h5]
@@ -1521,6 +1521,7 @@ ok: [h2] =>
     #
     # Print the final routing table
     ip route
+skipping: [r2]
 ok: [h3] => 
   msg: |-
     routing configuration for h3
@@ -1550,37 +1551,7 @@ ok: [h3] =>
     #
     # Print the final routing table
     ip route
-skipping: [r2]
 skipping: [r3]
-ok: [h5] => 
-  msg: |-
-    routing configuration for h5
-    =========================================
-    #!/bin/bash
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.2.0.0/24 2>/dev/null; do
-      : ; done
-    #
-    #
-    #
-    echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.2.1 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.2.1 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.2.1 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.2.1 dev eth1 protocol static
-    #
-    # Print the final routing table
-    ip route
 ok: [h4] => 
   msg: |-
     routing configuration for h4
@@ -1610,6 +1581,35 @@ ok: [h4] =>
     #
     # Print the final routing table
     ip route
+ok: [h5] => 
+  msg: |-
+    routing configuration for h5
+    =========================================
+    #!/bin/bash
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.2.1 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.2.1 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.2.1 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.2.1 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
 
 TASK [Deploy routing configuration] ********************************************
 skipping: [r1]
@@ -1633,10 +1633,10 @@ changed: [h5 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
 changed: [h1 -> localhost]
-changed: [h2 -> localhost]
 changed: [h4 -> localhost]
-changed: [h5 -> localhost]
 changed: [h3 -> localhost]
+changed: [h2 -> localhost]
+changed: [h5 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
 skipping: [h1]
@@ -1653,18 +1653,18 @@ skipping: [h4]
 skipping: [h5]
 
 TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 changed: [h3 -> localhost]
-changed: [h4 -> localhost]
 changed: [h5 -> localhost]
+changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-oj7fci80.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-oh275f4n.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
-changed: [h5 -> localhost]
 changed: [h4 -> localhost]
+changed: [h5 -> localhost]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [h1]
@@ -1766,17 +1766,17 @@ TASK [Process template /home/pipi/netlab_gh/netsim/ansible/templates/ospf/sros.j
 changed: [r1 -> localhost]
 changed: [r3 -> localhost]
 
-TASK [Show generated config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/sros.j2 based on /tmp/ansible.sros.r1.me_nwkwutemp] ***
+TASK [Show generated config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/sros.j2 based on /tmp/ansible.sros.r1.nzs0v537temp] ***
 skipping: [r1]
 skipping: [r3]
 
-TASK [Check that prepared config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/sros.j2 in /tmp/ansible.sros.r1.me_nwkwutemp is valid YAML] ***
+TASK [Check that prepared config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/sros.j2 in /tmp/ansible.sros.r1.nzs0v537temp is valid YAML] ***
 skipping: [r1]
 skipping: [r3]
 
 TASK [Wait up to 180s for gNMI(TCP 57400) to be ready on clab-ml_17-r1] ********
-ok: [r3 -> localhost]
 ok: [r1 -> localhost]
+ok: [r3 -> localhost]
 
 TASK [Enable Open Config YAML modules (retry to give Containerlab a chance to finish configuration)] ***
 skipping: [r1]
@@ -2246,14 +2246,14 @@ ok: [r1]
 ok: [r3]
 
 TASK [Process template /home/pipi/netlab_gh/netsim/ansible/templates/vrf/sros.j2] ***
-changed: [r3 -> localhost]
 changed: [r1 -> localhost]
+changed: [r3 -> localhost]
 
-TASK [Show generated config from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/sros.j2 based on /tmp/ansible.sros.r1.hvqirulftemp] ***
+TASK [Show generated config from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/sros.j2 based on /tmp/ansible.sros.r1.3aj0yxmxtemp] ***
 skipping: [r1]
 skipping: [r3]
 
-TASK [Check that prepared config from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/sros.j2 in /tmp/ansible.sros.r1.hvqirulftemp is valid YAML] ***
+TASK [Check that prepared config from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/sros.j2 in /tmp/ansible.sros.r1.3aj0yxmxtemp is valid YAML] ***
 skipping: [r1]
 skipping: [r3]
 
@@ -2341,7 +2341,7 @@ ok: [r1] =>
                   "op": "UPDATE"
               }
           ],
-          "timestamp": "2025-05-24T08:39:00.291736"
+          "timestamp": "2025-05-30T15:49:19.048540"
       }
 ok: [r3] => 
   gnmi_set_result:
@@ -2392,7 +2392,7 @@ ok: [r3] =>
                   "op": "UPDATE"
               }
           ],
-          "timestamp": "2025-05-24T08:38:59.993201"
+          "timestamp": "2025-05-30T15:49:19.442586"
       }
 
 TASK [file] ********************************************************************

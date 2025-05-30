@@ -8,16 +8,16 @@ ok: [pe1]
 ok: [pe2]
 ok: [p2]
 ok: [h1]
-ok: [h2]
 ok: [dut]
+ok: [h2]
 
 TASK [Find device readiness script] ********************************************
 ok: [pe1]
 ok: [pe2]
 ok: [p2]
 ok: [h1]
-ok: [dut]
 ok: [h2]
+ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [pe1]
@@ -25,7 +25,13 @@ skipping: [pe2]
 skipping: [p2]
 skipping: [h1]
 skipping: [h2]
-skipping: [dut]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/sros.yml for dut
+
+TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+ok: [dut]
+
+TASK [Wait up to 180s for gNMI(TCP 57400) to be ready on clab-ml_17-dut] *******
+ok: [dut -> localhost]
 
 TASK [Normalize config on bridge-like devices] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for pe1, pe2, p2, h1, h2, dut
@@ -42,9 +48,9 @@ TASK [Find configuration template for normalize] *******************************
 ok: [pe1]
 ok: [pe2]
 ok: [p2]
-ok: [h1]
-ok: [dut]
 ok: [h2]
+ok: [dut]
+ok: [h1]
 
 TASK [fail] ********************************************************************
 skipping: [pe1]
@@ -110,8 +116,8 @@ ok: [pe1]
 ok: [pe2]
 ok: [p2]
 ok: [h1]
-ok: [dut]
 ok: [h2]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [h1] => 
@@ -533,11 +539,14 @@ ok: [dut] =>
   
   
   
+  
+  
+  
     - path: configure/router[router-name=Base]/interface[interface-name=system]
   
       val:
        admin-state: enable
-       description: "system interface vlan=0"
+       description: "System interface"
        ipv4:
         primary:
          address: "10.0.0.5"
@@ -561,11 +570,12 @@ ok: [dut] =>
   
   
   
-    - path: configure/router[router-name=Base]/interface[interface-name=i1/1/c1]
+    - path: configure/router[router-name=Base]/interface[interface-name=eth-1/1/c1]
   
       val:
        admin-state: enable
-       description: "dut ~ pe1 () vlan=0"
+       description: "dut ~ pe1 ()"
+       ip-mtu: 1500
        port: "1/1/c1/1"
        ipv4:
         primary:
@@ -590,11 +600,12 @@ ok: [dut] =>
   
   
   
-    - path: configure/router[router-name=Base]/interface[interface-name=i1/1/c2]
+    - path: configure/router[router-name=Base]/interface[interface-name=eth-1/1/c2]
   
       val:
        admin-state: enable
-       description: "dut ~ p2 () vlan=0"
+       description: "dut ~ p2 ()"
+       ip-mtu: 1500
        port: "1/1/c2/1"
        ipv4:
         primary:
@@ -618,8 +629,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for pe1, pe2, p2
 
 TASK [template] ****************************************************************
-changed: [pe2]
 changed: [p2]
+changed: [pe2]
 changed: [pe1]
 
 TASK [set_fact] ****************************************************************
@@ -628,9 +639,9 @@ ok: [pe2]
 ok: [p2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [p2]
 changed: [pe1]
 changed: [pe2]
+changed: [p2]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [pe1]
@@ -661,108 +672,18 @@ TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/a
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-yq6soqss.sh] ***********************
-changed: [h1 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-qphzrz3p.sh] ***********************
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+TASK [Generate gNMI YAML configuration] ****************************************
 ok: [dut]
 
-TASK [tempfile] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [Set default provisioning model to use OpenConfig (sros_use_openconfig=False)] ***
-skipping: [dut]
-
-TASK [Check if OpenConfig can be used as provisioning method/model (config_template=/home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2)] ***
-ok: [dut]
-
-TASK [Select provisioning template netsim_action=initial] **********************
-ok: [dut]
-
-TASK [Process template /home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2] ***
-changed: [dut -> localhost]
-
-TASK [Show generated config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2 based on /tmp/ansible.sros.dut.lrj__6m0temp] ***
-skipping: [dut]
-
-TASK [Check that prepared config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2 in /tmp/ansible.sros.dut.lrj__6m0temp is valid YAML] ***
-skipping: [dut]
-
-TASK [Wait up to 180s for gNMI(TCP 57400) to be ready on clab-ml_17-dut] *******
-ok: [dut -> localhost]
-
-TASK [Enable Open Config YAML modules (retry to give Containerlab a chance to finish configuration)] ***
+TASK [Update initial node configuration from gNMI template /home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
-ok: [dut] => 
-  enable_open_config:
-    attempts: 1
-    changed: true
-    failed: false
-    output: |-
-      {
-          "prefix": "configure",
-          "response": [
-              {
-                  "path": "system/management-interface/yang-modules/openconfig-modules",
-                  "op": "UPDATE"
-              }
-          ],
-          "timestamp": "2025-05-24T09:35:22.133216"
-      }
-
-TASK [Update initial node configuration (using gNMI SET based on YAML template /home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2)] ***
-changed: [dut]
-
-TASK [debug] *******************************************************************
-ok: [dut] => 
-  gnmi_set_result:
-    attempts: 1
-    changed: true
-    failed: false
-    output: |-
-      {
-          "response": [
-              {
-                  "path": "configure/router[router-name=Base]",
-                  "op": "UPDATE"
-              },
-              {
-                  "path": "configure/router[router-name=Base]/interface[interface-name=system]",
-                  "op": "UPDATE"
-              },
-              {
-                  "path": "configure/port[port-id=1/1/c1]",
-                  "op": "UPDATE"
-              },
-              {
-                  "path": "configure/port[port-id=1/1/c1/1]",
-                  "op": "UPDATE"
-              },
-              {
-                  "path": "configure/router[router-name=Base]/interface[interface-name=i1/1/c1]",
-                  "op": "UPDATE"
-              },
-              {
-                  "path": "configure/port[port-id=1/1/c2]",
-                  "op": "UPDATE"
-              },
-              {
-                  "path": "configure/port[port-id=1/1/c2/1]",
-                  "op": "UPDATE"
-              },
-              {
-                  "path": "configure/router[router-name=Base]/interface[interface-name=i1/1/c2]",
-                  "op": "UPDATE"
-              }
-          ],
-          "timestamp": "2025-05-24T09:35:22.952286"
-      }
-
-TASK [file] ********************************************************************
-changed: [dut -> localhost]
+skipping: [dut]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -791,10 +712,10 @@ ok: [pe2]
 TASK [Find configuration template for routing] *********************************
 skipping: [dut]
 skipping: [p2]
-ok: [h1]
 skipping: [pe1]
-ok: [h2]
+ok: [h1]
 skipping: [pe2]
+ok: [h2]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -907,7 +828,7 @@ TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/a
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-c5oraii5.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-z5cf211k.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -1031,8 +952,8 @@ skipping: [p2]
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for pe1, pe2
 
 TASK [template] ****************************************************************
-changed: [pe2]
 changed: [pe1]
+changed: [pe2]
 
 TASK [set_fact] ****************************************************************
 ok: [pe1]
@@ -1043,8 +964,8 @@ skipping: [pe1]
 skipping: [pe2]
 
 TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [pe2]
 changed: [pe1]
+changed: [pe2]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [dut]
@@ -1132,7 +1053,7 @@ ok: [dut] =>
        area:
        - area-id: "0.0.0.0"
          interface:
-         - interface-name: "i1/1/c1"
+         - interface-name: "eth-1/1/c1"
            # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
            interface-type: "point-to-point"
   
@@ -1145,7 +1066,7 @@ ok: [dut] =>
        area:
        - area-id: "0.0.0.0"
          interface:
-         - interface-name: "i1/1/c2"
+         - interface-name: "eth-1/1/c2"
            # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
            interface-type: "point-to-point"
   
@@ -1224,78 +1145,18 @@ skipping: [h2]
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for dut
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for p2, pe1, pe2
 
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
-skipping: [dut]
-
-TASK [tempfile] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [Set default provisioning model to use OpenConfig (sros_use_openconfig=False)] ***
-skipping: [dut]
-
-TASK [Check if OpenConfig can be used as provisioning method/model (config_template=/home/pipi/netlab_gh/netsim/ansible/templates/ospf/sros.j2)] ***
+TASK [Generate gNMI YAML configuration] ****************************************
 ok: [dut]
 
-TASK [Select provisioning template netsim_action=ospf] *************************
-ok: [dut]
-
-TASK [Process template /home/pipi/netlab_gh/netsim/ansible/templates/ospf/sros.j2] ***
-changed: [dut -> localhost]
-
-TASK [Show generated config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/sros.j2 based on /tmp/ansible.sros.dut.v_sxn16htemp] ***
-skipping: [dut]
-
-TASK [Check that prepared config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/sros.j2 in /tmp/ansible.sros.dut.v_sxn16htemp is valid YAML] ***
-skipping: [dut]
-
-TASK [Wait up to 180s for gNMI(TCP 57400) to be ready on clab-ml_17-dut] *******
-ok: [dut -> localhost]
-
-TASK [Enable Open Config YAML modules (retry to give Containerlab a chance to finish configuration)] ***
-skipping: [dut]
-
-TASK [debug] *******************************************************************
-ok: [dut] => 
-  enable_open_config:
-    changed: false
-    false_condition: enable_open_config is not defined and 'ixr-ec' != clab.type
-    skip_reason: Conditional result was False
-    skipped: true
-
-TASK [Update ospf node configuration (using gNMI SET based on YAML template /home/pipi/netlab_gh/netsim/ansible/templates/ospf/sros.j2)] ***
+TASK [Update ospf node configuration from gNMI template /home/pipi/netlab_gh/netsim/ansible/templates/ospf/sros.j2] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
-ok: [dut] => 
-  gnmi_set_result:
-    attempts: 1
-    changed: true
-    failed: false
-    output: |-
-      {
-          "response": [
-              {
-                  "path": "configure/router[router-name=Base]/ospf[ospf-instance=0]",
-                  "op": "UPDATE"
-              },
-              {
-                  "path": "configure/router[router-name=Base]/ospf[ospf-instance=0]",
-                  "op": "UPDATE"
-              },
-              {
-                  "path": "configure/router[router-name=Base]/ospf[ospf-instance=0]",
-                  "op": "UPDATE"
-              }
-          ],
-          "timestamp": "2025-05-24T09:35:26.642483"
-      }
-
-TASK [file] ********************************************************************
-changed: [dut -> localhost]
+skipping: [dut]
 
 TASK [template] ****************************************************************
-changed: [pe1]
 changed: [pe2]
+changed: [pe1]
 changed: [p2]
 
 TASK [set_fact] ****************************************************************
@@ -1310,8 +1171,8 @@ skipping: [pe2]
 
 TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [pe1]
-changed: [pe2]
 changed: [p2]
+changed: [pe2]
 
 TASK [Figure out whether to deploy the module mpls on current device] **********
 ok: [dut]
@@ -1454,20 +1315,20 @@ ok: [dut] =>
           admin-state: disable
   
   
-    - path: configure/router[router-name=Base]/mpls/interface[interface-name=i1/1/c1]
+    - path: configure/router[router-name=Base]/mpls/interface[interface-name=eth-1/1/c1]
       val:
        admin-state: enable
   
     # RSVP interface must be present along with MPLS interface
-    - path: configure/router[router-name=Base]/rsvp/interface[interface-name=i1/1/c1]
+    - path: configure/router[router-name=Base]/rsvp/interface[interface-name=eth-1/1/c1]
       val:
        admin-state: disable
-    - path: configure/router[router-name=Base]/mpls/interface[interface-name=i1/1/c2]
+    - path: configure/router[router-name=Base]/mpls/interface[interface-name=eth-1/1/c2]
       val:
        admin-state: enable
   
     # RSVP interface must be present along with MPLS interface
-    - path: configure/router[router-name=Base]/rsvp/interface[interface-name=i1/1/c2]
+    - path: configure/router[router-name=Base]/rsvp/interface[interface-name=eth-1/1/c2]
       val:
        admin-state: disable
   
@@ -1477,12 +1338,12 @@ ok: [dut] =>
        implicit-null-label: True
        interface-parameters:
         interface:
-        - ip-int-name: "i1/1/c1"
+        - ip-int-name: "eth-1/1/c1"
           admin-state: enable
           ipv4:
            admin-state: enable
            transport-address: system
-        - ip-int-name: "i1/1/c2"
+        - ip-int-name: "eth-1/1/c2"
           admin-state: enable
           ipv4:
            admin-state: enable
@@ -1494,91 +1355,19 @@ skipping: [h2]
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for dut
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for p2, pe1, pe2
 
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
-skipping: [dut]
-
-TASK [tempfile] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [Set default provisioning model to use OpenConfig (sros_use_openconfig=False)] ***
-skipping: [dut]
-
-TASK [Check if OpenConfig can be used as provisioning method/model (config_template=/home/pipi/netlab_gh/netsim/ansible/templates/mpls/sros.j2)] ***
+TASK [Generate gNMI YAML configuration] ****************************************
 ok: [dut]
 
-TASK [Select provisioning template netsim_action=mpls] *************************
-ok: [dut]
-
-TASK [Process template /home/pipi/netlab_gh/netsim/ansible/templates/mpls/sros.j2] ***
-changed: [dut -> localhost]
-
-TASK [Show generated config from /home/pipi/netlab_gh/netsim/ansible/templates/mpls/sros.j2 based on /tmp/ansible.sros.dut.7_v3lskstemp] ***
-skipping: [dut]
-
-TASK [Check that prepared config from /home/pipi/netlab_gh/netsim/ansible/templates/mpls/sros.j2 in /tmp/ansible.sros.dut.7_v3lskstemp is valid YAML] ***
-skipping: [dut]
-
-TASK [Wait up to 180s for gNMI(TCP 57400) to be ready on clab-ml_17-dut] *******
-ok: [dut -> localhost]
-
-TASK [Enable Open Config YAML modules (retry to give Containerlab a chance to finish configuration)] ***
-skipping: [dut]
-
-TASK [debug] *******************************************************************
-ok: [dut] => 
-  enable_open_config:
-    changed: false
-    false_condition: enable_open_config is not defined and 'ixr-ec' != clab.type
-    skip_reason: Conditional result was False
-    skipped: true
-
-TASK [Update mpls node configuration (using gNMI SET based on YAML template /home/pipi/netlab_gh/netsim/ansible/templates/mpls/sros.j2)] ***
+TASK [Update mpls node configuration from gNMI template /home/pipi/netlab_gh/netsim/ansible/templates/mpls/sros.j2] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
-ok: [dut] => 
-  gnmi_set_result:
-    attempts: 1
-    changed: true
-    failed: false
-    output: |-
-      {
-          "response": [
-              {
-                  "path": "configure/router[router-name=Base]",
-                  "op": "UPDATE"
-              },
-              {
-                  "path": "configure/router[router-name=Base]/mpls/interface[interface-name=i1/1/c1]",
-                  "op": "UPDATE"
-              },
-              {
-                  "path": "configure/router[router-name=Base]/rsvp/interface[interface-name=i1/1/c1]",
-                  "op": "UPDATE"
-              },
-              {
-                  "path": "configure/router[router-name=Base]/mpls/interface[interface-name=i1/1/c2]",
-                  "op": "UPDATE"
-              },
-              {
-                  "path": "configure/router[router-name=Base]/rsvp/interface[interface-name=i1/1/c2]",
-                  "op": "UPDATE"
-              },
-              {
-                  "path": "configure/router[router-name=Base]/ldp",
-                  "op": "UPDATE"
-              }
-          ],
-          "timestamp": "2025-05-24T09:35:29.401326"
-      }
-
-TASK [file] ********************************************************************
-changed: [dut -> localhost]
+skipping: [dut]
 
 TASK [template] ****************************************************************
-changed: [pe2]
 changed: [pe1]
 changed: [p2]
+changed: [pe2]
 
 TASK [set_fact] ****************************************************************
 ok: [p2]
@@ -1586,8 +1375,8 @@ ok: [pe1]
 ok: [pe2]
 
 TASK [run /tmp/config.sh to deploy mpls config from /home/pipi/netlab_gh/netsim/ansible/templates/mpls/frr.j2] ***
-changed: [p2]
 changed: [pe1]
+changed: [p2]
 changed: [pe2]
 
 TASK [run vtysh to import mpls config from /home/pipi/netlab_gh/netsim/ansible/templates/mpls/frr.j2] ***
@@ -1599,7 +1388,7 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=58   changed=13   unreachable=0    failed=0    skipped=30   rescued=0    ignored=0   
+dut                        : ok=38   changed=3    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
 h1                         : ok=35   changed=8    unreachable=0    failed=0    skipped=25   rescued=0    ignored=0   
 h2                         : ok=35   changed=8    unreachable=0    failed=0    skipped=25   rescued=0    ignored=0   
 p2                         : ok=39   changed=6    unreachable=0    failed=0    skipped=21   rescued=0    ignored=0   

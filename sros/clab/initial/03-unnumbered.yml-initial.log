@@ -10,7 +10,13 @@ TASK [Find device readiness script] ********************************************
 ok: [r]
 
 TASK [Wait for device to become ready] *****************************************
-skipping: [r]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/sros.yml for r
+
+TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+ok: [r]
+
+TASK [Wait up to 180s for gNMI(TCP 57400) to be ready on clab-ml_17-r] *********
+ok: [r -> localhost]
 
 TASK [Normalize config on bridge-like devices] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for r
@@ -65,11 +71,14 @@ ok: [r] =>
   
   
   
+  
+  
+  
     - path: configure/router[router-name=Base]/interface[interface-name=system]
   
       val:
        admin-state: enable
-       description: "system interface vlan=0"
+       description: "System interface"
        ipv4:
         primary:
          address: "10.0.0.1"
@@ -84,15 +93,27 @@ ok: [r] =>
   
   
   
+    - path: configure/port[port-id=1/1/c1]
+      val:
+       admin-state: enable
+       connector:
+        breakout: "c1-100g"
+    - path: configure/port[port-id=1/1/c1/1]
+      val:
+       admin-state: enable
+       ethernet:
+        mtu: 1514 # max 9800
+        mode: network
   
   
   
-    - path: configure/router[router-name=Base]/interface[interface-name=stub-1/1/c1]
+    - path: configure/router[router-name=Base]/interface[interface-name=eth-1/1/c1]
   
       val:
        admin-state: enable
-       description: "r ~ stub (stub) vlan=0"
-       loopback: [null]
+       description: "r ~ stub (stub)"
+       ip-mtu: 1500
+       port: "1/1/c1/1"
        ipv4:
         unnumbered:
          system: [null]
@@ -101,15 +122,27 @@ ok: [r] =>
   
   
   
+    - path: configure/port[port-id=1/1/c2]
+      val:
+       admin-state: enable
+       connector:
+        breakout: "c1-100g"
+    - path: configure/port[port-id=1/1/c2/1]
+      val:
+       admin-state: enable
+       ethernet:
+        mtu: 1514 # max 9800
+        mode: network
   
   
   
-    - path: configure/router[router-name=Base]/interface[interface-name=stub-1/1/c2]
+    - path: configure/router[router-name=Base]/interface[interface-name=eth-1/1/c2]
   
       val:
        admin-state: enable
-       description: "r ~ stub (stub) vlan=0"
-       loopback: [null]
+       description: "r ~ stub (stub)"
+       ip-mtu: 1500
+       port: "1/1/c2/1"
        ipv4:
         unnumbered:
          system: [null]
@@ -117,29 +150,53 @@ ok: [r] =>
   
   
   
+    - path: configure/port[port-id=1/1/c3]
+      val:
+       admin-state: enable
+       connector:
+        breakout: "c1-100g"
+    - path: configure/port[port-id=1/1/c3/1]
+      val:
+       admin-state: enable
+       ethernet:
+        mtu: 1514 # max 9800
+        mode: network
   
   
   
-    - path: configure/router[router-name=Base]/interface[interface-name=stub-1/1/c3]
+    - path: configure/router[router-name=Base]/interface[interface-name=eth-1/1/c3]
   
       val:
        admin-state: enable
-       description: "r ~ stub (stub) vlan=0"
-       loopback: [null]
+       description: "r ~ stub (stub)"
+       ip-mtu: 1500
+       port: "1/1/c3/1"
        ipv6: { }
   
   
   
   
+    - path: configure/port[port-id=1/1/c4]
+      val:
+       admin-state: enable
+       connector:
+        breakout: "c1-100g"
+    - path: configure/port[port-id=1/1/c4/1]
+      val:
+       admin-state: enable
+       ethernet:
+        mtu: 1514 # max 9800
+        mode: network
   
   
   
-    - path: configure/router[router-name=Base]/interface[interface-name=stub-1/1/c4]
+    - path: configure/router[router-name=Base]/interface[interface-name=eth-1/1/c4]
   
       val:
        admin-state: enable
-       description: "r ~ stub (stub) vlan=0"
-       loopback: [null]
+       description: "r ~ stub (stub)"
+       ip-mtu: 1500
+       port: "1/1/c4/1"
        ipv4:
         unnumbered:
          system: [null]
@@ -152,15 +209,27 @@ ok: [r] =>
   
   
   
+    - path: configure/port[port-id=1/1/c5]
+      val:
+       admin-state: enable
+       connector:
+        breakout: "c1-100g"
+    - path: configure/port[port-id=1/1/c5/1]
+      val:
+       admin-state: enable
+       ethernet:
+        mtu: 1514 # max 9800
+        mode: network
   
   
   
-    - path: configure/router[router-name=Base]/interface[interface-name=stub-1/1/c5]
+    - path: configure/router[router-name=Base]/interface[interface-name=eth-1/1/c5]
   
       val:
        admin-state: enable
-       description: "r ~ stub (stub) vlan=0"
-       loopback: [null]
+       description: "r ~ stub (stub)"
+       ip-mtu: 1500
+       port: "1/1/c5/1"
        ipv4:
         primary:
          address: "172.16.4.1"
@@ -171,69 +240,24 @@ ok: [r] =>
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for r
 
-TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
+TASK [Generate gNMI YAML configuration] ****************************************
 ok: [r]
 
-TASK [tempfile] ****************************************************************
-changed: [r -> localhost]
-
-TASK [Set default provisioning model to use OpenConfig (sros_use_openconfig=False)] ***
-skipping: [r]
-
-TASK [Check if OpenConfig can be used as provisioning method/model (config_template=/home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2)] ***
-ok: [r]
-
-TASK [Select provisioning template netsim_action=initial] **********************
-ok: [r]
-
-TASK [Process template /home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2] ***
-changed: [r -> localhost]
-
-TASK [Show generated config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2 based on /tmp/ansible.sros.r.7qjgzhxctemp] ***
-skipping: [r]
-
-TASK [Check that prepared config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2 in /tmp/ansible.sros.r.7qjgzhxctemp is valid YAML] ***
-skipping: [r]
-
-TASK [Wait up to 180s for gNMI(TCP 57400) to be ready on clab-ml_17-r] *********
-ok: [r -> localhost]
-
-TASK [Enable Open Config YAML modules (retry to give Containerlab a chance to finish configuration)] ***
-changed: [r]
-
-TASK [debug] *******************************************************************
-ok: [r] => 
-  enable_open_config:
-    attempts: 1
-    changed: true
-    failed: false
-    output: |-
-      {
-          "prefix": "configure",
-          "response": [
-              {
-                  "path": "system/management-interface/yang-modules/openconfig-modules",
-                  "op": "UPDATE"
-              }
-          ],
-          "timestamp": "2025-05-24T07:08:44.187422"
-      }
-
-TASK [Update initial node configuration (using gNMI SET based on YAML template /home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2)] ***
-FAILED - RETRYING: [r]: Update initial node configuration (using gNMI SET based on YAML template /home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2) (2 retries left).
-FAILED - RETRYING: [r]: Update initial node configuration (using gNMI SET based on YAML template /home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2) (1 retries left).
+TASK [Update initial node configuration from gNMI template /home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2] ***
+FAILED - RETRYING: [r]: Update initial node configuration from gNMI template /home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2 (2 retries left).
+FAILED - RETRYING: [r]: Update initial node configuration from gNMI template /home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2 (1 retries left).
 fatal: [r]: FAILED! => changed=false 
   attempts: 2
   code: -32603
   msg: |-
     <_InactiveRpcError of RPC that terminated with:
             status = StatusCode.FAILED_PRECONDITION
-            details = "MINOR: COMMON #238: /configure/router[router-name=Base]/interface[interface-name=stub-1/1/c1]/ipv4/unnumbered/ip-address - Configuration change failed validation - Combination of unnumbered ip-int-system and loopback not supported - gRPC: commit operation"
-            debug_error_string = "UNKNOWN:Error received from peer  {created_time:"2025-05-24T07:09:03.614417135+00:00", grpc_status:9, grpc_message:"MINOR: COMMON #238: /configure/router[router-name=Base]/interface[interface-name=stub-1/1/c1]/ipv4/unnumbered/ip-address - Configuration change failed validation - Combination of unnumbered ip-int-system and loopback not supported - gRPC: commit operation"}"
+            details = "MINOR: MGMT_CORE #4001: /configure/router[router-name=Base]/interface[interface-name=eth-1/1/c4]/ipv4/unnumbered/ip-address - Unnumbered configuration not compatible with IPv6 address configuration - /configure/router[router-name=Base]/interface[interface-name=eth-1/1/c4] - gRPC: commit operation"
+            debug_error_string = "UNKNOWN:Error received from peer  {grpc_message:"MINOR: MGMT_CORE #4001: /configure/router[router-name=Base]/interface[interface-name=eth-1/1/c4]/ipv4/unnumbered/ip-address - Unnumbered configuration not compatible with IPv6 address configuration - /configure/router[router-name=Base]/interface[interface-name=eth-1/1/c4] - gRPC: commit operation", grpc_status:9, created_time:"2025-05-30T05:59:15.12179492+00:00"}"
     >
 
 PLAY RECAP *********************************************************************
-r                          : ok=20   changed=3    unreachable=0    failed=1    skipped=8    rescued=0    ignored=0   
+r                          : ok=16   changed=0    unreachable=0    failed=1    skipped=4    rescued=0    ignored=0   
 
 Fatal error in netlab: Executing Ansible playbook /home/pipi/netlab_gh/netsim/ansible/initial-config.ansible failed
 Error executing ansible-playbook /home/pipi/netlab_gh/netsim/ansible/initial-config.ansible:
