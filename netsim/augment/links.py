@@ -1213,8 +1213,9 @@ def expand_groups(topology: Box) -> None:
 
     for idx,member in enumerate(link.members):
       member = adjust_link_object(member,f'{link._linkname}[{idx+1}]',topology.nodes)
-      member = copy_group_data + member             # Copy group data into member link
-      topology.links.append(member)
+      if member is not None:
+        member = copy_group_data + member           # Copy group data into member link
+        topology.links.append(member)
 
   # Finally, remove group links from the link list
   topology.links = [ link for link in topology.links if not 'group' in link ]

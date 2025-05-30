@@ -87,6 +87,8 @@ def normalized_members(l: Box, topology: Box, peerlink: bool = False) -> list:
   _name = "peerlink" if peerlink else "lag"
   for idx,member in enumerate(l.lag.members):
     member = links.adjust_link_object(member,f'{l._linkname}.{_name}[{idx+1}]',topology.nodes)
+    if member is None:                              # Invalid link data, skip this one
+      continue
     if 'lag' in member:                             # Catch potential sources for inconsistency
       lag_atts = len(member.lag) - (1 if 'ifindex' in member.lag else 0)
       if peerlink or (lag_atts>0):                  # ...but allow for custom bond numbering
