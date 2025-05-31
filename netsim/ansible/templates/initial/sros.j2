@@ -2,19 +2,43 @@
 {{ name or i.ifname }}
 {%- endmacro %}
 
-{% macro declare_router(i,sub_path="") -%}
+{% macro declare_router(i,sub_path="",intf_cfg=False) -%}
+{#
+    This macro selects the SR/OS service in which the current object
+    is configured. The global routing instance is "router Base" unless
+    we have to configure the global SVI interfaces, in which case we
+    have to use "ies default". VRFs use "vprn X" service.
+
+    The selection logic thus goes like that:
+
+    * If the interface is in VRF, use 'vprn' instance (in_base and in_ise
+      are set to False)
+    * If the interface is not in a VRF, assume we have to use 'ies' service
+    * However, if the interface does not have a VLAN, or is a route VLAN
+      interface, we have to create it in 'router Base'
+    * Finally, non-interface objects are created in 'router Base' for non-VRF
+      interfaces
+
+    Sounds confusing? Yeah, it is...
+#}
 {%  set service_name = i.vrf if i.vrf is defined else 'default' %}
-{%  set in_base = i.vrf is not defined and (i.vlan is not defined or i.vlan.mode|default('irb')=='route') %}
-{%  set base_path = "router[router-name=Base]" if in_base else "service/vprn[service-name="+service_name+"]" %}
+{%  set in_ise = i.vrf is not defined %}
+{%  set in_base = in_ise and
+                    (i.vlan is not defined or
+                     i.vlan.mode|default('irb')=='route' or
+                     not intf_cfg) %}
+{%  set base_path = "router[router-name=Base]" if in_base else 
+                    "service/ies[service-name="+service_name+"]" if in_ise
+                    else "service/vprn[service-name="+service_name+"]" %}
 
 {# Minimal service config must exist #}
 {%  if not in_base %}
 - path: configure/{{ base_path }}
   val:
-   service-id: {{ vrfs[i.vrf].vrfidx if i.vrf is defined else 1 }}
    customer: "1"
    admin-state: enable
-   ecmp: {{ 1 if 'ixr' in clab.type else 64 }}
+   service-id: {{ vrfs[i.vrf].vrfidx if i.vrf is defined else 1 }}
+#   ecmp: {{ 1 if 'ixr' in clab.type else 64 }}
 {%  endif %}
 
 - path: configure/{{ base_path }}{{ sub_path }}
@@ -22,7 +46,7 @@
 
 {% macro declare_interface(i,name=None) %}
 {% set ifname = if_name(i,name or i.ifname) %}
-{{ declare_router(i,sub_path="/interface[interface-name=" + ifname + "]") }}
+{{ declare_router(i,sub_path="/interface[interface-name=" + ifname + "]",intf_cfg=True) }}
 {% endmacro %}
 
 {% macro ip_addr(v,ip,ifname) %}
