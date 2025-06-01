@@ -44,8 +44,8 @@ TASK [Find configuration template for normalize] *******************************
 ok: [dut]
 ok: [r2]
 ok: [r4]
-ok: [r3]
 ok: [r1]
+ok: [r3]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -101,8 +101,8 @@ skipping: [r3]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [dut]
-ok: [r2]
 ok: [r4]
+ok: [r2]
 ok: [r1]
 ok: [r3]
 
@@ -719,9 +719,9 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for
 
 TASK [template] ****************************************************************
 changed: [r1]
+changed: [r4]
 changed: [r3]
 changed: [r2]
-changed: [r4]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
@@ -730,9 +730,9 @@ ok: [r1]
 ok: [r3]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r1]
 changed: [r2]
 changed: [r4]
+changed: [r1]
 changed: [r3]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -817,20 +817,20 @@ ok: [dut] =>
   
     - path: configure/policy-options/policy-statement[name=default_export]
       val:
-       default-action:
-        action-type: reject
-       entry:
-       - entry-id: 10
-         from:
-          prefix-list: [ "default_export" ]
-         action:
-          action-type: accept
-       - entry-id: 20
-         from:
-          protocol:
-           name: ["bgp"]
-         action:
-          action-type: accept
+        default-action:
+          action-type: reject
+        entry:
+        - entry-id: 10
+          from:
+            prefix-list: [ "default_export" ]
+          action:
+            action-type: accept
+        - entry-id: 20
+          from:
+            protocol:
+              name: [ bgp ]
+          action:
+            action-type: accept
   
     - path: configure/policy-options/prefix-list[name=default_export]
       val:
@@ -945,8 +945,8 @@ TASK [debug] *******************************************************************
 skipping: [dut]
 
 TASK [template] ****************************************************************
-changed: [r2]
 changed: [r4]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
@@ -957,8 +957,8 @@ skipping: [r2]
 skipping: [r4]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [r2]
 changed: [r4]
+changed: [r2]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [dut]
@@ -1053,6 +1053,7 @@ ok: [dut] =>
     =========================================
   
   
+  
     updates:
 
 TASK [Deploy ospf configuration] ***********************************************
@@ -1083,8 +1084,8 @@ skipping: [r1]
 skipping: [r3]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [r1]
 changed: [r3]
+changed: [r1]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [dut]
@@ -1143,20 +1144,32 @@ ok: [dut] =>
   
     - path: configure/policy-options/policy-statement[name=blue_export]
       val:
-       default-action:
-        action-type: reject
-       entry:
-       - entry-id: 10
-         from:
-          prefix-list: [ "blue_export" ]
-         action:
-          action-type: accept
-       - entry-id: 20
-         from:
-          protocol:
-           name: ["bgp"]
-         action:
-          action-type: accept
+        default-action:
+          action-type: reject
+        entry:
+        - entry-id: 10
+          from:
+            prefix-list: [ "blue_export" ]
+          action:
+            action-type: accept
+        - entry-id: 20
+          from:
+            protocol:
+              name: [ bgp ]
+          action:
+            action-type: accept
+        - entry-id: 30
+          from:
+            protocol:
+              name: [ direct ]
+          action:
+            action-type: accept
+        - entry-id: 40
+          from:
+            protocol:
+              name: [ ospf ]
+          action:
+            action-type: accept
   
   
   
@@ -1212,6 +1225,25 @@ ok: [dut] =>
   
   
   
+    - path: configure/policy-options/policy-statement[name=ospf_blue_export]
+      val:
+        default-action:
+          action-type: reject
+        entry:
+        - entry-id: 20
+          from:
+            protocol:
+              name: [ bgp ]
+          action:
+            action-type: accept
+        - entry-id: 30
+          from:
+            protocol:
+              name: [ direct ]
+          action:
+            action-type: accept
+  
+  
   
   
     - path: configure/service/vprn[service-name=blue]
@@ -1223,14 +1255,15 @@ ok: [dut] =>
   
     - path: configure/service/vprn[service-name=blue]/ospf[ospf-instance=0]
       val:
-       admin-state: enable
-       router-id: 10.101.0.1
-       area:
-       - area-id: "0.0.0.0"
-         interface:
-         - interface-name: "eth-1/1/c3"
+        admin-state: enable
+        router-id: 10.101.0.1
+        export-policy: [ ospf_blue_export ]
+        area:
+        - area-id: "0.0.0.0"
+          interface:
+          - interface-name: "eth-1/1/c3"
            # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
-           interface-type: "point-to-point"
+            interface-type: "point-to-point"
   
   
   
@@ -1252,20 +1285,32 @@ ok: [dut] =>
   
     - path: configure/policy-options/policy-statement[name=red_export]
       val:
-       default-action:
-        action-type: reject
-       entry:
-       - entry-id: 10
-         from:
-          prefix-list: [ "red_export" ]
-         action:
-          action-type: accept
-       - entry-id: 20
-         from:
-          protocol:
-           name: ["bgp"]
-         action:
-          action-type: accept
+        default-action:
+          action-type: reject
+        entry:
+        - entry-id: 10
+          from:
+            prefix-list: [ "red_export" ]
+          action:
+            action-type: accept
+        - entry-id: 20
+          from:
+            protocol:
+              name: [ bgp ]
+          action:
+            action-type: accept
+        - entry-id: 30
+          from:
+            protocol:
+              name: [ direct ]
+          action:
+            action-type: accept
+        - entry-id: 40
+          from:
+            protocol:
+              name: [ ospf ]
+          action:
+            action-type: accept
   
   
   
@@ -1321,6 +1366,25 @@ ok: [dut] =>
   
   
   
+    - path: configure/policy-options/policy-statement[name=ospf_red_export]
+      val:
+        default-action:
+          action-type: reject
+        entry:
+        - entry-id: 20
+          from:
+            protocol:
+              name: [ bgp ]
+          action:
+            action-type: accept
+        - entry-id: 30
+          from:
+            protocol:
+              name: [ direct ]
+          action:
+            action-type: accept
+  
+  
   
   
     - path: configure/service/vprn[service-name=red]
@@ -1332,14 +1396,15 @@ ok: [dut] =>
   
     - path: configure/service/vprn[service-name=red]/ospf[ospf-instance=0]
       val:
-       admin-state: enable
-       router-id: 10.100.0.1
-       area:
-       - area-id: "0.0.0.0"
-         interface:
-         - interface-name: "eth-1/1/c1"
+        admin-state: enable
+        router-id: 10.100.0.1
+        export-policy: [ ospf_red_export ]
+        area:
+        - area-id: "0.0.0.0"
+          interface:
+          - interface-name: "eth-1/1/c1"
            # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
-           interface-type: "point-to-point"
+            interface-type: "point-to-point"
 
 TASK [Deploy vrf configuration] ************************************************
 skipping: [r1]
