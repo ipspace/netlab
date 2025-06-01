@@ -86,26 +86,28 @@
     import:
       policy: ["accept_all"]
     export:
-      policy: [ "{{ (vrf + "_export") if type in ['localas_ibgp','ebgp'] else 
-                  'next-hop-self-ebgp-routes-only' if 'ibgp' in type and bgp.next_hop_self|default(False) else 'accept_all' }}" ]
-
-{% if bgp.community[ type ]|default([])|length < 2 %}
-    send-communities:
-{%  for c,vals in {'standard': ['standard','large'],'extended':['extended'] }.items() %}
-{%   if c not in bgp.community[ type ] %}
-{%    for knob in vals %}
-      {{ knob }}: False  # True value not allowed, on by default
-{%    endfor %}
+      policy:
+{%   if 'ibgp' in type and bgp.next_hop_self|default(False) %}
+      - next-hop-self-ebgp-routes-only
 {%   endif %}
-{%  endfor %}
-{% endif %}
-{% if transport_ip %}
+      - {{ vrf }}_export
+{%   if bgp.community[ type ]|default([])|length < 2 %}
+    send-communities:
+{%     for c,vals in {'standard': ['standard','large'],'extended':['extended'] }.items() %}
+{%       if c not in bgp.community[ type ] %}
+{%         for knob in vals %}
+      {{ knob }}: False  # True value not allowed, on by default
+{%         endfor %}
+{%       endif %}
+{%     endfor %}
+{%   endif %}
+{%   if transport_ip %}
     local-address: "{{ transport_ip }}"
-{%  if bgp.rr|default(False) and 'ibgp' in name %}
+{%   endif %}
+{%   if bgp.rr|default(False) and 'ibgp' in name %}
     cluster:
       cluster-id: "{{ bgp.rr_cluster_id|default(vrf_bgp.router_id|default(bgp.router_id)) }}"
-{%  endif %}
-{% endif %}
+{%   endif %}
 {% endmacro %}
 
 {% for n in vrf_bgp.neighbors %}
