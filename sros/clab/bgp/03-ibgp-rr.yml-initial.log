@@ -89,8 +89,8 @@ TASK [Find configuration template for initial] *********************************
 ok: [dut]
 ok: [r1]
 ok: [r2]
-ok: [x1]
 ok: [rr2]
+ok: [x1]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -329,108 +329,6 @@ ok: [r2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [x1] => 
-  msg: |-
-    initial configuration for x1
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)# "
-    echo
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
-    #
-    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
-    #
-    sysctl -w net.ipv4.ip_forward=1
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    # Set system defaults
-    #
-    # Send ARP requests from a sane source IP address
-    #
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Create loopbacks, stub and lag/bond devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    ip link set eth1 down
-    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
-    ip link set eth1 up
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-  
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname x1
-    !
-    ip forwarding
-    vrf mgmt
-     exit-vrf
-    !
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ip address 172.42.42.1/24
-    !
-    interface eth1
-     no shutdown
-     description x1 -> dut [external]
-     ip address 10.1.0.14/30
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
 ok: [rr2] => 
   msg: |-
     initial configuration for rr2
@@ -528,6 +426,108 @@ ok: [rr2] =>
      no shutdown
      description rr2 -> r1
      ip address 10.1.0.6/30
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
+ok: [x1] => 
+  msg: |-
+    initial configuration for x1
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname x1
+    !
+    ip forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 172.42.42.1/24
+    !
+    interface eth1
+     no shutdown
+     description x1 -> dut [external]
+     ip address 10.1.0.14/30
     !
     do write
     CONFIG
@@ -649,8 +649,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for
 
 TASK [template] ****************************************************************
 changed: [r1]
-changed: [rr2]
 changed: [x1]
+changed: [rr2]
 changed: [r2]
 
 TASK [set_fact] ****************************************************************
@@ -660,9 +660,9 @@ ok: [rr2]
 ok: [x1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+changed: [rr2]
 changed: [r2]
 changed: [r1]
-changed: [rr2]
 changed: [x1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -677,8 +677,8 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
 ok: [r1]
 ok: [r2]
-ok: [rr2]
 ok: [x1]
+ok: [rr2]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, rr2, x1 => (item=bgp)
@@ -695,8 +695,8 @@ TASK [Find configuration template for bgp] *************************************
 ok: [dut]
 ok: [r1]
 ok: [r2]
-ok: [rr2]
 ok: [x1]
+ok: [rr2]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -709,8 +709,8 @@ TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [dut]
 ok: [r1]
 ok: [r2]
-ok: [rr2]
 ok: [x1]
+ok: [rr2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -735,7 +735,7 @@ ok: [dut] =>
           action-type: accept
           next-hop: self
        default-action:
-        action-type: accept
+        action-type: next-policy
   
   
     - path: configure/policy-options/prefix-list[name=default_export]
@@ -770,20 +770,20 @@ ok: [dut] =>
   
     - path: configure/router[router-name=Base]
       val:
-       router-id: "10.0.0.1"
-       autonomous-system: 65000
-       bgp:
-        ebgp-default-reject-policy:
-         import: False
-         export: False
-        vpn-apply-export: True
-        vpn-apply-import: True
-        multipath:
-         ibgp: 64
-         ebgp: 64
-        min-route-advertisement: 1 # Be aggressive about sending updates
-        connect-retry: 5           # Retry frequently, suitable in DC context
-        client-reflect: False
+        router-id: "10.0.0.1"
+        autonomous-system: 65000
+        bgp:
+          ebgp-default-reject-policy:
+            import: False
+            export: False
+          vpn-apply-export: True
+          vpn-apply-import: True
+          client-reflect: True
+          multipath:
+            ibgp: 64
+            ebgp: 64
+          min-route-advertisement: 1 # Be aggressive about sending updates
+          connect-retry: 5           # Retry frequently, suitable in DC context
         # family: cannot disable this
         # ipv4: False # Enabled by default, disable globally and set per group
   
@@ -792,123 +792,124 @@ ok: [dut] =>
   
     - path: configure/router[router-name=Base]/bgp/group[group-name=ibgp-ipv4]
       val:
-       admin-state: enable
-       family:
-        ipv4: True
-        ipv6: False
+        admin-state: enable
+        family:
+          ipv4: True
+          ipv6: False
   
-       import:
-        policy: ["accept_all"]
-       export:
-        policy: [ "next-hop-self-ebgp-routes-only" ]
-  
-       local-address: "10.0.0.1"
-       cluster:
-        cluster-id: "10.0.0.42"
+        import:
+          policy: ["accept_all"]
+        export:
+          policy:
+          - next-hop-self-ebgp-routes-only
+          - default_export
+        local-address: "10.0.0.1"
+        cluster:
+          cluster-id: "10.0.0.42"
   
   
     - path: configure/router[router-name=Base]/bgp
       val:
-       neighbor:
-       - ip-address: "10.0.0.2"
-         description: "rr2"
-         peer-as: 65000
-         group: "ibgp-ipv4"
-         family:
+        neighbor:
+        - ip-address: "10.0.0.2"
+          description: "rr2"
+          peer-as: 65000
+          group: "ibgp-ipv4"
+          family:
+            ipv4: True
+            ipv6: False
+  
+  
+          client-reflect: False
+  
+    - path: configure/router[router-name=Base]/bgp/group[group-name=ibgp-ipv4]
+      val:
+        admin-state: enable
+        family:
           ipv4: True
           ipv6: False
   
+        import:
+          policy: ["accept_all"]
+        export:
+          policy:
+          - next-hop-self-ebgp-routes-only
+          - default_export
+        local-address: "10.0.0.1"
+        cluster:
+          cluster-id: "10.0.0.42"
+  
+  
+    - path: configure/router[router-name=Base]/bgp
+      val:
+        neighbor:
+        - ip-address: "10.0.0.10"
+          description: "r1"
+          peer-as: 65000
+          group: "ibgp-ipv4"
+          family:
+            ipv4: True
+            ipv6: False
   
   
   
     - path: configure/router[router-name=Base]/bgp/group[group-name=ibgp-ipv4]
       val:
-       admin-state: enable
-       family:
-        ipv4: True
-        ipv6: False
+        admin-state: enable
+        family:
+          ipv4: True
+          ipv6: False
   
-       import:
-        policy: ["accept_all"]
-       export:
-        policy: [ "next-hop-self-ebgp-routes-only" ]
-  
-       local-address: "10.0.0.1"
-       cluster:
-        cluster-id: "10.0.0.42"
+        import:
+          policy: ["accept_all"]
+        export:
+          policy:
+          - next-hop-self-ebgp-routes-only
+          - default_export
+        local-address: "10.0.0.1"
+        cluster:
+          cluster-id: "10.0.0.42"
   
   
     - path: configure/router[router-name=Base]/bgp
       val:
-       neighbor:
-       - ip-address: "10.0.0.10"
-         description: "r1"
-         peer-as: 65000
-         group: "ibgp-ipv4"
-         family:
-          ipv4: True
-          ipv6: False
-  
-  
-  
-  
-    - path: configure/router[router-name=Base]/bgp/group[group-name=ibgp-ipv4]
-      val:
-       admin-state: enable
-       family:
-        ipv4: True
-        ipv6: False
-  
-       import:
-        policy: ["accept_all"]
-       export:
-        policy: [ "next-hop-self-ebgp-routes-only" ]
-  
-       local-address: "10.0.0.1"
-       cluster:
-        cluster-id: "10.0.0.42"
-  
-  
-    - path: configure/router[router-name=Base]/bgp
-      val:
-       neighbor:
-       - ip-address: "10.0.0.3"
-         description: "r2"
-         peer-as: 65000
-         group: "ibgp-ipv4"
-         family:
-          ipv4: True
-          ipv6: False
-  
+        neighbor:
+        - ip-address: "10.0.0.3"
+          description: "r2"
+          peer-as: 65000
+          group: "ibgp-ipv4"
+          family:
+            ipv4: True
+            ipv6: False
   
   
   
     - path: configure/router[router-name=Base]/bgp/group[group-name=ebgp]
       val:
-       admin-state: enable
-       family:
-        ipv4: True
-        ipv6: False
+        admin-state: enable
+        family:
+          ipv4: True
+          ipv6: False
   
-       import:
-        policy: ["accept_all"]
-       export:
-        policy: [ "default_export" ]
-  
-       send-communities:
-        extended: False  # True value not allowed, on by default
+        import:
+          policy: ["accept_all"]
+        export:
+          policy:
+          - default_export
+        send-communities:
+          extended: False  # True value not allowed, on by default
   
   
     - path: configure/router[router-name=Base]/bgp
       val:
-       neighbor:
-       - ip-address: "10.1.0.14"
-         description: "x1"
-         peer-as: 65101
-         group: "ebgp"
-         family:
-          ipv4: True
-          ipv6: False
+        neighbor:
+        - ip-address: "10.1.0.14"
+          description: "x1"
+          peer-as: 65101
+          group: "ebgp"
+          family:
+            ipv4: True
+            ipv6: False
 ok: [r1] => 
   msg: |-
     bgp configuration for r1
@@ -1123,15 +1124,15 @@ skipping: [dut]
 
 TASK [template] ****************************************************************
 changed: [r2]
-changed: [r1]
-changed: [x1]
 changed: [rr2]
+changed: [x1]
+changed: [r1]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
 ok: [r2]
-ok: [x1]
 ok: [rr2]
+ok: [x1]
 
 TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [r1]
@@ -1142,8 +1143,8 @@ skipping: [x1]
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [r1]
 changed: [r2]
-changed: [x1]
 changed: [rr2]
+changed: [x1]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [dut]
@@ -1154,8 +1155,8 @@ ok: [x1]
 
 TASK [Find configuration template for ospf] ************************************
 ok: [dut]
-skipping: [x1]
 ok: [r1]
+skipping: [x1]
 ok: [r2]
 ok: [rr2]
 
@@ -1167,8 +1168,8 @@ skipping: [rr2]
 skipping: [x1]
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
-skipping: [x1]
 ok: [dut]
+skipping: [x1]
 ok: [r1]
 ok: [r2]
 ok: [rr2]
@@ -1241,6 +1242,34 @@ ok: [r2] =>
   
     !
     do write
+ok: [rr2] => 
+  msg: |-
+    ospf configuration for rr2
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.2
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! rr2 -> r1
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    do write
 ok: [dut] => 
   msg: |-
     ospf configuration for dut
@@ -1275,34 +1304,6 @@ ok: [dut] =>
          - interface-name: "system"
            passive: True
            # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
-ok: [rr2] => 
-  msg: |-
-    ospf configuration for rr2
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.2
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! rr2 -> r1
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    do write
 
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [x1]
@@ -1319,9 +1320,9 @@ TASK [debug] *******************************************************************
 skipping: [dut]
 
 TASK [template] ****************************************************************
+changed: [r2]
 changed: [r1]
 changed: [rr2]
-changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
