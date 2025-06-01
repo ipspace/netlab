@@ -290,6 +290,7 @@ def validate_vrf_route_leaking(node : Box) -> None:
     leaked_routes = vdata['import'] and vdata['import'] != simple_rt
     leaked_routes = leaked_routes or (vdata['export'] and vdata['export'] != simple_rt)
     if leaked_routes:
+      vdata._leaked_routes = True
       if not node.get('bgp.as',None):
         if node.get('vrf.as',None):
           node.bgp['as'] = node.vrf['as']

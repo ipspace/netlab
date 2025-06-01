@@ -17,11 +17,20 @@ def ipv4_unnumbered(node: Box) -> None:
         node=node,
         category=log.IncorrectValue)
 
+def vrf_route_leaking(node: Box) -> None:
+  for vname,vdata in node.get('vrfs',{}).items():
+    if '_leaked_routes' in vdata:
+      report_quirk(
+        text=f'We did not implement inter-VRF route leaking on SR/OS (node {node.name} vrf {vname})',
+        node=node,
+        category=log.IncorrectValue)
+
 class SROS(_Quirks):
 
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
     ipv4_unnumbered(node)
+    vrf_route_leaking(node)
   
   def check_config_sw(self, node: Box, topology: Box) -> None:
     need_ansible_collection(node,'nokia.grpc',version='1.0.2')
