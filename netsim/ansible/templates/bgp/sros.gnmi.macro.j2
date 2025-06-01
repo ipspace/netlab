@@ -69,8 +69,8 @@
     # ipv4: False # Enabled by default, disable globally and set per group
 
 {% macro bgp_families(neighbor,ipv4=True,ipv6=True) %}
-    family:
 {% set activate = neighbor.activate|default( {'ipv4': True,'ipv6': True } ) %}
+    family:
       ipv4: {{ activate.ipv4|default(False) and ipv4 }}
       ipv6: {{ activate.ipv6|default(False) and ipv6 }}
 {%  if 'evpn' in neighbor and neighbor.evpn %}
@@ -111,9 +111,9 @@
 {% endmacro %}
 
 {% for n in vrf_bgp.neighbors %}
-{%  for af in ['ipv4','ipv6'] if n[af] is defined %}
+{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
 
-{%   if n[af] is string %}
+{%     if n[af] is string %}
 {# (Re)create peer group #}
 {%    set peer_group = 'ebgp' if n.type=='ebgp' else 'ibgp-local-as' if n.type=='localas_ibgp' else ('ibgp-'+af) %}
 {%    set transport_ip = loopback[af]|ipaddr('address') if af in loopback and n.type=='ibgp' else None %}
@@ -126,20 +126,23 @@
       description: "{{ n.name }}"
       peer-as: {{ n.as }}
       group: "{{ peer_group }}"
+{%       if n.activate[af]|default(False) %}
   {{ bgp_families(n,ipv4=(af=='ipv4' or 'ipv4' not in n),ipv6=(af=='ipv6')) | indent(2) }}
-
-{%    if n.type == 'ibgp' and n.rr|default(False) %}
+{%       else %}
+      admin-state: disable
+{%       endif %}
+{%       if n.type == 'ibgp' and n.rr|default(False) %}
       client-reflect: False
-{%    endif %}
-{%    if n.local_as is defined %}
+{%       endif %}
+{%       if n.local_as is defined %}
       local-as:
         as-number: {{ n.local_as }}
         prepend-global-as: {{ not n.replace_global_as|default(True) }} # Don't include iBGP global AS in eBGP advertisements
-{%    endif %}
-{%   else %}
+{%       endif %}
+{%     else %}
 {# TODO BGP unnumbered #}
-{%   endif %}
-{%  endfor %}
+{%     endif %}
+{%   endfor %}
 {% endfor %}
 
 {% for pfx in vrf_bgp.originate|default([]) %}
