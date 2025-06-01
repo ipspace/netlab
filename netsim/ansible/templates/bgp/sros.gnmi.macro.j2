@@ -15,23 +15,37 @@
 
 - path: configure/policy-options/policy-statement[name={{vrf}}_export]
   val:
-   default-action:
-    action-type: reject
-   entry:
-   - entry-id: 10
-     from:
-      prefix-list: [ "{{vrf}}_export" ]
-     action:
-      action-type: accept
-   - entry-id: 20
-     from:
-      protocol: 
-       name: ["bgp"]
-     action:
-      action-type: accept
+    default-action:
+      action-type: reject
+    entry:
+    - entry-id: 10
+      from:
+        prefix-list: [ "{{vrf}}_export" ]
+      action:
+        action-type: accept
+    - entry-id: 20
+      from:
+        protocol:
+          name: [ bgp ]
+      action:
+        action-type: accept
+{% if vrf != 'default' %}
+    - entry-id: 30
+      from:
+        protocol:
+          name: [ direct ]
+      action:
+        action-type: accept
+    - entry-id: 40
+      from:
+        protocol:
+          name: [ ospf ]
+      action:
+        action-type: accept
+{% endif %}
 
 {% for af in ['ipv4','ipv6'] if af in vrf_context.af and vrf_context.af[af] %}
-{% if loopback[af] is defined and bgp.advertise_loopback and vrf=="default" %}
+{% if loopback[af] is defined and vrf=="default" and bgp.advertise_loopback %}
 {{ bgp_export_prefix(vrf,loopback[af]|ipaddr('address')|ipaddr('host')) }}
 {% endif %}
 
@@ -110,8 +124,8 @@
 {%   endif %}
 {% endmacro %}
 
-{% for n in vrf_bgp.neighbors %}
-{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
+{% for n in vrf_bgp.neighbors|default([]) %}
+{%  for af in ['ipv4','ipv6'] if n[af] is defined %}
 
 {%     if n[af] is string %}
 {# (Re)create peer group #}

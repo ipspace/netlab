@@ -1,5 +1,25 @@
 {% from "templates/initial/sros.j2" import if_name, declare_router with context %}
 
+{% macro ospf_export_policy(ospf,vrf) %}
+- path: configure/policy-options/policy-statement[name=ospf_{{vrf}}_export]
+  val:
+    default-action:
+      action-type: reject
+    entry:
+    - entry-id: 20
+      from:
+        protocol:
+          name: [ bgp ]
+      action:
+        action-type: accept
+    - entry-id: 30
+      from:
+        protocol:
+          name: [ direct ]
+      action:
+        action-type: accept
+{% endmacro %}
+
 {% macro ospf_config(af,ospf,vrf_interfaces,include_system) %}
 {% set pid = ospf.process|default(0) %}
 {% set ospfv = 'ospf3' if af=='ipv6' else 'ospf' %}
@@ -7,34 +27,37 @@
 {% macro ospf_interface(l) %}
 {{ declare_router(l,sub_path="/"+ospfv+"[ospf-instance="+pid|string + "]") }}
   val:
-{%  if ospf.reference_bandwidth is defined %}
-   reference-bandwidth: {{ ospf.reference_bandwidth * 1000 }} # in kbps
-{%  endif %}
-   admin-state: enable
-   router-id: {{ ospf.router_id }}
-   area:
-   - area-id: "{{ l.ospf.area }}"
-     interface:
-     - interface-name: "{{ if_name(l,l.ifname) }}"
+{%   if ospf.reference_bandwidth is defined %}
+    reference-bandwidth: {{ ospf.reference_bandwidth * 1000 }} # in kbps
+{%   endif %}
+    admin-state: enable
+    router-id: {{ ospf.router_id }}
+{%   if l.vrf is defined %}
+    export-policy: [ ospf_{{ l.vrf }}_export ]
+{%   endif %}
+    area:
+    - area-id: "{{ l.ospf.area }}"
+      interface:
+      - interface-name: "{{ if_name(l,l.ifname) }}"
 {%  if l.ospf.passive|default(False) %}
-       passive: True
+        passive: True
 {%  endif %}
 {%  if l.ospf.bfd|default(False) %}
-       bfd-liveness: {% if not ospf.strict_bfd|default(False) %}{ }
+        bfd-liveness: {% if not ospf.strict_bfd|default(False) %}{ }
 {%     else +%}
-        strict: True
+          strict: True
 {%      if ospf.strict_bfd_delay|default(0) > 0 %}
-        strict-mode-holddown: {{ ospf.strict_bfd_delay }}
+          strict-mode-holddown: {{ ospf.strict_bfd_delay }}
 {%      endif %}
 {%     endif %}
 {%  endif %}
        # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
 {# TODO: Add support for multi-area adjacencies and 'secondary' interface-type #}
 {%  if l.ospf.network_type|default("") in ["broadcast","non-broadcast","point-to-point","point-to-multipoint"] %}
-       interface-type: "{{ 'p2mp-nbma' if l.ospf.network_type=='point-to-multipoint' else l.ospf.network_type }}"
+        interface-type: "{{ 'p2mp-nbma' if l.ospf.network_type=='point-to-multipoint' else l.ospf.network_type }}"
 {%  endif %}
 {%  if l.ospf.cost is defined %}
-       metric: {{ l.ospf.cost }}
+        metric: {{ l.ospf.cost }}
 {%  endif %}
 {% endmacro %}
 
