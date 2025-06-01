@@ -47,61 +47,63 @@
 {% set path = "router[router-name=Base]" if vrf=="default" else "service/vprn[service-name="+vrf+"]" %}
 - path: configure/{{ path }}
   val:
-   router-id: "{{ vrf_bgp.router_id|default(bgp.router_id) }}"
-   autonomous-system: {{ bgp.as }}
-   bgp:
-    ebgp-default-reject-policy:
-     import: False
-     export: False
+    router-id: "{{ vrf_bgp.router_id|default(bgp.router_id) }}"
+    autonomous-system: {{ bgp.as }}
+    bgp:
+      ebgp-default-reject-policy:
+        import: False
+        export: False
 {% if vrf=="default" %}
-    vpn-apply-export: True
-    vpn-apply-import: True
+      vpn-apply-export: True
+      vpn-apply-import: True
 {% endif %}
-    multipath:
-     ibgp: {{ 16 if 'ixr' in clab.type else 64 }}
-     ebgp: {{ 16 if 'ixr' in clab.type else 64 }}
-    min-route-advertisement: 1 # Be aggressive about sending updates
-    connect-retry: 5           # Retry frequently, suitable in DC context
-    client-reflect: {{ (not vrf) and bgp.rr|default('')|bool }}
+{% if vrf_bgp.rr|default(False) %}
+      client-reflect: True
+{% endif %}
+      multipath:
+        ibgp: {{ 16 if 'ixr' in clab.type else 64 }}
+        ebgp: {{ 16 if 'ixr' in clab.type else 64 }}
+      min-route-advertisement: 1 # Be aggressive about sending updates
+      connect-retry: 5           # Retry frequently, suitable in DC context
     # family: cannot disable this
     # ipv4: False # Enabled by default, disable globally and set per group
 
 {% macro bgp_families(neighbor,ipv4=True,ipv6=True) %}
-   family:
+    family:
 {% set activate = neighbor.activate|default( {'ipv4': True,'ipv6': True } ) %}
-    ipv4: {{ activate.ipv4|default(False) and ipv4 }}
-    ipv6: {{ activate.ipv6|default(False) and ipv6 }}
+      ipv4: {{ activate.ipv4|default(False) and ipv4 }}
+      ipv6: {{ activate.ipv6|default(False) and ipv6 }}
 {%  if 'evpn' in neighbor and neighbor.evpn %}
-    evpn: True # Must have at least 1 address family enabled
+      evpn: True # Must have at least 1 address family enabled
 {%  endif %}
 {% endmacro %}
 
 {% macro bgp_peer_group(name,type,neighbor,transport_ip) %}
 - path: configure/{{ path }}/bgp/group[group-name={{name}}]
   val:
-   admin-state: enable
+    admin-state: enable
 {{ bgp_families(neighbor) }}
-   import:
-    policy: ["accept_all"]
-   export:
-    policy: [ "{{ (vrf + "_export") if type in ['localas_ibgp','ebgp'] else 
+    import:
+      policy: ["accept_all"]
+    export:
+      policy: [ "{{ (vrf + "_export") if type in ['localas_ibgp','ebgp'] else 
                   'next-hop-self-ebgp-routes-only' if 'ibgp' in type and bgp.next_hop_self|default(False) else 'accept_all' }}" ]
 
 {% if bgp.community[ type ]|default([])|length < 2 %}
-   send-communities:
+    send-communities:
 {%  for c,vals in {'standard': ['standard','large'],'extended':['extended'] }.items() %}
 {%   if c not in bgp.community[ type ] %}
 {%    for knob in vals %}
-    {{ knob }}: False  # True value not allowed, on by default
+      {{ knob }}: False  # True value not allowed, on by default
 {%    endfor %}
 {%   endif %}
 {%  endfor %}
 {% endif %}
 {% if transport_ip %}
-   local-address: "{{ transport_ip }}"
-{%  if bgp.rr|default('')|bool %}
-   cluster:
-    cluster-id: "{{ bgp.rr_cluster_id|default(False) or vrf_bgp.router_id|default(bgp.router_id) }}"
+    local-address: "{{ transport_ip }}"
+{%  if bgp.rr|default(False) and 'ibgp' in name %}
+    cluster:
+      cluster-id: "{{ bgp.rr_cluster_id|default(vrf_bgp.router_id|default(bgp.router_id)) }}"
 {%  endif %}
 {% endif %}
 {% endmacro %}
@@ -117,19 +119,21 @@
 
 - path: configure/{{ path }}/bgp
   val:
-   neighbor:
-   - ip-address: "{{ n[af] }}"
-     description: "{{ n.name }}"
-     peer-as: {{ n.as }}
-     group: "{{ peer_group }}"
+    neighbor:
+    - ip-address: "{{ n[af] }}"
+      description: "{{ n.name }}"
+      peer-as: {{ n.as }}
+      group: "{{ peer_group }}"
   {{ bgp_families(n,ipv4=(af=='ipv4' or 'ipv4' not in n),ipv6=(af=='ipv6')) | indent(2) }}
 
-{%    if n.local_as is defined %}
-     local-as:
-      as-number: {{ n.local_as }}
-      prepend-global-as: {{ not n.replace_global_as|default(True) }} # Don't include iBGP global AS in eBGP advertisements
+{%    if n.type == 'ibgp' and n.rr|default(False) %}
+      client-reflect: False
 {%    endif %}
-
+{%    if n.local_as is defined %}
+      local-as:
+        as-number: {{ n.local_as }}
+        prepend-global-as: {{ not n.replace_global_as|default(True) }} # Don't include iBGP global AS in eBGP advertisements
+{%    endif %}
 {%   else %}
 {# TODO BGP unnumbered #}
 {%   endif %}
