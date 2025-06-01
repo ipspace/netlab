@@ -626,8 +626,8 @@ ok: [x1]
 ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x1]
 changed: [probe]
+changed: [x1]
 changed: [x2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -680,22 +680,20 @@ ok: [dut] =>
     routing configuration for dut
     =========================================
     updates:
-    - path: routing-policy/policy[name=lp_17]
+    - path: /configure/policy-options/policy-statement[name=lp_17]
       val:
-       statement:
-       - name: rpe_10
-         action:
-          bgp:
-           local-preference:
-            set: 17
-    - path: routing-policy/policy[name=lp_42]
+        entry:
+        - entry-id: 10
+          action:
+            action-type: accept
+            local-preference: "17"
+    - path: /configure/policy-options/policy-statement[name=lp_42]
       val:
-       statement:
-       - name: rpe_10
-         action:
-          bgp:
-           local-preference:
-            set: 42
+        entry:
+        - entry-id: 10
+          action:
+            action-type: accept
+            local-preference: "42"
 ok: [probe] => 
   msg: |-
     routing configuration for probe
@@ -713,14 +711,10 @@ TASK [Generate gNMI YAML configuration] ****************************************
 ok: [dut]
 
 TASK [Update routing node configuration from gNMI template /home/pipi/net101/tools/netsim/ansible/templates/routing/sros.j2] ***
-fatal: [dut]: FAILED! => changed=false 
-  code: -32603
-  msg: |-
-    <_InactiveRpcError of RPC that terminated with:
-            status = StatusCode.INVALID_ARGUMENT
-            details = "MINOR: MGMT_CORE #2201: /routing-policy - Unknown element - disabled by configuration"
-            debug_error_string = "UNKNOWN:Error received from peer  {grpc_message:"MINOR: MGMT_CORE #2201: /routing-policy - Unknown element - disabled by configuration", grpc_status:3, created_time:"2025-05-31T11:04:55.298126479+00:00"}"
-    >
+changed: [dut]
+
+TASK [debug] *******************************************************************
+skipping: [dut]
 
 TASK [template] ****************************************************************
 changed: [probe]
@@ -735,26 +729,289 @@ TASK [run vtysh to import routing config from /home/pipi/net101/tools/netsim/ans
 changed: [probe]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
+ok: [dut]
 ok: [probe]
 ok: [x1]
 ok: [x2]
 
 TASK [Find configuration template for bgp] *************************************
+ok: [dut]
 ok: [probe]
 ok: [x1]
 ok: [x2]
 
 TASK [fail] ********************************************************************
+skipping: [dut]
 skipping: [probe]
 skipping: [x1]
 skipping: [x2]
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
+ok: [dut]
 ok: [probe]
 ok: [x1]
 ok: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+  
+    updates:
+  
+    - path: configure/policy-options/policy-statement[name=accept_all]
+      val:
+       default-action:
+        action-type: accept
+  
+    - path: configure/policy-options/policy-statement[name=next-hop-self-ebgp-routes-only]
+      val:
+       entry:
+       - entry-id: 10
+         from:
+          path-type: ebgp
+         action:
+          action-type: accept
+          next-hop: self
+       default-action:
+        action-type: accept
+  
+  
+    - path: configure/policy-options/prefix-list[name=default_export]
+      val:
+       prefix: [] # Make sure it exists
+  
+    - path: configure/policy-options/policy-statement[name=default_export]
+      val:
+       default-action:
+        action-type: reject
+       entry:
+       - entry-id: 10
+         from:
+          prefix-list: [ "default_export" ]
+         action:
+          action-type: accept
+       - entry-id: 20
+         from:
+          protocol:
+           name: ["bgp"]
+         action:
+          action-type: accept
+  
+    - path: configure/policy-options/prefix-list[name=default_export]
+      val:
+       prefix:
+       - ip-prefix: 10.0.0.1/32
+         type: exact
+  
+  
+  
+    - path: configure/policy-options/prefix-list[name=default_export]
+      val:
+       prefix:
+       - ip-prefix: 2001:db8:1:1::1/128
+         type: exact
+  
+  
+  
+  
+    - path: configure/router[router-name=Base]
+      val:
+       router-id: "10.0.0.1"
+       autonomous-system: 65000
+       bgp:
+        ebgp-default-reject-policy:
+         import: False
+         export: False
+        vpn-apply-export: True
+        vpn-apply-import: True
+        multipath:
+         ibgp: 64
+         ebgp: 64
+        min-route-advertisement: 1 # Be aggressive about sending updates
+        connect-retry: 5           # Retry frequently, suitable in DC context
+        client-reflect: False
+        # family: cannot disable this
+        # ipv4: False # Enabled by default, disable globally and set per group
+  
+  
+  
+  
+    - path: configure/router[router-name=Base]/bgp/group[group-name=ibgp-ipv4]
+      val:
+       admin-state: enable
+       family:
+        ipv4: True
+        ipv6: True
+  
+       import:
+        policy: ["accept_all"]
+       export:
+        policy: [ "next-hop-self-ebgp-routes-only" ]
+  
+       local-address: "10.0.0.1"
+  
+  
+    - path: configure/router[router-name=Base]/bgp
+      val:
+       neighbor:
+       - ip-address: "10.0.0.2"
+         description: "probe"
+         peer-as: 65000
+         group: "ibgp-ipv4"
+         family:
+          ipv4: True
+          ipv6: False
+  
+  
+  
+  
+    - path: configure/router[router-name=Base]/bgp/group[group-name=ibgp-ipv6]
+      val:
+       admin-state: enable
+       family:
+        ipv4: True
+        ipv6: True
+  
+       import:
+        policy: ["accept_all"]
+       export:
+        policy: [ "next-hop-self-ebgp-routes-only" ]
+  
+       local-address: "2001:db8:1:1::1"
+  
+  
+    - path: configure/router[router-name=Base]/bgp
+      val:
+       neighbor:
+       - ip-address: "2001:db8:1:2::1"
+         description: "probe"
+         peer-as: 65000
+         group: "ibgp-ipv6"
+         family:
+          ipv4: False
+          ipv6: True
+  
+  
+  
+  
+    - path: configure/router[router-name=Base]/bgp/group[group-name=ebgp]
+      val:
+       admin-state: enable
+       family:
+        ipv4: True
+        ipv6: True
+  
+       import:
+        policy: ["accept_all"]
+       export:
+        policy: [ "default_export" ]
+  
+       send-communities:
+        extended: False  # True value not allowed, on by default
+  
+  
+    - path: configure/router[router-name=Base]/bgp
+      val:
+       neighbor:
+       - ip-address: "10.1.0.2"
+         description: "x1"
+         peer-as: 65100
+         group: "ebgp"
+         family:
+          ipv4: True
+          ipv6: False
+  
+  
+  
+  
+    - path: configure/router[router-name=Base]/bgp/group[group-name=ebgp]
+      val:
+       admin-state: enable
+       family:
+        ipv4: True
+        ipv6: True
+  
+       import:
+        policy: ["accept_all"]
+       export:
+        policy: [ "default_export" ]
+  
+       send-communities:
+        extended: False  # True value not allowed, on by default
+  
+  
+    - path: configure/router[router-name=Base]/bgp
+      val:
+       neighbor:
+       - ip-address: "2001:db8:3::2"
+         description: "x1"
+         peer-as: 65100
+         group: "ebgp"
+         family:
+          ipv4: False
+          ipv6: True
+  
+  
+  
+  
+    - path: configure/router[router-name=Base]/bgp/group[group-name=ebgp]
+      val:
+       admin-state: enable
+       family:
+        ipv4: True
+        ipv6: True
+  
+       import:
+        policy: ["accept_all"]
+       export:
+        policy: [ "default_export" ]
+  
+       send-communities:
+        extended: False  # True value not allowed, on by default
+  
+  
+    - path: configure/router[router-name=Base]/bgp
+      val:
+       neighbor:
+       - ip-address: "10.1.0.6"
+         description: "x2"
+         peer-as: 65101
+         group: "ebgp"
+         family:
+          ipv4: True
+          ipv6: False
+  
+  
+  
+  
+    - path: configure/router[router-name=Base]/bgp/group[group-name=ebgp]
+      val:
+       admin-state: enable
+       family:
+        ipv4: True
+        ipv6: True
+  
+       import:
+        policy: ["accept_all"]
+       export:
+        policy: [ "default_export" ]
+  
+       send-communities:
+        extended: False  # True value not allowed, on by default
+  
+  
+    - path: configure/router[router-name=Base]/bgp
+      val:
+       neighbor:
+       - ip-address: "2001:db8:3:1::2"
+         description: "x2"
+         peer-as: 65101
+         group: "ebgp"
+         family:
+          ipv4: False
+          ipv6: True
 ok: [probe] => 
   msg: |-
     bgp configuration for probe
@@ -916,7 +1173,17 @@ ok: [x2] =>
     do write
 
 TASK [Deploy bgp configuration] ************************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for probe, x1, x2
+
+TASK [Generate gNMI YAML configuration] ****************************************
+ok: [dut]
+
+TASK [Update bgp node configuration from gNMI template /home/pipi/net101/tools/netsim/ansible/templates/bgp/sros.j2] ***
+changed: [dut]
+
+TASK [debug] *******************************************************************
+skipping: [dut]
 
 TASK [template] ****************************************************************
 changed: [x1]
@@ -934,21 +1201,24 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [probe]
 changed: [x1]
+changed: [probe]
 changed: [x2]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [dut]
 ok: [probe]
 ok: [x1]
 ok: [x2]
 
 TASK [Find configuration template for ospf] ************************************
 skipping: [x1]
+ok: [dut]
 skipping: [x2]
 ok: [probe]
 
 TASK [fail] ********************************************************************
+skipping: [dut]
 skipping: [probe]
 skipping: [x1]
 skipping: [x2]
@@ -956,6 +1226,7 @@ skipping: [x2]
 TASK [Find configuration deployment deploy_script for ospf] ********************
 skipping: [x1]
 skipping: [x2]
+ok: [dut]
 ok: [probe]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -1010,11 +1281,84 @@ ok: [probe] =>
   
     !
     do write
+ok: [dut] => 
+  msg: |-
+    ospf configuration for dut
+    =========================================
+  
+  
+    updates:
+  
+  
+  
+  
+    - path: configure/router[router-name=Base]/ospf[ospf-instance=0]
+      val:
+       admin-state: enable
+       router-id: 10.0.0.1
+       area:
+       - area-id: "0.0.0.0"
+         interface:
+         - interface-name: "eth-1/1/c3"
+           # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
+           interface-type: "point-to-point"
+  
+  
+  
+    - path: configure/router[router-name=Base]/ospf[ospf-instance=0]
+      val:
+       admin-state: enable
+       router-id: 10.0.0.1
+       area:
+       - area-id: "0.0.0.0"
+         interface:
+         - interface-name: "system"
+           passive: True
+           # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
+  
+  
+  
+  
+  
+  
+    - path: configure/router[router-name=Base]/ospf3[ospf-instance=0]
+      val:
+       admin-state: enable
+       router-id: 10.0.0.1
+       area:
+       - area-id: "0.0.0.0"
+         interface:
+         - interface-name: "eth-1/1/c3"
+           # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
+           interface-type: "point-to-point"
+  
+  
+  
+    - path: configure/router[router-name=Base]/ospf3[ospf-instance=0]
+      val:
+       admin-state: enable
+       router-id: 10.0.0.1
+       area:
+       - area-id: "0.0.0.0"
+         interface:
+         - interface-name: "system"
+           passive: True
+           # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
 
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [x1]
 skipping: [x2]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for probe
+
+TASK [Generate gNMI YAML configuration] ****************************************
+ok: [dut]
+
+TASK [Update ospf node configuration from gNMI template /home/pipi/net101/tools/netsim/ansible/templates/ospf/sros.j2] ***
+changed: [dut]
+
+TASK [debug] *******************************************************************
+skipping: [dut]
 
 TASK [template] ****************************************************************
 changed: [probe]
@@ -1030,12 +1374,48 @@ changed: [probe]
 
 PLAY [Deploy custom deployment templates] **************************************
 
+TASK [Run custom configuration deployment scripts] *****************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-custom-config.yml for dut => (item=bgp.policy)
+
+TASK [Find configuration template] *********************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Check is the configuration template is a file] ***************************
+ok: [dut -> localhost]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Process template /home/pipi/net101/tools/netsim/extra/bgp.policy/sros.j2 for dut] ***
+skipping: [dut]
+
+TASK [Find custom configuration deployment script] *****************************
+ok: [dut]
+
+TASK [Run the configuration deployment script] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for dut
+
+TASK [Generate gNMI YAML configuration] ****************************************
+ok: [dut]
+
+TASK [Update bgp.policy node configuration from gNMI template /home/pipi/net101/tools/netsim/extra/bgp.policy/sros.j2] ***
+changed: [dut]
+
+TASK [debug] *******************************************************************
+skipping: [dut]
+
 PLAY RECAP *********************************************************************
-dut                        : ok=27   changed=1    unreachable=0    failed=1    skipped=6    rescued=0    ignored=0   
+dut                        : ok=49   changed=5    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 probe                      : ok=45   changed=9    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
 x1                         : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
 x2                         : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
 
-Fatal error in netlab: Executing Ansible playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible failed
-Error executing ansible-playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible:
-  Command '['ansible-playbook', '/home/pipi/net101/tools/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.
+
+
+Use this topology to test BGP local preference on IPv4 and IPv6 prefixes. DUT
+has to set node-wide local preference on prefixes received from X1 and
+neighbor-specific local preference on prefixes received from X2.
+

@@ -317,22 +317,21 @@ ok: [dut] =>
     routing configuration for dut
     =========================================
     updates:
-    - path: routing-policy/policy[name=bp-probe-1-in]
+    - path: /configure/policy-options/policy-statement[name=bp-probe-1-in]
       val:
-       statement:
-       - name: rpe_10
-         action:
-          bgp:
-           local-preference:
-            set: 17
-    - path: routing-policy/policy[name=bp-probe-1-out]
+        entry:
+        - entry-id: 10
+          action:
+            action-type: accept
+            local-preference: "17"
+    - path: /configure/policy-options/policy-statement[name=bp-probe-1-out]
       val:
-       statement:
-       - name: rpe_10
-         action:
-          bgp:
-           med:
-            set: 42
+        entry:
+        - entry-id: 10
+          action:
+            action-type: accept
+            bgp-med:
+              set: "42"
 
 TASK [Deploy routing configuration] ********************************************
 skipping: [probe]
@@ -342,28 +341,109 @@ TASK [Generate gNMI YAML configuration] ****************************************
 ok: [dut]
 
 TASK [Update routing node configuration from gNMI template /home/pipi/net101/tools/netsim/ansible/templates/routing/sros.j2] ***
-fatal: [dut]: FAILED! => changed=false 
-  code: -32603
-  msg: |-
-    <_InactiveRpcError of RPC that terminated with:
-            status = StatusCode.INVALID_ARGUMENT
-            details = "MINOR: MGMT_CORE #2201: /routing-policy - Unknown element - disabled by configuration"
-            debug_error_string = "UNKNOWN:Error received from peer  {grpc_message:"MINOR: MGMT_CORE #2201: /routing-policy - Unknown element - disabled by configuration", grpc_status:3, created_time:"2025-05-31T10:09:15.252515688+00:00"}"
-    >
+changed: [dut]
+
+TASK [debug] *******************************************************************
+skipping: [dut]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
+ok: [dut]
 ok: [probe]
 
 TASK [Find configuration template for bgp] *************************************
+ok: [dut]
 ok: [probe]
 
 TASK [fail] ********************************************************************
+skipping: [dut]
 skipping: [probe]
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
+ok: [dut]
 ok: [probe]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+  
+    updates:
+  
+    - path: configure/policy-options/policy-statement[name=accept_all]
+      val:
+       default-action:
+        action-type: accept
+  
+    - path: configure/policy-options/policy-statement[name=next-hop-self-ebgp-routes-only]
+      val:
+       entry:
+       - entry-id: 10
+         from:
+          path-type: ebgp
+         action:
+          action-type: accept
+          next-hop: self
+       default-action:
+        action-type: accept
+  
+  
+    - path: configure/policy-options/prefix-list[name=default_export]
+      val:
+       prefix: [] # Make sure it exists
+  
+    - path: configure/policy-options/policy-statement[name=default_export]
+      val:
+       default-action:
+        action-type: reject
+       entry:
+       - entry-id: 10
+         from:
+          prefix-list: [ "default_export" ]
+         action:
+          action-type: accept
+       - entry-id: 20
+         from:
+          protocol:
+           name: ["bgp"]
+         action:
+          action-type: accept
+  
+    - path: configure/policy-options/prefix-list[name=default_export]
+      val:
+       prefix:
+       - ip-prefix: 10.0.0.1/32
+         type: exact
+  
+  
+  
+    - path: configure/policy-options/prefix-list[name=default_export]
+      val:
+       prefix:
+       - ip-prefix: 2001:db8:1:1::1/128
+         type: exact
+  
+  
+  
+  
+    - path: configure/router[router-name=Base]
+      val:
+       router-id: "10.0.0.1"
+       autonomous-system: 65000
+       bgp:
+        ebgp-default-reject-policy:
+         import: False
+         export: False
+        vpn-apply-export: True
+        vpn-apply-import: True
+        multipath:
+         ibgp: 64
+         ebgp: 64
+        min-route-advertisement: 1 # Be aggressive about sending updates
+        connect-retry: 5           # Retry frequently, suitable in DC context
+        client-reflect: False
+        # family: cannot disable this
+        # ipv4: False # Enabled by default, disable globally and set per group
 ok: [probe] => 
   msg: |-
     bgp configuration for probe
@@ -417,7 +497,17 @@ ok: [probe] =>
     do write
 
 TASK [Deploy bgp configuration] ************************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for probe
+
+TASK [Generate gNMI YAML configuration] ****************************************
+ok: [dut]
+
+TASK [Update bgp node configuration from gNMI template /home/pipi/net101/tools/netsim/ansible/templates/bgp/sros.j2] ***
+changed: [dut]
+
+TASK [debug] *******************************************************************
+skipping: [dut]
 
 TASK [template] ****************************************************************
 changed: [probe]
@@ -433,8 +523,63 @@ changed: [probe]
 
 PLAY [Deploy custom deployment templates] **************************************
 
+TASK [Run custom configuration deployment scripts] *****************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-custom-config.yml for dut => (item=bgp.policy)
+
+TASK [Find configuration template] *********************************************
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Check is the configuration template is a file] ***************************
+ok: [dut -> localhost]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+
+TASK [Process template /home/pipi/net101/tools/netsim/extra/bgp.policy/sros.j2 for dut] ***
+[WARNING]: The value 'True' is not a valid IP address or network, passing this
+value to ipaddr filter might result in breaking change in future.
+skipping: [dut]
+
+TASK [Find custom configuration deployment script] *****************************
+ok: [dut]
+
+TASK [Run the configuration deployment script] *********************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for dut
+
+TASK [Generate gNMI YAML configuration] ****************************************
+ok: [dut]
+
+TASK [Update bgp.policy node configuration from gNMI template /home/pipi/net101/tools/netsim/extra/bgp.policy/sros.j2] ***
+fatal: [dut]: FAILED! => 
+  msg: |-
+    The conditional check 'd or u or r' failed. The error was: An unhandled exception occurred while templating '{{ cfg.delete if 'delete' in cfg and cfg.delete is not string else [] }}'. Error was a <class 'ansible.errors.AnsibleError'>, original message: An unhandled exception occurred while templating '{{ yaml_config | from_yaml }}'. Error was a <class 'yaml.scanner.ScannerError'>, original message: block sequence entries are not allowed in this context
+      in "<unicode string>", line 13, column 14
+  
+    The error appears to be in '/home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml': line 5, column 3, but may
+    be elsewhere in the file depending on the exact syntax problem.
+  
+    The offending line appears to be:
+  
+  
+    - name: Update {{ netsim_action }} node configuration from gNMI template {{ config_template  }}
+      ^ here
+    We could be wrong, but this one looks like it might be an issue with
+    missing quotes. Always quote template expression brackets when they
+    start a value. For instance:
+  
+        with_items:
+          - {{ foo }}
+  
+    Should be written as:
+  
+        with_items:
+          - "{{ foo }}"
+
 PLAY RECAP *********************************************************************
-dut                        : ok=26   changed=1    unreachable=0    failed=1    skipped=6    rescued=0    ignored=0   
+dut                        : ok=40   changed=3    unreachable=0    failed=1    skipped=12   rescued=0    ignored=0   
 probe                      : ok=29   changed=5    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
 
 Fatal error in netlab: Executing Ansible playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible failed
