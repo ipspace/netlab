@@ -15,8 +15,8 @@ TASK [Find device readiness script] ********************************************
 ok: [dut]
 ok: [pe2]
 ok: [ce1]
-ok: [p1]
 ok: [ce2]
+ok: [p1]
 ok: [p2]
 
 TASK [Wait for device to become ready] *****************************************
@@ -25,7 +25,7 @@ skipping: [ce1]
 skipping: [ce2]
 skipping: [p1]
 skipping: [p2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/sros.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/sros.yml for dut
 
 TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
 ok: [dut]
@@ -34,7 +34,7 @@ TASK [Wait up to 180s for gNMI(TCP 57400) to be ready on clab-ml_17-dut] *******
 ok: [dut -> localhost]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, pe2, ce1, ce2, p1, p2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, pe2, ce1, ce2, p1, p2
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [dut]
@@ -85,14 +85,14 @@ skipping: [p1]
 skipping: [p2]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, pe2, ce1, ce2, p1, p2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, pe2, ce1, ce2, p1, p2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
 ok: [pe2]
 ok: [ce1]
-ok: [p1]
 ok: [ce2]
+ok: [p1]
 ok: [p2]
 
 TASK [Find configuration template for initial] *********************************
@@ -116,8 +116,8 @@ ok: [dut]
 ok: [pe2]
 ok: [ce1]
 ok: [ce2]
-ok: [p1]
 ok: [p2]
+ok: [p1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [pe2] => 
@@ -428,117 +428,6 @@ ok: [dut] =>
         primary:
          address: "10.1.0.14"
          prefix-length: 30
-ok: [p2] => 
-  msg: |-
-    initial configuration for p2
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)# "
-    echo
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
-    #
-    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
-    #
-    sysctl -w net.ipv4.ip_forward=1
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    # Set system defaults
-    #
-    # Send ARP requests from a sane source IP address
-    #
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Create loopbacks, stub and lag/bond devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    ip link set eth1 down
-    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
-    ip link set eth1 up
-    ip link set eth2 down
-    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
-    ip link set dev eth2 mtu 1500
-    ip link set eth2 up
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-  
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname p2
-    !
-    ip forwarding
-    vrf mgmt
-     exit-vrf
-    !
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ip address 10.0.0.6/32
-    !
-    interface eth1
-     no shutdown
-     description p2 -> p1
-     ip address 10.1.0.6/30
-    !
-    interface eth2
-     no shutdown
-     description p2 -> pe2
-     ip address 10.1.0.9/30
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
 ok: [ce2] => 
   msg: |-
     initial configuration for ce2
@@ -752,15 +641,126 @@ ok: [p1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [p2] => 
+  msg: |-
+    initial configuration for p2
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+    ip link set eth2 down
+    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+    ip link set dev eth2 mtu 1500
+    ip link set eth2 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname p2
+    !
+    ip forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.6/32
+    !
+    interface eth1
+     no shutdown
+     description p2 -> p1
+     ip address 10.1.0.6/30
+    !
+    interface eth2
+     no shutdown
+     description p2 -> pe2
+     ip address 10.1.0.9/30
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for pe2, ce1, ce2, p1, p2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for pe2, ce1, ce2, p1, p2
 
 TASK [Generate gNMI YAML configuration] ****************************************
 ok: [dut]
 
-TASK [Update initial node configuration from gNMI template /home/pipi/net101/tools/netsim/ansible/templates/initial/sros.j2] ***
+TASK [Update initial node configuration from gNMI template /home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
@@ -777,14 +777,14 @@ skipping: [p1]
 skipping: [p2]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for pe2, ce1, ce2, p1, p2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for pe2, ce1, ce2, p1, p2
 
 TASK [template] ****************************************************************
+changed: [p1]
+changed: [ce1]
 changed: [p2]
 changed: [ce2]
 changed: [pe2]
-changed: [ce1]
-changed: [p1]
 
 TASK [set_fact] ****************************************************************
 ok: [pe2]
@@ -793,14 +793,14 @@ ok: [ce2]
 ok: [p2]
 ok: [p1]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [ce1]
 changed: [pe2]
-changed: [p1]
 changed: [ce2]
+changed: [p1]
 changed: [p2]
 
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [pe2]
 skipping: [ce1]
 skipping: [ce2]
@@ -811,17 +811,17 @@ PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [ce1]
-ok: [ce2]
 ok: [dut]
-ok: [p1]
+ok: [ce2]
 ok: [p2]
+ok: [p1]
 ok: [pe2]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, dut, p1, p2, pe2 => (item=bgp)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, dut, p1, p2, pe2 => (item=ospf)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, dut, p1, p2, pe2 => (item=mpls)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, dut, p1, p2, pe2 => (item=vrf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, dut, p1, p2, pe2 => (item=bgp)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, dut, p1, p2, pe2 => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, dut, p1, p2, pe2 => (item=mpls)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, dut, p1, p2, pe2 => (item=vrf)
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [ce1]
@@ -882,7 +882,7 @@ ok: [dut] =>
           action-type: accept
           next-hop: self
        default-action:
-        action-type: accept
+        action-type: next-policy
   
   
     - path: configure/policy-options/prefix-list[name=default_export]
@@ -891,20 +891,20 @@ ok: [dut] =>
   
     - path: configure/policy-options/policy-statement[name=default_export]
       val:
-       default-action:
-        action-type: reject
-       entry:
-       - entry-id: 10
-         from:
-          prefix-list: [ "default_export" ]
-         action:
-          action-type: accept
-       - entry-id: 20
-         from:
-          protocol:
-           name: ["bgp"]
-         action:
-          action-type: accept
+        default-action:
+          action-type: reject
+        entry:
+        - entry-id: 10
+          from:
+            prefix-list: [ "default_export" ]
+          action:
+            action-type: accept
+        - entry-id: 20
+          from:
+            protocol:
+              name: [ bgp ]
+          action:
+            action-type: accept
   
     - path: configure/policy-options/prefix-list[name=default_export]
       val:
@@ -917,20 +917,19 @@ ok: [dut] =>
   
     - path: configure/router[router-name=Base]
       val:
-       router-id: "10.0.0.3"
-       autonomous-system: 65001
-       bgp:
-        ebgp-default-reject-policy:
-         import: False
-         export: False
-        vpn-apply-export: True
-        vpn-apply-import: True
-        multipath:
-         ibgp: 64
-         ebgp: 64
-        min-route-advertisement: 1 # Be aggressive about sending updates
-        connect-retry: 5           # Retry frequently, suitable in DC context
-        client-reflect: False
+        router-id: "10.0.0.3"
+        autonomous-system: 65001
+        bgp:
+          ebgp-default-reject-policy:
+            import: False
+            export: False
+          vpn-apply-export: True
+          vpn-apply-import: True
+          multipath:
+            ibgp: 64
+            ebgp: 64
+          min-route-advertisement: 1 # Be aggressive about sending updates
+          connect-retry: 5           # Retry frequently, suitable in DC context
         # family: cannot disable this
         # ipv4: False # Enabled by default, disable globally and set per group
   
@@ -939,29 +938,30 @@ ok: [dut] =>
   
     - path: configure/router[router-name=Base]/bgp/group[group-name=ibgp-ipv4]
       val:
-       admin-state: enable
-       family:
-        ipv4: True
-        ipv6: False
+        admin-state: enable
+        family:
+          ipv4: True
+          ipv6: False
   
-       import:
-        policy: ["accept_all"]
-       export:
-        policy: [ "next-hop-self-ebgp-routes-only" ]
-  
-       local-address: "10.0.0.3"
+        import:
+          policy: ["accept_all"]
+        export:
+          policy:
+          - next-hop-self-ebgp-routes-only
+          - default_export
+        local-address: "10.0.0.3"
   
   
     - path: configure/router[router-name=Base]/bgp
       val:
-       neighbor:
-       - ip-address: "10.0.0.4"
-         description: "pe2"
-         peer-as: 65001
-         group: "ibgp-ipv4"
-         family:
-          ipv4: True
-          ipv6: False
+        neighbor:
+        - ip-address: "10.0.0.4"
+          description: "pe2"
+          peer-as: 65001
+          group: "ibgp-ipv4"
+          family:
+            ipv4: True
+            ipv6: False
 ok: [pe2] => 
   msg: |-
     bgp configuration for pe2
@@ -1006,13 +1006,13 @@ skipping: [ce1]
 skipping: [ce2]
 skipping: [p1]
 skipping: [p2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for pe2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for pe2
 
 TASK [Generate gNMI YAML configuration] ****************************************
 ok: [dut]
 
-TASK [Update bgp node configuration from gNMI template /home/pipi/net101/tools/netsim/ansible/templates/bgp/sros.j2] ***
+TASK [Update bgp node configuration from gNMI template /home/pipi/netlab_gh/netsim/ansible/templates/bgp/sros.j2] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
@@ -1024,10 +1024,10 @@ changed: [pe2]
 TASK [set_fact] ****************************************************************
 ok: [pe2]
 
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [pe2]
 
-TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [pe2]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
@@ -1058,8 +1058,8 @@ TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [ce1]
 ok: [ce2]
 ok: [dut]
-ok: [p2]
 ok: [p1]
+ok: [p2]
 ok: [pe2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -1153,6 +1153,7 @@ ok: [dut] =>
     =========================================
   
   
+  
     updates:
   
   
@@ -1160,26 +1161,26 @@ ok: [dut] =>
   
     - path: configure/router[router-name=Base]/ospf[ospf-instance=0]
       val:
-       admin-state: enable
-       router-id: 10.0.0.3
-       area:
-       - area-id: "0.0.0.0"
-         interface:
-         - interface-name: "eth-1/1/c1"
+        admin-state: enable
+        router-id: 10.0.0.3
+        area:
+        - area-id: "0.0.0.0"
+          interface:
+          - interface-name: "eth-1/1/c1"
            # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
-           interface-type: "point-to-point"
+            interface-type: "point-to-point"
   
   
   
     - path: configure/router[router-name=Base]/ospf[ospf-instance=0]
       val:
-       admin-state: enable
-       router-id: 10.0.0.3
-       area:
-       - area-id: "0.0.0.0"
-         interface:
-         - interface-name: "system"
-           passive: True
+        admin-state: enable
+        router-id: 10.0.0.3
+        area:
+        - area-id: "0.0.0.0"
+          interface:
+          - interface-name: "system"
+            passive: True
            # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
 ok: [p1] => 
   msg: |-
@@ -1249,15 +1250,15 @@ ok: [p2] =>
     do write
 
 TASK [Deploy ospf configuration] ***********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for ce1, ce2, p1, p2, pe2
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for ce1, ce2, p1, p2, pe2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for dut
 
 TASK [template] ****************************************************************
-changed: [ce1]
-changed: [p2]
+changed: [ce2]
 changed: [pe2]
 changed: [p1]
-changed: [ce2]
+changed: [p2]
+changed: [ce1]
 
 TASK [set_fact] ****************************************************************
 ok: [ce1]
@@ -1266,24 +1267,24 @@ ok: [p1]
 ok: [pe2]
 ok: [p2]
 
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
 skipping: [ce1]
 skipping: [ce2]
 skipping: [p1]
 skipping: [p2]
 skipping: [pe2]
 
-TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [pe2]
-changed: [p1]
+TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [ce1]
-changed: [ce2]
+changed: [p1]
 changed: [p2]
+changed: [pe2]
+changed: [ce2]
 
 TASK [Generate gNMI YAML configuration] ****************************************
 ok: [dut]
 
-TASK [Update ospf node configuration from gNMI template /home/pipi/net101/tools/netsim/ansible/templates/ospf/sros.j2] ***
+TASK [Update ospf node configuration from gNMI template /home/pipi/netlab_gh/netsim/ansible/templates/ospf/sros.j2] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
@@ -1487,34 +1488,34 @@ ok: [dut] =>
 TASK [Deploy mpls configuration] ***********************************************
 skipping: [ce1]
 skipping: [ce2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for p1, p2, pe2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for p1, p2, pe2
 
 TASK [Generate gNMI YAML configuration] ****************************************
 ok: [dut]
 
-TASK [Update mpls node configuration from gNMI template /home/pipi/net101/tools/netsim/ansible/templates/mpls/sros.j2] ***
+TASK [Update mpls node configuration from gNMI template /home/pipi/netlab_gh/netsim/ansible/templates/mpls/sros.j2] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
 skipping: [dut]
 
 TASK [template] ****************************************************************
-changed: [p1]
 changed: [p2]
 changed: [pe2]
+changed: [p1]
 
 TASK [set_fact] ****************************************************************
 ok: [p1]
 ok: [p2]
 ok: [pe2]
 
-TASK [run /tmp/config.sh to deploy mpls config from /home/pipi/net101/tools/netsim/ansible/templates/mpls/frr.j2] ***
-changed: [p2]
-changed: [p1]
+TASK [run /tmp/config.sh to deploy mpls config from /home/pipi/netlab_gh/netsim/ansible/templates/mpls/frr.j2] ***
 changed: [pe2]
+changed: [p1]
+changed: [p2]
 
-TASK [run vtysh to import mpls config from /home/pipi/net101/tools/netsim/ansible/templates/mpls/frr.j2] ***
+TASK [run vtysh to import mpls config from /home/pipi/netlab_gh/netsim/ansible/templates/mpls/frr.j2] ***
 skipping: [p1]
 skipping: [p2]
 skipping: [pe2]
@@ -1556,18 +1557,6 @@ skipping: [ce1]
 skipping: [ce2]
 skipping: [p1]
 skipping: [p2]
-fatal: [dut]: FAILED! => 
-  msg: |-
-    The task includes an option with an undefined variable.. 'dict object' has no attribute 'neighbors'
-  
-    The error appears to be in '/home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml': line 52, column 7, but may
-    be elsewhere in the file depending on the exact syntax problem.
-  
-    The offending line appears to be:
-  
-        block:
-        - name: "Print deployed configuration when running in verbose mode"
-          ^ here
 ok: [pe2] => 
   msg: |-
     vrf configuration for pe2
@@ -1637,13 +1626,148 @@ ok: [pe2] =>
     CONFIG
     vtysh -f /tmp/vrf_config
     exit $?
+ok: [dut] => 
+  msg: |-
+    vrf configuration for dut
+    =========================================
+  
+    updates:
+  
+    - path: configure/service/vprn[service-name=tenant]
+      val:
+       service-id: 100
+       customer: "1"
+       autonomous-system: 65001
+       router-id: 10.0.0.3
+       ecmp: 64
+       admin-state: enable
+  
+       bgp-ipvpn:
+         mpls:
+          admin-state: enable
+          route-distinguisher: "65000:1"
+          vrf-target:
+           export-community: "target:65000:1" # For now a single community, TODO import policy
+           import-community: "target:65000:1"
+          auto-bind-tunnel:
+           resolution: "any"
+           ecmp: 32
+  
+  
+    - path: configure/policy-options/prefix-list[name=tenant_export]
+      val:
+       prefix: [] # Make sure it exists
+  
+    - path: configure/policy-options/policy-statement[name=tenant_export]
+      val:
+        default-action:
+          action-type: reject
+        entry:
+        - entry-id: 10
+          from:
+            prefix-list: [ "tenant_export" ]
+          action:
+            action-type: accept
+        - entry-id: 20
+          from:
+            protocol:
+              name: [ bgp ]
+          action:
+            action-type: accept
+        - entry-id: 30
+          from:
+            protocol:
+              name: [ direct ]
+          action:
+            action-type: accept
+        - entry-id: 40
+          from:
+            protocol:
+              name: [ ospf ]
+          action:
+            action-type: accept
+  
+  
+  
+  
+    - path: configure/service/vprn[service-name=tenant]
+      val:
+        router-id: "10.0.0.3"
+        autonomous-system: 65001
+        bgp:
+          ebgp-default-reject-policy:
+            import: False
+            export: False
+          multipath:
+            ibgp: 64
+            ebgp: 64
+          min-route-advertisement: 1 # Be aggressive about sending updates
+          connect-retry: 5           # Retry frequently, suitable in DC context
+        # family: cannot disable this
+        # ipv4: False # Enabled by default, disable globally and set per group
+  
+  
+  
+  
+  
+  
+  
+    - path: configure/policy-options/policy-statement[name=ospf_tenant_export]
+      val:
+        default-action:
+          action-type: reject
+        entry:
+        - entry-id: 20
+          from:
+            protocol:
+              name: [ bgp ]
+          action:
+            action-type: accept
+        - entry-id: 30
+          from:
+            protocol:
+              name: [ direct ]
+          action:
+            action-type: accept
+  
+  
+  
+  
+    - path: configure/service/vprn[service-name=tenant]
+      val:
+       customer: "1"
+       admin-state: enable
+       service-id: 100
+    #   ecmp: 64
+  
+    - path: configure/service/vprn[service-name=tenant]/ospf[ospf-instance=0]
+      val:
+        admin-state: enable
+        router-id: 10.0.0.3
+        export-policy: [ ospf_tenant_export ]
+        area:
+        - area-id: "0.0.0.0"
+          interface:
+          - interface-name: "eth-1/1/c2"
+           # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
+            interface-type: "point-to-point"
 
 TASK [Deploy vrf configuration] ************************************************
 skipping: [ce1]
 skipping: [ce2]
 skipping: [p1]
 skipping: [p2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for pe2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for pe2
+
+TASK [Generate gNMI YAML configuration] ****************************************
+ok: [dut]
+
+TASK [Update vrf node configuration from gNMI template /home/pipi/netlab_gh/netsim/ansible/templates/vrf/sros.j2] ***
+changed: [dut]
+
+TASK [debug] *******************************************************************
+skipping: [dut]
 
 TASK [template] ****************************************************************
 changed: [pe2]
@@ -1651,10 +1775,10 @@ changed: [pe2]
 TASK [set_fact] ****************************************************************
 ok: [pe2]
 
-TASK [run /tmp/config.sh to deploy vrf config from /home/pipi/net101/tools/netsim/ansible/templates/vrf/frr.j2] ***
+TASK [run /tmp/config.sh to deploy vrf config from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/frr.j2] ***
 changed: [pe2]
 
-TASK [run vtysh to import vrf config from /home/pipi/net101/tools/netsim/ansible/templates/vrf/frr.j2] ***
+TASK [run vtysh to import vrf config from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/frr.j2] ***
 skipping: [pe2]
 
 PLAY [Deploy custom deployment templates] **************************************
@@ -1663,11 +1787,13 @@ skipping: no hosts matched
 PLAY RECAP *********************************************************************
 ce1                        : ok=32   changed=4    unreachable=0    failed=0    skipped=24   rescued=0    ignored=0   
 ce2                        : ok=32   changed=4    unreachable=0    failed=0    skipped=24   rescued=0    ignored=0   
-dut                        : ok=46   changed=4    unreachable=0    failed=1    skipped=12   rescued=0    ignored=0   
+dut                        : ok=50   changed=5    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
 p1                         : ok=39   changed=6    unreachable=0    failed=0    skipped=21   rescued=0    ignored=0   
 p2                         : ok=39   changed=6    unreachable=0    failed=0    skipped=21   rescued=0    ignored=0   
 pe2                        : ok=54   changed=11   unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 
-Fatal error in netlab: Executing Ansible playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible failed
-Error executing ansible-playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible:
-  Command '['ansible-playbook', '/home/pipi/net101/tools/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.
+
+
+The tested device (DUT) is a PE-router running MPLS/VPN with a simple VRF. Two OSPF-speaking CE-routers are attached to the VRF (one per PE-router)
+The PE-router has to run OSPF and LDP with a P-router, exchange IPv4 routes via OSPF with the CE-router, do two-way redistribution of OSPF and VPNv4 routes, and pass VPNv4 routes to another PE-router.
+The validation tests check OSPF prefixes on the CE-routers and perform end-to-end connectivity tests between CE-router loopbacks.

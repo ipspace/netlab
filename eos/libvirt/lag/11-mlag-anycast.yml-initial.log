@@ -99,8 +99,8 @@ TASK [eos_config: deploying normalize from /home/pipi/netlab_gh/netsim/ansible/t
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
 should be similar to how they appear if present in the running configuration on
 device including the indentation
-changed: [s1]
 changed: [s2]
+changed: [s1]
 changed: [x1]
 
 TASK [Deploy initial configuration] ********************************************
@@ -166,53 +166,6 @@ ok: [h1] =>
     ip addr add 172.16.42.5/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
-ok: [s2] => 
-  msg: |-
-    initial configuration for s2
-    =========================================
-    hostname s2
-    !
-    logging monitor debugging
-    aaa authorization exec default local
-    !
-    lldp run
-    ip routing
-    no ipv6 unicast-routing
-    !
-    !
-    ip host h1 172.16.42.5
-    ip host s1 10.0.0.2 172.16.42.2
-    ip host x1 10.0.0.4 172.16.42.4
-    !
-    interface Management1
-     no lldp transmit
-     no lldp receive
-    !
-    interface Loopback0
-     ip address 10.0.0.3/32
-    !
-    interface Ethernet1
-     no switchport
-     description s2 -> s1
-    !
-     mac-address 52dc.cafe.0301
-     no shutdown
-    !
-    interface port-channel1
-     no switchport
-     description [Access VLAN red] s2 -> [x1,s1]
-    !
-    interface Ethernet2
-     no switchport
-     description s2 -> x1
-    !
-     mac-address 52dc.cafe.0302
-     no shutdown
-    !
-    interface Vlan1000
-     description VLAN red (1000) -> [x1,s1,h1]
-     ip address 172.16.42.3/24
-    !
 ok: [s1] => 
   msg: |-
     initial configuration for s1
@@ -259,6 +212,53 @@ ok: [s1] =>
     interface Vlan1000
      description VLAN red (1000) -> [x1,s2,h1]
      ip address 172.16.42.2/24
+    !
+ok: [s2] => 
+  msg: |-
+    initial configuration for s2
+    =========================================
+    hostname s2
+    !
+    logging monitor debugging
+    aaa authorization exec default local
+    !
+    lldp run
+    ip routing
+    no ipv6 unicast-routing
+    !
+    !
+    ip host h1 172.16.42.5
+    ip host s1 10.0.0.2 172.16.42.2
+    ip host x1 10.0.0.4 172.16.42.4
+    !
+    interface Management1
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     ip address 10.0.0.3/32
+    !
+    interface Ethernet1
+     no switchport
+     description s2 -> s1
+    !
+     mac-address 52dc.cafe.0301
+     no shutdown
+    !
+    interface port-channel1
+     no switchport
+     description [Access VLAN red] s2 -> [x1,s1]
+    !
+    interface Ethernet2
+     no switchport
+     description s2 -> x1
+    !
+     mac-address 52dc.cafe.0302
+     no shutdown
+    !
+    interface Vlan1000
+     description VLAN red (1000) -> [x1,s1,h1]
+     ip address 172.16.42.3/24
     !
 ok: [x1] => 
   msg: |-
@@ -320,8 +320,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for s1
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1
 
 TASK [eos_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/eos.j2] ***
-changed: [s2]
 changed: [s1]
+changed: [s2]
 changed: [x1]
 
 TASK [Define script filename and determine whether to execute in netns] ********
@@ -342,7 +342,7 @@ skipping: [h1]
 TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [h1 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-zpw_9swk.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-9uu_39wm.sh] ***********************
 changed: [h1 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
@@ -361,8 +361,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, s1
 
 TASK [Figure out whether to deploy the module lag on current device] ***********
 ok: [h1]
-ok: [s2]
 ok: [s1]
+ok: [s2]
 ok: [x1]
 
 TASK [Find configuration template for lag] *************************************
@@ -512,8 +512,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for s1
 
 TASK [eos_config: deploying lag from /home/pipi/netlab_gh/netsim/ansible/templates/lag/eos.j2] ***
 changed: [x1]
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [h1]
@@ -555,6 +555,20 @@ ok: [s1] =>
      switchport access vlan 1000
     !
     interface Vlan1000
+ok: [s2] => 
+  msg: |-
+    vlan configuration for s2
+    =========================================
+    vlan 1000
+     name red
+    !
+  
+    !
+    interface port-channel1
+     switchport
+     switchport access vlan 1000
+    !
+    interface Vlan1000
 ok: [x1] => 
   msg: |-
     vlan configuration for x1
@@ -573,20 +587,6 @@ ok: [x1] =>
      switchport access vlan 1000
     !
     interface Vlan1000
-ok: [s2] => 
-  msg: |-
-    vlan configuration for s2
-    =========================================
-    vlan 1000
-     name red
-    !
-  
-    !
-    interface port-channel1
-     switchport
-     switchport access vlan 1000
-    !
-    interface Vlan1000
 
 TASK [Deploy vlan configuration] ***********************************************
 skipping: [h1]
@@ -594,20 +594,20 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for s1
 
 TASK [eos_config: deploying vlan from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/eos.j2] ***
 changed: [s2]
-changed: [x1]
 changed: [s1]
+changed: [x1]
 
 TASK [Figure out whether to deploy the module gateway on current device] *******
 ok: [h1]
 ok: [s1]
-ok: [x1]
 ok: [s2]
+ok: [x1]
 
 TASK [Find configuration template for gateway] *********************************
 skipping: [h1]
 skipping: [x1]
-ok: [s2]
 ok: [s1]
+ok: [s2]
 
 TASK [fail] ********************************************************************
 skipping: [h1]
@@ -618,15 +618,15 @@ skipping: [x1]
 TASK [Find configuration deployment deploy_script for gateway] *****************
 skipping: [h1]
 skipping: [x1]
-ok: [s1]
 ok: [s2]
+ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
 skipping: [x1]
-ok: [s2] => 
+ok: [s1] => 
   msg: |-
-    gateway configuration for s2
+    gateway configuration for s1
     =========================================
     no ip icmp redirect
     !
@@ -634,9 +634,9 @@ ok: [s2] =>
     !
     interface Vlan1000
       ip virtual-router address 172.16.42.1/24
-ok: [s1] => 
+ok: [s2] => 
   msg: |-
-    gateway configuration for s1
+    gateway configuration for s2
     =========================================
     no ip icmp redirect
     !
@@ -651,20 +651,20 @@ skipping: [x1]
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for s1, s2
 
 TASK [eos_config: deploying gateway from /home/pipi/netlab_gh/netsim/ansible/templates/gateway/eos.j2] ***
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [h1]
-ok: [x1]
 ok: [s1]
 ok: [s2]
+ok: [x1]
 
 TASK [Find configuration template for routing] *********************************
 skipping: [s1]
 skipping: [s2]
-ok: [h1]
 skipping: [x1]
+ok: [h1]
 
 TASK [fail] ********************************************************************
 skipping: [h1]
@@ -736,7 +736,7 @@ skipping: [h1]
 TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
 changed: [h1 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-d4im0cxd.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-tzrwnbmk.sh] ***********************
 changed: [h1 -> localhost]
 
 PLAY [Deploy custom deployment templates] **************************************
