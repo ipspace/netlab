@@ -4,10 +4,10 @@
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [h1]
 ok: [r1]
-ok: [h2]
+ok: [h1]
 ok: [s1]
+ok: [h2]
 ok: [s2]
 
 TASK [Find device readiness script] ********************************************
@@ -39,8 +39,8 @@ ok: [s2]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [r1]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 ok: [s1]
 ok: [s2]
 
@@ -120,8 +120,8 @@ ok: [s2]
 
 TASK [Find configuration template for initial] *********************************
 ok: [r1]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 ok: [s1]
 ok: [s2]
 
@@ -134,47 +134,12 @@ skipping: [h2]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [r1]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 ok: [s1]
 ok: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [h1] => 
-  msg: |-
-    initial configuration for h1
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Send ARP requests from a sane source IP address
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-  
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.0.1/24 dev eth1
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
 ok: [h2] => 
   msg: |-
     initial configuration for h2
@@ -208,6 +173,41 @@ ok: [h2] =>
     ip addr del 172.16.1.2/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.1.2/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+  
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.1/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
 ok: [r1] => 
@@ -321,59 +321,6 @@ ok: [r1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [s2] => 
-  msg: |-
-    initial configuration for s2
-    =========================================
-    hostname s2
-    !
-    logging monitor debugging
-    aaa authorization exec default local
-    !
-    lldp run
-    ip routing
-    no ipv6 unicast-routing
-    !
-    !
-    ip host h1 172.16.0.1
-    ip host h2 172.16.1.2
-    ip host r1 10.0.0.5 172.16.0.5 172.16.1.5
-    ip host s1 10.0.0.3
-    !
-    interface Management0
-     no lldp transmit
-     no lldp receive
-    !
-    interface Loopback0
-     ip address 10.0.0.4/32
-    !
-    interface Ethernet1
-     no switchport
-     description s2 -> s1
-    !
-     mac-address 52dc.cafe.0401
-     no shutdown
-    !
-    interface Ethernet2
-     no switchport
-     description [Access VLAN red] s2 -> r1
-    !
-     mac-address 52dc.cafe.0402
-     no shutdown
-    !
-    interface Ethernet3
-     no switchport
-     description [Access VLAN blue] s2 -> r1
-    !
-     mac-address 52dc.cafe.0403
-     no shutdown
-    !
-    interface Vlan700
-     description VLAN red (700) -> [h1,s1,r1]
-    !
-    interface Vlan701
-     description VLAN blue (701) -> [h2,s1,r1]
-    !
 ok: [s1] => 
   msg: |-
     initial configuration for s1
@@ -427,6 +374,59 @@ ok: [s1] =>
     interface Vlan701
      description VLAN blue (701) -> [h2,s2,r1]
     !
+ok: [s2] => 
+  msg: |-
+    initial configuration for s2
+    =========================================
+    hostname s2
+    !
+    logging monitor debugging
+    aaa authorization exec default local
+    !
+    lldp run
+    ip routing
+    no ipv6 unicast-routing
+    !
+    !
+    ip host h1 172.16.0.1
+    ip host h2 172.16.1.2
+    ip host r1 10.0.0.5 172.16.0.5 172.16.1.5
+    ip host s1 10.0.0.3
+    !
+    interface Management0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     ip address 10.0.0.4/32
+    !
+    interface Ethernet1
+     no switchport
+     description s2 -> s1
+    !
+     mac-address 52dc.cafe.0401
+     no shutdown
+    !
+    interface Ethernet2
+     no switchport
+     description [Access VLAN red] s2 -> r1
+    !
+     mac-address 52dc.cafe.0402
+     no shutdown
+    !
+    interface Ethernet3
+     no switchport
+     description [Access VLAN blue] s2 -> r1
+    !
+     mac-address 52dc.cafe.0403
+     no shutdown
+    !
+    interface Vlan700
+     description VLAN red (700) -> [h1,s1,r1]
+    !
+    interface Vlan701
+     description VLAN blue (701) -> [h2,s1,r1]
+    !
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for s1, s2
@@ -434,8 +434,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for r1
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
 
 TASK [eos_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/eos.j2] ***
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [r1 -> localhost]
@@ -463,8 +463,8 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
@@ -482,9 +482,9 @@ TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/a
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-o7jmq7_j.sh] ***********************
-changed: [h1 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-wsmm1ju5.sh] ***********************
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -590,8 +590,8 @@ skipping: [h2]
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for s1, s2
 
 TASK [eos_config: deploying vlan from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/eos.j2] ***
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [h1]
@@ -693,8 +693,8 @@ changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
 skipping: [h1]
@@ -705,10 +705,10 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-fme8e1xo.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-tkt1o5f7.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
