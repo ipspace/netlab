@@ -25,12 +25,25 @@ def vrf_route_leaking(node: Box) -> None:
         node=node,
         category=log.IncorrectValue)
 
+def evpn_vrf_rp(node: Box) -> None:
+  for vname,vdata in node.get('vrfs',{}).items():
+    if not vdata.get('evpn',None):
+      continue
+    if vdata.get('bgp.neighbors',[]) or vdata.get('ospf'):
+      report_quirk(
+        text=f'We did not implement propagation of EVPN ip-prefix routes into VRF routing protocols',
+        more_data = f'Node {node.name} vrf {vname}',
+        quirk='evpn_rp',
+        node=node,
+        category=log.IncorrectValue)
+
 class SROS(_Quirks):
 
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
     ipv4_unnumbered(node)
     vrf_route_leaking(node)
+    evpn_vrf_rp(node)
   
   def check_config_sw(self, node: Box, topology: Box) -> None:
     need_ansible_collection(node,'nokia.grpc',version='1.0.2')
