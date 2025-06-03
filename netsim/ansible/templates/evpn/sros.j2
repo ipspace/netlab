@@ -2,21 +2,22 @@
 updates:
 - path: configure/router[router-name=Base]
   val:
-   bgp:
-    group:
-{%  for type in evpn.session %}
-    - group-name: {{ 'ibgp-ipv4' if type=='ibgp' else 'ebgp' }}
-      family:
-       evpn: True
-{%  if bgp.rr|default(0) %}
-      next-hop-unchanged:
-       evpn: True
+    bgp:
+      rapid-withdrawal: True
+      rapid-update:
+        evpn: True
+{%  if 'ebgp' in evpn.session %}
+      inter-as-vpn: true
 {%  endif %}
-
-    rapid-withdrawal: True
-    rapid-update:
-     evpn: True
-
+      group:
+{%  for type in evpn.session %}
+      - group-name: {{ 'ibgp-ipv4' if type=='ibgp' else 'ebgp' }}
+        family:
+          evpn: True
+{%  if bgp.rr|default(0) or type == 'ebgp' %}
+        next-hop-unchanged:
+          evpn: True
+{%  endif %}
 {%  endfor %}
 
 {# Configure EVPN parameters for VLANs, TODO bundles #}
