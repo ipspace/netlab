@@ -48,8 +48,8 @@ TASK [Find configuration template for normalize] *******************************
 ok: [dut]
 ok: [pe2]
 ok: [ce1]
-ok: [ce2]
 ok: [p1]
+ok: [ce2]
 ok: [p2]
 
 TASK [fail] ********************************************************************
@@ -64,8 +64,8 @@ TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [dut]
 ok: [pe2]
 ok: [ce1]
-ok: [p1]
 ok: [ce2]
+ok: [p1]
 ok: [p2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -115,8 +115,8 @@ TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [dut]
 ok: [pe2]
 ok: [ce1]
-ok: [p1]
 ok: [ce2]
+ok: [p1]
 ok: [p2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -333,6 +333,101 @@ ok: [ce1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+  
+  
+  
+  
+    updates:
+  
+    - path: configure/router[router-name=Base]
+      val:
+       ecmp: 64
+  
+  
+  
+  
+  
+  
+    - path: configure/router[router-name=Base]/interface[interface-name=system]
+  
+      val:
+       admin-state: enable
+       description: "System interface"
+       ipv4:
+        primary:
+         address: "10.0.0.3"
+         prefix-length: 32
+  
+  
+  
+  
+  
+    - path: configure/port[port-id=1/1/c1]
+      val:
+       admin-state: enable
+       connector:
+        breakout: "c1-100g"
+    - path: configure/port[port-id=1/1/c1/1]
+      val:
+       admin-state: enable
+       ethernet:
+        mtu: 1514 # max 9800
+        mode: network
+  
+  
+  
+    - path: configure/router[router-name=Base]/interface[interface-name=eth-1/1/c1]
+  
+      val:
+       admin-state: enable
+       description: "dut ~ p1 ()"
+       ip-mtu: 1500
+       port: "1/1/c1/1"
+       ipv4:
+        primary:
+         address: "10.1.0.1"
+         prefix-length: 30
+  
+  
+  
+  
+  
+    - path: configure/port[port-id=1/1/c2]
+      val:
+       admin-state: enable
+       connector:
+        breakout: "c1-100g"
+    - path: configure/port[port-id=1/1/c2/1]
+      val:
+       admin-state: enable
+       ethernet:
+        mtu: 1514 # max 9800
+        mode: access
+  
+  
+    - path: configure/service/vprn[service-name=tenant]
+      val:
+       customer: "1"
+       admin-state: enable
+       service-id: 100
+    #   ecmp: 64
+  
+    - path: configure/service/vprn[service-name=tenant]/interface[interface-name=eth-1/1/c2]
+  
+      val:
+       admin-state: enable
+       description: "dut ~ ce1 ()"
+       ip-mtu: 1500
+       sap:
+       - sap-id: "1/1/c2/1"
+       ipv4:
+        primary:
+         address: "10.1.0.14"
+         prefix-length: 30
 ok: [ce2] => 
   msg: |-
     initial configuration for ce2
@@ -435,101 +530,6 @@ ok: [ce2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-  
-  
-  
-  
-    updates:
-  
-    - path: configure/router[router-name=Base]
-      val:
-       ecmp: 64
-  
-  
-  
-  
-  
-  
-    - path: configure/router[router-name=Base]/interface[interface-name=system]
-  
-      val:
-       admin-state: enable
-       description: "System interface"
-       ipv4:
-        primary:
-         address: "10.0.0.3"
-         prefix-length: 32
-  
-  
-  
-  
-  
-    - path: configure/port[port-id=1/1/c1]
-      val:
-       admin-state: enable
-       connector:
-        breakout: "c1-100g"
-    - path: configure/port[port-id=1/1/c1/1]
-      val:
-       admin-state: enable
-       ethernet:
-        mtu: 1514 # max 9800
-        mode: network
-  
-  
-  
-    - path: configure/router[router-name=Base]/interface[interface-name=eth-1/1/c1]
-  
-      val:
-       admin-state: enable
-       description: "dut ~ p1 ()"
-       ip-mtu: 1500
-       port: "1/1/c1/1"
-       ipv4:
-        primary:
-         address: "10.1.0.1"
-         prefix-length: 30
-  
-  
-  
-  
-  
-    - path: configure/port[port-id=1/1/c2]
-      val:
-       admin-state: enable
-       connector:
-        breakout: "c1-100g"
-    - path: configure/port[port-id=1/1/c2/1]
-      val:
-       admin-state: enable
-       ethernet:
-        mtu: 1514 # max 9800
-        mode: access
-  
-  
-    - path: configure/service/vprn[service-name=tenant]
-      val:
-       customer: "1"
-       admin-state: enable
-       service-id: 100
-    #   ecmp: 64
-  
-    - path: configure/service/vprn[service-name=tenant]/interface[interface-name=eth-1/1/c2]
-  
-      val:
-       admin-state: enable
-       description: "dut ~ ce1 ()"
-       ip-mtu: 1500
-       sap:
-       - sap-id: "1/1/c2/1"
-       ipv4:
-        primary:
-         address: "10.1.0.14"
-         prefix-length: 30
 ok: [p1] => 
   msg: |-
     initial configuration for p1
@@ -780,11 +780,11 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for pe2, ce1, ce2, p1, p2
 
 TASK [template] ****************************************************************
-changed: [p1]
-changed: [p2]
-changed: [pe2]
 changed: [ce2]
 changed: [ce1]
+changed: [pe2]
+changed: [p2]
+changed: [p1]
 
 TASK [set_fact] ****************************************************************
 ok: [pe2]
@@ -794,11 +794,11 @@ ok: [p2]
 ok: [p1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+changed: [ce1]
 changed: [pe2]
 changed: [ce2]
-changed: [p1]
 changed: [p2]
-changed: [ce1]
+changed: [p1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [pe2]
@@ -1042,8 +1042,8 @@ ok: [ce1]
 ok: [ce2]
 ok: [dut]
 ok: [p1]
-ok: [pe2]
 ok: [p2]
+ok: [pe2]
 
 TASK [fail] ********************************************************************
 skipping: [ce1]
@@ -1118,15 +1118,15 @@ ok: [ce2] =>
   
     !
     do write
-ok: [pe2] => 
+ok: [p1] => 
   msg: |-
-    ospf configuration for pe2
+    ospf configuration for p1
     =========================================
     !
     ! OSPFv2 FRR configuration
     !
     router ospf
-     ospf router-id 10.0.0.4
+     ospf router-id 10.0.0.5
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
@@ -1139,7 +1139,12 @@ ok: [pe2] =>
      ip ospf area 0.0.0.0
     !
     interface eth1
-    ! pe2 -> p2
+    ! p1 -> dut
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    interface eth2
+    ! p1 -> p2
      ip ospf area 0.0.0.0
      ip ospf network point-to-point
     !
@@ -1181,15 +1186,15 @@ ok: [dut] =>
           - interface-name: "system"
             passive: True
            # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
-ok: [p1] => 
+ok: [pe2] => 
   msg: |-
-    ospf configuration for p1
+    ospf configuration for pe2
     =========================================
     !
     ! OSPFv2 FRR configuration
     !
     router ospf
-     ospf router-id 10.0.0.5
+     ospf router-id 10.0.0.4
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
@@ -1202,12 +1207,7 @@ ok: [p1] =>
      ip ospf area 0.0.0.0
     !
     interface eth1
-    ! p1 -> dut
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-    interface eth2
-    ! p1 -> p2
+    ! pe2 -> p2
      ip ospf area 0.0.0.0
      ip ospf network point-to-point
     !
@@ -1253,11 +1253,11 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for dut
 
 TASK [template] ****************************************************************
-changed: [ce2]
-changed: [pe2]
-changed: [p1]
-changed: [p2]
 changed: [ce1]
+changed: [p1]
+changed: [ce2]
+changed: [p2]
+changed: [pe2]
 
 TASK [set_fact] ****************************************************************
 ok: [ce1]
@@ -1274,11 +1274,11 @@ skipping: [p2]
 skipping: [pe2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+changed: [pe2]
 changed: [ce1]
 changed: [p1]
-changed: [ce2]
 changed: [p2]
-changed: [pe2]
+changed: [ce2]
 
 TASK [Generate gNMI YAML configuration] ****************************************
 ok: [dut]
@@ -1475,15 +1475,19 @@ ok: [dut] =>
   
   
   
-  
     - path: configure/router[router-name=Base]/bgp/neighbor[ip-address=10.0.0.4]
       val:
-        description: "pe2"
-        admin-state: enable
-        group: "ibgp-ipv4"
-        peer-as: 65001
         family:
           vpn-ipv4: True
+    - path: configure/policy-options/policy-statement[name=ospf_tenant_export]
+      val:
+        entry:
+        - entry-id: 1000
+          from:
+            protocol:
+              name: [ bgp-vpn ]
+          action:
+            action-type: accept
 
 TASK [Deploy mpls configuration] ***********************************************
 skipping: [ce1]
@@ -1501,8 +1505,8 @@ TASK [debug] *******************************************************************
 skipping: [dut]
 
 TASK [template] ****************************************************************
-changed: [p1]
 changed: [pe2]
+changed: [p1]
 changed: [p2]
 
 TASK [set_fact] ****************************************************************
