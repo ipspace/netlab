@@ -4,29 +4,36 @@ updates:
 {% for intf in interfaces if intf.gateway.protocol is defined %}
 {{ declare_interface(intf) }}
   val:
-{%  for af in ('ipv4','ipv6') %}
-{%   if intf.gateway.protocol in ['anycast','vrrp'] and af in intf.gateway %}
+{%   for af in ('ipv4','ipv6') if intf.gateway.protocol in ['anycast','vrrp'] and af in intf.gateway %}
    {{ af }}:
-{% if af=='ipv6' %}
+{%     if af=='ipv6' and intf.ipv6 is string %}
     address:
     - ipv6-address: "{{ intf.ipv6|default('')|ipaddr('address') }}"
       duplicate-address-detection: False
-{% endif %}
+{%       if intf.gateway.protocol == 'vrrp' %}
+    link-local-address:
+      address: "{{ 'fe80::%04x' % id }}"
+      duplicate-address-detection: False
+{%       endif %}
+{%     endif %}
     vrrp:
     - virtual-router-id: {{ intf.gateway.vrrp.group|default(1) }}
       admin-state: enable
       ping-reply: True
+{%     if af == 'ipv6' and intf.gateway.protocol == 'vrrp' %}
+      backup: [ "{{ 'fe80::200:5eff:fe00:02%02x' % intf.gateway.vrrp.group }}", {{ intf.gateway[af]|ipaddr('address') }} ]
+{%     else %}
       backup: [ "{{ intf.gateway[af]|ipaddr('address') }}" ]
-      passive: {{ intf.gateway.protocol == 'anycast' }}
-{%    if intf.gateway.anycast.mac is defined and 'ixr' not in clab.type %}
-      mac: {{ intf.gateway.anycast.mac|hwaddr('linux') }}
-{%    endif %}
-{%    if intf.gateway.protocol == 'vrrp' %}
-      preempt: {{ intf.gateway.vrrp.preempt|default(True)|bool }}
-{%     if 'priority' in intf.gateway.vrrp %}
-      priority: {{ intf.gateway.vrrp.priority }}
 {%     endif %}
-{%    endif %}
-{%   endif %}
-{%  endfor %}
+      passive: {{ intf.gateway.protocol == 'anycast' }}
+{%     if intf.gateway.anycast.mac is defined and 'ixr' not in clab.type %}
+      mac: {{ intf.gateway.anycast.mac|hwaddr('linux') }}
+{%     endif %}
+{%     if intf.gateway.protocol == 'vrrp' %}
+      preempt: {{ intf.gateway.vrrp.preempt|default(True)|bool }}
+{%       if 'priority' in intf.gateway.vrrp %}
+      priority: {{ intf.gateway.vrrp.priority }}
+{%       endif %}
+{%     endif %}
+{%   endfor %}
 {% endfor %}
