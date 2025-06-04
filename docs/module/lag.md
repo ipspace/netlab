@@ -15,6 +15,9 @@ LAG is currently supported on these platforms:
 | Dell OS10             | ✅ | ✅ | ✅  | ✅ |
 | FRR                   | ✅ | ✅ | ❌  | ❌ |
 | Generic Linux hosts   | ✅ | ✅ | ❌  | ❌ |
+| JunOS[^Junos]         | ✅ | ✅ | ✅  | ❌ |
+
+[^Junos]: Includes vSRX, vPTX and vJunos-switch. vJunos-router (and vMX) do not support LAG.
 
 ## Parameters
 

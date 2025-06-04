@@ -1,0 +1,48 @@
+{# first of all, need to count all lag interfaces and create specific config #}
+
+chassis {
+  aggregated-devices {
+    ethernet {
+      device-count {{interfaces|selectattr("type", "equalto", "lag")|length}};
+    }
+  }
+}
+
+
+interfaces {
+
+{% for intf in interfaces if intf.type == 'lag' %}
+  {{ intf.junos_interface }} {
+    description "{{ intf.name }} (LAG)";
+    aggregated-ether-options {
+
+{%   if intf.lag.lacp|default('') == 'off' %}
+{%   elif intf.lag.lacp|default('') %}
+      lacp {
+{%     if intf.lag.lacp_mode|default('') == 'active' %}
+        active;
+{%     elif intf.lag.lacp_mode|default('') == 'passive' %}
+        passive;
+{%     endif %}
+        periodic {{intf.lag.lacp}};
+      }
+{%   endif %}
+
+    }
+  }
+
+{%   for ch in interfaces if ch.lag._parentindex|default(None) == intf.lag.ifindex %}
+  {{ ch.junos_interface }} {
+    description "{{ ch.name }} in LAG {{ intf.lag.ifindex }}";
+    ether-options {
+      802.3ad ae{{ intf.lag.ifindex }};
+    }
+{# must delete mtu and unit 0 #}
+    delete: mtu;
+    delete: unit 0;
+  }
+{%   endfor %}
+
+{% endfor %}
+
+}
