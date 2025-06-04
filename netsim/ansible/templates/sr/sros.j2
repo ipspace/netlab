@@ -4,40 +4,48 @@
 updates:
 - path: configure/router[router-name=Base]/mpls-labels
   val:
-   static-label-range: 18400 # default, lower bound of dynamic label range
-   sr-labels: # SRGB, required for SR-ISIS
-    start: {{ sr.srgb_range_start }} # Minimum value: static-label-range+32
-    end: {{ sr.srgb_range_start + sr.srgb_range_size }}
+    static-label-range: 18400 # default, lower bound of dynamic label range
+    sr-labels: # SRGB, required for SR-ISIS
+      start: {{ sr.srgb_range_start }} # Minimum value: static-label-range+32
+      end: {{ sr.srgb_range_start + sr.srgb_range_size }}
 
 - path: configure/router[router-name=Base]/isis[isis-instance=0]
   val:
-   advertise-router-capability: area
-   segment-routing:
-    admin-state: enable
-    prefix-sid-range:
-     global: [null]
+    advertise-router-capability: area
+    segment-routing:
+      admin-state: enable
+      prefix-sid-range:
+        global: [null]
     # srlb: reference mpls-labels reserved-label-block
-    tunnel-table-pref: 8 # default 11
-   interface:
-   - interface-name: system
+      tunnel-table-pref: 8 # default 11
+{%   if isis.af.ipv6 is defined %}
+      multi-topology:
+        mt2: True
+{%   endif %}
+    interface:
+    - interface-name: system
 {% if 'ipv4' in loopback %}
-     ipv4-node-sid:
-      index: "{{ id }}"
+      ipv4-node-sid:
+        index: "{{ id }}"
 {% endif %}
 {% if 'ipv6' in loopback %}
-     ipv6-node-sid:
-      index: "{{ id+sr.ipv6_sid_offset }}"
+      ipv6-node-sid:
+        index: "{{ id+sr.ipv6_sid_offset }}"
 {% endif %}
 
 {% if 'bgp' in module and 'isis' in module %}
 {# Configure BGP shortcuts via SR-ISIS #}
+{%   for af in ['ipv4','ipv6'] if af in bgp %}
+{%     if loop.first %}
 - path: configure/router[router-name=Base]/bgp
   val:
-   next-hop-resolution:
-    shortcut-tunnel:
-     family:
-     - family-type: ipv4
-       resolution: filter
-       resolution-filter:
-        sr-isis: True
+    next-hop-resolution:
+      shortcut-tunnel:
+        family:
+{%     endif %}
+        - family-type: {{ af }}
+          resolution: filter
+          resolution-filter:
+            sr-isis: True
+{%   endfor %}
 {% endif %}
