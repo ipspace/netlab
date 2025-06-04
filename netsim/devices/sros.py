@@ -37,10 +37,36 @@ def evpn_vrf_rp(node: Box) -> None:
         node=node,
         category=log.IncorrectValue)
 
+def set_port_mode(intf: Box, mode: str) -> None:
+  if '_port_mode' not in intf:
+    intf._port_mode = mode
+  elif intf._port_mode != mode:
+    intf._port_mode = 'hybrid'
+
+def set_port_modes(node: Box) -> None:
+  for intf in node.interfaces:
+    if intf.type in ['svi', 'loopback']:
+      continue
+
+    t_intf = intf
+    if intf.type == 'vlan_member':
+      pif_list = [ p_if for p_if in node.interfaces if p_if.ifname == intf.parent_ifname ]
+      if not pif_list:
+        log.fatal(f'SROS: Cannot find parent interface {intf.parent_ifname} on node {node.name}')
+      t_intf = pif_list[0]
+
+    if 'vrf' in intf:
+      set_port_mode(t_intf,'access')
+    elif 'ipv4' in intf or 'ipv6' in intf:
+      set_port_mode(t_intf,'network')
+    else:
+      set_port_mode(t_intf,'access')
+
 class SROS(_Quirks):
 
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
+    set_port_modes(node)
     ipv4_unnumbered(node)
     vrf_route_leaking(node)
     evpn_vrf_rp(node)
