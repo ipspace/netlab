@@ -12,6 +12,7 @@ import pathlib
 import shutil
 import tarfile
 import re
+import platform
 
 from box import Box
 
@@ -183,8 +184,17 @@ def lp_create_vm_disk(args: argparse.Namespace, workdir: str) -> None:
     print(f"Creating a copy of {name} in {workdir}")
     abort_on_failure(f'cp {name} {workdir}/vm.qcow2')
 
+def get_cpu_vendor() -> str:
+    cpu_info = platform.processor().lower()
+    if "amd" in cpu_info:
+      return "amd"
+    elif "intel" in cpu_info:
+      return "intel"
+    else:
+      return "unknown"
+
 def get_template_data(devdata: Box) -> Box:
-  return devdata + { 'user' : { 'cwd' : os.getcwd() }}
+  return devdata + { 'user' : { 'cwd' : os.getcwd() }, 'cpu' : get_cpu_vendor()  }
 
 def lp_preinstall_hook(args: argparse.Namespace,settings: Box) -> None:
   devdata = settings.devices[args.device]
