@@ -188,7 +188,7 @@ def get_cpu_vendor() -> str:
     cpu_info = platform.processor().lower()
     if "amd" in cpu_info:
       return "amd"
-    elif "intel" in cpu_info:
+    elif "intel" in cpu_info or "x86" in cpu_info:
       return "intel"
     else:
       return "unknown"
