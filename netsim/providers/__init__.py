@@ -22,6 +22,16 @@ from ..utils import files as _files
 from ..utils import templates,log,strings
 from ..outputs.ansible import get_host_addresses
 
+def get_cpu_model() -> str:
+  processor_name = ""
+  if platform.system() == "Windows":
+    processor_name = platform.processor()
+  elif platform.system() == "Darwin":
+    processor_name = "arm64"          # Assume Apple silicon for MacOS
+  elif platform.system() == "Linux":
+    processor_name = pathlib.Path("/proc/cpuinfo").read_text().splitlines()[1].split()[2]
+  return processor_name.lower()
+
 """
 The generic provider class. Used as a super class of all other providers
 """
@@ -104,14 +114,7 @@ class _Provider(Callback):
     if "processor" in topology.defaults:
       return
     else:
-      processor_name = ""
-      if platform.system() == "Windows":
-        processor_name = platform.processor()
-      elif platform.system() == "Darwin":
-        processor_name = "intel"  # Assume Intel for MacOS
-      elif platform.system() == "Linux":
-        processor_name = str(subprocess.check_output("cat /proc/cpuinfo", shell=True).splitlines()[1].split()[2])
-      topology.defaults.processor = processor_name
+      topology.defaults.processor = get_cpu_model()
 
   def create_extra_files_mappings(
       self,
