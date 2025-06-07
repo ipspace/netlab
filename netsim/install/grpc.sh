@@ -34,6 +34,7 @@ fi
 
 # Install Ansible grpc plug-in and its dependencies from github repo
 ansible-galaxy collection install 'git+https://github.com/nokia/ansible-networking-collections.git#/grpc/'
+ansible-galaxy collection install nokia.srlinux
 echo
 echo "We have to upgrade Ansible to release 9.5.1 or greater or it will break"
 echo "Alternatively, you can manually downgrade it to release 4.10.0 or earlier"
