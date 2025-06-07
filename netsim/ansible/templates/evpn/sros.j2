@@ -6,10 +6,25 @@ updates:
       rapid-withdrawal: True
       rapid-update:
         evpn: True
-{% if 'ebgp' in evpn.session %}
+{#
+    OK, here's how the following Jinja2 line noise works:
+
+    * Take BGP neighbors, default to empty list just in case * Select all BGP
+      neighbors where 'evpn' attribute is defined indicating we want to run EVPN
+      AF with this neighbor (note: the only value we'll ever see is 'evpn: true')
+    * Select neighbor type (ibgp/ebgp) from neighbors with EVPN AF
+    * We might have multiple neighbors with the same type, so apply the 'unique'
+      filter to the results
+
+    And voila, we have the BGP session types on which we want to run EVPN
+
+    Note we can't use evpn.session -- it's not set for EBGP multihop neighbors
+#}
+{% set evpn_session_types = bgp.neighbors|default([])|selectattr('evpn','defined')|map(attribute='type')|unique %}
+{% if 'ebgp' in evpn_session_types %}
       inter-as-vpn: true
 {% endif %}
-{% for type in evpn.session %}
+{% for type in evpn_session_types %}
 {%   if loop.first %}
       group:
 {%   endif %}
