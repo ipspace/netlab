@@ -20,6 +20,7 @@ from ...data.types import must_be_id
 from .. import external_commands
 from .. import parser_add_debug, parser_add_verbose
 from ...providers.libvirt import create_vagrant_network,LIBVIRT_MANAGEMENT_NETWORK_NAME
+from ...providers import get_cpu_model
 
 def package_parse(args: typing.List[str], settings: Box) -> argparse.Namespace:
   devs = [ k for k in settings.devices.keys() if settings.devices[k].libvirt.create or settings.devices[k].libvirt.create_template ]
@@ -184,7 +185,7 @@ def lp_create_vm_disk(args: argparse.Namespace, workdir: str) -> None:
     abort_on_failure(f'cp {name} {workdir}/vm.qcow2')
 
 def get_template_data(devdata: Box) -> Box:
-  return devdata + { 'user' : { 'cwd' : os.getcwd() }}
+  return devdata + { 'user' : { 'cwd' : os.getcwd() }, 'cpu': get_cpu_model() }
 
 def lp_preinstall_hook(args: argparse.Namespace,settings: Box) -> None:
   devdata = settings.devices[args.device]
