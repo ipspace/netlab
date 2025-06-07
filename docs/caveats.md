@@ -329,7 +329,8 @@ You can change the license file parameters within a node definition or with **de
 (caveats-vptx)=
 ## Juniper vPTX
 
-* *netlab* release 1.7.0 supports only vJunosEvolved releases that do not require external PFE- and RPIO links. The first vJunosEvolved release implementing internal PFE- and RPIO links is the release 23.2R1-S1.8.
+* *netlab* supports only vJunosEvolved releases that do not require external PFE- and RPIO links. The first vJunosEvolved release implementing internal PFE- and RPIO links is the release 23.2R1-S1.8.
+* vJunosEvolved software is supposed to be run on an Intel CPU. _netlab_ implements the hacks [suggested by Juniper to run vJunos on an AMD CPU](https://www.juniper.net/documentation/us/en/software/nce/nce-510-virtual-switches-mist-cloud-managed/amd-cpu_unofficial_tweaks.html), but please note that this is not supported.
 * The virtual MAC address of the anycast gateway is ignored. _netlab_, therefore, does not support the anycast gateway on vPTX.
 
 The rest of this section lists information you might find helpful if you're a long-time Junos user:
