@@ -44,7 +44,7 @@ echo "Install Ansible Python dependencies"
 echo ".. pynacl lxml"
 $SUDO python3 -m pip install $REPLACE $IGNORE $FLAG_PIP pynacl lxml
 echo ".. paramiko netmiko ansible-pylibssh"
-$SUDO python3 -m pip install $REPLACE $FLAG_PIP paramiko netmiko ansible-pylibssh
+$SUDO python3 -m pip install $REPLACE $FLAG_PIP paramiko netmiko ansible-pylibssh ncclient
 #
 echo "Install optional Python components"
 $SUDO python3 -m pip install $REPLACE $FLAG_PIP textfsm ttp jmespath ntc-templates
