@@ -72,6 +72,7 @@ The following table describes per-platform support of individual router-level OS
 
 **Notes:**
 * Dell OS10 does not support OSPF on the so-called *Virtual Network* interface, the VLAN implementation model currently used in our templates.
+* Use the `netlab show modules -m ospf` command to display the route types that can be imported into OSPFv2/OSPFv3.
 
 [^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
 
