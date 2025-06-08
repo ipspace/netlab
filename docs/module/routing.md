@@ -442,6 +442,23 @@ community:
 
 Static routes are defined as lists of prefix/next-hop pairs in the **routing.static** node attribute. Each static route entry must specify a prefix and a next hop.
 
+### Platform Support
+
+_netlab_ supports static routes on these platforms:
+
+| Operating system    | Global<br>static routes | Discard<br>routes | VRF static<br>routes | Inter-VRF<br>static routes |
+|---------------------|:--:|:--:|:--:|:--:|
+| Arista EOS          | ✅ | ✅ | ✅ | ✅ |
+| Aruba AOS-CX        | ✅ |  ❌ | ✅ | [❗](caveats-aruba) |
+| Cisco IOS/XE[^18v]  | ✅ | ✅ | ✅ | ✅ |
+| Cumulus Linux 4.x   | ✅ |  ❌ | ✅ | ✅ |
+| Junos               | ✅ |  ❌ | ✅ | ❌ |
+| FRR                 | ✅ | ✅ | ✅ | ✅ |
+| Linux               | ✅ |  ❌ |  ❌ |  ❌ |
+| VyOS                | ✅ |  ❌ | ✅ | ✅ |
+
+### Configuring Static Routes
+
 The static route prefix can be defined with one of these attributes:
 
 * **ipv4**/**ipv6** -- an IPv4 and/or IPv6 prefix
@@ -458,6 +475,7 @@ A static route entry's **nexthop** attribute specifies the next hop used to reac
 * **ipv4**/**ipv6** -- an IPv4 and/or IPv6 next hop (an address, not a prefix)
 * **gateway** (boolean) -- the next hop is the default gateway. This entry will be resolved into a list containing all directly connected default gateways in the specified next-hop VRF (a node might use more than one default gateway to reach a destination).
 * **node** -- The next hop is the specified node. The node name will be resolved into a list of directly connected next-hops or the control-plane endpoint of a distant node (allowing you to specify recursive static routes).
+* **discard** -- The static route is a *discard* (aka *blackhole*) route pointing to the *null* interface (or an equivalent).
 
 ```{tip}
 * You can combine **‌ipv4** and **‌ipv6** next hops in the same static route entry. **gateway** and **node** next-hop attributes are exclusive and can specify both IPv4 and IPv6 next hops.
@@ -547,21 +565,6 @@ links:
 You can specify the **vrf** attribute in a static route entry to create a VRF static route. The lack of a **vrf** attribute indicates a static route in the global routing table (sometimes called *default VRF*).
 
 You can also specify the **vrf** attribute in the next-hop definition to create an inter-VRF static route. Use the **nexthop.vrf** attribute with no value (`null`) to create a VRF static route with a next hop in the global routing table.
-
-### Platform Support
-
-_netlab_ supports static routes on these platforms:
-
-| Operating system    | Global<br>static routes | VRF static<br>routes | Inter-VRF<br>static routes |
-|---------------------|:--:|:--:|:--:|
-| Arista EOS          | ✅ | ✅ | ✅ |
-| Aruba AOS-CX        | ✅ | ✅ | [❗](caveats-aruba) |
-| Cisco IOS/XE[^18v]  | ✅ | ✅ | ✅ |
-| Cumulus Linux 4.x   | ✅ | ✅ | ✅ |
-| Junos               | ✅ | ✅ | ❌ |
-| FRR                 | ✅ | ✅ | ✅ |
-| Linux               | ✅ |  ❌ |  ❌ |
-| VyOS                | ✅ | ✅ | ✅ |
 
 ### Global Static Routes
 

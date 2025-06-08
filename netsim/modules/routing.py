@@ -1093,6 +1093,13 @@ def check_static_routes(idx: int,o_name: str,node: Box,topology: Box) -> None:
     if af not in sr_data.nexthop:
       if '_skip_missing' in sr_data:
         sr_data.remove = True
+      elif 'discard' in sr_data.nexthop:
+        if 'discard' in sr_features:
+          continue
+        log.error(
+          f'Device {node.device} (node {node.name}) does not support discard static routes',
+          category=log.IncorrectAttr,
+          module='routing')        
       else:
         log.error(
           f'A static route for {sr_data[af]} on node {node.name} has no {af} next hop',
