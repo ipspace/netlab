@@ -218,7 +218,7 @@ def init(topology: Box) -> None:
       load_error = True
       log.error(
         f"Cannot find plugin {pname}",
-        more_data = "Search path:\n{strings.get_yaml_string(search_path)}",
+        more_data = f"Search path:\n{strings.get_yaml_string(search_path)}",
         category=log.IncorrectValue,
         module='plugin')
 
