@@ -38,28 +38,28 @@ VRFs are supported on these platforms:
 (module-vrf-platform-routing-support)=
 These platforms support routing protocols in VRFs:
 
-| Operating system      | OSPFv2 | OSPFv3 | EBGP | RIPv2 | RIPng
-| --------------------- | :-: | :-: | :-: | :-: | :-: |
-| Arista EOS            | ✅  | ✅  | ✅  |
-| Aruba AOS-CX          | ✅  | ✅  | ✅  |
-| Cisco IOS/IOSvL2      | ✅ [❗](caveats-iosv) | ✅  | ✅  | ✅  | ✅  |
-| Cisco IOS XE[^18v]    | ✅ [❗](caveats-csr) | ✅  | ✅  | ✅  | ✅  |
-| Cisco Nexus OS        | ✅  |  ❌  | ✅  |
-| Cumulus Linux 4.x     | ✅  |  ❌  | ✅  | ✅  | ✅  |
-| Cumulus 5.x (NVUE)    | ✅  |  ❌  | ✅  | ❌  | ❌  |
-| Dell OS10             | ✅  |  ❌  | ✅  |
-| FRR [❗](caveats-frr) | ✅  | ✅  | ✅  | ✅  | ✅  |
-| Junos[^Junos]         | ✅  | ✅  | ✅  |
-| Mikrotik RouterOS 6   | ✅  [❗](caveats-routeros6) |  ❌  | ✅  |
-| Mikrotik RouterOS 7   | ✅  |  ❌  | ✅  |
-| Nokia SR Linux        | ✅  | ✅  | ✅  |
-| Nokia SR OS           | ✅  | ✅  | ✅  |
-| VyOS                  | ✅  | ✅  | ✅  |
+| Operating system      | OSPFv2 | OSPFv3 | EBGP | RIPv2 | RIPng | IS-IS |
+| --------------------- | :-: | :-: | :-: | :-: | :-: | :-: |
+| Arista EOS            | ✅  | ✅  | ✅  | ❌  | ❌  | ✅ |
+| Aruba AOS-CX          | ✅  | ✅  | ✅  | ❌  | ❌  | ❌  |
+| Cisco IOS/IOSvL2      | ✅ [❗](caveats-iosv) | ✅  | ✅  | ✅  | ✅  | ❌  |
+| Cisco IOS XE[^18v]    | ✅ [❗](caveats-csr) | ✅  | ✅  | ✅  | ✅  | ❌  |
+| Cisco Nexus OS        | ✅  |  ❌  | ✅  | ❌  | ❌  | ❌  |
+| Cumulus Linux 4.x     | ✅  |  ❌  | ✅  | ✅  | ✅  | ❌  |
+| Cumulus 5.x (NVUE)    | ✅  |  ❌  | ✅  | ❌  | ❌  | ❌  |
+| Dell OS10             | ✅  |  ❌  | ✅  | ❌  | ❌  | ❌  |
+| FRR [❗](caveats-frr) | ✅  | ✅  | ✅  | ✅ | ✅ | ✅ |
+| Junos[^Junos]         | ✅  | ✅  | ✅  | ❌  | ❌  | ❌  |
+| Mikrotik RouterOS 6   | ✅  [❗](caveats-routeros6) |  ❌  | ✅  | ❌  | ❌  | ❌  |
+| Mikrotik RouterOS 7   | ✅  |  ❌  | ✅  | ❌  | ❌  | ❌  |
+| Nokia SR Linux        | ✅  | ✅  | ✅  | ❌  | ❌  | ✅ |
+| Nokia SR OS           | ✅  | ✅  | ✅  | ❌  | ❌  | ❌  |
+| VyOS                  | ✅  | ✅  | ✅  | ❌  | ❌  | ❌  |
 
 ```{note}
 * You cannot run EIGRP within a VRF, but the configuration module is VRF-aware -- it will not try to configure EIGRP routing on VRF interfaces
 * IBGP within a VRF instance does not work. PE-routers and CE-routers MUST HAVE different BGP AS numbers ([more details](bgp-vrf))
-* The detailed device support matrix is in the [VRF Integration Tests Results](https://release.netlab.tools/_html/coverage.vrf).
+* The detailed device support matrix for BGP, OSPFv2, and OSPFv3 is in the [VRF Integration Tests Results](https://release.netlab.tools/_html/coverage.vrf). The RIP-in-VRF tests are in the [RIPv2/RIPng Integration Tests Results](https://release.netlab.tools/_html/coverage.ripv2); the IS-IS tests are in the [IS-IS Integration Tests Results](https://release.netlab.tools/_html/coverage.isis)
 ```
 
 ## Parameters
