@@ -20,7 +20,7 @@
         action-type: accept
 {% endmacro %}
 
-{% macro ospf_config(af,ospf,vrf_interfaces,include_system) %}
+{% macro ospf_config(af,ospf,vrf_interfaces) %}
 {% set pid = ospf.process|default(0) %}
 {% set ospfv = 'ospf3' if af=='ipv6' else 'ospf' %}
 
@@ -51,8 +51,6 @@
 {%      endif %}
 {%     endif %}
 {%  endif %}
-       # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
-{# TODO: Add support for multi-area adjacencies and 'secondary' interface-type #}
 {%  if l.ospf.network_type|default("") in ["broadcast","non-broadcast","point-to-point","point-to-multipoint"] %}
         interface-type: "{{ 'p2mp-nbma' if l.ospf.network_type=='point-to-multipoint' else l.ospf.network_type }}"
 {%  endif %}
@@ -61,16 +59,15 @@
 {%  endif %}
 {% endmacro %}
 
-{% set system_if = { 'ifname': "system", 'ospf': { 'passive': True, 'area': ospf.area }, af: True } %}
-{% for l in vrf_interfaces+([system_if] if include_system else []) if 'ospf' in l and af in l %}
-{{ ospf_interface(l)}}
+{% for intf in vrf_interfaces if 'ospf' in intf and af in intf %}
+{{   ospf_interface(intf) }}
 {% endfor %}
 {% endmacro %}
 
 updates:
 {% if ospf.af.ipv4|default(False) %}
-{{ ospf_config('ipv4',ospf,interfaces,'ipv4' in loopback) }}
+{{   ospf_config('ipv4',ospf,netlab_interfaces) }}
 {% endif %}
 {% if ospf.af.ipv6|default(False) %}
-{{ ospf_config('ipv6',ospf,interfaces,'ipv6' in loopback) }}
+{{   ospf_config('ipv6',ospf,netlab_interfaces) }}
 {% endif %}

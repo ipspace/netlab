@@ -52,7 +52,8 @@ These platforms support routing protocols in VRFs:
 | Junos[^Junos]         | ✅  | ✅  | ✅  |
 | Mikrotik RouterOS 6   | ✅  [❗](caveats-routeros6) |  ❌  | ✅  |
 | Mikrotik RouterOS 7   | ✅  |  ❌  | ✅  |
-| SR Linux              | ✅  |  ❌  | ✅  |
+| Nokia SR Linux        | ✅  | ✅  | ✅  |
+| Nokia SR OS           | ✅  | ✅  | ✅  |
 | VyOS                  | ✅  | ✅  | ✅  |
 
 ```{note}
