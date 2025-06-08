@@ -420,8 +420,8 @@ ok: [x1]
 ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
@@ -473,29 +473,29 @@ ok: [dut] =>
   
     - path: configure/policy-options/policy-statement[name=next-hop-self-ebgp-routes-only]
       val:
-       entry:
-       - entry-id: 10
-         from:
-          path-type: ebgp
-         action:
-          action-type: accept
-          next-hop: self
-       default-action:
-        action-type: next-policy
+        entry:
+        - entry-id: 10
+          from:
+            path-type: ebgp
+          action:
+            action-type: accept
+            next-hop: self
+        default-action:
+          action-type: next-policy
   
   
-    - path: configure/policy-options/prefix-list[name=default_export]
+    - path: configure/policy-options/prefix-list[name=bgp_default_advertise]
       val:
-       prefix: [] # Make sure it exists
+        prefix: [] # Make sure it exists
   
-    - path: configure/policy-options/policy-statement[name=default_export]
+    - path: configure/policy-options/policy-statement[name=bgp_default_export]
       val:
         default-action:
           action-type: reject
         entry:
         - entry-id: 10
           from:
-            prefix-list: [ "default_export" ]
+            prefix-list: [ "bgp_default_advertise" ]
           action:
             action-type: accept
         - entry-id: 20
@@ -505,11 +505,12 @@ ok: [dut] =>
           action:
             action-type: accept
   
-    - path: configure/policy-options/prefix-list[name=default_export]
+  
+    - path: configure/policy-options/prefix-list[name=bgp_default_advertise]
       val:
-       prefix:
-       - ip-prefix: 10.0.0.1/32
-         type: exact
+        prefix:
+        - ip-prefix: 10.0.0.1/32
+          type: exact
   
   
   
@@ -616,8 +617,8 @@ TASK [debug] *******************************************************************
 skipping: [dut]
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -672,18 +673,18 @@ ok: [dut] =>
   
   
   
-    - path: configure/policy-options/prefix-list[name=red_export]
+    - path: configure/policy-options/prefix-list[name=bgp_red_advertise]
       val:
-       prefix: [] # Make sure it exists
+        prefix: [] # Make sure it exists
   
-    - path: configure/policy-options/policy-statement[name=red_export]
+    - path: configure/policy-options/policy-statement[name=bgp_red_export]
       val:
         default-action:
           action-type: reject
         entry:
         - entry-id: 10
           from:
-            prefix-list: [ "red_export" ]
+            prefix-list: [ "bgp_red_advertise" ]
           action:
             action-type: accept
         - entry-id: 20
@@ -692,24 +693,13 @@ ok: [dut] =>
               name: [ bgp ]
           action:
             action-type: accept
-        - entry-id: 30
+        - entry-id: 100
           from:
             protocol:
               name: [ direct ]
           action:
             action-type: accept
-        - entry-id: 40
-          from:
-            protocol:
-              name: [ ospf ]
-          action:
-            action-type: accept
-        - entry-id: 50
-          from:
-            protocol:
-              name: [ ospf3 ]
-          action:
-            action-type: accept
+  
   
   
   
@@ -744,7 +734,7 @@ ok: [dut] =>
           policy: ["accept_all"]
         export:
           policy:
-          - red_export
+          - bgp_red_export
         send-communities:
           extended: False  # True value not allowed, on by default
   
@@ -773,7 +763,7 @@ ok: [dut] =>
           policy: ["accept_all"]
         export:
           policy:
-          - red_export
+          - bgp_red_export
         send-communities:
           extended: False  # True value not allowed, on by default
   

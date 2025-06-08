@@ -58,8 +58,8 @@ TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [dut]
 ok: [r2]
 ok: [r4]
-ok: [r3]
 ok: [r1]
+ok: [r3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
@@ -206,7 +206,7 @@ ok: [r2] =>
     interface eth1
      no shutdown
      description r2 -> dut [external]
-     ! no ip address
+     ip address 10.1.0.6/30
      ipv6 address 2001:db8:3:1::2/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
@@ -314,7 +314,7 @@ ok: [r4] =>
     interface eth1
      no shutdown
      description r4 -> dut [external]
-     ! no ip address
+     ip address 10.1.0.14/30
      ipv6 address 2001:db8:3:3::2/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
@@ -323,364 +323,6 @@ ok: [r4] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [r1] => 
-  msg: |-
-    initial configuration for r1
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)# "
-    echo
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
-    #
-    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
-    #
-    sysctl -w net.ipv4.ip_forward=1
-    sysctl -w net.ipv6.conf.all.forwarding=1
-    #
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    # Set system defaults
-    #
-    # Send ARP requests from a sane source IP address
-    #
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Create loopbacks, stub and lag/bond devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    ip link set eth1 down
-    sysctl -qw net.ipv6.conf.eth1.autoconf=0
-    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set dev eth1 mtu 1500
-    ip link set eth1 up
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-  
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname r1
-    !
-    ip forwarding
-    ipv6 forwarding
-    vrf mgmt
-     exit-vrf
-    !
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ip address 10.0.0.2/32
-     ipv6 address 2001:db8:1:2::1/64
-    !
-    interface eth1
-     no shutdown
-     description r1 -> dut
-     ! no ip address
-     ipv6 address 2001:db8:3::2/64
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-  
-  
-  
-  
-    updates:
-  
-    - path: configure/router[router-name=Base]
-      val:
-       ecmp: 64
-  
-  
-  
-  
-  
-  
-    - path: configure/router[router-name=Base]/interface[interface-name=system]
-  
-      val:
-       admin-state: enable
-       description: "System interface"
-       ipv4:
-        primary:
-         address: "10.0.0.1"
-         prefix-length: 32
-  
-       ipv6:
-        address:
-        - ipv6-address: "2001:db8:1:1::1"
-          prefix-length: 128
-  
-  
-  
-  
-  
-    - path: configure/port[port-id=1/1/c1]
-      val:
-       admin-state: enable
-       connector:
-        breakout: "c1-100g"
-    - path: configure/port[port-id=1/1/c1/1]
-      val:
-       admin-state: enable
-       ethernet:
-        mtu: 1514 # max 9800
-        mode: access
-  
-  
-    - path: configure/service/vprn[service-name=red]
-      val:
-       customer: "1"
-       admin-state: enable
-       service-id: 100
-    #   ecmp: 64
-  
-    - path: configure/service/vprn[service-name=red]/interface[interface-name=eth-1/1/c1]
-  
-      val:
-       admin-state: enable
-       description: "dut ~ r1 ()"
-       ip-mtu: 1500
-       sap:
-       - sap-id: "1/1/c1/1"
-       ipv6:
-        address:
-        - ipv6-address: "2001:db8:3::1"
-          prefix-length: 64
-  
-  
-    - path: configure/service/vprn[service-name=red]
-      val:
-       customer: "1"
-       admin-state: enable
-       service-id: 100
-    #   ecmp: 64
-  
-    - path: configure/service/vprn[service-name=red]
-      val:
-        ipv6:
-          router-advertisement:
-            interface:
-            - ip-int-name: eth-1/1/c1
-              admin-state: enable
-              min-advertisement-interval: 3
-              max-advertisement-interval: 5
-  
-  
-  
-  
-    - path: configure/port[port-id=1/1/c2]
-      val:
-       admin-state: enable
-       connector:
-        breakout: "c1-100g"
-    - path: configure/port[port-id=1/1/c2/1]
-      val:
-       admin-state: enable
-       ethernet:
-        mtu: 1514 # max 9800
-        mode: access
-  
-  
-    - path: configure/service/vprn[service-name=red]
-      val:
-       customer: "1"
-       admin-state: enable
-       service-id: 100
-    #   ecmp: 64
-  
-    - path: configure/service/vprn[service-name=red]/interface[interface-name=eth-1/1/c2]
-  
-      val:
-       admin-state: enable
-       description: "dut ~ r2 (external)"
-       ip-mtu: 1500
-       sap:
-       - sap-id: "1/1/c2/1"
-       ipv6:
-        address:
-        - ipv6-address: "2001:db8:3:1::1"
-          prefix-length: 64
-  
-  
-    - path: configure/service/vprn[service-name=red]
-      val:
-       customer: "1"
-       admin-state: enable
-       service-id: 100
-    #   ecmp: 64
-  
-    - path: configure/service/vprn[service-name=red]
-      val:
-        ipv6:
-          router-advertisement:
-            interface:
-            - ip-int-name: eth-1/1/c2
-              admin-state: enable
-              min-advertisement-interval: 3
-              max-advertisement-interval: 5
-  
-  
-  
-  
-    - path: configure/port[port-id=1/1/c3]
-      val:
-       admin-state: enable
-       connector:
-        breakout: "c1-100g"
-    - path: configure/port[port-id=1/1/c3/1]
-      val:
-       admin-state: enable
-       ethernet:
-        mtu: 1514 # max 9800
-        mode: access
-  
-  
-    - path: configure/service/vprn[service-name=blue]
-      val:
-       customer: "1"
-       admin-state: enable
-       service-id: 101
-    #   ecmp: 64
-  
-    - path: configure/service/vprn[service-name=blue]/interface[interface-name=eth-1/1/c3]
-  
-      val:
-       admin-state: enable
-       description: "dut ~ r3 ()"
-       ip-mtu: 1500
-       sap:
-       - sap-id: "1/1/c3/1"
-       ipv6:
-        address:
-        - ipv6-address: "2001:db8:3:2::1"
-          prefix-length: 64
-  
-  
-    - path: configure/service/vprn[service-name=blue]
-      val:
-       customer: "1"
-       admin-state: enable
-       service-id: 101
-    #   ecmp: 64
-  
-    - path: configure/service/vprn[service-name=blue]
-      val:
-        ipv6:
-          router-advertisement:
-            interface:
-            - ip-int-name: eth-1/1/c3
-              admin-state: enable
-              min-advertisement-interval: 3
-              max-advertisement-interval: 5
-  
-  
-  
-  
-    - path: configure/port[port-id=1/1/c4]
-      val:
-       admin-state: enable
-       connector:
-        breakout: "c1-100g"
-    - path: configure/port[port-id=1/1/c4/1]
-      val:
-       admin-state: enable
-       ethernet:
-        mtu: 1514 # max 9800
-        mode: access
-  
-  
-    - path: configure/service/vprn[service-name=blue]
-      val:
-       customer: "1"
-       admin-state: enable
-       service-id: 101
-    #   ecmp: 64
-  
-    - path: configure/service/vprn[service-name=blue]/interface[interface-name=eth-1/1/c4]
-  
-      val:
-       admin-state: enable
-       description: "dut ~ r4 (external)"
-       ip-mtu: 1500
-       sap:
-       - sap-id: "1/1/c4/1"
-       ipv6:
-        address:
-        - ipv6-address: "2001:db8:3:3::1"
-          prefix-length: 64
-  
-  
-    - path: configure/service/vprn[service-name=blue]
-      val:
-       customer: "1"
-       admin-state: enable
-       service-id: 101
-    #   ecmp: 64
-  
-    - path: configure/service/vprn[service-name=blue]
-      val:
-        ipv6:
-          router-advertisement:
-            interface:
-            - ip-int-name: eth-1/1/c4
-              admin-state: enable
-              min-advertisement-interval: 3
-              max-advertisement-interval: 5
 ok: [r3] => 
   msg: |-
     initial configuration for r3
@@ -780,8 +422,386 @@ ok: [r3] =>
     interface eth1
      no shutdown
      description r3 -> dut
-     ! no ip address
+     ip address 10.1.0.10/30
      ipv6 address 2001:db8:3:2::2/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+  
+  
+  
+  
+    updates:
+  
+    - path: configure/router[router-name=Base]
+      val:
+       ecmp: 64
+  
+  
+  
+  
+  
+  
+    - path: configure/router[router-name=Base]/interface[interface-name=system]
+  
+      val:
+       admin-state: enable
+       description: "System interface"
+       ipv4:
+        primary:
+         address: "10.0.0.1"
+         prefix-length: 32
+  
+       ipv6:
+        address:
+        - ipv6-address: "2001:db8:1:1::1"
+          prefix-length: 128
+  
+  
+  
+  
+  
+    - path: configure/port[port-id=1/1/c1]
+      val:
+       admin-state: enable
+       connector:
+        breakout: "c1-100g"
+    - path: configure/port[port-id=1/1/c1/1]
+      val:
+       admin-state: enable
+       ethernet:
+        mtu: 1514 # max 9800
+        mode: access
+  
+  
+    - path: configure/service/vprn[service-name=red]
+      val:
+       customer: "1"
+       admin-state: enable
+       service-id: 100
+    #   ecmp: 64
+  
+    - path: configure/service/vprn[service-name=red]/interface[interface-name=eth-1/1/c1]
+  
+      val:
+       admin-state: enable
+       description: "dut ~ r1 ()"
+       ip-mtu: 1500
+       sap:
+       - sap-id: "1/1/c1/1"
+       ipv4:
+        primary:
+         address: "10.1.0.1"
+         prefix-length: 30
+  
+       ipv6:
+        address:
+        - ipv6-address: "2001:db8:3::1"
+          prefix-length: 64
+  
+  
+    - path: configure/service/vprn[service-name=red]
+      val:
+       customer: "1"
+       admin-state: enable
+       service-id: 100
+    #   ecmp: 64
+  
+    - path: configure/service/vprn[service-name=red]
+      val:
+        ipv6:
+          router-advertisement:
+            interface:
+            - ip-int-name: eth-1/1/c1
+              admin-state: enable
+              min-advertisement-interval: 3
+              max-advertisement-interval: 5
+  
+  
+  
+  
+    - path: configure/port[port-id=1/1/c2]
+      val:
+       admin-state: enable
+       connector:
+        breakout: "c1-100g"
+    - path: configure/port[port-id=1/1/c2/1]
+      val:
+       admin-state: enable
+       ethernet:
+        mtu: 1514 # max 9800
+        mode: access
+  
+  
+    - path: configure/service/vprn[service-name=red]
+      val:
+       customer: "1"
+       admin-state: enable
+       service-id: 100
+    #   ecmp: 64
+  
+    - path: configure/service/vprn[service-name=red]/interface[interface-name=eth-1/1/c2]
+  
+      val:
+       admin-state: enable
+       description: "dut ~ r2 (external)"
+       ip-mtu: 1500
+       sap:
+       - sap-id: "1/1/c2/1"
+       ipv4:
+        primary:
+         address: "10.1.0.5"
+         prefix-length: 30
+  
+       ipv6:
+        address:
+        - ipv6-address: "2001:db8:3:1::1"
+          prefix-length: 64
+  
+  
+    - path: configure/service/vprn[service-name=red]
+      val:
+       customer: "1"
+       admin-state: enable
+       service-id: 100
+    #   ecmp: 64
+  
+    - path: configure/service/vprn[service-name=red]
+      val:
+        ipv6:
+          router-advertisement:
+            interface:
+            - ip-int-name: eth-1/1/c2
+              admin-state: enable
+              min-advertisement-interval: 3
+              max-advertisement-interval: 5
+  
+  
+  
+  
+    - path: configure/port[port-id=1/1/c3]
+      val:
+       admin-state: enable
+       connector:
+        breakout: "c1-100g"
+    - path: configure/port[port-id=1/1/c3/1]
+      val:
+       admin-state: enable
+       ethernet:
+        mtu: 1514 # max 9800
+        mode: access
+  
+  
+    - path: configure/service/vprn[service-name=blue]
+      val:
+       customer: "1"
+       admin-state: enable
+       service-id: 101
+    #   ecmp: 64
+  
+    - path: configure/service/vprn[service-name=blue]/interface[interface-name=eth-1/1/c3]
+  
+      val:
+       admin-state: enable
+       description: "dut ~ r3 ()"
+       ip-mtu: 1500
+       sap:
+       - sap-id: "1/1/c3/1"
+       ipv4:
+        primary:
+         address: "10.1.0.9"
+         prefix-length: 30
+  
+       ipv6:
+        address:
+        - ipv6-address: "2001:db8:3:2::1"
+          prefix-length: 64
+  
+  
+    - path: configure/service/vprn[service-name=blue]
+      val:
+       customer: "1"
+       admin-state: enable
+       service-id: 101
+    #   ecmp: 64
+  
+    - path: configure/service/vprn[service-name=blue]
+      val:
+        ipv6:
+          router-advertisement:
+            interface:
+            - ip-int-name: eth-1/1/c3
+              admin-state: enable
+              min-advertisement-interval: 3
+              max-advertisement-interval: 5
+  
+  
+  
+  
+    - path: configure/port[port-id=1/1/c4]
+      val:
+       admin-state: enable
+       connector:
+        breakout: "c1-100g"
+    - path: configure/port[port-id=1/1/c4/1]
+      val:
+       admin-state: enable
+       ethernet:
+        mtu: 1514 # max 9800
+        mode: access
+  
+  
+    - path: configure/service/vprn[service-name=blue]
+      val:
+       customer: "1"
+       admin-state: enable
+       service-id: 101
+    #   ecmp: 64
+  
+    - path: configure/service/vprn[service-name=blue]/interface[interface-name=eth-1/1/c4]
+  
+      val:
+       admin-state: enable
+       description: "dut ~ r4 (external)"
+       ip-mtu: 1500
+       sap:
+       - sap-id: "1/1/c4/1"
+       ipv4:
+        primary:
+         address: "10.1.0.13"
+         prefix-length: 30
+  
+       ipv6:
+        address:
+        - ipv6-address: "2001:db8:3:3::1"
+          prefix-length: 64
+  
+  
+    - path: configure/service/vprn[service-name=blue]
+      val:
+       customer: "1"
+       admin-state: enable
+       service-id: 101
+    #   ecmp: 64
+  
+    - path: configure/service/vprn[service-name=blue]
+      val:
+        ipv6:
+          router-advertisement:
+            interface:
+            - ip-int-name: eth-1/1/c4
+              admin-state: enable
+              min-advertisement-interval: 3
+              max-advertisement-interval: 5
+ok: [r1] => 
+  msg: |-
+    initial configuration for r1
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.autoconf=0
+    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname r1
+    !
+    ip forwarding
+    ipv6 forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.2/32
+     ipv6 address 2001:db8:1:2::1/64
+    !
+    interface eth1
+     no shutdown
+     description r1 -> dut
+     ip address 10.1.0.2/30
+     ipv6 address 2001:db8:3::2/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -816,10 +836,10 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r2, r4, r1, r3
 
 TASK [template] ****************************************************************
-changed: [r3]
 changed: [r1]
-changed: [r2]
 changed: [r4]
+changed: [r3]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
@@ -828,8 +848,8 @@ ok: [r1]
 ok: [r3]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r2]
 changed: [r4]
+changed: [r2]
 changed: [r1]
 changed: [r3]
 
@@ -850,7 +870,7 @@ ok: [r4]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4 => (item=bgp)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4 => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4 => (item=isis)
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4 => (item=vrf)
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
@@ -898,29 +918,29 @@ ok: [dut] =>
   
     - path: configure/policy-options/policy-statement[name=next-hop-self-ebgp-routes-only]
       val:
-       entry:
-       - entry-id: 10
-         from:
-          path-type: ebgp
-         action:
-          action-type: accept
-          next-hop: self
-       default-action:
-        action-type: next-policy
+        entry:
+        - entry-id: 10
+          from:
+            path-type: ebgp
+          action:
+            action-type: accept
+            next-hop: self
+        default-action:
+          action-type: next-policy
   
   
-    - path: configure/policy-options/prefix-list[name=default_export]
+    - path: configure/policy-options/prefix-list[name=bgp_default_advertise]
       val:
-       prefix: [] # Make sure it exists
+        prefix: [] # Make sure it exists
   
-    - path: configure/policy-options/policy-statement[name=default_export]
+    - path: configure/policy-options/policy-statement[name=bgp_default_export]
       val:
         default-action:
           action-type: reject
         entry:
         - entry-id: 10
           from:
-            prefix-list: [ "default_export" ]
+            prefix-list: [ "bgp_default_advertise" ]
           action:
             action-type: accept
         - entry-id: 20
@@ -930,19 +950,20 @@ ok: [dut] =>
           action:
             action-type: accept
   
-    - path: configure/policy-options/prefix-list[name=default_export]
+  
+    - path: configure/policy-options/prefix-list[name=bgp_default_advertise]
       val:
-       prefix:
-       - ip-prefix: 10.0.0.1/32
-         type: exact
+        prefix:
+        - ip-prefix: 10.0.0.1/32
+          type: exact
   
   
   
-    - path: configure/policy-options/prefix-list[name=default_export]
+    - path: configure/policy-options/prefix-list[name=bgp_default_advertise]
       val:
-       prefix:
-       - ip-prefix: 2001:db8:1:1::1/128
-         type: exact
+        prefix:
+        - ip-prefix: 2001:db8:1:1::1/128
+          type: exact
   
   
   
@@ -978,6 +999,9 @@ ok: [r2] =>
   
       bgp router-id 10.0.0.3
     !
+      neighbor 10.1.0.5 remote-as 65000
+      neighbor 10.1.0.5 description dut
+    !
       neighbor 2001:db8:3:1::1 remote-as 65000
       neighbor 2001:db8:3:1::1 description dut
     !
@@ -988,6 +1012,11 @@ ok: [r2] =>
       network 10.0.0.3/32
     !
     !
+    !
+      neighbor 10.1.0.5 activate
+      no neighbor 10.1.0.5 send-community all
+      neighbor 10.1.0.5 send-community standard
+      neighbor 10.1.0.5 send-community large
     !
      address-family ipv6 unicast
     !
@@ -1021,6 +1050,9 @@ ok: [r4] =>
   
       bgp router-id 10.0.0.5
     !
+      neighbor 10.1.0.13 remote-as 65000
+      neighbor 10.1.0.13 description dut
+    !
       neighbor 2001:db8:3:3::1 remote-as 65000
       neighbor 2001:db8:3:3::1 description dut
     !
@@ -1031,6 +1063,11 @@ ok: [r4] =>
       network 10.0.0.5/32
     !
     !
+    !
+      neighbor 10.1.0.13 activate
+      no neighbor 10.1.0.13 send-community all
+      neighbor 10.1.0.13 send-community standard
+      neighbor 10.1.0.13 send-community large
     !
      address-family ipv6 unicast
     !
@@ -1077,19 +1114,19 @@ skipping: [r2]
 skipping: [r4]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [r4]
 changed: [r2]
+changed: [r4]
 
-TASK [Figure out whether to deploy the module ospf on current device] **********
+TASK [Figure out whether to deploy the module isis on current device] **********
 ok: [dut]
 ok: [r1]
 ok: [r2]
 ok: [r3]
 ok: [r4]
 
-TASK [Find configuration template for ospf] ************************************
-ok: [dut]
+TASK [Find configuration template for isis] ************************************
 skipping: [r2]
+ok: [dut]
 ok: [r1]
 skipping: [r4]
 ok: [r3]
@@ -1101,7 +1138,7 @@ skipping: [r2]
 skipping: [r3]
 skipping: [r4]
 
-TASK [Find configuration deployment deploy_script for ospf] ********************
+TASK [Find configuration deployment deploy_script for isis] ********************
 skipping: [r2]
 skipping: [r4]
 ok: [dut]
@@ -1113,102 +1150,80 @@ skipping: [r2]
 skipping: [r4]
 ok: [r1] => 
   msg: |-
-    ospf configuration for r1
+    isis configuration for r1
     =========================================
     !
-    ! OSPFv2 FRR configuration
     !
-    router ospf
-     ospf router-id 10.0.0.2
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
+    ipv6 forwarding
+    !
+    router isis Gandalf
+     log-adjacency-changes
+     hostname dynamic
+     is-type level-2
+     metric-style wide
+     lsp-timers gen-interval 1 refresh-interval 900 max-lifetime 1800
+     net 49.0001.0000.0000.0002.00
+     topology ipv6-unicast
   
   
-    exit
     !
     interface lo
     !
-     ip ospf area 0.0.0.0
-    !
-  
-    !
-    ! OSPFv3 FRR configuration
-    !
-    interface lo
-    !
-     ipv6 ospf6 area 0.0.0.0
+     ip router isis Gandalf
+     ipv6 router isis Gandalf
     !
     interface eth1
     ! r1 -> dut
-     ipv6 ospf6 area 0.0.0.0
-     ipv6 ospf6 network point-to-point
+     ip router isis Gandalf
+     ipv6 router isis Gandalf
+     isis network point-to-point
     !
-    !
-    router ospf6
-     ospf6 router-id 10.0.0.2
-     timers lsa min-arrival 100
-     timers throttle spf 10 50 500
-  
-  
-    exit
   
     !
     do write
 ok: [r3] => 
   msg: |-
-    ospf configuration for r3
+    isis configuration for r3
     =========================================
     !
-    ! OSPFv2 FRR configuration
     !
-    router ospf
-     ospf router-id 10.0.0.4
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
+    ipv6 forwarding
+    !
+    router isis Gandalf
+     log-adjacency-changes
+     hostname dynamic
+     is-type level-2
+     metric-style wide
+     lsp-timers gen-interval 1 refresh-interval 900 max-lifetime 1800
+     net 49.0001.0000.0000.0004.00
+     topology ipv6-unicast
   
   
-    exit
     !
     interface lo
     !
-     ip ospf area 0.0.0.0
-    !
-  
-    !
-    ! OSPFv3 FRR configuration
-    !
-    interface lo
-    !
-     ipv6 ospf6 area 0.0.0.0
+     ip router isis Gandalf
+     ipv6 router isis Gandalf
     !
     interface eth1
     ! r3 -> dut
-     ipv6 ospf6 area 0.0.0.0
-     ipv6 ospf6 network point-to-point
+     ip router isis Gandalf
+     ipv6 router isis Gandalf
+     isis network point-to-point
     !
-    !
-    router ospf6
-     ospf6 router-id 10.0.0.4
-     timers lsa min-arrival 100
-     timers throttle spf 10 50 500
-  
-  
-    exit
   
     !
     do write
 ok: [dut] => 
   msg: |-
-    ospf configuration for dut
+    isis configuration for dut
     =========================================
   
   
   
     updates:
 
-TASK [Deploy ospf configuration] ***********************************************
+TASK [Deploy isis configuration] ***********************************************
 skipping: [r2]
 skipping: [r4]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for dut
@@ -1217,7 +1232,7 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for
 TASK [Generate gNMI YAML configuration] ****************************************
 ok: [dut]
 
-TASK [Update ospf node configuration from gNMI template /home/pipi/net101/tools/netsim/ansible/templates/ospf/sros.j2] ***
+TASK [Update isis node configuration from gNMI template /home/pipi/net101/tools/netsim/ansible/templates/isis/sros.j2] ***
 skipping: [dut]
 
 TASK [debug] *******************************************************************
@@ -1231,11 +1246,11 @@ TASK [set_fact] ****************************************************************
 ok: [r1]
 ok: [r3]
 
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run /tmp/config.sh to deploy isis config from /home/pipi/net101/tools/netsim/ansible/templates/isis/frr.j2] ***
 skipping: [r1]
 skipping: [r3]
 
-TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run vtysh to import isis config from /home/pipi/net101/tools/netsim/ansible/templates/isis/frr.j2] ***
 changed: [r3]
 changed: [r1]
 
@@ -1290,18 +1305,18 @@ ok: [dut] =>
   
   
   
-    - path: configure/policy-options/prefix-list[name=blue_export]
+    - path: configure/policy-options/prefix-list[name=bgp_blue_advertise]
       val:
-       prefix: [] # Make sure it exists
+        prefix: [] # Make sure it exists
   
-    - path: configure/policy-options/policy-statement[name=blue_export]
+    - path: configure/policy-options/policy-statement[name=bgp_blue_export]
       val:
         default-action:
           action-type: reject
         entry:
         - entry-id: 10
           from:
-            prefix-list: [ "blue_export" ]
+            prefix-list: [ "bgp_blue_advertise" ]
           action:
             action-type: accept
         - entry-id: 20
@@ -1310,24 +1325,21 @@ ok: [dut] =>
               name: [ bgp ]
           action:
             action-type: accept
-        - entry-id: 30
+        - entry-id: 100
           from:
             protocol:
               name: [ direct ]
           action:
             action-type: accept
-        - entry-id: 40
+        - entry-id: 110
           from:
             protocol:
-              name: [ ospf ]
+              name: [ isis ]
           action:
             action-type: accept
-        - entry-id: 50
-          from:
-            protocol:
-              name: [ ospf3 ]
-          action:
-            action-type: accept
+  
+  
+  
   
   
   
@@ -1355,14 +1367,43 @@ ok: [dut] =>
       val:
         admin-state: enable
         family:
-          ipv4: False
+          ipv4: True
           ipv6: True
   
         import:
           policy: ["accept_all"]
         export:
           policy:
-          - blue_export
+          - bgp_blue_export
+        send-communities:
+          extended: False  # True value not allowed, on by default
+  
+  
+    - path: configure/service/vprn[service-name=blue]/bgp
+      val:
+        neighbor:
+        - ip-address: "10.1.0.14"
+          description: "r4"
+          peer-as: 65101
+          group: "ebgp"
+          admin-state: enable
+          family:
+            ipv4: True
+            ipv6: False
+  
+  
+    - path: configure/service/vprn[service-name=blue]/bgp/group[group-name=ebgp]
+      val:
+        admin-state: enable
+        family:
+          ipv4: True
+          ipv6: True
+  
+        import:
+          policy: ["accept_all"]
+        export:
+          policy:
+          - bgp_blue_export
         send-communities:
           extended: False  # True value not allowed, on by default
   
@@ -1383,24 +1424,23 @@ ok: [dut] =>
   
   
   
-    - path: configure/policy-options/policy-statement[name=ospf_blue_export]
+    - path: configure/policy-options/policy-statement[name=isis_blue_export]
       val:
         default-action:
           action-type: reject
         entry:
-        - entry-id: 20
+        - entry-id: 100
           from:
             protocol:
               name: [ bgp ]
           action:
             action-type: accept
-        - entry-id: 30
+        - entry-id: 110
           from:
             protocol:
               name: [ direct ]
           action:
             action-type: accept
-  
   
   
   
@@ -1411,18 +1451,26 @@ ok: [dut] =>
        service-id: 101
     #   ecmp: 64
   
-    - path: configure/service/vprn[service-name=blue]/ospf3[ospf-instance=0]
+    - path: configure/service/vprn[service-name=blue]
       val:
-        admin-state: enable
-        router-id: 10.0.0.1
-        export-policy: [ ospf_blue_export ]
-        area:
-        - area-id: "0.0.0.0"
+        isis:
+        - isis-instance: 0
+          system-id: "0000.0000.0001"
+          admin-state: enable
+          area-address: ["49.0001"]
+          export-policy: [ isis_blue_export ]
+          level:
+          - level-number: "1"
+            wide-metrics-only: True
+          - level-number: "2"
+            wide-metrics-only: True
+          level-capability: "2"
+          multi-topology:
+            ipv6-unicast: True
           interface:
-          - interface-name: "eth-1/1/c3"
-            interface-type: "point-to-point"
-  
-  
+          - interface-name: eth-1/1/c3
+            interface-type: point-to-point
+            passive: False
   
   
     - path: configure/service/vprn[service-name=red]
@@ -1436,18 +1484,18 @@ ok: [dut] =>
   
   
   
-    - path: configure/policy-options/prefix-list[name=red_export]
+    - path: configure/policy-options/prefix-list[name=bgp_red_advertise]
       val:
-       prefix: [] # Make sure it exists
+        prefix: [] # Make sure it exists
   
-    - path: configure/policy-options/policy-statement[name=red_export]
+    - path: configure/policy-options/policy-statement[name=bgp_red_export]
       val:
         default-action:
           action-type: reject
         entry:
         - entry-id: 10
           from:
-            prefix-list: [ "red_export" ]
+            prefix-list: [ "bgp_red_advertise" ]
           action:
             action-type: accept
         - entry-id: 20
@@ -1456,24 +1504,21 @@ ok: [dut] =>
               name: [ bgp ]
           action:
             action-type: accept
-        - entry-id: 30
+        - entry-id: 100
           from:
             protocol:
               name: [ direct ]
           action:
             action-type: accept
-        - entry-id: 40
+        - entry-id: 110
           from:
             protocol:
-              name: [ ospf ]
+              name: [ isis ]
           action:
             action-type: accept
-        - entry-id: 50
-          from:
-            protocol:
-              name: [ ospf3 ]
-          action:
-            action-type: accept
+  
+  
+  
   
   
   
@@ -1501,14 +1546,43 @@ ok: [dut] =>
       val:
         admin-state: enable
         family:
-          ipv4: False
+          ipv4: True
           ipv6: True
   
         import:
           policy: ["accept_all"]
         export:
           policy:
-          - red_export
+          - bgp_red_export
+        send-communities:
+          extended: False  # True value not allowed, on by default
+  
+  
+    - path: configure/service/vprn[service-name=red]/bgp
+      val:
+        neighbor:
+        - ip-address: "10.1.0.6"
+          description: "r2"
+          peer-as: 65100
+          group: "ebgp"
+          admin-state: enable
+          family:
+            ipv4: True
+            ipv6: False
+  
+  
+    - path: configure/service/vprn[service-name=red]/bgp/group[group-name=ebgp]
+      val:
+        admin-state: enable
+        family:
+          ipv4: True
+          ipv6: True
+  
+        import:
+          policy: ["accept_all"]
+        export:
+          policy:
+          - bgp_red_export
         send-communities:
           extended: False  # True value not allowed, on by default
   
@@ -1529,24 +1603,23 @@ ok: [dut] =>
   
   
   
-    - path: configure/policy-options/policy-statement[name=ospf_red_export]
+    - path: configure/policy-options/policy-statement[name=isis_red_export]
       val:
         default-action:
           action-type: reject
         entry:
-        - entry-id: 20
+        - entry-id: 100
           from:
             protocol:
               name: [ bgp ]
           action:
             action-type: accept
-        - entry-id: 30
+        - entry-id: 110
           from:
             protocol:
               name: [ direct ]
           action:
             action-type: accept
-  
   
   
   
@@ -1557,16 +1630,26 @@ ok: [dut] =>
        service-id: 100
     #   ecmp: 64
   
-    - path: configure/service/vprn[service-name=red]/ospf3[ospf-instance=0]
+    - path: configure/service/vprn[service-name=red]
       val:
-        admin-state: enable
-        router-id: 10.0.0.1
-        export-policy: [ ospf_red_export ]
-        area:
-        - area-id: "0.0.0.0"
+        isis:
+        - isis-instance: 0
+          system-id: "0000.0000.0001"
+          admin-state: enable
+          area-address: ["49.0001"]
+          export-policy: [ isis_red_export ]
+          level:
+          - level-number: "1"
+            wide-metrics-only: True
+          - level-number: "2"
+            wide-metrics-only: True
+          level-capability: "2"
+          multi-topology:
+            ipv6-unicast: True
           interface:
-          - interface-name: "eth-1/1/c1"
-            interface-type: "point-to-point"
+          - interface-name: eth-1/1/c1
+            interface-type: point-to-point
+            passive: False
 
 TASK [Deploy vrf configuration] ************************************************
 skipping: [r1]
@@ -1596,10 +1679,12 @@ r4                         : ok=30   changed=4    unreachable=0    failed=0    s
 
 
 
-The device under test has two IPv6-only VRFs with two interfaces in each VRF.
-Routers are attached to those interfaces and run OSPF and BGP with device
-under test. Assuming the OSPF and BGP multi-vrf test cases succeeded, this one
-tests OSPF-to-BGP two-way redistribution.
+The device under test has two dual-stack VRFs with two interfaces in each VRF.
+Routers are attached to those interfaces and run IS-IS and BGP with device
+under test.
+
+This scenario tests IS-IS in VRF, redistribution of connected subnets into
+IS-IS and two-way IS-IS-to-BGP redistribution.
 
 * r1 and r2 should be able to ping each other
 * r3 and r4 should be able to ping each other
