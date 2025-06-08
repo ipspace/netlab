@@ -1,4 +1,5 @@
 {% from "templates/initial/sros.j2" import if_name, declare_router with context %}
+{% from 'templates/routing/_redistribute.sros.j2' import import_protocols with context %}
 
 {% macro ospf_export_policy(ospf,vrf) %}
 - path: configure/policy-options/policy-statement[name=ospf_{{vrf}}_export]
@@ -6,23 +7,22 @@
     default-action:
       action-type: reject
     entry:
-    - entry-id: 20
-      from:
-        protocol:
-          name: [ bgp ]
-      action:
-        action-type: accept
-    - entry-id: 30
-      from:
-        protocol:
-          name: [ direct ]
-      action:
-        action-type: accept
+{{  import_protocols(ospf.import|default([])) | indent(4,first=True) }}
 {% endmacro %}
 
-{% macro ospf_config(af,ospf,vrf_interfaces) %}
+{% macro ospf_config(af,ospf,vrf_interfaces,vname='default') %}
 {% set pid = ospf.process|default(0) %}
 {% set ospfv = 'ospf3' if af=='ipv6' else 'ospf' %}
+
+{% if ospf.import is defined %}
+{{   ospf_export_policy(ospf,vname) }}
+{{   declare_router({ 'vrf': vname } if vname != 'default' else {},sub_path="/"+ospfv+"[ospf-instance="+pid|string + "]") }}
+  val:
+    export-policy: [ ospf_{{ vname }}_export ]
+{%   if vname == 'default' %}
+    asbr: {}
+{%   endif %}
+{% endif %}
 
 {% macro ospf_interface(l) %}
 {{ declare_router(l,sub_path="/"+ospfv+"[ospf-instance="+pid|string + "]") }}
@@ -32,9 +32,6 @@
 {%   endif %}
     admin-state: enable
     router-id: {{ ospf.router_id }}
-{%   if l.vrf is defined %}
-    export-policy: [ ospf_{{ l.vrf }}_export ]
-{%   endif %}
     area:
     - area-id: "{{ l.ospf.area }}"
       interface:

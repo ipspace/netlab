@@ -1,26 +1,28 @@
+{% from 'templates/routing/_redistribute.sros.j2' import import_protocols with context %}
+
 {% macro bgp_export_prefix(vrf,prefix) %}
-- path: configure/policy-options/prefix-list[name={{vrf}}_export]
+- path: configure/policy-options/prefix-list[name=bgp_{{vrf}}_advertise]
   val:
-   prefix:
-   - ip-prefix: {{ prefix }}
-     type: exact
+    prefix:
+    - ip-prefix: {{ prefix }}
+      type: exact
 {% endmacro %}
 
 {% macro bgp_config(vrf,vrf_bgp,vrf_context) %}
 
 {# Create route export policies #}
-- path: configure/policy-options/prefix-list[name={{vrf}}_export]
+- path: configure/policy-options/prefix-list[name=bgp_{{vrf}}_advertise]
   val:
-   prefix: [] # Make sure it exists
+    prefix: [] # Make sure it exists
 
-- path: configure/policy-options/policy-statement[name={{vrf}}_export]
+- path: configure/policy-options/policy-statement[name=bgp_{{vrf}}_export]
   val:
     default-action:
       action-type: reject
     entry:
     - entry-id: 10
       from:
-        prefix-list: [ "{{vrf}}_export" ]
+        prefix-list: [ "bgp_{{vrf}}_advertise" ]
       action:
         action-type: accept
     - entry-id: 20
@@ -29,26 +31,7 @@
           name: [ bgp ]
       action:
         action-type: accept
-{% if vrf != 'default' %}
-    - entry-id: 30
-      from:
-        protocol:
-          name: [ direct ]
-      action:
-        action-type: accept
-    - entry-id: 40
-      from:
-        protocol:
-          name: [ ospf ]
-      action:
-        action-type: accept
-    - entry-id: 50
-      from:
-        protocol:
-          name: [ ospf3 ]
-      action:
-        action-type: accept
-{% endif %}
+{{  import_protocols(vrf_bgp.import|default([])) | indent(4,first=True) }}
 
 {% for af in ['ipv4','ipv6'] if af in vrf_context.af and vrf_context.af[af] %}
 {% if loopback[af] is defined and vrf=="default" and bgp.advertise_loopback %}
@@ -106,7 +89,7 @@
 {%   if 'ibgp' in type and bgp.next_hop_self|default(False) %}
       - next-hop-self-ebgp-routes-only
 {%   endif %}
-      - {{ vrf }}_export
+      - bgp_{{ vrf }}_export
 {%   if bgp.community[ type ]|default([])|length < 2 %}
     send-communities:
 {%     for c,vals in {'standard': ['standard','large'],'extended':['extended'] }.items() %}
