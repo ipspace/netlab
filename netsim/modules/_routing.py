@@ -614,7 +614,7 @@ def check_import_request(
     if i_data is True:                                      # Change 'true' into an empty dictionary
       rdata['import'][s_proto] = {}
 
-    if not s_proto in node.module and s_proto not in ['connected']:
+    if not s_proto in node.module and s_proto not in ['connected','static']:
       log.error(                                            # Source protocol not active on the node ==> yell
         f'Node {node.name}: cannot import routes from {s_proto} which is not running on the box',
         category=log.IncorrectValue,
