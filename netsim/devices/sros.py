@@ -62,10 +62,26 @@ def set_port_modes(node: Box) -> None:
     else:
       set_port_mode(t_intf,'access')
 
+def adjust_system_ipv6_prefix(node: Box) -> None:
+  v6lb = node.get('loopback.ipv6',None)
+  if not v6lb:
+    return
+
+  (v6ad,v6pf) = v6lb.split('/')
+  if v6pf != '128':
+    node.loopback.ipv6 = f'{v6ad}/128'
+    report_quirk(
+      text=f'Loopback prefix {v6lb} on node {node.name} was changed to {node.loopback.ipv6}',
+      more_hints=[ f'The IPv6 prefix configured on SR OS system (loopback) interface must be a /128' ],
+      quirk='loopback_ipv6',
+      node=node,
+      category=Warning)
+
 class SROS(_Quirks):
 
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
+    adjust_system_ipv6_prefix(node)
     set_port_modes(node)
     ipv4_unnumbered(node)
     vrf_route_leaking(node)
