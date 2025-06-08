@@ -16,7 +16,7 @@ ok: [c1]
 TASK [Wait for device to become ready] *****************************************
 skipping: [pe2]
 skipping: [c1]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/sros.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/sros.yml for dut
 
 TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
 ok: [dut]
@@ -25,7 +25,7 @@ TASK [Wait up to 180s for gNMI(TCP 57400) to be ready on clab-ml_17-dut] *******
 ok: [dut -> localhost]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, pe2, c1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, pe2, c1
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [dut]
@@ -58,7 +58,7 @@ skipping: [pe2]
 skipping: [c1]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, pe2, c1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, pe2, c1
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
@@ -438,13 +438,13 @@ ok: [dut] =>
               max-advertisement-interval: 5
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for pe2, c1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for pe2, c1
 
 TASK [Generate gNMI YAML configuration] ****************************************
 ok: [dut]
 
-TASK [Update initial node configuration from gNMI template /home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2] ***
+TASK [Update initial node configuration from gNMI template /home/pipi/net101/tools/netsim/ansible/templates/initial/sros.j2] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
@@ -458,7 +458,7 @@ skipping: [pe2]
 skipping: [c1]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for pe2, c1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for pe2, c1
 
 TASK [template] ****************************************************************
 changed: [pe2]
@@ -468,11 +468,11 @@ TASK [set_fact] ****************************************************************
 ok: [pe2]
 ok: [c1]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [pe2]
 changed: [c1]
 
-TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [pe2]
 skipping: [c1]
 
@@ -484,8 +484,8 @@ ok: [c1]
 ok: [pe2]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for c1, dut, pe2 => (item=bgp)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for c1, dut, pe2 => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for c1, dut, pe2 => (item=bgp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for c1, dut, pe2 => (item=ospf)
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [c1]
@@ -523,29 +523,29 @@ ok: [dut] =>
   
     - path: configure/policy-options/policy-statement[name=next-hop-self-ebgp-routes-only]
       val:
-       entry:
-       - entry-id: 10
-         from:
-          path-type: ebgp
-         action:
-          action-type: accept
-          next-hop: self
-       default-action:
-        action-type: next-policy
+        entry:
+        - entry-id: 10
+          from:
+            path-type: ebgp
+          action:
+            action-type: accept
+            next-hop: self
+        default-action:
+          action-type: next-policy
   
   
-    - path: configure/policy-options/prefix-list[name=default_export]
+    - path: configure/policy-options/prefix-list[name=bgp_default_advertise]
       val:
-       prefix: [] # Make sure it exists
+        prefix: [] # Make sure it exists
   
-    - path: configure/policy-options/policy-statement[name=default_export]
+    - path: configure/policy-options/policy-statement[name=bgp_default_export]
       val:
         default-action:
           action-type: reject
         entry:
         - entry-id: 10
           from:
-            prefix-list: [ "default_export" ]
+            prefix-list: [ "bgp_default_advertise" ]
           action:
             action-type: accept
         - entry-id: 20
@@ -555,32 +555,33 @@ ok: [dut] =>
           action:
             action-type: accept
   
-    - path: configure/policy-options/prefix-list[name=default_export]
+  
+    - path: configure/policy-options/prefix-list[name=bgp_default_advertise]
       val:
-       prefix:
-       - ip-prefix: 10.0.0.1/32
-         type: exact
+        prefix:
+        - ip-prefix: 10.0.0.1/32
+          type: exact
   
   
-    - path: configure/policy-options/prefix-list[name=default_export]
+    - path: configure/policy-options/prefix-list[name=bgp_default_advertise]
       val:
-       prefix:
-       - ip-prefix: 192.168.42.0/24
-         type: exact
+        prefix:
+        - ip-prefix: 192.168.42.0/24
+          type: exact
   
   
-    - path: configure/policy-options/prefix-list[name=default_export]
+    - path: configure/policy-options/prefix-list[name=bgp_default_advertise]
       val:
-       prefix:
-       - ip-prefix: 2001:db8:1:1::1/128
-         type: exact
+        prefix:
+        - ip-prefix: 2001:db8:1:1::1/128
+          type: exact
   
   
-    - path: configure/policy-options/prefix-list[name=default_export]
+    - path: configure/policy-options/prefix-list[name=bgp_default_advertise]
       val:
-       prefix:
-       - ip-prefix: 2001:db8:42::/64
-         type: exact
+        prefix:
+        - ip-prefix: 2001:db8:42::/64
+          type: exact
   
   
   
@@ -614,7 +615,7 @@ ok: [dut] =>
           policy: ["accept_all"]
         export:
           policy:
-          - default_export
+          - bgp_default_export
         send-communities:
           extended: False  # True value not allowed, on by default
   
@@ -643,7 +644,7 @@ ok: [dut] =>
           policy: ["accept_all"]
         export:
           policy:
-          - default_export
+          - bgp_default_export
         send-communities:
           extended: False  # True value not allowed, on by default
   
@@ -715,13 +716,13 @@ ok: [pe2] =>
 
 TASK [Deploy bgp configuration] ************************************************
 skipping: [c1]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for pe2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for pe2
 
 TASK [Generate gNMI YAML configuration] ****************************************
 ok: [dut]
 
-TASK [Update bgp node configuration from gNMI template /home/pipi/netlab_gh/netsim/ansible/templates/bgp/sros.j2] ***
+TASK [Update bgp node configuration from gNMI template /home/pipi/net101/tools/netsim/ansible/templates/bgp/sros.j2] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
@@ -733,10 +734,10 @@ changed: [pe2]
 TASK [set_fact] ****************************************************************
 ok: [pe2]
 
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [pe2]
 
-TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [pe2]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
@@ -880,6 +881,18 @@ ok: [dut] =>
   
   
   
+  
+    - path: configure/router[router-name=Base]/ospf[ospf-instance=0]
+      val:
+        admin-state: enable
+        router-id: 10.0.0.1
+        area:
+        - area-id: "0.0.0.0"
+          interface:
+          - interface-name: "system"
+  
+  
+  
     - path: configure/router[router-name=Base]/ospf[ospf-instance=0]
       val:
         admin-state: enable
@@ -888,7 +901,6 @@ ok: [dut] =>
         - area-id: "0.0.0.0"
           interface:
           - interface-name: "eth-1/1/c1"
-           # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
             interface-type: "point-to-point"
   
   
@@ -902,20 +914,7 @@ ok: [dut] =>
           interface:
           - interface-name: "eth-1/1/c2"
             passive: True
-           # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
   
-  
-  
-    - path: configure/router[router-name=Base]/ospf[ospf-instance=0]
-      val:
-        admin-state: enable
-        router-id: 10.0.0.1
-        area:
-        - area-id: "0.0.0.0"
-          interface:
-          - interface-name: "system"
-            passive: True
-           # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
   
   
   
@@ -929,8 +928,18 @@ ok: [dut] =>
         area:
         - area-id: "0.0.0.0"
           interface:
+          - interface-name: "system"
+  
+  
+  
+    - path: configure/router[router-name=Base]/ospf3[ospf-instance=0]
+      val:
+        admin-state: enable
+        router-id: 10.0.0.1
+        area:
+        - area-id: "0.0.0.0"
+          interface:
           - interface-name: "eth-1/1/c1"
-           # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
             interface-type: "point-to-point"
   
   
@@ -944,24 +953,10 @@ ok: [dut] =>
           interface:
           - interface-name: "eth-1/1/c2"
             passive: True
-           # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
-  
-  
-  
-    - path: configure/router[router-name=Base]/ospf3[ospf-instance=0]
-      val:
-        admin-state: enable
-        router-id: 10.0.0.1
-        area:
-        - area-id: "0.0.0.0"
-          interface:
-          - interface-name: "system"
-            passive: True
-           # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
 
 TASK [Deploy ospf configuration] ***********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for c1, pe2
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for c1, pe2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for dut
 
 TASK [template] ****************************************************************
 changed: [pe2]
@@ -971,18 +966,18 @@ TASK [set_fact] ****************************************************************
 ok: [c1]
 ok: [pe2]
 
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 skipping: [c1]
 skipping: [pe2]
 
-TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [pe2]
 changed: [c1]
 
 TASK [Generate gNMI YAML configuration] ****************************************
 ok: [dut]
 
-TASK [Update ospf node configuration from gNMI template /home/pipi/netlab_gh/netsim/ansible/templates/ospf/sros.j2] ***
+TASK [Update ospf node configuration from gNMI template /home/pipi/net101/tools/netsim/ansible/templates/ospf/sros.j2] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
@@ -992,8 +987,8 @@ PLAY [Deploy custom deployment templates] **************************************
 
 TASK [Run custom configuration deployment scripts] *****************************
 skipping: [dut] => (item=bgp.session) 
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-custom-config.yml for dut, pe2 => (item=ebgp.multihop)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-custom-config.yml for pe2 => (item=bgp.session)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-custom-config.yml for dut, pe2 => (item=ebgp.multihop)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-custom-config.yml for pe2 => (item=bgp.session)
 
 TASK [Find configuration template] *********************************************
 ok: [dut]
@@ -1011,7 +1006,7 @@ TASK [fail] ********************************************************************
 skipping: [dut]
 skipping: [pe2]
 
-TASK [Process template /home/pipi/netlab_gh/netsim/extra/ebgp.multihop/sros.j2 for dut] ***
+TASK [Process template /home/pipi/net101/tools/netsim/extra/ebgp.multihop/sros.j2 for dut] ***
 skipping: [pe2]
 skipping: [dut]
 
@@ -1020,13 +1015,13 @@ ok: [dut]
 ok: [pe2]
 
 TASK [Run the configuration deployment script] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for pe2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for pe2
 
 TASK [Generate gNMI YAML configuration] ****************************************
 ok: [dut]
 
-TASK [Update ebgp.multihop node configuration from gNMI template /home/pipi/netlab_gh/netsim/extra/ebgp.multihop/sros.j2] ***
+TASK [Update ebgp.multihop node configuration from gNMI template /home/pipi/net101/tools/netsim/extra/ebgp.multihop/sros.j2] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
@@ -1038,10 +1033,10 @@ changed: [pe2]
 TASK [set_fact] ****************************************************************
 ok: [pe2]
 
-TASK [run /tmp/config.sh to deploy ebgp.multihop config from /home/pipi/netlab_gh/netsim/extra/ebgp.multihop/frr.j2] ***
+TASK [run /tmp/config.sh to deploy ebgp.multihop config from /home/pipi/net101/tools/netsim/extra/ebgp.multihop/frr.j2] ***
 skipping: [pe2]
 
-TASK [run vtysh to import ebgp.multihop config from /home/pipi/netlab_gh/netsim/extra/ebgp.multihop/frr.j2] ***
+TASK [run vtysh to import ebgp.multihop config from /home/pipi/net101/tools/netsim/extra/ebgp.multihop/frr.j2] ***
 changed: [pe2]
 
 TASK [Find configuration template] *********************************************
@@ -1056,14 +1051,14 @@ ok: [pe2 -> localhost]
 TASK [fail] ********************************************************************
 skipping: [pe2]
 
-TASK [Process template /home/pipi/netlab_gh/netsim/extra/bgp.session/frr.j2 for pe2] ***
+TASK [Process template /home/pipi/net101/tools/netsim/extra/bgp.session/frr.j2 for pe2] ***
 skipping: [pe2]
 
 TASK [Find custom configuration deployment script] *****************************
 ok: [pe2]
 
 TASK [Run the configuration deployment script] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for pe2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for pe2
 
 TASK [template] ****************************************************************
 changed: [pe2]
@@ -1071,10 +1066,10 @@ changed: [pe2]
 TASK [set_fact] ****************************************************************
 ok: [pe2]
 
-TASK [run /tmp/config.sh to deploy bgp.session config from /home/pipi/netlab_gh/netsim/extra/bgp.session/frr.j2] ***
+TASK [run /tmp/config.sh to deploy bgp.session config from /home/pipi/net101/tools/netsim/extra/bgp.session/frr.j2] ***
 changed: [pe2]
 
-TASK [run vtysh to import bgp.session config from /home/pipi/netlab_gh/netsim/extra/bgp.session/frr.j2] ***
+TASK [run vtysh to import bgp.session config from /home/pipi/net101/tools/netsim/extra/bgp.session/frr.j2] ***
 skipping: [pe2]
 
 PLAY RECAP *********************************************************************

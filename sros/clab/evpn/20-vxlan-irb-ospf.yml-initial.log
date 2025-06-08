@@ -27,8 +27,8 @@ skipping: [h4]
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/sros.yml for s1, s2
 
 TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
-ok: [s1]
 ok: [s2]
+ok: [s1]
 
 TASK [Wait up to 180s for gNMI(TCP 57400) to be ready on clab-ml_17-s1] ********
 ok: [s1 -> localhost]
@@ -49,8 +49,8 @@ TASK [Find configuration template for normalize] *******************************
 ok: [s1]
 ok: [s2]
 ok: [h1]
-ok: [h3]
 ok: [h2]
+ok: [h3]
 ok: [h4]
 
 TASK [fail] ********************************************************************
@@ -101,8 +101,8 @@ ok: [s1]
 ok: [s2]
 ok: [h1]
 ok: [h2]
-ok: [h4]
 ok: [h3]
+ok: [h4]
 
 TASK [fail] ********************************************************************
 skipping: [s1]
@@ -116,9 +116,9 @@ TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [s1]
 ok: [s2]
 ok: [h1]
-ok: [h2]
 ok: [h4]
 ok: [h3]
+ok: [h2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [h1] => 
@@ -154,6 +154,41 @@ ok: [h1] =>
     ip addr del 172.16.0.3/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.0.3/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+ok: [h4] => 
+  msg: |-
+    initial configuration for h4
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+  
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.3.6/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.3.6/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
 ok: [h2] => 
@@ -224,41 +259,6 @@ ok: [h3] =>
     ip addr del 172.16.2.5/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.2.5/24 dev eth1
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
-ok: [h4] => 
-  msg: |-
-    initial configuration for h4
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Send ARP requests from a sane source IP address
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-  
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.3.6/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.3.6/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
 ok: [s1] => 
@@ -397,20 +397,20 @@ skipping: [s2]
 TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
 ok: [h2]
-ok: [h3]
 ok: [h4]
+ok: [h3]
 
 TASK [Create a temporary file for the rendered script] *************************
 changed: [h3 -> localhost]
+changed: [h4 -> localhost]
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
-changed: [h4 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h4 -> localhost]
-changed: [h3 -> localhost]
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h4 -> localhost]
+changed: [h3 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -430,10 +430,10 @@ changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-gzqq1ls2.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-kxwii8kg.sh] ***********************
+changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 changed: [h2 -> localhost]
-changed: [h3 -> localhost]
 changed: [h1 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
@@ -442,8 +442,8 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [s1]
 ok: [h4]
+ok: [s1]
 ok: [s2]
 
 TASK [Deploy individual configuration modules] *********************************
@@ -857,8 +857,8 @@ ok: [s1]
 ok: [s2]
 
 TASK [Update vlan node configuration from gNMI template /home/pipi/netlab_gh/netsim/ansible/templates/vlan/sros.j2] ***
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [debug] *******************************************************************
 skipping: [s1]
@@ -890,8 +890,8 @@ skipping: [s2]
 
 TASK [Find configuration deployment deploy_script for routing] *****************
 skipping: [s1]
-ok: [h1]
 skipping: [s2]
+ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
@@ -1057,7 +1057,7 @@ changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-3r0zdbsw.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-2w85v_z6.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
@@ -1114,29 +1114,29 @@ ok: [s1] =>
   
     - path: configure/policy-options/policy-statement[name=next-hop-self-ebgp-routes-only]
       val:
-       entry:
-       - entry-id: 10
-         from:
-          path-type: ebgp
-         action:
-          action-type: accept
-          next-hop: self
-       default-action:
-        action-type: next-policy
+        entry:
+        - entry-id: 10
+          from:
+            path-type: ebgp
+          action:
+            action-type: accept
+            next-hop: self
+        default-action:
+          action-type: next-policy
   
   
-    - path: configure/policy-options/prefix-list[name=default_export]
+    - path: configure/policy-options/prefix-list[name=bgp_default_advertise]
       val:
-       prefix: [] # Make sure it exists
+        prefix: [] # Make sure it exists
   
-    - path: configure/policy-options/policy-statement[name=default_export]
+    - path: configure/policy-options/policy-statement[name=bgp_default_export]
       val:
         default-action:
           action-type: reject
         entry:
         - entry-id: 10
           from:
-            prefix-list: [ "default_export" ]
+            prefix-list: [ "bgp_default_advertise" ]
           action:
             action-type: accept
         - entry-id: 20
@@ -1146,11 +1146,12 @@ ok: [s1] =>
           action:
             action-type: accept
   
-    - path: configure/policy-options/prefix-list[name=default_export]
+  
+    - path: configure/policy-options/prefix-list[name=bgp_default_advertise]
       val:
-       prefix:
-       - ip-prefix: 10.0.0.1/32
-         type: exact
+        prefix:
+        - ip-prefix: 10.0.0.1/32
+          type: exact
   
   
   
@@ -1187,7 +1188,7 @@ ok: [s1] =>
         export:
           policy:
           - next-hop-self-ebgp-routes-only
-          - default_export
+          - bgp_default_export
         local-address: "10.0.0.1"
   
   
@@ -1217,29 +1218,29 @@ ok: [s2] =>
   
     - path: configure/policy-options/policy-statement[name=next-hop-self-ebgp-routes-only]
       val:
-       entry:
-       - entry-id: 10
-         from:
-          path-type: ebgp
-         action:
-          action-type: accept
-          next-hop: self
-       default-action:
-        action-type: next-policy
+        entry:
+        - entry-id: 10
+          from:
+            path-type: ebgp
+          action:
+            action-type: accept
+            next-hop: self
+        default-action:
+          action-type: next-policy
   
   
-    - path: configure/policy-options/prefix-list[name=default_export]
+    - path: configure/policy-options/prefix-list[name=bgp_default_advertise]
       val:
-       prefix: [] # Make sure it exists
+        prefix: [] # Make sure it exists
   
-    - path: configure/policy-options/policy-statement[name=default_export]
+    - path: configure/policy-options/policy-statement[name=bgp_default_export]
       val:
         default-action:
           action-type: reject
         entry:
         - entry-id: 10
           from:
-            prefix-list: [ "default_export" ]
+            prefix-list: [ "bgp_default_advertise" ]
           action:
             action-type: accept
         - entry-id: 20
@@ -1249,11 +1250,12 @@ ok: [s2] =>
           action:
             action-type: accept
   
-    - path: configure/policy-options/prefix-list[name=default_export]
+  
+    - path: configure/policy-options/prefix-list[name=bgp_default_advertise]
       val:
-       prefix:
-       - ip-prefix: 10.0.0.2/32
-         type: exact
+        prefix:
+        - ip-prefix: 10.0.0.2/32
+          type: exact
   
   
   
@@ -1290,7 +1292,7 @@ ok: [s2] =>
         export:
           policy:
           - next-hop-self-ebgp-routes-only
-          - default_export
+          - bgp_default_export
         local-address: "10.0.0.2"
   
   
@@ -1329,9 +1331,9 @@ skipping: [s2]
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [h1]
 ok: [h2]
+ok: [h4]
 ok: [h3]
 ok: [s1]
-ok: [h4]
 ok: [s2]
 
 TASK [Find configuration template for ospf] ************************************
@@ -1375,18 +1377,6 @@ ok: [s1] =>
   
   
   
-    - path: configure/router[router-name=Base]/ospf[ospf-instance=0]
-      val:
-        admin-state: enable
-        router-id: 10.0.0.1
-        area:
-        - area-id: "0.0.0.0"
-          interface:
-          - interface-name: "eth-1/1/c1"
-           # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
-            interface-type: "point-to-point"
-  
-  
   
     - path: configure/router[router-name=Base]/ospf[ospf-instance=0]
       val:
@@ -1396,8 +1386,18 @@ ok: [s1] =>
         - area-id: "0.0.0.0"
           interface:
           - interface-name: "system"
-            passive: True
-           # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
+  
+  
+  
+    - path: configure/router[router-name=Base]/ospf[ospf-instance=0]
+      val:
+        admin-state: enable
+        router-id: 10.0.0.1
+        area:
+        - area-id: "0.0.0.0"
+          interface:
+          - interface-name: "eth-1/1/c1"
+            interface-type: "point-to-point"
 ok: [s2] => 
   msg: |-
     ospf configuration for s2
@@ -1410,18 +1410,6 @@ ok: [s2] =>
   
   
   
-    - path: configure/router[router-name=Base]/ospf[ospf-instance=0]
-      val:
-        admin-state: enable
-        router-id: 10.0.0.2
-        area:
-        - area-id: "0.0.0.0"
-          interface:
-          - interface-name: "eth-1/1/c1"
-           # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
-            interface-type: "point-to-point"
-  
-  
   
     - path: configure/router[router-name=Base]/ospf[ospf-instance=0]
       val:
@@ -1431,8 +1419,18 @@ ok: [s2] =>
         - area-id: "0.0.0.0"
           interface:
           - interface-name: "system"
-            passive: True
-           # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
+  
+  
+  
+    - path: configure/router[router-name=Base]/ospf[ospf-instance=0]
+      val:
+        admin-state: enable
+        router-id: 10.0.0.2
+        area:
+        - area-id: "0.0.0.0"
+          interface:
+          - interface-name: "eth-1/1/c1"
+            interface-type: "point-to-point"
 
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [h1]
@@ -1446,8 +1444,8 @@ ok: [s1]
 ok: [s2]
 
 TASK [Update ospf node configuration from gNMI template /home/pipi/netlab_gh/netsim/ansible/templates/ospf/sros.j2] ***
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [debug] *******************************************************************
 skipping: [s1]
@@ -1508,18 +1506,18 @@ ok: [s1] =>
   
   
   
-    - path: configure/policy-options/prefix-list[name=tenant_export]
+    - path: configure/policy-options/prefix-list[name=bgp_tenant_advertise]
       val:
-       prefix: [] # Make sure it exists
+        prefix: [] # Make sure it exists
   
-    - path: configure/policy-options/policy-statement[name=tenant_export]
+    - path: configure/policy-options/policy-statement[name=bgp_tenant_export]
       val:
         default-action:
           action-type: reject
         entry:
         - entry-id: 10
           from:
-            prefix-list: [ "tenant_export" ]
+            prefix-list: [ "bgp_tenant_advertise" ]
           action:
             action-type: accept
         - entry-id: 20
@@ -1528,25 +1526,32 @@ ok: [s1] =>
               name: [ bgp ]
           action:
             action-type: accept
-        - entry-id: 30
+        - entry-id: 100
           from:
             protocol:
               name: [ direct ]
           action:
             action-type: accept
-        - entry-id: 40
+        - entry-id: 110
           from:
             protocol:
               name: [ ospf ]
           action:
             action-type: accept
+        - entry-id: 120
+          from:
+            protocol:
+              name: [ ospf3 ]
+          action:
+            action-type: accept
   
   
-    - path: configure/policy-options/prefix-list[name=tenant_export]
+  
+    - path: configure/policy-options/prefix-list[name=bgp_tenant_advertise]
       val:
-       prefix:
-       - ip-prefix: 172.16.2.0/24
-         type: exact
+        prefix:
+        - ip-prefix: 172.16.2.0/24
+          type: exact
   
   
   
@@ -1572,18 +1577,19 @@ ok: [s1] =>
   
   
   
+  
     - path: configure/policy-options/policy-statement[name=ospf_tenant_export]
       val:
         default-action:
           action-type: reject
         entry:
-        - entry-id: 20
+        - entry-id: 100
           from:
             protocol:
               name: [ bgp ]
           action:
             action-type: accept
-        - entry-id: 30
+        - entry-id: 110
           from:
             protocol:
               name: [ direct ]
@@ -1592,6 +1598,18 @@ ok: [s1] =>
   
   
   
+    - path: configure/service/vprn[service-name=tenant]
+      val:
+       customer: "1"
+       admin-state: enable
+       service-id: 100
+    #   ecmp: 64
+  
+    - path: configure/service/vprn[service-name=tenant]/ospf[ospf-instance=0]
+      val:
+        export-policy: [ ospf_tenant_export ]
+  
+  
   
     - path: configure/service/vprn[service-name=tenant]
       val:
@@ -1604,12 +1622,10 @@ ok: [s1] =>
       val:
         admin-state: enable
         router-id: 10.0.0.1
-        export-policy: [ ospf_tenant_export ]
         area:
         - area-id: "0.0.0.0"
           interface:
           - interface-name: "svi.1000"
-           # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
   
   
     - path: configure/service/vprn[service-name=tenant]
@@ -1623,13 +1639,11 @@ ok: [s1] =>
       val:
         admin-state: enable
         router-id: 10.0.0.1
-        export-policy: [ ospf_tenant_export ]
         area:
         - area-id: "0.0.0.0"
           interface:
           - interface-name: "svi.1002"
             passive: True
-           # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
             interface-type: "point-to-point"
   
   
@@ -1644,12 +1658,10 @@ ok: [s1] =>
       val:
         admin-state: enable
         router-id: 10.0.0.1
-        export-policy: [ ospf_tenant_export ]
         area:
         - area-id: "0.0.0.0"
           interface:
           - interface-name: "svi.1001"
-           # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
 ok: [s2] => 
   msg: |-
     vrf configuration for s2
@@ -1668,18 +1680,18 @@ ok: [s2] =>
   
   
   
-    - path: configure/policy-options/prefix-list[name=tenant_export]
+    - path: configure/policy-options/prefix-list[name=bgp_tenant_advertise]
       val:
-       prefix: [] # Make sure it exists
+        prefix: [] # Make sure it exists
   
-    - path: configure/policy-options/policy-statement[name=tenant_export]
+    - path: configure/policy-options/policy-statement[name=bgp_tenant_export]
       val:
         default-action:
           action-type: reject
         entry:
         - entry-id: 10
           from:
-            prefix-list: [ "tenant_export" ]
+            prefix-list: [ "bgp_tenant_advertise" ]
           action:
             action-type: accept
         - entry-id: 20
@@ -1688,25 +1700,32 @@ ok: [s2] =>
               name: [ bgp ]
           action:
             action-type: accept
-        - entry-id: 30
+        - entry-id: 100
           from:
             protocol:
               name: [ direct ]
           action:
             action-type: accept
-        - entry-id: 40
+        - entry-id: 110
           from:
             protocol:
               name: [ ospf ]
           action:
             action-type: accept
+        - entry-id: 120
+          from:
+            protocol:
+              name: [ ospf3 ]
+          action:
+            action-type: accept
   
   
-    - path: configure/policy-options/prefix-list[name=tenant_export]
+  
+    - path: configure/policy-options/prefix-list[name=bgp_tenant_advertise]
       val:
-       prefix:
-       - ip-prefix: 172.16.3.0/24
-         type: exact
+        prefix:
+        - ip-prefix: 172.16.3.0/24
+          type: exact
   
   
   
@@ -1732,18 +1751,19 @@ ok: [s2] =>
   
   
   
+  
     - path: configure/policy-options/policy-statement[name=ospf_tenant_export]
       val:
         default-action:
           action-type: reject
         entry:
-        - entry-id: 20
+        - entry-id: 100
           from:
             protocol:
               name: [ bgp ]
           action:
             action-type: accept
-        - entry-id: 30
+        - entry-id: 110
           from:
             protocol:
               name: [ direct ]
@@ -1752,6 +1772,18 @@ ok: [s2] =>
   
   
   
+    - path: configure/service/vprn[service-name=tenant]
+      val:
+       customer: "1"
+       admin-state: enable
+       service-id: 100
+    #   ecmp: 64
+  
+    - path: configure/service/vprn[service-name=tenant]/ospf[ospf-instance=0]
+      val:
+        export-policy: [ ospf_tenant_export ]
+  
+  
   
     - path: configure/service/vprn[service-name=tenant]
       val:
@@ -1764,12 +1796,10 @@ ok: [s2] =>
       val:
         admin-state: enable
         router-id: 10.0.0.2
-        export-policy: [ ospf_tenant_export ]
         area:
         - area-id: "0.0.0.0"
           interface:
           - interface-name: "svi.1001"
-           # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
   
   
     - path: configure/service/vprn[service-name=tenant]
@@ -1783,13 +1813,11 @@ ok: [s2] =>
       val:
         admin-state: enable
         router-id: 10.0.0.2
-        export-policy: [ ospf_tenant_export ]
         area:
         - area-id: "0.0.0.0"
           interface:
           - interface-name: "svi.1003"
             passive: True
-           # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
             interface-type: "point-to-point"
   
   
@@ -1804,12 +1832,10 @@ ok: [s2] =>
       val:
         admin-state: enable
         router-id: 10.0.0.2
-        export-policy: [ ospf_tenant_export ]
         area:
         - area-id: "0.0.0.0"
           interface:
           - interface-name: "svi.1000"
-           # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
 
 TASK [Deploy vrf configuration] ************************************************
 skipping: [h1]
@@ -1990,8 +2016,8 @@ ok: [s1]
 ok: [s2]
 
 TASK [Update vxlan node configuration from gNMI template /home/pipi/netlab_gh/netsim/ansible/templates/vxlan/sros.j2] ***
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [debug] *******************************************************************
 skipping: [s1]
@@ -2001,8 +2027,8 @@ TASK [Figure out whether to deploy the module evpn on current device] **********
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [h4]
 ok: [s1]
+ok: [h4]
 ok: [s2]
 
 TASK [Find configuration template for evpn] ************************************
@@ -2115,8 +2141,8 @@ ok: [s1]
 ok: [s2]
 
 TASK [Update evpn node configuration from gNMI template /home/pipi/netlab_gh/netsim/ansible/templates/evpn/sros.j2] ***
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [debug] *******************************************************************
 skipping: [s1]

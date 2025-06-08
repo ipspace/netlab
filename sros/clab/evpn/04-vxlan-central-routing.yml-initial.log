@@ -30,12 +30,12 @@ skipping: [h4]
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/sros.yml for l1, spine
 
 TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
-ok: [l1]
 ok: [spine]
+ok: [l1]
 
 TASK [Wait up to 180s for gNMI(TCP 57400) to be ready on clab-ml_17-l1] ********
-ok: [l1 -> localhost]
 ok: [spine -> localhost]
+ok: [l1 -> localhost]
 
 TASK [Normalize config on bridge-like devices] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2, spine, h1, h2, h3, h4
@@ -71,10 +71,10 @@ TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [l1]
 ok: [l2]
 ok: [spine]
-ok: [h1]
 ok: [h2]
-ok: [h3]
+ok: [h1]
 ok: [h4]
+ok: [h3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [l1]
@@ -99,8 +99,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for l1, l2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [l1]
-ok: [spine]
 ok: [l2]
+ok: [spine]
 ok: [h1]
 ok: [h2]
 ok: [h3]
@@ -130,13 +130,13 @@ ok: [spine]
 ok: [l2]
 ok: [h1]
 ok: [h2]
-ok: [h4]
 ok: [h3]
+ok: [h4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [h4] => 
+ok: [h3] => 
   msg: |-
-    initial configuration for h4
+    initial configuration for h3
     =========================================
     #!/bin/bash
     #
@@ -164,9 +164,9 @@ ok: [h4] =>
     #
     ip link set dev eth1 up
     set +e
-    ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
+    ip addr del 172.16.1.3/24 dev eth1 2>/dev/null
     set -e
-    ip addr add 172.16.1.4/24 dev eth1
+    ip addr add 172.16.1.3/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
 ok: [h1] => 
@@ -237,6 +237,41 @@ ok: [h2] =>
     ip addr del 172.16.0.2/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.0.2/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+ok: [h4] => 
+  msg: |-
+    initial configuration for h4
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+  
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.1.4/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
 ok: [l2] => 
@@ -369,41 +404,6 @@ ok: [l2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [h3] => 
-  msg: |-
-    initial configuration for h3
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Send ARP requests from a sane source IP address
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-  
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.1.3/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.1.3/24 dev eth1
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
 ok: [l1] => 
   msg: |-
     initial configuration for l1
@@ -596,14 +596,14 @@ ok: [h3]
 ok: [h4]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
-changed: [h4 -> localhost]
 changed: [h3 -> localhost]
+changed: [h4 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
@@ -625,11 +625,11 @@ changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-kjqa72qw.sh] ***********************
-changed: [h1 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-8dfyxgbk.sh] ***********************
+changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 changed: [h2 -> localhost]
-changed: [h3 -> localhost]
+changed: [h1 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -654,9 +654,9 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [h1]
 ok: [h2]
+ok: [h4]
 ok: [h3]
 ok: [l1]
-ok: [h4]
 ok: [l2]
 ok: [spine]
 
@@ -924,12 +924,12 @@ ok: [spine]
 
 TASK [Find configuration template for routing] *********************************
 ok: [h1]
-skipping: [l1]
 ok: [h2]
-skipping: [l2]
+skipping: [l1]
 ok: [h3]
-skipping: [spine]
+skipping: [l2]
 ok: [h4]
+skipping: [spine]
 
 TASK [fail] ********************************************************************
 skipping: [h1]
@@ -950,7 +950,6 @@ skipping: [spine]
 ok: [h4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [l1]
 ok: [h1] => 
   msg: |-
     routing configuration for h1
@@ -980,6 +979,7 @@ ok: [h1] =>
     #
     # Print the final routing table
     ip route
+skipping: [l1]
 skipping: [l2]
 ok: [h2] => 
   msg: |-
@@ -1089,10 +1089,10 @@ changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
-changed: [h3 -> localhost]
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 changed: [h4 -> localhost]
+changed: [h3 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
 skipping: [h1]
@@ -1107,16 +1107,16 @@ skipping: [h3]
 skipping: [h4]
 
 TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-ddjld7y4.sh] ***********************
-changed: [h1 -> localhost]
+TASK [Remove temporary file /tmp/h1_routing-d03d9u3q.sh] ***********************
 changed: [h2 -> localhost]
-changed: [h4 -> localhost]
+changed: [h1 -> localhost]
 changed: [h3 -> localhost]
+changed: [h4 -> localhost]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [h1]
@@ -1173,29 +1173,29 @@ ok: [l1] =>
   
     - path: configure/policy-options/policy-statement[name=next-hop-self-ebgp-routes-only]
       val:
-       entry:
-       - entry-id: 10
-         from:
-          path-type: ebgp
-         action:
-          action-type: accept
-          next-hop: self
-       default-action:
-        action-type: next-policy
+        entry:
+        - entry-id: 10
+          from:
+            path-type: ebgp
+          action:
+            action-type: accept
+            next-hop: self
+        default-action:
+          action-type: next-policy
   
   
-    - path: configure/policy-options/prefix-list[name=default_export]
+    - path: configure/policy-options/prefix-list[name=bgp_default_advertise]
       val:
-       prefix: [] # Make sure it exists
+        prefix: [] # Make sure it exists
   
-    - path: configure/policy-options/policy-statement[name=default_export]
+    - path: configure/policy-options/policy-statement[name=bgp_default_export]
       val:
         default-action:
           action-type: reject
         entry:
         - entry-id: 10
           from:
-            prefix-list: [ "default_export" ]
+            prefix-list: [ "bgp_default_advertise" ]
           action:
             action-type: accept
         - entry-id: 20
@@ -1205,11 +1205,12 @@ ok: [l1] =>
           action:
             action-type: accept
   
-    - path: configure/policy-options/prefix-list[name=default_export]
+  
+    - path: configure/policy-options/prefix-list[name=bgp_default_advertise]
       val:
-       prefix:
-       - ip-prefix: 10.0.0.5/32
-         type: exact
+        prefix:
+        - ip-prefix: 10.0.0.5/32
+          type: exact
   
   
   
@@ -1246,7 +1247,7 @@ ok: [l1] =>
         export:
           policy:
           - next-hop-self-ebgp-routes-only
-          - default_export
+          - bgp_default_export
         local-address: "10.0.0.5"
   
   
@@ -1316,29 +1317,29 @@ ok: [spine] =>
   
     - path: configure/policy-options/policy-statement[name=next-hop-self-ebgp-routes-only]
       val:
-       entry:
-       - entry-id: 10
-         from:
-          path-type: ebgp
-         action:
-          action-type: accept
-          next-hop: self
-       default-action:
-        action-type: next-policy
+        entry:
+        - entry-id: 10
+          from:
+            path-type: ebgp
+          action:
+            action-type: accept
+            next-hop: self
+        default-action:
+          action-type: next-policy
   
   
-    - path: configure/policy-options/prefix-list[name=default_export]
+    - path: configure/policy-options/prefix-list[name=bgp_default_advertise]
       val:
-       prefix: [] # Make sure it exists
+        prefix: [] # Make sure it exists
   
-    - path: configure/policy-options/policy-statement[name=default_export]
+    - path: configure/policy-options/policy-statement[name=bgp_default_export]
       val:
         default-action:
           action-type: reject
         entry:
         - entry-id: 10
           from:
-            prefix-list: [ "default_export" ]
+            prefix-list: [ "bgp_default_advertise" ]
           action:
             action-type: accept
         - entry-id: 20
@@ -1348,11 +1349,12 @@ ok: [spine] =>
           action:
             action-type: accept
   
-    - path: configure/policy-options/prefix-list[name=default_export]
+  
+    - path: configure/policy-options/prefix-list[name=bgp_default_advertise]
       val:
-       prefix:
-       - ip-prefix: 10.0.0.7/32
-         type: exact
+        prefix:
+        - ip-prefix: 10.0.0.7/32
+          type: exact
   
   
   
@@ -1390,7 +1392,7 @@ ok: [spine] =>
         export:
           policy:
           - next-hop-self-ebgp-routes-only
-          - default_export
+          - bgp_default_export
         local-address: "10.0.0.7"
         cluster:
           cluster-id: "10.0.0.7"
@@ -1423,7 +1425,7 @@ ok: [spine] =>
         export:
           policy:
           - next-hop-self-ebgp-routes-only
-          - default_export
+          - bgp_default_export
         local-address: "10.0.0.7"
         cluster:
           cluster-id: "10.0.0.7"
@@ -1455,8 +1457,8 @@ ok: [l1]
 ok: [spine]
 
 TASK [Update bgp node configuration from gNMI template /home/pipi/netlab_gh/netsim/ansible/templates/bgp/sros.j2] ***
-changed: [spine]
 changed: [l1]
+changed: [spine]
 
 TASK [debug] *******************************************************************
 skipping: [l1]
@@ -1478,8 +1480,8 @@ TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [h4]
 ok: [l1]
+ok: [h4]
 ok: [l2]
 ok: [spine]
 
@@ -1555,18 +1557,6 @@ ok: [l1] =>
   
   
   
-    - path: configure/router[router-name=Base]/ospf[ospf-instance=0]
-      val:
-        admin-state: enable
-        router-id: 10.0.0.5
-        area:
-        - area-id: "0.0.0.0"
-          interface:
-          - interface-name: "eth-1/1/c1"
-           # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
-            interface-type: "point-to-point"
-  
-  
   
     - path: configure/router[router-name=Base]/ospf[ospf-instance=0]
       val:
@@ -1576,8 +1566,18 @@ ok: [l1] =>
         - area-id: "0.0.0.0"
           interface:
           - interface-name: "system"
-            passive: True
-           # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
+  
+  
+  
+    - path: configure/router[router-name=Base]/ospf[ospf-instance=0]
+      val:
+        admin-state: enable
+        router-id: 10.0.0.5
+        area:
+        - area-id: "0.0.0.0"
+          interface:
+          - interface-name: "eth-1/1/c1"
+            interface-type: "point-to-point"
 ok: [spine] => 
   msg: |-
     ospf configuration for spine
@@ -1590,6 +1590,18 @@ ok: [spine] =>
   
   
   
+  
+    - path: configure/router[router-name=Base]/ospf[ospf-instance=0]
+      val:
+        admin-state: enable
+        router-id: 10.0.0.7
+        area:
+        - area-id: "0.0.0.0"
+          interface:
+          - interface-name: "system"
+  
+  
+  
     - path: configure/router[router-name=Base]/ospf[ospf-instance=0]
       val:
         admin-state: enable
@@ -1598,7 +1610,6 @@ ok: [spine] =>
         - area-id: "0.0.0.0"
           interface:
           - interface-name: "eth-1/1/c1"
-           # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
             interface-type: "point-to-point"
   
   
@@ -1611,21 +1622,7 @@ ok: [spine] =>
         - area-id: "0.0.0.0"
           interface:
           - interface-name: "eth-1/1/c2"
-           # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
             interface-type: "point-to-point"
-  
-  
-  
-    - path: configure/router[router-name=Base]/ospf[ospf-instance=0]
-      val:
-        admin-state: enable
-        router-id: 10.0.0.7
-        area:
-        - area-id: "0.0.0.0"
-          interface:
-          - interface-name: "system"
-            passive: True
-           # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
 
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [h1]
@@ -1663,8 +1660,8 @@ TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [h4]
 ok: [l1]
+ok: [h4]
 ok: [l2]
 ok: [spine]
 
@@ -1772,18 +1769,18 @@ ok: [spine] =>
   
   
   
-    - path: configure/policy-options/prefix-list[name=customer_export]
+    - path: configure/policy-options/prefix-list[name=bgp_customer_advertise]
       val:
-       prefix: [] # Make sure it exists
+        prefix: [] # Make sure it exists
   
-    - path: configure/policy-options/policy-statement[name=customer_export]
+    - path: configure/policy-options/policy-statement[name=bgp_customer_export]
       val:
         default-action:
           action-type: reject
         entry:
         - entry-id: 10
           from:
-            prefix-list: [ "customer_export" ]
+            prefix-list: [ "bgp_customer_advertise" ]
           action:
             action-type: accept
         - entry-id: 20
@@ -1792,18 +1789,13 @@ ok: [spine] =>
               name: [ bgp ]
           action:
             action-type: accept
-        - entry-id: 30
+        - entry-id: 100
           from:
             protocol:
               name: [ direct ]
           action:
             action-type: accept
-        - entry-id: 40
-          from:
-            protocol:
-              name: [ ospf ]
-          action:
-            action-type: accept
+  
   
   
   
@@ -1862,8 +1854,8 @@ ok: [h2]
 ok: [h3]
 ok: [l1]
 ok: [h4]
-ok: [l2]
 ok: [spine]
+ok: [l2]
 
 TASK [Find configuration template for vxlan] ***********************************
 skipping: [h1]
@@ -2095,8 +2087,8 @@ TASK [Figure out whether to deploy the module evpn on current device] **********
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [l1]
 ok: [h4]
+ok: [l1]
 ok: [l2]
 ok: [spine]
 
@@ -2256,8 +2248,8 @@ ok: [l1]
 ok: [spine]
 
 TASK [Update evpn node configuration from gNMI template /home/pipi/netlab_gh/netsim/ansible/templates/evpn/sros.j2] ***
-changed: [spine]
 changed: [l1]
+changed: [spine]
 
 TASK [debug] *******************************************************************
 skipping: [l1]

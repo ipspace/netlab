@@ -49,8 +49,8 @@ ok: [s1]
 ok: [s2]
 ok: [h1]
 ok: [h2]
-ok: [h4]
 ok: [h3]
+ok: [h4]
 
 TASK [fail] ********************************************************************
 skipping: [s1]
@@ -65,8 +65,8 @@ ok: [s1]
 ok: [s2]
 ok: [h1]
 ok: [h2]
-ok: [h3]
 ok: [h4]
+ok: [h3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [s1]
@@ -492,15 +492,15 @@ ok: [h4]
 
 TASK [Create a temporary file for the rendered script] *************************
 changed: [h4 -> localhost]
-changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
-changed: [h2 -> localhost]
-changed: [h4 -> localhost]
 changed: [h3 -> localhost]
+changed: [h1 -> localhost]
+changed: [h4 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -520,11 +520,11 @@ changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-c7cf7jf0.sh] ***********************
-changed: [h1 -> localhost]
-changed: [h3 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-9adncosl.sh] ***********************
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 changed: [h4 -> localhost]
+changed: [h3 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -532,8 +532,8 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [h4]
 ok: [s1]
+ok: [h4]
 ok: [s2]
 
 TASK [Deploy individual configuration modules] *********************************
@@ -738,15 +738,14 @@ skipping: [s2]
 
 TASK [Find configuration deployment deploy_script for routing] *****************
 skipping: [s1]
-skipping: [s2]
 ok: [h1]
+skipping: [s2]
 ok: [h2]
 ok: [h3]
 ok: [h4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [s1]
-skipping: [s2]
 ok: [h1] => 
   msg: |-
     routing configuration for h1
@@ -762,6 +761,7 @@ ok: [h1] =>
     #
     # Print the final routing table
     ip route
+skipping: [s2]
 ok: [h2] => 
   msg: |-
     routing configuration for h2
@@ -826,8 +826,8 @@ changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 changed: [h4 -> localhost]
 changed: [h3 -> localhost]
 
@@ -844,12 +844,12 @@ skipping: [h3]
 skipping: [h4]
 
 TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
-changed: [h4 -> localhost]
+changed: [h1 -> localhost]
 changed: [h3 -> localhost]
+changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-ekoi2ypa.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-xixhos_a.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
@@ -859,8 +859,8 @@ TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [h4]
 ok: [s1]
+ok: [h4]
 ok: [s2]
 
 TASK [Find configuration template for bgp] *************************************
@@ -906,29 +906,29 @@ ok: [s1] =>
   
     - path: configure/policy-options/policy-statement[name=next-hop-self-ebgp-routes-only]
       val:
-       entry:
-       - entry-id: 10
-         from:
-          path-type: ebgp
-         action:
-          action-type: accept
-          next-hop: self
-       default-action:
-        action-type: next-policy
+        entry:
+        - entry-id: 10
+          from:
+            path-type: ebgp
+          action:
+            action-type: accept
+            next-hop: self
+        default-action:
+          action-type: next-policy
   
   
-    - path: configure/policy-options/prefix-list[name=default_export]
+    - path: configure/policy-options/prefix-list[name=bgp_default_advertise]
       val:
-       prefix: [] # Make sure it exists
+        prefix: [] # Make sure it exists
   
-    - path: configure/policy-options/policy-statement[name=default_export]
+    - path: configure/policy-options/policy-statement[name=bgp_default_export]
       val:
         default-action:
           action-type: reject
         entry:
         - entry-id: 10
           from:
-            prefix-list: [ "default_export" ]
+            prefix-list: [ "bgp_default_advertise" ]
           action:
             action-type: accept
         - entry-id: 20
@@ -938,11 +938,12 @@ ok: [s1] =>
           action:
             action-type: accept
   
-    - path: configure/policy-options/prefix-list[name=default_export]
+  
+    - path: configure/policy-options/prefix-list[name=bgp_default_advertise]
       val:
-       prefix:
-       - ip-prefix: 10.0.0.5/32
-         type: exact
+        prefix:
+        - ip-prefix: 10.0.0.5/32
+          type: exact
   
   
   
@@ -979,7 +980,7 @@ ok: [s1] =>
         export:
           policy:
           - next-hop-self-ebgp-routes-only
-          - default_export
+          - bgp_default_export
         local-address: "10.0.0.5"
   
   
@@ -1067,8 +1068,8 @@ TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [s1]
 ok: [h4]
+ok: [s1]
 ok: [s2]
 
 TASK [Find configuration template for ospf] ************************************
@@ -1140,18 +1141,6 @@ ok: [s1] =>
   
   
   
-    - path: configure/router[router-name=Base]/ospf[ospf-instance=0]
-      val:
-        admin-state: enable
-        router-id: 10.0.0.5
-        area:
-        - area-id: "0.0.0.0"
-          interface:
-          - interface-name: "eth-1/1/c1"
-           # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
-            interface-type: "point-to-point"
-  
-  
   
     - path: configure/router[router-name=Base]/ospf[ospf-instance=0]
       val:
@@ -1161,8 +1150,18 @@ ok: [s1] =>
         - area-id: "0.0.0.0"
           interface:
           - interface-name: "system"
-            passive: True
-           # mtu: 1500 # SRL defaults to 1500, now supporting global mtu settings
+  
+  
+  
+    - path: configure/router[router-name=Base]/ospf[ospf-instance=0]
+      val:
+        admin-state: enable
+        router-id: 10.0.0.5
+        area:
+        - area-id: "0.0.0.0"
+          interface:
+          - interface-name: "eth-1/1/c1"
+            interface-type: "point-to-point"
 
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [h1]
@@ -1370,8 +1369,8 @@ TASK [Figure out whether to deploy the module evpn on current device] **********
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [h4]
 ok: [s1]
+ok: [h4]
 ok: [s2]
 
 TASK [Find configuration template for evpn] ************************************

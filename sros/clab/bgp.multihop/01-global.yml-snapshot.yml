@@ -632,6 +632,12 @@ defaults:
         type: ipv6
         use: prefix
       nexthop:
+        discard:
+          _valid_with:
+          - none
+          type: bool
+          valid_values:
+          - true
         gateway:
           _valid_with:
           - vrf
@@ -1199,6 +1205,7 @@ defaults:
     - isis
     - ospf
     - ripv2
+    - static
     vrf_igp_protocols:
     - connected
     - ospf
@@ -1665,6 +1672,7 @@ defaults:
           - isis
           - ripv2
           - connected
+          - static
           - vrf
           password: true
           priority: true
@@ -1700,6 +1708,7 @@ defaults:
               weight: true
           prefix: true
           static:
+            discard: true
             inter_vrf: true
             vrf: true
         sr: {}
@@ -1841,6 +1850,7 @@ defaults:
           - isis
           - ripv2
           - connected
+          - static
           - vrf
           password: true
           priority: true
@@ -1876,6 +1886,7 @@ defaults:
               weight: true
           prefix: true
           static:
+            discard: true
             inter_vrf: true
             vrf: true
         sr: {}
@@ -2520,6 +2531,7 @@ defaults:
           - isis
           - ripv2
           - connected
+          - static
           - vrf
           password: true
           priority: true
@@ -2547,6 +2559,7 @@ defaults:
             - community
           prefix: true
           static:
+            discard: true
             inter_vrf: true
             vrf: true
         sr: {}
@@ -2719,6 +2732,7 @@ defaults:
           - ripv2
           - isis
           - connected
+          - static
           - vrf
           password: true
           priority: true
@@ -2758,6 +2772,7 @@ defaults:
               weight: true
           prefix: true
           static:
+            discard: true
             inter_vrf: true
             vrf: true
         sr: {}
@@ -2924,6 +2939,7 @@ defaults:
           - isis
           - ripv2
           - connected
+          - static
           - vrf
           password: true
           priority: true
@@ -2959,6 +2975,7 @@ defaults:
               weight: true
           prefix: true
           static:
+            discard: true
             inter_vrf: true
             vrf: true
         sr: {}
@@ -3088,6 +3105,7 @@ defaults:
           - isis
           - ripv2
           - connected
+          - static
           - vrf
           password: true
           priority: true
@@ -3123,6 +3141,7 @@ defaults:
               weight: true
           prefix: true
           static:
+            discard: true
             inter_vrf: true
             vrf: true
         sr: {}
@@ -3247,6 +3266,7 @@ defaults:
           - isis
           - ripv2
           - connected
+          - static
           - vrf
           password: true
           priority: true
@@ -3282,6 +3302,7 @@ defaults:
               weight: true
           prefix: true
           static:
+            discard: true
             inter_vrf: true
             vrf: true
         vlan:
@@ -3403,6 +3424,7 @@ defaults:
           - isis
           - ripv2
           - connected
+          - static
           - vrf
           password: true
           priority: true
@@ -3438,6 +3460,7 @@ defaults:
               weight: true
           prefix: true
           static:
+            discard: true
             inter_vrf: true
             vrf: true
         vlan:
@@ -3709,6 +3732,7 @@ defaults:
           - isis
           - ripv2
           - connected
+          - static
           - vrf
           password: true
           priority: true
@@ -3742,6 +3766,7 @@ defaults:
               weight: true
           prefix: true
           static:
+            discard: true
             inter_vrf: true
             vrf: true
         sr: {}
@@ -4154,6 +4179,12 @@ defaults:
           allowas_in: true
           as_override: true
           default_originate: true
+          import:
+          - ospf
+          - isis
+          - connected
+          - vrf
+          - no_policy
           ipv6_lla: false
           local_as: true
           local_as_ibgp: true
@@ -4177,6 +4208,12 @@ defaults:
           max_mtu: 9782
           min_phy_mtu: 1500
         isis:
+          import:
+          - ospf
+          - bgp
+          - connected
+          - vrf
+          - no_policy
           unnumbered:
             ipv4: true
             ipv6: true
@@ -4187,6 +4224,12 @@ defaults:
           ldp: true
           vpn: true
         ospf:
+          import:
+          - bgp
+          - isis
+          - connected
+          - vrf
+          - no_policy
           strict_bfd: true
           unnumbered: true
         ripv2:
@@ -4210,7 +4253,9 @@ defaults:
           svi_interface_name: svi.{vlan}
         vrf:
           bgp: true
+          isis: true
           ospfv2: true
+          ospfv3: true
         vxlan:
           requires:
           - evpn
@@ -4222,6 +4267,16 @@ defaults:
         ansible_ssh_pass: admin
         ansible_user: admin
         netlab_console_connection: ssh
+        netlab_match_protomap:
+          bgp:
+          - bgp
+          connected:
+          - direct
+          isis:
+          - isis
+          ospf:
+          - ospf
+          - ospf3
         sros_use_openconfig: false
       interface_name: eth-1/1/c{ifindex}
       loopback_interface_name: '{"loopback."+str(ifindex) if ifindex else "system"}'
@@ -5933,13 +5988,13 @@ defaults:
   paths:
     collect:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks/fetch-config
+      - /home/pipi/net101/tools/netsim/ansible/tasks/fetch-config
     custom:
       dirs:
       - /home/pipi/net101/tools/tests/integration/bgp.multihop
       - /work/netlab_cicd
       - /home/pipi/.netlab
-      - /home/pipi/netlab_gh/netsim/extra
+      - /home/pipi/net101/tools/netsim/extra
       files:
       - '{{ custom_config + ''/'' + inventory_hostname + ''.'' + netlab_device_type
         + ''-'' + node_provider + ''.j2'' }}'
@@ -5970,7 +6025,7 @@ defaults:
       - '{{ custom_config }}/deploy.yml'
     deploy:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks
+      - /home/pipi/net101/tools/netsim/ansible/tasks
       files:
       - '{{ netlab_device_type }}/{{ config_module }}-{{ provider|default(netlab_provider)
         }}.yml'
@@ -5993,10 +6048,10 @@ defaults:
     - /work/netlab_cicd
     - /home/pipi/net101/tools/tests/integration/bgp.multihop
     - /home/pipi/.netlab
-    - /home/pipi/netlab_gh/netsim/extra
+    - /home/pipi/net101/tools/netsim/extra
     ready:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check
+      - /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check
       files:
       - '{{netlab_device_type}}-{{provider|default(netlab_provider)}}.yml'
       - '{{netlab_device_type}}.yml'
@@ -6013,10 +6068,10 @@ defaults:
       - '{{netlab_device_type}}/{{config_module}}.j2'
     templates:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/templates
-      - /home/pipi/netlab_gh/netsim/daemons
+      - /home/pipi/net101/tools/netsim/ansible/templates
+      - /home/pipi/net101/tools/netsim/daemons
     validate:
-    - /home/pipi/netlab_gh/netsim/validate
+    - /home/pipi/net101/tools/netsim/validate
   plugin:
   - multilab
   ports:
@@ -7208,7 +7263,7 @@ nodes:
       ifindex: 0
       ifname: system
       ipv4: 10.0.0.1/32
-      ipv6: 2001:db8:1:1::1/64
+      ipv6: 2001:db8:1:1::1/128
       neighbors: []
       ospf:
         area: 0.0.0.0
