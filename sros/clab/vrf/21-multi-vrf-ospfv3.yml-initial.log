@@ -37,8 +37,8 @@ TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [r1]
 ok: [r2]
 ok: [r3]
-ok: [dut]
 ok: [r4]
+ok: [dut]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [r1]
@@ -58,8 +58,8 @@ TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [r1]
 ok: [r2]
 ok: [r3]
-ok: [r4]
 ok: [dut]
+ok: [r4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r1]
@@ -89,8 +89,8 @@ TASK [Find configuration template for initial] *********************************
 ok: [r1]
 ok: [r2]
 ok: [r3]
-ok: [dut]
 ok: [r4]
+ok: [dut]
 
 TASK [fail] ********************************************************************
 skipping: [r1]
@@ -132,7 +132,7 @@ ok: [r1] =>
     # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
     #
     sysctl -w net.ipv4.ip_forward=1
-    sysctl -w net.ipv6.conf.all.forwarding=0
+    sysctl -w net.ipv6.conf.all.forwarding=1
     #
     #
     # Get the current next hop for the default route
@@ -176,7 +176,8 @@ ok: [r1] =>
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
     ip link set eth1 down
-    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    sysctl -qw net.ipv6.conf.eth1.autoconf=0
+    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
     ip link set dev eth1 mtu 1500
     ip link set eth1 up
   
@@ -191,6 +192,7 @@ ok: [r1] =>
     hostname r1
     !
     ip forwarding
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
@@ -199,11 +201,15 @@ ok: [r1] =>
     interface lo
      no shutdown
      ip address 10.0.0.2/32
+     ipv6 address 2001:db8:1:2::1/64
     !
     interface eth1
      no shutdown
      description r1 -> dut
-     ip address 10.1.0.2/30
+     ! no ip address
+     ipv6 address 2001:db8:3::2/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
     !
     do write
     CONFIG
@@ -234,7 +240,7 @@ ok: [r2] =>
     # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
     #
     sysctl -w net.ipv4.ip_forward=1
-    sysctl -w net.ipv6.conf.all.forwarding=0
+    sysctl -w net.ipv6.conf.all.forwarding=1
     #
     #
     # Get the current next hop for the default route
@@ -278,7 +284,8 @@ ok: [r2] =>
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
     ip link set eth1 down
-    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    sysctl -qw net.ipv6.conf.eth1.autoconf=0
+    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
     ip link set dev eth1 mtu 1500
     ip link set eth1 up
   
@@ -293,6 +300,7 @@ ok: [r2] =>
     hostname r2
     !
     ip forwarding
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
@@ -301,11 +309,15 @@ ok: [r2] =>
     interface lo
      no shutdown
      ip address 10.0.0.3/32
+     ipv6 address 2001:db8:1:3::1/64
     !
     interface eth1
      no shutdown
      description r2 -> dut
-     ip address 10.1.0.6/30
+     ! no ip address
+     ipv6 address 2001:db8:3:1::2/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
     !
     do write
     CONFIG
@@ -336,7 +348,7 @@ ok: [r3] =>
     # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
     #
     sysctl -w net.ipv4.ip_forward=1
-    sysctl -w net.ipv6.conf.all.forwarding=0
+    sysctl -w net.ipv6.conf.all.forwarding=1
     #
     #
     # Get the current next hop for the default route
@@ -380,7 +392,8 @@ ok: [r3] =>
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
     ip link set eth1 down
-    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    sysctl -qw net.ipv6.conf.eth1.autoconf=0
+    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
     ip link set dev eth1 mtu 1500
     ip link set eth1 up
   
@@ -395,6 +408,7 @@ ok: [r3] =>
     hostname r3
     !
     ip forwarding
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
@@ -403,11 +417,15 @@ ok: [r3] =>
     interface lo
      no shutdown
      ip address 10.0.0.4/32
+     ipv6 address 2001:db8:1:4::1/64
     !
     interface eth1
      no shutdown
      description r3 -> dut
-     ip address 10.1.0.10/30
+     ! no ip address
+     ipv6 address 2001:db8:3:2::2/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
     !
     do write
     CONFIG
@@ -438,7 +456,7 @@ ok: [r4] =>
     # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
     #
     sysctl -w net.ipv4.ip_forward=1
-    sysctl -w net.ipv6.conf.all.forwarding=0
+    sysctl -w net.ipv6.conf.all.forwarding=1
     #
     #
     # Get the current next hop for the default route
@@ -482,7 +500,8 @@ ok: [r4] =>
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
     ip link set eth1 down
-    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    sysctl -qw net.ipv6.conf.eth1.autoconf=0
+    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
     ip link set dev eth1 mtu 1500
     ip link set eth1 up
   
@@ -497,6 +516,7 @@ ok: [r4] =>
     hostname r4
     !
     ip forwarding
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
@@ -505,11 +525,15 @@ ok: [r4] =>
     interface lo
      no shutdown
      ip address 10.0.0.5/32
+     ipv6 address 2001:db8:1:5::1/64
     !
     interface eth1
      no shutdown
      description r4 -> dut
-     ip address 10.1.0.14/30
+     ! no ip address
+     ipv6 address 2001:db8:3:3::2/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
     !
     do write
     CONFIG
@@ -544,6 +568,11 @@ ok: [dut] =>
          address: "10.0.0.1"
          prefix-length: 32
   
+       ipv6:
+        address:
+        - ipv6-address: "2001:db8:1:1::1"
+          prefix-length: 128
+  
   
   
   
@@ -576,11 +605,28 @@ ok: [dut] =>
        ip-mtu: 1500
        sap:
        - sap-id: "1/1/c1/1"
-       ipv4:
-        primary:
-         address: "10.1.0.1"
-         prefix-length: 30
+       ipv6:
+        address:
+        - ipv6-address: "2001:db8:3::1"
+          prefix-length: 64
   
+  
+    - path: configure/service/vprn[service-name=red]
+      val:
+       customer: "1"
+       admin-state: enable
+       service-id: 100
+    #   ecmp: 64
+  
+    - path: configure/service/vprn[service-name=red]
+      val:
+        ipv6:
+          router-advertisement:
+            interface:
+            - ip-int-name: eth-1/1/c1
+              admin-state: enable
+              min-advertisement-interval: 3
+              max-advertisement-interval: 5
   
   
   
@@ -613,11 +659,28 @@ ok: [dut] =>
        ip-mtu: 1500
        sap:
        - sap-id: "1/1/c2/1"
-       ipv4:
-        primary:
-         address: "10.1.0.5"
-         prefix-length: 30
+       ipv6:
+        address:
+        - ipv6-address: "2001:db8:3:1::1"
+          prefix-length: 64
   
+  
+    - path: configure/service/vprn[service-name=red]
+      val:
+       customer: "1"
+       admin-state: enable
+       service-id: 100
+    #   ecmp: 64
+  
+    - path: configure/service/vprn[service-name=red]
+      val:
+        ipv6:
+          router-advertisement:
+            interface:
+            - ip-int-name: eth-1/1/c2
+              admin-state: enable
+              min-advertisement-interval: 3
+              max-advertisement-interval: 5
   
   
   
@@ -650,11 +713,28 @@ ok: [dut] =>
        ip-mtu: 1500
        sap:
        - sap-id: "1/1/c3/1"
-       ipv4:
-        primary:
-         address: "10.1.0.9"
-         prefix-length: 30
+       ipv6:
+        address:
+        - ipv6-address: "2001:db8:3:2::1"
+          prefix-length: 64
   
+  
+    - path: configure/service/vprn[service-name=blue]
+      val:
+       customer: "1"
+       admin-state: enable
+       service-id: 101
+    #   ecmp: 64
+  
+    - path: configure/service/vprn[service-name=blue]
+      val:
+        ipv6:
+          router-advertisement:
+            interface:
+            - ip-int-name: eth-1/1/c3
+              admin-state: enable
+              min-advertisement-interval: 3
+              max-advertisement-interval: 5
   
   
   
@@ -687,11 +767,28 @@ ok: [dut] =>
        ip-mtu: 1500
        sap:
        - sap-id: "1/1/c4/1"
-       ipv4:
-        primary:
-         address: "10.1.0.13"
-         prefix-length: 30
+       ipv6:
+        address:
+        - ipv6-address: "2001:db8:3:3::1"
+          prefix-length: 64
   
+  
+    - path: configure/service/vprn[service-name=blue]
+      val:
+       customer: "1"
+       admin-state: enable
+       service-id: 101
+    #   ecmp: 64
+  
+    - path: configure/service/vprn[service-name=blue]
+      val:
+        ipv6:
+          router-advertisement:
+            interface:
+            - ip-int-name: eth-1/1/c4
+              admin-state: enable
+              min-advertisement-interval: 3
+              max-advertisement-interval: 5
   
   
   
@@ -711,10 +808,10 @@ ok: [dut] =>
        admin-state: enable
        description: "Loopback"
        loopback: True
-       ipv4:
-        primary:
-         address: "10.2.0.1"
-         prefix-length: 32
+       ipv6:
+        address:
+        - ipv6-address: "2001:db8:cafe::1"
+          prefix-length: 64
   
   
   
@@ -735,10 +832,10 @@ ok: [dut] =>
        admin-state: enable
        description: "Loopback"
        loopback: True
-       ipv4:
-        primary:
-         address: "10.2.0.2"
-         prefix-length: 32
+       ipv6:
+        address:
+        - ipv6-address: "2001:db8:cafe:1::1"
+          prefix-length: 64
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for r1, r2, r3, r4
@@ -759,8 +856,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for
 TASK [template] ****************************************************************
 changed: [r2]
 changed: [r3]
-changed: [r1]
 changed: [r4]
+changed: [r1]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -769,10 +866,10 @@ ok: [r3]
 ok: [r4]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r3]
-changed: [r2]
 changed: [r1]
+changed: [r2]
 changed: [r4]
+changed: [r3]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r1]
@@ -826,8 +923,8 @@ skipping: [r4]
 TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [dut]
 ok: [r1]
-ok: [r2]
 ok: [r3]
+ok: [r2]
 ok: [r4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -851,11 +948,27 @@ ok: [r1] =>
     !
      ip ospf area 0.0.0.2
     !
+  
+    !
+    ! OSPFv3 FRR configuration
+    !
+    interface lo
+    !
+     ipv6 ospf6 area 0.0.0.2
+    !
     interface eth1
     ! r1 -> dut
-     ip ospf area 0.0.0.2
-     ip ospf network point-to-point
+     ipv6 ospf6 area 0.0.0.2
+     ipv6 ospf6 network point-to-point
     !
+    !
+    router ospf6
+     ospf6 router-id 10.0.0.2
+     timers lsa min-arrival 100
+     timers throttle spf 10 50 500
+  
+  
+    exit
   
     !
     do write
@@ -879,11 +992,27 @@ ok: [r2] =>
     !
      ip ospf area 0.0.0.2
     !
+  
+    !
+    ! OSPFv3 FRR configuration
+    !
+    interface lo
+    !
+     ipv6 ospf6 area 0.0.0.2
+    !
     interface eth1
     ! r2 -> dut
-     ip ospf area 0.0.0.2
-     ip ospf network point-to-point
+     ipv6 ospf6 area 0.0.0.2
+     ipv6 ospf6 network point-to-point
     !
+    !
+    router ospf6
+     ospf6 router-id 10.0.0.3
+     timers lsa min-arrival 100
+     timers throttle spf 10 50 500
+  
+  
+    exit
   
     !
     do write
@@ -907,11 +1036,27 @@ ok: [r3] =>
     !
      ip ospf area 0.0.0.3
     !
+  
+    !
+    ! OSPFv3 FRR configuration
+    !
+    interface lo
+    !
+     ipv6 ospf6 area 0.0.0.3
+    !
     interface eth1
     ! r3 -> dut
-     ip ospf area 0.0.0.3
-     ip ospf network point-to-point
+     ipv6 ospf6 area 0.0.0.3
+     ipv6 ospf6 network point-to-point
     !
+    !
+    router ospf6
+     ospf6 router-id 10.0.0.4
+     timers lsa min-arrival 100
+     timers throttle spf 10 50 500
+  
+  
+    exit
   
     !
     do write
@@ -943,11 +1088,27 @@ ok: [r4] =>
     !
      ip ospf area 0.0.0.4
     !
+  
+    !
+    ! OSPFv3 FRR configuration
+    !
+    interface lo
+    !
+     ipv6 ospf6 area 0.0.0.4
+    !
     interface eth1
     ! r4 -> dut
-     ip ospf area 0.0.0.4
-     ip ospf network point-to-point
+     ipv6 ospf6 area 0.0.0.4
+     ipv6 ospf6 network point-to-point
     !
+    !
+    router ospf6
+     ospf6 router-id 10.0.0.5
+     timers lsa min-arrival 100
+     timers throttle spf 10 50 500
+  
+  
+    exit
   
     !
     do write
@@ -966,10 +1127,10 @@ TASK [debug] *******************************************************************
 skipping: [dut]
 
 TASK [template] ****************************************************************
-changed: [r2]
-changed: [r1]
 changed: [r4]
+changed: [r1]
 changed: [r3]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -984,8 +1145,8 @@ skipping: [r3]
 skipping: [r4]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [r1]
 changed: [r2]
+changed: [r1]
 changed: [r3]
 changed: [r4]
 
@@ -1068,7 +1229,7 @@ ok: [dut] =>
        service-id: 101
     #   ecmp: 64
   
-    - path: configure/service/vprn[service-name=blue]/ospf[ospf-instance=0]
+    - path: configure/service/vprn[service-name=blue]/ospf3[ospf-instance=0]
       val:
         admin-state: enable
         router-id: 10.0.0.1
@@ -1087,7 +1248,7 @@ ok: [dut] =>
        service-id: 101
     #   ecmp: 64
   
-    - path: configure/service/vprn[service-name=blue]/ospf[ospf-instance=0]
+    - path: configure/service/vprn[service-name=blue]/ospf3[ospf-instance=0]
       val:
         admin-state: enable
         router-id: 10.0.0.1
@@ -1106,7 +1267,7 @@ ok: [dut] =>
        service-id: 101
     #   ecmp: 64
   
-    - path: configure/service/vprn[service-name=blue]/ospf[ospf-instance=0]
+    - path: configure/service/vprn[service-name=blue]/ospf3[ospf-instance=0]
       val:
         admin-state: enable
         router-id: 10.0.0.1
@@ -1158,7 +1319,7 @@ ok: [dut] =>
        service-id: 100
     #   ecmp: 64
   
-    - path: configure/service/vprn[service-name=red]/ospf[ospf-instance=0]
+    - path: configure/service/vprn[service-name=red]/ospf3[ospf-instance=0]
       val:
         admin-state: enable
         router-id: 10.0.0.1
@@ -1177,7 +1338,7 @@ ok: [dut] =>
        service-id: 100
     #   ecmp: 64
   
-    - path: configure/service/vprn[service-name=red]/ospf[ospf-instance=0]
+    - path: configure/service/vprn[service-name=red]/ospf3[ospf-instance=0]
       val:
         admin-state: enable
         router-id: 10.0.0.1
@@ -1196,7 +1357,7 @@ ok: [dut] =>
        service-id: 100
     #   ecmp: 64
   
-    - path: configure/service/vprn[service-name=red]/ospf[ospf-instance=0]
+    - path: configure/service/vprn[service-name=red]/ospf3[ospf-instance=0]
       val:
         admin-state: enable
         router-id: 10.0.0.1
