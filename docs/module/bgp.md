@@ -87,8 +87,8 @@ The following features are only supported on a subset of platforms:
 | Dell OS10                |  ✅ |  ❌  |  ❌  |  ❌  |
 | FRR                      |  ✅ |  ✅ |  ✅ |  ✅ |
 | JunOS                    |  ✅ |  ✅ |  ❌  |  ❌  |
-| Nokia SR Linux           |  ✅ |  ✅ |  ✅ [❗](caveats-srlinux) |  ✅ |
-| Nokia SR OS              |  ✅ |  ✅ |  ❌  |  ❌  |
+| Nokia SR Linux           |  ✅ |  ✅ |  ✅ [❗](caveats-srlinux) |  ✅ [❗](caveats-srlinux) |
+| Nokia SR OS              |  ✅ |  ✅ |  ✅ [❗](caveats-sros) |  ✅ [❗](caveats-sros) |
 | Sonic                    |  ✅ |  ✅ |  ❌  |  ❌  |
 | VyOS                     |  ✅ |  ❌  |  ✅ |  ✅ |
 

@@ -67,7 +67,7 @@ The following table describes per-platform support of individual router-level OS
 | Mikrotik RouterOS 6      | ✅| ❌ | ❌ | ❌ | ❌ |
 | Mikrotik RouterOS 7      | ✅| ❌ | ✅| ❌ | ❌ |
 | Nokia SR Linux           | ✅| ✅| ✅| ✅ [❗](caveats-srlinux) | ✅ [❗](caveats-srlinux) |
-| Nokia SR OS              | ✅| ✅| ✅| ❌ | ❌ |
+| Nokia SR OS              | ✅| ✅| ✅| ✅ [❗](caveats-sros) | ❌ |
 | VyOS                     | ✅| ✅| ✅| ✅| ✅|
 
 **Notes:**

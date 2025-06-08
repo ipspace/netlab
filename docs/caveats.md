@@ -445,9 +445,10 @@ Other caveats:
 
 * In our current implementation, Nokia SR-OS does not propagate EVPN type-5 (IP prefix) routes into VRF routing protocols.
 * We did not implement inter-VRF route leaking. Every VRF is limited to one import and export route target (and they have to match).
-* An SR-OS interface cannot use an unnumbered IPv4 address in combination with IPv6 GUA
-* SR-OS requires the IPv6 prefix configured on the global loopback interface to be a /128 prefix. _netlab_ automatically adjusts the **loopback.ipv6** prefix.
-* Nokia SR-OS does not accept EBGP EVPN routes with its own AS number in the AS path, even when the **loop-detect-threshold** is configured.
+* The SR OS configuration templates do not support additional routing policies on routing protocol route imports
+* An SR OS interface cannot use an unnumbered IPv4 address in combination with IPv6 GUA
+* SR OS requires the IPv6 prefix configured on the global loopback interface to be a /128 prefix. _netlab_ automatically adjusts the **loopback.ipv6** prefix.
+* Nokia SR OS does not accept EBGP EVPN routes with its own AS number in the AS path, even when the **loop-detect-threshold** is configured.
 
 (caveats-sonic)=
 ## Sonic
