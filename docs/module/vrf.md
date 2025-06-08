@@ -28,7 +28,8 @@ VRFs are supported on these platforms:
 | Junos[^Junos]         | ✅  | ✅  | ✅  |
 | Mikrotik RouterOS 6   | ✅  | ✅  |  ❌  |
 | Mikrotik RouterOS 7   | ✅  | ✅  | ✅  |
-| SR Linux              | ✅  | ✅ [❗](caveats-srlinux) | ✅  |
+| Nokia SR Linux        | ✅  | ✅ [❗](caveats-srlinux) | ✅  |
+| Nokia SR OS           | ✅  |  ❌  | ✅  |
 | VyOS                  | ✅  | ✅  | ✅  |
 
 [^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL) and IOL Layer-2 image
@@ -53,7 +54,7 @@ These platforms support routing protocols in VRFs:
 | Mikrotik RouterOS 6   | ✅  [❗](caveats-routeros6) |  ❌  | ✅  | ❌  | ❌  | ❌  |
 | Mikrotik RouterOS 7   | ✅  |  ❌  | ✅  | ❌  | ❌  | ❌  |
 | Nokia SR Linux        | ✅  | ✅  | ✅  | ❌  | ❌  | ✅ |
-| Nokia SR OS           | ✅  | ✅  | ✅  | ❌  | ❌  | ❌  |
+| Nokia SR OS           | ✅  | ✅  | ✅  | ❌  | ❌  | ✅ |
 | VyOS                  | ✅  | ✅  | ✅  | ❌  | ❌  | ❌  |
 
 ```{note}

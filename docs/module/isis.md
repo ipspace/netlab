@@ -39,7 +39,7 @@ The following table describes per-platform support of individual IS-IS features:
 | FRR                | ✅  | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Junos[^Junos]      | ✅  | ✅  | ✅  | ✅  |  ❌  |  ❌  |
 | Nokia SR Linux     | ✅  | ✅  | ✅  | ✅  | ✅ [❗](caveats-srlinux) | ✅  |
-| Nokia SR OS        | ✅  | ✅  | ✅  | ✅  |  ❌  |  ❌  |
+| Nokia SR OS        | ✅  | ✅  | ✅  | ✅  | ✅ [❗](caveats-sros) | ✅  |
 | VyOS               | ✅  | ✅  | ✅  |  ❌  |  ❌  |  ❌  |
 
 [^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
