@@ -37,10 +37,13 @@ ip community-list {{ c_value.type }} {{ c_name }} {{ c_line.action }} {{ c_line.
 {%   if 'ipv4' in sr_data %}
 ip route {{ cmd_vrf }}{{ 
     sr_data.ipv4|ipaddr('network') }} {{
-    sr_data.ipv4|ipaddr('netmask') }} {{ cmd_intf }}{{ sr_data.nexthop.ipv4 }}{{ leak_global }}
+    sr_data.ipv4|ipaddr('netmask') }} {{ 
+    cmd_intf }}{{ 
+    'Null0' if 'discard' in sr_data.nexthop else sr_data.nexthop.ipv4 }}{{ leak_global }}
 {%   endif %}
 {%   if 'ipv6' in sr_data %}
 {%   set e_vrf = ' nexthop-vrf '+(sr_data.nexthop.vrf or 'default') if 'vrf' in sr_data.nexthop else '' %}
-ipv6 route {{ cmd_vrf }}{{ sr_data.ipv6 }} {{ cmd_intf }}{{ sr_data.nexthop.ipv6 }}{{ e_vrf }}
+ipv6 route {{ cmd_vrf }}{{ sr_data.ipv6 }} {{ cmd_intf }}{{ 
+    'Null0' if 'discard' in sr_data.nexthop else sr_data.nexthop.ipv6 }}{{ e_vrf }}
 {%   endif %}
 {% endfor %}
