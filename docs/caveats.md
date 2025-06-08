@@ -441,6 +441,8 @@ python3 -m pip install grpcio protobuf==3.20.1
 sudo pip3 install --upgrade 'ansible>=9.5.1'
 ```
 
+* The gNMI configuration process occasionally fails with the _Connection closed by peer_ error. The configuration deployment is thus retried up to **sros_gnmi_retries** times (Ansible group variable, default value is 2), which might be annoying during configuration template development. To turn off the retries, set the `defaults.devices.sros.group_vars.sros_gnmi_retries` [default setting](topo-defaults) to zero.
+
 Other caveats:
 
 * In our current implementation, Nokia SR-OS does not propagate EVPN type-5 (IP prefix) routes into VRF routing protocols.
