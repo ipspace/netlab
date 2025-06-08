@@ -174,7 +174,7 @@ ok: [x1] =>
     interface lo
      no shutdown
      ! no ip address
-     ipv6 address 2001:db8:1:2::1/64
+     ipv6 address 2001:db8:1::2/128
     !
     interface eth1
      no shutdown
@@ -321,7 +321,7 @@ ok: [dut] =>
        description: "System interface"
        ipv6:
         address:
-        - ipv6-address: "2001:db8:1:1::1"
+        - ipv6-address: "2001:db8:1::1"
           prefix-length: 128
   
   
@@ -487,8 +487,8 @@ ok: [dut] =>
   
     - path: configure/policy-options/policy-statement[name=accept_all]
       val:
-       default-action:
-        action-type: accept
+        default-action:
+          action-type: accept
   
     - path: configure/policy-options/policy-statement[name=next-hop-self-ebgp-routes-only]
       val:
@@ -527,7 +527,7 @@ ok: [dut] =>
     - path: configure/policy-options/prefix-list[name=default_export]
       val:
        prefix:
-       - ip-prefix: 2001:db8:1:1::1/128
+       - ip-prefix: 2001:db8:1::1/128
          type: exact
   
   
@@ -541,8 +541,6 @@ ok: [dut] =>
           ebgp-default-reject-policy:
             import: False
             export: False
-          vpn-apply-export: True
-          vpn-apply-import: True
           multipath:
             ibgp: 64
             ebgp: 64
@@ -567,16 +565,17 @@ ok: [dut] =>
           policy:
           - next-hop-self-ebgp-routes-only
           - default_export
-        local-address: "2001:db8:1:1::1"
+        local-address: "2001:db8:1::1"
   
   
     - path: configure/router[router-name=Base]/bgp
       val:
         neighbor:
-        - ip-address: "2001:db8:1:2::1"
+        - ip-address: "2001:db8:1::2"
           description: "x1"
           peer-as: 65000
           group: "ibgp-ipv6"
+          admin-state: enable
           family:
             ipv4: False
             ipv6: True
@@ -605,6 +604,7 @@ ok: [dut] =>
           description: "x2"
           peer-as: 65100
           group: "ebgp"
+          admin-state: enable
           family:
             ipv4: False
             ipv6: True
@@ -624,24 +624,24 @@ ok: [x1] =>
   
       bgp router-id 10.0.0.2
     !
-      neighbor 2001:db8:1:1::1 remote-as 65000
-      neighbor 2001:db8:1:1::1 description dut
-      neighbor 2001:db8:1:1::1 update-source lo
+      neighbor 2001:db8:1::1 remote-as 65000
+      neighbor 2001:db8:1::1 description dut
+      neighbor 2001:db8:1::1 update-source lo
     !
      address-family ipv6 unicast
     !
   
     !
-      network 2001:db8:1:2::/64
+      network 2001:db8:1::2/128
     !
     !
     !
-      neighbor 2001:db8:1:1::1 activate
-      neighbor 2001:db8:1:1::1 next-hop-self
-      no neighbor 2001:db8:1:1::1 send-community all
-      neighbor 2001:db8:1:1::1 send-community standard
-      neighbor 2001:db8:1:1::1 send-community large
-      neighbor 2001:db8:1:1::1 send-community extended
+      neighbor 2001:db8:1::1 activate
+      neighbor 2001:db8:1::1 next-hop-self
+      no neighbor 2001:db8:1::1 send-community all
+      neighbor 2001:db8:1::1 send-community standard
+      neighbor 2001:db8:1::1 send-community large
+      neighbor 2001:db8:1::1 send-community extended
     !
     !
     !
@@ -696,8 +696,8 @@ TASK [debug] *******************************************************************
 skipping: [dut]
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]

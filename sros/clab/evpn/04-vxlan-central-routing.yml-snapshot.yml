@@ -3927,6 +3927,7 @@ defaults:
         netlab_license_url: https://www.juniper.net/content/dam/www/assets/dm/us/en/E421992502.txt
       ifindex_offset: 0
       interface_name: ge-0/0/{ifindex}
+      lag_interface_name: ae{lag.ifindex}
       loopback_interface_name: lo0.{ifindex}
       mgmt_if: fxp0
     vjunos-switch:
@@ -3970,6 +3971,8 @@ defaults:
           unnumbered:
             ipv4: true
             ipv6: true
+        lag:
+          passive: true
         mpls:
           ldp: true
           vpn: true
@@ -4019,6 +4022,7 @@ defaults:
         netlab_device_type: vjunos-switch
       ifindex_offset: 0
       interface_name: ge-0/0/{ifindex}
+      lag_interface_name: ae{lag.ifindex}
       loopback_interface_name: lo0.{ifindex}
       mgmt_if: fxp0
     vmx:
@@ -4103,6 +4107,7 @@ defaults:
         netlab_license_url: https://www.juniper.net/content/dam/www/assets/dm/us/en/E421992502.txt
       ifindex_offset: 0
       interface_name: ge-0/0/{ifindex}
+      lag_interface_name: ae{lag.ifindex}
       loopback_interface_name: lo0.{ifindex}
       mgmt_if: fxp0
     vptx:
@@ -4141,6 +4146,8 @@ defaults:
           unnumbered:
             ipv4: true
             ipv6: true
+        lag:
+          passive: true
         mpls:
           ldp: true
           vpn: true
@@ -4189,6 +4196,7 @@ defaults:
         netlab_device_type: vptx
       ifindex_offset: 0
       interface_name: et-0/0/{ifindex}
+      lag_interface_name: ae{lag.ifindex}
       libvirt:
         build: https://netlab.tools/labs/vptx/
         create_template: vptx.xml.j2
@@ -4231,6 +4239,8 @@ defaults:
           unnumbered:
             ipv4: true
             ipv6: true
+        lag:
+          passive: true
         mpls:
           ldp: true
           vpn: true
@@ -4279,6 +4289,7 @@ defaults:
         netlab_device_type: vsrx
       ifindex_offset: 0
       interface_name: ge-0/0/{ifindex}
+      lag_interface_name: ae{lag.ifindex}
       libvirt:
         build: https://netlab.tools/labs/vsrx/
         create: virt-install --connect=qemu:///system --name=vm_box --os-variant=freebsd10.0
@@ -4992,6 +5003,9 @@ defaults:
       frr: true
       linux: true
       none: true
+      vjunos-switch: true
+      vptx: true
+      vsrx: true
   module:
   - vlan
   - routing
@@ -5458,13 +5472,13 @@ defaults:
   paths:
     collect:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks/fetch-config
+      - /home/pipi/netlab_gh/netsim/ansible/tasks/fetch-config
     custom:
       dirs:
       - /home/pipi/net101/tools/tests/integration/evpn
       - /work/netlab_cicd
       - /home/pipi/.netlab
-      - /home/pipi/net101/tools/netsim/extra
+      - /home/pipi/netlab_gh/netsim/extra
       files:
       - '{{ custom_config + ''/'' + inventory_hostname + ''.'' + netlab_device_type
         + ''-'' + node_provider + ''.j2'' }}'
@@ -5495,7 +5509,7 @@ defaults:
       - '{{ custom_config }}/deploy.yml'
     deploy:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks
+      - /home/pipi/netlab_gh/netsim/ansible/tasks
       files:
       - '{{ netlab_device_type }}/{{ config_module }}-{{ provider|default(netlab_provider)
         }}.yml'
@@ -5518,10 +5532,10 @@ defaults:
     - /work/netlab_cicd
     - /home/pipi/net101/tools/tests/integration/evpn
     - /home/pipi/.netlab
-    - /home/pipi/net101/tools/netsim/extra
+    - /home/pipi/netlab_gh/netsim/extra
     ready:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check
+      - /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check
       files:
       - '{{netlab_device_type}}-{{provider|default(netlab_provider)}}.yml'
       - '{{netlab_device_type}}.yml'
@@ -5538,10 +5552,10 @@ defaults:
       - '{{netlab_device_type}}/{{config_module}}.j2'
     templates:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/templates
-      - /home/pipi/net101/tools/netsim/daemons
+      - /home/pipi/netlab_gh/netsim/ansible/templates
+      - /home/pipi/netlab_gh/netsim/daemons
     validate:
-    - /home/pipi/net101/tools/netsim/validate
+    - /home/pipi/netlab_gh/netsim/validate
   plugin:
   - multilab
   ports:
@@ -7007,7 +7021,8 @@ nodes:
     hostname: clab-ml_17-l1
     id: 5
     interfaces:
-    - clab:
+    - _port_mode: network
+      clab:
         name: eth1
       ifindex: 1
       ifname: eth-1/1/c1
@@ -7024,7 +7039,8 @@ nodes:
         network_type: point-to-point
         passive: false
       type: p2p
-    - bridge: ml_17_3
+    - _port_mode: access
+      bridge: ml_17_3
       clab:
         name: eth2
       ifindex: 2
@@ -7040,7 +7056,8 @@ nodes:
       vlan:
         access: red
         access_id: 1000
-    - bridge: ml_17_5
+    - _port_mode: access
+      bridge: ml_17_5
       clab:
         name: eth3
       ifindex: 3
@@ -7487,7 +7504,8 @@ nodes:
     hostname: clab-ml_17-spine
     id: 7
     interfaces:
-    - clab:
+    - _port_mode: network
+      clab:
         name: eth1
       ifindex: 1
       ifname: eth-1/1/c1
@@ -7504,7 +7522,8 @@ nodes:
         network_type: point-to-point
         passive: false
       type: p2p
-    - clab:
+    - _port_mode: network
+      clab:
         name: eth2
       ifindex: 2
       ifname: eth-1/1/c2
