@@ -1,6 +1,20 @@
 {% from "templates/initial/sros.j2" import if_name, declare_router with context %}
+{% from 'templates/routing/_redistribute.sros.j2' import import_protocols with context %}
+
+{% macro isis_export_policy(isis,vrf) %}
+- path: configure/policy-options/policy-statement[name=isis_{{vrf}}_export]
+  val:
+    default-action:
+      action-type: reject
+    entry:
+{{  import_protocols(isis.import) | indent(4,first=True) }}
+{% endmacro %}
 
 {% macro isis_router(vrf_data,isis,intf_list) %}
+{% set vname = vrf_data.vrf|default('default') %}
+{% if isis.import is defined %}
+{{   isis_export_policy(isis,vname) }}
+{% endif %}
 {% set kw_level = {'level-1': '1', 'level-2': '2', 'level-1-2': '1/2'} %}
 {{ declare_router(vrf_data) }}
   val:
@@ -9,6 +23,9 @@
       system-id: "{{ isis.system_id }}"
       admin-state: enable
       area-address: ["{{ isis.area }}"]
+{% if isis.import is defined %}
+      export-policy: [ isis_{{ vname }}_export ]
+{% endif %}
       level:
       - level-number: "1"
         wide-metrics-only: True
