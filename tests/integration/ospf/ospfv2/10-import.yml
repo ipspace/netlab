@@ -1,8 +1,12 @@
 ---
 message: |
-  This lab tests the simple import of BGP routes into OSPF.
+  This lab tests the simple import of BGP and (optionally) static routes into
+  OSPF.
 
 defaults.sources.extra: [ ../../wait_times.yml ]
+defaults.paths.prepend.plugin: [ "topology:../../plugin" ]
+plugin: [ static_import ]
+
 groups:
   probes:
     device: frr
@@ -11,9 +15,12 @@ groups:
 
 nodes:
   dut:
-    module: [ ospf, bgp ]
+    module: [ ospf, bgp, routing ]
+    routing.static:
+    - ipv4: 10.0.0.42/32
+      nexthop.node: x1
     bgp.as: 65000
-    ospf.import: [ bgp ]
+    ospf.import: [ bgp, static ]
   r2:
     module: [ ospf ]
   x1:
@@ -35,9 +42,13 @@ validate:
     wait: ebgp_session
     nodes: [ x1 ]
     plugin: bgp_neighbor(node.bgp.neighbors,'dut')
-  redist:
-    description: Check for redistributed X1 loopback on R2
+  p_bgp:
+    description: Check for redistributed BGP route (X1 loopback) on R2
     wait: ospf_import
     wait_msg: Waiting for routing protocols to do their magic
     nodes: [ r2 ]
     plugin: ospf_prefix(nodes.x1.loopback.ipv4)
+  p_static:
+    description: Check for redistributed static route on R2
+    nodes: [ r2 ]
+    plugin: ospf_prefix(nodes.dut.routing.static[0].ipv4)
