@@ -50,6 +50,9 @@ The following table describes per-platform support of individual IS-IS features:
 * On Arista EOS, IPv6 is enabled on all interfaces as soon as one has an IPv6 address. Arista EOS implementation of IS-IS refuses to work on interfaces with missing address families.
 * On VyOS, IPv6 is enabled on all interfaces as soon as one has an IPv6 address.
 * Cisco ASA does not support P2P IS-IS links. You could add `isis.network_type: false` to point-to-point links connecting ASA to other devices.
+* See [IS-IS](https://release.netlab.tools/_html/isis)  Integration Tests Results for more details.
+
+* Use the `netlab show modules -m isis` command to display the route types that can be imported into IS-IS.
 
 Some platforms can use BFD to speed up IS-IS convergence:
 
