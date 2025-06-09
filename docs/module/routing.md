@@ -455,7 +455,7 @@ _netlab_ supports static routes on these platforms:
 | Junos               | ✅ |  ❌ | ✅ | ❌ |
 | FRR                 | ✅ | ✅ | ✅ | ✅ |
 | Linux               | ✅ |  ❌ |  ❌ |  ❌ |
-| VyOS                | ✅ |  ❌ | ✅ | ✅ |
+| VyOS                | ✅ | ✅ | ✅ | ✅ |
 
 ### Configuring Static Routes
 

@@ -44,17 +44,25 @@ set policy community-list {{ c_name }} rule {{ c_line.sequence }} regex "{{ c_li
 {# if vrf key is present, but set to none, means default vrf #}
 {%   set cmd_nh_vrf_leak = 'vrf ' + (sr_data.nexthop.vrf or 'default') if 'vrf' in sr_data.nexthop else '' %}
 {%   if 'ipv4' in sr_data %}
+{%     if 'discard' in sr_data.nexthop %}
+set {{cmd_vrf}} protocols static route {{sr_data.ipv4}} blackhole
+{%     else %}
 set {{cmd_vrf}} protocols static route {{sr_data.ipv4}} next-hop {{sr_data.nexthop.ipv4}} {{cmd_intf}}
 {# vrf leaking must be a different instruction set, and without the interface #}
-{%     if cmd_nh_vrf_leak %}
+{%       if cmd_nh_vrf_leak %}
 set {{cmd_vrf}} protocols static route {{sr_data.ipv4}} next-hop {{sr_data.nexthop.ipv4}} {{cmd_nh_vrf_leak}}
+{%       endif %}
 {%     endif %}
 {%   endif %}
 {%   if 'ipv6' in sr_data %}
+{%     if 'discard' in sr_data.nexthop %}
+set {{cmd_vrf}} protocols static route6 {{ sr_data.ipv6 }} blackhole
+{%     else %}
 set {{cmd_vrf}} protocols static route6 {{ sr_data.ipv6 }} next-hop {{sr_data.nexthop.ipv6}} {{cmd_intf}}
 {# vrf leaking must be a different instruction set #}
-{%     if cmd_nh_vrf_leak %}
+{%       if cmd_nh_vrf_leak %}
 set {{cmd_vrf}} protocols static route6 {{ sr_data.ipv6 }} next-hop {{sr_data.nexthop.ipv6}} {{cmd_nh_vrf_leak}}
+{%       endif %}
 {%     endif %}
 {%   endif %}
 {% endfor %}
