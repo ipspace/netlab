@@ -7,6 +7,8 @@ from . import report_quirk
 
 def check_indirect_static_routes(node: Box) -> None:
   for sr_entry in node.get('routing.static',[]):
+    if 'discard' in sr_entry.nexthop:
+      continue
     if 'intf' not in sr_entry.nexthop:
       report_quirk(
         f'static routes with indirect next hops cannot be used (node {node.name})',
