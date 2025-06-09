@@ -24,9 +24,15 @@ function bgp_prefixes( bool originate_default ) {
   if net.len = 0 && !originate_default
     then reject "Don't originate default route";
 
-  if source ~ [ RTS_STATIC, RTS_BGP ]
-    then accept "Static or BGP route:", net;
+  if source ~ [ RTS_BGP ]
+    then accept "BGP route:", net;
 
+{% if bgp.import is defined %}
+{%   for proto in bgp.import %}
+  if source ~ [ {{ netlab_import_map[proto] }} ]
+    then accept "{{ proto }} route:", net;
+{%   endfor %}
+{% endif %} 
 {% if bgp.advertise_loopback|default(False) %}
   if source ~ [ RTS_DEVICE ] && ifname = "lo"
     then accept "advertise loopback:", net;
