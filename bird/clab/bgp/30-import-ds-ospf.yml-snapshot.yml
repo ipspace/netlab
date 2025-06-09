@@ -2,9 +2,11 @@ addressing:
   l2only: {}
   lan:
     ipv4: 172.16.0.0/16
+    ipv6: 2001:db8:2::/48
     prefix: 24
   loopback:
     ipv4: 10.0.0.0/24
+    ipv6: 2001:db8:1::/48
     prefix: 32
   mgmt:
     _bridge: nl_mgmt_17
@@ -15,6 +17,7 @@ addressing:
     start: 100
   p2p:
     ipv4: 10.1.0.0/16
+    ipv6: 2001:db8:3::/48
     prefix: 30
   router_id:
     ipv4: 10.0.0.0/24
@@ -4898,6 +4901,8 @@ defaults:
         settings use 'ip mtu'
       roles: Valid device roles
       system_mtu: System-wide MTU setting
+  interfaces:
+    mtu: 1500
   isis:
     area: '49.0001'
     attributes:
@@ -5574,7 +5579,7 @@ defaults:
       - /home/pipi/netlab_gh/netsim/ansible/tasks/fetch-config
     custom:
       dirs:
-      - /home/pipi/net101/tools/tests/integration/ospf/ospfv2
+      - /home/pipi/net101/tools/tests/integration/bgp
       - /work/netlab_cicd
       - /home/pipi/.netlab
       - /home/pipi/netlab_gh/netsim/extra
@@ -5630,7 +5635,7 @@ defaults:
     plugin:
     - /home/pipi/net101/tools/tests/integration/plugin
     - /work/netlab_cicd
-    - /home/pipi/net101/tools/tests/integration/ospf/ospfv2
+    - /home/pipi/net101/tools/tests/integration/bgp
     - /home/pipi/.netlab
     - /home/pipi/netlab_gh/netsim/extra
     ready:
@@ -6060,7 +6065,7 @@ defaults:
     - vlan
   sources:
     extra:
-    - ../../wait_times.yml
+    - ../wait_times.yml
     list: []
     system: []
     user: []
@@ -6608,12 +6613,12 @@ groups:
   probes:
     device: frr
     members:
-    - r2
     - x1
+    - r2
     node_data:
       provider: clab
 input:
-- /home/pipi/net101/tools/tests/integration/ospf/ospfv2/10-import.yml
+- /home/pipi/net101/tools/tests/integration/bgp/30-import-ds-ospf.yml
 - /home/pipi/net101/tools/tests/integration/wait_times.yml
 - /home/pipi/.netlab.yml
 - package:topology-defaults.yml
@@ -6624,15 +6629,18 @@ links:
   - ifindex: 1
     ifname: eth1
     ipv4: 172.16.0.1/24
+    ipv6: 2001:db8:2::1/64
     node: dut
   - ifindex: 1
     ifname: eth1
-    ipv4: 172.16.0.3/24
+    ipv4: 172.16.0.2/24
+    ipv6: 2001:db8:2::2/64
     node: x1
   linkindex: 1
   node_count: 2
   prefix:
     ipv4: 172.16.0.0/24
+    ipv6: 2001:db8:2::/64
   role: external
   type: lan
 - _linkname: links[2]
@@ -6641,19 +6649,22 @@ links:
   - ifindex: 2
     ifname: eth2
     ipv4: 172.16.1.1/24
+    ipv6: 2001:db8:2:1::1/64
     node: dut
   - ifindex: 1
     ifname: eth1
-    ipv4: 172.16.1.2/24
+    ipv4: 172.16.1.3/24
+    ipv6: 2001:db8:2:1::3/64
     node: r2
   linkindex: 2
   node_count: 2
   prefix:
     ipv4: 172.16.1.0/24
+    ipv6: 2001:db8:2:1::/64
   type: lan
-message: 'This lab tests the simple import of BGP and (optionally) static routes into
+message: 'Use this topology to test the import of OSPFv2, OSPFv3 routes, and optionally
 
-  OSPF.
+  static routes into BGP IPv4/IPv6 AF
 
   '
 module:
@@ -6672,6 +6683,7 @@ nodes:
     _daemon_parent: linux
     af:
       ipv4: true
+      ipv6: true
     bgp:
       advertise_loopback: true
       as: 65000
@@ -6687,13 +6699,19 @@ nodes:
         - standard
         - large
         - extended
+      import:
+        ospf: {}
+        static: {}
       ipv4: true
+      ipv6: true
       neighbors:
       - activate:
           ipv4: true
+          ipv6: true
         as: 65100
         ifindex: 1
-        ipv4: 172.16.0.3
+        ipv4: 172.16.0.2
+        ipv6: 2001:db8:2::2
         name: x1
         type: ebgp
       next_hop_self: true
@@ -6721,12 +6739,14 @@ nodes:
       ifindex: 1
       ifname: eth1
       ipv4: 172.16.0.1/24
+      ipv6: 2001:db8:2::1/64
       linkindex: 1
       mtu: 1500
       name: dut -> x1
       neighbors:
       - ifname: eth1
-        ipv4: 172.16.0.3/24
+        ipv4: 172.16.0.2/24
+        ipv6: 2001:db8:2::2/64
         node: x1
       role: external
       type: lan
@@ -6734,12 +6754,14 @@ nodes:
       ifindex: 2
       ifname: eth2
       ipv4: 172.16.1.1/24
+      ipv6: 2001:db8:2:1::1/64
       linkindex: 2
       mtu: 1500
       name: dut -> r2
       neighbors:
       - ifname: eth1
-        ipv4: 172.16.1.2/24
+        ipv4: 172.16.1.3/24
+        ipv6: 2001:db8:2:1::3/64
         node: r2
       ospf:
         area: 0.0.0.0
@@ -6752,17 +6774,15 @@ nodes:
       mac: 08:4f:a9:01:00:00
     module:
     - routing
-    - ospf
     - bgp
+    - ospf
     mtu: 1500
     name: dut
     ospf:
       af:
         ipv4: true
+        ipv6: true
       area: 0.0.0.0
-      import:
-        bgp: {}
-        static: {}
       router_id: 10.0.0.1
     role: host
     router_id: 10.0.0.1
@@ -6771,11 +6791,19 @@ nodes:
       - ipv4: 10.0.0.42/32
         nexthop:
           idx: 0
-          intf: eth1
-          ipv4: 172.16.0.3
+          intf: eth2
+          ipv4: 172.16.1.3
+          ipv6: 2001:db8:2:1::3
+      - ipv6: 2001:db8:42::42/128
+        nexthop:
+          idx: 0
+          intf: eth2
+          ipv4: 172.16.1.3
+          ipv6: 2001:db8:2:1::3
   r2:
     af:
       ipv4: true
+      ipv6: true
     box: quay.io/frrouting/frr:10.3.1
     clab:
       binds:
@@ -6787,18 +6815,20 @@ nodes:
       kind: linux
     device: frr
     hostname: clab-ml_17-r2
-    id: 2
+    id: 3
     interfaces:
     - bridge: ml_17_2
       ifindex: 1
       ifname: eth1
-      ipv4: 172.16.1.2/24
+      ipv4: 172.16.1.3/24
+      ipv6: 2001:db8:2:1::3/64
       linkindex: 2
       mtu: 1500
       name: r2 -> dut
       neighbors:
       - ifname: eth2
         ipv4: 172.16.1.1/24
+        ipv6: 2001:db8:2:1::1/64
         node: dut
       ospf:
         area: 0.0.0.0
@@ -6808,7 +6838,8 @@ nodes:
     loopback:
       ifindex: 0
       ifname: lo
-      ipv4: 10.0.0.2/32
+      ipv4: 10.0.0.3/32
+      ipv6: 2001:db8:1:3::1/64
       neighbors: []
       ospf:
         area: 0.0.0.0
@@ -6817,8 +6848,8 @@ nodes:
       virtual_interface: true
     mgmt:
       ifname: eth0
-      ipv4: 192.168.17.102
-      mac: 08:4f:a9:02:00:00
+      ipv4: 192.168.17.103
+      mac: 08:4f:a9:03:00:00
     module:
     - ospf
     mtu: 1500
@@ -6826,12 +6857,14 @@ nodes:
     ospf:
       af:
         ipv4: true
+        ipv6: true
       area: 0.0.0.0
-      router_id: 10.0.0.2
+      router_id: 10.0.0.3
     role: router
   x1:
     af:
       ipv4: true
+      ipv6: true
     bgp:
       advertise_loopback: true
       as: 65100
@@ -6848,16 +6881,19 @@ nodes:
         - large
         - extended
       ipv4: true
+      ipv6: true
       neighbors:
       - activate:
           ipv4: true
+          ipv6: true
         as: 65000
         ifindex: 1
         ipv4: 172.16.0.1
+        ipv6: 2001:db8:2::1
         name: dut
         type: ebgp
       next_hop_self: true
-      router_id: 10.0.0.3
+      router_id: 10.0.0.2
     box: quay.io/frrouting/frr:10.3.1
     clab:
       binds:
@@ -6869,32 +6905,35 @@ nodes:
       kind: linux
     device: frr
     hostname: clab-ml_17-x1
-    id: 3
+    id: 2
     interfaces:
     - bridge: ml_17_1
       ifindex: 1
       ifname: eth1
-      ipv4: 172.16.0.3/24
+      ipv4: 172.16.0.2/24
+      ipv6: 2001:db8:2::2/64
       linkindex: 1
       mtu: 1500
       name: x1 -> dut
       neighbors:
       - ifname: eth1
         ipv4: 172.16.0.1/24
+        ipv6: 2001:db8:2::1/64
         node: dut
       role: external
       type: lan
     loopback:
       ifindex: 0
       ifname: lo
-      ipv4: 10.0.0.3/32
+      ipv4: 10.0.0.2/32
+      ipv6: 2001:db8:1:2::1/64
       neighbors: []
       type: loopback
       virtual_interface: true
     mgmt:
       ifname: eth0
-      ipv4: 192.168.17.103
-      mac: 08:4f:a9:03:00:00
+      ipv4: 192.168.17.102
+      mac: 08:4f:a9:02:00:00
     module:
     - bgp
     mtu: 1500
@@ -6911,29 +6950,55 @@ prefix:
     ipv6: ::/0
 provider: clab
 validate:
-- description: Check OSPF adjacency
-  name: adj_ospf
-  nodes:
-  - r2
-  plugin: ospf_neighbor(nodes.dut.ospf.router_id)
-  wait: 30
-  wait_msg: Waiting for OSPF adjacency process to complete
-- description: Check EBGP sessions with DUT
-  name: adj_bgp
+- description: IPv4 EBGP session (X1-DUT) should be established
+  name: ipv4_ebgp
   nodes:
   - x1
   plugin: bgp_neighbor(node.bgp.neighbors,'dut')
   wait: 30
-  wait_msg: Wait for BGP sessions to be established
-- description: Check for redistributed BGP route (X1 loopback) on R2
-  name: p_bgp
+  wait_msg: Wait for EBGP session
+- description: IPv6 EBGP session (X1-DUT) should be established
+  name: ipv6_ebgp
+  nodes:
+  - x1
+  plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6')
+  wait: 30
+  wait_msg: Wait for EBGP session
+- description: OSPF session (R2-DUT) should be established
+  name: ipv4_ospf
   nodes:
   - r2
-  plugin: ospf_prefix(nodes.x1.loopback.ipv4)
-  wait: 20
-  wait_msg: Waiting for routing protocols to do their magic
-- description: Check for redistributed static route on R2
-  name: p_static
+  plugin: ospf_neighbor(nodes.dut.ospf.router_id)
+  wait: 30
+  wait_msg: Wait for OSPF session
+- description: OSPFv3 session (R2-DUT) should be established
+  name: ipv6_ospf
   nodes:
   - r2
-  plugin: ospf_prefix(nodes.dut.routing.static[0].ipv4)
+  plugin: ospf6_neighbor(nodes.dut.ospf.router_id)
+  wait: 30
+  wait_msg: Wait for OSPF session
+- description: Check whether R2 IPv4 prefix is redistributed into BGP
+  name: p_ospf_4
+  nodes:
+  - x1
+  plugin: bgp_prefix(nodes.r2.loopback.ipv4)
+  wait: 10
+  wait_msg: Waiting for the loopback prefix to be originated and redistributed
+- description: Check whether R2 IPv6 prefix is redistributed into BGP
+  name: p_ospf_6
+  nodes:
+  - x1
+  plugin: bgp_prefix(nodes.r2.loopback.ipv6,af='ipv6')
+  wait: 10
+  wait_msg: Waiting for the loopback prefix to be originated and redistributed
+- description: Check whether static IPv4 prefix is redistributed into BGP
+  name: p_static_4
+  nodes:
+  - x1
+  plugin: bgp_prefix(nodes.dut.routing.static[0].ipv4)
+- description: Check whether static IPv6 prefix is redistributed into BGP
+  name: p_static_6
+  nodes:
+  - x1
+  plugin: bgp_prefix(nodes.dut.routing.static[1].ipv6,af='ipv6')
