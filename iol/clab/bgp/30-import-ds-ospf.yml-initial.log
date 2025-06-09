@@ -377,16 +377,16 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for x1, r2
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [r2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
 ok: [r2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r2]
 changed: [x1]
+changed: [r2]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
@@ -400,8 +400,54 @@ ok: [x1]
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r2, x1 => (item=routing)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r2, x1 => (item=bgp)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r2, x1 => (item=ospf)
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [r2]
+ok: [x1]
+ok: [dut]
+
+TASK [Find configuration template for routing] *********************************
+skipping: [r2]
+skipping: [x1]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r2]
+skipping: [x1]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [r2]
+skipping: [x1]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [r2]
+skipping: [x1]
+ok: [dut] => 
+  msg: |-
+    routing configuration for dut
+    =========================================
+    !
+    !
+    ! AS-path access lists
+    !
+    !
+    ! Static routes
+    !
+    ip route 10.0.0.42 255.255.255.255 Ethernet0/2 10.1.0.6
+    ipv6 route 2001:db8:42::42/128 Ethernet0/2 2001:db8:3:1::2
+
+TASK [Deploy routing configuration] ********************************************
+skipping: [r2]
+skipping: [x1]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
+
+TASK [ios_config: deploying routing from /home/pipi/netlab_gh/netsim/ansible/templates/routing/ios.j2] ***
+changed: [dut]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [r2]
@@ -499,6 +545,7 @@ ok: [dut] =>
      address-family ipv4
       bgp scan-time 5
       redistribute ospf 1 match internal external
+      redistribute static
   
     !
       network 10.0.0.1 mask 255.255.255.255
@@ -512,6 +559,7 @@ ok: [dut] =>
      address-family ipv6
       bgp scan-time 5
       redistribute ospf 1 match internal external
+      redistribute static
   
     !
       network 2001:db8:1:1::/64
@@ -674,11 +722,12 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=33   changed=3    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
-r2                         : ok=28   changed=4    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
-x1                         : ok=29   changed=5    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
+dut                        : ok=40   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+r2                         : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+x1                         : ok=31   changed=5    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
 
 
 
-Use this topology to test the import of OSPFv2 and OSPFv3 routes into BGP IPv4/IPv6 AF
+Use this topology to test the import of OSPFv2, OSPFv3 routes, and optionally
+static routes into BGP IPv4/IPv6 AF
 
