@@ -449,7 +449,7 @@ _netlab_ supports static routes on these platforms:
 | Operating system    | Global<br>static routes | Discard<br>routes | VRF static<br>routes | Inter-VRF<br>static routes |
 |---------------------|:--:|:--:|:--:|:--:|
 | Arista EOS          | ✅ | ✅ | ✅ | ✅ |
-| Aruba AOS-CX        | ✅ |  ❌ | ✅ | [❗](caveats-aruba) |
+| Aruba AOS-CX        | ✅ | ✅ | ✅ | [❗](caveats-aruba) |
 | Cisco IOS/XE[^18v]  | ✅ | ✅ | ✅ | ✅ |
 | Cumulus Linux 4.x   | ✅ |  ❌ | ✅ | ✅ |
 | Junos               | ✅ |  ❌ | ✅ | ❌ |
