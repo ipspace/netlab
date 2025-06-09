@@ -4,41 +4,29 @@
 
 updates:
 {% for vname,vdata in vrfs.items() %}
-
 - path: configure/service/vprn[service-name={{ vname }}]
   val:
-   service-id: {{ vdata.vrfidx }}
-   customer: "1"
-   autonomous-system: {{ bgp.as|default(vrf.as) }}
-   router-id: {{ vdata.bgp.router_id|default(bgp.router_id if bgp is defined else loopback.ipv4|ipaddr('address')) }}
-   ecmp: {{ 1 if 'ixr' in clab.type else 64 }}
-   admin-state: enable
+    service-id: {{ vdata.vrfidx }}
+    customer: "1"
+    autonomous-system: {{ bgp.as|default(vrf.as) }}
+    router-id: {{ vdata.bgp.router_id|default(bgp.router_id if bgp is defined else loopback.ipv4|ipaddr('address')) }}
+    ecmp: {{ 1 if 'ixr' in clab.type else 64 }}
+    admin-state: enable
+{%   if '_leaked_routes' in vdata %}
+    allow-export-bgp-vpn: true
+{%   endif %}
+{%   if vdata.bgp is defined and 'af' in vdata %}
+{{     bgp_config(vname,vdata.bgp,vdata) }}
+{%   endif %}
 
-{% if mpls is defined and 'vpn' in mpls %}
-   bgp-ipvpn:
-     mpls:
-      admin-state: enable
-      route-distinguisher: "{{ vdata.rd }}"
-      vrf-target:
-       export-community: "target:{{ vdata.export[0] }}" # For now a single community, TODO import policy
-       import-community: "target:{{ vdata.import[0] }}"
-      auto-bind-tunnel:
-       resolution: "any"
-       ecmp: {{ 2 if 'ixr' in clab.type else 32 }}
-{% endif %}
-
-{% if vdata.bgp is defined and 'af' in vdata %}
-{{ bgp_config(vname,vdata.bgp,vdata) }}
-{% endif %}
-
-{% if 'ospf' in vdata and 'af' in vdata %}
-{%   for rtg_af in ['ipv4','ipv6'] %}
-{%     if vdata.ospf.af[rtg_af]|default(False) %}
-{{       ospf_config(rtg_af,vdata.ospf,vdata.ospf.interfaces,vname) }}
-{%     endif %}
-{%   endfor %}
-{% endif %}
-{% if 'isis' in vdata and 'af' in vdata %}
-{{   isis_router({ 'vrf': vname },vdata.isis,vdata.isis.interfaces) }}
-{% endif %}
+{%   if 'ospf' in vdata and 'af' in vdata %}
+{%     for rtg_af in ['ipv4','ipv6'] %}
+{%       if vdata.ospf.af[rtg_af]|default(False) %}
+{{         ospf_config(rtg_af,vdata.ospf,vdata.ospf.interfaces,vname) }}
+{%       endif %}
+{%     endfor %}
+{%   endif %}
+{%   if 'isis' in vdata and 'af' in vdata %}
+{{     isis_router({ 'vrf': vname },vdata.isis,vdata.isis.interfaces) }}
+{%   endif %}
 {% endfor %}

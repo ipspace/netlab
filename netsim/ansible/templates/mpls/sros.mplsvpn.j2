@@ -1,3 +1,37 @@
+{% macro vprn_route_leaking(vname,vdata) %}
+{%   for direction in ['import','export'] if vdata[direction]|default([]) %}
+
+- path: configure/policy-options/community[name={{ vname }}_rt_{{ direction }}]
+  val:
+{%     if direction == 'export' %}
+    member:
+{%       for rt in vdata[direction] %}
+    - member: "target:{{ rt }}"
+{%       endfor %}
+{%     else %}
+    expression:
+      expr: "{% for rt in vdata[direction] %}target:{{ rt }}{% if not loop.last %} OR {% endif %}{% endfor %}"
+{%     endif %}
+
+- path: configure/policy-options/policy-statement[name={{ vname }}_rt_{{ direction }}]
+  val:
+    entry:
+    - entry-id: 10
+{%     if direction == 'import' %}
+      from:
+        community:
+          name: "{{ vname }}_rt_{{ direction }}"
+      action:
+        action-type: accept
+{%     else %}
+      action:
+        action-type: accept
+        community:
+          add: [ {{ vname }}_rt_{{ direction }} ]
+{%     endif %}
+{%   endfor %}
+{% endmacro %}
+
 {% if 'ebgp' in mpls.vpn %}
 - path: configure/router[router-name=Base]
   val:
@@ -21,6 +55,29 @@
 {%   endfor %}
 {% endfor %}
 {% for vname,vdata in (vrfs|default({})).items() %}
+{%   if '_leaked_routes' in vdata %}
+{{     vprn_route_leaking(vname,vdata) }}
+{%   endif %}
+- path: configure/service/vprn[service-name={{ vname }}]
+  val:
+    bgp-ipvpn:
+      mpls:
+        admin-state: enable
+        route-distinguisher: "{{ vdata.rd }}"
+{%     if '_leaked_routes' in vdata %}
+{%       for direction in ['import','export'] if vdata[direction]|default() %}
+        vrf-{{ direction }}:
+          policy: [ {{ vname }}_rt_{{ direction }} ]
+{%       endfor %}
+{%     else %}
+        vrf-target:
+          export-community: "target:{{ vdata.export[0] }}" # For now a single community, TODO import policy
+          import-community: "target:{{ vdata.import[0] }}"
+{%     endif %}
+        auto-bind-tunnel:
+          resolution: "any"
+          ecmp: {{ 2 if 'ixr' in clab.type else 32 }}
+
 {%   if vdata.bgp.neighbors|default([]) %}
 - path: configure/policy-options/policy-statement[name=bgp_{{ vname }}_export]
   val:

@@ -18,10 +18,13 @@ def ipv4_unnumbered(node: Box) -> None:
         category=log.IncorrectValue)
 
 def vrf_route_leaking(node: Box) -> None:
+  if node.get('mpls.vpn',None):
+    return
+
   for vname,vdata in node.get('vrfs',{}).items():
-    if '_leaked_routes' in vdata:
+    if '_leaked_routes' in vdata and not vdata.get('evpn'):
       report_quirk(
-        text=f'We did not implement inter-VRF route leaking on SR/OS (node {node.name} vrf {vname})',
+        text=f'Inter-VRF route leaking on SR/OS is implemented only with MPLS/VPN or EVPN (node {node.name} vrf {vname})',
         node=node,
         category=log.IncorrectValue)
 
