@@ -1,9 +1,11 @@
 addressing:
   l2only: {}
   lan:
+    ipv4: 172.16.0.0/16
     ipv6: 2001:db8:2::/48
     prefix: 24
   loopback:
+    ipv4: 10.0.0.0/24
     ipv6: 2001:db8:1::/48
     prefix: 32
   mgmt:
@@ -14,6 +16,7 @@ addressing:
     prefix: 24
     start: 100
   p2p:
+    ipv4: 10.1.0.0/16
     ipv6: 2001:db8:3::/48
     prefix: 30
   router_id:
@@ -21,16 +24,8 @@ addressing:
     prefix: 32
   vrf_loopback:
     ipv4: 10.2.0.0/24
+    ipv6: 2001:db8:4::/48
     prefix: 32
-bgp:
-  advertise_loopback: true
-  community:
-    ebgp:
-    - standard
-    ibgp:
-    - standard
-    - extended
-  next_hop_self: true
 defaults:
   _globals:
     _modlist:
@@ -55,23 +50,24 @@ defaults:
   addressing:
     l2only: null
     lan:
-      ipv4: false
+      ipv4: 172.16.0.0/16
       ipv6: 2001:db8:2::/48
     loopback:
-      ipv4: false
+      ipv4: 10.0.0.0/24
       ipv6: 2001:db8:1::/48
     mgmt:
       ipv4: 192.168.121.0/24
       mac: 08-4F-A9-00-00-00
       start: 100
     p2p:
-      ipv4: false
+      ipv4: 10.1.0.0/16
       ipv6: 2001:db8:3::/48
     router_id:
       ipv4: 10.0.0.0/24
       prefix: 32
     vrf_loopback:
       ipv4: 10.2.0.0/24
+      ipv6: 2001:db8:4::/48
       prefix: 32
   attributes:
     _prefix:
@@ -976,19 +972,6 @@ defaults:
     - ospf
     - ripv2
     - static
-    validate:
-      ebgp_session: 30
-      ospf_import: 20
-      ospfv2_adj_lan: 50
-      ospfv2_adj_p2p: 30
-      ospfv2_spf: 10
-      ospfv3_adj_lan: 50
-      ospfv3_adj_p2p: 30
-      ospfv3_spf: 10
-      ping: 5
-      ra_send: 30
-      stp_forwarding: 40
-      vxlan_ping: 20
     vrf_igp_protocols:
     - connected
     - ospf
@@ -5095,8 +5078,6 @@ defaults:
       vsrx: true
   module:
   - routing
-  - bgp
-  - ospf
   mpls:
     attributes:
       global:
@@ -5558,7 +5539,7 @@ defaults:
       - /home/pipi/net101/tools/netsim/ansible/tasks/fetch-config
     custom:
       dirs:
-      - /home/pipi/net101/tools/tests/integration/ospf/ospfv3
+      - /home/pipi/net101/tools/tests/integration/routing
       - /work/netlab_cicd
       - /home/pipi/.netlab
       - /home/pipi/net101/tools/netsim/extra
@@ -5612,9 +5593,8 @@ defaults:
       - deploy-config/{{ ansible_network_os }}-{{ node_provider }}.yml
       - deploy-config/{{ ansible_network_os }}.yml
     plugin:
-    - /home/pipi/net101/tools/tests/integration/plugin
     - /work/netlab_cicd
-    - /home/pipi/net101/tools/tests/integration/ospf/ospfv3
+    - /home/pipi/net101/tools/tests/integration/routing
     - /home/pipi/.netlab
     - /home/pipi/net101/tools/netsim/extra
     ready:
@@ -6044,7 +6024,7 @@ defaults:
     - vlan
   sources:
     extra:
-    - ../../wait_times.yml
+    - defaults-ds.yml
     list: []
     system: []
     user: []
@@ -6583,23 +6563,20 @@ groups:
     members: []
     vars:
       netlab_show_config: true
-  as65000:
-    members:
-    - dut
-  as65100:
-    members:
-    - x1
   probes:
-    device: frr
+    device: linux
     members:
-    - r2
-    - x1
+    - h1
+    - h2
+    - h3
+    - v1
+    - v2
+    - v3
     node_data:
       provider: clab
 input:
-- /home/pipi/net101/tools/tests/integration/ospf/ospfv3/10-import.yml
-- /home/pipi/net101/tools/tests/integration/wait_times.yml
-- /home/pipi/net101/tools/tests/integration/ospf/ospfv3/topology-defaults.yml
+- /home/pipi/net101/tools/tests/integration/routing/25-static-discard.yml
+- /home/pipi/net101/tools/tests/integration/routing/defaults-ds.yml
 - /home/pipi/.netlab.yml
 - package:topology-defaults.yml
 links:
@@ -6608,94 +6585,74 @@ links:
   interfaces:
   - ifindex: 1
     ifname: eth1
+    ipv4: 172.16.0.1/24
     ipv6: 2001:db8:2::1/64
     node: dut
   - ifindex: 1
     ifname: eth1
-    ipv6: 2001:db8:2::3/64
-    node: x1
+    ipv4: 172.16.0.2/24
+    ipv6: 2001:db8:2::2/64
+    node: h1
   linkindex: 1
   node_count: 2
   prefix:
+    ipv4: 172.16.0.0/24
     ipv6: 2001:db8:2::/64
-  role: external
+  role: stub
   type: lan
 - _linkname: links[2]
   bridge: ml_17_2
   interfaces:
   - ifindex: 2
     ifname: eth2
-    ipv6: 2001:db8:2:1::1/64
+    ipv4: 172.16.42.1/24
+    ipv6: 2001:db8:cafe:42::1/64
     node: dut
   - ifindex: 1
     ifname: eth1
-    ipv6: 2001:db8:2:1::2/64
-    node: r2
+    ipv4: 172.16.42.3/24
+    ipv6: 2001:db8:cafe:42::3/64
+    node: h2
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 172.16.42.42/24
+    ipv6: 2001:db8:cafe:42::2a/64
+    node: h3
   linkindex: 2
-  node_count: 2
+  node_count: 3
   prefix:
-    ipv6: 2001:db8:2:1::/64
+    _name: x2_lan
+    ipv4: 172.16.42.0/24
+    ipv6: 2001:db8:cafe:42::/64
+  role: stub
   type: lan
-message: 'This lab tests the simple import of IPv6 BGP and (optionally) static routes
+message: 'Use this topology to test ''discard'' IPv4 and IPv6 static routes.
 
-  into OSPFv3.
+  H1 should be able to reach H2 but not H3 (due to a discard static route)
 
   '
 module:
 - routing
-- bgp
-- ospf
 name: ml_17
 nodes:
   dut:
     _daemon: true
     _daemon_config:
-      bgp: /etc/bird/bgp.mod.conf
       bird: /etc/bird/bird.conf
-      ospf: /etc/bird/ospf.mod.conf
       routing: /etc/bird/routing.mod.conf
     _daemon_parent: linux
     af:
+      ipv4: true
       ipv6: true
-    bgp:
-      advertise_loopback: true
-      as: 65000
-      community:
-        ebgp:
-        - standard
-        - large
-        ibgp:
-        - standard
-        - large
-        - extended
-        localas_ibgp:
-        - standard
-        - large
-        - extended
-      ipv6: true
-      neighbors:
-      - activate:
-          ipv6: true
-        as: 65100
-        ifindex: 1
-        ipv6: 2001:db8:2::3
-        name: x1
-        type: ebgp
-      next_hop_self: true
-      router_id: 10.0.0.1
     box: netlab/bird:latest
     clab:
       binds:
       - clab_files/dut/hosts:/etc/hosts
       - clab_files/dut/bird:/etc/bird/bird.conf
-      - clab_files/dut/bgp:/etc/bird/bgp.mod.conf
-      - clab_files/dut/ospf:/etc/bird/ospf.mod.conf
       - clab_files/dut/routing:/etc/bird/routing.mod.conf
       config_templates:
       - hosts:/etc/hosts
       - bird:/etc/bird/bird.conf
-      - bgp:/etc/bird/bgp.mod.conf
-      - ospf:/etc/bird/ospf.mod.conf
       - routing:/etc/bird/routing.mod.conf
       kind: linux
     device: bird
@@ -6705,222 +6662,371 @@ nodes:
     - bridge: ml_17_1
       ifindex: 1
       ifname: eth1
+      ipv4: 172.16.0.1/24
       ipv6: 2001:db8:2::1/64
       linkindex: 1
       mtu: 1500
-      name: dut -> x1
+      name: dut -> h1
       neighbors:
       - ifname: eth1
-        ipv6: 2001:db8:2::3/64
-        node: x1
-      role: external
+        ipv4: 172.16.0.2/24
+        ipv6: 2001:db8:2::2/64
+        node: h1
+      role: stub
       type: lan
     - bridge: ml_17_2
       ifindex: 2
       ifname: eth2
-      ipv6: 2001:db8:2:1::1/64
+      ipv4: 172.16.42.1/24
+      ipv6: 2001:db8:cafe:42::1/64
       linkindex: 2
       mtu: 1500
-      name: dut -> r2
+      name: dut -> [h2,h3]
       neighbors:
       - ifname: eth1
-        ipv6: 2001:db8:2:1::2/64
-        node: r2
-      ospf:
-        area: 0.0.0.0
-        network_type: point-to-point
-        passive: false
+        ipv4: 172.16.42.3/24
+        ipv6: 2001:db8:cafe:42::3/64
+        node: h2
+      - ifname: eth1
+        ipv4: 172.16.42.42/24
+        ipv6: 2001:db8:cafe:42::2a/64
+        node: h3
+      role: stub
       type: lan
+    loopback:
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.1/32
+      ipv6: 2001:db8:1:1::1/64
+      neighbors: []
+      type: loopback
+      virtual_interface: true
     mgmt:
       ifname: eth0
       ipv4: 192.168.17.101
       mac: 08:4f:a9:01:00:00
     module:
     - routing
-    - ospf
-    - bgp
     mtu: 1500
     name: dut
-    ospf:
-      af:
-        ipv6: true
-      area: 0.0.0.0
-      import:
-        bgp: {}
-        static: {}
-      router_id: 10.0.0.1
-    role: host
-    router_id: 10.0.0.1
+    role: router
     routing:
       static:
-      - ipv6: 2001:db8::42/128
+      - ipv4: 172.16.42.42/32
+        ipv6: 2001:db8:cafe:42::2a/128
         nexthop:
+          discard: true
           idx: 0
-          intf: eth1
-          ipv6: 2001:db8:2::3
-  r2:
+    vrf:
+      as: 65000
+  h1:
     af:
+      ipv4: true
       ipv6: true
-    box: quay.io/frrouting/frr:10.3.1
+    box: python:3.13-alpine
     clab:
       binds:
-      - clab_files/r2/daemons:/etc/frr/daemons
-      - clab_files/r2/hosts:/etc/hosts
+      - clab_files/h1/hosts:/etc/hosts
       config_templates:
-      - daemons:/etc/frr/daemons
       - hosts:/etc/hosts
       kind: linux
-    device: frr
-    hostname: clab-ml_17-r2
+    device: linux
+    hostname: clab-ml_17-h1
     id: 2
     interfaces:
-    - bridge: ml_17_2
+    - bridge: ml_17_1
+      gateway:
+        ipv4: 172.16.0.1/24
+        ipv6: 2001:db8:2::1/64
       ifindex: 1
       ifname: eth1
-      ipv6: 2001:db8:2:1::2/64
-      linkindex: 2
+      ipv4: 172.16.0.2/24
+      ipv6: 2001:db8:2::2/64
+      linkindex: 1
       mtu: 1500
-      name: r2 -> dut
+      name: h1 -> dut
       neighbors:
-      - ifname: eth2
-        ipv6: 2001:db8:2:1::1/64
+      - ifname: eth1
+        ipv4: 172.16.0.1/24
+        ipv6: 2001:db8:2::1/64
         node: dut
-      ospf:
-        area: 0.0.0.0
-        network_type: point-to-point
-        passive: false
+      role: stub
       type: lan
-    loopback:
-      ifindex: 0
-      ifname: lo
-      ipv6: 2001:db8:1:2::1/64
-      neighbors: []
-      ospf:
-        area: 0.0.0.0
-        passive: false
-      type: loopback
-      virtual_interface: true
     mgmt:
       ifname: eth0
       ipv4: 192.168.17.102
       mac: 08:4f:a9:02:00:00
     module:
-    - ospf
+    - routing
     mtu: 1500
-    name: r2
-    ospf:
-      af:
-        ipv6: true
-      area: 0.0.0.0
-      router_id: 10.0.0.2
-    role: router
-    router_id: 10.0.0.2
-  x1:
+    name: h1
+    role: host
+    routing:
+      static:
+      - ipv4: 172.16.0.0/16
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.0.1
+          ipv6: 2001:db8:2::1
+      - ipv4: 10.0.0.0/24
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.0.1
+          ipv6: 2001:db8:2::1
+      - ipv4: 10.1.0.0/16
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.0.1
+          ipv6: 2001:db8:2::1
+      - ipv4: 10.2.0.0/24
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.0.1
+          ipv6: 2001:db8:2::1
+  h2:
     af:
+      ipv4: true
       ipv6: true
-    bgp:
-      advertise_loopback: true
-      as: 65100
-      community:
-        ebgp:
-        - standard
-        - large
-        ibgp:
-        - standard
-        - large
-        - extended
-        localas_ibgp:
-        - standard
-        - large
-        - extended
-      ipv6: true
-      neighbors:
-      - activate:
-          ipv6: true
-        as: 65000
-        ifindex: 1
-        ipv6: 2001:db8:2::1
-        name: dut
-        type: ebgp
-      next_hop_self: true
-      router_id: 10.0.0.3
-    box: quay.io/frrouting/frr:10.3.1
+    box: python:3.13-alpine
     clab:
       binds:
-      - clab_files/x1/daemons:/etc/frr/daemons
-      - clab_files/x1/hosts:/etc/hosts
+      - clab_files/h2/hosts:/etc/hosts
       config_templates:
-      - daemons:/etc/frr/daemons
       - hosts:/etc/hosts
       kind: linux
-    device: frr
-    hostname: clab-ml_17-x1
+    device: linux
+    hostname: clab-ml_17-h2
     id: 3
     interfaces:
-    - bridge: ml_17_1
+    - bridge: ml_17_2
+      gateway:
+        ipv4: 172.16.42.1/24
+        ipv6: 2001:db8:cafe:42::1/64
       ifindex: 1
       ifname: eth1
-      ipv6: 2001:db8:2::3/64
-      linkindex: 1
+      ipv4: 172.16.42.3/24
+      ipv6: 2001:db8:cafe:42::3/64
+      linkindex: 2
       mtu: 1500
-      name: x1 -> dut
+      name: h2 -> [dut,h3]
       neighbors:
-      - ifname: eth1
-        ipv6: 2001:db8:2::1/64
+      - ifname: eth2
+        ipv4: 172.16.42.1/24
+        ipv6: 2001:db8:cafe:42::1/64
         node: dut
-      role: external
+      - ifname: eth1
+        ipv4: 172.16.42.42/24
+        ipv6: 2001:db8:cafe:42::2a/64
+        node: h3
+      role: stub
       type: lan
-    loopback:
-      ifindex: 0
-      ifname: lo
-      ipv6: 2001:db8:1:3::1/64
-      neighbors: []
-      type: loopback
-      virtual_interface: true
     mgmt:
       ifname: eth0
       ipv4: 192.168.17.103
       mac: 08:4f:a9:03:00:00
     module:
-    - bgp
+    - routing
     mtu: 1500
-    name: x1
-    role: router
-    router_id: 10.0.0.3
-ospf:
-  area: 0.0.0.0
+    name: h2
+    role: host
+    routing:
+      static:
+      - ipv4: 172.16.0.0/16
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.42.1
+          ipv6: 2001:db8:cafe:42::1
+      - ipv4: 10.0.0.0/24
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.42.1
+          ipv6: 2001:db8:cafe:42::1
+      - ipv4: 10.1.0.0/16
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.42.1
+          ipv6: 2001:db8:cafe:42::1
+      - ipv4: 10.2.0.0/24
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.42.1
+          ipv6: 2001:db8:cafe:42::1
+  h3:
+    af:
+      ipv4: true
+      ipv6: true
+    box: python:3.13-alpine
+    clab:
+      binds:
+      - clab_files/h3/hosts:/etc/hosts
+      config_templates:
+      - hosts:/etc/hosts
+      kind: linux
+    device: linux
+    hostname: clab-ml_17-h3
+    id: 42
+    interfaces:
+    - bridge: ml_17_2
+      gateway:
+        ipv4: 172.16.42.1/24
+        ipv6: 2001:db8:cafe:42::1/64
+      ifindex: 1
+      ifname: eth1
+      ipv4: 172.16.42.42/24
+      ipv6: 2001:db8:cafe:42::2a/64
+      linkindex: 2
+      mtu: 1500
+      name: h3 -> [dut,h2]
+      neighbors:
+      - ifname: eth2
+        ipv4: 172.16.42.1/24
+        ipv6: 2001:db8:cafe:42::1/64
+        node: dut
+      - ifname: eth1
+        ipv4: 172.16.42.3/24
+        ipv6: 2001:db8:cafe:42::3/64
+        node: h2
+      role: stub
+      type: lan
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.17.142
+      mac: 08:4f:a9:2a:00:00
+    module:
+    - routing
+    mtu: 1500
+    name: h3
+    role: host
+    routing:
+      static:
+      - ipv4: 172.16.0.0/16
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.42.1
+          ipv6: 2001:db8:cafe:42::1
+      - ipv4: 10.0.0.0/24
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.42.1
+          ipv6: 2001:db8:cafe:42::1
+      - ipv4: 10.1.0.0/16
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.42.1
+          ipv6: 2001:db8:cafe:42::1
+      - ipv4: 10.2.0.0/24
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.42.1
+          ipv6: 2001:db8:cafe:42::1
+  v1:
+    af: {}
+    box: python:3.13-alpine
+    clab:
+      binds:
+      - clab_files/v1/hosts:/etc/hosts
+      config_templates:
+      - hosts:/etc/hosts
+      kind: linux
+    device: linux
+    hostname: clab-ml_17-v1
+    id: 4
+    interfaces: []
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.17.104
+      mac: 08:4f:a9:04:00:00
+    mtu: 1500
+    name: v1
+    role: host
+  v2:
+    af: {}
+    box: python:3.13-alpine
+    clab:
+      binds:
+      - clab_files/v2/hosts:/etc/hosts
+      config_templates:
+      - hosts:/etc/hosts
+      kind: linux
+    device: linux
+    hostname: clab-ml_17-v2
+    id: 5
+    interfaces: []
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.17.105
+      mac: 08:4f:a9:05:00:00
+    mtu: 1500
+    name: v2
+    role: host
+  v3:
+    af: {}
+    box: python:3.13-alpine
+    clab:
+      binds:
+      - clab_files/v3/hosts:/etc/hosts
+      config_templates:
+      - hosts:/etc/hosts
+      kind: linux
+    device: linux
+    hostname: clab-ml_17-v3
+    id: 64
+    interfaces: []
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.17.164
+      mac: 08:4f:a9:40:00:00
+    mtu: 1500
+    name: v3
+    role: host
 plugin:
-- static_import
+- test.vrf_check
 - multilab
 prefix:
   any:
     ipv4: 0.0.0.0/0
     ipv6: ::/0
+  x2_lan:
+    _name: x2_lan
+    ipv4: 172.16.42.0/24
+    ipv6: 2001:db8:cafe:42::/64
 provider: clab
 validate:
-- description: Check OSPF adjacency
-  name: adj_ospf
+- description: IPv4 ping H2 from H1
+  name: ping_h2_v4
   nodes:
-  - r2
-  plugin: ospf6_neighbor(nodes.dut.ospf.router_id)
-  wait: 30
-  wait_msg: Waiting for OSPF adjacency process to complete
-- description: Check EBGP sessions with DUT
-  name: adj_bgp
+  - h1
+  plugin: ping('h2',af='ipv4')
+- description: IPv6 ping H2 from H1
+  name: ping_h2_v6
   nodes:
-  - x1
-  plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6')
-  wait: 30
-  wait_msg: Wait for BGP sessions to be established
-- description: Check for redistributed BGP route (X1 loopback) on R2
-  name: p_bgp
+  - h1
+  plugin: ping('h2',af='ipv6')
+- description: IPv4 ping H3 from H1
+  name: ping_h3_v4
   nodes:
-  - r2
-  plugin: ospf6_prefix(nodes.x1.loopback.ipv6)
-  wait: 20
-  wait_msg: Waiting for routing protocols to do their magic
-- description: Check for redistributed static route on R2
-  name: p_static
+  - h1
+  plugin: ping('h3',af='ipv4',expect='fail',count=3)
+- description: IPv6 ping H3 from H1
+  name: ping_h3_v6
   nodes:
-  - r2
-  plugin: ospf6_prefix(nodes.dut.routing.static[0].ipv6)
+  - h1
+  plugin: ping('h3',af='ipv6',expect='fail',count=3)
+- fail: Device bird does support VRFs, skipping VRF-specific tests
+  level: warning
+  name: v_warning
+  wait: 0
+vrf:
+  as: 65000
