@@ -93,11 +93,23 @@ routing-instances {
 {%   set route_resolve = ' resolve' if not 'intf' in sr_data.nexthop else '' %}
     routing-options {
 {%   if 'ipv4' in sr_data %}
-      static route {{sr_data.ipv4}} next-hop {{sr_data.nexthop.ipv4}}{{route_resolve}};
+      static route {{sr_data.ipv4}} {
+{%     if 'discard' in sr_data.nexthop %}
+        discard;
+{%     else %}
+        next-hop {{sr_data.nexthop.ipv4}}{{route_resolve}};
+{%     endif %}
+      }
 {%   endif %}
 {%   if 'ipv6' in sr_data %}
 {%   set ipv6_vrf_rib = sr_data.vrf + '.' if 'vrf' in sr_data else '' %}
-        rib {{ ipv6_vrf_rib }}inet6.0 static route {{sr_data.ipv6}} next-hop {{sr_data.nexthop.ipv6}}{{route_resolve}};
+        rib {{ ipv6_vrf_rib }}inet6.0 static route {{sr_data.ipv6}} {
+{%     if 'discard' in sr_data.nexthop %}
+          discard;
+{%     else %}
+          next-hop {{sr_data.nexthop.ipv6}}{{route_resolve}};
+{%     endif %}
+        }
 {%   endif %}
     }
 
