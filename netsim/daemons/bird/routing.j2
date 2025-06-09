@@ -1,0 +1,25 @@
+{# Static routes #}
+{% macro config_sr(sr_data,af) %}
+{%   set sr_intf = ' dev "'+sr_data.nexthop.intf+'"' if 'intf' in sr_data.nexthop else '' %}
+{%   set sr_intf = '' %}
+{%   set sr_nh = 'unreachable' if 'discard' in sr_data.nexthop else 'via ' + sr_data.nexthop[af] %}
+route {{ sr_data[af] }} {{ sr_nh }}{{ sr_intf }};
+{% endmacro -%}
+{% if routing.static|default([]) %}
+#
+# Global static routes
+#
+{% for sr_af in ['ipv4','ipv6'] %}
+{%   for sr_data in routing.static if sr_af in sr_data and 'vrf' not in sr_data %}
+{%     if loop.first %}
+protocol static {
+  {{ sr_af }};
+  check link;
+{%     endif %}
+  {{ config_sr(sr_data,sr_af) }}
+{%     if loop.last %}
+}
+{%     endif %}
+{%   endfor %}
+{% endfor %}
+{% endif %}{# static routes #}
