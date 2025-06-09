@@ -93,7 +93,8 @@ The following features are only supported on a subset of platforms:
 | VyOS                     |  ✅ |  ❌  |  ✅ |  ✅ |
 
 ```{tip}
-See [BGP Integration Tests Results](https://release.netlab.tools/_html/coverage.bgp) for more details.
+* See [BGP Integration Tests Results](https://release.netlab.tools/_html/coverage.bgp) for more details.
+* Use the `netlab show modules -m bgp` command to display the route types that can be imported into BGP.
 ```
 
 [^18v]: Includes Cisco IOSv, IOSvL2, Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL) and IOL Layer-2 images
