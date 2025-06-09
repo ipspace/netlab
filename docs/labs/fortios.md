@@ -9,7 +9,10 @@ FortiOS (FortiGate) is supported by the **netlab libvirt package** command. To b
 * Execute **netlab libvirt package fortios _qcow-file-name_** and follow the instructions
 
 ```{warning}
-* _netlab_ supports FortiGate devices that use username/password to authenticate API calls. The last software releases known to work are 7.0.x and 7.2.0.
+* _netlab_ supports FortiGate devices that use username/password to authenticate API calls.
+* Before `7.2.0`, the FortiGate VM included a 15 day evaluation license. The vagrant box would need to be recreated 15 days after the initial build to continue using it.
+* Starting with `7.2.0`, you can use a permanent evaluation license, linked to your FortiGate Support Portal account.
+* Limitations of the evaluation license can be found in the [FortiGate documentation](https://docs.fortinet.com/document/fortigate/7.6.3/administration-guide/441460).
 * If you're using a *‌netlab* release older than 1.8.2, or if you're using a Linux distribution other than Ubuntu, please [read the box-building caveats first](libvirt-box-caveats.md).
 ```
 
