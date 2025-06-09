@@ -84,7 +84,7 @@ The following features are only supported on a subset of platforms:
 | Cisco IOS/IOS XE[^18v]   |  ✅ |  ✅ |  ✅ |  ✅ |
 | Cumulus Linux 4.x        |  ✅ |  ❌  |  ✅ |  ✅ |
 | Cumulus Linux 5.x (NVUE) |  ✅ |  ✅ |  ✅ |  ❌ |
-| Dell OS10                |  ✅ |  ❌  |  ❌  |  ❌  |
+| Dell OS10                |  ✅ |  ❌  |  ✅  |  ✅  |
 | FRR                      |  ✅ |  ✅ |  ✅ |  ✅ |
 | JunOS                    |  ✅ |  ✅ |  ❌  |  ❌  |
 | Nokia SR Linux           |  ✅ |  ✅ |  ✅ [❗](caveats-srlinux) |  ✅ [❗](caveats-srlinux) |
