@@ -21,6 +21,9 @@ def remove_vrf(ndata: Box, topology: Box) -> None:
     log.info(f'Removing vrfs from node data')
     ndata.pop('vrfs',None)
 
+  if 'routing.static' in ndata:
+    ndata.routing.static = [ sr for sr in ndata.routing.static if 'vrf' not in sr ]
+
   for link in topology.links:
     if 'vrf' in link:
       log.info(f'Removing vrf from link {link._linkname}')
@@ -31,10 +34,15 @@ def remove_vrf(ndata: Box, topology: Box) -> None:
         log.info(f'Removing vrf from interface {link._linkname}/{intf.node}')
         intf.pop('vrf',None)
 
-  for test in list(topology.validate.keys()):
-    if 'vrf' in test:
-      log.info(f'Removing validation test {test}')
-      topology.validate.pop(test,None)
+  if 'validate' in topology:
+    for test in list(topology.validate.keys()):
+      if 'vrf' in test:
+        log.info(f'Removing validation test {test}')
+        topology.validate.pop(test,None)
+    topology.validate.v_warning = {
+      'wait': 0,
+      'level': 'warning',
+      'fail': f'Device {ndata.device} does support VRFs, skipping VRF-specific tests' }
 
 def pre_transform(topology: Box) -> None:
   for node,ndata in topology.nodes.items():
