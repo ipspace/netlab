@@ -1,8 +1,14 @@
 ---
 message: |
-  Use this topology to test the two-way redistribution between RIPv2 and OSPFv2/OSPFv3/BGP
+  Use this topology to test the two-way redistribution between RIPv2 and
+  OSPFv2/OSPFv3/BGP The topology also tests redistribution of static routes into
+  RIPv2 (when supported by the device-under-test)
 
 defaults.interfaces.mtu: 1500
+
+defaults.paths.prepend.plugin: [ "topology:../plugin" ]
+plugin: [ static_import ]
+defaults.sources.extra: [ ../wait_times.yml ]
 
 addressing:
   loopback:
@@ -20,11 +26,16 @@ groups:
 
 nodes:
   dut:
-    module: [ bgp, ripv2, ospf ]
+    module: [ bgp, ripv2, ospf, routing ]
     bgp.as: 65000
     bgp.import: [ ripv2 ]
     ospf.import: [ ripv2 ]
-    ripv2.import: [ bgp, ospf ]
+    ripv2.import: [ bgp, ospf, static ]
+    routing.static:
+    - ipv4: 10.0.0.42/32
+      nexthop.node: r2
+    - ipv6: 2001:db8:42::42/128
+      nexthop.node: r2
   x1:
     bgp.as: 65100
     module: [ bgp ]
@@ -112,3 +123,11 @@ validate:
     wait_msg: Waiting for the loopback prefix to be originated and redistributed
     nodes: [ x1 ]
     plugin: bgp_prefix(pfx=nodes.r3.interfaces[0].ipv6,af='ipv6')
+  static_4:
+    description: Check whether static IPv4 prefix is redistributed into RIPv2
+    nodes: [ r3 ]
+    plugin: rt_prefix(pfx=nodes.dut.routing.static[0].ipv4,af='ipv4',proto='rip')
+  static_6:
+    description: Check whether static IPv6 prefix is redistributed into RIPv2
+    nodes: [ r3 ]
+    plugin: rt_prefix(pfx=nodes.dut.routing.static[1].ipv6,af='ipv6',proto='rip')
