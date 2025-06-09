@@ -1,4 +1,5 @@
 {% import "dellos10.bgp-macro.j2" as bgpcfg %}
+{% import "templates/routing/_redistribute.dellos10.j2" as redistribute %}
 {% for vname,vdata in vrfs.items() +%}
 !
 ip vrf {{ vname }}
@@ -37,10 +38,7 @@ router bgp {{ bgp.as }}
 {%   for af in ['ipv4','ipv6'] if af in vdata.af|default({}) %}
 !
  address-family {{ af }} unicast
-   redistribute connected
-{%     if 'ospf' in vdata %}
-   redistribute ospf {{ vdata.vrfidx }}
-{%     endif %}
+{{     redistribute.config(vdata.bgp,af=af,ospf_pid=vdata.vrfidx) }}
 {%     for n in vdata.networks|default([]) if af in n %}
    network {{ n[af]|ipaddr('0') }}
 {%     endfor %}
