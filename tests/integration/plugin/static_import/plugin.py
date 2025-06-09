@@ -1,7 +1,14 @@
-#
-# Check whether the device under test supports VRFs and removes
-# VRF links and related tests if needed
-#
+"""
+Check whether the device under test supports static routing and import of static
+routes into the routing protocol(s) configured on the device.
+
+If the device under test (the node using 'routing' module) does not support
+these features:
+
+* Removes 'routing' module and 'routing' attribute from the node
+* Removes 'static' from routing protocol imports
+* Adds a warning to the validation tests
+"""
 
 import typing
 from box import Box
