@@ -22,7 +22,7 @@ skipping: [r2]
 skipping: [r3]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, r2, r3
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, r2, r3
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [dut]
@@ -61,7 +61,7 @@ skipping: [r2]
 skipping: [r3]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, r2, r3
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, r2, r3
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
@@ -304,6 +304,177 @@ ok: [r2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)#"
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # Build hosts file
+    #
+    echo "INIT: setting hostname"
+    hostname dut
+    #
+    #
+    # Build hosts file
+    #
+    #
+    cat <<SCRIPT >/tmp/hosts
+    #
+    # Created by netlab initial
+    #
+    10.0.0.1 dut
+    2001:db8:1:1::1 dut
+    10.1.0.1 swp1.dut
+    2001:db8:3::1 swp1.dut
+    10.1.0.5 swp2.dut
+    2001:db8:3:1::1 swp2.dut
+    10.1.0.9 swp3.dut
+    2001:db8:3:2::1 swp3.dut
+    10.0.0.2 x1
+    2001:db8:1:2::1 x1
+    10.1.0.2 eth1.x1
+    2001:db8:3::2 eth1.x1
+    10.0.0.3 r2
+    2001:db8:1:3::1 r2
+    10.1.0.6 eth1.r2
+    2001:db8:3:1::3 eth1.r2
+    10.0.0.4 r3
+    2001:db8:1:4::1 r3
+    172.16.0.4 eth1.r3
+    2001:db8:2::4 eth1.r3
+    10.1.0.10 eth2.r3
+    2001:db8:3:2::4 eth2.r3
+    SCRIPT
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
+    #
+    # Disable ZTP
+    #
+    ztp --disable
+    #
+    #
+  
+    echo "INIT: Configuring system wide default MTU policy"
+    cat > /etc/network/ifupdown2/policy.d/mtu.json <<CONFIG
+    { "address": { "defaults": { "mtu": "1500" } } }
+    CONFIG
+    #
+    echo "INIT: creating loopback interface"
+    #
+    # Create loopback interface entry
+    #
+    cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
+    auto lo
+    iface lo inet loopback
+      address 10.0.0.1/32
+    iface lo inet6 loopback
+      address 2001:db8:1:1::1/64
+  
+    CONFIG
+    #
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    echo "INIT: creating other interface"
+    cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
+    auto swp1
+  
+    iface swp1 inet static
+      address 10.1.0.1/30
+  
+    iface swp1 inet6 static
+      address 2001:db8:3::1/64
+    auto swp2
+  
+    iface swp2 inet static
+      address 10.1.0.5/30
+  
+    iface swp2 inet6 static
+      address 2001:db8:3:1::1/64
+    auto swp3
+  
+    iface swp3 inet static
+      address 10.1.0.9/30
+  
+    iface swp3 inet6 static
+      address 2001:db8:3:2::1/64
+    CONFIG
+    #
+    echo "INIT: executing ifreload"
+    until ifreload -a; do
+      sleep 1
+    done
+    #
+    # For whatever crazy reason, I had to enable IPv6 in containers
+    #
+    sysctl -qw net.ipv6.conf.swp1.disable_ipv6=0
+    sysctl -qw net.ipv6.conf.swp2.disable_ipv6=0
+    sysctl -qw net.ipv6.conf.swp3.disable_ipv6=0
+    #
+    # Enable FRR modules for ['routing', 'bgp', 'ripv2', 'ospf']
+    #
+    #
+    # Enable FRR daemons
+    #
+    echo "bgpd=yes" >>/etc/frr/daemons
+    echo "ripd=yes" >>/etc/frr/daemons
+    echo "ripngd=yes" >>/etc/frr/daemons
+    echo "ospfd=yes" >>/etc/frr/daemons
+    echo "ospf6d=yes" >>/etc/frr/daemons
+  
+    systemctl enable frr.service
+    systemctl start frr.service
+    systemctl reload frr.service
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    ipv6 forwarding
+    !
+    interface swp1
+    ! no shutdown
+     description dut -> x1 [external]
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    interface swp2
+    ! no shutdown
+     description dut -> r2
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    interface swp3
+    ! no shutdown
+     description dut -> r3
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    #
+    # Enable LLDP
+    #
+    echo "INIT: enabling LLDP"
+    cat <<CONFIG >/etc/lldpd.d/system.conf
+    configure lldp tx-interval 30
+    configure lldp tx-hold 3
+    configure system interface pattern *,!eth0,swp*
+    CONFIG
+    service lldpd restart
 ok: [r3] => 
   msg: |-
     initial configuration for r3
@@ -425,183 +596,12 @@ ok: [r3] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)#"
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # Build hosts file
-    #
-    echo "INIT: setting hostname"
-    hostname dut
-    #
-    #
-    # Build hosts file
-    #
-    #
-    cat <<SCRIPT >/tmp/hosts
-    #
-    # Created by netlab initial
-    #
-    10.0.0.1 dut
-    2001:db8:1:1::1 dut
-    10.1.0.1 swp1.dut
-    2001:db8:3::1 swp1.dut
-    10.1.0.5 swp2.dut
-    2001:db8:3:1::1 swp2.dut
-    10.1.0.9 swp3.dut
-    2001:db8:3:2::1 swp3.dut
-    10.0.0.2 x1
-    2001:db8:1:2::1 x1
-    10.1.0.2 eth1.x1
-    2001:db8:3::2 eth1.x1
-    10.0.0.3 r2
-    2001:db8:1:3::1 r2
-    10.1.0.6 eth1.r2
-    2001:db8:3:1::3 eth1.r2
-    10.0.0.4 r3
-    2001:db8:1:4::1 r3
-    172.16.0.4 eth1.r3
-    2001:db8:2::4 eth1.r3
-    10.1.0.10 eth2.r3
-    2001:db8:3:2::4 eth2.r3
-    SCRIPT
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
-    #
-    # Disable ZTP
-    #
-    ztp --disable
-    #
-    #
-  
-    echo "INIT: Configuring system wide default MTU policy"
-    cat > /etc/network/ifupdown2/policy.d/mtu.json <<CONFIG
-    { "address": { "defaults": { "mtu": "1500" } } }
-    CONFIG
-    #
-    echo "INIT: creating loopback interface"
-    #
-    # Create loopback interface entry
-    #
-    cat >/etc/network/interfaces.d/10-loopback.intf <<CONFIG
-    auto lo
-    iface lo inet loopback
-      address 10.0.0.1/32
-    iface lo inet6 loopback
-      address 2001:db8:1:1::1/64
-  
-    CONFIG
-    #
-    until ifreload -a; do
-      sleep 1
-    done
-    #
-    echo "INIT: creating other interface"
-    cat >/etc/network/interfaces.d/11-physical.intf <<CONFIG
-    auto swp1
-  
-    iface swp1 inet static
-      address 10.1.0.1/30
-  
-    iface swp1 inet6 static
-      address 2001:db8:3::1/64
-    auto swp2
-  
-    iface swp2 inet static
-      address 10.1.0.5/30
-  
-    iface swp2 inet6 static
-      address 2001:db8:3:1::1/64
-    auto swp3
-  
-    iface swp3 inet static
-      address 10.1.0.9/30
-  
-    iface swp3 inet6 static
-      address 2001:db8:3:2::1/64
-    CONFIG
-    #
-    echo "INIT: executing ifreload"
-    until ifreload -a; do
-      sleep 1
-    done
-    #
-    # For whatever crazy reason, I had to enable IPv6 in containers
-    #
-    sysctl -qw net.ipv6.conf.swp1.disable_ipv6=0
-    sysctl -qw net.ipv6.conf.swp2.disable_ipv6=0
-    sysctl -qw net.ipv6.conf.swp3.disable_ipv6=0
-    #
-    # Enable FRR modules for ['bgp', 'ripv2', 'ospf']
-    #
-    #
-    # Enable FRR daemons
-    #
-    echo "bgpd=yes" >>/etc/frr/daemons
-    echo "ripd=yes" >>/etc/frr/daemons
-    echo "ripngd=yes" >>/etc/frr/daemons
-    echo "ospfd=yes" >>/etc/frr/daemons
-    echo "ospf6d=yes" >>/etc/frr/daemons
-  
-    systemctl enable frr.service
-    systemctl start frr.service
-    systemctl reload frr.service
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    ipv6 forwarding
-    !
-    interface swp1
-    ! no shutdown
-     description dut -> x1 [external]
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    interface swp2
-    ! no shutdown
-     description dut -> r2
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    interface swp3
-    ! no shutdown
-     description dut -> r3
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    #
-    # Enable LLDP
-    #
-    echo "INIT: enabling LLDP"
-    cat <<CONFIG >/etc/lldpd.d/system.conf
-    configure lldp tx-interval 30
-    configure lldp tx-hold 3
-    configure system interface pattern *,!eth0,swp*
-    CONFIG
-    service lldpd restart
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for x1, r2, r3
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for x1, r2, r3
 
-TASK [Render device configuration from /home/pipi/netlab_gh/netsim/ansible/templates/initial/cumulus.j2] ***
+TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/initial/cumulus.j2] ***
 ok: [dut]
 
 TASK [Create local temporary file] *********************************************
@@ -613,7 +613,7 @@ changed: [dut -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
 
-TASK [Remove temporary file /tmp/ansible.dut.jbohkts2temp] *********************
+TASK [Remove temporary file /tmp/ansible.dut.v8fea1ohtemp] *********************
 changed: [dut -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
@@ -625,11 +625,11 @@ skipping: [r2]
 skipping: [r3]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for x1, r2, r3
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, r2, r3
 
 TASK [template] ****************************************************************
-changed: [r2]
 changed: [x1]
+changed: [r2]
 changed: [r3]
 
 TASK [set_fact] ****************************************************************
@@ -637,12 +637,12 @@ ok: [x1]
 ok: [r2]
 ok: [r3]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r2]
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [x1]
+changed: [r2]
 changed: [r3]
 
-TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
 skipping: [r2]
 skipping: [r3]
@@ -656,9 +656,72 @@ ok: [r3]
 ok: [x1]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r2, r3, x1 => (item=bgp)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r2, r3, x1 => (item=ospf)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r2, r3, x1 => (item=ripv2)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, r3, x1 => (item=routing)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, r3, x1 => (item=bgp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, r3, x1 => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, r3, x1 => (item=ripv2)
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [dut]
+ok: [r2]
+ok: [r3]
+ok: [x1]
+
+TASK [Find configuration template for routing] *********************************
+skipping: [r2]
+skipping: [r3]
+ok: [dut]
+skipping: [x1]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r2]
+skipping: [r3]
+skipping: [x1]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [r2]
+skipping: [r3]
+skipping: [x1]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [r2]
+skipping: [r3]
+skipping: [x1]
+ok: [dut] => 
+  msg: |-
+    routing configuration for dut
+    =========================================
+    !
+    !
+    !
+    !
+    ! Global static routes
+    !
+    ip route 10.0.0.42/32 10.1.0.6 swp2
+    ipv6 route 2001:db8:42::42/128 2001:db8:3:1::3 swp2
+
+TASK [Deploy routing configuration] ********************************************
+skipping: [r2]
+skipping: [r3]
+skipping: [x1]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
+
+TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/routing/cumulus.j2] ***
+ok: [dut]
+
+TASK [Create local temporary file] *********************************************
+changed: [dut -> localhost]
+
+TASK [Create routing config script in local temporary file] ********************
+changed: [dut -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
+changed: [dut]
+
+TASK [Remove temporary file /tmp/ansible.dut.8a86snb8temp] *********************
+changed: [dut -> localhost]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [dut]
@@ -795,10 +858,10 @@ ok: [x1] =>
 TASK [Deploy bgp configuration] ************************************************
 skipping: [r2]
 skipping: [r3]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for x1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1
 
-TASK [Render device configuration from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/cumulus.j2] ***
+TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/bgp/cumulus.j2] ***
 ok: [dut]
 
 TASK [Create local temporary file] *********************************************
@@ -810,7 +873,7 @@ changed: [dut -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
 
-TASK [Remove temporary file /tmp/ansible.dut.gmqnvvnvtemp] *********************
+TASK [Remove temporary file /tmp/ansible.dut.nwr6x2rftemp] *********************
 changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
@@ -819,10 +882,10 @@ changed: [x1]
 TASK [set_fact] ****************************************************************
 ok: [x1]
 
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [x1]
 
-TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [x1]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
@@ -852,55 +915,6 @@ ok: [r2]
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r3]
 skipping: [x1]
-ok: [dut] => 
-  msg: |-
-    ospf configuration for dut
-    =========================================
-    !
-    router ospf
-     ospf router-id 10.0.0.1
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-     redistribute rip
-  
-    !
-    interface lo
-     ip ospf area 0.0.0.0
-    !
-    interface swp2
-    ! dut -> r2
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-    interface swp3
-    ! dut -> r3
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-    !
-    router ospf6
-     ospf6 router-id 10.0.0.1
-     timers lsa min-arrival 100
-     timers throttle spf 10 50 500
-     redistribute rip
-  
-  
-     interface lo area 0.0.0.0
-     interface swp2 area 0.0.0.0
-     interface swp3 area 0.0.0.0
-    !
-    interface swp2
-    ! dut -> r2
-     ipv6 ospf6 network point-to-point
-    !
-    interface swp3
-    ! dut -> r3
-     ipv6 ospf6 network point-to-point
-    !
-  
-    do write
 ok: [r2] => 
   msg: |-
     ospf configuration for r2
@@ -950,14 +964,63 @@ ok: [r2] =>
   
     !
     do write
+ok: [dut] => 
+  msg: |-
+    ospf configuration for dut
+    =========================================
+    !
+    router ospf
+     ospf router-id 10.0.0.1
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+     redistribute rip
+  
+    !
+    interface lo
+     ip ospf area 0.0.0.0
+    !
+    interface swp2
+    ! dut -> r2
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    interface swp3
+    ! dut -> r3
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    !
+    router ospf6
+     ospf6 router-id 10.0.0.1
+     timers lsa min-arrival 100
+     timers throttle spf 10 50 500
+     redistribute rip
+  
+  
+     interface lo area 0.0.0.0
+     interface swp2 area 0.0.0.0
+     interface swp3 area 0.0.0.0
+    !
+    interface swp2
+    ! dut -> r2
+     ipv6 ospf6 network point-to-point
+    !
+    interface swp3
+    ! dut -> r3
+     ipv6 ospf6 network point-to-point
+    !
+  
+    do write
 
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [r3]
 skipping: [x1]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r2
 
-TASK [Render device configuration from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/cumulus.j2] ***
+TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/ospf/cumulus.j2] ***
 ok: [dut]
 
 TASK [Create local temporary file] *********************************************
@@ -969,7 +1032,7 @@ changed: [dut -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
 
-TASK [Remove temporary file /tmp/ansible.dut._hsq2hr4temp] *********************
+TASK [Remove temporary file /tmp/ansible.dut.q0ktuai7temp] *********************
 changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
@@ -978,10 +1041,10 @@ changed: [r2]
 TASK [set_fact] ****************************************************************
 ok: [r2]
 
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 skipping: [r2]
 
-TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [r2]
 
 TASK [Figure out whether to deploy the module ripv2 on current device] *********
@@ -1037,6 +1100,7 @@ ok: [dut] =>
      timers basic 5 180 120
      redistribute bgp
      redistribute ospf
+     redistribute static
   
      network lo
      network swp2
@@ -1046,6 +1110,7 @@ ok: [dut] =>
      timers basic 5 180 120
      redistribute bgp
      redistribute ospf6
+     redistribute static
   
      network lo
      network swp2
@@ -1066,6 +1131,7 @@ ok: [dut] =>
      timers basic 5 180 120
      redistribute bgp
      redistribute ospf
+     redistribute static
   
      network lo
      network swp2
@@ -1075,6 +1141,7 @@ ok: [dut] =>
      timers basic 5 180 120
      redistribute bgp
      redistribute ospf6
+     redistribute static
   
      network lo
      network swp2
@@ -1112,10 +1179,10 @@ ok: [r3] =>
 TASK [Deploy ripv2 configuration] **********************************************
 skipping: [r2]
 skipping: [x1]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r3
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r3
 
-TASK [Render device configuration from /home/pipi/netlab_gh/netsim/ansible/templates/ripv2/cumulus.j2] ***
+TASK [Render device configuration from /home/pipi/net101/tools/netsim/ansible/templates/ripv2/cumulus.j2] ***
 ok: [dut]
 
 TASK [Create local temporary file] *********************************************
@@ -1127,7 +1194,7 @@ changed: [dut -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
 
-TASK [Remove temporary file /tmp/ansible.dut.ndhzm0ngtemp] *********************
+TASK [Remove temporary file /tmp/ansible.dut.nqzvjudhtemp] *********************
 changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
@@ -1136,22 +1203,24 @@ changed: [r3]
 TASK [set_fact] ****************************************************************
 ok: [r3]
 
-TASK [run /tmp/config.sh to deploy ripv2 config from /home/pipi/netlab_gh/netsim/ansible/templates/ripv2/frr.j2] ***
+TASK [run /tmp/config.sh to deploy ripv2 config from /home/pipi/net101/tools/netsim/ansible/templates/ripv2/frr.j2] ***
 skipping: [r3]
 
-TASK [run vtysh to import ripv2 config from /home/pipi/netlab_gh/netsim/ansible/templates/ripv2/frr.j2] ***
+TASK [run vtysh to import ripv2 config from /home/pipi/net101/tools/netsim/ansible/templates/ripv2/frr.j2] ***
 changed: [r3]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=51   changed=16   unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-r2                         : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
-r3                         : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
-x1                         : ok=31   changed=5    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+dut                        : ok=62   changed=20   unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+r2                         : ok=32   changed=4    unreachable=0    failed=0    skipped=24   rescued=0    ignored=0   
+r3                         : ok=32   changed=4    unreachable=0    failed=0    skipped=24   rescued=0    ignored=0   
+x1                         : ok=33   changed=5    unreachable=0    failed=0    skipped=24   rescued=0    ignored=0   
 
 
 
-Use this topology to test the two-way redistribution between RIPv2 and OSPFv2/OSPFv3/BGP
+Use this topology to test the two-way redistribution between RIPv2 and
+OSPFv2/OSPFv3/BGP The topology also tests redistribution of static routes into
+RIPv2 (when supported by the device-under-test)
 
