@@ -12,7 +12,7 @@ def post_transform(topology: Box) -> None:
     ospf_areas = ndata.get('ospf.areas',{})
     if not ospf_areas:
       continue
-    if ndata.get('loopback.ospf.area','0.0.0.0') != '0.0.0.0':  # Check if node is an ABR
+    if ndata.get('ospf.area','0.0.0.0') != '0.0.0.0':  # Check if node is an ABR
       for _,area in ospf_areas.items():
         area.pop('no_summary',None)
     global _config_name
