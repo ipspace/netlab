@@ -63,10 +63,10 @@ EVPN module supports IBGP- and EBGP-based EVPN:
 | Cumulus 5.x (NVUE) | ✅  | ✅  | ✅  | ✅  |
 | Dell OS 10 [❗](caveats-os10) | ✅  | ✅  | ✅  | ✅  |
 | FRR                | ✅  | ✅  | ✅  | ✅  |
-| Nokia SR Linux     | ✅  | ✅  |  ❌  |  ❌  |
-| Nokia SR OS        | ✅  | ✅  | ✅  | ✅  |
+| Nokia SR Linux     | ✅  | ✅  | ✅  | ✅  |
+| Nokia SR OS        | ✅  | ✅  | ✅  |  ❌  |
 | vJunos-switch      | ✅  | ✅  |  ❌  |  ❌  |
-| VyOS               | ✅  | ✅  |  ❌  |  ❌  |
+| VyOS               | ✅  | ✅  |  ❌  | ✅  |
 
 With additional nerd knobs ([more details](evpn-weird-designs)), it's possible to implement the more convoluted designs, including:
 
@@ -76,14 +76,14 @@ With additional nerd knobs ([more details](evpn-weird-designs)), it's possible t
 | Operating system   | IBGP over<br>EBGP | EBGP<br>over EBGP |
 | ------------------ | :-: | :-: |
 | Arista EOS         | ✅  | ✅  |
-| Aruba AOS-CX       | ✅  | ❌   |
+| Aruba AOS-CX       | ✅  | ✅  |
 | Cisco Nexus OS     | ❌   | ❌   |
 | Cumulus Linux 4.x  | ✅  | ✅  |
 | Cumulus 5.x (NVUE) | ✅  | ✅  |
 | Dell OS 10         | ✅  | ❌   |
 | FRR                | ✅  | ✅  |
-| Nokia SR Linux     | ✅  | ❌   |
-| Nokia SR OS        | ✅  | ❌   |
+| Nokia SR Linux     | ✅  | ✅  |
+| Nokia SR OS        | ✅  | ✅  |
 | vJunos-switch      | ✅  | ✅   |
 | VyOS               | ✅  | ❌   |
 

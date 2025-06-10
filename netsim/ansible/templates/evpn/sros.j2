@@ -1,4 +1,5 @@
 updates:
+{# Configure EVPN AF on BGP neighbors #}
 - path: configure/router[router-name=Base]
   val:
     bgp:
@@ -52,18 +53,9 @@ updates:
      mac-ip:
       advertise: False
 {% endif %}
-    vxlan:
-    - vxlan-instance: 1
-      bgp-instance: 1
-      admin-state: enable
-      ecmp: {{ 1 if 'ixr' in clab.type else 8 }}
-{% if is_routed %}
-   routed-vpls:
-    vxlan-ipv4-tep-ecmp: True # Enable ECMP for routed VXLAN
-{% endif %}
 {% endmacro %}
 
-{% macro evpn_vprn %}
+{% macro evpn_vprn() %}
 {# Add it to the VPRN, enable evpn-tunnel and configure RT #}
 - path: configure/service/vprn[service-name={{ vname }}]
   val:
@@ -84,30 +76,88 @@ updates:
       ecmp: {{ 1 if 'ixr' in clab.type else 8 }}
 {% endmacro %}
 
-{# Configure EVPN parameters for VLANs, TODO bundles #}
+{# Configure EVPN parameters for simple MAC-VRF (VLAN) services #}
 {% if vlans is defined %}
 {%   for vname,vdata in vlans.items() if vdata.evpn.evi is defined %}
 - path: configure/service/vpls[service-name=vlan{{ vdata.id }}]
   val:
-   bgp:
-   - bgp-instance: 1
-     # route-distinguisher: "{{ vdata.evpn.rd }}" # use auto-rd
-     route-target:
-      export: "target:{{ vdata.evpn.export[0] }}"
-      import: "target:{{ vdata.evpn.import[0] }}"
-
-{%     if evpn.transport|default('vxlan') == 'mpls' %}
-   bgp-evpn:
-    evi: {{ vdata.evpn.evi }}
-    # TODO if evpn.transport == 'mpls'
-    mpls:
-    - bgp-instance: 1
-      admin-state: enable
-      ecmp: {{ 2 if 'ixr' in clab.type else 32 }}
-      # ingress-replication-bum-label: True # TODO, requires reserved label range
-      auto-bind-tunnel:
-       resolution: any
-       ecmp: {{ 2 if 'ixr' in clab.type else 32 }}
+{%     if vdata.mode|default('irb') == 'irb' %}
+    routed-vpls:
+      vxlan-ipv4-tep-ecmp: True # Enable ECMP for routed VXLAN
 {%     endif %}
+    bgp:
+    - bgp-instance: 1
+      route-distinguisher: "{{ vdata.evpn.rd }}"
+      route-target:
+        export: "target:{{ vdata.evpn.export[0] }}"
+        import: "target:{{ vdata.evpn.import[0] }}"
+    bgp-evpn:
+      evi: {{ vdata.evpn.evi }}
+      routes:
+        mac-ip:
+          advertise: True
+{%     if evpn.transport|default('vxlan') == 'mpls' %}
+    # TODO if evpn.transport == 'mpls'
+      mpls:
+      - bgp-instance: 1
+        admin-state: enable
+        ecmp: {{ 2 if 'ixr' in clab.type else 32 }}
+      # ingress-replication-bum-label: True # TODO, requires reserved label range
+        auto-bind-tunnel:
+          resolution: any
+          ecmp: {{ 2 if 'ixr' in clab.type else 32 }}
+{%     else %}
+      vxlan:
+      - vxlan-instance: 1
+        bgp-instance: 1
+        admin-state: enable
+        ecmp: {{ 1 if 'ixr' in clab.type else 8 }}
+{%     endif %}
+{%   endfor %}
+{% endif %}
+
+{# Configure EVPN parameters for IP-VRF services #}
+{% if vrfs is defined %}
+{%   for vname,vdata in vrfs.items() if vdata.evpn.transit_vni is defined %}
+- path: configure/service/vprn[service-name={{ vname }}]
+  val:
+    bgp-evpn:
+{%     if evpn.transport|default('vxlan') == 'mpls' %}
+    # TODO if evpn.transport == 'mpls'
+      mpls:
+      - bgp-instance: 1
+        admin-state: enable
+        ecmp: {{ 2 if 'ixr' in clab.type else 32 }}
+      # ingress-replication-bum-label: True # TODO, requires reserved label range
+        auto-bind-tunnel:
+          resolution: any
+          ecmp: {{ 2 if 'ixr' in clab.type else 32 }}
+{%     else %}
+      vxlan:
+      - vxlan-instance: 1
+        bgp-instance: 1
+        admin-state: enable
+        route-distinguisher: "{{ vdata.rd }}"
+        vrf-target:
+          export-community: "target:{{ vdata.export[0] }}"
+          import-community: "target:{{ vdata.import[0] }}"
+
+    vxlan:
+      instance:
+      - vxlan-instance: 1
+        vni: {{ vdata.evpn.transit_vni }}
+{%     endif %}
+{%     for proto in ['bgp','ospf','isis','ripv2'] if proto in vdata %}
+#
+- path: configure/policy-options/policy-statement[name={{ proto }}_{{ vname }}_export]
+  val:
+    entry:
+    - entry-id: 2000
+      from:
+        protocol:
+          name: [ evpn-ifl ]
+      action:
+        action-type: accept
+{%     endfor %}
 {%   endfor %}
 {% endif %}

@@ -28,17 +28,21 @@ def vrf_route_leaking(node: Box) -> None:
         node=node,
         category=log.IncorrectValue)
 
-def evpn_vrf_rp(node: Box) -> None:
-  for vname,vdata in node.get('vrfs',{}).items():
-    if not vdata.get('evpn',None):
+"""
+It looks like SR-OS does not apply AS-path loop detection parameters on EVPN AF
+"""
+def evpn_allowas_in(node: Box) -> None:
+  for ngb in node.get('bgp.neighbors',[]):
+    if not ngb.get('evpn',None):
       continue
-    if vdata.get('bgp.neighbors',[]) or vdata.get('ospf'):
-      report_quirk(
-        text=f'We did not implement propagation of EVPN ip-prefix routes into VRF routing protocols',
-        more_data = f'Node {node.name} vrf {vname}',
-        quirk='evpn_rp',
-        node=node,
-        category=log.IncorrectValue)
+    if not ngb.get('allowas_in',None):
+      continue
+    report_quirk(
+      text=f'node {node.name}: cannot use "allowas_in" on BGP neighbor {node.name} with EVPN address family',
+      more_hints = f'It looks SR/OS does not apply AS-path loop detection parameters to EVPN AF',
+      quirk='evpn_allowas_in',
+      node=node,
+      category=log.IncorrectValue)
 
 def set_port_mode(intf: Box, mode: str) -> None:
   if '_port_mode' not in intf:
@@ -105,7 +109,7 @@ class SROS(_Quirks):
     ipv4_unnumbered(node)
     vrf_route_leaking(node)
     vxlan_vtep(node)
-    evpn_vrf_rp(node)
+    evpn_allowas_in(node)
   
   def check_config_sw(self, node: Box, topology: Box) -> None:
     need_ansible_collection(node,'nokia.grpc',version='1.0.2')
