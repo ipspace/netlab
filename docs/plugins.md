@@ -18,6 +18,7 @@
    plugins/mlag.vtep.md
    plugins/multilab.md
    plugins/node.clone.md
+   plugins/ospf.stub.md
    plugins/vrrp.version.md
    plugins/firewall.zonebased.md
 ```

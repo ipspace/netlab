@@ -1,6 +1,8 @@
 import typing
 from box import Box
 from netsim import api
+from netsim.augment import devices
+from netsim.utils import log
 
 _config_name = "ospf.stub"
 _require = [ "ospf" ]
@@ -11,6 +13,10 @@ def post_transform(topology: Box) -> None:
       continue
     ospf_areas = ndata.get('ospf.areas',{})
     if not ospf_areas:
+      continue
+    features = devices.get_device_features(ndata,topology.defaults)
+    if 'stub' not in features.ospf:
+      log.error(f"Node {ndata.name} (device {ndata.device}) not supported by the ospf.stub plugin")
       continue
     if ndata.get('ospf.area','0.0.0.0') != '0.0.0.0':  # Check if node is an ABR
       for _,area in ospf_areas.items():
