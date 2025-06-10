@@ -1,5 +1,5 @@
 (plugin-ospf-stub)=
-# Fine-grained control over OSPF area route exchange
+# Fine-grained Control Over OSPF Area Route Propagation
 
 The **ospf.stub** plugin extends OSPF topology modeling by adding native support for stub, totally stubby, NSSA, 
 and totally NSSA areas. These specialized OSPF area types are commonly used to simplify routing in enterprise networks 
