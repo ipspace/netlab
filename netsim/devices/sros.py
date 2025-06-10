@@ -65,6 +65,22 @@ def set_port_modes(node: Box) -> None:
     else:
       set_port_mode(t_intf,'access')
 
+"""
+Configuring non-system VTEP on SR-OS is too much trouble. Let's check if the VTEP is equal to loopback IPv4
+"""
+def vxlan_vtep(node: Box) -> None:
+  vtep = node.get('vxlan.vtep',None)
+  if not vtep:
+    return
+  lbip = node.get('loopback.ipv4','x/x').split('/')[0]
+  if vtep != lbip:
+    report_quirk(
+      text=f'Node {node.name} must use loopback IPv4 address as the VXLAN VTEP',
+      more_hints = [ 'SR/OS supports non-system VTEP, but it was too much hassle to configure it' ],
+      quirk='vxlan_vtep',
+      node=node,
+      category=log.IncorrectValue)
+
 def adjust_system_ipv6_prefix(node: Box) -> None:
   v6lb = node.get('loopback.ipv6',None)
   if not v6lb:
@@ -88,6 +104,7 @@ class SROS(_Quirks):
     set_port_modes(node)
     ipv4_unnumbered(node)
     vrf_route_leaking(node)
+    vxlan_vtep(node)
     evpn_vrf_rp(node)
   
   def check_config_sw(self, node: Box, topology: Box) -> None:
