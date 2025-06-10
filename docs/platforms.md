@@ -220,7 +220,7 @@ The following interface parameters are configured on supported network operating
 | Cumulus Linux         | ✅  | ✅  | ✅  | ✅  |
 | Cumulus Linux 5.x (NVUE) | ✅ | ❌ | ✅  | ✅  |
 | Dell OS10             | ✅  |  ❌  | ✅  | ✅  |
-| Fortinet FortiOS      | ✅  | ✅  |  ❌  |  ❌  |
+| Fortinet FortiOS      | ✅  | ✅  |  ✅[❗](caveats-fortios)  |  ❌  |
 | FRR                   | ✅  | ✅  | ✅  | ✅  |
 | Generic Linux         |  ❌  |  ❌  | ✅  |  ❌  |
 | Junos[^Junos]         | ✅  | ✅  | ✅  |  ❌  |

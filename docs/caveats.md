@@ -279,6 +279,14 @@ diag debug application httpsd -1
 * We're not testing Fortinet implementation as part of the regular integration tests; the configuration scripts might be outdated. If you encounter a problem, please open an issue.
 ```
 
+## Fortinet FortiOS 7.4.x/7.6.x
+
+* Starting from FortiOS 7.2, FortiGate devices do not come with a license out of the box. Users can link *one* device with a permanent evaluation license to an account on the Fortinet support portal.
+* The license needs to be added before creating the Vagrant box.
+* There are restrictions associated with the evaluation license, including a maximum of three interfaces, firewall policies, and routes... For more detailed information, refer to the [evaluation license restrictions](https://docs.fortinet.com/document/fortigate/7.6.3/administration-guide/441460).
+* The license is linked to the serial number of the device and the UUID. To ensure that the serial number remains consistent each time you start the lab, set the `libvirt.uuid` node parameter to the appropriate value.
+* MTU can be defined on the interface level, default is forced to 1500 bytes due to a different behaviour between `7.4.8` and `7.6.3` releases.
+
 ### OSPF Caveats
 
 * Fortinet implementation of OSPF configuration module does not implement per-interface OSPF areas. All interfaces belong to the OSPF area defined in the node data.
