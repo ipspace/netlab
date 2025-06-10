@@ -79,8 +79,8 @@ skipping: [dut]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [r1]
-ok: [r2]
 ok: [r3]
+ok: [r2]
 ok: [r4]
 ok: [dut]
 
@@ -110,9 +110,9 @@ ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
 ok: [r1]
+ok: [r3]
 ok: [r2]
 ok: [r4]
-ok: [r3]
 ok: [dut]
 
 TASK [fail] ********************************************************************
@@ -227,108 +227,6 @@ ok: [r1] =>
      no shutdown
      description r1 -> dut
      ip address 10.1.0.2/30
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
-ok: [r3] => 
-  msg: |-
-    initial configuration for r3
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)# "
-    echo
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
-    #
-    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
-    #
-    sysctl -w net.ipv4.ip_forward=1
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    # Set system defaults
-    #
-    # Send ARP requests from a sane source IP address
-    #
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Create loopbacks, stub and lag/bond devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    ip link set eth1 down
-    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
-    ip link set eth1 up
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-  
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname r3
-    !
-    ip forwarding
-    vrf mgmt
-     exit-vrf
-    !
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ip address 10.0.0.4/32
-    !
-    interface eth1
-     no shutdown
-     description r3 -> dut
-     ip address 10.1.0.10/30
     !
     do write
     CONFIG
@@ -538,6 +436,108 @@ ok: [r4] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [r3] => 
+  msg: |-
+    initial configuration for r3
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname r3
+    !
+    ip forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.4/32
+    !
+    interface eth1
+     no shutdown
+     description r3 -> dut
+     ip address 10.1.0.10/30
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
 ok: [dut] => 
   msg: |-
     initial configuration for dut
@@ -624,6 +624,7 @@ ok: [dut] =>
   
         interface ge-0/0/2.0;
         interface ge-0/0/3.0;
+        interface lo0.2;
   
       }
   
@@ -641,6 +642,7 @@ ok: [dut] =>
   
         interface ge-0/0/0.0;
         interface ge-0/0/1.0;
+        interface lo0.1;
   
       }
   
@@ -698,6 +700,22 @@ ok: [dut] =>
           }
   
       }
+      lo0.1 {
+        description "VRF Loopback red";
+  
+          family inet {
+            address 10.2.0.1/32;
+          }
+  
+      }
+      lo0.2 {
+        description "VRF Loopback blue";
+  
+          family inet {
+            address 10.2.0.2/32;
+          }
+  
+      }
     }
     protocols {
       lldp {
@@ -725,10 +743,10 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, r3, r4
 
 TASK [template] ****************************************************************
-changed: [r3]
 changed: [r1]
-changed: [r2]
 changed: [r4]
+changed: [r3]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -737,9 +755,9 @@ ok: [r3]
 ok: [r4]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r1]
-changed: [r3]
 changed: [r2]
+changed: [r3]
+changed: [r1]
 changed: [r4]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -756,8 +774,8 @@ PLAY [Deploy module-specific configurations] ***********************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [r1]
 ok: [r2]
-ok: [dut]
 ok: [r3]
+ok: [dut]
 ok: [r4]
 
 TASK [Deploy individual configuration modules] *********************************
@@ -768,14 +786,14 @@ TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [r1]
 ok: [r2]
 ok: [r3]
-ok: [r4]
 ok: [dut]
+ok: [r4]
 
 TASK [Find configuration template for ospf] ************************************
 ok: [r1]
-ok: [r3]
-ok: [r2]
 ok: [dut]
+ok: [r2]
+ok: [r3]
 ok: [r4]
 
 TASK [fail] ********************************************************************
@@ -787,9 +805,9 @@ skipping: [r4]
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [r1]
-ok: [r4]
 ok: [dut]
 ok: [r2]
+ok: [r4]
 ok: [r3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -797,34 +815,6 @@ ok: [dut] =>
   msg: |-
     ospf configuration for dut
     =========================================
-ok: [r1] => 
-  msg: |-
-    ospf configuration for r1
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.2
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! r1 -> dut
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    do write
 ok: [r3] => 
   msg: |-
     ospf configuration for r3
@@ -843,25 +833,25 @@ ok: [r3] =>
     !
     interface lo
     !
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.3
     !
     interface eth1
     ! r3 -> dut
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.3
      ip ospf network point-to-point
     !
   
     !
     do write
-ok: [r2] => 
+ok: [r1] => 
   msg: |-
-    ospf configuration for r2
+    ospf configuration for r1
     =========================================
     !
     ! OSPFv2 FRR configuration
     !
     router ospf
-     ospf router-id 10.0.0.3
+     ospf router-id 10.0.0.2
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
@@ -871,11 +861,11 @@ ok: [r2] =>
     !
     interface lo
     !
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.2
     !
     interface eth1
-    ! r2 -> dut
-     ip ospf area 0.0.0.0
+    ! r1 -> dut
+     ip ospf area 0.0.0.2
      ip ospf network point-to-point
     !
   
@@ -899,11 +889,39 @@ ok: [r4] =>
     !
     interface lo
     !
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.4
     !
     interface eth1
     ! r4 -> dut
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.4
+     ip ospf network point-to-point
+    !
+  
+    !
+    do write
+ok: [r2] => 
+  msg: |-
+    ospf configuration for r2
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.3
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.2
+    !
+    interface eth1
+    ! r2 -> dut
+     ip ospf area 0.0.0.2
      ip ospf network point-to-point
     !
   
@@ -918,10 +936,10 @@ TASK [junos_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/t
 ok: [dut]
 
 TASK [template] ****************************************************************
-changed: [r4]
-changed: [r1]
 changed: [r3]
+changed: [r1]
 changed: [r2]
+changed: [r4]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -936,16 +954,16 @@ skipping: [r3]
 skipping: [r4]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [r2]
 changed: [r1]
-changed: [r3]
+changed: [r2]
 changed: [r4]
+changed: [r3]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [r1]
-ok: [r3]
 ok: [r2]
 ok: [dut]
+ok: [r3]
 ok: [r4]
 
 TASK [Find configuration template for vrf] *************************************
@@ -1017,14 +1035,18 @@ ok: [dut] =>
     protocols {
       ospf {
         export vrf-blue-ospf-export;
-        area 0.0.0.0 {
+        area 0.0.0.3 {
           interface ge-0/0/2.0 {
             interface-type p2p;
           }
         }
-        area 0.0.0.0 {
+        area 0.0.0.4 {
           interface ge-0/0/3.0 {
             interface-type p2p;
+          }
+        }
+        area 0.0.0.0 {
+          interface lo0.2 {
           }
         }
       }
@@ -1069,14 +1091,18 @@ ok: [dut] =>
     protocols {
       ospf {
         export vrf-red-ospf-export;
-        area 0.0.0.0 {
+        area 0.0.0.2 {
           interface ge-0/0/0.0 {
             interface-type p2p;
           }
         }
-        area 0.0.0.0 {
+        area 0.0.0.2 {
           interface ge-0/0/1.0 {
             interface-type p2p;
+          }
+        }
+        area 0.0.0.2 {
+          interface lo0.1 {
           }
         }
       }

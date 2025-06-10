@@ -290,15 +290,15 @@ ok: [dut] =>
   
   
   
-    interface loopback 0
-        ip address 10.0.0.1/32
-    !
     interface mgmt
         no lldp transmit
         no lldp receive
     !
   
   
+    interface loopback 0
+        ip address 10.0.0.1/32
+    !
   
     interface 1/1/1
         shutdown
@@ -308,7 +308,6 @@ ok: [dut] =>
         ip address 10.1.0.1/30
         no shutdown
     !
-  
   
     interface 1/1/2
         shutdown
@@ -347,8 +346,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -370,8 +369,112 @@ ok: [x2]
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=bgp)
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=bgp)
+
+TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [Find configuration template for ospf] ************************************
+skipping: [x2]
+ok: [x1]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+skipping: [x2]
+ok: [x1]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [x2]
+ok: [dut] => 
+  msg: |-
+    ospf configuration for dut
+    =========================================
+    !
+    router ospf 1
+        router-id 10.0.0.1
+  
+  
+  
+  
+  
+        area 0.0.0.0
+        area 0.0.0.0
+  
+    !
+    interface loopback 0
+        ip ospf 1 area 0.0.0.0
+    !
+    interface 1/1/1
+    ! dut -> x1
+        ip ospf 1 area 0.0.0.0
+        ip ospf network point-to-point
+    !
+ok: [x1] => 
+  msg: |-
+    ospf configuration for x1
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.2
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! x1 -> dut
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    do write
+
+TASK [Deploy ospf configuration] ***********************************************
+skipping: [x2]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1
+
+TASK [tempfile] ****************************************************************
+changed: [dut -> localhost]
+
+TASK [template] ****************************************************************
+changed: [dut -> localhost]
+
+TASK [aoscx_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/arubacx.j2] ***
+changed: [dut]
+
+TASK [file] ********************************************************************
+changed: [dut -> localhost]
+
+TASK [template] ****************************************************************
+changed: [x1]
+
+TASK [set_fact] ****************************************************************
+ok: [x1]
+
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+skipping: [x1]
+
+TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+changed: [x1]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [x1]
@@ -519,8 +622,8 @@ TASK [file] ********************************************************************
 changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -532,110 +635,6 @@ skipping: [x2]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [x2]
-changed: [x1]
-
-TASK [Figure out whether to deploy the module ospf on current device] **********
-ok: [x1]
-ok: [x2]
-ok: [dut]
-
-TASK [Find configuration template for ospf] ************************************
-skipping: [x2]
-ok: [x1]
-ok: [dut]
-
-TASK [fail] ********************************************************************
-skipping: [dut]
-skipping: [x1]
-skipping: [x2]
-
-TASK [Find configuration deployment deploy_script for ospf] ********************
-skipping: [x2]
-ok: [x1]
-ok: [dut]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [x2]
-ok: [dut] => 
-  msg: |-
-    ospf configuration for dut
-    =========================================
-    !
-    router ospf 1
-        router-id 10.0.0.1
-  
-  
-  
-  
-  
-        area 0.0.0.0
-        area 0.0.0.0
-  
-    !
-    interface loopback 0
-        ip ospf 1 area 0.0.0.0
-    !
-    interface 1/1/1
-    ! dut -> x1
-        ip ospf 1 area 0.0.0.0
-        ip ospf network point-to-point
-    !
-ok: [x1] => 
-  msg: |-
-    ospf configuration for x1
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.2
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! x1 -> dut
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    do write
-
-TASK [Deploy ospf configuration] ***********************************************
-skipping: [x2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1
-
-TASK [tempfile] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [template] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [aoscx_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/arubacx.j2] ***
-changed: [dut]
-
-TASK [file] ********************************************************************
-changed: [dut -> localhost]
-
-TASK [template] ****************************************************************
-changed: [x1]
-
-TASK [set_fact] ****************************************************************
-ok: [x1]
-
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-skipping: [x1]
-
-TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [x1]
 
 PLAY [Deploy custom deployment templates] **************************************

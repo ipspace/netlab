@@ -9,15 +9,15 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [l2]
 ok: [spine]
 ok: [h1]
-ok: [l1]
 ok: [h2]
+ok: [l1]
 
 TASK [Find device readiness script] ********************************************
 ok: [l2]
+ok: [h2]
 ok: [h1]
 ok: [spine]
 ok: [l1]
-ok: [h2]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [l2]
@@ -59,8 +59,8 @@ TASK [Wait for ge-0/0/0 interface] *********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/vjunos-switch.yml for spine, l1
 
 TASK [Wait for ge-0/0/0 to appear] *********************************************
-ok: [spine]
 ok: [l1]
+ok: [spine]
 
 TASK [Normalize config on bridge-like devices] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for spine, l1, l2, h1, h2
@@ -69,14 +69,14 @@ TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [l2]
 ok: [h1]
 ok: [h2]
-ok: [spine]
 ok: [l1]
+ok: [spine]
 
 TASK [Find configuration template for normalize] *******************************
+ok: [spine]
 ok: [l2]
 ok: [h1]
 ok: [h2]
-ok: [spine]
 ok: [l1]
 
 TASK [fail] ********************************************************************
@@ -87,10 +87,10 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [spine]
 ok: [l2]
 ok: [h1]
 ok: [h2]
-ok: [spine]
 ok: [l1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -112,10 +112,10 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for spi
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [l2]
-ok: [h1]
-ok: [h2]
 ok: [spine]
+ok: [h1]
 ok: [l1]
+ok: [h2]
 
 TASK [Find configuration template for initial] *********************************
 ok: [l2]
@@ -209,6 +209,61 @@ ok: [h2] =>
     ip addr add 172.31.1.5/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+ok: [spine] => 
+  msg: |-
+    initial configuration for spine
+    =========================================
+    system {
+      host-name spine;
+      static-host-mapping {
+        l1 inet 10.0.0.2;
+        l2 inet 10.0.0.3;
+        h1 inet 172.31.1.4;
+        h2 inet 172.31.1.5;
+      }
+    }
+  
+  
+    interfaces {
+      ge-0/0/0 {
+        mtu 1614;
+      }
+      ge-0/0/1 {
+        mtu 1614;
+      }
+  
+      lo0.0 {
+  
+          family inet {
+            address 10.0.0.1/32;
+          }
+  
+      }
+      ge-0/0/0.0 {
+        description "spine -> l1 [external]";
+  
+          family inet {
+            address 10.1.0.2/30;
+          }
+  
+      }
+      ge-0/0/1.0 {
+        description "spine -> l2 [external]";
+  
+          family inet {
+            address 10.1.0.6/30;
+          }
+  
+      }
+    }
+    protocols {
+      lldp {
+        interface fxp0 {
+          disable;
+        }
+        interface all;
+      }
+    }
 ok: [l2] => 
   msg: |-
     initial configuration for l2
@@ -325,61 +380,6 @@ ok: [l2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [spine] => 
-  msg: |-
-    initial configuration for spine
-    =========================================
-    system {
-      host-name spine;
-      static-host-mapping {
-        l1 inet 10.0.0.2;
-        l2 inet 10.0.0.3;
-        h1 inet 172.31.1.4;
-        h2 inet 172.31.1.5;
-      }
-    }
-  
-  
-    interfaces {
-      ge-0/0/0 {
-        mtu 1614;
-      }
-      ge-0/0/1 {
-        mtu 1614;
-      }
-  
-      lo0.0 {
-  
-          family inet {
-            address 10.0.0.1/32;
-          }
-  
-      }
-      ge-0/0/0.0 {
-        description "spine -> l1 [external]";
-  
-          family inet {
-            address 10.1.0.2/30;
-          }
-  
-      }
-      ge-0/0/1.0 {
-        description "spine -> l2 [external]";
-  
-          family inet {
-            address 10.1.0.6/30;
-          }
-  
-      }
-    }
-    protocols {
-      lldp {
-        interface fxp0 {
-          disable;
-        }
-        interface all;
-      }
-    }
 ok: [l1] => 
   msg: |-
     initial configuration for l1
@@ -490,12 +490,12 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -506,12 +506,12 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-rvdncgdm.sh] ***********************
-changed: [h2 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-e22tv2wy.sh] ***********************
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -639,9 +639,9 @@ ok: [spine]
 
 TASK [Find configuration template for routing] *********************************
 skipping: [l1]
+ok: [h1]
 skipping: [l2]
 skipping: [spine]
-ok: [h1]
 ok: [h2]
 
 TASK [fail] ********************************************************************
@@ -661,7 +661,6 @@ ok: [h2]
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [l1]
 skipping: [l2]
-skipping: [spine]
 ok: [h1] => 
   msg: |-
     routing configuration for h1
@@ -677,6 +676,7 @@ ok: [h1] =>
     #
     # Print the final routing table
     ip route
+skipping: [spine]
 ok: [h2] => 
   msg: |-
     routing configuration for h2
@@ -700,16 +700,16 @@ skipping: [spine]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
 
 TASK [Define script filename and determine whether to execute in netns] ********
-ok: [h2]
 ok: [h1]
+ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
 skipping: [h1]
@@ -720,10 +720,10 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Container configuration for routing based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-9phmrxxo.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-o9ecdmb8.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -731,15 +731,15 @@ TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [h1]
 ok: [h2]
 ok: [l2]
-ok: [spine]
 ok: [l1]
+ok: [spine]
 
 TASK [Find configuration template for bgp] *************************************
 skipping: [h1]
 skipping: [h2]
 ok: [l2]
-ok: [spine]
 ok: [l1]
+ok: [spine]
 
 TASK [fail] ********************************************************************
 skipping: [h1]
@@ -804,6 +804,136 @@ ok: [l2] =>
     !
     !
     do write
+ok: [l1] => 
+  msg: |-
+    bgp configuration for l1
+    =========================================
+  
+    routing-options {
+      autonomous-system 65200;
+      router-id 10.0.0.2
+    }
+  
+  
+    policy-options community x-route-permit-mark members large:65535:0:65536;
+  
+    policy-options {
+      delete: policy-statement bgp-advertise;
+      delete: policy-statement bgp-redistribute;
+      delete: route-filter-list bgp-announce;
+    }
+  
+    policy-options {
+  
+      route-filter-list bgp-announce {
+      }
+  
+      policy-statement next-hop-self {
+        term next-hop-self {
+          from {
+            route-type external;
+          }
+          then {
+            next-hop self;
+          }
+        }
+      }
+  
+      policy-statement bgp-advertise {
+        term advertise {
+          from {
+            protocol direct;
+            interface [
+               lo0.0  ];
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+  
+        term originate {
+          from {
+            protocol static;
+            route-filter-list bgp-announce;
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+  
+      }
+  
+      policy-statement bgp-redistribute {
+        term redis_bgp {
+          from protocol bgp;
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+      }
+  
+      policy-statement bgp-final {
+        term final-option {
+          from community x-route-permit-mark;
+          then {
+            community delete x-route-permit-mark;
+            accept;
+          }
+        }
+        term default-reject {
+          then reject;
+        }
+      }
+  
+      policy-statement bgp-initial {
+        term initial-cleanup {
+          from community x-route-permit-mark;
+          then {
+            community delete x-route-permit-mark;
+            next policy;
+          }
+        }
+      }
+  
+    }
+    protocols {
+      delete: bgp;
+    }
+    protocols {
+      bgp {
+        group ibgp-peers-ipv4 {
+          type internal;
+          export [
+              next-hop-self
+              bgp-advertise bgp-redistribute bgp-final
+            ];
+          advertise-inactive;
+        }
+        group ebgp-peers {
+          export [
+              bgp-advertise bgp-redistribute bgp-final
+            ];
+          advertise-inactive;
+          neighbor 10.1.0.2 {
+  
+            peer-as 65100;
+            description spine;
+            family inet {
+              unicast;
+            }
+          }
+          neighbor 10.0.0.1 {
+  
+            peer-as 65100;
+            description spine;
+            shutdown;
+          }
+        }
+      }
+    }
 ok: [spine] => 
   msg: |-
     bgp configuration for spine
@@ -948,136 +1078,6 @@ ok: [spine] =>
         }
       }
     }
-ok: [l1] => 
-  msg: |-
-    bgp configuration for l1
-    =========================================
-  
-    routing-options {
-      autonomous-system 65200;
-      router-id 10.0.0.2
-    }
-  
-  
-    policy-options community x-route-permit-mark members large:65535:0:65536;
-  
-    policy-options {
-      delete: policy-statement bgp-advertise;
-      delete: policy-statement bgp-redistribute;
-      delete: route-filter-list bgp-announce;
-    }
-  
-    policy-options {
-  
-      route-filter-list bgp-announce {
-      }
-  
-      policy-statement next-hop-self {
-        term next-hop-self {
-          from {
-            route-type external;
-          }
-          then {
-            next-hop self;
-          }
-        }
-      }
-  
-      policy-statement bgp-advertise {
-        term advertise {
-          from {
-            protocol direct;
-            interface [
-               lo0.0  ];
-          }
-          then {
-            community add x-route-permit-mark;
-            next policy;
-          }
-        }
-  
-        term originate {
-          from {
-            protocol static;
-            route-filter-list bgp-announce;
-          }
-          then {
-            community add x-route-permit-mark;
-            next policy;
-          }
-        }
-  
-      }
-  
-      policy-statement bgp-redistribute {
-        term redis_bgp {
-          from protocol bgp;
-          then {
-            community add x-route-permit-mark;
-            next policy;
-          }
-        }
-      }
-  
-      policy-statement bgp-final {
-        term final-option {
-          from community x-route-permit-mark;
-          then {
-            community delete x-route-permit-mark;
-            accept;
-          }
-        }
-        term default-reject {
-          then reject;
-        }
-      }
-  
-      policy-statement bgp-initial {
-        term initial-cleanup {
-          from community x-route-permit-mark;
-          then {
-            community delete x-route-permit-mark;
-            next policy;
-          }
-        }
-      }
-  
-    }
-    protocols {
-      delete: bgp;
-    }
-    protocols {
-      bgp {
-        group ibgp-peers-ipv4 {
-          type internal;
-          export [
-              next-hop-self
-              bgp-advertise bgp-redistribute bgp-final
-            ];
-          advertise-inactive;
-        }
-        group ebgp-peers {
-          export [
-              bgp-advertise bgp-redistribute bgp-final
-            ];
-          advertise-inactive;
-          neighbor 10.1.0.2 {
-  
-            peer-as 65100;
-            description spine;
-            family inet {
-              unicast;
-            }
-          }
-          neighbor 10.0.0.1 {
-  
-            peer-as 65100;
-            description spine;
-            shutdown;
-          }
-        }
-      }
-    }
 
 TASK [Deploy bgp configuration] ************************************************
 skipping: [h1]
@@ -1127,48 +1127,13 @@ TASK [Find configuration deployment deploy_script for vxlan] *******************
 skipping: [h1]
 skipping: [h2]
 skipping: [spine]
-ok: [l2]
 ok: [l1]
+ok: [l2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
 skipping: [h2]
 skipping: [spine]
-ok: [l2] => 
-  msg: |-
-    vxlan configuration for l2
-    =========================================
-    #!/bin/bash
-    #
-    set -e # Exit immediately when any command fails
-    #
-  
-  
-  
-    # Create L3 VNIs with bridges and add to correct vrf table
-  
-    # Create VXLAN L2 interface per vni
-    ip link add vxlan1000 type vxlan \
-      id 1000 \
-      dstport 4789 \
-      local 10.0.0.3 nolearning
-    #
-    # Add it to the VLAN bridge (create if needed for l3 vnis); disable STP
-    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
-    ip link add vlan1000 type bridge
-    ip link set up dev vlan1000
-    fi
-    ip link set dev vxlan1000 master vlan1000
-    ip link set vlan1000 type bridge stp_state 0
-  
-    # Do not generate ipv6 link-local address for VXLAN devices
-    ip link set mtu 1500 addrgenmode none dev vxlan1000
-    # Disable dynamic MAC learning for evpn, see https://docs.frrouting.org/en/latest/evpn.html
-    bridge link set dev vxlan1000 learning off
-    ip link set up dev vxlan1000
-  
-  
-    exit $?
 ok: [l1] => 
   msg: |-
     vxlan configuration for l1
@@ -1208,6 +1173,41 @@ ok: [l1] =>
     }
   
     protocols evpn encapsulation vxlan;
+ok: [l2] => 
+  msg: |-
+    vxlan configuration for l2
+    =========================================
+    #!/bin/bash
+    #
+    set -e # Exit immediately when any command fails
+    #
+  
+  
+  
+    # Create L3 VNIs with bridges and add to correct vrf table
+  
+    # Create VXLAN L2 interface per vni
+    ip link add vxlan1000 type vxlan \
+      id 1000 \
+      dstport 4789 \
+      local 10.0.0.3 nolearning
+    #
+    # Add it to the VLAN bridge (create if needed for l3 vnis); disable STP
+    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
+    ip link add vlan1000 type bridge
+    ip link set up dev vlan1000
+    fi
+    ip link set dev vxlan1000 master vlan1000
+    ip link set vlan1000 type bridge stp_state 0
+  
+    # Do not generate ipv6 link-local address for VXLAN devices
+    ip link set mtu 1500 addrgenmode none dev vxlan1000
+    # Disable dynamic MAC learning for evpn, see https://docs.frrouting.org/en/latest/evpn.html
+    bridge link set dev vxlan1000 learning off
+    ip link set up dev vxlan1000
+  
+  
+    exit $?
 
 TASK [Deploy vxlan configuration] **********************************************
 skipping: [h1]
@@ -1232,8 +1232,8 @@ TASK [run vtysh to import vxlan config from /home/pipi/net101/tools/netsim/ansib
 skipping: [l2]
 
 TASK [Figure out whether to deploy the module evpn on current device] **********
-ok: [h2]
 ok: [h1]
+ok: [h2]
 ok: [l2]
 ok: [l1]
 ok: [spine]
@@ -1255,13 +1255,48 @@ skipping: [spine]
 TASK [Find configuration deployment deploy_script for evpn] ********************
 skipping: [h1]
 skipping: [h2]
-ok: [l1]
 ok: [l2]
+ok: [l1]
 ok: [spine]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
 skipping: [h2]
+ok: [l2] => 
+  msg: |-
+    evpn configuration for l2
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    cat >/tmp/evpn_config <<CONFIG
+    router bgp 65201
+     address-family l2vpn evpn
+      advertise-all-vni
+      advertise-svi-ip
+      advertise ipv4 unicast
+  
+    ! Configure explicit Route Targets and RD per L2 VNI; auto-derived differs
+      vni 1000
+       rd 10.0.0.3:1000
+       route-target import 65000:1000
+       route-target export 65000:1000
+      exit-vni
+  
+      neighbor 10.0.0.1 activate
+    #  neighbor 10.0.0.1 soft-reconfiguration inbound
+  
+     exit-address-family
+    !
+  
+    exit
+  
+    ! L3 VRF EVPN handling
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/evpn_config
+    vtysh -c 'clear bgp *'
 ok: [l1] => 
   msg: |-
     evpn configuration for l1
@@ -1317,41 +1352,6 @@ ok: [l1] =>
         }
       }
     }
-ok: [l2] => 
-  msg: |-
-    evpn configuration for l2
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    cat >/tmp/evpn_config <<CONFIG
-    router bgp 65201
-     address-family l2vpn evpn
-      advertise-all-vni
-      advertise-svi-ip
-      advertise ipv4 unicast
-  
-    ! Configure explicit Route Targets and RD per L2 VNI; auto-derived differs
-      vni 1000
-       rd 10.0.0.3:1000
-       route-target import 65000:1000
-       route-target export 65000:1000
-      exit-vni
-  
-      neighbor 10.0.0.1 activate
-    #  neighbor 10.0.0.1 soft-reconfiguration inbound
-  
-     exit-address-family
-    !
-  
-    exit
-  
-    ! L3 VRF EVPN handling
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/evpn_config
-    vtysh -c 'clear bgp *'
 ok: [spine] => 
   msg: |-
     evpn configuration for spine
@@ -1420,9 +1420,9 @@ skipping: [l2]
 skipping: [spine]
 
 TASK [Check is the configuration template is a file] ***************************
+ok: [l1 -> localhost]
 ok: [l2 -> localhost]
 ok: [spine -> localhost]
-ok: [l1 -> localhost]
 
 TASK [fail] ********************************************************************
 skipping: [l1]
@@ -1435,9 +1435,9 @@ skipping: [l1]
 skipping: [spine]
 
 TASK [Find custom configuration deployment script] *****************************
-ok: [spine]
-ok: [l2]
 ok: [l1]
+ok: [l2]
+ok: [spine]
 
 TASK [Run the configuration deployment script] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for l1, spine

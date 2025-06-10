@@ -4,15 +4,15 @@
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [xf]
 ok: [probe]
 ok: [dut_a]
+ok: [xf]
 ok: [dut_c]
 
 TASK [Find device readiness script] ********************************************
 ok: [xf]
-ok: [probe]
 ok: [dut_a]
+ok: [probe]
 ok: [dut_c]
 
 TASK [Wait for device to become ready] *****************************************
@@ -25,14 +25,14 @@ TASK [Normalize config on bridge-like devices] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut_a, dut_c, xf, probe
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
-ok: [xf]
 ok: [probe]
+ok: [xf]
 ok: [dut_a]
 ok: [dut_c]
 
 TASK [Find configuration template for normalize] *******************************
-ok: [xf]
 ok: [probe]
+ok: [xf]
 ok: [dut_a]
 ok: [dut_c]
 
@@ -44,9 +44,9 @@ skipping: [probe]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [xf]
-ok: [probe]
 ok: [dut_a]
 ok: [dut_c]
+ok: [probe]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut_a]
@@ -190,6 +190,35 @@ ok: [xf] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [dut_a] => 
+  msg: |-
+    initial configuration for dut_a
+    =========================================
+    hostname dut-a
+    !
+    lldp
+    !
+  
+  
+  
+    interface mgmt
+        no lldp transmit
+        no lldp receive
+    !
+  
+  
+    interface loopback 0
+        ip address 10.0.0.1/32
+    !
+  
+    interface 1/1/1
+        shutdown
+        mtu 9198
+        description dut_a -> probe
+        ip address 10.1.0.2/30
+        no shutdown
+    !
+    !
 ok: [probe] => 
   msg: |-
     initial configuration for probe
@@ -301,35 +330,6 @@ ok: [probe] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [dut_a] => 
-  msg: |-
-    initial configuration for dut_a
-    =========================================
-    hostname dut-a
-    !
-    lldp
-    !
-  
-  
-  
-    interface loopback 0
-        ip address 10.0.0.1/32
-    !
-    interface mgmt
-        no lldp transmit
-        no lldp receive
-    !
-  
-  
-  
-    interface 1/1/1
-        shutdown
-        mtu 9198
-        description dut_a -> probe
-        ip address 10.1.0.2/30
-        no shutdown
-    !
-    !
 ok: [dut_c] => 
   msg: |-
     initial configuration for dut_c
@@ -341,15 +341,15 @@ ok: [dut_c] =>
   
   
   
-    interface loopback 0
-        ip address 10.0.0.2/32
-    !
     interface mgmt
         no lldp transmit
         no lldp receive
     !
   
   
+    interface loopback 0
+        ip address 10.0.0.2/32
+    !
   
     interface 1/1/1
         shutdown
@@ -358,7 +358,6 @@ ok: [dut_c] =>
         ip address 10.1.0.6/30
         no shutdown
     !
-  
   
     interface 1/1/2
         shutdown
@@ -400,8 +399,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for xf, probe
 
 TASK [template] ****************************************************************
-changed: [xf]
 changed: [probe]
+changed: [xf]
 
 TASK [set_fact] ****************************************************************
 ok: [xf]
@@ -424,8 +423,153 @@ ok: [dut_a]
 ok: [dut_c]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut_a, dut_c, probe, xf => (item=bgp)
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut_a, dut_c, probe, xf => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut_a, dut_c, probe, xf => (item=bgp)
+
+TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [probe]
+ok: [xf]
+ok: [dut_a]
+ok: [dut_c]
+
+TASK [Find configuration template for ospf] ************************************
+skipping: [xf]
+ok: [probe]
+ok: [dut_a]
+ok: [dut_c]
+
+TASK [fail] ********************************************************************
+skipping: [dut_a]
+skipping: [dut_c]
+skipping: [probe]
+skipping: [xf]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+skipping: [xf]
+ok: [probe]
+ok: [dut_a]
+ok: [dut_c]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [xf]
+ok: [dut_a] => 
+  msg: |-
+    ospf configuration for dut_a
+    =========================================
+    !
+    router ospf 1
+        router-id 10.0.0.1
+  
+     default-information originate always metric 40
+  
+  
+  
+  
+        area 0.0.0.0
+        area 0.0.0.0
+  
+    !
+    interface loopback 0
+        ip ospf 1 area 0.0.0.0
+    !
+    interface 1/1/1
+    ! dut_a -> probe
+        ip ospf 1 area 0.0.0.0
+        ip ospf network point-to-point
+    !
+ok: [probe] => 
+  msg: |-
+    ospf configuration for probe
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.3
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! probe -> dut_a
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    interface eth2
+    ! probe -> dut_c
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+     ip ospf cost 10
+    !
+  
+    !
+    do write
+ok: [dut_c] => 
+  msg: |-
+    ospf configuration for dut_c
+    =========================================
+    !
+    router ospf 1
+        router-id 10.0.0.2
+  
+     default-information originate metric 20
+  
+  
+  
+  
+        area 0.0.0.0
+        area 0.0.0.0
+  
+    !
+    interface loopback 0
+        ip ospf 1 area 0.0.0.0
+    !
+    interface 1/1/1
+    ! dut_c -> probe
+        ip ospf 1 area 0.0.0.0
+        ip ospf network point-to-point
+        ip ospf cost 10
+    !
+
+TASK [Deploy ospf configuration] ***********************************************
+skipping: [xf]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for dut_a, dut_c
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for probe
+
+TASK [tempfile] ****************************************************************
+changed: [dut_c -> localhost]
+changed: [dut_a -> localhost]
+
+TASK [template] ****************************************************************
+changed: [dut_a -> localhost]
+changed: [dut_c -> localhost]
+
+TASK [aoscx_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/arubacx.j2] ***
+changed: [dut_a]
+changed: [dut_c]
+
+TASK [file] ********************************************************************
+changed: [dut_a -> localhost]
+changed: [dut_c -> localhost]
+
+TASK [template] ****************************************************************
+changed: [probe]
+
+TASK [set_fact] ****************************************************************
+ok: [probe]
+
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+skipping: [probe]
+
+TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+changed: [probe]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [probe]
@@ -441,8 +585,8 @@ ok: [dut_c]
 
 TASK [fail] ********************************************************************
 skipping: [dut_a]
-skipping: [dut_c]
 skipping: [probe]
+skipping: [dut_c]
 skipping: [xf]
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
@@ -544,151 +688,6 @@ skipping: [xf]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [xf]
-
-TASK [Figure out whether to deploy the module ospf on current device] **********
-ok: [probe]
-ok: [xf]
-ok: [dut_a]
-ok: [dut_c]
-
-TASK [Find configuration template for ospf] ************************************
-skipping: [xf]
-ok: [probe]
-ok: [dut_c]
-ok: [dut_a]
-
-TASK [fail] ********************************************************************
-skipping: [dut_a]
-skipping: [dut_c]
-skipping: [probe]
-skipping: [xf]
-
-TASK [Find configuration deployment deploy_script for ospf] ********************
-skipping: [xf]
-ok: [probe]
-ok: [dut_a]
-ok: [dut_c]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [xf]
-ok: [dut_a] => 
-  msg: |-
-    ospf configuration for dut_a
-    =========================================
-    !
-    router ospf 1
-        router-id 10.0.0.1
-  
-     default-information originate always metric 40
-  
-  
-  
-  
-        area 0.0.0.0
-        area 0.0.0.0
-  
-    !
-    interface loopback 0
-        ip ospf 1 area 0.0.0.0
-    !
-    interface 1/1/1
-    ! dut_a -> probe
-        ip ospf 1 area 0.0.0.0
-        ip ospf network point-to-point
-    !
-ok: [dut_c] => 
-  msg: |-
-    ospf configuration for dut_c
-    =========================================
-    !
-    router ospf 1
-        router-id 10.0.0.2
-  
-     default-information originate metric 20
-  
-  
-  
-  
-        area 0.0.0.0
-        area 0.0.0.0
-  
-    !
-    interface loopback 0
-        ip ospf 1 area 0.0.0.0
-    !
-    interface 1/1/1
-    ! dut_c -> probe
-        ip ospf 1 area 0.0.0.0
-        ip ospf network point-to-point
-        ip ospf cost 10
-    !
-ok: [probe] => 
-  msg: |-
-    ospf configuration for probe
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.3
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! probe -> dut_a
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-    interface eth2
-    ! probe -> dut_c
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-     ip ospf cost 10
-    !
-  
-    !
-    do write
-
-TASK [Deploy ospf configuration] ***********************************************
-skipping: [xf]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for dut_a, dut_c
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for probe
-
-TASK [tempfile] ****************************************************************
-changed: [dut_c -> localhost]
-changed: [dut_a -> localhost]
-
-TASK [template] ****************************************************************
-changed: [dut_a -> localhost]
-changed: [dut_c -> localhost]
-
-TASK [aoscx_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/arubacx.j2] ***
-changed: [dut_c]
-changed: [dut_a]
-
-TASK [file] ********************************************************************
-changed: [dut_a -> localhost]
-changed: [dut_c -> localhost]
-
-TASK [template] ****************************************************************
-changed: [probe]
-
-TASK [set_fact] ****************************************************************
-ok: [probe]
-
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-skipping: [probe]
-
-TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [probe]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched

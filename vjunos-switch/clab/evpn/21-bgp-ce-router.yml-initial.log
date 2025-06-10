@@ -7,9 +7,9 @@ PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [s2]
+ok: [s1]
 ok: [ce1]
 ok: [ce2]
-ok: [s1]
 
 TASK [Find device readiness script] ********************************************
 ok: [s2]
@@ -37,7 +37,6 @@ FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-
 FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (39 retries left).
 FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (38 retries left).
 FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (37 retries left).
-FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (36 retries left).
 ok: [s1 -> localhost]
 
 TASK [Confirm s1 SSH server works] *********************************************
@@ -56,14 +55,14 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1,
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [s2]
 ok: [ce1]
-ok: [ce2]
 ok: [s1]
+ok: [ce2]
 
 TASK [Find configuration template for normalize] *******************************
-ok: [ce1]
 ok: [s2]
-ok: [s1]
 ok: [ce2]
+ok: [ce1]
+ok: [s1]
 
 TASK [fail] ********************************************************************
 skipping: [s1]
@@ -94,14 +93,14 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1,
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [s2]
-ok: [ce2]
 ok: [ce1]
+ok: [ce2]
 ok: [s1]
 
 TASK [Find configuration template for initial] *********************************
 ok: [s2]
-ok: [s1]
 ok: [ce1]
+ok: [s1]
 ok: [ce2]
 
 TASK [fail] ********************************************************************
@@ -111,219 +110,12 @@ skipping: [ce1]
 skipping: [ce2]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [ce2]
 ok: [s2]
 ok: [s1]
 ok: [ce1]
-ok: [ce2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [ce1] => 
-  msg: |-
-    initial configuration for ce1
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)# "
-    echo
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
-    #
-    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
-    #
-    sysctl -w net.ipv4.ip_forward=1
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    # Set system defaults
-    #
-    # Send ARP requests from a sane source IP address
-    #
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Create loopbacks, stub and lag/bond devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    ip link set eth1 down
-    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
-    ip link set eth1 up
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-  
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname ce1
-    !
-    ip forwarding
-    vrf mgmt
-     exit-vrf
-    !
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ip address 10.0.0.1/32
-    !
-    interface eth1
-     no shutdown
-     description ce1 -> s1 [external]
-     ip address 10.1.0.5/30
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
-ok: [s1] => 
-  msg: |-
-    initial configuration for s1
-    =========================================
-    system {
-      host-name s1;
-      static-host-mapping {
-        s2 inet 10.0.0.4;
-        ce1 inet 10.0.0.1;
-        ce2 inet 10.0.0.2;
-      }
-    }
-  
-  
-  
-  
-  
-  
-    policy-options {
-      community tg_65000_1 members target:65000:1;
-    }
-  
-  
-  
-    policy-options {
-      policy-statement vrf-tenant-rt-export {
-        term 1 {
-          then {
-            community add tg_65000_1;
-            accept;
-          }
-        }
-      }
-  
-  
-  
-      policy-statement vrf-tenant-rt-import {
-        term 1 {
-          from community [ tg_65000_1 ];
-          then accept;
-        }
-        term default {
-          then reject;
-        }
-      }
-    }
-  
-    routing-instances {
-  
-      tenant {
-        instance-type vrf;
-        route-distinguisher 65000:1;
-  
-        vrf-import vrf-tenant-rt-import;
-        vrf-export vrf-tenant-rt-export;
-  
-        routing-options {
-          auto-export;
-        }
-  
-        interface ge-0/0/1.0;
-  
-      }
-  
-    }
-    interfaces {
-      ge-0/0/0 {
-        mtu 1614;
-      }
-      ge-0/0/1 {
-        mtu 1514;
-      }
-  
-      lo0.0 {
-  
-          family inet {
-            address 10.0.0.3/32;
-          }
-  
-      }
-      ge-0/0/0.0 {
-        description "s1 -> s2";
-  
-          family inet {
-            address 10.1.0.1/30;
-          }
-  
-      }
-      ge-0/0/1.0 {
-        description "s1 -> ce1 [external]";
-  
-          family inet {
-            address 10.1.0.6/30;
-          }
-  
-      }
-    }
-    protocols {
-      lldp {
-        interface fxp0 {
-          disable;
-        }
-        interface all;
-      }
-    }
 ok: [s2] => 
   msg: |-
     initial configuration for s2
@@ -537,6 +329,213 @@ ok: [ce2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [ce1] => 
+  msg: |-
+    initial configuration for ce1
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname ce1
+    !
+    ip forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.1/32
+    !
+    interface eth1
+     no shutdown
+     description ce1 -> s1 [external]
+     ip address 10.1.0.5/30
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
+ok: [s1] => 
+  msg: |-
+    initial configuration for s1
+    =========================================
+    system {
+      host-name s1;
+      static-host-mapping {
+        s2 inet 10.0.0.4;
+        ce1 inet 10.0.0.1;
+        ce2 inet 10.0.0.2;
+      }
+    }
+  
+  
+  
+  
+  
+  
+    policy-options {
+      community tg_65000_1 members target:65000:1;
+    }
+  
+  
+  
+    policy-options {
+      policy-statement vrf-tenant-rt-export {
+        term 1 {
+          then {
+            community add tg_65000_1;
+            accept;
+          }
+        }
+      }
+  
+  
+  
+      policy-statement vrf-tenant-rt-import {
+        term 1 {
+          from community [ tg_65000_1 ];
+          then accept;
+        }
+        term default {
+          then reject;
+        }
+      }
+    }
+  
+    routing-instances {
+  
+      tenant {
+        instance-type vrf;
+        route-distinguisher 65000:1;
+  
+        vrf-import vrf-tenant-rt-import;
+        vrf-export vrf-tenant-rt-export;
+  
+        routing-options {
+          auto-export;
+        }
+  
+        interface ge-0/0/1.0;
+  
+      }
+  
+    }
+    interfaces {
+      ge-0/0/0 {
+        mtu 1614;
+      }
+      ge-0/0/1 {
+        mtu 1514;
+      }
+  
+      lo0.0 {
+  
+          family inet {
+            address 10.0.0.3/32;
+          }
+  
+      }
+      ge-0/0/0.0 {
+        description "s1 -> s2";
+  
+          family inet {
+            address 10.1.0.1/30;
+          }
+  
+      }
+      ge-0/0/1.0 {
+        description "s1 -> ce1 [external]";
+  
+          family inet {
+            address 10.1.0.6/30;
+          }
+  
+      }
+    }
+    protocols {
+      lldp {
+        interface fxp0 {
+          disable;
+        }
+        interface all;
+      }
+    }
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for s1
@@ -557,14 +556,14 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for s2, ce1, ce2
 
 TASK [template] ****************************************************************
-changed: [ce1]
 changed: [ce2]
 changed: [s2]
+changed: [ce1]
 
 TASK [set_fact] ****************************************************************
-ok: [s2]
 ok: [ce1]
 ok: [ce2]
+ok: [s2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [ce1]
@@ -939,9 +938,9 @@ skipping: [ce2]
 skipping: [s2]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [s2]
 changed: [ce2]
 changed: [ce1]
+changed: [s2]
 
 TASK [junos_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/junos.j2] ***
 [WARNING]:  statement not found

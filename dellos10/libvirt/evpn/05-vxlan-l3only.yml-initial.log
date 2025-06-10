@@ -285,13 +285,14 @@ ok: [s1] =>
     !
     default mtu 1532
     !
-    interface loopback0
-     ip address 10.0.0.3/32
-     no ipv6 enable
-    !
     interface mgmt1/1/1
      no lldp transmit
      no lldp receive
+    !
+    interface loopback0
+     no shutdown
+     ip address 10.0.0.3/32
+     no ipv6 enable
     !
     interface ethernet1/1/1
      no shutdown
@@ -349,8 +350,8 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
@@ -368,9 +369,9 @@ TASK [Container configuration for initial based on /home/pipi/net101/tools/netsi
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-ispv9r0d.sh] ***********************
-changed: [h1 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-5b8c8a9r.sh] ***********************
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -383,8 +384,8 @@ ok: [s1]
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1, s2 => (item=vlan)
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1, s2 => (item=routing)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1, s2 => (item=bgp)
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1, s2 => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1, s2 => (item=bgp)
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1, s2 => (item=vrf)
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1, s2 => (item=vxlan)
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1, s2 => (item=evpn)
@@ -555,8 +556,8 @@ changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
 skipping: [h1]
@@ -567,12 +568,115 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Container configuration for routing based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
+changed: [h2 -> localhost]
+changed: [h1 -> localhost]
+
+TASK [Remove temporary file /tmp/h1_routing-_19pap2h.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-epdzg0id.sh] ***********************
-changed: [h2 -> localhost]
-changed: [h1 -> localhost]
+TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [h1]
+ok: [h2]
+ok: [s2]
+ok: [s1]
+
+TASK [Find configuration template for ospf] ************************************
+skipping: [h1]
+skipping: [h2]
+ok: [s2]
+ok: [s1]
+
+TASK [fail] ********************************************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [s1]
+skipping: [s2]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+skipping: [h1]
+skipping: [h2]
+ok: [s2]
+ok: [s1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [h1]
+skipping: [h2]
+ok: [s1] => 
+  msg: |-
+    ospf configuration for s1
+    =========================================
+  
+    router ospf 1
+     router-id 10.0.0.3
+  
+  
+  
+     timers lsa arrival 100
+     timers spf 10 50 500
+     timers throttle lsa all 100
+    !
+    interface loopback0
+     ip ospf 1 area 0.0.0.0
+     ip ospf passive
+    !
+    interface ethernet1/1/2
+    ! s1 -> s2
+     ip ospf 1 area 0.0.0.0
+     ip ospf network point-to-point
+    !
+ok: [s2] => 
+  msg: |-
+    ospf configuration for s2
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.4
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth2
+    ! s2 -> s1
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    do write
+
+TASK [Deploy ospf configuration] ***********************************************
+skipping: [h1]
+skipping: [h2]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/dellos10.yml for s1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s2
+
+TASK [wait_for_connection] *****************************************************
+skipping: [s1]
+
+TASK [dellos10_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/dellos10.j2, save to startup=yes] ***
+changed: [s1]
+
+TASK [template] ****************************************************************
+changed: [s2]
+
+TASK [set_fact] ****************************************************************
+ok: [s2]
+
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+skipping: [s2]
+
+TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+changed: [s2]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [h1]
@@ -713,109 +817,6 @@ TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsi
 skipping: [s2]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [s2]
-
-TASK [Figure out whether to deploy the module ospf on current device] **********
-ok: [h1]
-ok: [h2]
-ok: [s2]
-ok: [s1]
-
-TASK [Find configuration template for ospf] ************************************
-skipping: [h1]
-skipping: [h2]
-ok: [s2]
-ok: [s1]
-
-TASK [fail] ********************************************************************
-skipping: [h1]
-skipping: [h2]
-skipping: [s1]
-skipping: [s2]
-
-TASK [Find configuration deployment deploy_script for ospf] ********************
-skipping: [h1]
-skipping: [h2]
-ok: [s2]
-ok: [s1]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [h1]
-skipping: [h2]
-ok: [s1] => 
-  msg: |-
-    ospf configuration for s1
-    =========================================
-  
-    router ospf 1
-     router-id 10.0.0.3
-  
-  
-  
-     timers lsa arrival 100
-     timers spf 10 50 500
-     timers throttle lsa all 100
-    !
-    interface loopback0
-     ip ospf 1 area 0.0.0.0
-     ip ospf passive
-    !
-    interface ethernet1/1/2
-    ! s1 -> s2
-     ip ospf 1 area 0.0.0.0
-     ip ospf network point-to-point
-    !
-ok: [s2] => 
-  msg: |-
-    ospf configuration for s2
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.4
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth2
-    ! s2 -> s1
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    do write
-
-TASK [Deploy ospf configuration] ***********************************************
-skipping: [h1]
-skipping: [h2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/dellos10.yml for s1
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s2
-
-TASK [wait_for_connection] *****************************************************
-skipping: [s1]
-
-TASK [dellos10_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/dellos10.j2, save to startup=yes] ***
-changed: [s1]
-
-TASK [template] ****************************************************************
-changed: [s2]
-
-TASK [set_fact] ****************************************************************
-ok: [s2]
-
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-skipping: [s2]
-
-TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [s2]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********

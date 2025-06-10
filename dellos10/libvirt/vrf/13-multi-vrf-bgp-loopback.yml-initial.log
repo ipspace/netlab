@@ -6,16 +6,16 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [r1]
 ok: [r2]
-ok: [r3]
 ok: [dut]
+ok: [r3]
 ok: [r4]
 
 TASK [Find device readiness script] ********************************************
 ok: [r1]
 ok: [r2]
 ok: [r3]
-ok: [dut]
 ok: [r4]
+ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [dut]
@@ -38,8 +38,8 @@ TASK [Find configuration template for normalize] *******************************
 ok: [r1]
 ok: [r2]
 ok: [r3]
-ok: [dut]
 ok: [r4]
+ok: [dut]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -51,9 +51,9 @@ skipping: [r4]
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [r1]
 ok: [r2]
-ok: [r3]
-ok: [r4]
 ok: [dut]
+ok: [r4]
+ok: [r3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
@@ -76,15 +76,15 @@ TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [r1]
 ok: [r2]
 ok: [r3]
-ok: [r4]
 ok: [dut]
+ok: [r4]
 
 TASK [Find configuration template for initial] *********************************
 ok: [r1]
 ok: [r2]
 ok: [r3]
-ok: [dut]
 ok: [r4]
+ok: [dut]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -530,13 +530,14 @@ ok: [dut] =>
     !
     default mtu 1532
     !
-    interface loopback0
-     ip address 10.0.0.1/32
-     no ipv6 enable
-    !
     interface mgmt1/1/1
      no lldp transmit
      no lldp receive
+    !
+    interface loopback0
+     no shutdown
+     ip address 10.0.0.1/32
+     no ipv6 enable
     !
     interface ethernet1/1/1
      no shutdown
@@ -612,8 +613,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, r3, r4
 
 TASK [template] ****************************************************************
-changed: [r1]
 changed: [r2]
+changed: [r1]
 changed: [r3]
 changed: [r4]
 
@@ -624,9 +625,9 @@ ok: [r3]
 ok: [r4]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r1]
-changed: [r3]
 changed: [r2]
+changed: [r3]
+changed: [r1]
 changed: [r4]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -650,8 +651,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [r1]
-ok: [dut]
 ok: [r2]
+ok: [dut]
 ok: [r3]
 ok: [r4]
 
@@ -712,31 +713,6 @@ ok: [r1] =>
     !
     !
     do write
-ok: [dut] => 
-  msg: |-
-    bgp configuration for dut
-    =========================================
-    !
-    router bgp 65000
-      log-neighbor-changes
-  
-    ! define a generic unnumbered template to be used for eBGP unnumbered...
-    ! additionally, need to define link-local-only-nexthop as per Dell suggested "Cumulus workaround"
-    ! WTF Dell...
-      template unnumbered_ebgp
-        link-local-only-nexthop
-        exit
-  
-      router-id 10.0.0.1
-    !
-    !
-     address-family ipv4 unicast
-    !
-      network 10.0.0.1/32
-    !
-    !
-    !
-    !
 ok: [r2] => 
   msg: |-
     bgp configuration for r2
@@ -768,6 +744,66 @@ ok: [r2] =>
       no neighbor 10.1.0.5 send-community all
       neighbor 10.1.0.5 send-community standard
       neighbor 10.1.0.5 send-community large
+    !
+    !
+    !
+    do write
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+    !
+    router bgp 65000
+      log-neighbor-changes
+  
+    ! define a generic unnumbered template to be used for eBGP unnumbered...
+    ! additionally, need to define link-local-only-nexthop as per Dell suggested "Cumulus workaround"
+    ! WTF Dell...
+      template unnumbered_ebgp
+        link-local-only-nexthop
+        exit
+  
+      router-id 10.0.0.1
+    !
+    !
+     address-family ipv4 unicast
+    !
+      network 10.0.0.1/32
+    !
+    !
+    !
+    !
+ok: [r4] => 
+  msg: |-
+    bgp configuration for r4
+    =========================================
+    !
+    router bgp 65104
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.5
+    !
+      neighbor 10.1.0.13 remote-as 65000
+      neighbor 10.1.0.13 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.5/32
+    !
+    !
+    !
+      neighbor 10.1.0.13 activate
+      no neighbor 10.1.0.13 send-community all
+      neighbor 10.1.0.13 send-community standard
+      neighbor 10.1.0.13 send-community large
     !
     !
     !
@@ -807,41 +843,6 @@ ok: [r3] =>
     !
     !
     do write
-ok: [r4] => 
-  msg: |-
-    bgp configuration for r4
-    =========================================
-    !
-    router bgp 65104
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.5
-    !
-      neighbor 10.1.0.13 remote-as 65000
-      neighbor 10.1.0.13 description dut
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-      network 10.0.0.5/32
-    !
-    !
-    !
-      neighbor 10.1.0.13 activate
-      no neighbor 10.1.0.13 send-community all
-      neighbor 10.1.0.13 send-community standard
-      neighbor 10.1.0.13 send-community large
-    !
-    !
-    !
-    do write
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/dellos10.yml for dut
@@ -854,10 +855,10 @@ TASK [dellos10_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [r2]
-changed: [r1]
-changed: [r4]
 changed: [r3]
+changed: [r2]
+changed: [r4]
+changed: [r1]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -872,16 +873,16 @@ skipping: [r3]
 skipping: [r4]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [r1]
 changed: [r2]
 changed: [r3]
+changed: [r1]
 changed: [r4]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [r1]
 ok: [r2]
-ok: [r3]
 ok: [dut]
+ok: [r3]
 ok: [r4]
 
 TASK [Find configuration template for vrf] *************************************
