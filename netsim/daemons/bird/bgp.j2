@@ -4,7 +4,7 @@ router id {{ bgp.router_id }};
 
 {% for pfx in bgp.originate|default([]) %}
 {%   if loop.first %}
-protocol static bgp_ipv4 {
+protocol static static_bgp_ipv4 {
   ipv4;
 {%   endif %}
   route {{ pfx }} unreachable;
@@ -14,7 +14,7 @@ protocol static bgp_ipv4 {
 {% endfor %}
 
 {% for _af in ['ipv4','ipv6'] if _af in af %}
-protocol static static_default_{{ _af }} {
+protocol static static_bgp_default_{{ _af }} {
   {{ _af }};
   route {{ '0.0.0.0/0' if _af=='ipv4' else '::/0' }} reject;
 }
@@ -26,6 +26,9 @@ function bgp_prefixes( bool originate_default ) {
 
   if source ~ [ RTS_BGP ]
     then accept "BGP route:", net;
+
+  if proto ~ "static_bgp*"
+    then accept "BGP prefix origination:", net;
 
 {% if bgp.import is defined %}
 {%   for proto in bgp.import %}
