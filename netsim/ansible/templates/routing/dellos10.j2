@@ -39,11 +39,13 @@ ip community-list standard {{ c_name }} {{ c_line.action }} {{ c_line._value }}
 {%   set cmd_intf = 'interface ' + sr_data.nexthop.intf + ' ' if 'intf' in sr_data.nexthop else '' %}
 {%   for _vrf in [ _vrf_str, _nh_vrf_str ] %}
 {%     if 'ipv4' in sr_data %}
+{%       set _nh = 'interface null0' if 'discard' in sr_data.nexthop else sr_data.nexthop.ipv4 %}
 ip route {{ _vrf }}{{
-    sr_data.ipv4|ipaddr('network') }}/{{ sr_data.ipv4|ipaddr('prefix') }} {{ cmd_intf }}{{ sr_data.nexthop.ipv4 }}
+    sr_data.ipv4|ipaddr('network') }}/{{ sr_data.ipv4|ipaddr('prefix') }} {{ cmd_intf }}{{ _nh }}
 {%     endif %}
 {%     if 'ipv6' in sr_data %}
-ipv6 route {{ _vrf }}{{ sr_data.ipv6 }} {{ cmd_intf }}{{ sr_data.nexthop.ipv6 }}
+{%       set _nh = 'interface null0' if 'discard' in sr_data.nexthop else sr_data.nexthop.ipv6 %}
+ipv6 route {{ _vrf }}{{ sr_data.ipv6 }} {{ cmd_intf }}{{ _nh }}
 {%     endif %}
 {%   endfor %}
 {% endfor %}
