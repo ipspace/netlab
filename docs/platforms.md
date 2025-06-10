@@ -133,7 +133,7 @@ Configuration files for Virtualbox and KVM/libvirt environments specify the numb
 | Cumulus Linux              | cumulus            |    2 |   1024 | virtio |
 | Cumulus Linux 5.x (NVUE)   | cumulus_nvue       |    2 |   1024 | virtio |
 | Dell OS10                  | dellos10           |    2 |   2048 | e1000                      |
-| Fortinet FortiOS           | fortios            |    1 |   1024 | virtio |
+| Fortinet FortiOS           | fortios            |    1 |   2048 | virtio |
 | FRR                        | frr                |    1 |   1024 | virtio |
 | Generic Linux host         | linux              |    1 |   1024 | virtio |
 | Juniper vSRX 3.0           | vsrx               |    2 |   4096 | virtio |
