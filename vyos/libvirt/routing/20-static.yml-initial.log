@@ -19,7 +19,7 @@ skipping: [x2]
 skipping: [dut]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x1, x2, dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for x1, x2, dut
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [x1]
@@ -52,7 +52,7 @@ skipping: [x2]
 skipping: [dut]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x1, x2, dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for x1, x2, dut
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [x1]
@@ -209,6 +209,63 @@ ok: [x1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+  
+    configure
+    set system host-name 'dut'
+  
+  
+    set interfaces dummy dum0 address 10.0.0.1/32
+    set interfaces dummy dum0 address 2001:db8:1:1::1/64
+  
+  
+  
+    set interfaces ethernet eth1 description 'dut -> x1'
+  
+  
+    set interfaces ethernet eth1 address 10.1.0.1/30
+  
+    set interfaces ethernet eth1 address 2001:db8:3::1/64;
+  
+  
+  
+  
+    set interfaces ethernet eth2 description 'dut -> x1'
+  
+  
+    set interfaces ethernet eth2 address 10.1.0.5/30
+  
+    set interfaces ethernet eth2 address 2001:db8:3:1::1/64;
+  
+  
+  
+    set service lldp interface all
+    >/dev/null 2>/dev/null set service lldp interface eth0 disable
+    >/dev/null 2>/dev/null set service lldp interface eth0 mode disable
+  
+    set service router-advert interface eth1
+    set service router-advert interface eth2
+  
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
+  
+    # Restart FRR to pick up the new hostname
+    sudo service frr restart
 ok: [x2] => 
   msg: |-
     initial configuration for x2
@@ -326,67 +383,10 @@ ok: [x2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
-  
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-    fi
-  
-    # Configuration items start here
-  
-    configure
-    set system host-name 'dut'
-  
-  
-    set interfaces dummy dum0 address 10.0.0.1/32
-    set interfaces dummy dum0 address 2001:db8:1:1::1/64
-  
-  
-  
-    set interfaces ethernet eth1 description 'dut -> x1'
-  
-  
-    set interfaces ethernet eth1 address 10.1.0.1/30
-  
-    set interfaces ethernet eth1 address 2001:db8:3::1/64;
-  
-  
-  
-  
-    set interfaces ethernet eth2 description 'dut -> x1'
-  
-  
-    set interfaces ethernet eth2 address 10.1.0.5/30
-  
-    set interfaces ethernet eth2 address 2001:db8:3:1::1/64;
-  
-  
-  
-    set service lldp interface all
-    >/dev/null 2>/dev/null set service lldp interface eth0 disable
-    >/dev/null 2>/dev/null set service lldp interface eth0 mode disable
-  
-    set service router-advert interface eth1
-    set service router-advert interface eth2
-  
-  
-    # Commit, save and exit from subshell
-  
-    commit
-    save
-    exit
-  
-    # Restart FRR to pick up the new hostname
-    sudo service frr restart
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for x1, x2
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/vyos.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for x1, x2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for dut
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [x1 -> localhost]
@@ -396,21 +396,21 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
 ok: [x2]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x2]
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [x1]
+changed: [x2]
 
-TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
 skipping: [x2]
 
@@ -429,7 +429,7 @@ ok: [dut]
 TASK [template] ****************************************************************
 changed: [dut]
 
-TASK [execute config-initial.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/vyos.j2] ***
+TASK [execute config-initial.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/vyos.j2] ***
 changed: [dut]
 
 PLAY [Deploy module-specific configurations] ***********************************
@@ -440,8 +440,8 @@ ok: [x1]
 ok: [x2]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=routing)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=routing)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=ospf)
 
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [dut]
@@ -505,7 +505,7 @@ ok: [dut] =>
 TASK [Deploy routing configuration] ********************************************
 skipping: [x1]
 skipping: [x2]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/vyos.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for dut
 
 TASK [wait_for_connection] *****************************************************
 skipping: [dut]
@@ -522,7 +522,7 @@ ok: [dut]
 TASK [template] ****************************************************************
 changed: [dut]
 
-TASK [execute config-routing.sh to deploy routing config from /home/pipi/netlab_gh/netsim/ansible/templates/routing/vyos.j2] ***
+TASK [execute config-routing.sh to deploy routing config from /home/pipi/net101/tools/netsim/ansible/templates/routing/vyos.j2] ***
 changed: [dut]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
@@ -673,21 +673,21 @@ ok: [x2] =>
 
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [dut]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
 ok: [x2]
 
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 skipping: [x1]
 skipping: [x2]
 
-TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [x2]
 changed: [x1]
 

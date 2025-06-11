@@ -142,6 +142,50 @@ ok: [dut_c] =>
   
     # Restart FRR to pick up the new hostname
     sudo service frr restart
+ok: [dut_a] => 
+  msg: |-
+    initial configuration for dut_a
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+  
+    configure
+    set system host-name 'dut-a'
+  
+  
+    set interfaces dummy dum0 address 2001:db8:1:1::1/64
+  
+  
+  
+    set interfaces ethernet eth1 description 'dut_a -> probe'
+  
+  
+  
+    set interfaces ethernet eth1 address 2001:db8:3::1/64;
+  
+  
+  
+    set service lldp interface all
+    >/dev/null 2>/dev/null set service lldp interface eth0 disable
+    >/dev/null 2>/dev/null set service lldp interface eth0 mode disable
+  
+    set service router-advert interface eth1
+  
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
+  
+    # Restart FRR to pick up the new hostname
+    sudo service frr restart
 ok: [xf] => 
   msg: |-
     initial configuration for xf
@@ -249,50 +293,6 @@ ok: [xf] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [dut_a] => 
-  msg: |-
-    initial configuration for dut_a
-    =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
-  
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-    fi
-  
-    # Configuration items start here
-  
-    configure
-    set system host-name 'dut-a'
-  
-  
-    set interfaces dummy dum0 address 2001:db8:1:1::1/64
-  
-  
-  
-    set interfaces ethernet eth1 description 'dut_a -> probe'
-  
-  
-  
-    set interfaces ethernet eth1 address 2001:db8:3::1/64;
-  
-  
-  
-    set service lldp interface all
-    >/dev/null 2>/dev/null set service lldp interface eth0 disable
-    >/dev/null 2>/dev/null set service lldp interface eth0 mode disable
-  
-    set service router-advert interface eth1
-  
-  
-    # Commit, save and exit from subshell
-  
-    commit
-    save
-    exit
-  
-    # Restart FRR to pick up the new hostname
-    sudo service frr restart
 ok: [probe] => 
   msg: |-
     initial configuration for probe
@@ -800,8 +800,8 @@ ok: [dut_a]
 ok: [dut_c]
 
 TASK [template] ****************************************************************
-changed: [dut_c]
 changed: [dut_a]
+changed: [dut_c]
 
 TASK [execute config-ospf.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/vyos.j2] ***
 changed: [dut_a]

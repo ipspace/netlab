@@ -43,8 +43,8 @@ skipping: [probe]
 skipping: [dut_a]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
-ok: [xf]
 ok: [dut_c]
+ok: [xf]
 ok: [probe]
 ok: [dut_a]
 
@@ -72,8 +72,8 @@ ok: [dut_a]
 TASK [Find configuration template for initial] *********************************
 ok: [dut_c]
 ok: [xf]
-ok: [probe]
 ok: [dut_a]
+ok: [probe]
 
 TASK [fail] ********************************************************************
 skipping: [dut_c]
@@ -84,8 +84,8 @@ skipping: [dut_a]
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [dut_c]
 ok: [xf]
-ok: [dut_a]
 ok: [probe]
+ok: [dut_a]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut_c] => 
@@ -124,6 +124,51 @@ ok: [dut_c] =>
     set interfaces ethernet eth2 mtu 1500
   
     set interfaces ethernet eth2 address 10.1.0.9/30
+  
+  
+  
+  
+    set service lldp interface all
+    >/dev/null 2>/dev/null set service lldp interface eth0 disable
+    >/dev/null 2>/dev/null set service lldp interface eth0 mode disable
+  
+  
+    set service ssh
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
+  
+    # Restart FRR to pick up the new hostname
+    sudo service frr restart
+ok: [dut_a] => 
+  msg: |-
+    initial configuration for dut_a
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+  
+    configure
+    set system host-name 'dut-a'
+  
+  
+    set interfaces dummy dum0 address 10.0.0.1/32
+  
+  
+  
+    set interfaces ethernet eth1 description 'dut_a -> probe'
+  
+    set interfaces ethernet eth1 mtu 1500
+  
+    set interfaces ethernet eth1 address 10.1.0.1/30
   
   
   
@@ -245,51 +290,6 @@ ok: [xf] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [dut_a] => 
-  msg: |-
-    initial configuration for dut_a
-    =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
-  
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-    fi
-  
-    # Configuration items start here
-  
-    configure
-    set system host-name 'dut-a'
-  
-  
-    set interfaces dummy dum0 address 10.0.0.1/32
-  
-  
-  
-    set interfaces ethernet eth1 description 'dut_a -> probe'
-  
-    set interfaces ethernet eth1 mtu 1500
-  
-    set interfaces ethernet eth1 address 10.1.0.1/30
-  
-  
-  
-  
-    set service lldp interface all
-    >/dev/null 2>/dev/null set service lldp interface eth0 disable
-    >/dev/null 2>/dev/null set service lldp interface eth0 mode disable
-  
-  
-    set service ssh
-  
-    # Commit, save and exit from subshell
-  
-    commit
-    save
-    exit
-  
-    # Restart FRR to pick up the new hostname
-    sudo service frr restart
 ok: [probe] => 
   msg: |-
     initial configuration for probe
@@ -423,12 +423,12 @@ ok: [dut_c]
 ok: [dut_a]
 
 TASK [template] ****************************************************************
-changed: [dut_a]
 changed: [dut_c]
+changed: [dut_a]
 
 TASK [execute config-initial.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/vyos.j2] ***
-changed: [dut_c]
 changed: [dut_a]
+changed: [dut_c]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [xf -> localhost]

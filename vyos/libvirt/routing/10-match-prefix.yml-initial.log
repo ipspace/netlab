@@ -17,8 +17,8 @@ ok: [dut]
 ok: [vx1]
 ok: [x1]
 ok: [vx2]
-ok: [vx3]
 ok: [x2]
+ok: [vx3]
 ok: [x3]
 
 TASK [Wait for device to become ready] *****************************************
@@ -66,8 +66,8 @@ ok: [vx1]
 ok: [x1]
 ok: [vx2]
 ok: [x2]
-ok: [vx3]
 ok: [x3]
+ok: [vx3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
@@ -95,17 +95,17 @@ ok: [dut]
 ok: [vx1]
 ok: [x1]
 ok: [vx2]
-ok: [x2]
 ok: [vx3]
+ok: [x2]
 ok: [x3]
 
 TASK [Find configuration template for initial] *********************************
 ok: [dut]
 ok: [vx1]
 ok: [x1]
+ok: [vx3]
 ok: [vx2]
 ok: [x2]
-ok: [vx3]
 ok: [x3]
 
 TASK [fail] ********************************************************************
@@ -122,11 +122,116 @@ ok: [dut]
 ok: [vx1]
 ok: [x1]
 ok: [vx2]
-ok: [x3]
-ok: [vx3]
 ok: [x2]
+ok: [vx3]
+ok: [x3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+  
+    configure
+    set system host-name 'dut'
+  
+    set vrf name tenant table 100
+  
+    set interfaces dummy dum0 address 10.0.0.1/32
+    set interfaces dummy dum0 address 2001:db8:1:1::1/64
+  
+  
+  
+    set interfaces ethernet eth1 description 'dut -> x1 [external]'
+  
+  
+    set interfaces ethernet eth1 address 10.1.0.1/30
+  
+    set interfaces ethernet eth1 address 2001:db8:3::1/64;
+  
+  
+  
+  
+    set interfaces ethernet eth2 description 'dut -> x2 [external]'
+  
+  
+    set interfaces ethernet eth2 address 10.1.0.5/30
+  
+    set interfaces ethernet eth2 address 2001:db8:3:1::1/64;
+  
+  
+  
+  
+    set interfaces ethernet eth3 description 'dut -> x3 [external]'
+  
+  
+    set interfaces ethernet eth3 address 10.1.0.9/30
+  
+    set interfaces ethernet eth3 address 2001:db8:3:2::1/64;
+  
+  
+  
+  
+    set interfaces ethernet eth4 description 'dut -> vx1 [external]'
+  
+  
+    set interfaces ethernet eth4 address 10.1.0.13/30
+  
+    set interfaces ethernet eth4 address 2001:db8:3:3::1/64;
+  
+    set interfaces ethernet eth4 vrf tenant
+  
+  
+  
+    set interfaces ethernet eth5 description 'dut -> vx2 [external]'
+  
+  
+    set interfaces ethernet eth5 address 10.1.0.17/30
+  
+    set interfaces ethernet eth5 address 2001:db8:3:4::1/64;
+  
+    set interfaces ethernet eth5 vrf tenant
+  
+  
+  
+    set interfaces ethernet eth6 description 'dut -> vx3 [external]'
+  
+  
+    set interfaces ethernet eth6 address 10.1.0.21/30
+  
+    set interfaces ethernet eth6 address 2001:db8:3:5::1/64;
+  
+    set interfaces ethernet eth6 vrf tenant
+  
+  
+    set service lldp interface all
+    >/dev/null 2>/dev/null set service lldp interface eth0 disable
+    >/dev/null 2>/dev/null set service lldp interface eth0 mode disable
+  
+    set service router-advert interface eth1
+    set service router-advert interface eth2
+    set service router-advert interface eth3
+    set service router-advert interface eth4
+    set service router-advert interface eth5
+    set service router-advert interface eth6
+  
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
+  
+    # Restart FRR to pick up the new hostname
+    sudo service frr restart
 ok: [vx1] => 
   msg: |-
     initial configuration for vx1
@@ -477,219 +582,6 @@ ok: [x3] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
-  
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-    fi
-  
-    # Configuration items start here
-  
-    configure
-    set system host-name 'dut'
-  
-    set vrf name tenant table 100
-  
-    set interfaces dummy dum0 address 10.0.0.1/32
-    set interfaces dummy dum0 address 2001:db8:1:1::1/64
-  
-  
-  
-    set interfaces ethernet eth1 description 'dut -> x1 [external]'
-  
-  
-    set interfaces ethernet eth1 address 10.1.0.1/30
-  
-    set interfaces ethernet eth1 address 2001:db8:3::1/64;
-  
-  
-  
-  
-    set interfaces ethernet eth2 description 'dut -> x2 [external]'
-  
-  
-    set interfaces ethernet eth2 address 10.1.0.5/30
-  
-    set interfaces ethernet eth2 address 2001:db8:3:1::1/64;
-  
-  
-  
-  
-    set interfaces ethernet eth3 description 'dut -> x3 [external]'
-  
-  
-    set interfaces ethernet eth3 address 10.1.0.9/30
-  
-    set interfaces ethernet eth3 address 2001:db8:3:2::1/64;
-  
-  
-  
-  
-    set interfaces ethernet eth4 description 'dut -> vx1 [external]'
-  
-  
-    set interfaces ethernet eth4 address 10.1.0.13/30
-  
-    set interfaces ethernet eth4 address 2001:db8:3:3::1/64;
-  
-    set interfaces ethernet eth4 vrf tenant
-  
-  
-  
-    set interfaces ethernet eth5 description 'dut -> vx2 [external]'
-  
-  
-    set interfaces ethernet eth5 address 10.1.0.17/30
-  
-    set interfaces ethernet eth5 address 2001:db8:3:4::1/64;
-  
-    set interfaces ethernet eth5 vrf tenant
-  
-  
-  
-    set interfaces ethernet eth6 description 'dut -> vx3 [external]'
-  
-  
-    set interfaces ethernet eth6 address 10.1.0.21/30
-  
-    set interfaces ethernet eth6 address 2001:db8:3:5::1/64;
-  
-    set interfaces ethernet eth6 vrf tenant
-  
-  
-    set service lldp interface all
-    >/dev/null 2>/dev/null set service lldp interface eth0 disable
-    >/dev/null 2>/dev/null set service lldp interface eth0 mode disable
-  
-    set service router-advert interface eth1
-    set service router-advert interface eth2
-    set service router-advert interface eth3
-    set service router-advert interface eth4
-    set service router-advert interface eth5
-    set service router-advert interface eth6
-  
-  
-    # Commit, save and exit from subshell
-  
-    commit
-    save
-    exit
-  
-    # Restart FRR to pick up the new hostname
-    sudo service frr restart
-ok: [vx3] => 
-  msg: |-
-    initial configuration for vx3
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)# "
-    echo
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
-    #
-    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
-    #
-    sysctl -w net.ipv4.ip_forward=1
-    sysctl -w net.ipv6.conf.all.forwarding=1
-    #
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    # Set system defaults
-    #
-    # Send ARP requests from a sane source IP address
-    #
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Create loopbacks, stub and lag/bond devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    ip link set eth1 down
-    sysctl -qw net.ipv6.conf.eth1.autoconf=0
-    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set dev eth1 mtu 1500
-    ip link set eth1 up
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-  
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname vx3
-    !
-    ip forwarding
-    ipv6 forwarding
-    vrf mgmt
-     exit-vrf
-    !
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ip address 10.0.0.7/32
-     ipv6 address 2001:db8:1:7::1/64
-    !
-    interface eth1
-     no shutdown
-     description vx3 -> dut [external]
-     ip address 10.1.0.22/30
-     ipv6 address 2001:db8:3:5::7/64
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
 ok: [vx2] => 
   msg: |-
     initial configuration for vx2
@@ -906,6 +798,114 @@ ok: [x2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [vx3] => 
+  msg: |-
+    initial configuration for vx3
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.autoconf=0
+    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname vx3
+    !
+    ip forwarding
+    ipv6 forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.7/32
+     ipv6 address 2001:db8:1:7::1/64
+    !
+    interface eth1
+     no shutdown
+     description vx3 -> dut [external]
+     ip address 10.1.0.22/30
+     ipv6 address 2001:db8:3:5::7/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for dut
@@ -945,11 +945,11 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for
 
 TASK [template] ****************************************************************
 changed: [x1]
-changed: [vx1]
 changed: [vx2]
-changed: [x2]
 changed: [vx3]
+changed: [x2]
 changed: [x3]
+changed: [vx1]
 
 TASK [set_fact] ****************************************************************
 ok: [vx1]
@@ -960,12 +960,12 @@ ok: [vx3]
 ok: [x3]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+changed: [vx1]
 changed: [x1]
 changed: [vx2]
+changed: [x3]
 changed: [vx3]
 changed: [x2]
-changed: [vx1]
-changed: [x3]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [vx1]
@@ -1185,8 +1185,8 @@ TASK [Find configuration template for bgp] *************************************
 ok: [dut]
 ok: [vx1]
 ok: [vx2]
-ok: [vx3]
 ok: [x1]
+ok: [vx3]
 ok: [x2]
 ok: [x3]
 
@@ -1203,9 +1203,9 @@ TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [dut]
 ok: [vx1]
 ok: [vx2]
-ok: [x1]
 ok: [vx3]
 ok: [x2]
+ok: [x1]
 ok: [x3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -1684,19 +1684,19 @@ TASK [execute config-bgp.sh to deploy bgp config from /home/pipi/net101/tools/ne
 changed: [dut]
 
 TASK [template] ****************************************************************
+changed: [vx1]
 changed: [vx3]
 changed: [vx2]
-changed: [x3]
 changed: [x1]
+changed: [x3]
 changed: [x2]
-changed: [vx1]
 
 TASK [set_fact] ****************************************************************
 ok: [vx1]
 ok: [vx2]
-ok: [x1]
-ok: [x2]
 ok: [vx3]
+ok: [x2]
+ok: [x1]
 ok: [x3]
 
 TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
@@ -1709,11 +1709,11 @@ skipping: [x3]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [vx2]
+changed: [vx1]
 changed: [x1]
 changed: [x2]
-changed: [x3]
-changed: [vx1]
 changed: [vx3]
+changed: [x3]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [dut]
