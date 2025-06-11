@@ -146,7 +146,7 @@ Apart from setting BGP communities on BGP routes, these devices can execute addi
 |---------------------|:--:|:--:| :--:|
 | Arista EOS          | ✅ | ✅ | ✅ |
 | Aruba AOS-CX        | ✅ | ✅ | ❌  |
-| Cisco IOS/XE[^18v]  | ✅ | ❌  | ❌  |
+| Cisco IOS/XE[^18v]  | ✅ | ✅❗️| ✅ |
 | Cumulus Linux       | ✅ | ❌  | ❌  |
 | Dell OS10           | ✅ | ❌  | ❌  |
 | Junos               | ✅ | ✅ | ❌  |
@@ -154,7 +154,7 @@ Apart from setting BGP communities on BGP routes, these devices can execute addi
 | VyOS                | ✅ | ❌  | ❌  |
 
 **Notes:**
-* FRR is creating an internal BGP community list to delete BGP communities specified together with the **set.community.delete** routing policy parameter. This approach is currently limited to standard BGP communities; FRR cannot delete extended or large communities from a BGP route.
+* _netlab_ is creating an internal BGP community list on FRR and Cisco IOS/XE to delete BGP communities specified with the **set.community.delete** routing policy parameter. This approach is currently limited to standard BGP communities.
 
 ### Shortcut Routing Policy Definitions
 
