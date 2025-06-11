@@ -6,8 +6,8 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [probe]
 ok: [x1]
-ok: [x2]
 ok: [dut]
+ok: [x2]
 
 TASK [Find device readiness script] ********************************************
 ok: [probe]
@@ -557,8 +557,8 @@ ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1, x2 => (item=routing)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1, x2 => (item=ospf)
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1, x2 => (item=bgp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1, x2 => (item=ospf)
 
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [probe]
@@ -654,6 +654,333 @@ TASK [run /tmp/config.sh to deploy routing config from /home/pipi/net101/tools/n
 skipping: [x2]
 
 TASK [run vtysh to import routing config from /home/pipi/net101/tools/netsim/ansible/templates/routing/frr.j2] ***
+changed: [x2]
+
+TASK [Figure out whether to deploy the module bgp on current device] ***********
+ok: [probe]
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [Find configuration template for bgp] *************************************
+ok: [probe]
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [probe]
+skipping: [x1]
+skipping: [x2]
+
+TASK [Find configuration deployment deploy_script for bgp] *********************
+ok: [probe]
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [probe] => 
+  msg: |-
+    bgp configuration for probe
+    =========================================
+    !
+    router bgp 65000
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.2
+    !
+      neighbor 10.0.0.1 remote-as 65000
+      neighbor 10.0.0.1 description dut
+      neighbor 10.0.0.1 update-source lo
+    !
+      neighbor 2001:db8:1:1::1 remote-as 65000
+      neighbor 2001:db8:1:1::1 description dut
+      neighbor 2001:db8:1:1::1 update-source lo
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.2/32
+    !
+    !
+    !
+      neighbor 10.0.0.1 activate
+      neighbor 10.0.0.1 next-hop-self
+      no neighbor 10.0.0.1 send-community all
+      neighbor 10.0.0.1 send-community standard
+      neighbor 10.0.0.1 send-community large
+      neighbor 10.0.0.1 send-community extended
+    !
+     address-family ipv6 unicast
+    !
+  
+    !
+      network 2001:db8:1:2::/64
+    !
+    !
+    !
+      neighbor 2001:db8:1:1::1 activate
+      neighbor 2001:db8:1:1::1 next-hop-self
+      no neighbor 2001:db8:1:1::1 send-community all
+      neighbor 2001:db8:1:1::1 send-community standard
+      neighbor 2001:db8:1:1::1 send-community large
+      neighbor 2001:db8:1:1::1 send-community extended
+    !
+    !
+    !
+    do write
+ok: [x1] => 
+  msg: |-
+    bgp configuration for x1
+    =========================================
+    !
+    router bgp 65100
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.3
+    !
+      neighbor 172.42.42.4 remote-as 65101
+      neighbor 172.42.42.4 description x2
+    !
+      neighbor 10.1.0.1 remote-as 65000
+      neighbor 10.1.0.1 description dut
+    !
+      neighbor 2001:db8:cafe:42::4 remote-as 65101
+      neighbor 2001:db8:cafe:42::4 description x2
+    !
+      neighbor 2001:db8:3::1 remote-as 65000
+      neighbor 2001:db8:3::1 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.3/32
+    !
+      network 172.42.42.0/24
+    !
+    !
+      neighbor 172.42.42.4 activate
+      no neighbor 172.42.42.4 send-community all
+      neighbor 172.42.42.4 send-community standard
+      neighbor 172.42.42.4 send-community large
+    !
+      neighbor 10.1.0.1 activate
+      no neighbor 10.1.0.1 send-community all
+      neighbor 10.1.0.1 send-community standard
+      neighbor 10.1.0.1 send-community large
+    !
+     address-family ipv6 unicast
+    !
+  
+    !
+      network 2001:db8:1:3::/64
+    !
+      network 2001:db8:cafe:42::/64
+    !
+    !
+      neighbor 2001:db8:cafe:42::4 activate
+      no neighbor 2001:db8:cafe:42::4 send-community all
+      neighbor 2001:db8:cafe:42::4 send-community standard
+      neighbor 2001:db8:cafe:42::4 send-community large
+    !
+      neighbor 2001:db8:3::1 activate
+      no neighbor 2001:db8:3::1 send-community all
+      neighbor 2001:db8:3::1 send-community standard
+      neighbor 2001:db8:3::1 send-community large
+    !
+    !
+    !
+    do write
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+    !
+    !
+    router bgp 65000
+      bgp log-neighbor-changes
+      timers bgp connect-retry 10
+      bgp router-id 10.0.0.1
+      neighbor 10.0.0.2 remote-as 65000
+      neighbor 10.0.0.2 description probe
+      neighbor 10.0.0.2 update-source loopback 0
+  
+      neighbor 2001:db8:1:2::1 remote-as 65000
+      neighbor 2001:db8:1:2::1 description probe
+      neighbor 2001:db8:1:2::1 update-source loopback 0
+  
+      neighbor 10.1.0.2 remote-as 65100
+      neighbor 10.1.0.2 description x1
+  
+      neighbor 2001:db8:3::3 remote-as 65100
+      neighbor 2001:db8:3::3 description x1
+  
+      neighbor 10.1.0.6 remote-as 65101
+      neighbor 10.1.0.6 description x2
+  
+      neighbor 2001:db8:3:1::4 remote-as 65101
+      neighbor 2001:db8:3:1::4 description x2
+  
+    !
+      address-family ipv4 unicast
+    !
+  
+        network 10.0.0.1/32
+    !
+    !
+        neighbor 10.0.0.2 activate
+        neighbor 10.0.0.2 advertisement-interval 1
+        neighbor 10.0.0.2 send-community both
+        neighbor 10.0.0.2 next-hop-self
+  
+        neighbor 10.1.0.2 activate
+        neighbor 10.1.0.2 advertisement-interval 1
+        neighbor 10.1.0.2 send-community standard
+  
+        neighbor 10.1.0.6 activate
+        neighbor 10.1.0.6 advertisement-interval 1
+        neighbor 10.1.0.6 send-community standard
+  
+      address-family ipv6 unicast
+    !
+  
+        network 2001:db8:1:1::/64
+    !
+    !
+        neighbor 2001:db8:1:2::1 activate
+        neighbor 2001:db8:1:2::1 advertisement-interval 1
+        neighbor 2001:db8:1:2::1 send-community both
+        neighbor 2001:db8:1:2::1 next-hop-self
+  
+        neighbor 2001:db8:3::3 activate
+        neighbor 2001:db8:3::3 advertisement-interval 1
+        neighbor 2001:db8:3::3 send-community standard
+  
+        neighbor 2001:db8:3:1::4 activate
+        neighbor 2001:db8:3:1::4 advertisement-interval 1
+        neighbor 2001:db8:3:1::4 send-community standard
+  
+    !
+ok: [x2] => 
+  msg: |-
+    bgp configuration for x2
+    =========================================
+    !
+    router bgp 65101
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.4
+    !
+      neighbor 172.42.42.3 remote-as 65100
+      neighbor 172.42.42.3 description x1
+    !
+      neighbor 10.1.0.5 remote-as 65000
+      neighbor 10.1.0.5 description dut
+    !
+      neighbor 2001:db8:cafe:42::3 remote-as 65100
+      neighbor 2001:db8:cafe:42::3 description x1
+    !
+      neighbor 2001:db8:3:1::1 remote-as 65000
+      neighbor 2001:db8:3:1::1 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.4/32
+    !
+      network 172.42.42.0/24
+    !
+    !
+      neighbor 172.42.42.3 activate
+      no neighbor 172.42.42.3 send-community all
+      neighbor 172.42.42.3 send-community standard
+      neighbor 172.42.42.3 send-community large
+    !
+      neighbor 10.1.0.5 activate
+      no neighbor 10.1.0.5 send-community all
+      neighbor 10.1.0.5 send-community standard
+      neighbor 10.1.0.5 send-community large
+    !
+     address-family ipv6 unicast
+    !
+  
+    !
+      network 2001:db8:1:4::/64
+    !
+      network 2001:db8:cafe:42::/64
+    !
+    !
+      neighbor 2001:db8:cafe:42::3 activate
+      no neighbor 2001:db8:cafe:42::3 send-community all
+      neighbor 2001:db8:cafe:42::3 send-community standard
+      neighbor 2001:db8:cafe:42::3 send-community large
+    !
+      neighbor 2001:db8:3:1::1 activate
+      no neighbor 2001:db8:3:1::1 send-community all
+      neighbor 2001:db8:3:1::1 send-community standard
+      neighbor 2001:db8:3:1::1 send-community large
+    !
+    !
+    !
+    do write
+
+TASK [Deploy bgp configuration] ************************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for probe, x1, x2
+
+TASK [tempfile] ****************************************************************
+changed: [dut -> localhost]
+
+TASK [template] ****************************************************************
+changed: [dut -> localhost]
+
+TASK [aoscx_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/arubacx.j2] ***
+changed: [dut]
+
+TASK [file] ********************************************************************
+changed: [dut -> localhost]
+
+TASK [template] ****************************************************************
+changed: [x1]
+changed: [probe]
+changed: [x2]
+
+TASK [set_fact] ****************************************************************
+ok: [probe]
+ok: [x1]
+ok: [x2]
+
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+skipping: [probe]
+skipping: [x1]
+skipping: [x2]
+
+TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+changed: [x1]
+changed: [probe]
 changed: [x2]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
@@ -806,333 +1133,6 @@ skipping: [probe]
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [probe]
 
-TASK [Figure out whether to deploy the module bgp on current device] ***********
-ok: [probe]
-ok: [x1]
-ok: [x2]
-ok: [dut]
-
-TASK [Find configuration template for bgp] *************************************
-ok: [probe]
-ok: [x1]
-ok: [x2]
-ok: [dut]
-
-TASK [fail] ********************************************************************
-skipping: [dut]
-skipping: [probe]
-skipping: [x1]
-skipping: [x2]
-
-TASK [Find configuration deployment deploy_script for bgp] *********************
-ok: [probe]
-ok: [x1]
-ok: [dut]
-ok: [x2]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [probe] => 
-  msg: |-
-    bgp configuration for probe
-    =========================================
-    !
-    router bgp 65000
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.2
-    !
-      neighbor 10.0.0.1 remote-as 65000
-      neighbor 10.0.0.1 description dut
-      neighbor 10.0.0.1 update-source lo
-    !
-      neighbor 2001:db8:1:1::1 remote-as 65000
-      neighbor 2001:db8:1:1::1 description dut
-      neighbor 2001:db8:1:1::1 update-source lo
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-      network 10.0.0.2/32
-    !
-    !
-    !
-      neighbor 10.0.0.1 activate
-      neighbor 10.0.0.1 next-hop-self
-      no neighbor 10.0.0.1 send-community all
-      neighbor 10.0.0.1 send-community standard
-      neighbor 10.0.0.1 send-community large
-      neighbor 10.0.0.1 send-community extended
-    !
-     address-family ipv6 unicast
-    !
-  
-    !
-      network 2001:db8:1:2::/64
-    !
-    !
-    !
-      neighbor 2001:db8:1:1::1 activate
-      neighbor 2001:db8:1:1::1 next-hop-self
-      no neighbor 2001:db8:1:1::1 send-community all
-      neighbor 2001:db8:1:1::1 send-community standard
-      neighbor 2001:db8:1:1::1 send-community large
-      neighbor 2001:db8:1:1::1 send-community extended
-    !
-    !
-    !
-    do write
-ok: [x1] => 
-  msg: |-
-    bgp configuration for x1
-    =========================================
-    !
-    router bgp 65100
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.3
-    !
-      neighbor 172.42.42.4 remote-as 65101
-      neighbor 172.42.42.4 description x2
-    !
-      neighbor 10.1.0.1 remote-as 65000
-      neighbor 10.1.0.1 description dut
-    !
-      neighbor 2001:db8:cafe:42::4 remote-as 65101
-      neighbor 2001:db8:cafe:42::4 description x2
-    !
-      neighbor 2001:db8:3::1 remote-as 65000
-      neighbor 2001:db8:3::1 description dut
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-      network 10.0.0.3/32
-    !
-      network 172.42.42.0/24
-    !
-    !
-      neighbor 172.42.42.4 activate
-      no neighbor 172.42.42.4 send-community all
-      neighbor 172.42.42.4 send-community standard
-      neighbor 172.42.42.4 send-community large
-    !
-      neighbor 10.1.0.1 activate
-      no neighbor 10.1.0.1 send-community all
-      neighbor 10.1.0.1 send-community standard
-      neighbor 10.1.0.1 send-community large
-    !
-     address-family ipv6 unicast
-    !
-  
-    !
-      network 2001:db8:1:3::/64
-    !
-      network 2001:db8:cafe:42::/64
-    !
-    !
-      neighbor 2001:db8:cafe:42::4 activate
-      no neighbor 2001:db8:cafe:42::4 send-community all
-      neighbor 2001:db8:cafe:42::4 send-community standard
-      neighbor 2001:db8:cafe:42::4 send-community large
-    !
-      neighbor 2001:db8:3::1 activate
-      no neighbor 2001:db8:3::1 send-community all
-      neighbor 2001:db8:3::1 send-community standard
-      neighbor 2001:db8:3::1 send-community large
-    !
-    !
-    !
-    do write
-ok: [x2] => 
-  msg: |-
-    bgp configuration for x2
-    =========================================
-    !
-    router bgp 65101
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.4
-    !
-      neighbor 172.42.42.3 remote-as 65100
-      neighbor 172.42.42.3 description x1
-    !
-      neighbor 10.1.0.5 remote-as 65000
-      neighbor 10.1.0.5 description dut
-    !
-      neighbor 2001:db8:cafe:42::3 remote-as 65100
-      neighbor 2001:db8:cafe:42::3 description x1
-    !
-      neighbor 2001:db8:3:1::1 remote-as 65000
-      neighbor 2001:db8:3:1::1 description dut
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-      network 10.0.0.4/32
-    !
-      network 172.42.42.0/24
-    !
-    !
-      neighbor 172.42.42.3 activate
-      no neighbor 172.42.42.3 send-community all
-      neighbor 172.42.42.3 send-community standard
-      neighbor 172.42.42.3 send-community large
-    !
-      neighbor 10.1.0.5 activate
-      no neighbor 10.1.0.5 send-community all
-      neighbor 10.1.0.5 send-community standard
-      neighbor 10.1.0.5 send-community large
-    !
-     address-family ipv6 unicast
-    !
-  
-    !
-      network 2001:db8:1:4::/64
-    !
-      network 2001:db8:cafe:42::/64
-    !
-    !
-      neighbor 2001:db8:cafe:42::3 activate
-      no neighbor 2001:db8:cafe:42::3 send-community all
-      neighbor 2001:db8:cafe:42::3 send-community standard
-      neighbor 2001:db8:cafe:42::3 send-community large
-    !
-      neighbor 2001:db8:3:1::1 activate
-      no neighbor 2001:db8:3:1::1 send-community all
-      neighbor 2001:db8:3:1::1 send-community standard
-      neighbor 2001:db8:3:1::1 send-community large
-    !
-    !
-    !
-    do write
-ok: [dut] => 
-  msg: |-
-    bgp configuration for dut
-    =========================================
-    !
-    !
-    router bgp 65000
-      bgp log-neighbor-changes
-      timers bgp connect-retry 10
-      bgp router-id 10.0.0.1
-      neighbor 10.0.0.2 remote-as 65000
-      neighbor 10.0.0.2 description probe
-      neighbor 10.0.0.2 update-source loopback 0
-  
-      neighbor 2001:db8:1:2::1 remote-as 65000
-      neighbor 2001:db8:1:2::1 description probe
-      neighbor 2001:db8:1:2::1 update-source loopback 0
-  
-      neighbor 10.1.0.2 remote-as 65100
-      neighbor 10.1.0.2 description x1
-  
-      neighbor 2001:db8:3::3 remote-as 65100
-      neighbor 2001:db8:3::3 description x1
-  
-      neighbor 10.1.0.6 remote-as 65101
-      neighbor 10.1.0.6 description x2
-  
-      neighbor 2001:db8:3:1::4 remote-as 65101
-      neighbor 2001:db8:3:1::4 description x2
-  
-    !
-      address-family ipv4 unicast
-    !
-  
-        network 10.0.0.1/32
-    !
-    !
-        neighbor 10.0.0.2 activate
-        neighbor 10.0.0.2 advertisement-interval 1
-        neighbor 10.0.0.2 send-community both
-        neighbor 10.0.0.2 next-hop-self
-  
-        neighbor 10.1.0.2 activate
-        neighbor 10.1.0.2 advertisement-interval 1
-        neighbor 10.1.0.2 send-community standard
-  
-        neighbor 10.1.0.6 activate
-        neighbor 10.1.0.6 advertisement-interval 1
-        neighbor 10.1.0.6 send-community standard
-  
-      address-family ipv6 unicast
-    !
-  
-        network 2001:db8:1:1::/64
-    !
-    !
-        neighbor 2001:db8:1:2::1 activate
-        neighbor 2001:db8:1:2::1 advertisement-interval 1
-        neighbor 2001:db8:1:2::1 send-community both
-        neighbor 2001:db8:1:2::1 next-hop-self
-  
-        neighbor 2001:db8:3::3 activate
-        neighbor 2001:db8:3::3 advertisement-interval 1
-        neighbor 2001:db8:3::3 send-community standard
-  
-        neighbor 2001:db8:3:1::4 activate
-        neighbor 2001:db8:3:1::4 advertisement-interval 1
-        neighbor 2001:db8:3:1::4 send-community standard
-  
-    !
-
-TASK [Deploy bgp configuration] ************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for probe, x1, x2
-
-TASK [tempfile] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [template] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [aoscx_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/arubacx.j2] ***
-changed: [dut]
-
-TASK [file] ********************************************************************
-changed: [dut -> localhost]
-
-TASK [template] ****************************************************************
-changed: [x1]
-changed: [probe]
-changed: [x2]
-
-TASK [set_fact] ****************************************************************
-ok: [probe]
-ok: [x1]
-ok: [x2]
-
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-skipping: [probe]
-skipping: [x1]
-skipping: [x2]
-
-TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [x1]
-changed: [probe]
-changed: [x2]
-
 PLAY [Deploy custom deployment templates] **************************************
 
 TASK [Run custom configuration deployment scripts] *****************************
@@ -1147,8 +1147,8 @@ skipping: [dut]
 skipping: [x2]
 
 TASK [Check is the configuration template is a file] ***************************
-ok: [dut -> localhost]
 ok: [x2 -> localhost]
+ok: [dut -> localhost]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
