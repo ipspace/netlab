@@ -3,6 +3,7 @@ from box import Box
 from netsim import api
 from netsim.augment import devices
 from netsim.utils import log
+from ipaddress import IPv4Address
 
 _config_name = "ospf.stub"
 _require = [ "ospf" ]
@@ -23,10 +24,16 @@ def post_transform(topology: Box) -> None:
       log.error(f"Node {ndata.name} (device {ndata.device}) not supported by the ospf.stub plugin")
       continue
     for k,v in ospf_areas.items():
-      validate_area(k,v)
+      validate_area(k,v)                               # TODO once for entire topology, not per node
     if ndata.get('ospf.area','0.0.0.0') != '0.0.0.0':  # Check if node is not an ABR
-      for _,area in ospf_areas.items():
+      areas = { intf.get('ospf.area') for intf in ndata.get('interfaces',[]) }
+      updated_areas = {}
+      for id,area in ospf_areas.items():
+        if str(IPv4Address(id)) not in areas:
+          continue
         for att in [ 'no_summary', 'range' ]:          # Only applied at ABR
           area.pop(att,None)
+        updated_areas[ id ] = area
+      ndata.ospf.areas = updated_areas
     global _config_name
     api.node_config(ndata,_config_name)
