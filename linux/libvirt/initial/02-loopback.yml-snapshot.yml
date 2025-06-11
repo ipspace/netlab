@@ -2,9 +2,11 @@ addressing:
   l2only: {}
   lan:
     ipv4: 172.16.0.0/16
+    ipv6: 2001:db8:1::/48
     prefix: 24
   loopback:
     ipv4: 10.0.0.0/24
+    ipv6: 2001:db8::/48
     prefix: 32
   mgmt:
     _bridge: nl_mgmt_17
@@ -21,6 +23,7 @@ addressing:
     prefix: 32
   vrf_loopback:
     ipv4: 10.2.0.0/24
+    ipv6: 2001:db8:cafe::/48
     prefix: 32
 defaults:
   _globals:
@@ -964,6 +967,22 @@ defaults:
     - ospf
     - ripv2
     - static
+    validate:
+      bgp_scan_time: 5
+      ebgp_session: 30
+      isis_adj_p2p: 20
+      isis_spf: 15
+      ospf_import: 20
+      ospfv2_adj_lan: 50
+      ospfv2_adj_p2p: 30
+      ospfv2_spf: 10
+      ospfv3_adj_lan: 50
+      ospfv3_adj_p2p: 30
+      ospfv3_spf: 10
+      ping: 5
+      ra_send: 30
+      stp_forwarding: 40
+      vxlan_ping: 20
     vrf_igp_protocols:
     - connected
     - ospf
@@ -1078,7 +1097,7 @@ defaults:
         dnsmasq: dnsmasq
       virtualbox:
         image: null
-  device: dellos10
+  device: linux
   devices:
     arubacx:
       clab:
@@ -1340,6 +1359,7 @@ defaults:
       mgmt_if: eth0
       packages:
         bird: bird
+      provider: libvirt
       role: host
       virtualbox:
         group_vars:
@@ -1995,6 +2015,7 @@ defaults:
               weight: true
           prefix: true
           static:
+            discard: true
             inter_vrf: true
             vrf: true
         stp:
@@ -2033,7 +2054,6 @@ defaults:
       loopback_interface_name: loopback{ifindex}
       mgmt_if: mgmt1/1/1
       mtu: 1500
-      provider: libvirt
     dnsmasq:
       clab:
         build: https://netlab.tools/netlab/clab/#netlab-clab-build
@@ -2118,6 +2138,7 @@ defaults:
         - dhcp
       packages:
         dnsmasq: dnsmasq
+      provider: libvirt
       role: host
       virtualbox:
         group_vars:
@@ -3294,6 +3315,7 @@ defaults:
         image: bento/ubuntu-24.04
       loopback_interface_name: lo{ifindex if ifindex else ""}
       mgmt_if: eth0
+      provider: libvirt
       role: host
       virtualbox:
         group_vars:
@@ -4030,9 +4052,6 @@ defaults:
       lag_interface_name: ae{lag.ifindex}
       loopback_interface_name: lo0.{ifindex}
       mgmt_if: fxp0
-      netlab_validate:
-        ping_irb_1:
-          wait: 90
     vjunos-switch:
       clab:
         build: https://containerlab.dev/manual/kinds/vr-vjunosswitch/
@@ -5115,7 +5134,6 @@ defaults:
       vptx: true
       vsrx: true
   module:
-  - vlan
   - routing
   mpls:
     attributes:
@@ -5575,13 +5593,13 @@ defaults:
   paths:
     collect:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks/fetch-config
+      - /home/pipi/netlab_gh/netsim/ansible/tasks/fetch-config
     custom:
       dirs:
-      - /home/pipi/net101/tools/tests/integration/vlan
+      - /home/pipi/net101/tools/tests/integration/initial
       - /work/netlab_cicd
       - /home/pipi/.netlab
-      - /home/pipi/net101/tools/netsim/extra
+      - /home/pipi/netlab_gh/netsim/extra
       files:
       - '{{ custom_config + ''/'' + inventory_hostname + ''.'' + netlab_device_type
         + ''-'' + node_provider + ''.j2'' }}'
@@ -5612,7 +5630,7 @@ defaults:
       - '{{ custom_config }}/deploy.yml'
     deploy:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks
+      - /home/pipi/netlab_gh/netsim/ansible/tasks
       files:
       - '{{ netlab_device_type }}/{{ config_module }}-{{ provider|default(netlab_provider)
         }}.yml'
@@ -5633,12 +5651,12 @@ defaults:
       - deploy-config/{{ ansible_network_os }}.yml
     plugin:
     - /work/netlab_cicd
-    - /home/pipi/net101/tools/tests/integration/vlan
+    - /home/pipi/net101/tools/tests/integration/initial
     - /home/pipi/.netlab
-    - /home/pipi/net101/tools/netsim/extra
+    - /home/pipi/netlab_gh/netsim/extra
     ready:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check
+      - /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check
       files:
       - '{{netlab_device_type}}-{{provider|default(netlab_provider)}}.yml'
       - '{{netlab_device_type}}.yml'
@@ -5655,10 +5673,10 @@ defaults:
       - '{{netlab_device_type}}/{{config_module}}.j2'
     templates:
       dirs:
-      - /home/pipi/net101/tools/netsim/daemons
-      - /home/pipi/net101/tools/netsim/ansible/templates
+      - /home/pipi/netlab_gh/netsim/daemons
+      - /home/pipi/netlab_gh/netsim/ansible/templates
     validate:
-    - /home/pipi/net101/tools/netsim/validate
+    - /home/pipi/netlab_gh/netsim/validate
   plugin:
   - multilab
   ports:
@@ -6063,7 +6081,8 @@ defaults:
     transform_after:
     - vlan
   sources:
-    extra: []
+    extra:
+    - ../wait_times.yml
     list: []
     system: []
     user: []
@@ -6405,7 +6424,6 @@ defaults:
         trunk: null
       node:
         mode: null
-      node_copy: {}
       phy_ifattr:
         _selfloop_ifindex: null
         bandwidth: null
@@ -6428,7 +6446,6 @@ defaults:
         prefix: null
         stp: null
         vni: null
-      vlan_svi_no_propagate: {}
     config_after:
     - lag
     features:
@@ -6439,7 +6456,7 @@ defaults:
     no_propagate:
     - start_vlan_id
     - mode
-    start_vlan_id: 700
+    start_vlan_id: 1000
     supported_on:
       arubacx: true
       bird:
@@ -6607,33 +6624,23 @@ groups:
   hosts:
     device: linux
     members:
-    - r1
-    - r2
-    - r3
-    - r4
-    - d1
-    - d2
-    - d3
-    - d4
+    - h1
+    - h2
+    module:
+    - routing
     node_data:
       provider: clab
-  probes:
-    device: frr
-    members:
-    - s2
-    - s3
-    - s4
-  switches:
-    members:
-    - s1
-    - s2
-    - s3
-    - s4
-    module:
-    - vlan
+      routing:
+        static:
+        - nexthop:
+            node: r
+          pool: loopback
+        - nexthop:
+            node: r
+          pool: vrf_loopback
 input:
-- /home/pipi/net101/tools/tests/integration/vlan/70-vlan-1-trunk.yml
-- /home/pipi/net101/tools/tests/integration/vlan/topology-defaults.yml
+- /home/pipi/net101/tools/tests/integration/initial/02-loopback.yml
+- /home/pipi/net101/tools/tests/integration/wait_times.yml
 - /home/pipi/.netlab.yml
 - package:topology-defaults.yml
 libvirt:
@@ -6641,1650 +6648,312 @@ libvirt:
     clab: true
 links:
 - _linkname: links[1]
+  bridge: ml_17_1
   interfaces:
   - ifindex: 1
-    ifname: ethernet1/1/1
-    node: s1
-    vlan:
-      trunk:
-        red: {}
-        vlan_1: {}
+    ifname: eth1
+    ipv4: 172.16.0.1/24
+    ipv6: 2001:db8:1::1/64
+    node: r
   - ifindex: 1
     ifname: eth1
-    node: s2
-    vlan:
-      trunk:
-        red: {}
-        vlan_1: {}
+    ipv4: 172.16.0.2/24
+    ipv6: 2001:db8:1::2/64
+    node: h1
+  libvirt:
+    provider:
+      clab: true
   linkindex: 1
   node_count: 2
-  prefix: {}
-  type: p2p
-  vlan:
-    trunk:
-      red: {}
-      vlan_1: {}
+  prefix:
+    ipv4: 172.16.0.0/24
+    ipv6: 2001:db8:1::/64
+  role: stub
+  type: lan
 - _linkname: links[2]
   bridge: ml_17_2
   interfaces:
-  - _vlan_mode: irb
-    ifindex: 2
-    ifname: ethernet1/1/2
-    ipv4: 172.31.1.1/24
-    node: s1
-    vlan:
-      native: vlan_1
-      trunk:
-        red: {}
-        vlan_1: {}
-  - _vlan_mode: irb
-    ifindex: 1
+  - ifindex: 2
+    ifname: eth2
+    ipv4: 172.16.1.1/24
+    ipv6: 2001:db8:1:1::1/64
+    node: r
+  - ifindex: 1
     ifname: eth1
-    ipv4: 172.31.1.3/24
-    node: s3
-    vlan:
-      native: vlan_1
-      trunk:
-        red: {}
-        vlan_1: {}
+    ipv4: 172.16.1.3/24
+    ipv6: 2001:db8:1:1::3/64
+    node: h2
+  libvirt:
+    provider:
+      clab: true
   linkindex: 2
   node_count: 2
   prefix:
-    allocation: id_based
-    ipv4: 172.31.1.0/24
+    ipv4: 172.16.1.0/24
+    ipv6: 2001:db8:1:1::/64
+  role: stub
   type: lan
-  vlan:
-    native: vlan_1
-    trunk:
-      red: {}
-      vlan_1: {}
 - _linkname: links[3]
-  bridge: ml_17_3
   interfaces:
-  - _vlan_mode: bridge
-    ifindex: 3
-    ifname: ethernet1/1/3
-    node: s1
-    vlan:
-      native: red
-      trunk:
-        red: {}
-        vlan_1: {}
-  - _vlan_mode: bridge
-    ifindex: 1
-    ifname: eth1
-    node: s4
-    vlan:
-      native: red
-      trunk:
-        red: {}
-        vlan_1: {}
+  - ifindex: 10001
+    ifname: lo1
+    ipv4: 10.2.0.1/32
+    ipv6: 2001:db8:cafe::1/64
+    node: r
   linkindex: 3
-  node_count: 2
+  node_count: 1
+  pool: vrf_loopback
   prefix:
-    allocation: id_based
-    ipv4: 172.31.1.0/24
-  type: lan
-  vlan:
-    native: red
-    trunk:
-      red: {}
-      vlan_1: {}
-- _linkname: vlans.red.links[1]
-  bridge: ml_17_4
-  interfaces:
-  - _vlan_mode: bridge
-    ifindex: 4
-    ifname: ethernet1/1/4
-    node: s1
-    vlan:
-      access: red
-  - ifindex: 1
-    ifname: eth1
-    ipv4: 172.31.1.5/24
-    node: r1
-  libvirt:
-    provider:
-      clab: true
-  linkindex: 4
-  node_count: 2
-  prefix:
-    allocation: id_based
-    ipv4: 172.31.1.0/24
-  type: lan
-  vlan:
-    access: red
-- _linkname: vlans.red.links[2]
-  bridge: ml_17_5
-  interfaces:
-  - _vlan_mode: bridge
-    ifindex: 2
-    ifname: eth2
-    node: s2
-    vlan:
-      access: red
-  - ifindex: 1
-    ifname: eth1
-    ipv4: 172.31.1.6/24
-    node: r2
-  libvirt:
-    provider:
-      clab: true
-  linkindex: 5
-  node_count: 2
-  prefix:
-    allocation: id_based
-    ipv4: 172.31.1.0/24
-  type: lan
-  vlan:
-    access: red
-- _linkname: vlans.red.links[3]
-  bridge: ml_17_6
-  interfaces:
-  - _vlan_mode: bridge
-    ifindex: 2
-    ifname: eth2
-    node: s3
-    vlan:
-      access: red
-  - ifindex: 1
-    ifname: eth1
-    ipv4: 172.31.1.7/24
-    node: r3
-  libvirt:
-    provider:
-      clab: true
-  linkindex: 6
-  node_count: 2
-  prefix:
-    allocation: id_based
-    ipv4: 172.31.1.0/24
-  type: lan
-  vlan:
-    access: red
-- _linkname: vlans.red.links[4]
-  bridge: ml_17_7
-  interfaces:
-  - _vlan_mode: bridge
-    ifindex: 2
-    ifname: eth2
-    node: s4
-    vlan:
-      access: red
-  - ifindex: 1
-    ifname: eth1
-    ipv4: 172.31.1.8/24
-    node: r4
-  libvirt:
-    provider:
-      clab: true
-  linkindex: 7
-  node_count: 2
-  prefix:
-    allocation: id_based
-    ipv4: 172.31.1.0/24
-  type: lan
-  vlan:
-    access: red
-- _linkname: vlans.vlan_1.links[1]
-  bridge: ml_17_8
-  interfaces:
-  - _vlan_mode: irb
-    ifindex: 5
-    ifname: ethernet1/1/5
-    ipv4: 172.31.1.1/24
-    node: s1
-    vlan:
-      access: vlan_1
-  - ifindex: 1
-    ifname: eth1
-    ipv4: 172.31.1.9/24
-    node: d1
-  libvirt:
-    provider:
-      clab: true
-  linkindex: 8
-  node_count: 2
-  prefix:
-    allocation: id_based
-    ipv4: 172.31.1.0/24
-  type: lan
-  vlan:
-    access: vlan_1
-- _linkname: vlans.vlan_1.links[2]
-  bridge: ml_17_9
-  interfaces:
-  - _vlan_mode: irb
-    ifindex: 3
-    ifname: eth3
-    ipv4: 172.31.1.2/24
-    node: s2
-    vlan:
-      access: vlan_1
-  - ifindex: 1
-    ifname: eth1
-    ipv4: 172.31.1.10/24
-    node: d2
-  libvirt:
-    provider:
-      clab: true
-  linkindex: 9
-  node_count: 2
-  prefix:
-    allocation: id_based
-    ipv4: 172.31.1.0/24
-  type: lan
-  vlan:
-    access: vlan_1
-- _linkname: vlans.vlan_1.links[3]
-  bridge: ml_17_10
-  interfaces:
-  - _vlan_mode: irb
-    ifindex: 3
-    ifname: eth3
-    ipv4: 172.31.1.3/24
-    node: s3
-    vlan:
-      access: vlan_1
-  - ifindex: 1
-    ifname: eth1
-    ipv4: 172.31.1.11/24
-    node: d3
-  libvirt:
-    provider:
-      clab: true
-  linkindex: 10
-  node_count: 2
-  prefix:
-    allocation: id_based
-    ipv4: 172.31.1.0/24
-  type: lan
-  vlan:
-    access: vlan_1
-- _linkname: vlans.vlan_1.links[4]
-  bridge: ml_17_11
-  interfaces:
-  - _vlan_mode: irb
-    ifindex: 3
-    ifname: eth3
-    ipv4: 172.31.1.4/24
-    node: s4
-    vlan:
-      access: vlan_1
-  - ifindex: 1
-    ifname: eth1
-    ipv4: 172.31.1.12/24
-    node: d4
-  libvirt:
-    provider:
-      clab: true
-  linkindex: 11
-  node_count: 2
-  prefix:
-    allocation: id_based
-    ipv4: 172.31.1.0/24
-  type: lan
-  vlan:
-    access: vlan_1
-message: 'The topology tests whether the device deals correctly with VLAN 1
-
-  in a vlan.trunk:
-
-
-  * As a native VLAN
-
-  * As a regular (tagged) VLAN
-
-  * In a trunk where another VLAN is a native VLAN
-
-
-  All r* hosts should be able to ping each other and all d* hosts should
-
-  be able to ping each other.
-
-
-  Please note it might take a while for the lab to work due to
-
-  STP learning phase
-
-  '
+    ipv4: 10.2.0.1/32
+    ipv6: 2001:db8:cafe::/64
+  type: loopback
+message: This scenario tests additional loopback interfaces
 module:
-- vlan
 - routing
 name: ml_17
 nodes:
-  d1:
+  h1:
     af:
       ipv4: true
+      ipv6: true
     box: python:3.13-alpine
     clab:
       binds:
-      - clab_files/d1/hosts:/etc/hosts
+      - clab_files/h1/hosts:/etc/hosts
       config_templates:
       - hosts:/etc/hosts
       kind: linux
     device: linux
-    hostname: clab-ml_17-d1
-    id: 9
-    interfaces:
-    - bridge: ml_17_8
-      gateway:
-        ipv4: 172.31.1.3/24
-      ifindex: 1
-      ifname: eth1
-      ipv4: 172.31.1.9/24
-      libvirt:
-        provider:
-          clab: true
-      linkindex: 8
-      mtu: 1500
-      name: d1 -> [s3,s1,s2,s4,d2...]
-      neighbors:
-      - ifname: vlan1
-        ipv4: 172.31.1.3/24
-        node: s3
-      - ifname: virtual-network1
-        ipv4: 172.31.1.1/24
-        node: s1
-      - ifname: vlan1
-        ipv4: 172.31.1.2/24
-        node: s2
-      - ifname: vlan1
-        ipv4: 172.31.1.4/24
-        node: s4
-      - ifname: eth1
-        ipv4: 172.31.1.10/24
-        node: d2
-      - ifname: eth1
-        ipv4: 172.31.1.11/24
-        node: d3
-      - ifname: eth1
-        ipv4: 172.31.1.12/24
-        node: d4
-      type: lan
-    mgmt:
-      ifname: eth0
-      ipv4: 192.168.17.109
-      mac: 08:4f:a9:09:00:00
-    module:
-    - routing
-    mtu: 1500
-    name: d1
-    provider: clab
-    role: host
-    routing:
-      static:
-      - ipv4: 172.16.0.0/16
-        nexthop:
-          idx: 0
-          intf: eth1
-          ipv4: 172.31.1.3
-      - ipv4: 10.0.0.0/24
-        nexthop:
-          idx: 0
-          intf: eth1
-          ipv4: 172.31.1.3
-      - ipv4: 10.1.0.0/16
-        nexthop:
-          idx: 0
-          intf: eth1
-          ipv4: 172.31.1.3
-      - ipv4: 10.2.0.0/24
-        nexthop:
-          idx: 0
-          intf: eth1
-          ipv4: 172.31.1.3
-  d2:
-    af:
-      ipv4: true
-    box: python:3.13-alpine
-    clab:
-      binds:
-      - clab_files/d2/hosts:/etc/hosts
-      config_templates:
-      - hosts:/etc/hosts
-      kind: linux
-    device: linux
-    hostname: clab-ml_17-d2
-    id: 10
-    interfaces:
-    - bridge: ml_17_9
-      gateway:
-        ipv4: 172.31.1.3/24
-      ifindex: 1
-      ifname: eth1
-      ipv4: 172.31.1.10/24
-      libvirt:
-        provider:
-          clab: true
-      linkindex: 9
-      mtu: 1500
-      name: d2 -> [s3,s1,d1,s2,s4...]
-      neighbors:
-      - ifname: vlan1
-        ipv4: 172.31.1.3/24
-        node: s3
-      - ifname: virtual-network1
-        ipv4: 172.31.1.1/24
-        node: s1
-      - ifname: eth1
-        ipv4: 172.31.1.9/24
-        node: d1
-      - ifname: vlan1
-        ipv4: 172.31.1.2/24
-        node: s2
-      - ifname: vlan1
-        ipv4: 172.31.1.4/24
-        node: s4
-      - ifname: eth1
-        ipv4: 172.31.1.11/24
-        node: d3
-      - ifname: eth1
-        ipv4: 172.31.1.12/24
-        node: d4
-      type: lan
-    mgmt:
-      ifname: eth0
-      ipv4: 192.168.17.110
-      mac: 08:4f:a9:0a:00:00
-    module:
-    - routing
-    mtu: 1500
-    name: d2
-    provider: clab
-    role: host
-    routing:
-      static:
-      - ipv4: 172.16.0.0/16
-        nexthop:
-          idx: 0
-          intf: eth1
-          ipv4: 172.31.1.3
-      - ipv4: 10.0.0.0/24
-        nexthop:
-          idx: 0
-          intf: eth1
-          ipv4: 172.31.1.3
-      - ipv4: 10.1.0.0/16
-        nexthop:
-          idx: 0
-          intf: eth1
-          ipv4: 172.31.1.3
-      - ipv4: 10.2.0.0/24
-        nexthop:
-          idx: 0
-          intf: eth1
-          ipv4: 172.31.1.3
-  d3:
-    af:
-      ipv4: true
-    box: python:3.13-alpine
-    clab:
-      binds:
-      - clab_files/d3/hosts:/etc/hosts
-      config_templates:
-      - hosts:/etc/hosts
-      kind: linux
-    device: linux
-    hostname: clab-ml_17-d3
-    id: 11
-    interfaces:
-    - bridge: ml_17_10
-      gateway:
-        ipv4: 172.31.1.3/24
-      ifindex: 1
-      ifname: eth1
-      ipv4: 172.31.1.11/24
-      libvirt:
-        provider:
-          clab: true
-      linkindex: 10
-      mtu: 1500
-      name: d3 -> [s3,s1,d1,s2,s4...]
-      neighbors:
-      - ifname: vlan1
-        ipv4: 172.31.1.3/24
-        node: s3
-      - ifname: virtual-network1
-        ipv4: 172.31.1.1/24
-        node: s1
-      - ifname: eth1
-        ipv4: 172.31.1.9/24
-        node: d1
-      - ifname: vlan1
-        ipv4: 172.31.1.2/24
-        node: s2
-      - ifname: vlan1
-        ipv4: 172.31.1.4/24
-        node: s4
-      - ifname: eth1
-        ipv4: 172.31.1.10/24
-        node: d2
-      - ifname: eth1
-        ipv4: 172.31.1.12/24
-        node: d4
-      type: lan
-    mgmt:
-      ifname: eth0
-      ipv4: 192.168.17.111
-      mac: 08:4f:a9:0b:00:00
-    module:
-    - routing
-    mtu: 1500
-    name: d3
-    provider: clab
-    role: host
-    routing:
-      static:
-      - ipv4: 172.16.0.0/16
-        nexthop:
-          idx: 0
-          intf: eth1
-          ipv4: 172.31.1.3
-      - ipv4: 10.0.0.0/24
-        nexthop:
-          idx: 0
-          intf: eth1
-          ipv4: 172.31.1.3
-      - ipv4: 10.1.0.0/16
-        nexthop:
-          idx: 0
-          intf: eth1
-          ipv4: 172.31.1.3
-      - ipv4: 10.2.0.0/24
-        nexthop:
-          idx: 0
-          intf: eth1
-          ipv4: 172.31.1.3
-  d4:
-    af:
-      ipv4: true
-    box: python:3.13-alpine
-    clab:
-      binds:
-      - clab_files/d4/hosts:/etc/hosts
-      config_templates:
-      - hosts:/etc/hosts
-      kind: linux
-    device: linux
-    hostname: clab-ml_17-d4
-    id: 12
-    interfaces:
-    - bridge: ml_17_11
-      gateway:
-        ipv4: 172.31.1.3/24
-      ifindex: 1
-      ifname: eth1
-      ipv4: 172.31.1.12/24
-      libvirt:
-        provider:
-          clab: true
-      linkindex: 11
-      mtu: 1500
-      name: d4 -> [s3,s1,d1,s2,s4...]
-      neighbors:
-      - ifname: vlan1
-        ipv4: 172.31.1.3/24
-        node: s3
-      - ifname: virtual-network1
-        ipv4: 172.31.1.1/24
-        node: s1
-      - ifname: eth1
-        ipv4: 172.31.1.9/24
-        node: d1
-      - ifname: vlan1
-        ipv4: 172.31.1.2/24
-        node: s2
-      - ifname: vlan1
-        ipv4: 172.31.1.4/24
-        node: s4
-      - ifname: eth1
-        ipv4: 172.31.1.10/24
-        node: d2
-      - ifname: eth1
-        ipv4: 172.31.1.11/24
-        node: d3
-      type: lan
-    mgmt:
-      ifname: eth0
-      ipv4: 192.168.17.112
-      mac: 08:4f:a9:0c:00:00
-    module:
-    - routing
-    mtu: 1500
-    name: d4
-    provider: clab
-    role: host
-    routing:
-      static:
-      - ipv4: 172.16.0.0/16
-        nexthop:
-          idx: 0
-          intf: eth1
-          ipv4: 172.31.1.3
-      - ipv4: 10.0.0.0/24
-        nexthop:
-          idx: 0
-          intf: eth1
-          ipv4: 172.31.1.3
-      - ipv4: 10.1.0.0/16
-        nexthop:
-          idx: 0
-          intf: eth1
-          ipv4: 172.31.1.3
-      - ipv4: 10.2.0.0/24
-        nexthop:
-          idx: 0
-          intf: eth1
-          ipv4: 172.31.1.3
-  r1:
-    af:
-      ipv4: true
-    box: python:3.13-alpine
-    clab:
-      binds:
-      - clab_files/r1/hosts:/etc/hosts
-      config_templates:
-      - hosts:/etc/hosts
-      kind: linux
-    device: linux
-    hostname: clab-ml_17-r1
-    id: 5
-    interfaces:
-    - bridge: ml_17_4
-      ifindex: 1
-      ifname: eth1
-      ipv4: 172.31.1.5/24
-      libvirt:
-        provider:
-          clab: true
-      linkindex: 4
-      mtu: 1500
-      name: r1 -> [s4,s1,s2,s3,r2...]
-      neighbors:
-      - ifname: vlan700
-        node: s4
-      - ifname: virtual-network700
-        node: s1
-      - ifname: vlan700
-        node: s2
-      - ifname: vlan700
-        node: s3
-      - ifname: eth1
-        ipv4: 172.31.1.6/24
-        node: r2
-      - ifname: eth1
-        ipv4: 172.31.1.7/24
-        node: r3
-      - ifname: eth1
-        ipv4: 172.31.1.8/24
-        node: r4
-      type: lan
-    mgmt:
-      ifname: eth0
-      ipv4: 192.168.17.105
-      mac: 08:4f:a9:05:00:00
-    module:
-    - routing
-    mtu: 1500
-    name: r1
-    provider: clab
-    role: host
-    routing:
-      static: []
-  r2:
-    af:
-      ipv4: true
-    box: python:3.13-alpine
-    clab:
-      binds:
-      - clab_files/r2/hosts:/etc/hosts
-      config_templates:
-      - hosts:/etc/hosts
-      kind: linux
-    device: linux
-    hostname: clab-ml_17-r2
-    id: 6
-    interfaces:
-    - bridge: ml_17_5
-      ifindex: 1
-      ifname: eth1
-      ipv4: 172.31.1.6/24
-      libvirt:
-        provider:
-          clab: true
-      linkindex: 5
-      mtu: 1500
-      name: r2 -> [s4,s1,r1,s2,s3...]
-      neighbors:
-      - ifname: vlan700
-        node: s4
-      - ifname: virtual-network700
-        node: s1
-      - ifname: eth1
-        ipv4: 172.31.1.5/24
-        node: r1
-      - ifname: vlan700
-        node: s2
-      - ifname: vlan700
-        node: s3
-      - ifname: eth1
-        ipv4: 172.31.1.7/24
-        node: r3
-      - ifname: eth1
-        ipv4: 172.31.1.8/24
-        node: r4
-      type: lan
-    mgmt:
-      ifname: eth0
-      ipv4: 192.168.17.106
-      mac: 08:4f:a9:06:00:00
-    module:
-    - routing
-    mtu: 1500
-    name: r2
-    provider: clab
-    role: host
-    routing:
-      static: []
-  r3:
-    af:
-      ipv4: true
-    box: python:3.13-alpine
-    clab:
-      binds:
-      - clab_files/r3/hosts:/etc/hosts
-      config_templates:
-      - hosts:/etc/hosts
-      kind: linux
-    device: linux
-    hostname: clab-ml_17-r3
-    id: 7
-    interfaces:
-    - bridge: ml_17_6
-      ifindex: 1
-      ifname: eth1
-      ipv4: 172.31.1.7/24
-      libvirt:
-        provider:
-          clab: true
-      linkindex: 6
-      mtu: 1500
-      name: r3 -> [s4,s1,r1,s2,s3...]
-      neighbors:
-      - ifname: vlan700
-        node: s4
-      - ifname: virtual-network700
-        node: s1
-      - ifname: eth1
-        ipv4: 172.31.1.5/24
-        node: r1
-      - ifname: vlan700
-        node: s2
-      - ifname: vlan700
-        node: s3
-      - ifname: eth1
-        ipv4: 172.31.1.6/24
-        node: r2
-      - ifname: eth1
-        ipv4: 172.31.1.8/24
-        node: r4
-      type: lan
-    mgmt:
-      ifname: eth0
-      ipv4: 192.168.17.107
-      mac: 08:4f:a9:07:00:00
-    module:
-    - routing
-    mtu: 1500
-    name: r3
-    provider: clab
-    role: host
-    routing:
-      static: []
-  r4:
-    af:
-      ipv4: true
-    box: python:3.13-alpine
-    clab:
-      binds:
-      - clab_files/r4/hosts:/etc/hosts
-      config_templates:
-      - hosts:/etc/hosts
-      kind: linux
-    device: linux
-    hostname: clab-ml_17-r4
-    id: 8
-    interfaces:
-    - bridge: ml_17_7
-      ifindex: 1
-      ifname: eth1
-      ipv4: 172.31.1.8/24
-      libvirt:
-        provider:
-          clab: true
-      linkindex: 7
-      mtu: 1500
-      name: r4 -> [s4,s1,r1,s2,s3...]
-      neighbors:
-      - ifname: vlan700
-        node: s4
-      - ifname: virtual-network700
-        node: s1
-      - ifname: eth1
-        ipv4: 172.31.1.5/24
-        node: r1
-      - ifname: vlan700
-        node: s2
-      - ifname: vlan700
-        node: s3
-      - ifname: eth1
-        ipv4: 172.31.1.6/24
-        node: r2
-      - ifname: eth1
-        ipv4: 172.31.1.7/24
-        node: r3
-      type: lan
-    mgmt:
-      ifname: eth0
-      ipv4: 192.168.17.108
-      mac: 08:4f:a9:08:00:00
-    module:
-    - routing
-    mtu: 1500
-    name: r4
-    provider: clab
-    role: host
-    routing:
-      static: []
-  s1:
-    af:
-      ipv4: true
-    box: dell/os10
-    device: dellos10
-    id: 1
-    interfaces:
-    - ifindex: 1
-      ifname: ethernet1/1/1
-      libvirt:
-        type: tunnel
-      linkindex: 1
-      name: s1 -> s2
-      neighbors:
-      - ifname: eth1
-        node: s2
-      remote_id: 2
-      remote_ifindex: 1
-      type: p2p
-      vlan:
-        trunk:
-          red: {}
-          vlan_1: {}
-        trunk_id:
-        - 700
-        - 1
-    - bridge: ml_17_2
-      ifindex: 2
-      ifname: ethernet1/1/2
-      linkindex: 2
-      name: s1 -> s3
-      neighbors:
-      - ifname: eth1
-        ipv4: 172.31.1.3/24
-        node: s3
-      type: lan
-      vlan:
-        access_id: 1
-        native: vlan_1
-        trunk:
-          red: {}
-          vlan_1: {}
-        trunk_id:
-        - 700
-        - 1
-    - bridge: ml_17_3
-      ifindex: 3
-      ifname: ethernet1/1/3
-      linkindex: 3
-      name: s1 -> s4
-      neighbors:
-      - ifname: eth1
-        node: s4
-      type: lan
-      vlan:
-        access_id: 700
-        native: red
-        trunk:
-          red: {}
-          vlan_1: {}
-        trunk_id:
-        - 700
-        - 1
-    - bridge: ml_17_4
-      ifindex: 4
-      ifname: ethernet1/1/4
-      libvirt:
-        provider:
-          clab: true
-      linkindex: 4
-      name: '[Access VLAN red] s1 -> r1'
-      neighbors:
-      - ifname: eth1
-        ipv4: 172.31.1.5/24
-        node: r1
-      type: lan
-      vlan:
-        access: red
-        access_id: 700
-    - bridge: ml_17_8
-      ifindex: 5
-      ifname: ethernet1/1/5
-      libvirt:
-        provider:
-          clab: true
-      linkindex: 8
-      name: '[Access VLAN vlan_1] s1 -> d1'
-      neighbors:
-      - ifname: eth1
-        ipv4: 172.31.1.9/24
-        node: d1
-      type: lan
-      vlan:
-        access: vlan_1
-        access_id: 1
-    - bridge_group: 1
-      ifindex: 40000
-      ifname: virtual-network1
-      ipv4: 172.31.1.1/24
-      name: VLAN vlan_1 (1) -> [s3,d1,s2,s4,d2...]
-      neighbors:
-      - ifname: vlan1
-        ipv4: 172.31.1.3/24
-        node: s3
-      - ifname: eth1
-        ipv4: 172.31.1.9/24
-        node: d1
-      - ifname: vlan1
-        ipv4: 172.31.1.2/24
-        node: s2
-      - ifname: vlan1
-        ipv4: 172.31.1.4/24
-        node: s4
-      - ifname: eth1
-        ipv4: 172.31.1.10/24
-        node: d2
-      - ifname: eth1
-        ipv4: 172.31.1.11/24
-        node: d3
-      - ifname: eth1
-        ipv4: 172.31.1.12/24
-        node: d4
-      type: svi
-      virtual_interface: true
-      vlan:
-        mode: irb
-        name: vlan_1
-    - bridge_group: 2
-      ifindex: 40001
-      ifname: virtual-network700
-      name: VLAN red (700) -> [s4,r1,s2,s3,r2...]
-      neighbors:
-      - ifname: vlan700
-        node: s4
-      - ifname: eth1
-        ipv4: 172.31.1.5/24
-        node: r1
-      - ifname: vlan700
-        node: s2
-      - ifname: vlan700
-        node: s3
-      - ifname: eth1
-        ipv4: 172.31.1.6/24
-        node: r2
-      - ifname: eth1
-        ipv4: 172.31.1.7/24
-        node: r3
-      - ifname: eth1
-        ipv4: 172.31.1.8/24
-        node: r4
-      type: svi
-      virtual_interface: true
-      vlan:
-        mode: bridge
-        name: red
-    loopback:
-      ifindex: 0
-      ifname: loopback0
-      ipv4: 10.0.0.1/32
-      neighbors: []
-      type: loopback
-      virtual_interface: true
-    mgmt:
-      ifname: mgmt1/1/1
-      ipv4: 192.168.17.101
-      mac: 08:4f:a9:01:00:00
-    module:
-    - vlan
-    mtu: 1500
-    name: s1
-    provider: libvirt
-    vlan:
-      max_bridge_group: 2
-    vlans:
-      red:
-        bridge_group: 2
-        id: 700
-        mode: bridge
-        prefix:
-          allocation: id_based
-          ipv4: 172.31.1.0/24
-      vlan_1:
-        bridge_group: 1
-        id: 1
-        mode: irb
-        prefix:
-          allocation: id_based
-          ipv4: 172.31.1.0/24
-  s2:
-    af:
-      ipv4: true
-    box: debian/bookworm64
-    device: frr
+    hostname: clab-ml_17-h1
     id: 2
     interfaces:
-    - ifindex: 1
+    - bridge: ml_17_1
+      ifindex: 1
       ifname: eth1
+      ipv4: 172.16.0.2/24
+      ipv6: 2001:db8:1::2/64
       libvirt:
-        type: tunnel
+        provider:
+          clab: true
       linkindex: 1
       mtu: 1500
-      name: s2 -> s1
-      neighbors:
-      - ifname: ethernet1/1/1
-        node: s1
-      remote_id: 1
-      remote_ifindex: 1
-      subif_index: 2
-      type: p2p
-    - bridge: ml_17_5
-      ifindex: 2
-      ifname: eth2
-      libvirt:
-        provider:
-          clab: true
-      linkindex: 5
-      mtu: 1500
-      name: '[Access VLAN red] s2 -> r2'
+      name: h1 -> r
       neighbors:
       - ifname: eth1
-        ipv4: 172.31.1.6/24
-        node: r2
+        ipv4: 172.16.0.1/24
+        ipv6: 2001:db8:1::1/64
+        node: r
+      role: stub
       type: lan
-      vlan:
-        access: red
-        access_id: 700
-    - bridge: ml_17_9
-      ifindex: 3
-      ifname: eth3
-      libvirt:
-        provider:
-          clab: true
-      linkindex: 9
-      mtu: 1500
-      name: '[Access VLAN vlan_1] s2 -> d2'
-      neighbors:
-      - ifname: eth1
-        ipv4: 172.31.1.10/24
-        node: d2
-      type: lan
-      vlan:
-        access: vlan_1
-        access_id: 1
-    - ifindex: 4
-      ifname: eth1.700
-      name: '[SubIf VLAN red] s2 -> s1'
-      neighbors:
-      - ifname: ethernet1/1/6
-        node: s1
-      parent_ifindex: 1
-      parent_ifname: eth1
-      type: vlan_member
-      virtual_interface: true
-      vlan:
-        access: red
-        access_id: 700
-    - ifindex: 5
-      ifname: eth1.1
-      name: '[SubIf VLAN vlan_1] s2 -> s1'
-      neighbors:
-      - ifname: ethernet1/1/7
-        ipv4: 172.31.1.1/24
-        node: s1
-      parent_ifindex: 1
-      parent_ifname: eth1
-      type: vlan_member
-      virtual_interface: true
-      vlan:
-        access: vlan_1
-        access_id: 1
-    - bridge_group: 1
-      ifindex: 40000
-      ifname: vlan700
-      name: VLAN red (700) -> [s4,s1,r1,s3,r2...]
-      neighbors:
-      - ifname: vlan700
-        node: s4
-      - ifname: virtual-network700
-        node: s1
-      - ifname: eth1
-        ipv4: 172.31.1.5/24
-        node: r1
-      - ifname: vlan700
-        node: s3
-      - ifname: eth1
-        ipv4: 172.31.1.6/24
-        node: r2
-      - ifname: eth1
-        ipv4: 172.31.1.7/24
-        node: r3
-      - ifname: eth1
-        ipv4: 172.31.1.8/24
-        node: r4
-      type: svi
-      virtual_interface: true
-      vlan:
-        mode: bridge
-        name: red
-    - bridge_group: 2
-      ifindex: 40001
-      ifname: vlan1
-      ipv4: 172.31.1.2/24
-      mtu: 1500
-      name: VLAN vlan_1 (1) -> [s3,s1,d1,s4,d2...]
-      neighbors:
-      - ifname: vlan1
-        ipv4: 172.31.1.3/24
-        node: s3
-      - ifname: virtual-network1
-        ipv4: 172.31.1.1/24
-        node: s1
-      - ifname: eth1
-        ipv4: 172.31.1.9/24
-        node: d1
-      - ifname: vlan1
-        ipv4: 172.31.1.4/24
-        node: s4
-      - ifname: eth1
-        ipv4: 172.31.1.10/24
-        node: d2
-      - ifname: eth1
-        ipv4: 172.31.1.11/24
-        node: d3
-      - ifname: eth1
-        ipv4: 172.31.1.12/24
-        node: d4
-      type: svi
-      virtual_interface: true
-      vlan:
-        mode: irb
-        name: vlan_1
-    loopback:
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.2/32
-      neighbors: []
-      type: loopback
-      virtual_interface: true
     mgmt:
       ifname: eth0
       ipv4: 192.168.17.102
       mac: 08:4f:a9:02:00:00
     module:
-    - vlan
+    - routing
     mtu: 1500
-    name: s2
-    role: router
-    vlan:
-      max_bridge_group: 2
-    vlans:
-      red:
-        bridge_group: 1
-        id: 700
-        mode: bridge
-        prefix:
-          allocation: id_based
-          ipv4: 172.31.1.0/24
-      vlan_1:
-        bridge_group: 2
-        id: 1
-        mode: irb
-        prefix:
-          allocation: id_based
-          ipv4: 172.31.1.0/24
-  s3:
+    name: h1
+    provider: clab
+    role: host
+    routing:
+      static:
+      - ipv4: 10.0.0.0/24
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.0.1
+          ipv6: 2001:db8:1::1
+      - ipv6: 2001:db8::/48
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.0.1
+          ipv6: 2001:db8:1::1
+      - ipv4: 10.2.0.0/24
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.0.1
+          ipv6: 2001:db8:1::1
+      - ipv6: 2001:db8:cafe::/48
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.0.1
+          ipv6: 2001:db8:1::1
+  h2:
     af:
       ipv4: true
-    box: debian/bookworm64
-    device: frr
+      ipv6: true
+    box: python:3.13-alpine
+    clab:
+      binds:
+      - clab_files/h2/hosts:/etc/hosts
+      config_templates:
+      - hosts:/etc/hosts
+      kind: linux
+    device: linux
+    hostname: clab-ml_17-h2
     id: 3
     interfaces:
     - bridge: ml_17_2
       ifindex: 1
       ifname: eth1
+      ipv4: 172.16.1.3/24
+      ipv6: 2001:db8:1:1::3/64
+      libvirt:
+        provider:
+          clab: true
       linkindex: 2
       mtu: 1500
-      name: s3 -> s1
+      name: h2 -> r
       neighbors:
-      - ifname: ethernet1/1/2
-        ipv4: 172.31.1.1/24
-        node: s1
-      subif_index: 1
+      - ifname: eth2
+        ipv4: 172.16.1.1/24
+        ipv6: 2001:db8:1:1::1/64
+        node: r
+      role: stub
       type: lan
-      vlan:
-        access_id: 1
-        native: vlan_1
-        trunk:
-          red: {}
-          vlan_1: {}
-        trunk_id:
-        - 1
-    - bridge: ml_17_6
-      ifindex: 2
-      ifname: eth2
-      libvirt:
-        provider:
-          clab: true
-      linkindex: 6
-      mtu: 1500
-      name: '[Access VLAN red] s3 -> r3'
-      neighbors:
-      - ifname: eth1
-        ipv4: 172.31.1.7/24
-        node: r3
-      type: lan
-      vlan:
-        access: red
-        access_id: 700
-    - bridge: ml_17_10
-      ifindex: 3
-      ifname: eth3
-      libvirt:
-        provider:
-          clab: true
-      linkindex: 10
-      mtu: 1500
-      name: '[Access VLAN vlan_1] s3 -> d3'
-      neighbors:
-      - ifname: eth1
-        ipv4: 172.31.1.11/24
-        node: d3
-      type: lan
-      vlan:
-        access: vlan_1
-        access_id: 1
-    - ifindex: 4
-      ifname: eth1.700
-      name: '[SubIf VLAN red] s3 -> s1'
-      neighbors:
-      - ifname: ethernet1/1/8
-        node: s1
-      parent_ifindex: 1
-      parent_ifname: eth1
-      type: vlan_member
-      virtual_interface: true
-      vlan:
-        access: red
-        access_id: 700
-    - bridge_group: 1
-      ifindex: 40000
-      ifname: vlan1
-      ipv4: 172.31.1.3/24
-      mtu: 1500
-      name: VLAN vlan_1 (1) -> [s1,d1,s2,s4,d2...]
-      neighbors:
-      - ifname: virtual-network1
-        ipv4: 172.31.1.1/24
-        node: s1
-      - ifname: eth1
-        ipv4: 172.31.1.9/24
-        node: d1
-      - ifname: vlan1
-        ipv4: 172.31.1.2/24
-        node: s2
-      - ifname: vlan1
-        ipv4: 172.31.1.4/24
-        node: s4
-      - ifname: eth1
-        ipv4: 172.31.1.10/24
-        node: d2
-      - ifname: eth1
-        ipv4: 172.31.1.11/24
-        node: d3
-      - ifname: eth1
-        ipv4: 172.31.1.12/24
-        node: d4
-      type: svi
-      virtual_interface: true
-      vlan:
-        mode: irb
-        name: vlan_1
-    - bridge_group: 2
-      ifindex: 40001
-      ifname: vlan700
-      name: VLAN red (700) -> [s4,s1,r1,s2,r2...]
-      neighbors:
-      - ifname: vlan700
-        node: s4
-      - ifname: virtual-network700
-        node: s1
-      - ifname: eth1
-        ipv4: 172.31.1.5/24
-        node: r1
-      - ifname: vlan700
-        node: s2
-      - ifname: eth1
-        ipv4: 172.31.1.6/24
-        node: r2
-      - ifname: eth1
-        ipv4: 172.31.1.7/24
-        node: r3
-      - ifname: eth1
-        ipv4: 172.31.1.8/24
-        node: r4
-      type: svi
-      virtual_interface: true
-      vlan:
-        mode: bridge
-        name: red
-    loopback:
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.3/32
-      neighbors: []
-      type: loopback
-      virtual_interface: true
     mgmt:
       ifname: eth0
       ipv4: 192.168.17.103
       mac: 08:4f:a9:03:00:00
     module:
-    - vlan
+    - routing
     mtu: 1500
-    name: s3
-    role: router
-    vlan:
-      max_bridge_group: 2
-    vlans:
-      red:
-        bridge_group: 2
-        id: 700
-        mode: bridge
-        prefix:
-          allocation: id_based
-          ipv4: 172.31.1.0/24
-      vlan_1:
-        bridge_group: 1
-        id: 1
-        mode: irb
-        prefix:
-          allocation: id_based
-          ipv4: 172.31.1.0/24
-  s4:
+    name: h2
+    provider: clab
+    role: host
+    routing:
+      static:
+      - ipv4: 10.0.0.0/24
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.1.1
+          ipv6: 2001:db8:1:1::1
+      - ipv6: 2001:db8::/48
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.1.1
+          ipv6: 2001:db8:1:1::1
+      - ipv4: 10.2.0.0/24
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.1.1
+          ipv6: 2001:db8:1:1::1
+      - ipv6: 2001:db8:cafe::/48
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.1.1
+          ipv6: 2001:db8:1:1::1
+  r:
     af:
       ipv4: true
-    box: debian/bookworm64
-    device: frr
-    id: 4
+      ipv6: true
+    box: bento/ubuntu-24.04
+    device: linux
+    id: 1
     interfaces:
-    - bridge: ml_17_3
+    - bridge: ml_17_1
       ifindex: 1
       ifname: eth1
-      linkindex: 3
-      mtu: 1500
-      name: s4 -> s1
+      ipv4: 172.16.0.1/24
+      ipv6: 2001:db8:1::1/64
+      libvirt:
+        provider:
+          clab: true
+      linkindex: 1
+      name: r -> h1
       neighbors:
-      - ifname: ethernet1/1/3
-        node: s1
-      subif_index: 1
+      - ifname: eth1
+        ipv4: 172.16.0.2/24
+        ipv6: 2001:db8:1::2/64
+        node: h1
+      role: stub
       type: lan
-      vlan:
-        access_id: 700
-        native: red
-        trunk:
-          red: {}
-          vlan_1: {}
-        trunk_id:
-        - 700
-    - bridge: ml_17_7
+    - bridge: ml_17_2
       ifindex: 2
       ifname: eth2
+      ipv4: 172.16.1.1/24
+      ipv6: 2001:db8:1:1::1/64
       libvirt:
         provider:
           clab: true
-      linkindex: 7
-      mtu: 1500
-      name: '[Access VLAN red] s4 -> r4'
+      linkindex: 2
+      name: r -> h2
       neighbors:
       - ifname: eth1
-        ipv4: 172.31.1.8/24
-        node: r4
+        ipv4: 172.16.1.3/24
+        ipv6: 2001:db8:1:1::3/64
+        node: h2
+      role: stub
       type: lan
-      vlan:
-        access: red
-        access_id: 700
-    - bridge: ml_17_11
-      ifindex: 3
-      ifname: eth3
-      libvirt:
-        provider:
-          clab: true
-      linkindex: 11
-      mtu: 1500
-      name: '[Access VLAN vlan_1] s4 -> d4'
-      neighbors:
-      - ifname: eth1
-        ipv4: 172.31.1.12/24
-        node: d4
-      type: lan
-      vlan:
-        access: vlan_1
-        access_id: 1
-    - ifindex: 4
-      ifname: eth1.1
-      name: '[SubIf VLAN vlan_1] s4 -> s1'
-      neighbors:
-      - ifname: ethernet1/1/9
-        ipv4: 172.31.1.1/24
-        node: s1
-      parent_ifindex: 1
-      parent_ifname: eth1
-      type: vlan_member
+    - ifindex: 10001
+      ifname: lo1
+      ipv4: 10.2.0.1/32
+      ipv6: 2001:db8:cafe::1/64
+      linkindex: 3
+      name: r -> stub
+      neighbors: []
+      pool: vrf_loopback
+      type: loopback
       virtual_interface: true
-      vlan:
-        access: vlan_1
-        access_id: 1
-    - bridge_group: 1
-      ifindex: 40000
-      ifname: vlan700
-      name: VLAN red (700) -> [s1,r1,s2,s3,r2...]
-      neighbors:
-      - ifname: virtual-network700
-        node: s1
-      - ifname: eth1
-        ipv4: 172.31.1.5/24
-        node: r1
-      - ifname: vlan700
-        node: s2
-      - ifname: vlan700
-        node: s3
-      - ifname: eth1
-        ipv4: 172.31.1.6/24
-        node: r2
-      - ifname: eth1
-        ipv4: 172.31.1.7/24
-        node: r3
-      - ifname: eth1
-        ipv4: 172.31.1.8/24
-        node: r4
-      type: svi
-      virtual_interface: true
-      vlan:
-        mode: bridge
-        name: red
-    - bridge_group: 2
-      ifindex: 40001
-      ifname: vlan1
-      ipv4: 172.31.1.4/24
-      mtu: 1500
-      name: VLAN vlan_1 (1) -> [s3,s1,d1,s2,d2...]
-      neighbors:
-      - ifname: vlan1
-        ipv4: 172.31.1.3/24
-        node: s3
-      - ifname: virtual-network1
-        ipv4: 172.31.1.1/24
-        node: s1
-      - ifname: eth1
-        ipv4: 172.31.1.9/24
-        node: d1
-      - ifname: vlan1
-        ipv4: 172.31.1.2/24
-        node: s2
-      - ifname: eth1
-        ipv4: 172.31.1.10/24
-        node: d2
-      - ifname: eth1
-        ipv4: 172.31.1.11/24
-        node: d3
-      - ifname: eth1
-        ipv4: 172.31.1.12/24
-        node: d4
-      type: svi
-      virtual_interface: true
-      vlan:
-        mode: irb
-        name: vlan_1
     loopback:
       ifindex: 0
       ifname: lo
-      ipv4: 10.0.0.4/32
+      ipv4: 10.0.0.1/32
+      ipv6: 2001:db8:0:1::1/64
       neighbors: []
       type: loopback
       virtual_interface: true
     mgmt:
       ifname: eth0
-      ipv4: 192.168.17.104
-      mac: 08:4f:a9:04:00:00
+      ipv4: 192.168.17.101
+      mac: 08:4f:a9:01:00:00
     module:
-    - vlan
-    mtu: 1500
-    name: s4
-    role: router
-    vlan:
-      max_bridge_group: 2
-    vlans:
-      red:
-        bridge_group: 1
-        id: 700
-        mode: bridge
-        prefix:
-          allocation: id_based
-          ipv4: 172.31.1.0/24
-      vlan_1:
-        bridge_group: 2
-        id: 1
-        mode: irb
-        prefix:
-          allocation: id_based
-          ipv4: 172.31.1.0/24
+    - routing
+    name: r
+    provider: libvirt
+    role: host
+    routing:
+      static: []
 plugin:
 - multilab
+prefix:
+  any:
+    ipv4: 0.0.0.0/0
+    ipv6: ::/0
 provider: libvirt
 validate:
-- description: Ping-based reachability test in VLAN red
-  name: ping_red
+- description: IPv4 ping to device loopback
+  name: ping4
   nodes:
-  - r2
-  - r3
-  - r4
-  plugin: ping('r1')
-  wait: 45
-  wait_msg: Waiting for STP to enable the ports
-- description: Ping-based reachability test in VLAN 1
-  name: ping_vlan_1
+  - h1
+  - h2
+  plugin: ping(nodes.r.loopback.ipv4)
+  wait: 5
+  wait_msg: Waiting for IPv4 interfaces to become ready
+- description: IPv6 ping to device loopback
+  name: ping6
   nodes:
-  - d2
-  - d3
-  - d4
-  plugin: ping('d1')
-  wait: 15
-  wait_msg: Waiting for STP to enable the ports
-- description: Ping VLAN 1 interface on S1
-  name: ping_irb_1
+  - h1
+  - h2
+  plugin: ping(nodes.r.loopback.ipv6,af='ipv6')
+  wait: 5
+  wait_msg: Waiting for IPv6 interfaces to become ready
+- description: IPv4 ping to extra loopback
+  name: ping_x4
   nodes:
-  - d1
-  - d2
-  - d3
-  - d4
-  plugin: ping('172.31.1.1')
-vlans:
-  red:
-    host_count: 4
-    id: 700
-    mode: bridge
-    neighbors:
-    - ifname: vlan700
-      node: s4
-    - ifname: virtual-network700
-      node: s1
-    - ifname: eth1
-      ipv4: 172.31.1.5/24
-      node: r1
-    - ifname: vlan700
-      node: s2
-    - ifname: vlan700
-      node: s3
-    - ifname: eth1
-      ipv4: 172.31.1.6/24
-      node: r2
-    - ifname: eth1
-      ipv4: 172.31.1.7/24
-      node: r3
-    - ifname: eth1
-      ipv4: 172.31.1.8/24
-      node: r4
-    prefix:
-      allocation: id_based
-      ipv4: 172.31.1.0/24
-  vlan_1:
-    host_count: 4
-    id: 1
-    mode: irb
-    neighbors:
-    - ifname: vlan1
-      ipv4: 172.31.1.3/24
-      node: s3
-    - ifname: virtual-network1
-      ipv4: 172.31.1.1/24
-      node: s1
-    - ifname: eth1
-      ipv4: 172.31.1.9/24
-      node: d1
-    - ifname: vlan1
-      ipv4: 172.31.1.2/24
-      node: s2
-    - ifname: vlan1
-      ipv4: 172.31.1.4/24
-      node: s4
-    - ifname: eth1
-      ipv4: 172.31.1.10/24
-      node: d2
-    - ifname: eth1
-      ipv4: 172.31.1.11/24
-      node: d3
-    - ifname: eth1
-      ipv4: 172.31.1.12/24
-      node: d4
-    prefix:
-      allocation: id_based
-      ipv4: 172.31.1.0/24
+  - h1
+  - h2
+  plugin: ping(nodes.r.interfaces[2].ipv4)
+- description: IPv6 ping to extra loopback
+  name: ping_x6
+  nodes:
+  - h1
+  - h2
+  plugin: ping(nodes.r.interfaces[2].ipv6)
