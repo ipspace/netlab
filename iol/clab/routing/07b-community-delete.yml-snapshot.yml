@@ -332,9 +332,6 @@ defaults:
       config: list
       cpu: null
       device: device
-      eos:
-        serialnumber: str
-        systemmacaddr: mac
       group: list
       id:
         max_value: 150
@@ -1150,7 +1147,7 @@ defaults:
         dnsmasq: dnsmasq
       virtualbox:
         image: null
-  device: eos
+  device: iol
   devices:
     arubacx:
       clab:
@@ -2424,7 +2421,6 @@ defaults:
         image: arista/veos
       loopback_interface_name: Loopback{ifindex}
       mgmt_if: Management1
-      provider: clab
       role: router
       tunnel_interface_name: Tunnel{ifindex}
       virtualbox:
@@ -2827,6 +2823,7 @@ defaults:
           -o HostKeyAlgorithms=+ssh-rsa
       interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
       loopback_interface_name: Loopback{ifindex}
+      provider: clab
       role: router
       routing:
         _rm_per_af: true
@@ -2992,6 +2989,7 @@ defaults:
           -o HostKeyAlgorithms=+ssh-rsa
       interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
       loopback_interface_name: Loopback{ifindex}
+      provider: clab
       role: router
       routing:
         _rm_per_af: true
@@ -6809,7 +6807,7 @@ groups:
     node_data:
       provider: clab
 input:
-- /home/pipi/net101/tools/tests/integration/routing/07a-community-append.yml
+- /home/pipi/net101/tools/tests/integration/routing/07b-community-delete.yml
 - /home/pipi/.netlab.yml
 - package:topology-defaults.yml
 links:
@@ -6819,7 +6817,7 @@ links:
       policy:
         out: set_comm
     ifindex: 1
-    ifname: Ethernet1
+    ifname: Ethernet0/1
     ipv4: 10.1.0.1/30
     node: dut
   - ifindex: 1
@@ -6835,7 +6833,7 @@ links:
 - _linkname: links[2]
   interfaces:
   - ifindex: 2
-    ifname: Ethernet2
+    ifname: Ethernet0/2
     ipv4: 10.1.0.5/30
     node: dut
   - bgp:
@@ -6851,7 +6849,7 @@ links:
     ipv4: 10.1.0.4/30
   role: external
   type: p2p
-message: 'Use this topology to test ''set.community.append'' route-map option.
+message: 'Use this topology to test ''set.community.delete'' route-map option.
 
   '
 module:
@@ -6863,11 +6861,6 @@ nodes:
     af:
       ipv4: true
     bgp:
-      _cprop_order:
-      - standard
-      - extended
-      - large
-      - link-bandwidth
       _session_clear:
       - 10.1.0.2
       advertise_loopback: true
@@ -6875,14 +6868,11 @@ nodes:
       community:
         ebgp:
         - standard
-        - large
         ibgp:
         - standard
-        - large
         - extended
         localas_ibgp:
         - standard
-        - large
         - extended
       ipv4: true
       neighbors:
@@ -6904,15 +6894,12 @@ nodes:
         type: ebgp
       next_hop_self: true
       router_id: 10.0.0.1
-    box: ceos:4.33.1F
+    box: vrnetlab/cisco_iol:17.12.01
     clab:
-      env:
-        CLAB_MGMT_VRF: management
-        INTFTYPE: et
-      kind: ceos
+      kind: cisco_iol
     config:
     - bgp.policy
-    device: eos
+    device: iol
     hostname: clab-ml_17-dut
     id: 1
     interfaces:
@@ -6920,9 +6907,9 @@ nodes:
         policy:
           out: set_comm
       clab:
-        name: et1
+        name: Ethernet0/1
       ifindex: 1
-      ifname: Ethernet1
+      ifname: Ethernet0/1
       ipv4: 10.1.0.1/30
       linkindex: 1
       name: dut -> probe
@@ -6933,9 +6920,9 @@ nodes:
       role: external
       type: p2p
     - clab:
-        name: et2
+        name: Ethernet0/2
       ifindex: 2
-      ifname: Ethernet2
+      ifname: Ethernet0/2
       ipv4: 10.1.0.5/30
       linkindex: 2
       name: dut -> x1
@@ -6956,7 +6943,7 @@ nodes:
       type: loopback
       virtual_interface: true
     mgmt:
-      ifname: Management0
+      ifname: Ethernet0/0
       ipv4: 192.168.17.101
       mac: 08:4f:a9:01:00:00
     module:
@@ -6966,15 +6953,22 @@ nodes:
     provider: clab
     role: router
     routing:
+      _rm_per_af: true
+      community:
+        DEL_set_comm_10:
+          action: permit
+          type: standard
+          value:
+          - _value: '65101:42'
+            action: permit
+            type: standard
       policy:
         set_comm:
         - action: permit
           sequence: 10
           set:
             community:
-              append: true
-              standard:
-              - 65000:101
+              delete_list: DEL_set_comm_10
   probe:
     af:
       ipv4: true
@@ -7027,7 +7021,7 @@ nodes:
       - bgp:
           policy:
             out: set_comm
-        ifname: Ethernet1
+        ifname: Ethernet0/1
         ipv4: 10.1.0.1/30
         node: dut
       role: external
@@ -7109,7 +7103,7 @@ nodes:
       mtu: 1500
       name: x1 -> dut
       neighbors:
-      - ifname: Ethernet2
+      - ifname: Ethernet0/2
         ipv4: 10.1.0.5/30
         node: dut
       role: external
@@ -7140,7 +7134,7 @@ nodes:
           set:
             community:
               standard:
-              - '65101:17'
+              - 65101:17 65101:42
 plugin:
 - bgp.policy
 - multilab
@@ -7163,18 +7157,18 @@ validate:
   - probe
   plugin: bgp_prefix(nodes.x1.loopback.ipv4)
   wait: 10
-- description: Check for AS65000 communities attached to X1 loopback prefix
-  name: comm_lb_dut
-  nodes:
-  - probe
-  plugin: 'bgp_prefix(nodes.x1.loopback.ipv4,community={''community'': ''65000:101''})
-
-    '
-  wait: 10
 - description: Check for AS65101 communities attached to X1 loopback prefix
-  name: comm_lb_x1
+  name: comm_present
   nodes:
   - probe
   plugin: 'bgp_prefix(nodes.x1.loopback.ipv4,community={''community'': ''65101:17''})
+
+    '
+  wait: 10
+- description: Check for AS65101 communities removed from X1 loopback prefix
+  name: comm_missing
+  nodes:
+  - probe
+  plugin: 'bgp_prefix(nodes.x1.loopback.ipv4,community={''community'': ''65101:42''},state=''missing'')
 
     '
