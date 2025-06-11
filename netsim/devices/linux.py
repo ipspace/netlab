@@ -17,6 +17,18 @@ def check_vm_modules(node: Box, topology: Box) -> None:
       category=log.IncorrectType,
       quirk='vm_vlan')
 
+def check_extra_loopbacks(node: Box, topology: Box) -> None:
+  intf_list = [ intf.ifname for intf in node.get('interfaces',[]) if intf.type == 'loopback' ]
+  if not intf_list:
+    return
+
+  report_quirk(
+    text=f"Cannot use additional loopbacks ({' '.join(intf_list)}) on node {node.name}",
+    more_hints=[ f"netplan (used by Ubuntu Linux VMs) cannot create dummy interfaces" ],
+    node=node,
+    category=log.IncorrectType,
+    quirk='ubuntu_dummy')
+
 class Linux(_Quirks):
 
   @classmethod
@@ -25,3 +37,4 @@ class Linux(_Quirks):
 
     if devices.get_provider(node,topology) != 'clab':
       check_vm_modules(node,topology)
+      check_extra_loopbacks(node,topology)
