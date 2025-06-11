@@ -4,70 +4,70 @@
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [rtr]
 ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
 ok: [dut]
+ok: [rtr]
 
 TASK [Find device readiness script] ********************************************
-ok: [rtr]
 ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
+ok: [rtr]
 ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
-skipping: [rtr]
+skipping: [dut]
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
-skipping: [dut]
+skipping: [rtr]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for rtr, h1, h2, h3, h4, dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, h1, h2, h3, h4, rtr
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
-ok: [rtr]
 ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
+ok: [rtr]
 ok: [dut]
 
 TASK [Find configuration template for normalize] *******************************
-ok: [rtr]
 ok: [h1]
 ok: [h2]
-ok: [h4]
 ok: [h3]
+ok: [h4]
+ok: [rtr]
 ok: [dut]
 
 TASK [fail] ********************************************************************
-skipping: [rtr]
+skipping: [dut]
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
-skipping: [dut]
+skipping: [rtr]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
-ok: [rtr]
 ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
+ok: [rtr]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [rtr]
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
+skipping: [rtr]
 ok: [dut] => 
   msg: |-
     normalize configuration for dut
@@ -82,11 +82,11 @@ ok: [dut] =>
      mac-address 52dc.cafe.0102
 
 TASK [Deploy normalize configuration] ******************************************
-skipping: [rtr]
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
+skipping: [rtr]
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
 
 TASK [ios_config: deploying normalize from /home/pipi/netlab_gh/netsim/ansible/templates/normalize/iosvl2.j2] ***
@@ -96,38 +96,38 @@ device including the indentation
 changed: [dut]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for rtr, h1, h2, h3, h4, dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, h1, h2, h3, h4, rtr
 
 TASK [Figure out whether to deploy the module initial on current device] *******
-ok: [rtr]
 ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
+ok: [rtr]
 ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
-ok: [rtr]
 ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
+ok: [rtr]
 ok: [dut]
 
 TASK [fail] ********************************************************************
-skipping: [rtr]
+skipping: [dut]
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
-skipping: [dut]
+skipping: [rtr]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [rtr]
 ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
+ok: [rtr]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -287,6 +287,57 @@ ok: [h4] =>
     set -e
     ip -6 addr add 2001:db8:cafe:2::6/64 dev eth1
     ip link set dev eth1 mtu 1500
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    hostname dut
+    !
+    no ip domain lookup
+    !
+    lldp run
+    !
+    ip host rtr 10.0.0.2 192.168.42.2 172.16.0.2
+    ip host h1 192.168.42.3
+    ip host h2 172.16.0.4
+    ip host h3 192.168.43.5
+    ip host h4 192.168.43.6
+    !
+    ip routing
+    !
+    no ipv6 unicast-routing
+    !
+    !
+    !
+    interface GigabitEthernet0/0
+     no lldp transmit
+     no lldp receive
+    !
+    interface GigabitEthernet0/1
+     no switchport
+     description dut -> [rtr,h1] [stub]
+     ip address 192.168.42.1 255.255.255.0
+     ipv6 nd ra suppress all
+     ipv6 nd autoconfig default-route
+     ipv6 address 2001:DB8:CAFE:1::1/64
+     no shutdown
+    !
+    interface GigabitEthernet0/2
+     no switchport
+     description dut -> [h3,h4] [stub]
+     ip address 192.168.43.1 255.255.255.0
+     ipv6 nd ra suppress all
+     ipv6 nd autoconfig default-route
+     ipv6 address 2001:DB8:CAFE:2::1/64
+     no shutdown
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
+    !
+    no banner exec
+    no banner login
+    no banner incoming
 ok: [rtr] => 
   msg: |-
     initial configuration for rtr
@@ -408,62 +459,56 @@ ok: [rtr] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    hostname dut
-    !
-    no ip domain lookup
-    !
-    lldp run
-    !
-    ip host h1 192.168.42.3
-    ip host h2 172.16.0.4
-    ip host h3 192.168.43.5
-    ip host h4 192.168.43.6
-    ip host rtr 10.0.0.2 192.168.42.2 172.16.0.2
-    !
-    ip routing
-    !
-    no ipv6 unicast-routing
-    !
-    !
-    !
-    interface GigabitEthernet0/0
-     no lldp transmit
-     no lldp receive
-    !
-    interface GigabitEthernet0/1
-     no switchport
-     description dut -> [rtr,h1] [stub]
-     ip address 192.168.42.1 255.255.255.0
-     ipv6 nd ra suppress all
-     ipv6 nd autoconfig default-route
-     ipv6 address 2001:DB8:CAFE:1::1/64
-     no shutdown
-    !
-    interface GigabitEthernet0/2
-     no switchport
-     description dut -> [h3,h4] [stub]
-     ip address 192.168.43.1 255.255.255.0
-     ipv6 nd ra suppress all
-     ipv6 nd autoconfig default-route
-     ipv6 address 2001:DB8:CAFE:2::1/64
-     no shutdown
-    !
-    !
-    line vty 0 4
-     exec-timeout 0 0
-    !
-    no banner exec
-    no banner login
-    no banner incoming
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for rtr
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2, h3, h4
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2, h3, h4
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for rtr
+
+TASK [ios_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/ios.j2] ***
+changed: [dut]
+
+TASK [Define script filename and determine whether to execute in netns] ********
+ok: [h1]
+ok: [h2]
+ok: [h3]
+ok: [h4]
+
+TASK [Create a temporary file for the rendered script] *************************
+changed: [h3 -> localhost]
+changed: [h4 -> localhost]
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
+changed: [h3 -> localhost]
+changed: [h1 -> localhost]
+changed: [h4 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+
+TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+
+TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
+changed: [h1 -> localhost]
+changed: [h3 -> localhost]
+changed: [h4 -> localhost]
+changed: [h2 -> localhost]
+
+TASK [Remove temporary file /tmp/h1_initial-5sxpu4wa.sh] ***********************
+changed: [h3 -> localhost]
+changed: [h4 -> localhost]
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [rtr -> localhost]
@@ -485,51 +530,6 @@ changed: [rtr]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [rtr]
-
-TASK [Define script filename and determine whether to execute in netns] ********
-ok: [h1]
-ok: [h2]
-ok: [h3]
-ok: [h4]
-
-TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
-changed: [h2 -> localhost]
-changed: [h4 -> localhost]
-changed: [h3 -> localhost]
-
-TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
-changed: [h2 -> localhost]
-changed: [h3 -> localhost]
-changed: [h4 -> localhost]
-
-TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
-skipping: [h1]
-skipping: [h2]
-skipping: [h3]
-skipping: [h4]
-
-TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
-skipping: [h1]
-skipping: [h2]
-skipping: [h3]
-skipping: [h4]
-
-TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h1 -> localhost]
-changed: [h2 -> localhost]
-changed: [h3 -> localhost]
-changed: [h4 -> localhost]
-
-TASK [Remove temporary file /tmp/h1_initial-h0zoj94m.sh] ***********************
-changed: [h4 -> localhost]
-changed: [h1 -> localhost]
-changed: [h3 -> localhost]
-changed: [h2 -> localhost]
-
-TASK [ios_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/ios.j2] ***
-changed: [dut]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -568,8 +568,8 @@ TASK [Find configuration deployment deploy_script for routing] *****************
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [dut]
 ok: [h4]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [h1] => 
@@ -689,14 +689,14 @@ ok: [h3]
 ok: [h4]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
@@ -718,9 +718,9 @@ changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-hwcu41lf.sh] ***********************
-changed: [h1 -> localhost]
+TASK [Remove temporary file /tmp/h1_routing-a9vodi0q.sh] ***********************
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 

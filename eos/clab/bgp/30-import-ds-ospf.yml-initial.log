@@ -4,13 +4,13 @@
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [r2]
 ok: [x1]
+ok: [r2]
 ok: [dut]
 
 TASK [Find device readiness script] ********************************************
-ok: [x1]
 ok: [r2]
+ok: [x1]
 ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
@@ -381,8 +381,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, r2
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [r2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -404,17 +404,18 @@ ok: [x1]
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, x1 => (item=bgp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, x1 => (item=routing)
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, x1 => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, x1 => (item=bgp)
 
-TASK [Figure out whether to deploy the module bgp on current device] ***********
+TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [r2]
 ok: [x1]
 ok: [dut]
 
-TASK [Find configuration template for bgp] *************************************
+TASK [Find configuration template for routing] *********************************
 skipping: [r2]
-ok: [x1]
+skipping: [x1]
 ok: [dut]
 
 TASK [fail] ********************************************************************
@@ -422,124 +423,35 @@ skipping: [dut]
 skipping: [r2]
 skipping: [x1]
 
-TASK [Find configuration deployment deploy_script for bgp] *********************
+TASK [Find configuration deployment deploy_script for routing] *****************
 skipping: [r2]
-ok: [x1]
+skipping: [x1]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r2]
-ok: [x1] => 
-  msg: |-
-    bgp configuration for x1
-    =========================================
-    !
-    router bgp 65100
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.2
-    !
-      neighbor 10.1.0.1 remote-as 65000
-      neighbor 10.1.0.1 description dut
-    !
-      neighbor 2001:db8:3::1 remote-as 65000
-      neighbor 2001:db8:3::1 description dut
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-      network 10.0.0.2/32
-    !
-    !
-    !
-      neighbor 10.1.0.1 activate
-      no neighbor 10.1.0.1 send-community all
-      neighbor 10.1.0.1 send-community standard
-      neighbor 10.1.0.1 send-community large
-    !
-     address-family ipv6 unicast
-    !
-  
-    !
-      network 2001:db8:1:2::/64
-    !
-    !
-    !
-      neighbor 2001:db8:3::1 activate
-      no neighbor 2001:db8:3::1 send-community all
-      neighbor 2001:db8:3::1 send-community standard
-      neighbor 2001:db8:3::1 send-community large
-    !
-    !
-    !
-    do write
+skipping: [x1]
 ok: [dut] => 
   msg: |-
-    bgp configuration for dut
+    routing configuration for dut
     =========================================
     !
     !
-    router bgp 65000
-      bgp advertise-inactive
-      bgp log-neighbor-changes
-      no bgp default ipv4-unicast
-      no bgp default ipv6-unicast
-      router-id 10.0.0.1
-    !
-      neighbor 10.1.0.2 remote-as 65100
-      neighbor 10.1.0.2 description x1
-      neighbor 10.1.0.2 send-community standard large
-    !
-      neighbor 2001:db8:3::2 remote-as 65100
-      neighbor 2001:db8:3::2 description x1
-      neighbor 2001:db8:3::2 send-community standard large
+    ! AS-path access lists
     !
     !
-     address-family ipv4
-      redistribute ospf
-  
-      network 10.0.0.1/32
+    ! Static routes
     !
-    !
-    !
-      neighbor 10.1.0.2 activate
-    !
-     address-family ipv6
-      redistribute ospfv3
-  
-      network 2001:db8:1:1::/64
-    !
-    !
-    !
-      neighbor 2001:db8:3::2 activate
-    !
+    ip route 10.0.0.42/32 Ethernet2 10.1.0.6
+    ipv6 route 2001:db8:42::42/128 Ethernet2 2001:db8:3:1::2
 
-TASK [Deploy bgp configuration] ************************************************
+TASK [Deploy routing configuration] ********************************************
 skipping: [r2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1
-
-TASK [eos_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/eos.j2] ***
-changed: [dut]
-
-TASK [template] ****************************************************************
-changed: [x1]
-
-TASK [set_fact] ****************************************************************
-ok: [x1]
-
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [x1]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for dut
 
-TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [x1]
+TASK [eos_config: deploying routing from /home/pipi/net101/tools/netsim/ansible/templates/routing/eos.j2] ***
+changed: [dut]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [r2]
@@ -677,15 +589,152 @@ skipping: [r2]
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [r2]
 
+TASK [Figure out whether to deploy the module bgp on current device] ***********
+ok: [r2]
+ok: [x1]
+ok: [dut]
+
+TASK [Find configuration template for bgp] *************************************
+skipping: [r2]
+ok: [x1]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r2]
+skipping: [x1]
+
+TASK [Find configuration deployment deploy_script for bgp] *********************
+skipping: [r2]
+ok: [x1]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [r2]
+ok: [x1] => 
+  msg: |-
+    bgp configuration for x1
+    =========================================
+    !
+    router bgp 65100
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.2
+    !
+      neighbor 10.1.0.1 remote-as 65000
+      neighbor 10.1.0.1 description dut
+    !
+      neighbor 2001:db8:3::1 remote-as 65000
+      neighbor 2001:db8:3::1 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.2/32
+    !
+    !
+    !
+      neighbor 10.1.0.1 activate
+      no neighbor 10.1.0.1 send-community all
+      neighbor 10.1.0.1 send-community standard
+      neighbor 10.1.0.1 send-community large
+    !
+     address-family ipv6 unicast
+    !
+  
+    !
+      network 2001:db8:1:2::/64
+    !
+    !
+    !
+      neighbor 2001:db8:3::1 activate
+      no neighbor 2001:db8:3::1 send-community all
+      neighbor 2001:db8:3::1 send-community standard
+      neighbor 2001:db8:3::1 send-community large
+    !
+    !
+    !
+    do write
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+    !
+    !
+    router bgp 65000
+      bgp advertise-inactive
+      bgp log-neighbor-changes
+      no bgp default ipv4-unicast
+      no bgp default ipv6-unicast
+      router-id 10.0.0.1
+    !
+      neighbor 10.1.0.2 remote-as 65100
+      neighbor 10.1.0.2 description x1
+      neighbor 10.1.0.2 send-community standard large
+    !
+      neighbor 2001:db8:3::2 remote-as 65100
+      neighbor 2001:db8:3::2 description x1
+      neighbor 2001:db8:3::2 send-community standard large
+    !
+    !
+     address-family ipv4
+      redistribute ospf
+      redistribute static
+  
+      network 10.0.0.1/32
+    !
+    !
+    !
+      neighbor 10.1.0.2 activate
+    !
+     address-family ipv6
+      redistribute ospfv3
+      redistribute static
+  
+      network 2001:db8:1:1::/64
+    !
+    !
+    !
+      neighbor 2001:db8:3::2 activate
+    !
+
+TASK [Deploy bgp configuration] ************************************************
+skipping: [r2]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1
+
+TASK [eos_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/eos.j2] ***
+changed: [dut]
+
+TASK [template] ****************************************************************
+changed: [x1]
+
+TASK [set_fact] ****************************************************************
+ok: [x1]
+
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+skipping: [x1]
+
+TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+changed: [x1]
+
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=33   changed=4    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
-r2                         : ok=28   changed=4    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
-x1                         : ok=29   changed=5    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
+dut                        : ok=40   changed=5    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
+r2                         : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+x1                         : ok=31   changed=5    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
 
 
 
-Use this topology to test the import of OSPFv2 and OSPFv3 routes into BGP IPv4/IPv6 AF
+Use this topology to test the import of OSPFv2, OSPFv3 routes, and optionally
+static routes into BGP IPv4/IPv6 AF
 

@@ -395,7 +395,7 @@ ok: [dut] =>
     sysctl -qw net.ipv6.conf.swp1.disable_ipv6=0
     sysctl -qw net.ipv6.conf.swp2.disable_ipv6=0
     #
-    # Enable FRR modules for ['bgp', 'ospf']
+    # Enable FRR modules for ['routing', 'bgp', 'ospf']
     #
     #
     # Enable FRR daemons
@@ -455,7 +455,7 @@ changed: [dut -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
 
-TASK [Remove temporary file /tmp/ansible.dut.g6mt4b5rtemp] *********************
+TASK [Remove temporary file /tmp/ansible.dut.e0rx5lvotemp] *********************
 changed: [dut -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
@@ -477,8 +477,8 @@ ok: [x1]
 ok: [r2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x1]
 changed: [r2]
+changed: [x1]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
@@ -492,8 +492,65 @@ ok: [r2]
 ok: [x1]
 
 TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r2, x1 => (item=routing)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r2, x1 => (item=bgp)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r2, x1 => (item=ospf)
+
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [dut]
+ok: [r2]
+ok: [x1]
+
+TASK [Find configuration template for routing] *********************************
+skipping: [r2]
+skipping: [x1]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r2]
+skipping: [x1]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [r2]
+skipping: [x1]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [r2]
+skipping: [x1]
+ok: [dut] => 
+  msg: |-
+    routing configuration for dut
+    =========================================
+    !
+    !
+    !
+    !
+    ! Global static routes
+    !
+    ip route 10.0.0.42/32 10.1.0.6 swp2
+    ipv6 route 2001:db8:42::42/128 2001:db8:3:1::3 swp2
+
+TASK [Deploy routing configuration] ********************************************
+skipping: [r2]
+skipping: [x1]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/cumulus.yml for dut
+
+TASK [Render device configuration from /home/pipi/netlab_gh/netsim/ansible/templates/routing/cumulus.j2] ***
+ok: [dut]
+
+TASK [Create local temporary file] *********************************************
+changed: [dut -> localhost]
+
+TASK [Create routing config script in local temporary file] ********************
+changed: [dut -> localhost]
+
+TASK [Execute local config script on Cumulus node] *****************************
+changed: [dut]
+
+TASK [Remove temporary file /tmp/ansible.dut.zewhxpbatemp] *********************
+changed: [dut -> localhost]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [dut]
@@ -542,6 +599,7 @@ ok: [dut] =>
      address-family ipv4 unicast
     !
      redistribute ospf
+     redistribute static
   
     !
       network 10.0.0.1/32
@@ -556,6 +614,7 @@ ok: [dut] =>
      address-family ipv6 unicast
     !
      redistribute ospf6
+     redistribute static
   
     !
       network 2001:db8:1:1::/64
@@ -639,7 +698,7 @@ changed: [dut -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
 
-TASK [Remove temporary file /tmp/ansible.dut.hf7hmn6ltemp] *********************
+TASK [Remove temporary file /tmp/ansible.dut.pnm1px84temp] *********************
 changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
@@ -780,7 +839,7 @@ changed: [dut -> localhost]
 TASK [Execute local config script on Cumulus node] *****************************
 changed: [dut]
 
-TASK [Remove temporary file /tmp/ansible.dut.ekvj4d8ptemp] *********************
+TASK [Remove temporary file /tmp/ansible.dut.s2djbwq9temp] *********************
 changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
@@ -799,11 +858,12 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=40   changed=12   unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-r2                         : ok=28   changed=4    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
-x1                         : ok=29   changed=5    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
+dut                        : ok=51   changed=16   unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+r2                         : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+x1                         : ok=31   changed=5    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
 
 
 
-Use this topology to test the import of OSPFv2 and OSPFv3 routes into BGP IPv4/IPv6 AF
+Use this topology to test the import of OSPFv2, OSPFv3 routes, and optionally
+static routes into BGP IPv4/IPv6 AF
 

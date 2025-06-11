@@ -14,8 +14,8 @@ TASK [Find device readiness script] ********************************************
 ok: [r1]
 ok: [r2]
 ok: [r3]
-ok: [r4]
 ok: [dut]
+ok: [r4]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [r1]
@@ -37,8 +37,8 @@ ok: [dut]
 TASK [Find configuration template for normalize] *******************************
 ok: [r1]
 ok: [r2]
-ok: [r4]
 ok: [r3]
+ok: [r4]
 ok: [dut]
 
 TASK [fail] ********************************************************************
@@ -305,87 +305,6 @@ ok: [r2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
-  
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-    fi
-  
-    # Configuration items start here
-  
-    configure
-    set system host-name 'dut'
-  
-    set vrf name blue table 101
-    set vrf name red table 100
-  
-    set interfaces dummy dum0 address 10.0.0.1/32
-  
-  
-  
-    set interfaces ethernet eth1 description 'dut -> r1'
-  
-    set interfaces ethernet eth1 mtu 1500
-  
-    set interfaces ethernet eth1 address 10.1.0.1/30
-  
-  
-    set interfaces ethernet eth1 vrf red
-  
-  
-  
-    set interfaces ethernet eth2 description 'dut -> r2'
-  
-    set interfaces ethernet eth2 mtu 1500
-  
-    set interfaces ethernet eth2 address 10.1.0.5/30
-  
-  
-    set interfaces ethernet eth2 vrf red
-  
-  
-  
-    set interfaces ethernet eth3 description 'dut -> r3'
-  
-    set interfaces ethernet eth3 mtu 1500
-  
-    set interfaces ethernet eth3 address 10.1.0.9/30
-  
-  
-    set interfaces ethernet eth3 vrf blue
-  
-  
-  
-    set interfaces ethernet eth4 description 'dut -> r4'
-  
-    set interfaces ethernet eth4 mtu 1500
-  
-    set interfaces ethernet eth4 address 10.1.0.13/30
-  
-  
-    set interfaces ethernet eth4 vrf blue
-  
-  
-    set service lldp interface all
-    >/dev/null 2>/dev/null set service lldp interface eth0 disable
-    >/dev/null 2>/dev/null set service lldp interface eth0 mode disable
-  
-  
-    set service ssh
-  
-    # Commit, save and exit from subshell
-  
-    commit
-    save
-    exit
-  
-    # Restart FRR to pick up the new hostname
-    sudo service frr restart
 ok: [r3] => 
   msg: |-
     initial configuration for r3
@@ -590,6 +509,107 @@ ok: [r4] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+  
+    configure
+    set system host-name 'dut'
+  
+    set vrf name blue table 101
+    set vrf name red table 100
+  
+    set interfaces dummy dum0 address 10.0.0.1/32
+  
+  
+  
+    set interfaces ethernet eth1 description 'dut -> r1'
+  
+    set interfaces ethernet eth1 mtu 1500
+  
+    set interfaces ethernet eth1 address 10.1.0.1/30
+  
+  
+    set interfaces ethernet eth1 vrf red
+  
+  
+  
+    set interfaces ethernet eth2 description 'dut -> r2'
+  
+    set interfaces ethernet eth2 mtu 1500
+  
+    set interfaces ethernet eth2 address 10.1.0.5/30
+  
+  
+    set interfaces ethernet eth2 vrf red
+  
+  
+  
+    set interfaces ethernet eth3 description 'dut -> r3'
+  
+    set interfaces ethernet eth3 mtu 1500
+  
+    set interfaces ethernet eth3 address 10.1.0.9/30
+  
+  
+    set interfaces ethernet eth3 vrf blue
+  
+  
+  
+    set interfaces ethernet eth4 description 'dut -> r4'
+  
+    set interfaces ethernet eth4 mtu 1500
+  
+    set interfaces ethernet eth4 address 10.1.0.13/30
+  
+  
+    set interfaces ethernet eth4 vrf blue
+  
+  
+  
+    set interfaces dummy dum1 description 'VRF Loopback red'
+  
+  
+    set interfaces dummy dum1 address 10.2.0.1/32
+  
+  
+    set interfaces dummy dum1 vrf red
+  
+  
+  
+    set interfaces dummy dum2 description 'VRF Loopback blue'
+  
+  
+    set interfaces dummy dum2 address 10.2.0.2/32
+  
+  
+    set interfaces dummy dum2 vrf blue
+  
+  
+    set service lldp interface all
+    >/dev/null 2>/dev/null set service lldp interface eth0 disable
+    >/dev/null 2>/dev/null set service lldp interface eth0 mode disable
+  
+  
+    set service ssh
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
+  
+    # Restart FRR to pick up the new hostname
+    sudo service frr restart
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for r1, r2, r3, r4
@@ -608,10 +628,10 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, r3, r4
 
 TASK [template] ****************************************************************
-changed: [r2]
-changed: [r3]
 changed: [r4]
 changed: [r1]
+changed: [r3]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -621,9 +641,9 @@ ok: [r4]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [r1]
+changed: [r2]
 changed: [r3]
 changed: [r4]
-changed: [r2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r1]
@@ -673,8 +693,8 @@ TASK [Find configuration template for ospf] ************************************
 ok: [dut]
 ok: [r1]
 ok: [r2]
-ok: [r4]
 ok: [r3]
+ok: [r4]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -686,9 +706,9 @@ skipping: [r4]
 TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [dut]
 ok: [r1]
+ok: [r2]
 ok: [r3]
 ok: [r4]
-ok: [r2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -728,11 +748,11 @@ ok: [r1] =>
     !
     interface lo
     !
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.2
     !
     interface eth1
     ! r1 -> dut
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.2
      ip ospf network point-to-point
     !
   
@@ -756,11 +776,11 @@ ok: [r2] =>
     !
     interface lo
     !
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.2
     !
     interface eth1
     ! r2 -> dut
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.2
      ip ospf network point-to-point
     !
   
@@ -784,11 +804,11 @@ ok: [r3] =>
     !
     interface lo
     !
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.3
     !
     interface eth1
     ! r3 -> dut
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.3
      ip ospf network point-to-point
     !
   
@@ -812,11 +832,11 @@ ok: [r4] =>
     !
     interface lo
     !
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.4
     !
     interface eth1
     ! r4 -> dut
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.4
      ip ospf network point-to-point
     !
   
@@ -873,8 +893,8 @@ TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [dut]
 ok: [r1]
 ok: [r2]
-ok: [r4]
 ok: [r3]
+ok: [r4]
 
 TASK [Find configuration template for vrf] *************************************
 skipping: [r1]
@@ -930,14 +950,18 @@ ok: [dut] =>
   
   
   
-    set protocols ospf interface eth3 area 0.0.0.0
+    set protocols ospf interface eth3 area 0.0.0.3
   
     set protocols ospf interface eth3 network point-to-point
   
   
-    set protocols ospf interface eth4 area 0.0.0.0
+    set protocols ospf interface eth4 area 0.0.0.4
   
     set protocols ospf interface eth4 network point-to-point
+  
+  
+    set protocols ospf interface dum2 area 0.0.0.0
+  
   
   
     # Back to root level
@@ -954,14 +978,18 @@ ok: [dut] =>
   
   
   
-    set protocols ospf interface eth1 area 0.0.0.0
+    set protocols ospf interface eth1 area 0.0.0.2
   
     set protocols ospf interface eth1 network point-to-point
   
   
-    set protocols ospf interface eth2 area 0.0.0.0
+    set protocols ospf interface eth2 area 0.0.0.2
   
     set protocols ospf interface eth2 network point-to-point
+  
+  
+    set protocols ospf interface dum1 area 0.0.0.2
+  
   
   
     # Back to root level

@@ -16,13 +16,13 @@ ok: [srv]
 ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
+skipping: [dut]
 skipping: [r1]
 skipping: [r2]
 skipping: [srv]
-skipping: [dut]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for r1, r2, srv, dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, srv
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [r1]
@@ -37,10 +37,10 @@ ok: [srv]
 ok: [dut]
 
 TASK [fail] ********************************************************************
+skipping: [dut]
 skipping: [r1]
 skipping: [r2]
 skipping: [srv]
-skipping: [dut]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [r1]
@@ -49,19 +49,19 @@ ok: [srv]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
 skipping: [r1]
 skipping: [r2]
 skipping: [srv]
-skipping: [dut]
 
 TASK [Deploy normalize configuration] ******************************************
+skipping: [dut]
 skipping: [r1]
 skipping: [r2]
 skipping: [srv]
-skipping: [dut]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for r1, r2, srv, dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, srv
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [r1]
@@ -76,10 +76,10 @@ ok: [srv]
 ok: [dut]
 
 TASK [fail] ********************************************************************
+skipping: [dut]
 skipping: [r1]
 skipping: [r2]
 skipping: [srv]
-skipping: [dut]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [r1]
@@ -404,9 +404,9 @@ ok: [dut] =>
     !
     lldp run
     !
+    ip host dut-red 10.1.0.1
     ip host dut-blue 10.1.0.5
     ip host dut-common 10.1.0.9
-    ip host dut-red 10.1.0.1
     ip host r1 10.0.0.2 10.1.0.2
     ip host r2 10.0.0.3 10.1.0.6
     ip host srv 10.0.0.4 10.1.0.10
@@ -414,6 +414,15 @@ ok: [dut] =>
     ip routing
     !
     no ipv6 unicast-routing
+    !
+    vrf definition red
+     rd 65000:1
+     route-target import 65000:1
+     route-target import 65000:3
+     route-target export 65000:1
+    !
+     address-family ipv4
+     exit-address-family
     !
     vrf definition blue
      rd 65000:2
@@ -430,15 +439,6 @@ ok: [dut] =>
      route-target import 65000:2
      route-target import 65000:3
      route-target export 65000:3
-    !
-     address-family ipv4
-     exit-address-family
-    !
-    vrf definition red
-     rd 65000:1
-     route-target import 65000:1
-     route-target import 65000:3
-     route-target export 65000:1
     !
      address-family ipv4
      exit-address-family
@@ -483,8 +483,14 @@ ok: [dut] =>
     no banner incoming
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for r1, r2, srv
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for r1, r2, srv
+
+TASK [ios_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/ios.j2] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [r1 -> localhost]
@@ -498,9 +504,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, srv
 
 TASK [template] ****************************************************************
-changed: [srv]
-changed: [r1]
 changed: [r2]
+changed: [r1]
+changed: [srv]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -508,20 +514,14 @@ ok: [r2]
 ok: [srv]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r2]
 changed: [r1]
+changed: [r2]
 changed: [srv]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r1]
 skipping: [r2]
 skipping: [srv]
-
-TASK [ios_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/ios.j2] ***
-[WARNING]: To ensure idempotency and correct diff the input configuration lines
-should be similar to how they appear if present in the running configuration on
-device including the indentation
-changed: [dut]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -542,8 +542,8 @@ ok: [srv]
 ok: [dut]
 
 TASK [Find configuration template for ospf] ************************************
-ok: [r2]
 ok: [r1]
+ok: [r2]
 ok: [srv]
 ok: [dut]
 
@@ -588,6 +588,34 @@ ok: [r1] =>
   
     !
     do write
+ok: [r2] => 
+  msg: |-
+    ospf configuration for r2
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.3
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! r2 -> dut
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    do write
 ok: [srv] => 
   msg: |-
     ospf configuration for srv
@@ -620,34 +648,6 @@ ok: [dut] =>
   msg: |-
     ospf configuration for dut
     =========================================
-ok: [r2] => 
-  msg: |-
-    ospf configuration for r2
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.3
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! r2 -> dut
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    do write
 
 TASK [Deploy ospf configuration] ***********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
@@ -657,13 +657,13 @@ TASK [ios_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/templa
 ok: [dut]
 
 TASK [template] ****************************************************************
-changed: [r1]
-changed: [r2]
 changed: [srv]
+changed: [r2]
+changed: [r1]
 
 TASK [set_fact] ****************************************************************
-ok: [r1]
 ok: [r2]
+ok: [r1]
 ok: [srv]
 
 TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
@@ -672,9 +672,9 @@ skipping: [r2]
 skipping: [srv]
 
 TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [srv]
-changed: [r2]
 changed: [r1]
+changed: [r2]
+changed: [srv]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [r1]
@@ -710,6 +710,13 @@ ok: [dut] =>
     =========================================
     !
     router bgp 65000
+     address-family ipv4 vrf red
+      bgp router-id 10.0.0.1
+      redistribute connected
+      redistribute ospf 100 match internal external
+  
+    !
+    !
      address-family ipv4 vrf blue
       bgp router-id 10.0.0.1
       redistribute connected
@@ -724,13 +731,19 @@ ok: [dut] =>
   
     !
     !
-     address-family ipv4 vrf red
-      bgp router-id 10.0.0.1
-      redistribute connected
-      redistribute ospf 100 match internal external
+    router ospf 100 vrf red
+     router-id 10.100.0.100
+  
+     redistribute bgp 65000
+     redistribute connected
   
     !
+    interface GigabitEthernet2
+    ! dut -> r1
+     ip ospf 100 area 0.0.0.0
+     ip ospf network point-to-point
     !
+  
     router ospf 101 vrf blue
      router-id 10.100.0.101
   
@@ -754,19 +767,6 @@ ok: [dut] =>
     interface GigabitEthernet4
     ! dut -> srv
      ip ospf 102 area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    router ospf 100 vrf red
-     router-id 10.100.0.100
-  
-     redistribute bgp 65000
-     redistribute connected
-  
-    !
-    interface GigabitEthernet2
-    ! dut -> r1
-     ip ospf 100 area 0.0.0.0
      ip ospf network point-to-point
     !
 

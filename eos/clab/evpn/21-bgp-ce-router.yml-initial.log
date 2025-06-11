@@ -493,8 +493,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for s2, ce1, ce2
 
 TASK [template] ****************************************************************
-changed: [s2]
 changed: [ce2]
+changed: [s2]
 changed: [ce1]
 
 TASK [set_fact] ****************************************************************
@@ -522,8 +522,8 @@ ok: [s1]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, s1, s2 => (item=vlan)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, s1, s2 => (item=bgp)
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, s1, s2 => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, s1, s2 => (item=bgp)
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, s1, s2 => (item=vrf)
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, s1, s2 => (item=vxlan)
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, s1, s2 => (item=evpn)
@@ -588,6 +588,108 @@ changed: [s2]
 
 TASK [run vtysh to import vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
 skipping: [s2]
+
+TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [ce1]
+ok: [ce2]
+ok: [s2]
+ok: [s1]
+
+TASK [Find configuration template for ospf] ************************************
+skipping: [ce1]
+skipping: [ce2]
+ok: [s2]
+ok: [s1]
+
+TASK [fail] ********************************************************************
+skipping: [ce1]
+skipping: [ce2]
+skipping: [s1]
+skipping: [s2]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+skipping: [ce1]
+skipping: [ce2]
+ok: [s2]
+ok: [s1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [ce1]
+skipping: [ce2]
+ok: [s2] => 
+  msg: |-
+    ospf configuration for s2
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.4
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! s2 -> s1
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    do write
+ok: [s1] => 
+  msg: |-
+    ospf configuration for s1
+    =========================================
+    !
+    ! OSPFv2 configuration
+    !
+    router ospf 1
+     router-id 10.0.0.3
+     interface unnumbered hello mask tx 0.0.0.0
+     timers spf delay initial 100 200 500
+     timers lsa rx min interval 100
+     timers lsa tx delay initial 100 200 500
+  
+  
+    !
+    interface Loopback0
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface Ethernet1
+    ! s1 -> s2
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+
+TASK [Deploy ospf configuration] ***********************************************
+skipping: [ce1]
+skipping: [ce2]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for s1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s2
+
+TASK [eos_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/eos.j2] ***
+changed: [s1]
+
+TASK [template] ****************************************************************
+changed: [s2]
+
+TASK [set_fact] ****************************************************************
+ok: [s2]
+
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+skipping: [s2]
+
+TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+changed: [s2]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [ce1]
@@ -762,8 +864,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for s1
 
 TASK [template] ****************************************************************
-changed: [ce2]
 changed: [ce1]
+changed: [ce2]
 changed: [s2]
 
 TASK [set_fact] ****************************************************************
@@ -783,108 +885,6 @@ changed: [s2]
 
 TASK [eos_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/eos.j2] ***
 changed: [s1]
-
-TASK [Figure out whether to deploy the module ospf on current device] **********
-ok: [ce1]
-ok: [ce2]
-ok: [s2]
-ok: [s1]
-
-TASK [Find configuration template for ospf] ************************************
-skipping: [ce1]
-skipping: [ce2]
-ok: [s2]
-ok: [s1]
-
-TASK [fail] ********************************************************************
-skipping: [ce1]
-skipping: [ce2]
-skipping: [s1]
-skipping: [s2]
-
-TASK [Find configuration deployment deploy_script for ospf] ********************
-skipping: [ce1]
-skipping: [ce2]
-ok: [s2]
-ok: [s1]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [ce1]
-skipping: [ce2]
-ok: [s2] => 
-  msg: |-
-    ospf configuration for s2
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.4
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! s2 -> s1
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    do write
-ok: [s1] => 
-  msg: |-
-    ospf configuration for s1
-    =========================================
-    !
-    ! OSPFv2 configuration
-    !
-    router ospf 1
-     router-id 10.0.0.3
-     interface unnumbered hello mask tx 0.0.0.0
-     timers spf delay initial 100 200 500
-     timers lsa rx min interval 100
-     timers lsa tx delay initial 100 200 500
-  
-  
-    !
-    interface Loopback0
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface Ethernet1
-    ! s1 -> s2
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-
-TASK [Deploy ospf configuration] ***********************************************
-skipping: [ce1]
-skipping: [ce2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for s1
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s2
-
-TASK [eos_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/eos.j2] ***
-changed: [s1]
-
-TASK [template] ****************************************************************
-changed: [s2]
-
-TASK [set_fact] ****************************************************************
-ok: [s2]
-
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-skipping: [s2]
-
-TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [s2]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [ce1]

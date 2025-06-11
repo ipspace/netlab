@@ -4,106 +4,106 @@
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
+ok: [s1]
+ok: [s2]
 ok: [r1]
 ok: [r2]
-ok: [s2]
-ok: [s1]
 ok: [ros]
 
 TASK [Find device readiness script] ********************************************
+ok: [s1]
+ok: [s2]
 ok: [r1]
 ok: [r2]
-ok: [s2]
-ok: [s1]
 ok: [ros]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [ros]
-skipping: [r1]
-skipping: [r2]
 skipping: [s1]
 skipping: [s2]
+skipping: [r1]
+skipping: [r2]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ros, r1, r2, s1, s2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ros, s1, s2, r1, r2
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
-ok: [r1]
-ok: [r2]
 ok: [s1]
 ok: [s2]
+ok: [r1]
+ok: [r2]
 ok: [ros]
 
 TASK [Find configuration template for normalize] *******************************
-ok: [r1]
-ok: [r2]
 ok: [s1]
 ok: [s2]
+ok: [r1]
+ok: [r2]
 ok: [ros]
 
 TASK [fail] ********************************************************************
 skipping: [ros]
-skipping: [r1]
-skipping: [r2]
 skipping: [s1]
 skipping: [s2]
+skipping: [r1]
+skipping: [r2]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [s1]
+ok: [s2]
 ok: [r1]
 ok: [r2]
-ok: [s2]
-ok: [s1]
 ok: [ros]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ros]
-skipping: [r1]
-skipping: [r2]
 skipping: [s1]
 skipping: [s2]
+skipping: [r1]
+skipping: [r2]
 
 TASK [Deploy normalize configuration] ******************************************
 skipping: [ros]
-skipping: [r1]
-skipping: [r2]
 skipping: [s1]
 skipping: [s2]
+skipping: [r1]
+skipping: [r2]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ros, r1, r2, s1, s2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ros, s1, s2, r1, r2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [s1]
+ok: [s2]
 ok: [r1]
 ok: [r2]
-ok: [s2]
-ok: [s1]
 ok: [ros]
 
 TASK [Find configuration template for initial] *********************************
-ok: [r1]
-ok: [r2]
 ok: [s1]
 ok: [s2]
+ok: [r1]
+ok: [r2]
 ok: [ros]
 
 TASK [fail] ********************************************************************
 skipping: [ros]
-skipping: [r1]
-skipping: [r2]
 skipping: [s1]
 skipping: [s2]
+skipping: [r1]
+skipping: [r2]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [r1]
 ok: [s1]
-ok: [r2]
 ok: [s2]
+ok: [r1]
+ok: [r2]
 ok: [ros]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [r1] => 
+ok: [s1] => 
   msg: |-
-    initial configuration for r1
+    initial configuration for s1
     =========================================
     #!/bin/bash
     #
@@ -173,6 +173,14 @@ ok: [r1] =>
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
     ip link set eth1 up
+    ip link set eth2 down
+    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+    ip link set dev eth2 mtu 1500
+    ip link set eth2 up
+    ip link set eth3 down
+    sysctl -qw net.ipv6.conf.eth3.disable_ipv6=1
+    ip link set dev eth3 mtu 1500
+    ip link set eth3 up
   
     #
     # Add vtysh.conf file
@@ -182,7 +190,7 @@ ok: [r1] =>
     # Rest of initial configuration done through VTYSH
     #
     cat >/tmp/config <<CONFIG
-    hostname r1
+    hostname s1
     !
     ip forwarding
     vrf mgmt
@@ -192,12 +200,42 @@ ok: [r1] =>
     !
     interface lo
      no shutdown
-     ip address 10.0.0.4/32
+     ip address 10.0.0.2/32
     !
     interface eth1
      no shutdown
-     description r1 -> [s1,s2,ros]
-     ip address 172.16.0.4/24
+     description s1 -> s2
+     ! no ip address
+    !
+    interface eth2
+     no shutdown
+     description [Access VLAN red] s1 -> r1
+     ! no ip address
+    !
+    interface eth3
+     no shutdown
+     description [Access VLAN blue] s1 -> r2
+     ! no ip address
+    !
+    interface eth1.701
+     no shutdown
+     description [SubIf VLAN blue] s1 -> s2
+     ! no ip address
+    !
+    interface eth1.700
+     no shutdown
+     description [SubIf VLAN red] s1 -> s2
+     ! no ip address
+    !
+    interface vlan700
+     no shutdown
+     description VLAN red (700) -> [r1,s2,ros]
+     ip address 172.16.0.2/24
+    !
+    interface vlan701
+     no shutdown
+     description VLAN blue (701) -> [ros,r2,s2]
+     ip address 172.16.1.2/24
     !
     do write
     CONFIG
@@ -339,53 +377,108 @@ ok: [s2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [ros] => 
+ok: [r1] => 
   msg: |-
-    initial configuration for ros
+    initial configuration for r1
     =========================================
-    hostname ros
-    !
-    no ip domain lookup
-    !
-    lldp run
-    !
-    ip host r1 10.0.0.4 172.16.0.4
-    ip host r2 10.0.0.5 172.16.1.5
-    ip host s1 10.0.0.2 172.16.0.2 172.16.1.2
-    ip host s2 10.0.0.3 172.16.0.3 172.16.1.3
-    !
-    ip routing
-    !
-    no ipv6 unicast-routing
-    !
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname r1
     !
+    ip forwarding
+    vrf mgmt
+     exit-vrf
     !
-    interface Loopback0
-     ip address 10.0.0.1 255.255.255.255
+    frr defaults datacenter
     !
-    interface GigabitEthernet1
-     no lldp transmit
-     no lldp receive
-    !
-    interface GigabitEthernet2
-     description ros -> [r1,s1,s2]
-     ip address 172.16.0.1 255.255.255.0
+    interface lo
      no shutdown
+     ip address 10.0.0.4/32
     !
-    interface GigabitEthernet2.1
-     encapsulation dot1Q 701
-     description ros -> [r2,s1,s2]
-     ip address 172.16.1.1 255.255.255.0
+    interface eth1
      no shutdown
+     description r1 -> [s1,s2,ros]
+     ip address 172.16.0.4/24
     !
-    !
-    line vty 0 4
-     exec-timeout 0 0
-    !
-    no banner exec
-    no banner login
-    no banner incoming
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
 ok: [r2] => 
   msg: |-
     initial configuration for r2
@@ -488,150 +581,57 @@ ok: [r2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [s1] => 
+ok: [ros] => 
   msg: |-
-    initial configuration for s1
+    initial configuration for ros
     =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)# "
-    echo
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
-    #
-    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
-    #
-    sysctl -w net.ipv4.ip_forward=1
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
+    hostname ros
+    !
+    no ip domain lookup
+    !
+    lldp run
+    !
+    ip host s1 10.0.0.2 172.16.0.2 172.16.1.2
+    ip host s2 10.0.0.3 172.16.0.3 172.16.1.3
+    ip host r1 10.0.0.4 172.16.0.4
+    ip host r2 10.0.0.5 172.16.1.5
+    !
+    ip routing
+    !
+    no ipv6 unicast-routing
+    !
   
-    # Set system defaults
-    #
-    # Send ARP requests from a sane source IP address
-    #
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Create loopbacks, stub and lag/bond devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    ip link set eth1 down
-    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
-    ip link set eth1 up
-    ip link set eth2 down
-    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
-    ip link set dev eth2 mtu 1500
-    ip link set eth2 up
-    ip link set eth3 down
-    sysctl -qw net.ipv6.conf.eth3.disable_ipv6=1
-    ip link set dev eth3 mtu 1500
-    ip link set eth3 up
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-  
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname s1
     !
-    ip forwarding
-    vrf mgmt
-     exit-vrf
     !
-    frr defaults datacenter
+    interface Loopback0
+     ip address 10.0.0.1 255.255.255.255
     !
-    interface lo
+    interface GigabitEthernet1
+     no lldp transmit
+     no lldp receive
+    !
+    interface GigabitEthernet2
+     description ros -> [r1,s1,s2]
+     ip address 172.16.0.1 255.255.255.0
      no shutdown
-     ip address 10.0.0.2/32
     !
-    interface eth1
+    interface GigabitEthernet2.1
+     encapsulation dot1Q 701
+     description ros -> [r2,s1,s2]
+     ip address 172.16.1.1 255.255.255.0
      no shutdown
-     description s1 -> s2
-     ! no ip address
     !
-    interface eth2
-     no shutdown
-     description [Access VLAN red] s1 -> r1
-     ! no ip address
     !
-    interface eth3
-     no shutdown
-     description [Access VLAN blue] s1 -> r2
-     ! no ip address
+    line vty 0 4
+     exec-timeout 0 0
     !
-    interface eth1.701
-     no shutdown
-     description [SubIf VLAN blue] s1 -> s2
-     ! no ip address
-    !
-    interface eth1.700
-     no shutdown
-     description [SubIf VLAN red] s1 -> s2
-     ! no ip address
-    !
-    interface vlan700
-     no shutdown
-     description VLAN red (700) -> [r1,s2,ros]
-     ip address 172.16.0.2/24
-    !
-    interface vlan701
-     no shutdown
-     description VLAN blue (701) -> [ros,r2,s2]
-     ip address 172.16.1.2/24
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
+    no banner exec
+    no banner login
+    no banner incoming
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for ros
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for r1, r2, s1, s2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for s1, s2, r1, r2
 
 TASK [ios_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/ios.j2] ***
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
@@ -640,59 +640,59 @@ device including the indentation
 changed: [ros]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [r1 -> localhost]
+changed: [s1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
-skipping: [r1]
-skipping: [r2]
 skipping: [s1]
 skipping: [s2]
+skipping: [r1]
+skipping: [r2]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, s1, s2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for s1, s2, r1, r2
 
 TASK [template] ****************************************************************
-changed: [s2]
-changed: [r2]
 changed: [s1]
 changed: [r1]
+changed: [s2]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
-ok: [r1]
-ok: [r2]
 ok: [s1]
 ok: [s2]
+ok: [r1]
+ok: [r2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+changed: [s2]
 changed: [r2]
 changed: [r1]
-changed: [s2]
 changed: [s1]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-skipping: [r1]
-skipping: [r2]
 skipping: [s1]
 skipping: [s2]
+skipping: [r1]
+skipping: [r2]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [r1]
-ok: [r2]
 ok: [s1]
 ok: [s2]
+ok: [r1]
+ok: [r2]
 ok: [ros]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for r1, r2, ros, s1, s2 => (item=vlan)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for r1, r2, ros, s1, s2 => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ros, s1, s2, r1, r2 => (item=vlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ros, s1, s2, r1, r2 => (item=ospf)
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
-ok: [r1]
-ok: [r2]
 ok: [s1]
 ok: [s2]
+ok: [r1]
+ok: [r2]
 ok: [ros]
 
 TASK [Find configuration template for vlan] ************************************
@@ -703,11 +703,11 @@ ok: [s2]
 ok: [ros]
 
 TASK [fail] ********************************************************************
-skipping: [r1]
-skipping: [r2]
 skipping: [ros]
 skipping: [s1]
 skipping: [s2]
+skipping: [r1]
+skipping: [r2]
 
 TASK [Find configuration deployment deploy_script for vlan] ********************
 skipping: [r1]
@@ -808,9 +808,9 @@ ok: [ros] =>
     vlan configuration for ros
     =========================================
     !
-    bridge-domain 701
-    !
     bridge-domain 700
+    !
+    bridge-domain 701
     !
     interface GigabitEthernet2.1
      encapsulation dot1Q 701
@@ -833,33 +833,33 @@ ok: [s1]
 ok: [s2]
 
 TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/frr.j2] ***
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [run vtysh to import vlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/frr.j2] ***
 skipping: [s1]
 skipping: [s2]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
-ok: [r1]
-ok: [r2]
 ok: [s1]
 ok: [s2]
+ok: [r1]
+ok: [r2]
 ok: [ros]
 
 TASK [Find configuration template for ospf] ************************************
 skipping: [s1]
+skipping: [s2]
 ok: [r1]
 ok: [r2]
-skipping: [s2]
 ok: [ros]
 
 TASK [fail] ********************************************************************
-skipping: [r1]
-skipping: [r2]
 skipping: [ros]
 skipping: [s1]
 skipping: [s2]
+skipping: [r1]
+skipping: [r2]
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 skipping: [s1]
@@ -950,12 +950,15 @@ ok: [ros] =>
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [s1]
 skipping: [s2]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for ros
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2
+
+TASK [ios_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/ios.j2] ***
+changed: [ros]
 
 TASK [template] ****************************************************************
-changed: [r1]
 changed: [r2]
+changed: [r1]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -966,20 +969,17 @@ skipping: [r1]
 skipping: [r2]
 
 TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [r1]
 changed: [r2]
-
-TASK [ios_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/ios.j2] ***
-changed: [ros]
+changed: [r1]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-r1                         : ok=29   changed=5    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
+r1                         : ok=28   changed=4    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
 r2                         : ok=28   changed=4    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
 ros                        : ok=28   changed=3    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-s1                         : ok=28   changed=4    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
+s1                         : ok=29   changed=5    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
 s2                         : ok=28   changed=4    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
 
 

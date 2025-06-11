@@ -6,8 +6,8 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [r1]
 ok: [r2]
-ok: [r4]
 ok: [r3]
+ok: [r4]
 ok: [dut]
 
 TASK [Find device readiness script] ********************************************
@@ -530,13 +530,14 @@ ok: [dut] =>
     !
     default mtu 1532
     !
-    interface loopback0
-     ip address 10.0.0.1/32
-     no ipv6 enable
-    !
     interface mgmt1/1/1
      no lldp transmit
      no lldp receive
+    !
+    interface loopback0
+     no shutdown
+     ip address 10.0.0.1/32
+     no ipv6 enable
     !
     interface ethernet1/1/1
      no shutdown
@@ -574,6 +575,20 @@ ok: [dut] =>
      ip unreachables
      no ipv6 enable
     !
+    interface loopback1
+     no shutdown
+     ip vrf forwarding red
+     description "VRF Loopback red"
+     ip address 10.2.0.1/32
+     no ipv6 enable
+    !
+    interface loopback2
+     no shutdown
+     ip vrf forwarding blue
+     description "VRF Loopback blue"
+     ip address 10.2.0.2/32
+     no ipv6 enable
+    !
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for r1, r2, r3, r4
@@ -592,8 +607,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, r3, r4
 
 TASK [template] ****************************************************************
-changed: [r2]
 changed: [r4]
+changed: [r2]
 changed: [r1]
 changed: [r3]
 
@@ -604,9 +619,9 @@ ok: [r3]
 ok: [r4]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r1]
 changed: [r2]
 changed: [r3]
+changed: [r1]
 changed: [r4]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -627,8 +642,8 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [r1]
 ok: [r2]
 ok: [r3]
-ok: [r4]
 ok: [dut]
+ok: [r4]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4 => (item=ospf)
@@ -685,11 +700,11 @@ ok: [r1] =>
     !
     interface lo
     !
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.2
     !
     interface eth1
     ! r1 -> dut
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.2
      ip ospf network point-to-point
     !
   
@@ -713,11 +728,11 @@ ok: [r2] =>
     !
     interface lo
     !
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.2
     !
     interface eth1
     ! r2 -> dut
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.2
      ip ospf network point-to-point
     !
   
@@ -741,11 +756,11 @@ ok: [r3] =>
     !
     interface lo
     !
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.3
     !
     interface eth1
     ! r3 -> dut
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.3
      ip ospf network point-to-point
     !
   
@@ -769,11 +784,11 @@ ok: [r4] =>
     !
     interface lo
     !
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.4
     !
     interface eth1
     ! r4 -> dut
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.4
      ip ospf network point-to-point
     !
   
@@ -791,10 +806,10 @@ TASK [dellos10_config: deploying ospf from /home/pipi/net101/tools/netsim/ansibl
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [r2]
 changed: [r3]
-changed: [r1]
+changed: [r2]
 changed: [r4]
+changed: [r1]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -809,17 +824,17 @@ skipping: [r3]
 skipping: [r4]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+changed: [r4]
 changed: [r1]
 changed: [r2]
 changed: [r3]
-changed: [r4]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [r1]
 ok: [r2]
 ok: [dut]
-ok: [r4]
 ok: [r3]
+ok: [r4]
 
 TASK [Find configuration template for vrf] *************************************
 skipping: [r1]
@@ -865,14 +880,19 @@ ok: [dut] =>
     !
     interface ethernet1/1/3
     ! dut -> r3
-     ip ospf 101 area 0.0.0.0
+     ip ospf 101 area 0.0.0.3
      ip ospf network point-to-point
     !
   
     interface ethernet1/1/4
     ! dut -> r4
-     ip ospf 101 area 0.0.0.0
+     ip ospf 101 area 0.0.0.4
      ip ospf network point-to-point
+    !
+  
+    interface loopback2
+    ! VRF Loopback blue
+     ip ospf 101 area 0.0.0.0
     !
   
     exit
@@ -889,14 +909,19 @@ ok: [dut] =>
     !
     interface ethernet1/1/1
     ! dut -> r1
-     ip ospf 100 area 0.0.0.0
+     ip ospf 100 area 0.0.0.2
      ip ospf network point-to-point
     !
   
     interface ethernet1/1/2
     ! dut -> r2
-     ip ospf 100 area 0.0.0.0
+     ip ospf 100 area 0.0.0.2
      ip ospf network point-to-point
+    !
+  
+    interface loopback1
+    ! VRF Loopback red
+     ip ospf 100 area 0.0.0.2
     !
   
     exit

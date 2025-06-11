@@ -21,8 +21,8 @@ skipping: [probe]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/eos-clab.yml for dut_c, dut_a
 
 TASK [Wait for cEOS SSH daemon to start] ***************************************
-ok: [dut_c]
 ok: [dut_a]
+ok: [dut_c]
 
 TASK [Normalize config on bridge-like devices] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut_c, xf, dut_a, probe
@@ -449,8 +449,8 @@ ok: [xf]
 ok: [probe]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [xf]
 changed: [probe]
+changed: [xf]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [xf]
@@ -465,8 +465,136 @@ ok: [dut_a]
 ok: [dut_c]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut_a, dut_c, probe, xf => (item=bgp)
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut_a, dut_c, probe, xf => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut_a, dut_c, probe, xf => (item=bgp)
+
+TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [probe]
+ok: [xf]
+ok: [dut_a]
+ok: [dut_c]
+
+TASK [Find configuration template for ospf] ************************************
+skipping: [xf]
+ok: [probe]
+ok: [dut_a]
+ok: [dut_c]
+
+TASK [fail] ********************************************************************
+skipping: [dut_a]
+skipping: [dut_c]
+skipping: [probe]
+skipping: [xf]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+skipping: [xf]
+ok: [probe]
+ok: [dut_a]
+ok: [dut_c]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [xf]
+ok: [probe] => 
+  msg: |-
+    ospf configuration for probe
+    =========================================
+    !
+    ! OSPFv3 FRR configuration
+    !
+    interface lo
+    !
+     ipv6 ospf6 area 0.0.0.0
+    !
+    interface eth1
+    ! probe -> dut_a
+     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 network point-to-point
+    !
+    interface eth2
+    ! probe -> dut_c
+     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 network point-to-point
+     ipv6 ospf6 cost 10
+    !
+    !
+    router ospf6
+     ospf6 router-id 10.0.0.3
+     timers lsa min-arrival 100
+     timers throttle spf 10 50 500
+  
+  
+    exit
+  
+    !
+    do write
+ok: [dut_a] => 
+  msg: |-
+    ospf configuration for dut_a
+    =========================================
+    !
+    ! OSPFv3 configuration
+    !
+    interface Loopback0
+    !
+     ipv6 ospf 1 area 0.0.0.0
+    !
+    interface Ethernet1
+    ! dut_a -> probe
+     ipv6 ospf 1 area 0.0.0.0
+     ipv6 ospf network point-to-point
+    !
+    !
+    ipv6 router ospf 1
+     router-id 10.0.0.1
+     timers spf delay initial 100 200 500
+     timers lsa rx min interval 100
+     timers lsa tx delay initial 100 200 500
+     default-information originate always metric-type 2 metric 40
+ok: [dut_c] => 
+  msg: |-
+    ospf configuration for dut_c
+    =========================================
+    !
+    ! OSPFv3 configuration
+    !
+    interface Loopback0
+    !
+     ipv6 ospf 1 area 0.0.0.0
+    !
+    interface Ethernet1
+    ! dut_c -> probe
+     ipv6 ospf 1 area 0.0.0.0
+     ipv6 ospf network point-to-point
+     ipv6 ospf cost 10
+    !
+    !
+    ipv6 router ospf 1
+     router-id 10.0.0.2
+     timers spf delay initial 100 200 500
+     timers lsa rx min interval 100
+     timers lsa tx delay initial 100 200 500
+     default-information originate metric-type 1 metric 20
+
+TASK [Deploy ospf configuration] ***********************************************
+skipping: [xf]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for dut_a, dut_c
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for probe
+
+TASK [eos_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/eos.j2] ***
+changed: [dut_a]
+changed: [dut_c]
+
+TASK [template] ****************************************************************
+changed: [probe]
+
+TASK [set_fact] ****************************************************************
+ok: [probe]
+
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+skipping: [probe]
+
+TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+changed: [probe]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [probe]
@@ -577,134 +705,6 @@ skipping: [xf]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [xf]
-
-TASK [Figure out whether to deploy the module ospf on current device] **********
-ok: [probe]
-ok: [xf]
-ok: [dut_a]
-ok: [dut_c]
-
-TASK [Find configuration template for ospf] ************************************
-skipping: [xf]
-ok: [probe]
-ok: [dut_a]
-ok: [dut_c]
-
-TASK [fail] ********************************************************************
-skipping: [dut_a]
-skipping: [dut_c]
-skipping: [xf]
-skipping: [probe]
-
-TASK [Find configuration deployment deploy_script for ospf] ********************
-skipping: [xf]
-ok: [probe]
-ok: [dut_a]
-ok: [dut_c]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [xf]
-ok: [probe] => 
-  msg: |-
-    ospf configuration for probe
-    =========================================
-    !
-    ! OSPFv3 FRR configuration
-    !
-    interface lo
-    !
-     ipv6 ospf6 area 0.0.0.0
-    !
-    interface eth1
-    ! probe -> dut_a
-     ipv6 ospf6 area 0.0.0.0
-     ipv6 ospf6 network point-to-point
-    !
-    interface eth2
-    ! probe -> dut_c
-     ipv6 ospf6 area 0.0.0.0
-     ipv6 ospf6 network point-to-point
-     ipv6 ospf6 cost 10
-    !
-    !
-    router ospf6
-     ospf6 router-id 10.0.0.3
-     timers lsa min-arrival 100
-     timers throttle spf 10 50 500
-  
-  
-    exit
-  
-    !
-    do write
-ok: [dut_a] => 
-  msg: |-
-    ospf configuration for dut_a
-    =========================================
-    !
-    ! OSPFv3 configuration
-    !
-    interface Loopback0
-    !
-     ipv6 ospf 1 area 0.0.0.0
-    !
-    interface Ethernet1
-    ! dut_a -> probe
-     ipv6 ospf 1 area 0.0.0.0
-     ipv6 ospf network point-to-point
-    !
-    !
-    ipv6 router ospf 1
-     router-id 10.0.0.1
-     timers spf delay initial 100 200 500
-     timers lsa rx min interval 100
-     timers lsa tx delay initial 100 200 500
-     default-information originate always metric-type 2 metric 40
-ok: [dut_c] => 
-  msg: |-
-    ospf configuration for dut_c
-    =========================================
-    !
-    ! OSPFv3 configuration
-    !
-    interface Loopback0
-    !
-     ipv6 ospf 1 area 0.0.0.0
-    !
-    interface Ethernet1
-    ! dut_c -> probe
-     ipv6 ospf 1 area 0.0.0.0
-     ipv6 ospf network point-to-point
-     ipv6 ospf cost 10
-    !
-    !
-    ipv6 router ospf 1
-     router-id 10.0.0.2
-     timers spf delay initial 100 200 500
-     timers lsa rx min interval 100
-     timers lsa tx delay initial 100 200 500
-     default-information originate metric-type 1 metric 20
-
-TASK [Deploy ospf configuration] ***********************************************
-skipping: [xf]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for dut_a, dut_c
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for probe
-
-TASK [eos_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/eos.j2] ***
-changed: [dut_c]
-changed: [dut_a]
-
-TASK [template] ****************************************************************
-changed: [probe]
-
-TASK [set_fact] ****************************************************************
-ok: [probe]
-
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-skipping: [probe]
-
-TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [probe]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched

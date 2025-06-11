@@ -140,10 +140,10 @@ ok: [t_1300] =>
     2001:db8:0:2::1 p1
     172.16.0.2 Ethernet1.p1
     2001:db8:1::2 Ethernet1.p1
-    172.16.2.3 t_1300 eth1.t_1300
-    2001:db8:1:2::3 t_1300 eth1.t_1300
-    172.16.1.4 t_1400 eth1.t_1400
-    2001:db8:1:1::4 t_1400 eth1.t_1400
+    172.16.2.3 t-1300 eth1.t_1300
+    2001:db8:1:2::3 t-1300 eth1.t_1300
+    172.16.1.4 t-1400 eth1.t_1400
+    2001:db8:1:1::4 t-1400 eth1.t_1400
     SCRIPT
     grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
     # It seems on the Vagrant box for ubuntu 20.04, DNS Servers are hardcoded as 4.2.2.1 & Co.
@@ -183,18 +183,6 @@ ok: [t_1300] =>
   
     NEED_APT_UPDATE=YES
   
-    # Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA
-    #
-    cat <<SCRIPT > /etc/sysctl.d/10-netsim.conf
-    net.ipv4.conf.all.arp_announce=2
-    net.ipv4.ip_forward=0
-    net.ipv6.conf.all.forwarding=0
-  
-    net.ipv6.conf.eth1.disable_ipv6=0
-  
-    SCRIPT
-    sysctl -p /etc/sysctl.d/10-netsim.conf
-  
     # Loopback addressing
   
     # Interface addressing and bonds, including any static routes
@@ -221,12 +209,26 @@ ok: [t_1300] =>
     Duplex=full
     SCRIPT
   
-    chmod 600 /etc/netplan/*
+    chmod 400 /etc/netplan/*
   
     echo -n 'Starting netplan generate ' && date
     netplan generate
     echo -n 'Starting netplan apply ' && date
-    nohup netplan apply &
+    netplan apply
+  
+    #
+    # Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA
+    # Do this after 'netplan apply', e.g. bond devices won't exist before that
+    #
+    cat <<SCRIPT > /etc/sysctl.d/10-netsim.conf
+    net.ipv4.conf.all.arp_announce=2
+    net.ipv4.ip_forward=0
+    net.ipv6.conf.all.forwarding=0
+  
+    net.ipv6.conf.eth1.disable_ipv6=0
+  
+    SCRIPT
+    sysctl -p /etc/sysctl.d/10-netsim.conf
 ok: [t_1400] => 
   msg: |-
     initial configuration for t_1400
@@ -263,10 +265,10 @@ ok: [t_1400] =>
     2001:db8:0:2::1 p1
     172.16.0.2 Ethernet1.p1
     2001:db8:1::2 Ethernet1.p1
-    172.16.2.3 t_1300 eth1.t_1300
-    2001:db8:1:2::3 t_1300 eth1.t_1300
-    172.16.1.4 t_1400 eth1.t_1400
-    2001:db8:1:1::4 t_1400 eth1.t_1400
+    172.16.2.3 t-1300 eth1.t_1300
+    2001:db8:1:2::3 t-1300 eth1.t_1300
+    172.16.1.4 t-1400 eth1.t_1400
+    2001:db8:1:1::4 t-1400 eth1.t_1400
     SCRIPT
     grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
     # It seems on the Vagrant box for ubuntu 20.04, DNS Servers are hardcoded as 4.2.2.1 & Co.
@@ -306,18 +308,6 @@ ok: [t_1400] =>
   
     NEED_APT_UPDATE=YES
   
-    # Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA
-    #
-    cat <<SCRIPT > /etc/sysctl.d/10-netsim.conf
-    net.ipv4.conf.all.arp_announce=2
-    net.ipv4.ip_forward=0
-    net.ipv6.conf.all.forwarding=0
-  
-    net.ipv6.conf.eth1.disable_ipv6=0
-  
-    SCRIPT
-    sysctl -p /etc/sysctl.d/10-netsim.conf
-  
     # Loopback addressing
   
     # Interface addressing and bonds, including any static routes
@@ -344,12 +334,26 @@ ok: [t_1400] =>
     Duplex=full
     SCRIPT
   
-    chmod 600 /etc/netplan/*
+    chmod 400 /etc/netplan/*
   
     echo -n 'Starting netplan generate ' && date
     netplan generate
     echo -n 'Starting netplan apply ' && date
-    nohup netplan apply &
+    netplan apply
+  
+    #
+    # Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA
+    # Do this after 'netplan apply', e.g. bond devices won't exist before that
+    #
+    cat <<SCRIPT > /etc/sysctl.d/10-netsim.conf
+    net.ipv4.conf.all.arp_announce=2
+    net.ipv4.ip_forward=0
+    net.ipv6.conf.all.forwarding=0
+  
+    net.ipv6.conf.eth1.disable_ipv6=0
+  
+    SCRIPT
+    sysctl -p /etc/sysctl.d/10-netsim.conf
 ok: [dut] => 
   msg: |-
     initial configuration for dut
@@ -364,13 +368,14 @@ ok: [dut] =>
     !
     default mtu 1332
     !
-    interface loopback0
-     ip address 10.0.0.1/32
-     ipv6 address 2001:db8:0:1::1/64
-    !
     interface mgmt1/1/1
      no lldp transmit
      no lldp receive
+    !
+    interface loopback0
+     no shutdown
+     ip address 10.0.0.1/32
+     ipv6 address 2001:db8:0:1::1/64
     !
     interface ethernet1/1/1
      no shutdown
@@ -591,8 +596,8 @@ changed: [t_1400]
 changed: [t_1300]
 
 TASK [Execute /tmp/config.sh to deploy routing config from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux.j2] ***
-changed: [t_1400]
 changed: [t_1300]
+changed: [t_1400]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched

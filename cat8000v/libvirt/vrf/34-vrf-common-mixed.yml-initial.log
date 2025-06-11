@@ -4,93 +4,93 @@
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [srv]
 ok: [r1]
 ok: [r2]
+ok: [srv]
 ok: [dut]
 
 TASK [Find device readiness script] ********************************************
-ok: [srv]
 ok: [r1]
 ok: [r2]
+ok: [srv]
 ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [dut]
-skipping: [srv]
 skipping: [r1]
 skipping: [r2]
+skipping: [srv]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, srv, r1, r2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, srv
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
-ok: [srv]
-ok: [r2]
 ok: [r1]
+ok: [r2]
+ok: [srv]
 ok: [dut]
 
 TASK [Find configuration template for normalize] *******************************
-ok: [srv]
 ok: [r1]
 ok: [r2]
+ok: [srv]
 ok: [dut]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
-skipping: [srv]
 skipping: [r1]
 skipping: [r2]
+skipping: [srv]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
-ok: [srv]
-ok: [r2]
 ok: [r1]
+ok: [r2]
+ok: [srv]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
-skipping: [srv]
 skipping: [r1]
 skipping: [r2]
+skipping: [srv]
 
 TASK [Deploy normalize configuration] ******************************************
 skipping: [dut]
-skipping: [srv]
 skipping: [r1]
 skipping: [r2]
+skipping: [srv]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, srv, r1, r2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, srv
 
 TASK [Figure out whether to deploy the module initial on current device] *******
-ok: [srv]
 ok: [r1]
 ok: [r2]
+ok: [srv]
 ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
-ok: [srv]
 ok: [r1]
 ok: [r2]
+ok: [srv]
 ok: [dut]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
-skipping: [srv]
 skipping: [r1]
 skipping: [r2]
+skipping: [srv]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [srv]
 ok: [r1]
 ok: [r2]
+ok: [srv]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [srv] => 
+ok: [r1] => 
   msg: |-
-    initial configuration for srv
+    initial configuration for r1
     =========================================
     #!/bin/bash
     #
@@ -169,7 +169,7 @@ ok: [srv] =>
     # Rest of initial configuration done through VTYSH
     #
     cat >/tmp/config <<CONFIG
-    hostname srv
+    hostname r1
     !
     ip forwarding
     vrf mgmt
@@ -179,12 +179,12 @@ ok: [srv] =>
     !
     interface lo
      no shutdown
-     ip address 10.0.0.4/32
+     ip address 10.0.0.2/32
     !
     interface eth1
      no shutdown
-     description srv -> dut [external]
-     ip address 10.1.0.10/30
+     description r1 -> dut
+     ip address 10.1.0.2/30
     !
     do write
     CONFIG
@@ -292,9 +292,9 @@ ok: [r2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [r1] => 
+ok: [srv] => 
   msg: |-
-    initial configuration for r1
+    initial configuration for srv
     =========================================
     #!/bin/bash
     #
@@ -373,7 +373,7 @@ ok: [r1] =>
     # Rest of initial configuration done through VTYSH
     #
     cat >/tmp/config <<CONFIG
-    hostname r1
+    hostname srv
     !
     ip forwarding
     vrf mgmt
@@ -383,12 +383,12 @@ ok: [r1] =>
     !
     interface lo
      no shutdown
-     ip address 10.0.0.2/32
+     ip address 10.0.0.4/32
     !
     interface eth1
      no shutdown
-     description r1 -> dut
-     ip address 10.1.0.2/30
+     description srv -> dut [external]
+     ip address 10.1.0.10/30
     !
     do write
     CONFIG
@@ -404,9 +404,9 @@ ok: [dut] =>
     !
     lldp run
     !
+    ip host dut-red 10.1.0.1
     ip host dut-blue 10.1.0.5
     ip host dut-common 10.1.0.9
-    ip host dut-red 10.1.0.1
     ip host r1 10.0.0.2 10.1.0.2
     ip host r2 10.0.0.3 10.1.0.6
     ip host srv 10.0.0.4 10.1.0.10
@@ -414,6 +414,15 @@ ok: [dut] =>
     ip routing
     !
     no ipv6 unicast-routing
+    !
+    vrf definition red
+     rd 65000:1
+     route-target import 65000:1
+     route-target import 65000:3
+     route-target export 65000:1
+    !
+     address-family ipv4
+     exit-address-family
     !
     vrf definition blue
      rd 65000:2
@@ -430,15 +439,6 @@ ok: [dut] =>
      route-target import 65000:2
      route-target import 65000:3
      route-target export 65000:3
-    !
-     address-family ipv4
-     exit-address-family
-    !
-    vrf definition red
-     rd 65000:1
-     route-target import 65000:1
-     route-target import 65000:3
-     route-target export 65000:1
     !
      address-family ipv4
      exit-address-family
@@ -483,45 +483,45 @@ ok: [dut] =>
     no banner incoming
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for srv, r1, r2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for r1, r2, srv
 
-TASK [ios_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/ios.j2] ***
+TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
 should be similar to how they appear if present in the running configuration on
 device including the indentation
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [srv -> localhost]
+changed: [r1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
-skipping: [srv]
 skipping: [r1]
 skipping: [r2]
+skipping: [srv]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for srv, r1, r2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, srv
 
 TASK [template] ****************************************************************
-changed: [srv]
 changed: [r1]
 changed: [r2]
+changed: [srv]
 
 TASK [set_fact] ****************************************************************
-ok: [srv]
 ok: [r1]
 ok: [r2]
+ok: [srv]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+changed: [r1]
 changed: [srv]
 changed: [r2]
-changed: [r1]
 
-TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-skipping: [srv]
+TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r1]
 skipping: [r2]
+skipping: [srv]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -532,9 +532,9 @@ ok: [srv]
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, srv => (item=bgp)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, srv => (item=ospf)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, srv => (item=vrf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, srv => (item=bgp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, srv => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, srv => (item=vrf)
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [r1]
@@ -625,10 +625,10 @@ ok: [dut] =>
 TASK [Deploy bgp configuration] ************************************************
 skipping: [r1]
 skipping: [r2]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for srv
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for srv
 
-TASK [ios_config: deploying bgp from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/ios.j2] ***
+TASK [ios_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/ios.j2] ***
 changed: [dut]
 
 TASK [template] ****************************************************************
@@ -637,10 +637,10 @@ changed: [srv]
 TASK [set_fact] ****************************************************************
 ok: [srv]
 
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [srv]
 
-TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [srv]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
@@ -732,10 +732,10 @@ ok: [dut] =>
 
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [srv]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2
 
-TASK [ios_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/ios.j2] ***
+TASK [ios_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/ios.j2] ***
 ok: [dut]
 
 TASK [template] ****************************************************************
@@ -746,13 +746,13 @@ TASK [set_fact] ****************************************************************
 ok: [r1]
 ok: [r2]
 
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 skipping: [r1]
 skipping: [r2]
 
-TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [r2]
+TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [r1]
+changed: [r2]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [r1]
@@ -788,6 +788,13 @@ ok: [dut] =>
     =========================================
     !
     router bgp 65000
+     address-family ipv4 vrf red
+      bgp router-id 10.0.0.1
+      redistribute connected
+      redistribute ospf 100 match internal external
+  
+    !
+    !
      address-family ipv4 vrf blue
       bgp router-id 10.0.0.1
       redistribute connected
@@ -808,26 +815,6 @@ ok: [dut] =>
       neighbor 10.1.0.10 advertisement-interval 0
       neighbor 10.1.0.10 send-community standard
   
-     address-family ipv4 vrf red
-      bgp router-id 10.0.0.1
-      redistribute connected
-      redistribute ospf 100 match internal external
-  
-    !
-    !
-    router ospf 101 vrf blue
-     router-id 10.100.0.101
-  
-     redistribute bgp 65000
-     redistribute connected
-  
-    !
-    interface GigabitEthernet3
-    ! dut -> r2
-     ip ospf 101 area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
     router ospf 100 vrf red
      router-id 10.100.0.100
   
@@ -840,14 +827,27 @@ ok: [dut] =>
      ip ospf 100 area 0.0.0.0
      ip ospf network point-to-point
     !
+  
+    router ospf 101 vrf blue
+     router-id 10.100.0.101
+  
+     redistribute bgp 65000
+     redistribute connected
+  
+    !
+    interface GigabitEthernet3
+    ! dut -> r2
+     ip ospf 101 area 0.0.0.0
+     ip ospf network point-to-point
+    !
 
 TASK [Deploy vrf configuration] ************************************************
 skipping: [r1]
 skipping: [r2]
 skipping: [srv]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
 
-TASK [ios_config: deploying vrf from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/ios.j2] ***
+TASK [ios_config: deploying vrf from /home/pipi/net101/tools/netsim/ansible/templates/vrf/ios.j2] ***
 changed: [dut]
 
 PLAY [Deploy custom deployment templates] **************************************
@@ -855,9 +855,9 @@ skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
 dut                        : ok=35   changed=3    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-r1                         : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+r1                         : ok=31   changed=5    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
 r2                         : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
-srv                        : ok=31   changed=5    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+srv                        : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
 
 
 

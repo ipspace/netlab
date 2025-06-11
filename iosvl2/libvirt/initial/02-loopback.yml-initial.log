@@ -14,12 +14,12 @@ ok: [h2]
 ok: [r]
 
 TASK [Wait for device to become ready] *****************************************
-skipping: [r]
 skipping: [h1]
 skipping: [h2]
+skipping: [r]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for r, h1, h2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, r
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [h1]
@@ -32,9 +32,9 @@ ok: [h2]
 ok: [r]
 
 TASK [fail] ********************************************************************
-skipping: [r]
 skipping: [h1]
 skipping: [h2]
+skipping: [r]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [h1]
@@ -69,7 +69,7 @@ device including the indentation
 changed: [r]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for r, h1, h2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, r
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [h1]
@@ -82,9 +82,9 @@ ok: [h2]
 ok: [r]
 
 TASK [fail] ********************************************************************
-skipping: [r]
 skipping: [h1]
 skipping: [h2]
+skipping: [r]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [h1]
@@ -225,11 +225,8 @@ ok: [r] =>
     no banner incoming
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for r
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
-
-TASK [ios_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/ios.j2] ***
-changed: [r]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for r
 
 TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
@@ -240,8 +237,8 @@ changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -252,12 +249,15 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-ljrjmch4.sh] ***********************
-changed: [h1 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-aub4tji8.sh] ***********************
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
+
+TASK [ios_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/ios.j2] ***
+changed: [r]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -295,22 +295,24 @@ ok: [h1] =>
     #
     #
     echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
     while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
       : ; done
     while ip route del 10.2.0.0/24 2>/dev/null; do
       : ; done
     #
+    set +e
+    echo Removing existing IPv6 routes
+    while ip route del 2001:db8::/48 2>/dev/null; do
+      : ; done
+    while ip route del 2001:db8:cafe::/48 2>/dev/null; do
+      : ; done
     #
     #
     echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.0.1 dev eth1 protocol static
     ip route add 10.0.0.0/24 via 172.16.0.1 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.0.1 dev eth1 protocol static
+    ip route add 2001:db8::/48 via 2001:db8:1::1 dev eth1 protocol static
     ip route add 10.2.0.0/24 via 172.16.0.1 dev eth1 protocol static
+    ip route add 2001:db8:cafe::/48 via 2001:db8:1::1 dev eth1 protocol static
     #
     # Print the final routing table
     ip route
@@ -324,22 +326,24 @@ ok: [h2] =>
     #
     #
     echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
     while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
       : ; done
     while ip route del 10.2.0.0/24 2>/dev/null; do
       : ; done
     #
+    set +e
+    echo Removing existing IPv6 routes
+    while ip route del 2001:db8::/48 2>/dev/null; do
+      : ; done
+    while ip route del 2001:db8:cafe::/48 2>/dev/null; do
+      : ; done
     #
     #
     echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.1.1 dev eth1 protocol static
     ip route add 10.0.0.0/24 via 172.16.1.1 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.1.1 dev eth1 protocol static
+    ip route add 2001:db8::/48 via 2001:db8:1:1::1 dev eth1 protocol static
     ip route add 10.2.0.0/24 via 172.16.1.1 dev eth1 protocol static
+    ip route add 2001:db8:cafe::/48 via 2001:db8:1:1::1 dev eth1 protocol static
     #
     # Print the final routing table
     ip route
@@ -352,8 +356,8 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
 changed: [h1 -> localhost]
@@ -371,7 +375,7 @@ TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/a
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-vhh038v3.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-xicmwv_a.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 

@@ -207,6 +207,7 @@ def run_single_test(
   else:
     run_command(cmd,ignore_errors=True)
   os.chdir(pwd)
+  os.environ.pop(f'NETLAB_DEVICES_{device}_PROVIDER',None)
 
   return True
 

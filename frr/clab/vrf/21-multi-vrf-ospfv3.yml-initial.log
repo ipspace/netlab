@@ -14,8 +14,8 @@ TASK [Find device readiness script] ********************************************
 ok: [r1]
 ok: [r2]
 ok: [r3]
-ok: [dut]
 ok: [r4]
+ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [r1]
@@ -31,8 +31,8 @@ TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [r1]
 ok: [r2]
 ok: [r3]
-ok: [dut]
 ok: [r4]
+ok: [dut]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [r1]
@@ -76,15 +76,15 @@ TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [r1]
 ok: [r2]
 ok: [r3]
-ok: [dut]
 ok: [r4]
+ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
 ok: [r1]
 ok: [r2]
 ok: [r3]
-ok: [dut]
 ok: [r4]
+ok: [dut]
 
 TASK [fail] ********************************************************************
 skipping: [r1]
@@ -97,8 +97,8 @@ TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [r1]
 ok: [r2]
 ok: [r3]
-ok: [dut]
 ok: [r4]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [r1] => 
@@ -194,8 +194,8 @@ ok: [r1] =>
     !
     interface lo
      no shutdown
-     ip address 10.0.0.1/32
-     ipv6 address 2001:db8:1:1::1/64
+     ip address 10.0.0.2/32
+     ipv6 address 2001:db8:1:2::1/64
     !
     interface eth1
      no shutdown
@@ -302,8 +302,8 @@ ok: [r2] =>
     !
     interface lo
      no shutdown
-     ip address 10.0.0.2/32
-     ipv6 address 2001:db8:1:2::1/64
+     ip address 10.0.0.3/32
+     ipv6 address 2001:db8:1:3::1/64
     !
     interface eth1
      no shutdown
@@ -410,8 +410,8 @@ ok: [r3] =>
     !
     interface lo
      no shutdown
-     ip address 10.0.0.3/32
-     ipv6 address 2001:db8:1:3::1/64
+     ip address 10.0.0.4/32
+     ipv6 address 2001:db8:1:4::1/64
     !
     interface eth1
      no shutdown
@@ -518,8 +518,8 @@ ok: [r4] =>
     !
     interface lo
      no shutdown
-     ip address 10.0.0.4/32
-     ipv6 address 2001:db8:1:4::1/64
+     ip address 10.0.0.5/32
+     ipv6 address 2001:db8:1:5::1/64
     !
     interface eth1
      no shutdown
@@ -598,6 +598,18 @@ ok: [dut] =>
         ip link set dev lo up
       fi
     fi
+    if [ ! -e /sys/class/net/lo1 ]; then
+      if [ ! -e /sys/devices/virtual/net/lo1 ]; then
+        ip link add lo1 type dummy
+        ip link set dev lo1 up
+      fi
+    fi
+    if [ ! -e /sys/class/net/lo2 ]; then
+      if [ ! -e /sys/devices/virtual/net/lo2 ]; then
+        ip link add lo2 type dummy
+        ip link set dev lo2 up
+      fi
+    fi
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
@@ -641,8 +653,8 @@ ok: [dut] =>
     !
     interface lo
      no shutdown
-     ip address 10.0.0.5/32
-     ipv6 address 2001:db8:1:5::1/64
+     ip address 10.0.0.1/32
+     ipv6 address 2001:db8:1:1::1/64
     !
     interface eth1
      no shutdown
@@ -676,6 +688,18 @@ ok: [dut] =>
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
+    interface lo1
+     no shutdown
+     description VRF Loopback red
+     ! no ip address
+     ipv6 address 2001:db8:cafe::1/64
+    !
+    interface lo2
+     no shutdown
+     description VRF Loopback blue
+     ! no ip address
+     ipv6 address 2001:db8:cafe:1::1/64
+    !
     do write
     CONFIG
     vtysh -f /tmp/config
@@ -689,8 +713,8 @@ changed: [r1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [r1]
-skipping: [r3]
 skipping: [r2]
+skipping: [r3]
 skipping: [r4]
 skipping: [dut]
 
@@ -698,25 +722,25 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, r3, r4, dut
 
 TASK [template] ****************************************************************
-changed: [r2]
-changed: [r3]
-changed: [r1]
-changed: [r4]
 changed: [dut]
+changed: [r3]
+changed: [r2]
+changed: [r4]
+changed: [r1]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
 ok: [r2]
 ok: [r3]
-ok: [dut]
 ok: [r4]
+ok: [dut]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r2]
-changed: [r1]
 changed: [r3]
+changed: [r1]
 changed: [r4]
 changed: [dut]
+changed: [r2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r1]
@@ -781,7 +805,7 @@ ok: [r1] =>
     ! OSPFv2 FRR configuration
     !
     router ospf
-     ospf router-id 10.0.0.1
+     ospf router-id 10.0.0.2
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
@@ -791,7 +815,7 @@ ok: [r1] =>
     !
     interface lo
     !
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.2
     !
   
     !
@@ -799,16 +823,16 @@ ok: [r1] =>
     !
     interface lo
     !
-     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 area 0.0.0.2
     !
     interface eth1
     ! r1 -> dut
-     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 area 0.0.0.2
      ipv6 ospf6 network point-to-point
     !
     !
     router ospf6
-     ospf6 router-id 10.0.0.1
+     ospf6 router-id 10.0.0.2
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
   
@@ -825,7 +849,7 @@ ok: [r2] =>
     ! OSPFv2 FRR configuration
     !
     router ospf
-     ospf router-id 10.0.0.2
+     ospf router-id 10.0.0.3
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
@@ -835,7 +859,7 @@ ok: [r2] =>
     !
     interface lo
     !
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.2
     !
   
     !
@@ -843,16 +867,16 @@ ok: [r2] =>
     !
     interface lo
     !
-     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 area 0.0.0.2
     !
     interface eth1
     ! r2 -> dut
-     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 area 0.0.0.2
      ipv6 ospf6 network point-to-point
     !
     !
     router ospf6
-     ospf6 router-id 10.0.0.2
+     ospf6 router-id 10.0.0.3
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
   
@@ -869,7 +893,7 @@ ok: [r3] =>
     ! OSPFv2 FRR configuration
     !
     router ospf
-     ospf router-id 10.0.0.3
+     ospf router-id 10.0.0.4
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
@@ -879,7 +903,7 @@ ok: [r3] =>
     !
     interface lo
     !
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.3
     !
   
     !
@@ -887,16 +911,16 @@ ok: [r3] =>
     !
     interface lo
     !
-     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 area 0.0.0.3
     !
     interface eth1
     ! r3 -> dut
-     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 area 0.0.0.3
      ipv6 ospf6 network point-to-point
     !
     !
     router ospf6
-     ospf6 router-id 10.0.0.3
+     ospf6 router-id 10.0.0.4
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
   
@@ -913,7 +937,7 @@ ok: [r4] =>
     ! OSPFv2 FRR configuration
     !
     router ospf
-     ospf router-id 10.0.0.4
+     ospf router-id 10.0.0.5
      timers throttle spf 10 50 500
      timers throttle lsa all 100
      timers lsa min-arrival 100
@@ -923,7 +947,7 @@ ok: [r4] =>
     !
     interface lo
     !
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.4
     !
   
     !
@@ -931,16 +955,16 @@ ok: [r4] =>
     !
     interface lo
     !
-     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 area 0.0.0.4
     !
     interface eth1
     ! r4 -> dut
-     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 area 0.0.0.4
      ipv6 ospf6 network point-to-point
     !
     !
     router ospf6
-     ospf6 router-id 10.0.0.4
+     ospf6 router-id 10.0.0.5
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
   
@@ -956,16 +980,16 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for
 TASK [template] ****************************************************************
 changed: [dut]
 changed: [r2]
-changed: [r3]
-changed: [r4]
 changed: [r1]
+changed: [r4]
+changed: [r3]
 
 TASK [set_fact] ****************************************************************
-ok: [dut]
 ok: [r1]
 ok: [r2]
-ok: [r4]
 ok: [r3]
+ok: [r4]
+ok: [dut]
 
 TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 skipping: [dut]
@@ -977,9 +1001,9 @@ skipping: [r4]
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [dut]
 changed: [r1]
+changed: [r4]
 changed: [r3]
 changed: [r2]
-changed: [r4]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [dut]
@@ -1042,6 +1066,10 @@ ok: [dut] =>
     ip link set eth3 master blue
     sysctl -qw net.ipv6.conf.eth4.keep_addr_on_down=1
     ip link set eth4 master blue
+    sysctl -qw net.ipv6.conf.lo1.keep_addr_on_down=1
+    ip link set lo1 master red
+    sysctl -qw net.ipv6.conf.lo2.keep_addr_on_down=1
+    ip link set lo2 master blue
   
     cat >/tmp/vrf_config <<CONFIG
     vrf blue
@@ -1057,17 +1085,21 @@ ok: [dut] =>
     !
     interface eth3
     ! dut -> r3
-     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 area 0.0.0.3
      ipv6 ospf6 network point-to-point
     !
     interface eth4
     ! dut -> r4
-     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 area 0.0.0.4
      ipv6 ospf6 network point-to-point
+    !
+    interface lo2
+    ! VRF Loopback blue
+     ipv6 ospf6 area 0.0.0.0
     !
     !
     router ospf6 vrf blue
-     ospf6 router-id 10.0.0.5
+     ospf6 router-id 10.0.0.1
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
   
@@ -1081,17 +1113,21 @@ ok: [dut] =>
     !
     interface eth1
     ! dut -> r1
-     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 area 0.0.0.2
      ipv6 ospf6 network point-to-point
     !
     interface eth2
     ! dut -> r2
-     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 area 0.0.0.2
      ipv6 ospf6 network point-to-point
+    !
+    interface lo1
+    ! VRF Loopback red
+     ipv6 ospf6 area 0.0.0.2
     !
     !
     router ospf6 vrf red
-     ospf6 router-id 10.0.0.5
+     ospf6 router-id 10.0.0.1
      timers lsa min-arrival 100
      timers throttle spf 10 50 500
   

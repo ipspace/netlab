@@ -17,11 +17,11 @@ TASK [Find device readiness script] ********************************************
 ok: [dut]
 ok: [p1]
 ok: [p2]
-ok: [h1]
 ok: [h2]
-ok: [h3]
+ok: [h1]
 ok: [pe2]
 ok: [h4]
+ok: [h3]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [dut]
@@ -46,17 +46,17 @@ ok: [p2]
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [h4]
 ok: [pe2]
+ok: [h4]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [dut]
 ok: [p1]
 ok: [p2]
 ok: [h1]
+ok: [h3]
 ok: [h2]
 ok: [pe2]
-ok: [h3]
 ok: [h4]
 
 TASK [fail] ********************************************************************
@@ -74,10 +74,10 @@ ok: [dut]
 ok: [p1]
 ok: [p2]
 ok: [h1]
-ok: [h2]
 ok: [h3]
 ok: [pe2]
 ok: [h4]
+ok: [h2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
@@ -136,12 +136,12 @@ ok: [pe2]
 TASK [Find configuration template for initial] *********************************
 ok: [dut]
 ok: [p1]
+ok: [h1]
 ok: [p2]
 ok: [h2]
-ok: [h1]
 ok: [h3]
-ok: [h4]
 ok: [pe2]
+ok: [h4]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -158,10 +158,10 @@ ok: [dut]
 ok: [p1]
 ok: [p2]
 ok: [h1]
-ok: [pe2]
-ok: [h4]
 ok: [h2]
 ok: [h3]
+ok: [h4]
+ok: [pe2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [h4] => 
@@ -319,6 +319,41 @@ ok: [dut] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+  
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.1/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
 ok: [p1] => 
   msg: |-
     initial configuration for p1
@@ -430,41 +465,6 @@ ok: [p1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [h1] => 
-  msg: |-
-    initial configuration for h1
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Send ARP requests from a sane source IP address
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-  
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.0.1/24 dev eth1
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
 ok: [h2] => 
   msg: |-
     initial configuration for h2
@@ -535,75 +535,6 @@ ok: [h3] =>
     ip addr add 172.16.2.3/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
-ok: [pe2] => 
-  msg: |-
-    initial configuration for pe2
-    =========================================
-    hostname pe2
-    !
-    logging monitor debugging
-    aaa authorization exec default local
-    !
-    lldp run
-    ip routing
-    no ipv6 unicast-routing
-    !
-    vrf instance t1
-     rd 65000:1
-    !
-    ip routing vrf t1
-    !
-    vrf instance t2
-     rd 65000:2
-    !
-    ip routing vrf t2
-    !
-    !
-    ip host dut 10.0.0.5 10.1.0.1
-    ip host dut-t1 172.16.0.5
-    ip host dut-t2 172.16.2.5
-    ip host h1 172.16.0.1
-    ip host h2 172.16.1.2
-    ip host h3 172.16.2.3
-    ip host h4 172.16.3.4
-    ip host p1 10.0.0.7 10.1.0.2 10.1.0.5
-    ip host p2 10.0.0.8 10.1.0.6 10.1.0.9
-    ip host pe2-t1 172.16.1.6
-    ip host pe2-t2 172.16.3.6
-    !
-    interface Management0
-     no lldp transmit
-     no lldp receive
-    !
-    interface Loopback0
-     ip address 10.0.0.6/32
-    !
-    interface Ethernet1
-     no switchport
-     description pe2 -> p2
-     ip address 10.1.0.10/30
-    !
-     mac-address 52dc.cafe.0601
-     no shutdown
-    !
-    interface Ethernet2
-     no switchport
-     vrf t1
-     description pe2 -> h2 [stub]
-     ip address 172.16.1.6/24
-    !
-     mac-address 52dc.cafe.0602
-     no shutdown
-    !
-    interface Ethernet3
-     no switchport
-     vrf t2
-     description pe2 -> h4 [stub]
-     ip address 172.16.3.6/24
-    !
-     mac-address 52dc.cafe.0603
-     no shutdown
-    !
 ok: [p2] => 
   msg: |-
     initial configuration for p2
@@ -715,9 +646,78 @@ ok: [p2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [pe2] => 
+  msg: |-
+    initial configuration for pe2
+    =========================================
+    hostname pe2
+    !
+    logging monitor debugging
+    aaa authorization exec default local
+    !
+    lldp run
+    ip routing
+    no ipv6 unicast-routing
+    !
+    vrf instance t1
+     rd 65000:1
+    !
+    ip routing vrf t1
+    !
+    vrf instance t2
+     rd 65000:2
+    !
+    ip routing vrf t2
+    !
+    !
+    ip host dut 10.0.0.5 10.1.0.1
+    ip host dut-t1 172.16.0.5
+    ip host dut-t2 172.16.2.5
+    ip host h1 172.16.0.1
+    ip host h2 172.16.1.2
+    ip host h3 172.16.2.3
+    ip host h4 172.16.3.4
+    ip host p1 10.0.0.7 10.1.0.2 10.1.0.5
+    ip host p2 10.0.0.8 10.1.0.6 10.1.0.9
+    ip host pe2-t1 172.16.1.6
+    ip host pe2-t2 172.16.3.6
+    !
+    interface Management0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     ip address 10.0.0.6/32
+    !
+    interface Ethernet1
+     no switchport
+     description pe2 -> p2
+     ip address 10.1.0.10/30
+    !
+     mac-address 52dc.cafe.0601
+     no shutdown
+    !
+    interface Ethernet2
+     no switchport
+     vrf t1
+     description pe2 -> h2 [stub]
+     ip address 172.16.1.6/24
+    !
+     mac-address 52dc.cafe.0602
+     no shutdown
+    !
+    interface Ethernet3
+     no switchport
+     vrf t2
+     description pe2 -> h4 [stub]
+     ip address 172.16.3.6/24
+    !
+     mac-address 52dc.cafe.0603
+     no shutdown
+    !
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for dut, p2, p1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for dut, p1, p2
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for pe2
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2, h3, h4
 
@@ -733,9 +733,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for dut, p1, p2
 
 TASK [template] ****************************************************************
-changed: [p1]
-changed: [dut]
 changed: [p2]
+changed: [dut]
+changed: [p1]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
@@ -744,8 +744,8 @@ ok: [p2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [p1]
-changed: [p2]
 changed: [dut]
+changed: [p2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [dut]
@@ -763,15 +763,15 @@ ok: [h4]
 
 TASK [Create a temporary file for the rendered script] *************************
 changed: [h1 -> localhost]
-changed: [h2 -> localhost]
 changed: [h4 -> localhost]
+changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
-changed: [h3 -> localhost]
 changed: [h4 -> localhost]
+changed: [h3 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -786,14 +786,14 @@ skipping: [h3]
 skipping: [h4]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-vh8jwl77.sh] ***********************
-changed: [h1 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-md7mx0c0.sh] ***********************
 changed: [h3 -> localhost]
+changed: [h1 -> localhost]
 changed: [h4 -> localhost]
 changed: [h2 -> localhost]
 
@@ -803,8 +803,8 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
 ok: [h1]
 ok: [h2]
-ok: [h3]
 ok: [h4]
+ok: [h3]
 ok: [p1]
 ok: [p2]
 ok: [pe2]
@@ -833,8 +833,8 @@ ok: [h2]
 skipping: [p1]
 ok: [h3]
 skipping: [p2]
-skipping: [pe2]
 ok: [h4]
+skipping: [pe2]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -1000,8 +1000,8 @@ changed: [h4 -> localhost]
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
-changed: [h4 -> localhost]
 changed: [h3 -> localhost]
+changed: [h4 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
 skipping: [h1]
@@ -1021,7 +1021,7 @@ changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-tae2ntlf.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-r70o6yij.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
@@ -1041,8 +1041,8 @@ TASK [Find configuration template for bgp] *************************************
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
-ok: [dut]
 skipping: [h4]
+ok: [dut]
 skipping: [p1]
 skipping: [p2]
 ok: [pe2]
@@ -1208,8 +1208,8 @@ skipping: [h2]
 skipping: [h3]
 skipping: [h4]
 ok: [dut]
-ok: [p1]
 ok: [p2]
+ok: [p1]
 ok: [pe2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -1245,39 +1245,6 @@ ok: [dut] =>
   
     !
     do write
-ok: [p2] => 
-  msg: |-
-    ospf configuration for p2
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.8
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! p2 -> p1
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-    interface eth2
-    ! p2 -> pe2
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    do write
 ok: [p1] => 
   msg: |-
     ospf configuration for p1
@@ -1305,6 +1272,39 @@ ok: [p1] =>
     !
     interface eth2
     ! p1 -> p2
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    do write
+ok: [p2] => 
+  msg: |-
+    ospf configuration for p2
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.8
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! p2 -> p1
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    interface eth2
+    ! p2 -> pe2
      ip ospf area 0.0.0.0
      ip ospf network point-to-point
     !
@@ -1361,8 +1361,8 @@ skipping: [p1]
 skipping: [p2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [dut]
 changed: [p1]
+changed: [dut]
 changed: [p2]
 
 TASK [eos_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/eos.j2] ***
@@ -1551,9 +1551,9 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for pe2
 
 TASK [template] ****************************************************************
-changed: [dut]
 changed: [p1]
 changed: [p2]
+changed: [dut]
 
 TASK [set_fact] ****************************************************************
 ok: [p1]
@@ -1561,8 +1561,8 @@ ok: [dut]
 ok: [p2]
 
 TASK [run /tmp/config.sh to deploy mpls config from /home/pipi/net101/tools/netsim/ansible/templates/mpls/frr.j2] ***
-changed: [dut]
 changed: [p1]
+changed: [dut]
 changed: [p2]
 
 TASK [run vtysh to import mpls config from /home/pipi/net101/tools/netsim/ansible/templates/mpls/frr.j2] ***
@@ -1586,9 +1586,9 @@ ok: [pe2]
 TASK [Find configuration template for vrf] *************************************
 skipping: [h1]
 skipping: [h2]
+ok: [dut]
 skipping: [h3]
 skipping: [h4]
-ok: [dut]
 skipping: [p1]
 skipping: [p2]
 ok: [pe2]

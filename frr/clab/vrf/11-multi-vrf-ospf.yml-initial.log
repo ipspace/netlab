@@ -52,8 +52,8 @@ TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [r1]
 ok: [r2]
 ok: [r3]
-ok: [r4]
 ok: [dut]
+ok: [r4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r1]
@@ -97,8 +97,8 @@ TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [r1]
 ok: [r2]
 ok: [r3]
-ok: [dut]
 ok: [r4]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [r1] => 
@@ -472,6 +472,18 @@ ok: [dut] =>
         ip link set dev lo up
       fi
     fi
+    if [ ! -e /sys/class/net/lo1 ]; then
+      if [ ! -e /sys/devices/virtual/net/lo1 ]; then
+        ip link add lo1 type dummy
+        ip link set dev lo1 up
+      fi
+    fi
+    if [ ! -e /sys/class/net/lo2 ]; then
+      if [ ! -e /sys/devices/virtual/net/lo2 ]; then
+        ip link add lo2 type dummy
+        ip link set dev lo2 up
+      fi
+    fi
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
@@ -531,6 +543,16 @@ ok: [dut] =>
      no shutdown
      description dut -> r4
      ip address 10.1.0.13/30
+    !
+    interface lo1
+     no shutdown
+     description VRF Loopback red
+     ip address 10.2.0.1/32
+    !
+    interface lo2
+     no shutdown
+     description VRF Loopback blue
+     ip address 10.2.0.2/32
     !
     do write
     CONFIG
@@ -656,24 +678,24 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, r3, r4, dut
 
 TASK [template] ****************************************************************
-changed: [r2]
-changed: [dut]
-changed: [r1]
-changed: [r4]
 changed: [r3]
+changed: [dut]
+changed: [r4]
+changed: [r2]
+changed: [r1]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
 ok: [r2]
 ok: [r3]
-ok: [r4]
 ok: [dut]
+ok: [r4]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [r1]
-changed: [r2]
 changed: [r4]
 changed: [r3]
+changed: [r2]
 changed: [dut]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -749,11 +771,11 @@ ok: [r1] =>
     !
     interface lo
     !
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.2
     !
     interface eth1
     ! r1 -> dut
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.2
      ip ospf network point-to-point
     !
   
@@ -777,39 +799,11 @@ ok: [r2] =>
     !
     interface lo
     !
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.2
     !
     interface eth1
     ! r2 -> dut
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    do write
-ok: [r4] => 
-  msg: |-
-    ospf configuration for r4
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.5
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! r4 -> dut
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.2
      ip ospf network point-to-point
     !
   
@@ -833,11 +827,39 @@ ok: [r3] =>
     !
     interface lo
     !
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.3
     !
     interface eth1
     ! r3 -> dut
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.3
+     ip ospf network point-to-point
+    !
+  
+    !
+    do write
+ok: [r4] => 
+  msg: |-
+    ospf configuration for r4
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.5
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.4
+    !
+    interface eth1
+    ! r4 -> dut
+     ip ospf area 0.0.0.4
      ip ospf network point-to-point
     !
   
@@ -848,18 +870,18 @@ TASK [Deploy ospf configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for dut, r1, r2, r3, r4
 
 TASK [template] ****************************************************************
-changed: [r2]
-changed: [dut]
 changed: [r3]
+changed: [r2]
 changed: [r1]
+changed: [dut]
 changed: [r4]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
 ok: [r1]
 ok: [r2]
-ok: [r3]
 ok: [r4]
+ok: [r3]
 
 TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 skipping: [dut]
@@ -870,10 +892,10 @@ skipping: [r4]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [dut]
-changed: [r1]
-changed: [r2]
 changed: [r3]
 changed: [r4]
+changed: [r1]
+changed: [r2]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [dut]
@@ -936,6 +958,10 @@ ok: [dut] =>
     ip link set eth3 master blue
     sysctl -qw net.ipv6.conf.eth4.keep_addr_on_down=1
     ip link set eth4 master blue
+    sysctl -qw net.ipv6.conf.lo1.keep_addr_on_down=1
+    ip link set lo1 master red
+    sysctl -qw net.ipv6.conf.lo2.keep_addr_on_down=1
+    ip link set lo2 master blue
   
     cat >/tmp/vrf_config <<CONFIG
     vrf blue
@@ -961,13 +987,17 @@ ok: [dut] =>
     !
     interface eth3
     ! dut -> r3
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.3
      ip ospf network point-to-point
     !
     interface eth4
     ! dut -> r4
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.4
      ip ospf network point-to-point
+    !
+    interface lo2
+    ! VRF Loopback blue
+     ip ospf area 0.0.0.0
     !
   
     !
@@ -986,13 +1016,17 @@ ok: [dut] =>
     !
     interface eth1
     ! dut -> r1
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.2
      ip ospf network point-to-point
     !
     interface eth2
     ! dut -> r2
-     ip ospf area 0.0.0.0
+     ip ospf area 0.0.0.2
      ip ospf network point-to-point
+    !
+    interface lo1
+    ! VRF Loopback red
+     ip ospf area 0.0.0.2
     !
   
     !
