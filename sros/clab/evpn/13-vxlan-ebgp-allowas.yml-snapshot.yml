@@ -1248,7 +1248,7 @@ defaults:
         dnsmasq: dnsmasq
       virtualbox:
         image: null
-  device: arubacx
+  device: sros
   devices:
     arubacx:
       clab:
@@ -1373,7 +1373,6 @@ defaults:
         image: aruba/cx
       loopback_interface_name: loopback {ifindex}
       mgmt_if: mgmt
-      provider: libvirt
       tunnel_interface_name: tunnel {ifindex}
     asav:
       description: Cisco ASAv
@@ -4252,6 +4251,7 @@ defaults:
       interface_name: eth-1/1/c{ifindex}
       loopback_interface_name: '{"loopback."+str(ifindex) if ifindex else "system"}'
       mgmt_if: A/1
+      provider: clab
       sr:
         ipv6_sid_offset: 100
         srgb_range_size: 1000
@@ -6062,7 +6062,7 @@ defaults:
     any:
       ipv4: 0.0.0.0/0
       ipv6: ::/0
-  provider: libvirt
+  provider: clab
   providers:
     clab:
       act_probe: docker ps
@@ -7048,35 +7048,27 @@ input:
 - /home/pipi/net101/tools/tests/integration/evpn/topology-defaults.yml
 - /home/pipi/.netlab.yml
 - package:topology-defaults.yml
-libvirt:
-  providers:
-    clab: true
 links:
 - _linkname: links[1]
-  bridge: ml_17_1
   interfaces:
   - bgp:
       allowas_in: 1
     ifindex: 1
-    ifname: 1/1/1
-    ipv4: 10.1.0.2/30
+    ifname: eth-1/1/c1
+    ipv4: 10.1.0.1/30
     node: l1
   - ifindex: 1
     ifname: eth1
-    ipv4: 10.1.0.1/30
+    ipv4: 10.1.0.2/30
     node: spine
-  libvirt:
-    provider:
-      clab: true
   linkindex: 1
   mtu: 1600
   node_count: 2
   prefix:
     ipv4: 10.1.0.0/30
   role: external
-  type: lan
+  type: p2p
 - _linkname: links[2]
-  bridge: ml_17_2
   interfaces:
   - bgp:
       allowas_in: 1
@@ -7088,22 +7080,19 @@ links:
     ifname: eth2
     ipv4: 10.1.0.6/30
     node: spine
-  libvirt:
-    provider:
-      clab: true
   linkindex: 2
   mtu: 1600
   node_count: 2
   prefix:
     ipv4: 10.1.0.4/30
   role: external
-  type: lan
+  type: p2p
 - _linkname: vlans.red.links[1]
   bridge: ml_17_3
   interfaces:
   - _vlan_mode: bridge
     ifindex: 2
-    ifname: 1/1/2
+    ifname: eth-1/1/c2
     node: l1
     vlan:
       access: red
@@ -7111,9 +7100,6 @@ links:
     ifname: eth1
     ipv4: 172.31.1.4/24
     node: h1
-  libvirt:
-    provider:
-      clab: true
   linkindex: 3
   node_count: 2
   prefix:
@@ -7135,9 +7121,6 @@ links:
     ifname: eth1
     ipv4: 172.31.1.5/24
     node: h2
-  libvirt:
-    provider:
-      clab: true
   linkindex: 4
   node_count: 2
   prefix:
@@ -7185,14 +7168,11 @@ nodes:
       ifindex: 1
       ifname: eth1
       ipv4: 172.31.1.4/24
-      libvirt:
-        provider:
-          clab: true
       linkindex: 3
       mtu: 1500
       name: h1 -> [l1,h2,l2]
       neighbors:
-      - ifname: vlan1000
+      - ifname: svi.1000
         node: l1
       - ifname: eth1
         ipv4: 172.31.1.5/24
@@ -7208,7 +7188,6 @@ nodes:
     - routing
     mtu: 1500
     name: h1
-    provider: clab
     role: host
     routing:
       static: []
@@ -7237,7 +7216,7 @@ nodes:
       - ifname: eth1
         ipv4: 172.31.1.4/24
         node: h1
-      - ifname: vlan1000
+      - ifname: svi.1000
         node: l1
       - ifname: vlan1000
         node: l2
@@ -7250,7 +7229,6 @@ nodes:
     - routing
     mtu: 1500
     name: h2
-    provider: clab
     role: host
     routing:
       static: []
@@ -7259,7 +7237,7 @@ nodes:
       ipv4: true
     bgp:
       _session_clear:
-      - 10.1.0.1
+      - 10.1.0.2
       advertise_loopback: true
       as: 65200
       community:
@@ -7280,7 +7258,7 @@ nodes:
         as: 65100
         evpn: true
         ifindex: 1
-        ipv4: 10.1.0.1
+        ipv4: 10.1.0.2
         name: spine
         type: ebgp
       next_hop_self: true
@@ -7288,42 +7266,47 @@ nodes:
       sessions:
         ipv4:
         - ebgp
-    box: aruba/cx
+    box: vrnetlab/nokia_sros:25.3.R2
+    clab:
+      kind: vr-sros
+      license: ~/.netlab/license_sros25.txt
+      type: sr-1
     config:
     - bgp.session
-    device: arubacx
+    device: sros
     evpn:
       session:
       - ebgp
       vlans:
       - red
+    hostname: clab-ml_17-l1
     id: 2
     interfaces:
-    - bgp:
+    - _port_mode: network
+      bgp:
         allowas_in: 1
-      bridge: ml_17_1
+      clab:
+        name: eth1
       ifindex: 1
-      ifname: 1/1/1
-      ipv4: 10.1.0.2/30
-      libvirt:
-        provider:
-          clab: true
+      ifname: eth-1/1/c1
+      ipv4: 10.1.0.1/30
       linkindex: 1
       mtu: 1600
       name: l1 -> spine
       neighbors:
       - ifname: eth1
-        ipv4: 10.1.0.1/30
+        ipv4: 10.1.0.2/30
         node: spine
       role: external
-      type: lan
-    - bridge: ml_17_3
+      type: p2p
+    - _port_mode: access
+      bridge: ml_17_3
+      clab:
+        name: eth2
       ifindex: 2
-      ifname: 1/1/2
-      libvirt:
-        provider:
-          clab: true
+      ifname: eth-1/1/c2
       linkindex: 3
+      mtu: 1500
       name: '[Access VLAN red] l1 -> h1'
       neighbors:
       - ifname: eth1
@@ -7335,7 +7318,7 @@ nodes:
         access_id: 1000
     - bridge_group: 1
       ifindex: 40000
-      ifname: vlan1000
+      ifname: svi.1000
       name: VLAN red (1000) -> [h1,h2,l2]
       neighbors:
       - ifname: eth1
@@ -7353,13 +7336,13 @@ nodes:
         name: red
     loopback:
       ifindex: 0
-      ifname: loopback 0
+      ifname: system
       ipv4: 10.0.0.2/32
       neighbors: []
       type: loopback
       virtual_interface: true
     mgmt:
-      ifname: mgmt
+      ifname: A/1
       ipv4: 192.168.17.102
       mac: 08:4f:a9:02:00:00
     module:
@@ -7367,8 +7350,9 @@ nodes:
     - bgp
     - vxlan
     - evpn
+    mtu: 1500
     name: l1
-    provider: libvirt
+    provider: clab
     vlan:
       max_bridge_group: 1
     vlans:
@@ -7393,7 +7377,7 @@ nodes:
       vlans:
       - red
       vtep: 10.0.0.2
-      vtep_interface: loopback 0
+      vtep_interface: system
   l2:
     af:
       ipv4: true
@@ -7453,7 +7437,6 @@ nodes:
     interfaces:
     - bgp:
         allowas_in: 1
-      bridge: ml_17_2
       ifindex: 1
       ifname: eth1
       ipv4: 10.1.0.5/30
@@ -7465,7 +7448,7 @@ nodes:
         ipv4: 10.1.0.6/30
         node: spine
       role: external
-      type: lan
+      type: p2p
     - bridge: ml_17_4
       ifindex: 2
       ifname: eth2
@@ -7488,7 +7471,7 @@ nodes:
       - ifname: eth1
         ipv4: 172.31.1.4/24
         node: h1
-      - ifname: vlan1000
+      - ifname: svi.1000
         node: l1
       - ifname: eth1
         ipv4: 172.31.1.5/24
@@ -7516,7 +7499,6 @@ nodes:
     - evpn
     mtu: 1500
     name: l2
-    provider: clab
     role: router
     vlan:
       max_bridge_group: 1
@@ -7569,7 +7551,7 @@ nodes:
         as: 65200
         evpn: true
         ifindex: 1
-        ipv4: 10.1.0.2
+        ipv4: 10.1.0.1
         name: l1
         type: ebgp
       - activate:
@@ -7602,26 +7584,21 @@ nodes:
     hostname: clab-ml_17-spine
     id: 1
     interfaces:
-    - bridge: ml_17_1
-      ifindex: 1
+    - ifindex: 1
       ifname: eth1
-      ipv4: 10.1.0.1/30
-      libvirt:
-        provider:
-          clab: true
+      ipv4: 10.1.0.2/30
       linkindex: 1
       mtu: 1600
       name: spine -> l1
       neighbors:
       - bgp:
           allowas_in: 1
-        ifname: 1/1/1
-        ipv4: 10.1.0.2/30
+        ifname: eth-1/1/c1
+        ipv4: 10.1.0.1/30
         node: l1
       role: external
-      type: lan
-    - bridge: ml_17_2
-      ifindex: 2
+      type: p2p
+    - ifindex: 2
       ifname: eth2
       ipv4: 10.1.0.6/30
       linkindex: 2
@@ -7634,7 +7611,7 @@ nodes:
         ipv4: 10.1.0.5/30
         node: l2
       role: external
-      type: lan
+      type: p2p
     loopback:
       ifindex: 0
       ifname: lo
@@ -7651,12 +7628,11 @@ nodes:
     - evpn
     mtu: 1500
     name: spine
-    provider: clab
     role: router
 plugin:
 - bgp.session
 - multilab
-provider: libvirt
+provider: clab
 validate:
 - description: Ping-based reachability test in VLAN red
   name: ping_red
@@ -7680,7 +7656,7 @@ vlans:
     - ifname: eth1
       ipv4: 172.31.1.4/24
       node: h1
-    - ifname: vlan1000
+    - ifname: svi.1000
       node: l1
     - ifname: eth1
       ipv4: 172.31.1.5/24
