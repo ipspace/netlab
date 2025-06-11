@@ -7,9 +7,9 @@ from netsim.utils import log
 _config_name = "ospf.stub"
 _require = [ "ospf" ]
 
-def validate_area( id: int, area: Box ) -> bool:
+def validate_area( id: int, area: Box ) -> None:
   if area.get('kind','normal') != 'normal' and 'range' in area:
-    log.error(f"OSPF area {id} is of type {area.kind} and cannot support 'range' summarization")
+    log.error(f"OSPF area {id} is of type {area.kind} and cannot support inter-area 'range' summarization")
 
 def post_transform(topology: Box) -> None:
   for ndata in topology.nodes.values():
