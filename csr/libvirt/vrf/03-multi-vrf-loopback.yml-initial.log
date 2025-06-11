@@ -6,16 +6,16 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [h1]
 ok: [h2]
-ok: [h4]
 ok: [h3]
+ok: [h4]
 ok: [dut]
 
 TASK [Find device readiness script] ********************************************
 ok: [h1]
-ok: [h3]
 ok: [h2]
-ok: [dut]
+ok: [h3]
 ok: [h4]
+ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [dut]
@@ -30,16 +30,16 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, h
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [h1]
 ok: [h2]
-ok: [h4]
 ok: [h3]
+ok: [h4]
 ok: [dut]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [h1]
-ok: [h3]
 ok: [h2]
-ok: [dut]
+ok: [h3]
 ok: [h4]
+ok: [dut]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -75,8 +75,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, h
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [h1]
 ok: [h2]
-ok: [h4]
 ok: [h3]
+ok: [h4]
 ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
@@ -95,10 +95,10 @@ skipping: [h4]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [h1]
-ok: [h4]
 ok: [h2]
-ok: [dut]
 ok: [h3]
+ok: [h4]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [h1] => 
@@ -134,41 +134,6 @@ ok: [h1] =>
     ip addr del 172.16.0.2/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.0.2/24 dev eth1
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
-ok: [h4] => 
-  msg: |-
-    initial configuration for h4
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Send ARP requests from a sane source IP address
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-  
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.3.5/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.3.5/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
 ok: [h2] => 
@@ -241,6 +206,41 @@ ok: [h3] =>
     ip addr add 172.16.2.4/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+ok: [h4] => 
+  msg: |-
+    initial configuration for h4
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+  
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.3.5/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.3.5/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
 ok: [dut] => 
   msg: |-
     initial configuration for dut
@@ -251,8 +251,8 @@ ok: [dut] =>
     !
     lldp run
     !
-    ip host dut-blue 172.16.2.1 172.16.3.1 10.0.0.43
     ip host dut-red 172.16.0.1 172.16.1.1 10.0.0.42
+    ip host dut-blue 172.16.2.1 172.16.3.1 10.2.0.1
     ip host h1 172.16.0.2
     ip host h2 172.16.1.3
     ip host h3 172.16.2.4
@@ -262,18 +262,18 @@ ok: [dut] =>
     !
     no ipv6 unicast-routing
     !
-    vrf definition blue
-     rd 65000:2
-     route-target import 65000:2
-     route-target export 65000:2
-    !
-     address-family ipv4
-     exit-address-family
-    !
     vrf definition red
      rd 65000:1
      route-target import 65000:1
      route-target export 65000:1
+    !
+     address-family ipv4
+     exit-address-family
+    !
+    vrf definition blue
+     rd 65000:2
+     route-target import 65000:2
+     route-target export 65000:2
     !
      address-family ipv4
      exit-address-family
@@ -321,7 +321,7 @@ ok: [dut] =>
     interface Loopback2
      vrf forwarding blue
      description VRF Loopback blue
-     ip address 10.0.0.43 255.255.255.255
+     ip address 10.2.0.1 255.255.255.255
      no shutdown
     !
     !
@@ -349,16 +349,16 @@ ok: [h3]
 ok: [h4]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
-changed: [h4 -> localhost]
 changed: [h3 -> localhost]
+changed: [h4 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
+changed: [h3 -> localhost]
 changed: [h2 -> localhost]
 changed: [h4 -> localhost]
 changed: [h1 -> localhost]
-changed: [h3 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -373,15 +373,15 @@ skipping: [h3]
 skipping: [h4]
 
 TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
+changed: [h4 -> localhost]
 changed: [h1 -> localhost]
 changed: [h3 -> localhost]
-changed: [h4 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-3a3ch6of.sh] ***********************
-changed: [h1 -> localhost]
-changed: [h4 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-pb_en9lh.sh] ***********************
 changed: [h3 -> localhost]
+changed: [h4 -> localhost]
+changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
@@ -400,8 +400,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, h
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [h1]
 ok: [h2]
-ok: [h4]
 ok: [h3]
+ok: [h4]
 ok: [dut]
 
 TASK [Find configuration template for vrf] *************************************
@@ -413,8 +413,8 @@ ok: [dut]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
-skipping: [h2]
 skipping: [h1]
+skipping: [h2]
 skipping: [h3]
 skipping: [h4]
 
@@ -470,8 +470,8 @@ TASK [Find configuration deployment deploy_script for routing] *****************
 skipping: [dut]
 ok: [h1]
 ok: [h2]
-ok: [h4]
 ok: [h3]
+ok: [h4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
@@ -609,8 +609,8 @@ changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
-changed: [h2 -> localhost]
 changed: [h3 -> localhost]
+changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 changed: [h4 -> localhost]
 
@@ -628,13 +628,13 @@ skipping: [h4]
 
 TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
 changed: [h1 -> localhost]
-changed: [h2 -> localhost]
 changed: [h3 -> localhost]
+changed: [h2 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-_2cb7kx7.sh] ***********************
-changed: [h1 -> localhost]
+TASK [Remove temporary file /tmp/h1_routing-exute219.sh] ***********************
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 

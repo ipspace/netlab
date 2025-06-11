@@ -11,8 +11,8 @@ ok: [dut]
 
 TASK [Find device readiness script] ********************************************
 ok: [x1]
-ok: [x3]
 ok: [x2]
+ok: [x3]
 ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
@@ -83,8 +83,8 @@ skipping: [x3]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [x1]
-ok: [x3]
 ok: [x2]
+ok: [x3]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -189,114 +189,6 @@ ok: [x1] =>
      description x1 -> dut
      ip address 10.1.0.6/30
      ipv6 address 2001:db8:3:1::2/64
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
-ok: [x3] => 
-  msg: |-
-    initial configuration for x3
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)# "
-    echo
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
-    #
-    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
-    #
-    sysctl -w net.ipv4.ip_forward=1
-    sysctl -w net.ipv6.conf.all.forwarding=1
-    #
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    # Set system defaults
-    #
-    # Send ARP requests from a sane source IP address
-    #
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Create loopbacks, stub and lag/bond devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    ip link set eth1 down
-    sysctl -qw net.ipv6.conf.eth1.autoconf=0
-    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set dev eth1 mtu 1500
-    ip link set eth1 up
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-  
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname x3
-    !
-    ip forwarding
-    ipv6 forwarding
-    vrf mgmt
-     exit-vrf
-    !
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ip address 10.42.0.3/32
-     ipv6 address 2001:db8:cafe:3::1/64
-    !
-    interface eth1
-     no shutdown
-     description x3 -> dut
-     ip address 10.1.0.2/30
-     ipv6 address 2001:db8:3::4/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -412,6 +304,114 @@ ok: [x2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [x3] => 
+  msg: |-
+    initial configuration for x3
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.autoconf=0
+    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname x3
+    !
+    ip forwarding
+    ipv6 forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.42.0.3/32
+     ipv6 address 2001:db8:cafe:3::1/64
+    !
+    interface eth1
+     no shutdown
+     description x3 -> dut
+     ip address 10.1.0.2/30
+     ipv6 address 2001:db8:3::4/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
 ok: [dut] => 
   msg: |-
     initial configuration for dut
@@ -422,8 +422,8 @@ ok: [dut] =>
     !
     lldp run
     !
-    ip host dut-blue 10.1.0.9 2001:db8:3:2::1
     ip host dut-red 10.1.0.5 2001:db8:3:1::1
+    ip host dut-blue 10.1.0.9 2001:db8:3:2::1
     ip host x1 10.42.0.1 10.1.0.6 2001:db8:cafe:1::1 2001:db8:3:1::2
     ip host x2 10.42.0.2 10.1.0.10 2001:db8:cafe:2::1 2001:db8:3:2::3
     ip host x3 10.42.0.3 10.1.0.2 2001:db8:cafe:3::1 2001:db8:3::4
@@ -432,10 +432,10 @@ ok: [dut] =>
     !
     ipv6 unicast-routing
     !
-    vrf definition blue
-     rd 65000:2
-     route-target import 65000:2
-     route-target export 65000:2
+    vrf definition red
+     rd 65000:1
+     route-target import 65000:1
+     route-target export 65000:1
     !
      address-family ipv4
      exit-address-family
@@ -443,10 +443,10 @@ ok: [dut] =>
      address-family ipv6
      exit-address-family
     !
-    vrf definition red
-     rd 65000:1
-     route-target import 65000:1
-     route-target export 65000:1
+    vrf definition blue
+     rd 65000:2
+     route-target import 65000:2
+     route-target export 65000:2
     !
      address-family ipv4
      exit-address-family
@@ -515,9 +515,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2, x3
 
 TASK [template] ****************************************************************
-changed: [x1]
-changed: [x2]
 changed: [x3]
+changed: [x2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -525,8 +525,8 @@ ok: [x2]
 ok: [x3]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 changed: [x3]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
@@ -636,9 +636,9 @@ TASK [ios_config: deploying routing from /home/pipi/netlab_gh/netsim/ansible/tem
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x2]
 changed: [x3]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -652,8 +652,8 @@ skipping: [x3]
 
 TASK [run vtysh to import routing config from /home/pipi/netlab_gh/netsim/ansible/templates/routing/frr.j2] ***
 changed: [x1]
-changed: [x3]
 changed: [x2]
+changed: [x3]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [x1]
@@ -675,8 +675,8 @@ skipping: [x3]
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [x1]
-ok: [x3]
 ok: [x2]
+ok: [x3]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -778,40 +778,6 @@ ok: [x2] =>
   
     !
     do write
-ok: [dut] => 
-  msg: |-
-    ospf configuration for dut
-    =========================================
-    router ospf 1
-     router-id 10.0.0.1
-  
-  
-    !
-    interface Loopback0
-    !
-     ip ospf 1 area 0.0.0.0
-    !
-    interface GigabitEthernet2
-    ! dut -> x3
-     ip ospf 1 area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    router ospfv3 1
-     router-id 10.0.0.1
-     address-family ipv6 unicast
-  
-  
-    !
-    interface Loopback0
-    !
-     ospfv3 1 ipv6 area 0.0.0.0
-    !
-    interface GigabitEthernet2
-    ! dut -> x3
-     ospfv3 1 ipv6 area 0.0.0.0
-     ospfv3 network point-to-point
-    !
 ok: [x3] => 
   msg: |-
     ospf configuration for x3
@@ -861,6 +827,40 @@ ok: [x3] =>
   
     !
     do write
+ok: [dut] => 
+  msg: |-
+    ospf configuration for dut
+    =========================================
+    router ospf 1
+     router-id 10.0.0.1
+  
+  
+    !
+    interface Loopback0
+    !
+     ip ospf 1 area 0.0.0.0
+    !
+    interface GigabitEthernet2
+    ! dut -> x3
+     ip ospf 1 area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    router ospfv3 1
+     router-id 10.0.0.1
+     address-family ipv6 unicast
+  
+  
+    !
+    interface Loopback0
+    !
+     ospfv3 1 ipv6 area 0.0.0.0
+    !
+    interface GigabitEthernet2
+    ! dut -> x3
+     ospfv3 1 ipv6 area 0.0.0.0
+     ospfv3 network point-to-point
+    !
 
 TASK [Deploy ospf configuration] ***********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
@@ -870,8 +870,8 @@ TASK [ios_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/templa
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x2]
+changed: [x1]
 changed: [x3]
 
 TASK [set_fact] ****************************************************************
@@ -885,8 +885,8 @@ skipping: [x2]
 skipping: [x3]
 
 TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [x3]
 changed: [x1]
+changed: [x3]
 changed: [x2]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
@@ -921,31 +921,6 @@ ok: [dut] =>
   msg: |-
     vrf configuration for dut
     =========================================
-    router ospf 101 vrf blue
-     router-id 10.0.0.1
-  
-     redistribute connected
-  
-    !
-    interface GigabitEthernet4
-    ! dut -> x2
-     ip ospf 101 area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    router ospfv3 101
-     router-id 10.0.0.1
-     address-family ipv6 unicast vrf blue
-  
-      redistribute connected
-  
-    !
-    interface GigabitEthernet4
-    ! dut -> x2
-     ospfv3 101 ipv6 area 0.0.0.0
-     ospfv3 network point-to-point
-    !
-  
     router ospf 100 vrf red
      router-id 10.0.0.1
   
@@ -968,6 +943,31 @@ ok: [dut] =>
     interface GigabitEthernet3
     ! dut -> x1
      ospfv3 100 ipv6 area 0.0.0.0
+     ospfv3 network point-to-point
+    !
+  
+    router ospf 101 vrf blue
+     router-id 10.0.0.1
+  
+     redistribute connected
+  
+    !
+    interface GigabitEthernet4
+    ! dut -> x2
+     ip ospf 101 area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    router ospfv3 101
+     router-id 10.0.0.1
+     address-family ipv6 unicast vrf blue
+  
+      redistribute connected
+  
+    !
+    interface GigabitEthernet4
+    ! dut -> x2
+     ospfv3 101 ipv6 area 0.0.0.0
      ospfv3 network point-to-point
     !
 
