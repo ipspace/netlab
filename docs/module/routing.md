@@ -144,7 +144,7 @@ Apart from setting BGP communities on BGP routes, these devices can execute addi
 
 | Operating system    | Append | Delete | Delete list |
 |---------------------|:--:|:--:| :--:|
-| Arista EOS          | ✅ | ✅ | ❌  |
+| Arista EOS          | ✅ | ✅ | ✅ |
 | Aruba AOS-CX        | ✅ | ✅ | ❌  |
 | Cisco IOS/XE[^18v]  | ✅ | ❌  | ❌  |
 | Cumulus Linux       | ✅ | ❌  | ❌  |
