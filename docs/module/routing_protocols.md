@@ -221,7 +221,7 @@ The **_protocol_.import** parameter can be specified:
 
 **Notes:**
 
-* The **connected** keyword is used to specify connected routes.
+* The **connected** keyword is used to specify connected routes; the **static** keyword specifies static routes configured with [**routing.static** data structure](generic-routing-static).
 * The source protocol must be active on the node doing route import. For example, to import BGP routes into OSPF, both **bgp** and **ospf** configuration modules must be specified on the node.
 * When importing IGP routes into another IGP within a VRF, the source IGP must have at least one parameter set in the VRF (to tell *netlab* the IGP is active within that VRF). You could, for example, set ***protocol*.active** to *True*
 * The **routing** configuration module must be active on the node if you want to use **policy** parameter.

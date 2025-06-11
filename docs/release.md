@@ -1,6 +1,15 @@
 Release Notes
 =============
 
+**Release 25.06 (2025-06-11)**
+
+* Discard [static routes](generic-routing-static)
+* [Redistribution](routing_import) of [static routes](generic-routing-static) into OSPF, IS-IS, RIPv2, RIPng, and BGP
+* Numerous new Nokia SR-OS [features](release-25.06-sros-features) and [bug fixes](release-25.06-sros-bug-fixes).
+* LAG on Junos
+
+[More details...](release-25.06)
+
 **Release 2.0.1 (2025-05-23)**
 
 Release 2.0.1 includes [bug](bug-fixes-2.0.1) and [documentation](doc-fixes-2.0.1) fixes as well as [minor device configuration improvements](release-2.0.1).
@@ -197,6 +206,7 @@ For older releases, check the [release notes archive](release-archive.md).
    :caption: Individual release notes
    :maxdepth: 2
 
+   release/25.06.md
    release/2.0.md
    release/1.9.md
    release/1.8.md
