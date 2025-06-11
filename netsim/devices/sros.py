@@ -29,7 +29,8 @@ def vrf_route_leaking(node: Box) -> None:
         category=log.IncorrectValue)
 
 """
-It looks like SR-OS does not apply AS-path loop detection parameters on EVPN AF
+Obsolete: this function tested whether we use 'allowas-in' with EVPN. It turned out to be FRR 10.3.1 gotcha;
+the tests work like a charm with 10.2.2.
 """
 def evpn_allowas_in(node: Box) -> None:
   for ngb in node.get('bgp.neighbors',[]):
@@ -109,7 +110,6 @@ class SROS(_Quirks):
     ipv4_unnumbered(node)
     vrf_route_leaking(node)
     vxlan_vtep(node)
-    evpn_allowas_in(node)
   
   def check_config_sw(self, node: Box, topology: Box) -> None:
     need_ansible_collection(node,'nokia.grpc',version='1.0.2')
