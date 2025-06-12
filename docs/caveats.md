@@ -307,6 +307,7 @@ diag debug application httpsd -1
 * FRR configures BFD as part of OSPFv2/OSPFv3 configuration.
 * IPv6 L3VPN over SRv6 works only for directly-connected IPv6 subnets. IPv6 EBGP routes received from CE-routers are not propagated across the IPv6 L3VPN IBGP session.
 * IPv6 L3VPN over SRv6 does not work in parallel with the IPv6 AF. You have to disable the IPv6 AF on IPv6 IBGP sessions with **bgp.activate.ipv6: []**.
+* An OSPFv3 ABR running FRR release 10.3 does not originate summary external routes from NSSA areas
 
 (caveats-junos)=
 ## Common Junos caveats

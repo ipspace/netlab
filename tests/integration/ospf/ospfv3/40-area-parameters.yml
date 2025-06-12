@@ -1,0 +1,150 @@
+---
+message: |
+  This lab tests numerous combinations of OSPFv3 area parameters. It currently
+  tests:
+
+  * Stub and NSSA areas
+  * Insertion of default route into stub/NSSA areas
+  * Suppression of inter-area routes in stub/NSSA area
+
+defaults.sources.extra: [ ../../wait_times.yml ]
+plugin: [ ospf.areas ]
+module: [ ospf ]
+
+ospf.areas:
+# Stub areas -- totally stubby one, and one with default cost
+- area: 11
+  kind: stub
+  inter_area: false
+- area: 12
+  kind: stub
+  default.cost: 15
+
+# NSSA areas -- totally NNSA, and one with default cost
+- area: 21
+  kind: nssa
+  inter_area: false
+- area: 22
+  kind: nssa
+  default.cost: 15
+  external_range:
+  - 2001:db8:cafe:1::/64
+  external_filter:
+  - 2001:db8:cafe:2::/64
+
+groups:
+  _auto_create: True
+  probes:
+    device: frr
+    provider: clab
+    members: [ rb, r11, r12, r21, r22, v1, v2 ]
+
+vrfs:
+  tenant:
+    links:
+    - interfaces: [ dut, v1 ]
+      ospf.area: 11
+    - interfaces: [ dut, v2 ]
+      ospf.area: 21
+
+nodes:
+  dut:
+    module: [ ospf, vrf ]
+    id: 1
+  r11:
+    ospf.area: 11
+  r12:
+    ospf.area: 12
+  r21:
+    ospf.area: 21
+  r22:
+    module: [ ospf, routing]
+    ospf.area: 22
+    ospf.import: [ static ]
+    routing.static:
+    - ipv6: 2001:db8:cafe::1/128
+      nexthop.discard: True
+    - ipv6: 2001:db8:cafe:1::1/128
+      nexthop.discard: True
+    - ipv6: 2001:db8:cafe:2::1/128
+      nexthop.discard: True
+  v1:
+    ospf.area: 11
+  v2:
+    ospf.area: 21
+
+links:
+- interfaces: [ dut, r11 ]
+  ospf.area: 11
+- interfaces: [ dut, r12 ]
+  ospf.area: 12
+- interfaces: [ dut, r21 ]
+  ospf.area: 21
+- interfaces: [ dut, r22 ]
+  ospf.area: 22
+- interfaces: [ dut, rb ]
+
+defaults.devices.frr..netlab_validate.n_range.level: warning      # Looks like NSSA external range is broken on FRR
+
+validate:
+  adj:
+    description: Check OSPFv3 adjacencies
+    wait: ospfv3_adj_p2p
+    wait_msg: Waiting for OSPF adjacency process to complete
+    nodes: [ rb, r11, r12, r21, r22 ]
+    plugin: ospf6_neighbor(nodes.dut.ospf.router_id)
+  vrf_adj:
+    description: Check VRF OSPFv3 adjacencies
+    wait: ospfv2_adj_p2p
+    wait_msg: Waiting for OSPF adjacency process to complete
+    nodes: [ v1, v2 ]
+    plugin: ospf6_neighbor(nodes.dut.vrfs.tenant.ospf.router_id)
+  default:
+    description: Check default route in NSSA/stub areas
+    wait: ospfv3_spf
+    wait_msg: Waiting for SPF run
+    nodes: [ r11, r12, r21, r22 ]
+    plugin: ospf6_prefix('::/0')
+  ia_present:
+    description: Check for inter-area routes in NSSA/stub areas
+    wait: ospfv3_spf
+    wait_msg: Waiting for SPF run
+    nodes: [ r12, r22 ]
+    plugin: ospf6_prefix(nodes.dut.loopback.ipv6)
+  ia_absent:
+    description: Check for lack of inter-area routes in NSSA/stub areas
+    wait: ospfv3_spf
+    wait_msg: Waiting for SPF run
+    nodes: [ r11, r21 ]
+    plugin: ospf6_prefix(nodes.dut.loopback.ipv6,state='missing')
+  n_prefix:
+    description: Check NSSA-to-backbone external route propagation
+    fail: NSSA route is not readvertised as type-5 route
+    wait: ospfv3_spf
+    nodes: [ rb ]
+    plugin: ospf6_prefix(nodes.r22.routing.static[0].ipv6)
+  nr_prefix:
+    description: Check NSSA-to-backbone summarization
+    fail: NSSA specific route is advertised into backbone area
+    wait: ospfv3_spf
+    nodes: [ rb ]
+    plugin: ospf6_prefix(nodes.r22.routing.static[1].ipv6,state='missing')
+  ns_prefix:
+    description: Check NSSA-to-backbone filter
+    fail: NSSA specific route is advertised into backbone area
+    wait: ospfv3_spf
+    nodes: [ rb ]
+    plugin: ospf6_prefix(nodes.r22.routing.static[2].ipv6,state='missing')
+  n_range:
+    description: Check NSSA type-7 (external) range
+    fail: NSSA routes are not summarized into type-5 LSA
+    wait: ospfv3_spf
+    nodes: [ rb ]
+    plugin: ospf6_prefix('2001:db8:cafe:1::/64')
+    level: warning
+  ns_range:
+    description: Check NSSA type-7 (external) filter
+    fail: NSSA summaries are not suppressed
+    wait: ospfv3_spf
+    nodes: [ rb ]
+    plugin: ospf6_prefix('2001:db8:cafe:2::/64',state='missing')

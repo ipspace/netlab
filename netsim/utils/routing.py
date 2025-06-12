@@ -67,6 +67,18 @@ def intf_neighbors(node: Box, vrf: bool = True, select: list = ['ibgp','ebgp']) 
           yield (intf,ngb)
 
 '''
+rp_data: iterate over routing protocol instances (global and VRF)
+'''
+def rp_data(node: Box, proto: str, select: list = ['global','vrf']) -> typing.Generator:
+  if 'global' in select:
+    if proto in node:
+      yield(node[proto],[ intf for intf in node.interfaces if proto in intf ],None)
+
+  if 'vrf' in select:
+    for vname,vdata in node.get('vrfs',{}).items():
+      yield(vdata[proto],vdata[proto].get('interfaces',[]),vname)
+
+'''
 igp_interfaces: iterate over IGP interfaces (global and VRF)
 '''
 def igp_interfaces(node: Box, proto: str, vrf: bool = True) -> typing.Generator:
