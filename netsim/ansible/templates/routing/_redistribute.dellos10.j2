@@ -1,15 +1,11 @@
 {% macro policy(sp_data,af) -%}
   {% if 'policy' in sp_data %} route-map {{ sp_data.policy }}-{{ af }}{% endif +%}
 {%- endmacro %}
-{% macro config(pdata,af,ospf_pid=1) -%}
+{% macro config(pdata,af) -%}
 {%   if pdata.import is defined %}
 {%     for s_proto,s_data in pdata.import.items() %}
-{%       if s_proto == 'ospf' %}
-{%         if af == 'ipv6' %}
-{%           set s_proto = 'ospfv3 ' + ospf_pid|string %}
-{%         else %}
-{%           set s_proto = 'ospf ' + ospf_pid|string %}
-{%         endif %}
+{%       if s_proto=='bgp' %}
+{%         set s_proto = "bgp %d" | format( bgp.as ) %}
 {%       endif %}
  redistribute {{ s_proto }}{{ policy(s_data,af) }}
 {%     endfor %}
