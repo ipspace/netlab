@@ -1,13 +1,14 @@
 ---
 message: |
-  This lab tests numerous combinations of OSPF area parameters. It currently
-  tests:
+  This lab tests numerous combinations of OSPF area parameters. It tests:
 
   * Stub and NSSA areas
   * Insertion of default route into stub/NSSA areas
   * Default route cost in stub/NSSA area
   * Suppression of inter-area routes in stub/NSSA area
   * Area ranges and suppressed ranges
+  * Summarization and suppression of NSSA routes
+  * Configuration of VRF instances
 
 defaults.sources.extra: [ ../../wait_times.yml ]
 plugin: [ ospf.areas ]
@@ -44,10 +45,19 @@ groups:
   probes:
     device: frr
     provider: clab
-    members: [ rb, r11, r12, r21, r22 ]
+    members: [ rb, r11, r12, r21, r22, v1, v2 ]
+
+vrfs:
+  tenant:
+    links:
+    - interfaces: [ dut, v1 ]
+      ospf.area: 11
+    - interfaces: [ dut, v2 ]
+      ospf.area: 21
 
 nodes:
   dut:
+    module: [ ospf, vrf ]
     id: 1
   rb:
   r11:
@@ -67,6 +77,10 @@ nodes:
       nexthop.discard: True
     - ipv4: 10.19.3.1/32
       nexthop.discard: True
+  v1:
+    ospf.area: 11
+  v2:
+    ospf.area: 21
 
 links:
 - interfaces: [ dut, r11 ]
@@ -92,6 +106,12 @@ validate:
     wait_msg: Waiting for OSPF adjacency process to complete
     nodes: [ r11, r12, r21, r22 ]
     plugin: ospf_neighbor(nodes.dut.ospf.router_id)
+  vrf_adj:
+    description: Check VRF OSPF adjacencies
+    wait: ospfv2_adj_p2p
+    wait_msg: Waiting for OSPF adjacency process to complete
+    nodes: [ v1, v2 ]
+    plugin: ospf_neighbor(nodes.dut.vrfs.tenant.ospf.router_id)
   default:
     description: Check default route in NSSA/stub areas
     wait: ospfv2_spf
