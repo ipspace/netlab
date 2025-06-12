@@ -1,0 +1,149 @@
+---
+message: |
+  This lab tests numerous combinations of OSPF area parameters inside VRFs. It currently
+  tests:
+
+  * Stub and NSSA areas
+  * Insertion of default route into stub/NSSA areas
+  * Default route cost in stub/NSSA area
+  * Suppression of inter-area routes in stub/NSSA area
+  * Area ranges and suppressed ranges
+
+defaults.sources.extra: [ ../wait_times.yml ]
+plugin: [ ospf.areas ]
+module: [ ospf ]
+
+ospf.areas:
+# Stub areas -- totally stubby one, and one with default cost
+- area: 11
+  kind: stub
+  inter_area: false
+  range:
+  - 10.17.0.0/16
+  filter:
+  - 10.18.0.0/16
+
+- area: 12
+  kind: stub
+  default.cost: 15
+
+# NSSA areas -- totally NNSA, and one with default cost
+- area: 21
+  kind: nssa
+  inter_area: false
+- area: 22
+  kind: nssa
+  default.cost: 15
+
+groups:
+  _auto_create: True
+  probes:
+    device: frr
+    provider: clab
+    members: [ rb, r11, r12, r21, r22 ]
+
+nodes:
+  dut:
+    id: 1
+    module: [ ospf, vrf ]
+  rb:
+  r11:
+    ospf.area: 11
+  r12:
+    ospf.area: 12
+  r21:
+    ospf.area: 21
+  r22:
+    ospf.area: 22
+
+vrfs:
+  test:
+    loopback: True
+
+links:
+- dut:
+    vrf: test
+  r11:
+  ospf.area: 11
+- dut:
+    vrf: test
+  r12:
+  ospf.area: 12
+  ospf.cost: 10
+- dut:
+    vrf: test
+  r21:
+  ospf.area: 21
+- dut:
+    vrf: test
+  r22:
+  ospf.area: 22
+  ospf.cost: 10
+- dut:
+    vrf: test
+  rb:
+
+# Extra interfaces needed to create range prefixes
+- r11.ipv4: 10.17.1.1/24
+- r11.ipv4: 10.18.1.1/24
+
+validate:
+  adj:
+    description: Check OSPF adjacencies
+    wait: ospfv2_adj_p2p
+    wait_msg: Waiting for OSPF adjacency process to complete
+    nodes: [ r11, r12, r21, r22 ]
+    plugin: ospf_neighbor(nodes.dut.vrfs.test.ospf.router_id)
+  default:
+    description: Check default route in NSSA/stub areas
+    wait: ospfv2_spf
+    wait_msg: Waiting for SPF run
+    nodes: [ r11, r12, r21, r22 ]
+    plugin: ospf_prefix('0.0.0.0/0')
+  d_cost:
+    description: Check default route cost in NSSA/stub areas
+    fail: The default route inserted in NSSA/stub area has wrong cost
+    nodes: [ r12, r22 ]
+    plugin: ospf_prefix('0.0.0.0/0',cost=25)
+  ia_present:
+    description: Check for inter-area routes in NSSA/stub areas
+    fail: Inter-area routes are not inserted into NSSA/stub area
+    wait: ospfv2_spf
+    wait_msg: Waiting for SPF run
+    nodes: [ r12, r22 ]
+    plugin: ospf_prefix(nodes.dut.vrfs.test.loopback_address.ipv4)
+  ia_absent:
+    description: Check for lack of inter-area routes in NSSA/stub areas
+    fail: Inter-area routes are not suppressed in NSSA/stub area
+    wait: ospfv2_spf
+    wait_msg: Waiting for SPF run
+    nodes: [ r11, r21 ]
+    plugin: ospf_prefix(nodes.dut.vrfs.test.loopback_address.ipv4,state='missing')
+  a_range:
+    description: Check for area ranges
+    fail: Inter-area routes are not summarized
+    wait: ospfv2_spf
+    wait_msg: Waiting for SPF run
+    nodes: [ rb ]
+    plugin: ospf_prefix('10.17.0.0/16')
+  am_range:
+    description: Check for more-specific prefixes in area ranges
+    fail: Inter-area routes are not summarized
+    wait: ospfv2_spf
+    wait_msg: Waiting for SPF run
+    nodes: [ rb ]
+    plugin: ospf_prefix('10.17.1.0/24',state='missing')
+  s_range:
+    description: Check suppressed area ranges
+    fail: Inter-area routes are not suppressed
+    wait: ospfv2_spf
+    wait_msg: Waiting for SPF run
+    nodes: [ rb ]
+    plugin: ospf_prefix('10.18.0.0/16',state='missing')
+  sm_range:
+    description: Check for more-specific prefixes in suppressed area ranges
+    fail: Inter-area routes are not suppressed
+    wait: ospfv2_spf
+    wait_msg: Waiting for SPF run
+    nodes: [ rb ]
+    plugin: ospf_prefix('10.18.1.0/24',state='missing')
