@@ -560,7 +560,7 @@ def validate_item(
               attributes=attributes,
               enabled_modules=enabled_modules)
 
-  return True
+  return OK
 
 """
 validate_attributes -- validate object attributes
