@@ -11,6 +11,7 @@ The plugin includes Jinja2 templates for the following platforms:
 | Operating system    | Stub/NSSA<br>areas | Totally<br>stubby areas | Area ranges |
 |-----------|:-:|:-:|:-:|
 | FRR       |✅|✅|✅ [❗](caveats-frr) |
+| JunOS     |✅|✅|✅ |
 
 ## Specifying OSPF Area Parameters
 
