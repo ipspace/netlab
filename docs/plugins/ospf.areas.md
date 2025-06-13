@@ -9,10 +9,12 @@ The plugin also supports suppressing inter-area routes in stub/NSSA areas, resul
 The plugin includes Jinja2 templates for the following platforms:
 
 | Operating system    | Stub/NSSA<br>areas | Totally<br>stubby areas | Area ranges |
-|-----------|:-:|:-:|:-:|
-| Arista EOS | ✅ [❗](caveats-eos) |✅|✅|
-| FRR       |✅|✅|✅ [❗](caveats-frr) |
-| JunOS     |✅|✅|✅ |
+|--------------|:-:|:-:|:-:|
+| Arista EOS   |✅ [❗](caveats-eos) |✅|✅|
+| Cumulus NVUE |✅|✅|✅ [❗](caveats-cumulus-nvue) |
+| Dell OS10    |✅|✅|✅ [❗](caveats-os10) |
+| FRR          |✅|✅|✅ [❗](caveats-frr) |
+| JunOS        |✅|✅|✅|
 
 ## Specifying OSPF Area Parameters
 

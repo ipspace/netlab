@@ -1,0 +1,44 @@
+---
+{% macro area_config(adata,af,abr) %}
+{%   set kind = 'normal' if adata.kind == 'regular' else adata.kind %}
+              {{ adata.area }}:
+                type: {{ 'totally-' if not adata.inter_area else '' }}{{ kind }}
+{%   if adata.kind in ['stub','nssa'] and adata.default.cost is defined and af == 'ipv4' %}
+                default-lsa-cost: {{ adata.default.cost }}
+{%   endif %}
+{%   if abr %}
+{%     for range in adata.range|default([])+adata.filter|default([]) if af in range %}
+{%       if loop.first %}
+                range:
+{%       endif %}
+                  {{ range[af] }}:
+                    suppress: {{ 'on' if range in adata.filter|default([]) else 'off' }}
+{%     endfor %}
+{%   endif %}
+{% endmacro %}
+
+{% macro ospf_area_config(odata,vrf='') %}
+{%   for af in ['ipv4'] if odata.af[af] is defined %}
+{%     if loop.first %}
+- set:
+    vrf:
+      {{ vrf if vrf else 'default' }}:
+        router:
+          ospf:
+            area: 
+{%     endif %}
+{%     for adata in odata.areas %}
+{{            area_config(adata,af,odata._abr|default(false)) -}}
+{%     endfor %}
+{%   endfor %}
+{% endmacro %}
+
+{% if ospf.areas is defined %}
+{{   ospf_area_config(ospf,'') }}
+{% endif %}
+{% if vrfs is defined %}
+{%   for vname,vdata in vrfs.items() if vdata.ospf.areas is defined %}
+{{     ospf_area_config(vdata.ospf,vname) }}
+{%   endfor %}
+{% endif %}
+

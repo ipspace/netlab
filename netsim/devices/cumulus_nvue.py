@@ -6,7 +6,7 @@ from box import Box
 from . import _Quirks, report_quirk
 # from .cumulus import Cumulus  # This causes Cumulus_Nvue to get skipped
 from .cumulus import check_ospf_vrf_default
-from ..utils import log
+from ..utils import log, routing as _rp_utils
 from ..augment import devices
 from .. import data
 import netaddr
@@ -154,6 +154,21 @@ def mark_shared_mlag_vtep(node: Box, topology: Box) -> None:
       node.vxlan._shared_vtep = n.name
       return
 
+def nvue_check_nssa_summarize(node: Box) -> None:
+  for (odata,_,_) in _rp_utils.rp_data(node,'ospf'):
+    if 'areas' not in odata:
+      continue
+    for area in odata.areas:
+      if area.kind != 'nssa':
+        continue
+      if 'external_range' in area or 'external_filter' in area:
+        report_quirk(
+          f'{node.name} cannot summarize type-7 NSSA routes (area {area.area})',
+          more_hints = [ 'Cumulus cannot configure NSSA type-7 ranges, FRR version too old' ],
+          node=node,
+          category=Warning,
+          quirk='ospf_nssa_range')
+
 class Cumulus_Nvue(_Quirks):
 
   @classmethod
@@ -166,6 +181,7 @@ class Cumulus_Nvue(_Quirks):
         nvue_check_ospf_passive_in_vrf(node)
         nvue_check_ospf_vrf_loopbacks(node)
       nvue_check_ospfv3(node)
+      nvue_check_nssa_summarize(node)
       nvue_merge_ospf_loopbacks(node)
 
     if 'stp' in mods:
