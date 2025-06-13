@@ -4,7 +4,7 @@
 from box import Box
 
 from . import _Quirks,report_quirk
-from ..utils import log
+from ..utils import log, routing as _rp_utils
 from ..modules import _routing
 from .. import data
 from ..augment import devices
@@ -101,6 +101,21 @@ def passive_stub_interfaces(node: Box, topology: Box) -> None:
 
     intf.ospf.network_type = 'point-to-point'
 
+def nssa_area_ranges(node: Box, topology: Box) -> None:
+  for (odata,_,_) in _rp_utils.rp_data(node,'ospf'):
+    if 'areas' not in odata:
+      continue
+    for area in odata.areas:
+      if area.kind != 'nssa':
+        continue
+      if 'external_range' in area or 'external_filter' in area:
+        report_quirk(
+          f'{node.name} cannot summarize type-7 NSSA routes (area {area.area})',
+          more_hints = [ f'Arista EOS cannot configure NSSA type-7 ranges' ],
+          node=node,
+          category=Warning,
+          quirk='ospf_nssa_range')
+
 class EOS(_Quirks):
 
   @classmethod
@@ -116,5 +131,6 @@ class EOS(_Quirks):
       check_shared_mac(node,topology)
     if 'ospf' in mods:
       passive_stub_interfaces(node,topology)
+      nssa_area_ranges(node,topology)
     if 'eos' in node:
       configure_ceos_attributes(node,topology)

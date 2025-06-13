@@ -10,6 +10,7 @@ The plugin includes Jinja2 templates for the following platforms:
 
 | Operating system    | Stub/NSSA<br>areas | Totally<br>stubby areas | Area ranges |
 |-----------|:-:|:-:|:-:|
+| Arista EOS | ✅ [❗](caveats-eos) |✅|✅|
 | FRR       |✅|✅|✅ [❗](caveats-frr) |
 | JunOS     |✅|✅|✅ |
 
