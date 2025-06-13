@@ -10,10 +10,11 @@ The plugin includes Jinja2 templates for the following platforms:
 
 | Operating system    | Stub/NSSA<br>areas | Totally<br>stubby areas | Area ranges |
 |--------------|:-:|:-:|:-:|
+| Arista EOS   |✅ [❗](caveats-eos) |✅|✅|
 | Cumulus NVUE |✅|✅|✅ [❗](caveats-cumulus-nvue) |
 | Dell OS10    |✅|✅|✅ [❗](caveats-os10) |
 | FRR          |✅|✅|✅ [❗](caveats-frr) |
-| JunOS        |✅|✅|✅ |
+| JunOS        |✅|✅|✅|
 
 ## Specifying OSPF Area Parameters
 
