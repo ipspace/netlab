@@ -250,6 +250,10 @@ def extend_device_wait_time(v_entry: Box, topology: Box) -> None:
       if log.VERBOSE:
         print(f'Extending wait time for test {v_entry.name} to {v_params.wait} (device {ndata.device})')
       v_entry.wait = v_params.wait
+    if 'level' in v_params:
+      if log.VERBOSE:
+        print(f'Changing severity level for test {v_entry.name} to {v_params.level} (device {ndata.device})')
+      v_entry.level = v_params.level
 
 '''
 load_plugin: try to load the validation plugin for the specified device
