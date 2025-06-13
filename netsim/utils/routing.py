@@ -76,7 +76,8 @@ def rp_data(node: Box, proto: str, select: list = ['global','vrf']) -> typing.Ge
 
   if 'vrf' in select:
     for vname,vdata in node.get('vrfs',{}).items():
-      yield(vdata[proto],vdata[proto].get('interfaces',[]),vname)
+      if proto in vdata:
+        yield(vdata[proto],vdata[proto].get('interfaces',[]),vname)
 
 '''
 igp_interfaces: iterate over IGP interfaces (global and VRF)
