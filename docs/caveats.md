@@ -436,6 +436,7 @@ See [](generic-linux-devices)
 * The SR Linux configuration templates do not support additional routing policies on routing protocol route imports
 * SR Linux needs a static default route (with low route preference) to implement OSPF **default-originate always** functionality.
 * SR Linux does not set metrics on routes imported into OSPF. While you can specify the metric and metric type of the OSPF default route, those settings have no impact.
+* SR Linux does not support setting a default metric for NSSA areas
 
 (caveats-sros)=
 ## Nokia SR OS
