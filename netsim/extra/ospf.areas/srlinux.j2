@@ -4,15 +4,17 @@ updates:
           - area-id: {{ adata.area }}
 {%   if adata.kind == 'stub' %}
             stub:
-              summaries: {{ not adata.inter_area }}
+              summaries: {{ adata.inter_area }}
 {%     if adata.default.cost is defined %}
               default-metric: {{ adata.default.cost }}
 {%     endif %}
 {%   elif adata.kind == 'nssa' %}
             nssa:
-              summaries: {{ not adata.inter_area }}
+              summaries: {{ adata.inter_area }}
+{# Note: 'default-metric' missing here, cannot set cost for NSSA area #}
 {%     if abr %}
-{%       if adata.default|default(false) %}
+{# Note: SR Linux won't automatically insert a default route when 'summaries' is False #}
+{%       if adata.default|default(not adata.inter_area) %}
               originate-default-route: { }
 {%       endif %}
 {%       for range in adata.external_range|default([])+adata.external_filter|default([]) if range[af] is defined %}
