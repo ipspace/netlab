@@ -15,24 +15,37 @@ from ..data import global_vars,validate
 from . import addressing
 from .. import roles
 
+"""
+Initializing the topology transformation:
+
+* The global variables (stored in topology defaults) are initialized
+* The attribute lists are adjusted
+* The search paths are expanded into absolute paths and pruned
+* Plugins are loaded
+* Device settings are initialized, including daemon- and child device
+  inheritance
+
+Note that the plugins have to be loaded before the device settings are
+inherited, or we cannot specify the new features for generic devices.
+"""
 def topology_init(topology: Box) -> None:
   global_vars.init(topology)
   augment.config.attributes(topology)
   augment.config.paths(topology)
+  augment.plugin.init(topology)
   augment.devices.augment_device_settings(topology)
 
 def transform_setup(topology: Box) -> None:
-  topology_init(topology)
-  augment.topology.topology_sanity_check(topology)
-  versioning.check_topology_version(topology)
+  topology_init(topology)                                   # Initialize variables, load plugins
+  augment.topology.topology_sanity_check(topology)          # Do the basic sanity check
+  versioning.check_topology_version(topology)               # Check topology/netlab version mismatch
   topology.nodes = augment.nodes.create_node_dict(topology.nodes)
-  augment.groups.precheck_groups(topology)
-  augment.plugin.init(topology)                                         # Initialize plugins very early on in case they modify extra attributes
-  roles.init(topology)                                                  # Initialize node roles
-  augment.plugin.execute('topology_expand',topology)                    # topology-expanding plugins must be called before link checks
+  augment.groups.precheck_groups(topology)                  # Do basic sanity checks on groups
+  roles.init(topology)                                      # Initialize node roles
+  augment.plugin.execute('topology_expand',topology)        # Topology-expanding plugins must be called before link checks
 
   if 'links' in topology:
-    augment.links.links_init(topology)
+    augment.links.links_init(topology)                      # Rewrite links into canonical form
 
   log.exit_on_error()
 
