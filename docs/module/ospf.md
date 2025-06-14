@@ -59,8 +59,8 @@ The following table describes per-platform support of individual router-level OS
 | Cisco IOS XE[^18v]       | ✅| ✅| ✅| ✅| ✅|
 | Cisco Nexus OS           | ✅| ✅| ✅| ❌ | ❌ |
 | Cumulus Linux            | ✅| ✅| ✅| ✅| ✅|
+| Dell OS10 ([❗](caveats-os10)) | ✅| ✅| ✅| ✅| ✅|
 | Cumulus Linux 5.x (NVUE) | ✅| ✅| ❌ | ✅ | ✅|
-| Dell OS10 ([❗](caveats-os10)) | | ✅| ✅| ✅| ❌ | ✅|
 | Fortinet FortiOS         |[❗](caveats-fortios)| ✅ | ❌ | ❌ | ❌ |
 | FRR                      | ✅| ✅| ✅| ✅| ✅|
 | Junos[^Junos]            | ✅| ✅| ✅| ❌ | ❌ |
