@@ -15,6 +15,7 @@ The plugin includes Jinja2 templates for the following platforms:
 | Dell OS10    |✅|✅|✅ [❗](caveats-os10) |
 | FRR          |✅|✅|✅ [❗](caveats-frr) |
 | JunOS        |✅|✅|✅|
+| SR Linux     |✅|✅|✅ [❗](caveats-srlinux) |
 
 ## Specifying OSPF Area Parameters
 
