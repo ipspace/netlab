@@ -64,6 +64,22 @@ def set_api_version(node: Box) -> None:
   # Assume latest (25.3.1) if unable to determine
   node._srl_version = float( version.group(1) ) if version else 25.3
 
+def check_nssa_default_cost(node: Box) -> None:
+  for (odata,_,_) in _routing.rp_data(node,'ospf'):
+    if 'areas' not in odata:
+      continue
+    for area in odata.areas:
+      if area.kind != 'nssa':
+        continue
+      cost = area.get('default.cost')
+      if cost:
+        report_quirk(
+          f'{node.name} cannot apply a default cost ({cost}) to NSSA area {area.area}',
+          more_hints = [ 'Nokia SR Linux cannot configure a default-metric for NSSA areas' ],
+          node=node,
+          category=Warning,
+          quirk='ospf_nssa_default_cost')
+
 class SRLINUX(_Quirks):
 
   @classmethod
@@ -120,6 +136,9 @@ class SRLINUX(_Quirks):
 
     if 'routing' in mods and node.get('routing.prefix',None):
       check_prefix_deny(node)
+
+    if 'ospf' in mods:
+      check_nssa_default_cost(node)
   
   def check_config_sw(self, node: Box, topology: Box) -> None:
     need_ansible_collection(node,'nokia.srlinux',version='0.5.0')

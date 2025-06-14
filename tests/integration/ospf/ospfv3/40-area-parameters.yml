@@ -10,6 +10,7 @@ message: |
 defaults.sources.extra: [ ../../wait_times.yml ]
 plugin: [ ospf.areas ]
 module: [ ospf ]
+addressing.loopback.prefix6: 128
 
 ospf.areas:
 # Stub areas -- totally stubby one, and one with default cost
@@ -38,6 +39,7 @@ groups:
     device: frr
     provider: clab
     members: [ rb, r11, r12, r21, r22, v1, v2 ]
+    clab.image: quay.io/frrouting/frr:10.2.2
 
 vrfs:
   tenant:
@@ -85,6 +87,10 @@ links:
 - interfaces: [ dut, rb ]
 
 defaults.devices.frr..netlab_validate.n_range.level: warning      # Looks like NSSA external range is broken on FRR
+defaults.devices.eos.netlab_validate:
+  n_range.level: warning      # Arista EOS does not have NSSA external route summarization
+  nr_prefix.level: warning
+  ns_prefix.level: warning
 
 validate:
   adj:
@@ -141,7 +147,6 @@ validate:
     wait: ospfv3_spf
     nodes: [ rb ]
     plugin: ospf6_prefix('2001:db8:cafe:1::/64')
-    level: warning
   ns_range:
     description: Check NSSA type-7 (external) filter
     fail: NSSA summaries are not suppressed

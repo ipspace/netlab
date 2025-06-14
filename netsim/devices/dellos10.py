@@ -4,7 +4,7 @@
 from box import Box,BoxList
 
 from . import _Quirks,need_ansible_collection,report_quirk
-from ..utils import log
+from ..utils import log, routing as _rp_utils
 from ..augment import devices
 
 def check_vlan_ospf(node: Box, iflist: BoxList, vname: str) -> None:
@@ -99,6 +99,27 @@ def check_expanded_communities(node:Box, topology: Box) -> None:
         quirk='non-standard_communities',
         node=node)
 
+def check_nssa_area_limitations(node: Box) -> None:
+  for (odata,_,_) in _rp_utils.rp_data(node,'ospf'):
+    if 'areas' not in odata:
+      continue
+    for area in odata.areas:
+      if area.kind != 'nssa':
+        continue
+      if 'ipv6' in odata.af:
+        report_quirk(
+          f'{node.name} cannot configure NSSA type areas for OSPFv3 (area {area.area})',
+          more_hints = [ 'Dell OS10 does not support NSSA for OSPFv3' ],
+          node=node,
+          quirk='ospfv3_nssa')
+      if 'external_range' in area or 'external_filter' in area:
+        report_quirk(
+          f'{node.name} cannot summarize type-7 NSSA routes (area {area.area})',
+          more_hints = [ 'Dell OS10 cannot configure NSSA type-7 ranges' ],
+          node=node,
+          category=Warning,
+          quirk='ospf_nssa_range')
+
 class OS10(_Quirks):
 
   @classmethod
@@ -109,6 +130,7 @@ class OS10(_Quirks):
       for vname,vdata in node.get('vrfs',{}).items():
         check_vlan_ospf(node,vdata.get('ospf.interfaces',[]),vname)
       check_ospf_originate_default(node)
+      check_nssa_area_limitations(node)
     
     if 'gateway' in mods:
       if 'anycast' in node.get('gateway',{}):
