@@ -1,0 +1,56 @@
+{%- macro range_config(pfx,af) %}
+{%   if af == 'ipv4' 
+%}{{ pfx|ipaddr('network') }} {{ pfx|ipaddr('netmask') }}{% else
+%}{{ pfx }}{%   
+     endif -%}{% endmacro -%}
+
+{% macro area_config(adata,af,abr) %}
+{%   if adata.kind == 'stub' %}
+  area {{ adata.area }} stub {% if not adata.inter_area %}no-summary{% endif +%}
+{%     if adata.default.cost is defined %}
+  area {{ adata.area }} default-cost {{ adata.default.cost }}
+{%     endif %}
+{%   elif adata.kind == 'nssa' %}
+  area {{ adata.area }} nssa {% if not adata.inter_area %}no-summary{% endif +%}
+{%     if abr and adata.default|default(false) %}
+  area {{ adata.area }} nssa default-information-originate{% if adata.default.cost is defined
+     %} metric {{ adata.default.cost }} metric-type 1{% endif +%}
+{%     endif %}
+{%   endif %}
+{%   if adata.kind in ['stub','nssa'] and adata.default.cost is defined and af == 'ipv4' %}
+  area {{ adata.area }} default-cost {{ adata.default.cost }}
+{%   endif %}
+{%   if abr %}
+{%     for range in adata.range|default([]) if range[af] is defined %}
+  area {{ adata.area }} range {{ range_config(range[af],af) }}
+{%     endfor %}
+{%     for range in adata.filter|default([]) if range[af] is defined %}
+  area {{ adata.area }} range {{ range_config(range[af],af) }} not-advertise
+{%     endfor %}
+{%   endif %}
+{% endmacro %}
+
+{% macro ospf_area_config(odata,ospf_vrf='',ospf_pid=1) %}
+{%   for af in ['ipv4','ipv6'] if odata.af[af] is defined %}
+{%     if af == 'ipv4' %}
+router ospf {{ ospf_pid }}{% if ospf_vrf %} vrf {{ ospf_vrf }}{% endif +%}
+{%     else %}
+router ospfv3 {{ ospf_pid }}
+{%       if ospf_vrf %}
+  address-family ipv6 unicast vrf {{ ospf_vrf }}
+{%       endif %}
+{%     endif %}
+{%     for adata in odata.areas %}
+{{       area_config(adata,af,odata._abr|default(false)) -}}
+{%     endfor %}
+{%   endfor %}
+{% endmacro %}
+
+{% if ospf.areas is defined %}
+{{   ospf_area_config(ospf) }}
+{% endif %}
+{% if vrfs is defined %}
+{%   for vname,vdata in vrfs.items() if vdata.ospf.areas is defined %}
+{{     ospf_area_config(vdata.ospf,vname,vdata.vrfidx) }}
+{%   endfor %}
+{% endif %}
