@@ -1,10 +1,9 @@
 addressing:
   l2only: {}
   lan:
-    ipv4: 172.16.0.0/16
+    ipv6: 2001:db8:2::/48
     prefix: 24
   loopback:
-    ipv4: 10.0.0.0/24
     ipv6: 2001:db8:1::/48
     prefix: 32
   mgmt:
@@ -15,7 +14,7 @@ addressing:
     prefix: 24
     start: 100
   p2p:
-    ipv4: 10.1.0.0/16
+    ipv6: 2001:db8:3::/48
     prefix: 30
   router_id:
     ipv4: 10.0.0.0/24
@@ -56,15 +55,18 @@ defaults:
   addressing:
     l2only: null
     lan:
-      ipv4: 172.16.0.0/16
+      ipv4: false
+      ipv6: 2001:db8:2::/48
     loopback:
-      ipv4: 10.0.0.0/24
+      ipv4: false
+      ipv6: 2001:db8:1::/48
     mgmt:
       ipv4: 192.168.121.0/24
       mac: 08-4F-A9-00-00-00
       start: 100
     p2p:
-      ipv4: 10.1.0.0/16
+      ipv4: false
+      ipv6: 2001:db8:3::/48
     router_id:
       ipv4: 10.0.0.0/24
       prefix: 32
@@ -331,9 +333,6 @@ defaults:
       config: list
       cpu: null
       device: device
-      eos:
-        serialnumber: str
-        systemmacaddr: mac
       group: list
       id:
         max_value: 150
@@ -897,7 +896,6 @@ defaults:
         router_id:
           type: ipv4
           use: id
-      vrf_aware: {}
     community:
       ebgp:
       - standard
@@ -982,6 +980,22 @@ defaults:
     - ospf
     - ripv2
     - static
+    validate:
+      bgp_scan_time: 5
+      ebgp_session: 30
+      isis_adj_p2p: 20
+      isis_spf: 15
+      ospf_import: 20
+      ospfv2_adj_lan: 50
+      ospfv2_adj_p2p: 30
+      ospfv2_spf: 10
+      ospfv3_adj_lan: 50
+      ospfv3_adj_p2p: 30
+      ospfv3_spf: 10
+      ping: 5
+      ra_send: 30
+      stp_forwarding: 40
+      vxlan_ping: 20
     vrf_igp_protocols:
     - connected
     - ospf
@@ -5157,8 +5171,9 @@ defaults:
       vptx: true
       vsrx: true
   module:
+  - routing
+  - ospf
   - bgp
-  - vrf
   mpls:
     attributes:
       global:
@@ -5620,7 +5635,7 @@ defaults:
       - /home/pipi/netlab_gh/netsim/ansible/tasks/fetch-config
     custom:
       dirs:
-      - /home/pipi/net101/tools/tests/integration/vrf
+      - /home/pipi/net101/tools/tests/integration/ospf/ospfv3
       - /work/netlab_cicd
       - /home/pipi/.netlab
       - /home/pipi/netlab_gh/netsim/extra
@@ -5674,8 +5689,9 @@ defaults:
       - deploy-config/{{ ansible_network_os }}-{{ node_provider }}.yml
       - deploy-config/{{ ansible_network_os }}.yml
     plugin:
+    - /home/pipi/net101/tools/tests/integration/plugin
     - /work/netlab_cicd
-    - /home/pipi/net101/tools/tests/integration/vrf
+    - /home/pipi/net101/tools/tests/integration/ospf/ospfv3
     - /home/pipi/.netlab
     - /home/pipi/netlab_gh/netsim/extra
     ready:
@@ -6050,6 +6066,7 @@ defaults:
         static:
           _subtype: static_entry
           type: list
+      node_copy: {}
       route_map:
         match:
         - prefix
@@ -6104,7 +6121,8 @@ defaults:
     transform_after:
     - vlan
   sources:
-    extra: []
+    extra:
+    - ../../wait_times.yml
     list: []
     system: []
     user: []
@@ -6527,7 +6545,6 @@ defaults:
       node:
         as: asn
         loopback: bool
-      node_copy: {}
       reserved:
       - default
       - system
@@ -6647,82 +6664,60 @@ groups:
   as65000:
     members:
     - dut
-  as65101:
+  as65100:
     members:
-    - r1
-  as65102:
-    members:
-    - r2
-  as65103:
-    members:
-    - r3
-  as65104:
-    members:
-    - r4
-  ce:
-    device: eos
-    members:
-    - r1
-    - r2
-    - r3
-    - r4
-    module:
-    - bgp
-    node_data:
-      netlab_phy_control: false
-      provider: clab
+    - x1
   external:
     _default_group: true
     device: srlinux
     members: []
-  pe:
+  probes:
+    device: frr
     members:
-    - dut
-    module:
-    - vrf
-    - bgp
+    - r2
+    - x1
     node_data:
-      bgp:
-        as: 65000
+      provider: clab
 input:
-- /home/pipi/net101/tools/tests/integration/vrf/12-multi-vrf-bgp.yml
+- /home/pipi/net101/tools/tests/integration/ospf/ospfv3/10-import.yml
+- /home/pipi/net101/tools/tests/integration/wait_times.yml
+- /home/pipi/net101/tools/tests/integration/ospf/ospfv3/topology-defaults.yml
 - /home/pipi/.netlab.yml
 - package:topology-defaults.yml
 libvirt:
   providers:
     clab: true
 links:
-- _linkname: vrfs.red.links[1]
+- _linkname: links[1]
   bridge: ml_17_1
   interfaces:
   - ifindex: 1
     ifname: ethernet1/1/1
-    ipv4: 10.1.0.1/30
+    ipv6: 2001:db8:3::1/64
     node: dut
   - ifindex: 1
-    ifname: Ethernet1
-    ipv4: 10.1.0.2/30
-    node: r1
+    ifname: eth1
+    ipv6: 2001:db8:3::3/64
+    node: x1
   libvirt:
     provider:
       clab: true
   linkindex: 1
   node_count: 2
   prefix:
-    ipv4: 10.1.0.0/30
+    ipv6: 2001:db8:3::/64
   role: external
   type: lan
-  vrf: red
-- _linkname: vrfs.red.links[2]
+- _linkname: links[2]
   bridge: ml_17_2
   interfaces:
   - ifindex: 2
     ifname: ethernet1/1/2
-    ipv4: 10.1.0.5/30
+    ipv6: 2001:db8:3:1::1/64
     node: dut
   - ifindex: 1
-    ifname: Ethernet1
-    ipv4: 10.1.0.6/30
+    ifname: eth1
+    ipv6: 2001:db8:3:1::2/64
     node: r2
   libvirt:
     provider:
@@ -6730,83 +6725,22 @@ links:
   linkindex: 2
   node_count: 2
   prefix:
-    ipv4: 10.1.0.4/30
-  role: external
+    ipv6: 2001:db8:3:1::/64
   type: lan
-  vrf: red
-- _linkname: vrfs.blue.links[1]
-  bridge: ml_17_3
-  interfaces:
-  - ifindex: 3
-    ifname: ethernet1/1/3
-    ipv4: 10.1.0.9/30
-    node: dut
-  - ifindex: 1
-    ifname: Ethernet1
-    ipv4: 10.1.0.10/30
-    node: r3
-  libvirt:
-    provider:
-      clab: true
-  linkindex: 3
-  node_count: 2
-  prefix:
-    ipv4: 10.1.0.8/30
-  role: external
-  type: lan
-  vrf: blue
-- _linkname: vrfs.blue.links[2]
-  bridge: ml_17_4
-  interfaces:
-  - ifindex: 4
-    ifname: ethernet1/1/4
-    ipv4: 10.1.0.13/30
-    node: dut
-  - ifindex: 1
-    ifname: Ethernet1
-    ipv4: 10.1.0.14/30
-    node: r4
-  libvirt:
-    provider:
-      clab: true
-  linkindex: 4
-  node_count: 2
-  prefix:
-    ipv4: 10.1.0.12/30
-  role: external
-  type: lan
-  vrf: blue
-message: 'The device under test has two VRFs with two interfaces in each VRF.
+message: 'This lab tests the simple import of IPv6 BGP and (optionally) static routes
 
-  Routers are attached to those interfaces and run BGP with device under test.
-
-  Assuming the multi-vrf test case succeeded, this one adds BGP routing with
-
-  CE routers.
-
-
-  * r1 and r2 should be able to ping each other
-
-  * r3 and r4 should be able to ping each other
-
-  * r1 should not be able to reach r3
-
-
-  The test also checks whether DUT unnecessarily enables IPv6 AF over IPv4
-
-  EBGP sessions
+  into OSPFv3.
 
   '
 module:
+- routing
+- ospf
 - bgp
-- vrf
 name: ml_17
 nodes:
   dut:
     af:
-      ipv4: true
       ipv6: true
-      vpnv4: true
     bgp:
       advertise_loopback: true
       as: 65000
@@ -6819,9 +6753,15 @@ nodes:
         localas_ibgp:
         - standard
         - extended
-      ipv4: true
       ipv6: true
-      neighbors: []
+      neighbors:
+      - activate:
+          ipv6: true
+        as: 65100
+        ifindex: 1
+        ipv6: 2001:db8:3::3
+        name: x1
+        type: ebgp
       next_hop_self: true
       router_id: 10.0.0.1
     box: dell/os10
@@ -6831,73 +6771,44 @@ nodes:
     - bridge: ml_17_1
       ifindex: 1
       ifname: ethernet1/1/1
-      ipv4: 10.1.0.1/30
+      ipv6: 2001:db8:3::1/64
       libvirt:
         provider:
           clab: true
       linkindex: 1
-      name: dut -> r1
+      name: dut -> x1
       neighbors:
-      - ifname: Ethernet1
-        ipv4: 10.1.0.2/30
-        node: r1
+      - ifname: eth1
+        ipv6: 2001:db8:3::3/64
+        node: x1
       role: external
       type: lan
-      vrf: red
     - bridge: ml_17_2
       ifindex: 2
       ifname: ethernet1/1/2
-      ipv4: 10.1.0.5/30
+      ipv6: 2001:db8:3:1::1/64
       libvirt:
         provider:
           clab: true
       linkindex: 2
       name: dut -> r2
       neighbors:
-      - ifname: Ethernet1
-        ipv4: 10.1.0.6/30
+      - ifname: eth1
+        ipv6: 2001:db8:3:1::2/64
         node: r2
-      role: external
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
       type: lan
-      vrf: red
-    - bridge: ml_17_3
-      ifindex: 3
-      ifname: ethernet1/1/3
-      ipv4: 10.1.0.9/30
-      libvirt:
-        provider:
-          clab: true
-      linkindex: 3
-      name: dut -> r3
-      neighbors:
-      - ifname: Ethernet1
-        ipv4: 10.1.0.10/30
-        node: r3
-      role: external
-      type: lan
-      vrf: blue
-    - bridge: ml_17_4
-      ifindex: 4
-      ifname: ethernet1/1/4
-      ipv4: 10.1.0.13/30
-      libvirt:
-        provider:
-          clab: true
-      linkindex: 4
-      name: dut -> r4
-      neighbors:
-      - ifname: Ethernet1
-        ipv4: 10.1.0.14/30
-        node: r4
-      role: external
-      type: lan
-      vrf: blue
     loopback:
       ifindex: 0
       ifname: loopback0
-      ipv4: 10.0.0.1/32
       ipv6: 2001:db8:1:1::1/64
       neighbors: []
+      ospf:
+        area: 0.0.0.0
+        passive: false
       type: loopback
       virtual_interface: true
     mgmt:
@@ -6905,252 +6816,95 @@ nodes:
       ipv4: 192.168.17.101
       mac: 08:4f:a9:01:00:00
     module:
+    - routing
+    - ospf
     - bgp
-    - vrf
     mtu: 1500
     name: dut
+    ospf:
+      af:
+        ipv6: true
+      area: 0.0.0.0
+      import:
+        bgp: {}
+        static: {}
+      router_id: 10.0.0.1
     provider: libvirt
-    vrf:
-      as: 65000
-    vrfs:
-      blue:
-        af:
-          ipv4: true
-        bgp:
-          import:
-            connected:
-              auto: true
-          neighbors:
-          - activate:
-              ipv4: true
-            as: 65103
-            ifindex: 3
-            ipv4: 10.1.0.10
-            name: r3
-            type: ebgp
-          - activate:
-              ipv4: true
-            as: 65104
-            ifindex: 4
-            ipv4: 10.1.0.14
-            name: r4
-            type: ebgp
-        export:
-        - '65000:2'
-        id: 2
-        import:
-        - '65000:2'
-        rd: '65000:2'
-        vrfidx: 101
-      red:
-        af:
-          ipv4: true
-        bgp:
-          import:
-            connected:
-              auto: true
-          neighbors:
-          - activate:
-              ipv4: true
-            as: 65101
-            ifindex: 1
-            ipv4: 10.1.0.2
-            name: r1
-            type: ebgp
-          - activate:
-              ipv4: true
-            as: 65102
-            ifindex: 2
-            ipv4: 10.1.0.6
-            name: r2
-            type: ebgp
-        export:
-        - '65000:1'
-        id: 1
-        import:
-        - '65000:1'
-        rd: '65000:1'
-        vrfidx: 100
-  r1:
-    af:
-      ipv4: true
-      ipv6: true
-    bgp:
-      _cprop_order:
-      - standard
-      - extended
-      - large
-      - link-bandwidth
-      advertise_loopback: true
-      as: 65101
-      community:
-        ebgp:
-        - standard
-        - large
-        ibgp:
-        - standard
-        - large
-        - extended
-        localas_ibgp:
-        - standard
-        - large
-        - extended
-      ipv4: true
-      ipv6: true
-      neighbors:
-      - activate:
-          ipv4: true
-        as: 65000
-        ifindex: 1
-        ipv4: 10.1.0.1
-        name: dut
-        type: ebgp
-      next_hop_self: true
-      router_id: 10.0.0.11
-    box: ceos:4.33.1F
-    clab:
-      env:
-        CLAB_MGMT_VRF: management
-        INTFTYPE: et
-      kind: ceos
-    config:
-    - bgp-xact
-    device: eos
-    hostname: clab-ml_17-r1
-    id: 11
-    interfaces:
-    - bridge: ml_17_1
-      clab:
-        name: et1
-      ifindex: 1
-      ifname: Ethernet1
-      ipv4: 10.1.0.2/30
-      libvirt:
-        provider:
-          clab: true
-      linkindex: 1
-      name: r1 -> dut
-      neighbors:
-      - ifname: ethernet1/1/1
-        ipv4: 10.1.0.1/30
-        node: dut
-        vrf: red
-      role: external
-      type: lan
-    loopback:
-      ifindex: 0
-      ifname: Loopback0
-      ipv4: 10.0.0.11/32
-      ipv6: 2001:db8:1:b::1/64
-      neighbors: []
-      type: loopback
-      virtual_interface: true
-    mgmt:
-      ifname: Management0
-      ipv4: 192.168.17.111
-      mac: 08:4f:a9:0b:00:00
-    module:
-    - bgp
-    name: r1
-    netlab_phy_control: false
-    provider: clab
-    role: router
+    router_id: 10.0.0.1
+    routing:
+      static:
+      - ipv6: 2001:db8::42/128
+        nexthop:
+          idx: 0
+          intf: ethernet1/1/1
+          ipv6: 2001:db8:3::3
   r2:
     af:
-      ipv4: true
       ipv6: true
-    bgp:
-      _cprop_order:
-      - standard
-      - extended
-      - large
-      - link-bandwidth
-      advertise_loopback: true
-      as: 65102
-      community:
-        ebgp:
-        - standard
-        - large
-        ibgp:
-        - standard
-        - large
-        - extended
-        localas_ibgp:
-        - standard
-        - large
-        - extended
-      ipv4: true
-      ipv6: true
-      neighbors:
-      - activate:
-          ipv4: true
-        as: 65000
-        ifindex: 1
-        ipv4: 10.1.0.5
-        name: dut
-        type: ebgp
-      next_hop_self: true
-      router_id: 10.0.0.12
-    box: ceos:4.33.1F
+    box: quay.io/frrouting/frr:10.3.1
     clab:
-      env:
-        CLAB_MGMT_VRF: management
-        INTFTYPE: et
-      kind: ceos
-    config:
-    - bgp-xact
-    device: eos
+      binds:
+      - clab_files/r2/daemons:/etc/frr/daemons
+      - clab_files/r2/hosts:/etc/hosts
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts
+      kind: linux
+    device: frr
     hostname: clab-ml_17-r2
-    id: 12
+    id: 2
     interfaces:
     - bridge: ml_17_2
-      clab:
-        name: et1
       ifindex: 1
-      ifname: Ethernet1
-      ipv4: 10.1.0.6/30
+      ifname: eth1
+      ipv6: 2001:db8:3:1::2/64
       libvirt:
         provider:
           clab: true
       linkindex: 2
+      mtu: 1500
       name: r2 -> dut
       neighbors:
       - ifname: ethernet1/1/2
-        ipv4: 10.1.0.5/30
+        ipv6: 2001:db8:3:1::1/64
         node: dut
-        vrf: red
-      role: external
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
       type: lan
     loopback:
       ifindex: 0
-      ifname: Loopback0
-      ipv4: 10.0.0.12/32
-      ipv6: 2001:db8:1:c::1/64
+      ifname: lo
+      ipv6: 2001:db8:1:2::1/64
       neighbors: []
+      ospf:
+        area: 0.0.0.0
+        passive: false
       type: loopback
       virtual_interface: true
     mgmt:
-      ifname: Management0
-      ipv4: 192.168.17.112
-      mac: 08:4f:a9:0c:00:00
+      ifname: eth0
+      ipv4: 192.168.17.102
+      mac: 08:4f:a9:02:00:00
     module:
-    - bgp
+    - ospf
+    mtu: 1500
     name: r2
-    netlab_phy_control: false
+    ospf:
+      af:
+        ipv6: true
+      area: 0.0.0.0
+      router_id: 10.0.0.2
     provider: clab
     role: router
-  r3:
+    router_id: 10.0.0.2
+  x1:
     af:
-      ipv4: true
       ipv6: true
     bgp:
-      _cprop_order:
-      - standard
-      - extended
-      - large
-      - link-bandwidth
       advertise_loopback: true
-      as: 65103
+      as: 65100
       community:
         ebgp:
         - standard
@@ -7163,228 +6917,98 @@ nodes:
         - standard
         - large
         - extended
-      ipv4: true
       ipv6: true
       neighbors:
       - activate:
-          ipv4: true
+          ipv6: true
         as: 65000
         ifindex: 1
-        ipv4: 10.1.0.9
+        ipv6: 2001:db8:3::1
         name: dut
         type: ebgp
       next_hop_self: true
-      router_id: 10.0.0.23
-    box: ceos:4.33.1F
+      router_id: 10.0.0.3
+    box: quay.io/frrouting/frr:10.3.1
     clab:
-      env:
-        CLAB_MGMT_VRF: management
-        INTFTYPE: et
-      kind: ceos
-    config:
-    - bgp-xact
-    device: eos
-    hostname: clab-ml_17-r3
-    id: 23
+      binds:
+      - clab_files/x1/daemons:/etc/frr/daemons
+      - clab_files/x1/hosts:/etc/hosts
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts
+      kind: linux
+    device: frr
+    hostname: clab-ml_17-x1
+    id: 3
     interfaces:
-    - bridge: ml_17_3
-      clab:
-        name: et1
+    - bridge: ml_17_1
       ifindex: 1
-      ifname: Ethernet1
-      ipv4: 10.1.0.10/30
+      ifname: eth1
+      ipv6: 2001:db8:3::3/64
       libvirt:
         provider:
           clab: true
-      linkindex: 3
-      name: r3 -> dut
+      linkindex: 1
+      mtu: 1500
+      name: x1 -> dut
       neighbors:
-      - ifname: ethernet1/1/3
-        ipv4: 10.1.0.9/30
+      - ifname: ethernet1/1/1
+        ipv6: 2001:db8:3::1/64
         node: dut
-        vrf: blue
       role: external
       type: lan
     loopback:
       ifindex: 0
-      ifname: Loopback0
-      ipv4: 10.0.0.23/32
-      ipv6: 2001:db8:1:17::1/64
+      ifname: lo
+      ipv6: 2001:db8:1:3::1/64
       neighbors: []
       type: loopback
       virtual_interface: true
     mgmt:
-      ifname: Management0
-      ipv4: 192.168.17.123
-      mac: 08:4f:a9:17:00:00
+      ifname: eth0
+      ipv4: 192.168.17.103
+      mac: 08:4f:a9:03:00:00
     module:
     - bgp
-    name: r3
-    netlab_phy_control: false
+    mtu: 1500
+    name: x1
     provider: clab
     role: router
-  r4:
-    af:
-      ipv4: true
-      ipv6: true
-    bgp:
-      _cprop_order:
-      - standard
-      - extended
-      - large
-      - link-bandwidth
-      advertise_loopback: true
-      as: 65104
-      community:
-        ebgp:
-        - standard
-        - large
-        ibgp:
-        - standard
-        - large
-        - extended
-        localas_ibgp:
-        - standard
-        - large
-        - extended
-      ipv4: true
-      ipv6: true
-      neighbors:
-      - activate:
-          ipv4: true
-        as: 65000
-        ifindex: 1
-        ipv4: 10.1.0.13
-        name: dut
-        type: ebgp
-      next_hop_self: true
-      router_id: 10.0.0.24
-    box: ceos:4.33.1F
-    clab:
-      env:
-        CLAB_MGMT_VRF: management
-        INTFTYPE: et
-      kind: ceos
-    config:
-    - bgp-xact
-    device: eos
-    hostname: clab-ml_17-r4
-    id: 24
-    interfaces:
-    - bridge: ml_17_4
-      clab:
-        name: et1
-      ifindex: 1
-      ifname: Ethernet1
-      ipv4: 10.1.0.14/30
-      libvirt:
-        provider:
-          clab: true
-      linkindex: 4
-      name: r4 -> dut
-      neighbors:
-      - ifname: ethernet1/1/4
-        ipv4: 10.1.0.13/30
-        node: dut
-        vrf: blue
-      role: external
-      type: lan
-    loopback:
-      ifindex: 0
-      ifname: Loopback0
-      ipv4: 10.0.0.24/32
-      ipv6: 2001:db8:1:18::1/64
-      neighbors: []
-      type: loopback
-      virtual_interface: true
-    mgmt:
-      ifname: Management0
-      ipv4: 192.168.17.124
-      mac: 08:4f:a9:18:00:00
-    module:
-    - bgp
-    name: r4
-    netlab_phy_control: false
-    provider: clab
-    role: router
+    router_id: 10.0.0.3
+ospf:
+  area: 0.0.0.0
 plugin:
+- static_import
 - multilab
+prefix:
+  any:
+    ipv4: 0.0.0.0/0
+    ipv6: ::/0
 provider: libvirt
 validate:
+- description: Check OSPF adjacency
+  name: adj_ospf
+  nodes:
+  - r2
+  plugin: ospf6_neighbor(nodes.dut.ospf.router_id)
+  wait: 30
+  wait_msg: Waiting for OSPF adjacency process to complete
 - description: Check EBGP sessions with DUT
-  name: session
+  name: adj_bgp
   nodes:
-  - r1
+  - x1
+  plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6')
+  wait: 30
+  wait_msg: Wait for BGP sessions to be established
+- description: Check for redistributed BGP route (X1 loopback) on R2
+  name: p_bgp
+  nodes:
   - r2
-  - r3
-  - r4
-  plugin: bgp_neighbor(node.bgp.neighbors,'dut')
-  stop_on_error: true
+  plugin: ospf6_prefix(nodes.x1.loopback.ipv6)
   wait: 20
-  wait_msg: Waiting for BGP sessions to start
-- description: Check BGP prefix on R1
-  fail: DUT is not propagating BGP prefixes between R1 and R2
-  name: pfx_red
+  wait_msg: Waiting for routing protocols to do their magic
+- description: Check for redistributed static route on R2
+  name: p_static
   nodes:
-  - r1
-  plugin: bgp_prefix(nodes.r2.loopback.ipv4)
-  wait: 15
-  wait_msg: Waiting for BGP convergence
-- description: Check connected subnet as BGP prefix on R1
-  fail: DUT is not redistributing connected subnets into BGP
-  name: pfx_red_c
-  nodes:
-  - r1
-  plugin: bgp_prefix(nodes.r2.interfaces[0].ipv4)
-  wait: 3
-  wait_msg: Waiting for BGP convergence
-- description: Check BGP prefix on R3
-  fail: DUT is not propagating BGP prefixes between R3 and R4
-  name: pfx_blue
-  nodes:
-  - r3
-  plugin: bgp_prefix(nodes.r4.loopback.ipv4)
-  wait: 15
-  wait_msg: Waiting for BGP convergence
-- description: Check for invalid activation of IPv6 AF over IPv4 EBGP sessions on
-    DUT
-  name: ebgp_6o4
-  nodes:
-  - r1
   - r2
-  - r3
-  - r4
-  plugin: bgp_neighbor(node.bgp.neighbors,'dut',activate='ipv6',state='missing')
-  stop_on_error: true
-- description: Ping-based reachability test in VRF red
-  name: red
-  nodes:
-  - r1
-  plugin: ping('r2')
-- description: Ping-based reachability test in VRF blue
-  name: blue
-  nodes:
-  - r3
-  plugin: ping('r4')
-- description: Ping-based isolation test between blue and red VRF
-  name: inter_vrf
-  nodes:
-  - r1
-  plugin: ping('r4',expect='fail')
-vrf:
-  as: 65000
-vrfs:
-  blue:
-    export:
-    - '65000:2'
-    id: 2
-    import:
-    - '65000:2'
-    rd: '65000:2'
-  red:
-    export:
-    - '65000:1'
-    id: 1
-    import:
-    - '65000:1'
-    rd: '65000:1'
+  plugin: ospf6_prefix(nodes.dut.routing.static[0].ipv6)
