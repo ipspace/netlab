@@ -16,6 +16,7 @@ The plugin includes Jinja2 templates for the following platforms:
 | Dell OS10    |✅|✅|✅ [❗](caveats-os10) |
 | FRR          |✅|✅|✅ [❗](caveats-frr) |
 | Junos[^Junos]|✅|✅|✅|
+| SR Linux     |✅|✅|✅ [❗](caveats-srlinux) |
 
 [^18v]: Includes Cisco IOSv, Cisco IOSvL2, Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
 
