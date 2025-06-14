@@ -36,7 +36,7 @@ Supported OSPF features:
 
 Missing features:
 
-* Stub and NSSA areas
+* Stub and NSSA areas (supported through a separate [ospf.areas plugin](plugin-ospf-areas))
 * Virtual links
 * Opaque LSA
 * Multi-area adjacencies
