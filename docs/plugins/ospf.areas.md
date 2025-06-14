@@ -1,3 +1,4 @@
+(plugin-ospf-areas)=
 # OSPF Area Parameters Plugin
 
 You can use the **ospf.areas** plugin to configure stub and NSSA areas, area ranges (summarization), or summarization of external NSSA (type-7) routes into external (type-2) routes. These features are considered core features as they're defined in RFC 2328, RFC 5340, and RFC 1587.
