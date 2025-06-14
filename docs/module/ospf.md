@@ -33,10 +33,10 @@ Supported OSPF features:
 * [Default route origination](ospf-default)
 * BFD (optionally with RFC9355 strict mode)
 * VRF OSPFv2 instances (on platforms with [VRF support](module-vrf-platform-support))
+* Stub and NSSA areas (implemented in a separate [ospf.areas plugin](plugin-ospf-areas))
 
 Missing features:
 
-* Stub and NSSA areas (supported through a separate [ospf.areas plugin](plugin-ospf-areas))
 * Virtual links
 * Opaque LSA
 * Multi-area adjacencies
