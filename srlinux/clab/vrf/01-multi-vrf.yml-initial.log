@@ -14,8 +14,8 @@ TASK [Find device readiness script] ********************************************
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [h4]
 ok: [rtr]
+ok: [h4]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [h1]
@@ -31,8 +31,8 @@ TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [h4]
 ok: [rtr]
+ok: [h4]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [h1]
@@ -83,8 +83,8 @@ TASK [Find configuration template for initial] *********************************
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [h4]
 ok: [rtr]
+ok: [h4]
 
 TASK [fail] ********************************************************************
 skipping: [h1]
@@ -332,20 +332,6 @@ ok: [rtr] =>
   
   
     # TODO: vdata.rd, vdata.import/export, vdata.af
-    - path: /network-instance[name=red]
-      value:
-       type: ip-vrf
-       interface:
-       - name: ethernet-1/1.0
-    - path: /network-instance[name=red]
-      value:
-       type: ip-vrf
-       interface:
-       - name: ethernet-1/2.0
-  
-  
-  
-    # TODO: vdata.rd, vdata.import/export, vdata.af
     - path: /network-instance[name=blue]
       value:
        type: ip-vrf
@@ -356,6 +342,20 @@ ok: [rtr] =>
        type: ip-vrf
        interface:
        - name: ethernet-1/4.0
+  
+  
+  
+    # TODO: vdata.rd, vdata.import/export, vdata.af
+    - path: /network-instance[name=red]
+      value:
+       type: ip-vrf
+       interface:
+       - name: ethernet-1/1.0
+    - path: /network-instance[name=red]
+      value:
+       type: ip-vrf
+       interface:
+       - name: ethernet-1/2.0
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2, h3, h4
@@ -369,14 +369,14 @@ ok: [h4]
 
 TASK [Create a temporary file for the rendered script] *************************
 changed: [h1 -> localhost]
-changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
-changed: [h4 -> localhost]
 changed: [h3 -> localhost]
+changed: [h4 -> localhost]
+changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
@@ -392,16 +392,16 @@ skipping: [h3]
 skipping: [h4]
 
 TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h4 -> localhost]
 changed: [h1 -> localhost]
-changed: [h3 -> localhost]
+changed: [h4 -> localhost]
 changed: [h2 -> localhost]
+changed: [h3 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-n8qkojap.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-hrryikt_.sh] ***********************
+changed: [h1 -> localhost]
 changed: [h4 -> localhost]
 changed: [h3 -> localhost]
 changed: [h2 -> localhost]
-changed: [h1 -> localhost]
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [rtr]
@@ -418,8 +418,8 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [h4]
 ok: [rtr]
+ok: [h4]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, h3, h4, rtr => (item=vrf)
@@ -464,56 +464,6 @@ ok: [rtr] =>
     =========================================
   
     updates:
-  
-    - path: /network-instance[name=red]
-      value:
-       type: ip-vrf
-  
-  
-    - path: /routing-policy/community-set[name=C65000_1]
-      value:
-       member:
-       - "target:65000:1" # Single member, else matching is AND
-  
-    - path: /routing-policy/community-set[name=red_export]
-      value:
-       member:
-       - "target:65000:1"
-  
-  
-    - path: /network-instance[name=red]/protocols/bgp-vpn
-      value:
-       bgp-instance:
-       - id: 1
-         route-distinguisher:
-          rd: "65000:1"
-  
-    - path: /network-instance[name=red]/inter-instance-policies
-      value:
-       apply-policy:
-        export-policy: "red_vpn_export"
-        import-policy: "red_vpn_import"
-  
-    - path: /routing-policy/policy[name=red_vpn_export]
-      value:
-       default-action:
-        policy-result: "accept"
-        bgp:
-         communities:
-          add: "red_export"
-  
-    - path: /routing-policy/policy[name=red_vpn_import]
-      value:
-       default-action:
-        policy-result: "reject"
-       statement:
-       - name: 11
-         match:
-          bgp:
-           community-set: "C65000_1"
-         action:
-          policy-result: "accept"
-  
   
     - path: /network-instance[name=blue]
       value:
@@ -561,6 +511,56 @@ ok: [rtr] =>
          match:
           bgp:
            community-set: "C65000_2"
+         action:
+          policy-result: "accept"
+  
+  
+    - path: /network-instance[name=red]
+      value:
+       type: ip-vrf
+  
+  
+    - path: /routing-policy/community-set[name=C65000_1]
+      value:
+       member:
+       - "target:65000:1" # Single member, else matching is AND
+  
+    - path: /routing-policy/community-set[name=red_export]
+      value:
+       member:
+       - "target:65000:1"
+  
+  
+    - path: /network-instance[name=red]/protocols/bgp-vpn
+      value:
+       bgp-instance:
+       - id: 1
+         route-distinguisher:
+          rd: "65000:1"
+  
+    - path: /network-instance[name=red]/inter-instance-policies
+      value:
+       apply-policy:
+        export-policy: "red_vpn_export"
+        import-policy: "red_vpn_import"
+  
+    - path: /routing-policy/policy[name=red_vpn_export]
+      value:
+       default-action:
+        policy-result: "accept"
+        bgp:
+         communities:
+          add: "red_export"
+  
+    - path: /routing-policy/policy[name=red_vpn_import]
+      value:
+       default-action:
+        policy-result: "reject"
+       statement:
+       - name: 11
+         match:
+          bgp:
+           community-set: "C65000_1"
          action:
           policy-result: "accept"
 
@@ -738,15 +738,15 @@ ok: [h3]
 ok: [h4]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
-changed: [h3 -> localhost]
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
@@ -767,7 +767,7 @@ changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-_gnplffz.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-6g_jjwfb.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
