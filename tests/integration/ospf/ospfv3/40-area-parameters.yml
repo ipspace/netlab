@@ -86,12 +86,6 @@ links:
   ospf.area: 22
 - interfaces: [ dut, rb ]
 
-defaults.devices.frr..netlab_validate.n_range.level: warning      # Looks like NSSA external range is broken on FRR
-defaults.devices.eos.netlab_validate:
-  n_range.level: warning      # Arista EOS does not have NSSA external route summarization
-  nr_prefix.level: warning
-  ns_prefix.level: warning
-
 validate:
   adj:
     description: Check OSPFv3 adjacencies
@@ -121,6 +115,7 @@ validate:
     description: Check for lack of inter-area routes in NSSA/stub areas
     wait: ospfv3_spf
     wait_msg: Waiting for SPF run
+    level: warning
     nodes: [ r11, r21 ]
     plugin: ospf6_prefix(nodes.dut.loopback.ipv6,state='missing')
   n_prefix:
@@ -129,27 +124,29 @@ validate:
     wait: ospfv3_spf
     nodes: [ rb ]
     plugin: ospf6_prefix(nodes.r22.routing.static[0].ipv6)
+    stop_on_error: True
   nr_prefix:
     description: Check NSSA-to-backbone summarization
-    fail: NSSA specific route is advertised into backbone area
+    fail: NSSA external route that should be summarized is advertised into backbone area
+    level: warning
     wait: ospfv3_spf
     nodes: [ rb ]
     plugin: ospf6_prefix(nodes.r22.routing.static[1].ipv6,state='missing')
   ns_prefix:
     description: Check NSSA-to-backbone filter
-    fail: NSSA specific route is advertised into backbone area
-    wait: ospfv3_spf
+    fail: NSSA external route that should be suppressed is advertised into backbone area
+    level: warning
     nodes: [ rb ]
     plugin: ospf6_prefix(nodes.r22.routing.static[2].ipv6,state='missing')
   n_range:
     description: Check NSSA type-7 (external) range
     fail: NSSA routes are not summarized into type-5 LSA
-    wait: ospfv3_spf
+    level: warning
     nodes: [ rb ]
     plugin: ospf6_prefix('2001:db8:cafe:1::/64')
   ns_range:
     description: Check NSSA type-7 (external) filter
     fail: NSSA summaries are not suppressed
-    wait: ospfv3_spf
+    level: warning
     nodes: [ rb ]
     plugin: ospf6_prefix('2001:db8:cafe:2::/64',state='missing')

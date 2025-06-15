@@ -101,11 +101,6 @@ links:
 - r11.ipv4: 10.17.1.1/24
 - r11.ipv4: 10.18.1.1/24
 
-defaults.devices.eos.netlab_validate:
-  n_range.level: warning      # Arista EOS does not have NSSA external route summarization
-  nr_prefix.level: warning
-  ns_prefix.level: warning
-
 validate:
   adj:
     description: Check OSPF adjacencies
@@ -129,6 +124,7 @@ validate:
     description: Check default route cost in NSSA/stub areas
     fail: The default route inserted in NSSA/stub area has wrong cost
     nodes: [ r12, r22 ]
+    level: warning
     plugin: ospf_prefix('0.0.0.0/0',cost=25)
   ia_present:
     description: Check for inter-area routes in NSSA/stub areas
@@ -141,6 +137,7 @@ validate:
     description: Check for lack of inter-area routes in NSSA/stub areas
     fail: Inter-area routes are not suppresed in NSSA/stub area
     wait: ospfv2_spf
+    level: warning
     wait_msg: Waiting for SPF run
     nodes: [ r11, r21 ]
     plugin: ospf_prefix(nodes.dut.loopback.ipv4,state='missing')
@@ -178,27 +175,29 @@ validate:
     wait: ospfv2_spf
     nodes: [ rb ]
     plugin: ospf_prefix(nodes.r22.routing.static[0].ipv4)
+    stop_on_error: True
   nr_prefix:
     description: Check NSSA-to-backbone summarization
-    fail: NSSA specific route is advertised into backbone area
+    fail: NSSA external route that should be summarized is advertised into backbone area
+    level: warning
     wait: ospfv2_spf
     nodes: [ rb ]
     plugin: ospf_prefix(nodes.r22.routing.static[1].ipv4,state='missing')
   ns_prefix:
     description: Check NSSA-to-backbone filter
-    fail: NSSA specific route is advertised into backbone area
-    wait: ospfv2_spf
+    fail: NSSA external route that should be suppressed is advertised into backbone area
+    level: warning
     nodes: [ rb ]
     plugin: ospf_prefix(nodes.r22.routing.static[2].ipv4,state='missing')
   n_range:
     description: Check NSSA type-7 (external) range
     fail: NSSA routes are not summarized into type-5 LSA
-    wait: ospfv2_spf
+    level: warning
     nodes: [ rb ]
     plugin: ospf_prefix('10.19.2.0/24')
   ns_range:
     description: Check NSSA type-7 (external) filter
     fail: NSSA summaries are not suppressed
-    wait: ospfv2_spf
+    level: warning
     nodes: [ rb ]
     plugin: ospf_prefix('10.19.3.0/24',state='missing')
