@@ -182,9 +182,50 @@ nodes:
 * Finally, _vrnetlab_ is an independent open-source project. If it fails to produce a working container image ([example](https://github.com/hellt/vrnetlab/issues/231)), please contact them.
 ```
 
+(vrnetlab-images)=
 ### Image Names
 
-The build process generates container tags based on the underlying VM image name. You will probably have to [change the default _netlab_ container image name](default-device-type) with the **‌defaults.devices._device_.clab.image** lab topology parameter.
+The *vrnetlab* build process generates container tags based on the underlying VM image name. You will probably have to [change the default _netlab_ container image name](default-device-type) with the **‌defaults.devices._device_.clab.image** lab topology parameter ([more details](topo-defaults)) or with the `netlab defaults devices._device.clab.image=_new_image_name_` command.
+
+(vrnetlab-usernames)=
+### Usernames and Passwords
+
+Most *vrnetlab* containers start with an unconfigured virtual machine and download the initial device configuration (including usernames and passwords) through the emulated VM console port. Recently, the *vrnetlab* project uses **admin** as the default username and **admin** (or **admin@123**) as the default password.
+
+While we're trying to keep _netlab_ default settings in sync with _vrnetlab_ code, you could experience a mismatch between what *vrnetlab* configures on a network device and what *netlab*  thinks it will do. In that case, change the _netlab_ defaults with:
+
+```
+$ netlab defaults devices._device_.clab.group_vars.ansible_user=_username_
+$ netlab defaults devices._device_.clab.group_vars.ansible_ssh_pass=_password_
+```
+
+You can also use another _vrnetlab_ detail: most containers can use `USERNAME` and `PASSWORD` environment variables to specify the username/password of the admin user. You can set these variables with the node **clab.env.USERNAME** and **clab.env.PASSWORD** parameters. For example, use these node settings to have a custom username and password for a Cisco IOSv device:
+
+```
+provider: clab
+
+nodes:
+  rtr:
+    device: iosv
+    ansible_user: Frodo
+    ansible_ssh_pass: Baggins
+    clab.env.USERNAME: Frodo
+    clab.env.PASSWORD: Baggins
+```
+
+To change the default *vrnetlab* username/password for a device (not a single node), set the **defaults.devices._device_.clab.env.USERNAME** and **defaults.devices._device_.clab.env.PASSWORD** parameters, for example:
+
+```
+$ netlab defaults devices.iosv.clab.env.USERNAME=Frodo
+$ netlab defaults devices.iosv.clab.env.PASSWORD=Baggins
+```
+
+Note: if you change these settings to non-standard values, you also have to adjust *netlab* Ansible variables:
+
+```
+$ netlab defaults devices.iosv.clab.group_vars.ansible_username=Frodo
+$ netlab defaults devices.iosv.clab.group_vars.ansible_ssh_pass=Baggins
+```
 
 (vrnetlab-internal-net)=
 ### Internal Container Networking
