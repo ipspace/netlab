@@ -410,4 +410,4 @@ def parse_prefix(prefix: typing.Union[str,Box],path: str = 'links') -> Box:
 
 def get_nth_ip_from_prefix(pfx: typing.Union[str,ipaddress._BaseNetwork], host: int) -> str:
   net = ipaddress.ip_network(pfx) if isinstance(pfx,str) else pfx
-  return f'{str(net[host])}/{net.prefixlen}'
+  return str(net) if net.prefixlen==128 else f'{str(net[host])}/{net.prefixlen}'
