@@ -238,13 +238,7 @@ def augment_loopback_interface(n: Box, pools: Box, topology: Box) -> None:
       continue
     if n.loopback.get(af,True) is not True:       # Static loopback address
       continue
-    if af == 'ipv6':
-      if prefix_list[af].prefixlen == 128:
-        n.loopback[af] = str(prefix_list[af])
-      else:
-        n.loopback[af] = addressing.get_nth_ip_from_prefix(prefix_list[af],1)
-    else:
-      n.loopback[af] = str(prefix_list[af])
+    n.loopback[af] = addressing.get_loopback_ip(prefix_list[af])
 
   for af in log.AF_LIST:
     if af in n.loopback:

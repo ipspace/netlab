@@ -411,3 +411,8 @@ def parse_prefix(prefix: typing.Union[str,Box],path: str = 'links') -> Box:
 def get_nth_ip_from_prefix(pfx: typing.Union[str,ipaddress._BaseNetwork], host: int) -> str:
   net = ipaddress.ip_network(pfx) if isinstance(pfx,str) else pfx
   return f'{str(net[host])}/{net.prefixlen}'
+
+def get_loopback_ip(pfx:ipaddress._BaseNetwork) -> str:
+  if pfx.version == 4 or pfx.prefixlen == 128:
+    return str(pfx)
+  return get_nth_ip_from_prefix(pfx,1)

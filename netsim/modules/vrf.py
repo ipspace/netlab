@@ -357,10 +357,7 @@ def vrf_loopbacks(node : Box, topology: Box) -> None:
       ifdata.ospf.area = ospf_area
 
     for af in vrfaddr:
-      if af == 'ipv6':
-        ifdata[af] = addressing.get_nth_ip_from_prefix(vrfaddr[af],1)
-      else:
-        ifdata[af] = str(vrfaddr[af])
+      ifdata[af] = addressing.get_loopback_ip(vrfaddr[af])
       vrfaddr[af] = str(ifdata[af])                                         # Save string copy in vrfaddr, we need it later
       node.vrfs[vrfname].af[af] = True                                      # Enable the af if not already
 
