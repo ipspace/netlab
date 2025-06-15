@@ -11,7 +11,7 @@ message: |
 
 defaults.interfaces.mtu: 1500
 
-defaults.sources.extra: [ defaults-ipv6-only.yml ]
+defaults.sources.extra: [ defaults-ipv6-only.yml, ../wait_times.yml ]
 
 groups:
   ce_ospf:
@@ -32,65 +32,122 @@ vrfs:
   red:
     links: [ dut-r1, dut-r2 ]
   blue:
-    links: [ dut-r3, dut-r4 ]
+    links:
+    - interfaces: [ dut, r3 ]
+      pool: p2p_v6only
+    - interfaces: [ dut, r4 ]
+      pool: p2p_v6only
 
 nodes:
   dut:
     bgp.as: 65000
+    vrfs:
+      blue:
+        loopback.ipv6: 2001:db8:cafe:2001::/64
   r1:
   r2:
     bgp.as: 65100
   r3:
+    loopback.pool: vrf_lb_v6only
   r4:
     bgp.as: 65101
+    loopback.pool: vrf_lb_v6only
 
 validate:
-  red_adj:
-    description: Check OSPF adjacencies in red VRF
-    wait: 20
+  red_adj_v2:
+    description: Check OSPFv2 adjacencies in red VRF
+    wait: ospfv2_adj_p2p
+    wait_msg: Waiting for OSPFv2 adjacencies
+    nodes: [ r1 ]
+    plugin: ospf_neighbor(nodes.dut.vrfs.red.ospf.router_id)
+    stop_on_error: true
+  red_adj_v3:
+    description: Check OSPFv3 adjacencies in red VRF
+    wait_msg: Waiting for OSPFv3 adjacencies
+    wait: ospfv3_adj_p2p
     nodes: [ r1 ]
     plugin: ospf6_neighbor(nodes.dut.vrfs.red.ospf.router_id)
     stop_on_error: true
-  blue_adj:
-    description: Check OSPF adjacencies in blue VRF
-    wait: 10
+  blue_adj_v3:
+    description: Check OSPFv3 adjacencies in blue VRF
+    wait: ospfv3_adj_p2p
+    wait_msg: Waiting for OSPFv3 adjacencies
     nodes: [ r3 ]
     plugin: ospf6_neighbor(nodes.dut.vrfs.blue.ospf.router_id)
-  ebgp:
-    description: Check EBGP adjacencies with DUT
+  ebgp_v4:
+    description: Check EBGP IPv4 adjacencies with DUT
+    nodes: [ r2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv4')
+    wait: ebgp_session
     wait_msg: Waiting for EBGP sessions to start
+    stop_on_error: true
+  ebgp_v6:
+    description: Check EBGP IPv6 adjacencies with DUT
     nodes: [ r2, r4 ]
     plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6')
-    wait: 10
+    wait: ebgp_session
+    wait_msg: Waiting for EBGP sessions to start
     stop_on_error: true
-  red_route:
-    description: Check OSPF routes in red VRF
-    wait: 10
+  red_v4_ospf:
+    description: Check OSPFv2 routes in red VRF
+    wait: ospfv2_spf
     nodes: [ r1 ]
-    plugin: ospf6_prefix(nodes.r2.loopback.ipv6.replace('::1','::'))
-  blue_route:
-    description: Check OSPF routes in blue VRF
-    wait: 5
+    plugin: ospf_prefix(nodes.r2.loopback.ipv4)
+  red_v6_ospf:
+    description: Check OSPFv3 routes in red VRF
+    wait: ospfv3_spf
+    nodes: [ r1 ]
+    plugin: ospf6_prefix(nodes.r2.loopback.ipv6)
+  red_v4_bgp:
+    description: Check IPv4 BGP routes in red VRF
+    wait: bgp_scan_time
+    nodes: [ r2 ]
+    plugin: bgp_prefix(nodes.r1.loopback.ipv4)
+  red_v6_bgp:
+    description: Check IPv6 BGP routes in red VRF
+    wait: bgp_scan_time
+    nodes: [ r2 ]
+    plugin: bgp_prefix(nodes.r2.loopback.ipv6,af='ipv6')
+  blue_ospf:
+    description: Check OSPFv3 routes in blue VRF
+    wait: ospfv3_spf
     nodes: [ r3 ]
-    plugin: ospf6_prefix(nodes.r4.loopback.ipv6.replace('::1','::'))
-  red_lb_ping:
-    description: Loopback-to-loopback reachability test in VRF red
-    wait: 20
+    plugin: ospf6_prefix(nodes.r4.loopback.ipv6)
+  blue_bgp:
+    description: Check IPv6 BGP routes in blue VRF
+    wait: bgp_scan_time
+    nodes: [ r4 ]
+    plugin: bgp_prefix(nodes.r3.loopback.ipv6,af='ipv6')
+  red_v4_ping:
+    description: Loopback-to-loopback IPv4 reachability test in VRF red
+    wait: ping
+    nodes: [ r1 ]
+    plugin: ping('r2',af='ipv4',src=nodes.r1.loopback.ipv4)
+  red_v6_ping:
+    description: Loopback-to-loopback IPv6 reachability test in VRF red
+    wait: ping
     wait_msg: Waiting for BGP and OSPFv3 to start
     nodes: [ r1 ]
     plugin: ping('r2',af='ipv6',src=nodes.r1.loopback.ipv6)
-  red_c_ospf:
+  red_c_ospfv2:
+    description: Check for connected routes in OSPFv2
+    nodes: [ r2 ]
+    plugin: ping('r1',af='ipv4')
+  red_c_ospfv3:
     description: Check for connected routes in OSPFv3
     nodes: [ r2 ]
     plugin: ping('r1',af='ipv6')
-  red_c_bgp:
-    description: Check for connected routes in BGP
+  red_c_bgp_v4:
+    description: Check for IPv4 connected routes in BGP
+    nodes: [ r1 ]
+    plugin: ping('r2',af='ipv4')
+  red_c_bgp_v6:
+    description: Check for IPv6 connected routes in BGP
     nodes: [ r1 ]
     plugin: ping('r2',af='ipv6')
   ping_blue:
     description: Ping-based reachability test in VRF blue
-    wait_msg: Wait for route redistribution convergence
-    wait: 10
+    wait: ping
     nodes: [ r4 ]
     plugin: ping('r3',af='ipv6')
   inter_vrf:

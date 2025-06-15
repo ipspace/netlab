@@ -37,55 +37,86 @@ vrfs:
     links:
     - interfaces: [ dut, r3 ]
       ospf.area: 3
+      pool: p2p_v6only
     - interfaces: [ dut, r4 ]
       ospf.area: 4
+      pool: p2p_v6only
 
 nodes:
   dut:
     id: 1
+    vrfs:
+      blue:
+        loopback.ipv6: 2001:db8:cafe:2001::/64
   r1:
   r2:
   r3:
     ospf.area: 3
+    loopback.pool: vrf_lb_v6only
   r4:
     ospf.area: 4
+    loopback.pool: vrf_lb_v6only
 
 validate:
-  red_adj:
+  red_v2_adj:
+    description: Check OSPFv2 adjacencies in red VRF
+    wait: ospfv2_adj_p2p
+    wait_msg: Waiting for OSPFv2 adjacencies
+    nodes: [ r1, r2 ]
+    plugin: ospf_neighbor(nodes.dut.vrfs.red.ospf.router_id)
+    stop_on_error: true
+  red_v3_adj:
     description: Check OSPFv3 adjacencies in red VRF
     wait: ospfv3_adj_p2p
+    wait_msg: Waiting for OSPFv3 adjacencies
     nodes: [ r1, r2 ]
     plugin: ospf6_neighbor(nodes.dut.vrfs.red.ospf.router_id)
     stop_on_error: true
   blue_adj:
     description: Check OSPFv3 adjacencies in blue VRF
     wait: ospfv3_adj_p2p
+    wait_msg: Waiting for OSPFv2 adjacencies
     nodes: [ r3, r4 ]
     plugin: ospf6_neighbor(nodes.dut.vrfs.blue.ospf.router_id)
-  red_route:
+    stop_on_error: true
+  red_v4_route:
+    description: Check OSPFv2 routes in red VRF
+    wait: ospfv2_spf
+    wait_msg: Waiting for OSPFv2 SPF run
+    nodes: [ r1 ]
+    plugin: ospf_prefix(nodes.r2.loopback.ipv4)
+  red_v6_route:
     description: Check OSPFv3 routes in red VRF
     wait: ospfv3_spf
+    wait_msg: Waiting for OSPFv3 SPF run
     nodes: [ r1 ]
-    plugin: ospf6_prefix(nodes.r2.loopback.ipv6.replace('::1','::'))
-  ping_red:
+    plugin: ospf6_prefix(nodes.r2.loopback.ipv6)
+  ping_red_v4:
     description: Ping-based reachability test in VRF red
-    wait: 20
+    wait: ping
+    nodes: [ r1 ]
+    plugin: ping('r2',af='ipv4')
+  ping_red_v6:
+    description: Ping-based reachability test in VRF red
+    wait: ping
     nodes: [ r1 ]
     plugin: ping('r2',af='ipv6')
   blue_route:
     description: Check OSPFv3 routes in blue VRF
     wait: ospfv3_spf
+    wait_msg: Waiting for OSPFv3 SPF run
     nodes: [ r3 ]
-    plugin: ospf6_prefix(nodes.r4.loopback.ipv6.replace('::1','::'))
+    plugin: ospf6_prefix(nodes.r4.loopback.ipv6)
     level: warning
     fail: Inter-area OSPFv3 routes are not propagated in VRF blue
     stop_on_error: True
   inter_route:
     description: Check for blue OSPFv3 routes in red VRF
     nodes: [ r1 ]
-    plugin: ospf6_prefix(nodes.r4.loopback.ipv6.replace('::1','::'),state='missing')
+    plugin: ospf6_prefix(nodes.r4.loopback.ipv6,state='missing')
   ping_blue:
     description: Ping-based reachability test in VRF blue
+    wait: ping
     nodes: [ r3 ]
     plugin: ping('r4',af='ipv6')
   inter_ping:
