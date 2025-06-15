@@ -1,0 +1,38 @@
+---
+{% if routing.static|default([]) %}
+{%   for sr_data in routing.static %}
+{%     for sr_af in ['ipv4','ipv6'] if sr_af in sr_data %}
+- set:
+    vrf:
+      {{ sr_data.vrf | default('default') }}:
+        router:
+          static:
+            {{ sr_data[sr_af] }}:
+              address-family: {{ sr_af }}-unicast
+              via:
+{%       if sr_data.nexthop.discard is defined %}
+                blackhole:
+                  type: blackhole
+{%       else %}
+{%         if sr_af in sr_data.nexthop %}
+                {{ sr_data.nexthop[ sr_af ] }}:
+                  type: {{ sr_af }}-address
+{%           if sr_data.nexthop.vrf is defined %}
+                  vrf: {{ sr_data.nexthop.vrf or 'default' }}
+{%           elif sr_data.nexthop.intf is defined %}
+{%             set version = box.split(':')[1] %}
+{%             if version=='latest' or version > '5.10.0' %}
+                  interface: 
+                    {{ sr_data.nexthop.intf }}: {}
+{%             else %}
+                  interface: {{ sr_data.nexthop.intf }}
+{%             endif %}
+{%           endif %}
+{%         elif sr_data.nexthop.intf is defined %}
+                {{ sr_data.nexthop.intf }}:
+                  type: interface
+{%         endif %}
+{%       endif %}
+{%     endfor %}
+{%   endfor %}
+{% endif %}
