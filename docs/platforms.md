@@ -12,44 +12,53 @@
 
 *netlab* supports these virtual network devices or their physical equivalents (when using *external* [virtualization provider](providers.md)).
 
-| Virtual network device                    | netlab device type |
-| ----------------------------------------- | ------------------ |
-| Arista vEOS                               | eos                |
-| Aruba AOS-CX [❗](caveats-aruba)          | arubacx        |
-| Cisco ASAv                                | asav               |
-| Cisco Catalyst 8000v [❗](caveats-cat8000v) | cat8000v                |
-| Cisco CSR 1000v [❗](caveats-csr)         | csr                |
-| Cisco IOS-on-Linux (IOL) [❗](caveats-iol)      | iol                |
-| Cisco IOS-on-Linux L2 image (IOL L2)[❗](caveats-iol) | ioll2               |
-| Cisco IOSv [❗](caveats-iosv)             | iosv               |
-| [Cisco IOSvL2](https://developer.cisco.com/docs/modeling-labs/iosvl2/#iosvl2) [❗](caveats-iosv)             | iosvl2               |
-| Cisco IOS XRv  [❗](caveats-iosxr)        | iosxr              |
-| Cisco Nexus 9300v [❗](caveats-nxos)      | nxos               |
-| Cumulus Linux 4.x/5.x [❗](caveats-cumulus) | cumulus            |
-| Cumulus Linux 5.x (NVUE) [❗](caveats-cumulus-nvue)                            | cumulus_nvue           |
-| Dell OS10 [❗](caveats-os10)              | dellos10           |
-| Fortinet FortiOS [❗](caveats-fortios)    | fortios            |
-| FRRouting (FRR) [❗](caveats-frr)         | frr                |
-| [Generic Linux host](labs/linux.md)       | linux              |
-| Juniper vMX [❗](caveats-vmx)             | vmx                |
-| Juniper vPTX (vJunos EVO) [❗](caveats-vptx) | vptx               |
-| Juniper vSRX 3.0 [❗](caveats-vsrx)       | vsrx               |
-| vJunos-switch [❗](caveats-vjunos-switch) | vjunos-switch |
-| vJunos-router [❗](caveats-vjunos-router) | vjunos-router |
-| Mikrotik RouterOS 6 (CHR) [❗](caveats-routeros6) | routeros           |
-| Mikrotik RouterOS 7 (CHR) [❗](caveats-routeros7) | routeros7           |
-| Nokia SR Linux [❗](caveats-srlinux)      | srlinux |
-| Nokia SR OS [❗](caveats-sros)            | sros    |
-| Sonic [❗](caveats-sonic)                 | sonic   |
-| VyOS 1.4 [❗](caveats-vyos)               | vyos    |
+| Virtual network device | netlab device type | support level |
+| -----------------------| ------------------ | ------------- |
+| Arista vEOS/cEOS [❗](caveats-eos) | eos    | full          |
+| Aruba AOS-CX [❗](caveats-aruba) | arubacx  | full          |
+| Cisco ASAv [❗](caveats-asav)    | asav     | minimal       |
+| Cisco Catalyst 8000v [❗](caveats-cat8000v) | cat8000v | full |
+| Cisco CSR 1000v [❗](caveats-csr) | csr     | full          |
+| Cisco IOS-on-Linux (IOL) [❗](caveats-iol) | iol | full     |
+| Cisco IOS-on-Linux L2 image (IOL L2)[❗](caveats-iol) | ioll2               | full |
+| Cisco IOSv [❗](caveats-iosv)      | iosv   | full          |
+| [Cisco IOSvL2](https://developer.cisco.com/docs/modeling-labs/iosvl2/#iosvl2) [❗](caveats-iosv)   | iosvl2 | full |
+| Cisco IOS XRv  [❗](caveats-iosxr) | iosxr  | minimal       |
+| Cisco Nexus 9300v [❗](caveats-nxos) | nxos | best effort   |
+| Cumulus Linux 4.x/5.x [❗](caveats-cumulus) | cumulus | end of life |
+| Cumulus Linux 5.x (NVUE) [❗](caveats-cumulus-nvue)                            | cumulus_nvue | best effort |
+| Dell OS10 [❗](caveats-os10) | dellos10     | full          | 
+| Fortinet FortiOS [❗](caveats-fortios) | fortios | minimal  |
+| FRRouting (FRR) [❗](caveats-frr) | frr     | full          |
+| [Generic Linux host](labs/linux.md) | linux | full          |
+| Juniper vMX [❗](caveats-vmx) | vmx         | best effort   |
+| Juniper vPTX (vJunos EVO) [❗](caveats-vptx) | vptx | full  |              
+| Juniper vSRX 3.0 [❗](caveats-vsrx) | vsrx  | best effort   |
+| vJunos-switch [❗](caveats-vjunos-switch) | vjunos-switch | full |
+| vJunos-router [❗](caveats-vjunos-router) | vjunos-router | full |
+| Mikrotik RouterOS 6 (CHR) [❗](caveats-routeros6) | routeros           | end of life |
+| Mikrotik RouterOS 7 (CHR) [❗](caveats-routeros7) | routeros7           | minimal |
+| Nokia SR Linux [❗](caveats-srlinux) | srlinux | full       |
+| Nokia SR OS [❗](caveats-sros)    | sros    | full          |
+| Sonic [❗](caveats-sonic)         | sonic   | minimal       |
+| VyOS 1.4 [❗](caveats-vyos)       | vyos    | full          |
 
 (platform-daemons)=
 *netlab* also supports the following daemons (control-plane software running in containers):
 
-| Daemon                         | netlab device type |
-| ------------------------------ | ------------------ |
-| BIRD Internet Routing Daemon [❗](caveats-bird) | bird               |
-| dnsmasq DHCP server [❗](caveats-dnsmasq)       | dnsmasq            |
+| Daemon          | netlab device type | support level |
+| --------------- | ------------------ | ------------- |
+| BIRD Internet Routing Daemon [❗](caveats-bird) | bird               | full |
+| dnsmasq DHCP server [❗](caveats-dnsmasq) | dnsmasq | full |
+
+The support level of a platform is defined as:
+
+* **full** -- a core contributor is regularly implementing new features. We run a [full suite of integration tests](https://release.netlab.tools/) for every release that could impact the device behavior (for example, due to changes in configuration templates).
+* **best effort** -- while a core contributor might still work on the platform, we don't run integration tests (usually due to limited availability of the VM/container image). YMMV.
+* **minimal** -- don't expect too much[^WTLTB]. What you see is pretty much what you'll get (and in many cases, it did not go through integration tests).
+* **end-of-life** -- these platforms are still part of _netlab_ package because the storage prices keep falling.
+
+[^WTLTB]: Particularly on platforms that take way too long to boot, like Cisco IOS XR. We're all forced to deal with a limited lifespan.
 
 (platform-host)=
 Most devices behave as routers (or layer-3 switches); the following devices can take multiple roles or behave as [IP hosts](node-router-host):
