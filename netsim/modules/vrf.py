@@ -126,9 +126,10 @@ def normalize_vrf_dict(obj: Box, topology: Box) -> None:
         module='vrf')
 
     if obj is topology and 'loopback' in vdata:
-      if not isinstance(vdata.loopback,bool):
-        log.error(f'The "loopback" attribute in the global VRF "{vname}" must be a bool',
-        more_hints=[ 'You can specify specific IP address for a VRF loopback interface in the node VRF data'],
+      lb = vdata.loopback
+      if isinstance(lb,Box) and ('ipv4' in lb or 'ipv6' in lb):
+        log.error(f'The "loopback" attribute in the global VRF "{vname}" cannot specify IPv4/IPv6 prefixes',
+        more_hints=[ 'Use pool attribute or specify specific IP address for a VRF loopback interface in the node VRF data'],
         category=log.IncorrectType,
         module='vrf')
 
@@ -339,10 +340,17 @@ def vrf_loopbacks(node : Box, topology: Box) -> None:
 
     links.create_virtual_interface(node,ifdata,topology.defaults)     # Use common function to create loopback interface
 
-    if isinstance(vrf_loopback,bool):
-      vrfaddr = addressing.get(topology.pools, ['vrf_loopback'])
-    else:
-      vrfaddr = addressing.parse_prefix(vrf_loopback)
+    lb_path = f'nodes.{node.name}.vrfs.{vrfname}.loopback'
+    lb_pool: typing.Optional[str] = 'vrf_loopback'
+    if isinstance(vrf_loopback,Box):
+      if 'ipv4' in vrf_loopback or 'ipv6' in vrf_loopback:
+        vrfaddr = addressing.parse_prefix(vrf_loopback,path=lb_path)
+        lb_pool = None
+      elif 'pool' in vrf_loopback:
+        lb_pool = vrf_loopback.pool
+
+    if lb_pool:
+      vrfaddr = addressing.get(topology.pools, [ lb_pool ])
 
     if not vrfaddr:
       continue
@@ -357,7 +365,7 @@ def vrf_loopbacks(node : Box, topology: Box) -> None:
       ifdata.ospf.area = ospf_area
 
     for af in vrfaddr:
-      if af == 'ipv6':
+      if vrfaddr[af].prefixlen != vrfaddr[af].max_prefixlen:
         ifdata[af] = addressing.get_nth_ip_from_prefix(vrfaddr[af],1)
       else:
         ifdata[af] = str(vrfaddr[af])

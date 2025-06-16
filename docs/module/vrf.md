@@ -109,17 +109,19 @@ You can also set these parameters to influence routing protocols within a VRF.
 (vrf-loopback)=
 ### Creating VRF Loopback Interfaces
 
-A loopback interface is created for a VRF whenever you set the **vrfs.*name*.loopback** or **vrf.loopback** global or node parameter.
+A loopback interface is created for a VRF whenever you set the **vrfs.*name*.loopback** or **vrf.loopback** global or node parameter. The global or node parameter is a boolean value that triggers (or turns off) the creation of loopbacks for all VRFs that do not have more specific loopback definitions.
 
-**loopback** parameter in a VRF definition could be:
+**loopback** parameter in a global- or node VRF definition could be:
 
 * A boolean value -- the address of the loopback interface will be allocated from the **vrf_loopback** address pool
-* A string specifying the IPv4 prefix of the loopback interface
+* A dictionary with the **pool** attribute to specify an alternate address pool
+
+**loopback** parameter in a node VRF definition can also be:
+
+* A string specifying the IPv4- or IPv6 prefix of the loopback interface (host bits are set to 1 for IPv4 prefixes larger than /32 or IPv6 prefixes larger than /128).
 * A dictionary of address families specifying IPv4 and/or IPv6 prefixes to be used on the loopback interface
 
-```{warning}
-The explicit IPv4/IPv6 loopback addresses can be used only in the node VRF definition, not in the global VRF definition.
-```
+To disable a VRF loopback, set the **loopback** parameter to *False* or *None* (no value).
 
 ### RD and RT Values
 
