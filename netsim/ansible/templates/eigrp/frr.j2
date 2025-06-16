@@ -1,0 +1,24 @@
+{#
+
+Configure IPv4 EIGRP
+
+#}
+{% if eigrp.af.ipv4 is defined %}
+router eigrp {{ eigrp.as }}
+{% if eigrp.router_id|ipv4 %}
+ eigrp router-id {{ eigrp.router_id }}
+{% endif %}
+{% for l in netlab_interfaces|default([]) if 'eigrp' in l and 'ipv4' in l  %}
+ network {{ l.ipv4|ipaddr('address') }}/32
+{% endfor %}
+{% for l in interfaces|default([]) if 'eigrp' in l and l.eigrp.passive %}
+ passive-interface {{ l.ifname }}
+{% endfor %}
+{% if mgmt.ifname|default("") %}
+ passive-interface {{ mgmt.ifname }}
+{% endif %}
+!
+{% endif %}
+!
+do write
+
