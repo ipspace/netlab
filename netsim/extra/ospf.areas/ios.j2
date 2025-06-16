@@ -1,8 +1,9 @@
-{%- macro range_config(pfx,af) %}
+{%- macro range_config(range,af) %}
 {%   if af == 'ipv4' 
-%}{{ pfx|ipaddr('network') }} {{ pfx|ipaddr('netmask') }}{% else
-%}{{ pfx }}{%   
-     endif -%}{% endmacro -%}
+%}{{ range[af]|ipaddr('network') }} {{ range[af]|ipaddr('netmask') }}{% else
+%}{{ range[af] }}{%
+     endif -%}{% if range.cost is defined %} cost {{ range.cost }}{% endif -%}
+{% endmacro -%}
 
 {% macro area_config(adata,af,abr) %}
 {%   if adata.kind == 'stub' %}
@@ -22,10 +23,10 @@
 {%   endif %}
 {%   if abr %}
 {%     for range in adata.range|default([]) if range[af] is defined %}
-  area {{ adata.area }} range {{ range_config(range[af],af) }}
+  area {{ adata.area }} range {{ range_config(range,af) }}
 {%     endfor %}
 {%     for range in adata.filter|default([]) if range[af] is defined %}
-  area {{ adata.area }} range {{ range_config(range[af],af) }} not-advertise
+  area {{ adata.area }} range {{ range_config(range,af) }} not-advertise
 {%     endfor %}
 {%   endif %}
 {% endmacro %}
@@ -37,7 +38,9 @@ router ospf {{ ospf_pid }}{% if ospf_vrf %} vrf {{ ospf_vrf }}{% endif +%}
 {%     else %}
 router ospfv3 {{ ospf_pid }}
 {%       if ospf_vrf %}
-  address-family ipv6 unicast vrf {{ ospf_vrf }}
+ address-family ipv6 unicast vrf {{ ospf_vrf }}
+{%       else %}
+ address-family ipv6 unicast
 {%       endif %}
 {%     endif %}
 {%     for adata in odata.areas %}
