@@ -6,6 +6,9 @@ message: |
   * Stub and NSSA areas
   * Insertion of default route into stub/NSSA areas
   * Suppression of inter-area routes in stub/NSSA area
+  * Area ranges (including explicit range cost) and suppressed ranges
+  * Summarization and suppression of NSSA routes
+  * Configuration of VRF instances
 
 defaults.sources.extra: [ ../../wait_times.yml ]
 plugin: [ ospf.areas ]
@@ -17,6 +20,11 @@ ospf.areas:
 - area: 11
   kind: stub
   inter_area: false
+  range:
+  - 2001:db8:cafe:2000::/60
+  - ipv6: 2001:db8:cafe:3000::/60
+    cost: 42
+
 - area: 12
   kind: stub
   default.cost: 15
@@ -30,6 +38,9 @@ ospf.areas:
   default.cost: 15
   external_range:
   - 2001:db8:cafe:1::/64
+  - ipv6: 2001:db8:cafe:3::/64
+    cost: 42
+    type: e2
   external_filter:
   - 2001:db8:cafe:2::/64
 
@@ -86,6 +97,10 @@ links:
   ospf.area: 22
 - interfaces: [ dut, rb ]
 
+- r11.ipv6: 2001:db8:cafe:2001::1/64
+- r11.ipv6: 2001:db8:cafe:2002::1/64
+- r11.ipv6: 2001:db8:cafe:3002::1/64
+
 validate:
   adj:
     description: Check OSPFv3 adjacencies
@@ -118,6 +133,19 @@ validate:
     level: warning
     nodes: [ r11, r21 ]
     plugin: ospf6_prefix(nodes.dut.loopback.ipv6,state='missing')
+  a_range:
+    description: Check for area ranges
+    fail: Inter-area routes are not summarized
+    wait: ospfv3_spf
+    wait_msg: Waiting for SPF run
+    nodes: [ rb ]
+    plugin: ospf6_prefix('2001:db8:cafe:2000::/60')
+  a_range_c:
+    description: Check for area ranges with specified cost
+    fail: Inter-area routes do not have the correct cost
+    level: warning
+    nodes: [ rb ]
+    plugin: ospf6_prefix('2001:db8:cafe:3000::/60',cost=52)
   n_prefix:
     description: Check NSSA-to-backbone external route propagation
     fail: NSSA route is not readvertised as type-5 route
@@ -126,21 +154,21 @@ validate:
     plugin: ospf6_prefix(nodes.r22.routing.static[0].ipv6)
     stop_on_error: True
   nr_prefix:
-    description: Check NSSA-to-backbone summarization
+    description: Check suppression of summarized type-7 LSAs
     fail: NSSA external route that should be summarized is advertised into backbone area
     level: warning
     wait: ospfv3_spf
     nodes: [ rb ]
     plugin: ospf6_prefix(nodes.r22.routing.static[1].ipv6,state='missing')
   ns_prefix:
-    description: Check NSSA-to-backbone filter
+    description: Check suppression of filtered type-7 LSAs
     fail: NSSA external route that should be suppressed is advertised into backbone area
     level: warning
     nodes: [ rb ]
     plugin: ospf6_prefix(nodes.r22.routing.static[2].ipv6,state='missing')
   n_range:
     description: Check NSSA type-7 (external) range
-    fail: NSSA routes are not summarized into type-5 LSA
+    fail: NSSA type-7 routes are not summarized into type-5 LSA
     level: warning
     nodes: [ rb ]
     plugin: ospf6_prefix('2001:db8:cafe:1::/64')
