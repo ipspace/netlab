@@ -11,6 +11,7 @@ The plugin includes Jinja2 templates for the following platforms:
 
 | Operating system    | Default Policies |
 | ------------------- | :--: |
+| Fortinet FortiOS    |  ✅  |
 | Juniper vSRX        |  ✅  |
 | VyOS                |  ✅  |
 

@@ -1,0 +1,98 @@
+---
+- name: Define intra-zone policy structure
+  set_fact:
+    intra_zone_policy: {}
+    zone_interface_list: {}
+    zone_action_map:
+      permit: 'allow'
+      deny: 'deny'
+    policy_action_map:
+      permit: 'accept'
+      deny: 'deny'
+
+- name: Add intra-zone policy for defined zones, if needed
+  with_items: "{{ firewall.zonebased.default_rules|default([]) }}"
+  loop_control:
+    loop_var: rule
+  when: "rule.from_zone == rule.to_zone"
+  set_fact:
+    intra_zone_policy: "{{ intra_zone_policy | combine( { rule.from_zone: zone_action_map[rule.action] } ) }}"
+
+- name: Define Interface-to-Zone mapping
+  with_items: "{{ interfaces }}"
+  loop_control:
+    loop_var: interface
+  when: "interface.firewall.zone is defined"
+  set_fact:
+    zone_interface_list: "{{ zone_interface_list | combine( { interface.firewall.zone: (zone_interface_list[interface.firewall.zone]|default([]))+([{ 'interface_name' : interface.ifname }]) } ) }}"
+
+- name: Reset firewall state for idempotency
+  block:
+  - name: Get all firewall policies
+    fortinet.fortios.fortios_configuration_fact:
+      vdom: "{{ vdom }}"
+      selector: "firewall_policy"
+    register: firewall_policies
+  - name: Delete all security policies
+    with_items: "{{firewall_policies.meta.results}}"
+    fortinet.fortios.fortios_firewall_policy:
+      vdom: "{{ vdom }}"
+      state: "absent"
+      firewall_policy:
+        policyid: "{{item.policyid}}"
+  - name: Get all firewall zones
+    fortinet.fortios.fortios_configuration_fact:
+      vdom: "{{ vdom }}"
+      selector: "system_zone"
+    register: system_zones
+  - name: Delete all firewall zones
+    with_items: "{{system_zones.meta.results}}"
+    fortinet.fortios.fortios_system_zone:
+      vdom: "{{ vdom }}"
+      state: "absent"
+      system_zone:
+        name: "{{item.name}}"
+
+- name: Create Firewall Zones
+  with_items: "{{ firewall.zonebased._zones.keys()|default([]) }}"
+  loop_control:
+    loop_var: zone
+  fortinet.fortios.fortios_system_zone:
+    vdom: "{{ vdom }}"
+    state: "present"
+    system_zone:
+      intrazone: "{{intra_zone_policy[zone]|default('deny')}}"
+      name: "{{zone}}"
+      interface: "{{zone_interface_list[zone]}}"
+
+- name: Create non-default Policy Rules
+  with_items: "{{ firewall.zonebased.default_rules|default([]) }}"
+  loop_control:
+    loop_var: rule
+    index_var: policy_idx
+  when: "rule.from_zone != rule.to_zone"
+  fortinet.fortios.fortios_firewall_policy:
+    vdom: "{{ vdom }}"
+    state: "present"
+    firewall_policy:
+      policyid: "{{policy_idx*10}}"
+      name: "{{rule.from_zone}}->{{rule.to_zone}} (default)"
+      action: "{{policy_action_map[rule.action]}}"
+      srcintf:
+      - name: "{{rule.from_zone}}"
+      srcaddr:
+      - name: "all"
+      srcaddr6:
+      - name: "all"
+      dstintf:
+      - name: "{{rule.to_zone}}"
+      dstaddr:
+      - name: "all"
+      dstaddr6:
+      - name: "all"
+      service:
+      - name: "ALL"
+      schedule: "always"
+      logtraffic: "all"
+      logtraffic_start: "enable"
+      status: "enable"
