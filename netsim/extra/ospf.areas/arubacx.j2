@@ -1,0 +1,47 @@
+{% macro area_config(adata,af,abr) %}
+{%   if adata.kind == 'stub' %}
+  area {{ adata.area }} stub {% if not adata.inter_area %}no-summary{% endif +%}
+{%   elif adata.kind == 'nssa' %}
+  area {{ adata.area }} nssa {% if not adata.inter_area %}no-summary{% endif +%}
+{%   endif %}
+{%   if adata.kind in ['stub','nssa'] and adata.default.cost is defined %}
+  area {{ adata.area }} default-metric {{ adata.default.cost }}
+{%   endif %}
+{%   if abr %}
+{%     for range in adata.range|default([]) if range[af] is defined %}
+  area {{ adata.area }} range {{ range[af] }} type inter-area
+{%     endfor %}
+{%     for range in adata.filter|default([]) if range[af] is defined %}
+  area {{ adata.area }} range {{ range[af] }} type inter-area no-advertise
+{%     endfor %}
+{%     for range in adata.external_range|default([]) if range[af] is defined %}
+  area {{ adata.area }} range {{ range[af] }} type nssa
+{%     endfor %}
+{%     for range in adata.external_filter|default([]) if range[af] is defined %}
+  area {{ adata.area }} range {{ range[af] }} type nssa no-advertise
+{%     endfor %}
+{%   endif %}
+{% endmacro %}
+
+{% macro ospf_area_config(odata,pid=1,vrf='') %}
+{%   for af in ['ipv4','ipv6'] if odata.af[af] is defined %}
+{%     set proto = 'ospf' if af == 'ipv4' else 'ospfv3' %}
+router {{ proto }} {{ pid }}{% if vrf %} vrf {{ vrf }}{% endif +%}
+{%     for adata in odata.areas %}
+{{       area_config(adata,af,odata._abr|default(false)) -}}
+{%     endfor %}
+{%   endfor %}
+{% endmacro %}
+
+{% if ospf.areas is defined %}
+{{   ospf_area_config(ospf,ospf.process|default(1)) }}
+{% endif %}
+{% if vrfs is defined %}
+{%   for vname,vdata in vrfs.items() if vdata.ospf.areas is defined %}
+{{     ospf_area_config(vdata.ospf,vdata.ospfidx,vname) }}
+{%   endfor %}
+{% endif %}
+
+{# seems we need to clear all neigh after setting stub/nssa config if neighborship is already established #}
+do clear ip ospf neighbors all-vrfs
+do clear ipv6 ospfv3 neighbors all-vrfs
