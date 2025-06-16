@@ -9,16 +9,16 @@ The plugin also supports suppressing inter-area routes in stub/NSSA areas, resul
 
 The plugin includes Jinja2 templates for the following platforms:
 
-| Operating system    | Stub/NSSA<br>areas | Totally<br>stubby areas | Area ranges |
-|--------------|:-:|:-:|:-:|
-| Arista EOS   |✅ [❗](caveats-eos) |✅|✅|
-| Aruba CX     |✅|✅|✅|
-| Cisco IOS/XE[^18v] |✅|✅|✅|
-| Cumulus NVUE |✅|✅|✅ [❗](caveats-cumulus-nvue) |
-| Dell OS10    |✅|✅|✅ [❗](caveats-os10) |
-| FRR          |✅|✅|✅ [❗](caveats-frr) |
-| Junos[^Junos]|✅|✅|✅|
-| SR Linux     |✅|✅|✅ [❗](caveats-srlinux) |
+| Operating system    | Stub/NSSA<br>areas | Totally<br>stubby areas | Area ranges | NSSA area<br>ranges |
+|--------------|:-:|:-:|:-:|:-:|
+| Arista EOS   |✅ [❗](caveats-eos) |✅|✅| ❌ |
+| Aruba CX     |✅|✅|✅|✅|
+| Cisco IOS/XE[^18v] |✅|✅|✅| ❌ |
+| Cumulus NVUE |✅|✅|✅ [❗](caveats-cumulus-nvue) | ❌ |
+| Dell OS10    |✅|✅|✅ [❗](caveats-os10) | ❌ |
+| FRR          |✅|✅|✅ [❗](caveats-frr) |✅|
+| Junos[^Junos]|✅|✅|✅|✅|
+| SR Linux     |✅|✅|✅ [❗](caveats-srlinux) |✅|
 
 [^18v]: Includes Cisco IOSv, Cisco IOSvL2, Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
 
@@ -32,10 +32,17 @@ The OSPF area parameters can be specified in global-, node-, or VRF-level **ospf
 * **kind** -- OSPF area type (*stub*, *nssa*, or *regular*)
 * **default.cost** (int) -- The cost of the default route inserted into the stub/NSSA area (IPv4 only)
 * **inter_area** (bool, default: *true*) -- propagation of inter-area routes into stub/NSSA area. Set to *false* to implement totally stubby areas.
-* **range** (list of IPv4 or IPv6 prefixes) -- summarization ranges for the area
+* **range** -- summarization ranges for the area
 * **filter** (list of IPv4 or IPv6 prefixes) -- not-advertized summarization ranges for the area
-* **external_range** (list of IPv4 or IPv6 prefixes) -- NSSA summarization ranges for the external type-7 routes from this area
+* **external_range** -- NSSA summarization ranges for the external type-7 routes from this area
 * **external_filter** (list of IPv4 or IPv6 prefixes) -- not-advertized summarization ranges for the external type-7 routes from this area
+
+The **range** and **external_range** parameters are lists of area summarization ranges. Each range can be specified as an IPv4/IPv6 prefix or a dictionary with these parameters:
+
+* **ipv4** -- IPv4 summary prefix
+* **ipv6** -- IPv6 summary prefix
+* **cost** -- The cost of the summary prefix
+* **type** (NSSA **external_range** only) -- the external metric type of the summary type-5 LSA (*e1* or *e2*)
 
 Example:
 
@@ -49,7 +56,8 @@ ospf.areas:
 - area: 11
   range:
   - 10.17.0.0/16
-  - 2001:db8:1::/48
+  - ipv6: 2001:db8:1::/48
+    cost: 42
   filter:
   - 10.18.0.0/16
   - 2001:db8:2::/48

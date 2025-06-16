@@ -6,7 +6,7 @@ message: |
   * Insertion of default route into stub/NSSA areas
   * Default route cost in stub/NSSA area
   * Suppression of inter-area routes in stub/NSSA area
-  * Area ranges and suppressed ranges
+  * Area ranges (including explicit range cost) and suppressed ranges
   * Summarization and suppression of NSSA routes
   * Configuration of VRF instances
 
@@ -22,6 +22,8 @@ ospf.areas:
   inter_area: false
   range:
   - 10.17.0.0/16
+  - ipv4: 10.19.0.0/16
+    cost: 42
   filter:
   - 10.18.0.0/16
 
@@ -38,6 +40,9 @@ ospf.areas:
   default.cost: 15
   external_range:
   - 10.19.2.0/24
+  - ipv4: 10.19.4.0/24
+    type: e2
+    cost: 42
   external_filter:
   - 10.19.3.0/24
 
@@ -79,6 +84,8 @@ nodes:
       nexthop.discard: True
     - ipv4: 10.19.3.1/32
       nexthop.discard: True
+    - ipv4: 10.19.4.1/32
+      nexthop.discard: True
   v1:
     ospf.area: 11
   v2:
@@ -100,6 +107,7 @@ links:
 # Extra interfaces needed to create range prefixes
 - r11.ipv4: 10.17.1.1/24
 - r11.ipv4: 10.18.1.1/24
+- r11.ipv4: 10.19.1.1/24
 
 validate:
   adj:
@@ -148,6 +156,12 @@ validate:
     wait_msg: Waiting for SPF run
     nodes: [ rb ]
     plugin: ospf_prefix('10.17.0.0/16')
+  a_range_c:
+    description: Check for area ranges with specified cost
+    fail: Inter-area routes do not have the correct cost
+    level: warning
+    nodes: [ rb ]
+    plugin: ospf_prefix('10.19.0.0/16',cost=52)
   am_range:
     description: Check for more-specific prefixes in area ranges
     fail: Inter-area routes are not summarized
@@ -195,6 +209,12 @@ validate:
     level: warning
     nodes: [ rb ]
     plugin: ospf_prefix('10.19.2.0/24')
+  nc_range:
+    description: Check NSSA type-7 (external) range with explicit cost
+    fail: NSSA range is missing or has incorrect cost
+    level: warning
+    nodes: [ rb ]
+    plugin: ospf_prefix('10.19.4.0/24',cost=42)
   ns_range:
     description: Check NSSA type-7 (external) filter
     fail: NSSA summaries are not suppressed
