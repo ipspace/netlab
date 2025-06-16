@@ -282,7 +282,7 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 | Cumulus Linux 5.x (NVUE) | ✅ |  ❌  |   ❌   | ✅ [❗](caveats-cumulus-nvue)  |  ❌  |
 | Dell OS10             | ✅ [❗](caveats-os10) |   ❌   |   ❌   | ✅  |  ❌  |
 | Fortinet FortiOS      | ✅ [❗](caveats-fortios) |   ❌   |   ❌   |   ❌   |  ❌  |
-| FRR                   | ✅   |  ✅   |   ❌  | ✅  |  ✅  |
+| FRR                   | ✅   |  ✅   |   ✅ [❗](caveats-frr) | ✅  |  ✅  |
 | Junos[^Junos]         | ✅   |  ✅   |   ❌  | ✅  |   ❌  |
 | Mikrotik RouterOS 6   | ✅   |   ❌   |   ❌  | ✅  |   ❌  |
 | Mikrotik RouterOS 7   | ✅   |   ❌   |   ❌  | ✅  |   ❌  |

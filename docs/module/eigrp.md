@@ -2,14 +2,15 @@
 
 This configuration module configures the EIGRP routing process on Cisco IOSv, Cisco IOS-XE[^18v], and Cisco Nexus-OS.
 
-[^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
+[^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), IOL Layer-2 image, and FRR
 
 Supported features:
 
-* IPv4 and IPv6
+* IPv4 and IPv6 (IPv4 only for FRR)
 * EIGRP AS number
 * Unnumbered point-to-point interfaces (Cisco IOS-XE only)
 * Passive interfaces
+* FRR supports EIGRP as described in RFC7868
 
 ## Global Parameters
 

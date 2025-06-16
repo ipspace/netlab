@@ -311,6 +311,8 @@ diag debug application httpsd -1
 * IPv6 L3VPN over SRv6 works only for directly-connected IPv6 subnets. IPv6 EBGP routes received from CE-routers are not propagated across the IPv6 L3VPN IBGP session.
 * IPv6 L3VPN over SRv6 does not work in parallel with the IPv6 AF. You have to disable the IPv6 AF on IPv6 IBGP sessions with **bgp.activate.ipv6: []**.
 * An OSPFv3 ABR running FRR release 10.3 does not originate summary external routes from NSSA areas
+* FRR supports EIGRP as described in RFC7868. A lot of advanced features normally found in enteprise EIGRP networks are not supported by FRR eigrp daemon.
+* IPv6 EIGRP  is not supported.
 
 (caveats-junos)=
 ## Common Junos caveats
