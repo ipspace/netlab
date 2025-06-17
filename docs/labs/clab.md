@@ -42,6 +42,7 @@ Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab creat
 | Cumulus VX with NVUE   | networkop/cx:5.0.1           |
 | Dell OS10              | vrnetlab/vr-ftosv            |
 | dnsmasq                | netlab/dnsmasq:latest        |
+| Fortinet FortiOS       | vrnetlab/vr-fortios:7.4.8    |
 | FRR                    | quay.io/frrouting/frr:10.1.2 |
 | Juniper vMX            | vrnetlab/vr-vmx:18.2R1.9     |
 | Juniper vPTX           | vrnetlab/juniper_vjunosevolved:23.4R2-S2.1 |
