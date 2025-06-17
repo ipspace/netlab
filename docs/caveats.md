@@ -268,6 +268,7 @@ Netlab enables VRRPv3 by default on Dell OS10, overriding any platform defaults.
 ## Fortinet FortiOS 6.x/7.0
 
 * FortiOS VM images have a default 15-day evaluation license. The VM has [limited capabilities](https://docs.fortinet.com/document/fortigate-private-cloud/7.2.0/kvm-administration-guide/504166/fortigate-vm-evaluation-license) without a license file. It will work for 15 days from the first boot, at which point you must install a license file or recreate the vagrant box completely from scratch.
+* The 15-day evaluation license only allows one single VDOM. Using the **netlab_vdom** node parameter will fail when using the built-in 15-day license.
 * _netlab_ configures Fortinet devices with API calls using username/password authentication. The last FortiGate images known to work with that restriction are software releases 7.0.x and 7.2.0. Later releases block API calls without a permanent evaluation license and require token-based authentication once API starts to work.
 * Use a recent version of Ansible and **fortinet.fortios** Ansible Galaxy collection (version 2.3.6 or later)
 * To troubleshoot API authentication, log into the FortiOS VM with **netlab connect** or **vagrant ssh** and enable HTTP debugging with the following commands:
