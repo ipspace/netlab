@@ -132,7 +132,7 @@ def check_node_support(ndata: Box,topology: Box) -> bool:
     for a_entry in o_data.areas:
       OK = OK and devices.check_optional_features(
                     data=a_entry,
-                    path=path+f'.areas[area={a_entry.area}]',
+                    path=path+f'.ospf.areas[area={a_entry.area}]',
                     node=ndata,
                     topology=topology,
                     attribute='ospf.areas',
@@ -166,5 +166,6 @@ def post_transform(topology: Box) -> None:
           category=log.IncorrectAttr,
           module=_config_name)
         return
-      if check_node_support(ndata,topology):
-        api.node_config(ndata,_config_name)                 # ... and remember if we have to do extra configuration
+
+      check_node_support(ndata,topology)                    # Report warnings if a device does not support optional features
+      api.node_config(ndata,_config_name)                   # ... and remember that we have to do extra configuration

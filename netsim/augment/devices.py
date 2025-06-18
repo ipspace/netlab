@@ -119,6 +119,7 @@ def check_optional_features(
       category=Warning if category is None else category,
       more_data=f'Used in {path}',
       module=module)
+    return False
 
   if isinstance(data,Box) and isinstance(features,Box):
     OK = True
