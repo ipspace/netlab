@@ -9,6 +9,15 @@
 {%   endif %}
 {{   routemap.apply_route_map(n,af,True) }}
 {%- endmacro %}
+
+{% macro aggregate(bgp,af) %}
+{%   for a_entry in bgp.aggregate|default([]) if af in a_entry %}
+    aggregate-address {{ a_entry[af] }}{% 
+       if a_entry.summary_only|default(false) %} summary-only{% endif %}{%
+       if a_entry.suppress_policy|default(false) %} suppress-map {{ a_entry.suppress_policy }}-{{ af }}{% endif %}{%
+       if a_entry.attributes|default(false) %} route-map {{ a_entry.attributes }}-{{ af }}{% endif +%}
+{%   endfor -%}
+{% endmacro -%}
 !
 router bgp {{ bgp.as }}
 !
@@ -17,10 +26,9 @@ router bgp {{ bgp.as }}
   bgp default local-preference {{ bgp.locpref }}
 {% endif %}
 {% for af in ['ipv4','ipv6'] if af in bgp %}
-{%   for n in bgp.neighbors if n[af] is defined %}
-{%     if loop.first %}
   address-family {{ af }}
-{%     endif %}
+{{   aggregate(bgp,af) }}
+{%   for n in bgp.neighbors if n[af] is defined %}
 {{     ebgp_neighbor(n,af) }}
 {%   endfor %}
 {% endfor %}
@@ -41,10 +49,9 @@ router bgp {{ bgp.as }} vrf {{ vname }}
   bgp default local-preference {{ bgp.locpref }}
 {% endif %}
 {%     for af in ['ipv4','ipv6'] if af in vdata.af|default({}) %}
-{%       for n in vdata.bgp.neighbors if n[af] is defined %}
-{%         if loop.first %}
   address-family {{ af }}
-{%         endif %}
+{{       aggregate(vdata.bgp,af) }}
+{%       for n in vdata.bgp.neighbors if n[af] is defined %}
 {{         ebgp_neighbor(n,af) }}
 {%       endfor %}
 {%     endfor %}

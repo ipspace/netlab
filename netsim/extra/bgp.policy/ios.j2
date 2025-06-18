@@ -9,6 +9,17 @@
 {{   routemap.apply_route_map(n,af,True) }}
 {%- endmacro %}
 !
+{% macro aggregate(bgp,af) %}
+{%   for a_entry in bgp.aggregate|default([]) if af in a_entry %}
+    aggregate-address {% 
+       if af == 'ipv4' %}{{ a_entry[af]|ipaddr('network') }} {{ a_entry[af]|ipaddr('netmask') }}{% endif %}{%
+       if af == 'ipv6' %}{{ a_entry[af] }}{% endif %}{%
+       if a_entry.summary_only|default(false) %} summary-only{% endif %}{%
+       if a_entry.suppress_policy|default(false) %} suppress-map {{ a_entry.suppress_policy }}-{{ af }}{% endif %}{%
+       if a_entry.attributes|default(false) %} attribute-map {{ a_entry.attributes }}-{{ af }}{% endif +%}
+{%   endfor -%}
+{% endmacro -%}
+!
 router bgp {{ bgp.as }}
 {% if 'locpref' in bgp %}
   bgp default local-preference {{ bgp.locpref }}
@@ -17,6 +28,7 @@ router bgp {{ bgp.as }}
 ! Global address families
 {% for af in ['ipv4','ipv6'] if af in bgp %}
   address-family {{ af }}
+{{   aggregate(bgp,af) }}
 {%   for n in bgp.neighbors if n[af] is defined %}
 {{     ebgp_neighbor(n,af) }}
 {%   endfor %}
@@ -28,6 +40,7 @@ router bgp {{ bgp.as }}
 {%       for n in vdata.bgp.neighbors if n[af] is defined %}
 {%         if loop.first %}
   address-family {{ af }} vrf {{ vname }}
+{{           aggregate(vdata.bgp,af) }}
 {%         endif %}
 {{         ebgp_neighbor(n,af) }}
 {%       endfor %}

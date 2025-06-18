@@ -3,6 +3,7 @@ from box import Box
 from netsim.utils import log, routing as _bgp
 from netsim import api,data
 from netsim.data import types
+from netsim.augment import devices
 from netsim.modules.routing import import_routing_policy,check_routing_policy
 
 _config_name = 'bgp.policy'
@@ -265,6 +266,33 @@ def apply_bgp_routing_policy(ndata: Box,ngb: Box,intf: Box,topology: Box) -> Non
     apply_config(ndata,ngb)                                 # Remember that we have to do extra configuration
 
 '''
+Process routing aggregation requests:
+
+* Check the feature support
+* Import routing policies needed for route aggregation
+'''
+def route_aggregation(ndata: Box, topology: Box) -> None:
+  global _config_name
+  for (bdata,_,vname) in _bgp.rp_data(ndata,'bgp'):         # Iterate over global and VRF BGP instances
+    if 'aggregate' not in bdata:                            # This instance is not doing aggregation
+      continue
+    api.node_config(ndata,_config_name)                     # Remember that we have to do extra configuration
+    bpath = f'nodes.{ndata.name}' + (f'.vrfs.{vname}' if vname else '')
+    for a_idx,a_entry in enumerate(bdata.aggregate):        # Now check every aggregation entry
+      devices.check_optional_features(                      # ... for optional features that
+        data=a_entry,                                       # ... might not be supported by this device
+        path=bpath+f'.aggregate[{a_idx}]',
+        node=ndata,
+        topology=topology,
+        attribute='bgp.aggregate',
+        check_mode=devices.FC_MODE.BLACKLIST)
+      for policy_kw in ['suppress_policy','attributes']:    # Finally, two attributes use routing policies
+        if policy_kw in a_entry:                            # ... so if they are present
+          pname = a_entry[policy_kw]                        # ... we need to import routing policies
+          if import_routing_policy(pname,'policy',ndata,topology):
+            check_routing_policy(pname,'policy',ndata,topology)
+
+'''
 post_transform hook
 
 As we're applying interface attributes to BGP sessions, we have to copy
@@ -281,6 +309,7 @@ def post_transform(topology: Box) -> None:
     if 'bgp' not in ndata.module:                           # Skip nodes not running BGP
       continue
 
+    route_aggregation(ndata,topology)
     _bgp.cleanup_neighbor_attributes(ndata,topology,_attr_list + [ 'policy' ])
     policy_idx = 0
 

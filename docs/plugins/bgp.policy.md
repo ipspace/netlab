@@ -18,7 +18,7 @@ You can also use this plugin to apply inbound and outbound [generic routing poli
 (plugin-bgp-policy-attributes)=
 ## Supported BGP Attributes
 
-The plugin adds the following BGP attributes:
+The plugin adds the following BGP link attributes:
 
 * **bgp.bandwidth** link attribute sets the BGP Link Bandwidth extended community. It can be an integer (in Mbps), in which case the Link Bandwidth community is attached to inbound EBGP updates[^BCP], a dictionary with **in** and **out** integer values if you want to set the Link Bandwidth community in both directions (or just on the outbound updates), or **auto** keyword if you're going to copy interface bandwidth into incoming EBGP updates[^PSV].
 * **bgp.locpref** is an integer attribute that sets default local preference when applied to a node, or sets local preference on BGP updates received from an EBGP neighbor.
@@ -33,33 +33,39 @@ The plugin adds the following BGP attributes:
 
 [^ASPS]: You must quote a single AS number that you want to prepend with the **path** attribute; otherwise, the YAML parser treats it as an integer.
 
-BGP policy attributes can be specified on a node or an interface (node-to-link attachment). The following table describes where you could apply individual attributes:
+It also adds the following node attributes:
 
-| BGP policy | Node | Interface |
-|------------|:----:|:---------:|
-| bandwidth  |  ❌   |    ✅     |
-| locpref    |  ✅  |    ✅     |
-| med        |  ❌   |    ✅     |
-| policy     |  ❌   |    ✅     |
-| prepend    |  ❌   |    ✅     |
-| weight     |  ❌   |    ✅     |
+* **bgp.locpref** sets the default (node-wide) local preference
+* **bgp.aggregate** configures [BGP address aggregation](plugin-bgp-policy-aggregate) (route summarization). This attribute can also be applied to a node VRF definition.
+
+The following table describes where you could apply individual attributes:
+
+| BGP policy | Node | Interface | VRF |
+|------------|:----:|:---------:|:---:|
+| aggregate  |  ✅  |    ❌      |  ✅ |
+| bandwidth  |  ❌   |    ✅     |  ❌  |
+| locpref    |  ✅  |    ✅     |  ❌  |
+| med        |  ❌   |    ✅     |  ❌  |
+| policy     |  ❌   |    ✅     |  ❌  |
+| prepend    |  ❌   |    ✅     |  ❌  |
+| weight     |  ❌   |    ✅     |  ❌  |
 
 ## Platform Support
 
 The plugin implements BGP routing policies and individual BGP policy attributes on these devices:
 
-| Operating system    | Routing<br>policies | Local<br>preference | MED | Weight | AS-path<br>prepend | Link<br>bandwidth |
-|---------------------|:----:|:----:|:----:|:----:|:-----:|:----:|
-| Arista EOS          |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
-| Aruba AOS-CX        |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |   ❌  |
-| Cisco IOSv/IOSvL2   |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |  ✅[❗](caveats-iosv) |
-| Cisco IOS-XE[^18v]  |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |  ✅[❗](caveats-iosv) |
-| Cumulus Linux       |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
-| FRR                 |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |
-| Junos               |  ✅  |  ✅  |  ✅  |  ✅  |  ✅  |   ❌  |
-| Nokia SR Linux      |  ✅  |  ✅  |  ✅  |  ❌  |   ❌  |   ❌  |
-| Nokia SR OS         |  ✅  |  ✅  |  ✅  |  ❌  |   ❌  |  ✅  |
-| VyOS                |  ✅  |  ✅  |  ✅  |  ❌  |   ✅  |   ❌  |
+| Operating system    | Routing<br>policies | Local<br>preference | MED | Weight | AS-path<br>prepend | Link<br>bandwidth | Address<br>Aggregation |
+|---------------------|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| Arista EOS          |✅ |✅ |✅ |✅|✅ |✅| ✅|
+| Aruba AOS-CX        |✅ |✅ |✅ |✅|✅ | ❌ | ❌ |
+| Cisco IOSv/IOSvL2   |✅ |✅ |✅ |✅|✅ |✅[❗](caveats-iosv) |✅|
+| Cisco IOS-XE[^18v]  |✅ |✅ |✅ |✅|✅ |✅[❗](caveats-iosv) |✅|
+| Cumulus Linux       |✅ |✅ |✅ |✅|✅ |✅| ❌ |
+| FRR                 |✅ |✅ |✅ |✅|✅ |✅| ✅|
+| Junos               |✅ |✅ |✅ |✅|✅ | ❌ | ❌ |
+| Nokia SR Linux      |✅ |✅ |✅ | ❌ | ❌ | ❌ | ❌ |
+| Nokia SR OS         |✅ |✅ |✅ | ❌ | ❌ | ✅| ❌ |
+| VyOS                |✅ |✅ |✅ | ❌ | ✅ | ❌ | ❌ |
 
 [^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
 
@@ -173,6 +179,36 @@ route-map bp-r1-2-out permit 10
 ```{warning}
 * You cannot combine **‌bgp.policy** routing policies with individual policy attributes that require a route map.
 * Some devices use route maps to implement the device-wide **‌bgp.locpref** attribute. When combined with **‌bgp.policy** routing policies, these auto-generated route maps generate errors.
+```
+
+(plugin-bgp-policy-aggregate)=
+## BGP Address Aggregation
+
+The BGP address aggregation (route summarization) is defined in the **bgp.aggregate** node/VRF attribute. It is a list of IPv4/IPv6 aggregate prefixes, either specified as a single prefix (string) or a dictionary with these attributes:
+
+* **ipv4**: Aggregated IPv4 prefix
+* **ipv6**: Aggregated IPv6 prefix
+* **summary_only** (bool): Do not advertise the more-specific prefixes
+* **attributes** (routing policy name): a [routing policy](generic-routing-policies) that sets the attributes of the aggregate prefix
+* **suppress_policy** (routing policy name): a [routing policy](generic-routing-policies) that matches the prefixes that should be suppressed.
+
+Example: the WAN edge router advertises two IPv4 and an IPv6 aggregate. One of the IPv4 aggregates has MED set to 73 and suppresses the advertisement of the more-specific prefixes:
+
+```
+nodes:
+  wan_edge:
+    module: [ bgp, vrf, routing ]
+    bgp.as: 65000
+    bgp.aggregate:
+    - 10.1.0.0/16
+    - 2001:db8:1001::/48
+    - ipv4: 10.2.0.0/16
+      summary_only: True
+      attributes: med_73
+
+    routing.policy:
+      med_73:
+      - set.med: 73
 ```
 
 ## Sample Topologies
