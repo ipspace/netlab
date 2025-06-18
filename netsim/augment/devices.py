@@ -3,6 +3,7 @@ Device utility functions
 """
 
 import typing
+from enum import Enum
 
 from box import Box
 
@@ -63,6 +64,78 @@ def get_device_features(node: Box, defaults: Box) -> Box:
     return data.get_empty_box()
 
   return features + n_features
+
+"""
+Check whether the 'data' used in 'node' at 'path' contains valid optional device features
+
+The checking algorithm is specified with the check_mode parameter:
+
+* WHITELIST requires that every element used in 'data' is a feature
+* BLACKLIST reports errors for elements in features. The value of those features could
+  be 'False' (not supported) or a string (error message)
+"""
+class FC_MODE(Enum):
+  BLACKLIST = 1
+  WHITELIST = 2
+
+def optional_features_error(
+      node: Box,
+      attribute: str,
+      path: str,
+      module: str,
+      category: typing.Optional[typing.Union[typing.Type[Warning],typing.Type[Exception]]] = None) -> None:
+
+  log.error(
+    f'Device {node.device} does not support {attribute} used in {path}',
+    category=log.IncorrectAttr if category is None else category,
+    module=module)
+
+def check_optional_features(
+        data: Box,                  # The lab topology data to check
+        path: str,                  # Path used in error messages
+        node: Box,                  # Parent node data
+        topology: Box,              # Topology data (needed to fetch device features)
+        attribute: str,             # Path to the feature to check
+        check_mode: FC_MODE = FC_MODE.WHITELIST,
+        category: typing.Optional[typing.Union[typing.Type[Warning],typing.Type[Exception]]] = None,
+        features: typing.Optional[Box] = None) -> bool:
+
+  error = False
+  module = attribute.split('.')[0]
+  if features is None:              # Fetch the initial device features (we'll set the value in recursive calls)
+    d_features = get_device_features(node,topology.defaults)
+    features = d_features.get(attribute,False)
+
+  if features is True:              # We got to a TRUE value, this stuff is supported
+    return True
+
+  if features is False:             # The device has no idea about the required feature, get out of here
+    optional_features_error(node,attribute,path,module,category)
+    return False
+
+  if isinstance(features,str):      # Custom error message
+    log.error(
+      features,
+      category=Warning if category is None else category,
+      more_data=f'Used in {path}',
+      module=module)
+
+  if isinstance(data,Box) and isinstance(features,Box):
+    OK = True
+    for kw in data.keys():          # Check all subfeatures
+      if kw in features:            # Subfeature is mentioned, do a recursive check
+        OK = OK and check_optional_features(
+                      data[kw],f'{path}.{kw}',node,topology,
+                      f'{attribute}.{kw}',check_mode,category,features[kw])
+        continue                    # ... and move to the next feature
+      if check_mode == FC_MODE.BLACKLIST:
+        continue                    # Subfeature is not mentioned, we're in blacklist mode == > OK
+      optional_features_error(node,f'{attribute}.{kw}',f'{path}.{kw}',module,category)
+      OK = False                    # In whitelisting mode a missing subfeature is an error
+
+    return OK                       # Return the final result
+  else:                             # Assume the feature is supported
+    return True
 
 """
 Get device loopback name (built-in loopback if ifindex == 0 else an additional loopback)
