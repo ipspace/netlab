@@ -121,6 +121,26 @@ def prune_ospf_areas(ndata: Box) -> bool:
   return abr_config
 
 '''
+Check whether the node supports all ospf.areas features used in area definitions
+'''
+def check_node_support(ndata: Box,topology: Box) -> bool:
+  OK = True
+  for (o_data,_,vname) in _ospf.rp_data(ndata,'ospf'):
+    if 'areas' not in o_data:
+      continue
+    path = f'nodes.{ndata.name}' + (f'.vrfs.{vname}' if vname else '')
+    for a_entry in o_data.areas:
+      OK = OK and devices.check_optional_features(
+                    data=a_entry,
+                    path=path+f'.ospf.areas[area={a_entry.area}]',
+                    node=ndata,
+                    topology=topology,
+                    attribute='ospf.areas',
+                    check_mode=devices.FC_MODE.BLACKLIST)
+
+  return OK
+
+'''
 post_transform hook
 
 * Normalize ospf.areas parameters in topology and all OSPF instances
@@ -145,5 +165,7 @@ def post_transform(topology: Box) -> None:
           f'Device {ndata.device} (node {ndata.name}) does not support OSPF area parameters',
           category=log.IncorrectAttr,
           module=_config_name)
-      else:
-        api.node_config(ndata,_config_name)                 # ... and remember if we have to do extra configuration
+        return
+
+      check_node_support(ndata,topology)                    # Report warnings if a device does not support optional features
+      api.node_config(ndata,_config_name)                   # ... and remember that we have to do extra configuration
