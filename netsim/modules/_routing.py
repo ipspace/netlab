@@ -206,7 +206,8 @@ def add_loopback_igp(node: Box, proto: str, topology: Box) -> None:
   node.loopback[proto] = lb_data + node.loopback[proto]     # Merge device LB info with whatever is already on LB
                                                             # Note that an empty box is created on first reference
   if 'passive' not in node.loopback[proto]:                 # Finally, many templates expect 'passive' to be present
-    node.loopback[proto].passive = False                    # ... so add a bogus 'not passive' flag if needed
+    _passive = topology.get(f"{proto}.passive",False)       # Check the global default
+    node.loopback[proto].passive = _passive                 # ... and add a 'passive' flag if needed
 
 # Get a router ID prefix from the router_id pool
 #
