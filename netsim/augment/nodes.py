@@ -227,7 +227,9 @@ def augment_loopback_interface(n: Box, pools: Box, topology: Box) -> None:
   pool = n.get('loopback.pool','loopback')
   prefix_list = addressing.get(pools,[ pool ],n.id)
 
-  for af in prefix_list:                          # Merge pool-allocated loopback prefixes with static data
+  for af in log.AF_LIST:                          # Merge pool-allocated loopback prefixes with static data
+    if af not in prefix_list:                     # pool data has nothing about this AF
+      continue
     if prefix_list[af] is False:                  # AF explicitely disabled in the pool
       continue                                    # ... skip AF allocation
     if prefix_list[af] is True:                   # Pool specifies unnumbered/LLA address -- useless on loopbacks
