@@ -48,18 +48,3 @@ def pre_link_transform(topology: Box) -> None:
 
       if log.debug_active('links'):                 # pragma: no cover (debugging)
         print(f'\nmlag.vtep Create VTEP loopback link for {node_name}: {vtep_loopback}')
-
-#
-# post_transform: Copy IGP configuration from primary loopbacks to VTEP loopbacks
-#
-def post_transform(topology: Box) -> None:
-  for node in topology.nodes.values():              # For each node
-    if not node.get('vxlan.vtep'):
-      continue
-    lb = node.get('loopback',{})
-    for intf in node.interfaces:
-      if intf.type != 'loopback' or not intf.get('vxlan.vtep'):
-        continue
-      for igp in ['isis','ospf','eigrp','ripv2']:   # Copy IGP from primary loopback
-        if igp in lb:
-          intf[igp] = lb[igp]
