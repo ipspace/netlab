@@ -33,7 +33,7 @@ nodes:
     lag.mlag.vtep: False
 ```
 
-The MLAG VTEP works for both static VXLAN and EVPN signalled topologies. IGP configuration is copied from the primary loopback interface.
+The MLAG VTEP works for both static VXLAN and EVPN signalled topologies. IGP configuration is automatically applied based on active modules.
 
 ## Customizing the Address Allocation Pool
 
@@ -41,7 +41,7 @@ By default, the plugin configures a "mlag_vtep" pool for `10.101.101.0/24` to al
 ```
 addressing.mlag_vtep.ipv4: 10.99.99.0/24
 ```
-The plugin will use the `loopback.pool` for the first node in the pair, if provided.
+The plugin will use the `loopback.pool` from the first node in the pair, if provided.
 
 ## Sample Topologies
 
