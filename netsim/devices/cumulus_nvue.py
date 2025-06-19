@@ -103,7 +103,10 @@ def nvue_merge_ospf_loopbacks(node: Box) -> None:
     if i.type!='loopback' or 'ospf' not in i:
       continue
     if 'ospf' in node.loopback:
-      if i.ospf == node.loopback.ospf or (i.ospf == node.loopback.ospf+{'passive': False}):
+      ospf_excl_passive = { k:v for k,v in i.ospf.items() if k!='passive' }
+      if ospf_excl_passive == { k:v for k,v in node.loopback.ospf.items() if k!='passive' }:
+        if i.ospf.get('passive',False) is False:
+          node.loopback.ospf.passive = False
         i.pop('ospf',None)
         report_quirk(
           f'Node {node.name} uses a secondary loopback with OSPF { i.ifname }, merged with primary loopback',
