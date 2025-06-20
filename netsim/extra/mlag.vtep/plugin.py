@@ -3,7 +3,7 @@
 #
 
 from netsim.utils import log
-from netsim.augment import addressing
+from netsim.augment import addressing, links
 from netsim import data
 from box import Box
 
@@ -40,10 +40,10 @@ def pre_link_transform(topology: Box) -> None:
           vtep_a = addressing.get(topology.pools, [pool, 'vrf_loopback'])['ipv4']
         vtep_loopback = data.get_empty_box()
         vtep_loopback.type = 'loopback'             # Assign same static IP to both nodes
-        vtep_loopback.interfaces = [ { 'node': node_name, 'ipv4': str(vtep_a.network_address)+"/32" } ]
+        vtep_loopback.interfaces = [ { 'node': node_name, 'ipv4': str(vtep_a) } ]
         vtep_loopback._linkname = f"MLAG VTEP VXLAN interface shared between {' - '.join(peers)}"
         vtep_loopback.vxlan.vtep = True
-        vtep_loopback.linkindex = len(topology.links)+1
+        vtep_loopback.linkindex = links.get_next_linkindex(topology)
         topology.links.append(vtep_loopback)
 
       if log.debug_active('links'):                 # pragma: no cover (debugging)
