@@ -22,6 +22,16 @@ addressing:
   vrf_loopback:
     ipv4: 10.2.0.0/24
     prefix: 32
+bgp:
+  advertise_loopback: true
+  as: 65000
+  community:
+    ebgp:
+    - standard
+    ibgp:
+    - standard
+    - extended
+  next_hop_self: true
 defaults:
   _globals:
     _modlist:
@@ -321,9 +331,6 @@ defaults:
       config: list
       cpu: null
       device: device
-      eos:
-        serialnumber: str
-        systemmacaddr: mac
       group: list
       id:
         max_value: 150
@@ -773,6 +780,7 @@ defaults:
     advertise_loopback: true
     advertise_roles:
     - stub
+    as: 65000
     attributes:
       as_list:
         _keytype: int
@@ -1096,7 +1104,7 @@ defaults:
         dnsmasq: dnsmasq
       virtualbox:
         image: null
-  device: frr
+  device: ioll2
   devices:
     arubacx:
       clab:
@@ -2579,7 +2587,6 @@ defaults:
       loopback_interface_name: lo{ifindex if ifindex else ""}
       mgmt_if: eth0
       mtu: 1500
-      provider: clab
       role: router
       routing:
         _rm_per_af: true
@@ -2905,6 +2912,7 @@ defaults:
           -o HostKeyAlgorithms=+ssh-rsa
       interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
       loopback_interface_name: Loopback{ifindex}
+      provider: clab
       role: router
       routing:
         _rm_per_af: true
@@ -4956,6 +4964,8 @@ defaults:
         settings use 'ip mtu'
       roles: Valid device roles
       system_mtu: System-wide MTU setting
+  interfaces:
+    mtu: 1500
   isis:
     area: '49.0001'
     attributes:
@@ -5169,8 +5179,8 @@ defaults:
       vptx: true
       vsrx: true
   module:
-  - vlan
-  - stp
+  - ospf
+  - bgp
   mpls:
     attributes:
       global:
@@ -5629,13 +5639,13 @@ defaults:
   paths:
     collect:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks/fetch-config
+      - /home/pipi/net101/tools/netsim/ansible/tasks/fetch-config
     custom:
       dirs:
-      - /home/pipi/net101/tools/tests/integration/stp
+      - /home/pipi/net101/tools/tests/integration/bgp
       - /work/netlab_cicd
       - /home/pipi/.netlab
-      - /home/pipi/netlab_gh/netsim/extra
+      - /home/pipi/net101/tools/netsim/extra
       files:
       - '{{ custom_config + ''/'' + inventory_hostname + ''.'' + netlab_device_type
         + ''-'' + node_provider + ''.j2'' }}'
@@ -5666,7 +5676,7 @@ defaults:
       - '{{ custom_config }}/deploy.yml'
     deploy:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks
+      - /home/pipi/net101/tools/netsim/ansible/tasks
       files:
       - '{{ netlab_device_type }}/{{ config_module }}-{{ provider|default(netlab_provider)
         }}.yml'
@@ -5687,12 +5697,12 @@ defaults:
       - deploy-config/{{ ansible_network_os }}.yml
     plugin:
     - /work/netlab_cicd
-    - /home/pipi/net101/tools/tests/integration/stp
+    - /home/pipi/net101/tools/tests/integration/bgp
     - /home/pipi/.netlab
-    - /home/pipi/netlab_gh/netsim/extra
+    - /home/pipi/net101/tools/netsim/extra
     ready:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check
+      - /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check
       files:
       - '{{netlab_device_type}}-{{provider|default(netlab_provider)}}.yml'
       - '{{netlab_device_type}}.yml'
@@ -5709,10 +5719,10 @@ defaults:
       - '{{netlab_device_type}}/{{config_module}}.j2'
     templates:
       dirs:
-      - /home/pipi/netlab_gh/netsim/daemons
-      - /home/pipi/netlab_gh/netsim/ansible/templates
+      - /home/pipi/net101/tools/netsim/daemons
+      - /home/pipi/net101/tools/netsim/ansible/templates
     validate:
-    - /home/pipi/netlab_gh/netsim/validate
+    - /home/pipi/net101/tools/netsim/validate
   plugin:
   - multilab
   ports:
@@ -6334,7 +6344,6 @@ defaults:
           - rstp
           - mstp
           - pvrst
-      node_copy: {}
     config_after:
     - vlan
     enable: true
@@ -6460,7 +6469,6 @@ defaults:
         trunk: null
       node:
         mode: null
-      node_copy: {}
       phy_ifattr:
         _selfloop_ifindex: null
         bandwidth: null
@@ -6483,7 +6491,6 @@ defaults:
         prefix: null
         stp: null
         vni: null
-      vlan_svi_no_propagate: {}
     config_after:
     - lag
     features:
@@ -6659,362 +6666,544 @@ groups:
     members: []
     vars:
       netlab_show_config: true
-  probes:
-    device: eos
+  as65000:
+    members:
+    - dut
+    - x3
+  as65100:
     members:
     - x1
+  as65101:
+    members:
+    - x2
+  ebgp:
+    members:
+    - x1
+    - x2
+    module:
+    - bgp
+  probes:
+    device: frr
+    members:
+    - x1
+    - x2
+    - x3
+    node_data:
+      provider: clab
 input:
-- /home/pipi/net101/tools/tests/integration/stp/03-stp-port-priority.yml
+- /home/pipi/net101/tools/tests/integration/bgp/08-ibgp-localas.yml
 - /home/pipi/.netlab.yml
 - package:topology-defaults.yml
 links:
 - _linkname: links[1]
-  bridge: ml_17_1
   interfaces:
-  - _vlan_mode: bridge
+  - bgp:
+      local_as: 65002
     ifindex: 1
-    ifname: eth1
+    ifname: Ethernet0/1
+    ipv4: 10.1.0.1/30
     node: dut
-    stp:
-      port_priority: 12
-    vlan:
-      access: red
-  - _vlan_mode: bridge
-    ifindex: 1
-    ifname: Ethernet1
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.2/30
     node: x1
-    vlan:
-      access: red
   linkindex: 1
   node_count: 2
   prefix:
-    allocation: id_based
-    ipv4: 172.16.0.0/24
-  type: lan
-  vlan:
-    access: red
+    ipv4: 10.1.0.0/30
+  role: external
+  type: p2p
 - _linkname: links[2]
-  bridge: ml_17_2
   interfaces:
-  - _vlan_mode: bridge
+  - bgp:
+      local_as: 65101
     ifindex: 2
-    ifname: eth2
+    ifname: Ethernet0/2
+    ipv4: 10.1.0.5/30
     node: dut
-    stp:
-      port_priority: 10
-    vlan:
-      access: red
-  - _vlan_mode: bridge
-    ifindex: 2
-    ifname: Ethernet2
-    node: x1
-    vlan:
-      access: red
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.6/30
+    node: x2
   linkindex: 2
   node_count: 2
   prefix:
-    allocation: id_based
-    ipv4: 172.16.0.0/24
-  type: lan
-  vlan:
-    access: red
+    ipv4: 10.1.0.4/30
+  role: external
+  type: p2p
 - _linkname: links[3]
-  bridge: ml_17_3
   interfaces:
-  - _vlan_mode: bridge
-    ifindex: 3
-    ifname: eth3
+  - ifindex: 3
+    ifname: Ethernet0/3
+    ipv4: 10.1.0.9/30
     node: dut
-    stp:
-      port_priority: 0
-    vlan:
-      access: red
-  - _vlan_mode: bridge
-    ifindex: 3
-    ifname: Ethernet3
-    node: x1
-    vlan:
-      access: red
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.10/30
+    node: x3
   linkindex: 3
   node_count: 2
   prefix:
-    allocation: id_based
-    ipv4: 172.16.0.0/24
-  type: lan
-  vlan:
-    access: red
-message: 'The devices under test form a loop in the red VLAN.
+    ipv4: 10.1.0.8/30
+  type: p2p
+message: 'Use this topology to test the ''local_as'' functionality on IBGP sessions.
+  The
+
+  device under test uses local AS which is identical to remote AS, effectively
+
+  turning an EBGP session into an IBGP session. It should establish the BGP
+
+  sessions with X1 and X2, and propagate BGP prefixes between them.
 
 
-  The link with the lowest port_priority should be forwarding, all other links
+  The test also checks (as a warning) whether DUT propagates "real" IBGP routes
 
-  should be blocked.
+  over local-as IBGP session. Failure to do that indicates that the next hop is
+
+  not set correctly, or that DUT is not working as a route reflector toward
+
+  local-as IBGP neighbor.
 
   '
 module:
-- vlan
-- stp
+- ospf
+- bgp
 name: ml_17
 nodes:
   dut:
     af:
       ipv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65000
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+        localas_ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - _source_intf:
+          ifindex: 0
+          ifname: Loopback0
+          ipv4: 10.0.0.1/32
+          neighbors: []
+          type: loopback
+          virtual_interface: true
+        activate:
+          ipv4: true
+        as: 65000
+        ipv4: 10.0.0.4
+        name: x3
+        type: ibgp
+      - activate:
+          ipv4: true
+        as: 65100
+        ifindex: 1
+        ipv4: 10.1.0.2
+        local_as: 65002
+        name: x1
+        type: ebgp
+      - activate:
+          ipv4: true
+        as: 65101
+        ifindex: 2
+        ipv4: 10.1.0.6
+        local_as: 65101
+        name: x2
+        type: localas_ibgp
+      next_hop_self: true
+      originate:
+      - 172.42.42.0/24
+      router_id: 10.0.0.1
+    box: vrnetlab/cisco_iol:L2-17.12.01
+    clab:
+      kind: cisco_iol
+      type: l2
+    device: ioll2
+    hostname: clab-ml_17-dut
+    id: 1
+    interfaces:
+    - _use_ip_mtu: true
+      bgp:
+        local_as: 65002
+      clab:
+        name: Ethernet0/1
+      ifindex: 1
+      ifname: Ethernet0/1
+      ipv4: 10.1.0.1/30
+      linkindex: 1
+      mtu: 1500
+      name: dut -> x1
+      neighbors:
+      - ifname: eth1
+        ipv4: 10.1.0.2/30
+        node: x1
+      role: external
+      type: p2p
+    - _use_ip_mtu: true
+      bgp:
+        local_as: 65101
+      clab:
+        name: Ethernet0/2
+      ifindex: 2
+      ifname: Ethernet0/2
+      ipv4: 10.1.0.5/30
+      linkindex: 2
+      mtu: 1500
+      name: dut -> x2
+      neighbors:
+      - ifname: eth1
+        ipv4: 10.1.0.6/30
+        node: x2
+      role: external
+      type: p2p
+    - _use_ip_mtu: true
+      clab:
+        name: Ethernet0/3
+      ifindex: 3
+      ifname: Ethernet0/3
+      ipv4: 10.1.0.9/30
+      linkindex: 3
+      mtu: 1500
+      name: dut -> x3
+      neighbors:
+      - ifname: eth1
+        ipv4: 10.1.0.10/30
+        node: x3
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
+      type: p2p
+    loopback:
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.1/32
+      neighbors: []
+      ospf:
+        area: 0.0.0.0
+        passive: false
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: Ethernet0/0
+      ipv4: 192.168.17.101
+      mac: 08:4f:a9:01:00:00
+    module:
+    - ospf
+    - bgp
+    mtu: 1500
+    name: dut
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.0
+      router_id: 10.0.0.1
+    provider: clab
+    role: router
+  x1:
+    af:
+      ipv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65100
+      community:
+        ebgp:
+        - standard
+        - large
+        ibgp:
+        - standard
+        - large
+        - extended
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65002
+        ifindex: 1
+        ipv4: 10.1.0.1
+        name: dut
+        type: ebgp
+      next_hop_self: true
+      router_id: 172.42.1.1
     box: quay.io/frrouting/frr:10.3.1
     clab:
       binds:
-      - clab_files/dut/daemons:/etc/frr/daemons
-      - clab_files/dut/hosts:/etc/hosts
+      - clab_files/x1/daemons:/etc/frr/daemons
+      - clab_files/x1/hosts:/etc/hosts
       config_templates:
       - daemons:/etc/frr/daemons
       - hosts:/etc/hosts
       kind: linux
     device: frr
-    hostname: clab-ml_17-dut
-    id: 1
+    hostname: clab-ml_17-x1
+    id: 2
     interfaces:
-    - bridge: ml_17_1
-      ifindex: 1
+    - ifindex: 1
       ifname: eth1
+      ipv4: 10.1.0.2/30
       linkindex: 1
       mtu: 1500
-      name: '[Access VLAN red] dut -> x1'
+      name: x1 -> dut
       neighbors:
-      - ifname: Ethernet1
-        node: x1
-      stp:
-        port_priority: 12
-      type: lan
-      vlan:
-        access: red
-        access_id: 42
-    - bridge: ml_17_2
-      ifindex: 2
-      ifname: eth2
-      linkindex: 2
-      mtu: 1500
-      name: '[Access VLAN red] dut -> x1'
-      neighbors:
-      - ifname: Ethernet2
-        node: x1
-      stp:
-        port_priority: 10
-      type: lan
-      vlan:
-        access: red
-        access_id: 42
-    - bridge: ml_17_3
-      ifindex: 3
-      ifname: eth3
-      linkindex: 3
-      mtu: 1500
-      name: '[Access VLAN red] dut -> x1'
-      neighbors:
-      - ifname: Ethernet3
-        node: x1
-      stp:
-        port_priority: 0
-      type: lan
-      vlan:
-        access: red
-        access_id: 42
-    - bridge_group: 1
-      ifindex: 40000
-      ifname: vlan42
-      name: VLAN red (42) -> [x1]
-      neighbors:
-      - ifname: Vlan42
-        node: x1
-      type: svi
-      virtual_interface: true
-      vlan:
-        mode: bridge
-        name: red
+      - bgp:
+          local_as: 65002
+        ifname: Ethernet0/1
+        ipv4: 10.1.0.1/30
+        node: dut
+      role: external
+      type: p2p
     loopback:
       ifindex: 0
       ifname: lo
-      ipv4: 10.0.0.1/32
+      ipv4: 172.42.1.1/24
       neighbors: []
       type: loopback
       virtual_interface: true
     mgmt:
       ifname: eth0
-      ipv4: 192.168.17.101
-      mac: 08:4f:a9:01:00:00
+      ipv4: 192.168.17.102
+      mac: 08:4f:a9:02:00:00
     module:
-    - vlan
-    - stp
+    - bgp
     mtu: 1500
-    name: dut
-    provider: clab
+    name: x1
     role: router
-    stp:
-      enable: true
-      priority: 4096
-      protocol: stp
-    vlan:
-      max_bridge_group: 1
-    vlans:
-      red:
-        bridge_group: 1
-        id: 42
-        mode: bridge
-        prefix:
-          allocation: id_based
-          ipv4: 172.16.0.0/24
-  x1:
+  x2:
     af:
       ipv4: true
-    box: ceos:4.33.1F
+    bgp:
+      advertise_loopback: true
+      as: 65101
+      community:
+        ebgp:
+        - standard
+        - large
+        ibgp:
+        - standard
+        - large
+        - extended
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65101
+        ifindex: 1
+        ipv4: 10.1.0.5
+        name: dut
+        type: localas_ibgp
+      next_hop_self: true
+      router_id: 172.42.2.1
+    box: quay.io/frrouting/frr:10.3.1
     clab:
-      env:
-        CLAB_MGMT_VRF: management
-        INTFTYPE: et
-      kind: ceos
-    device: eos
-    hostname: clab-ml_17-x1
-    id: 2
+      binds:
+      - clab_files/x2/daemons:/etc/frr/daemons
+      - clab_files/x2/hosts:/etc/hosts
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts
+      kind: linux
+    device: frr
+    hostname: clab-ml_17-x2
+    id: 3
     interfaces:
-    - bridge: ml_17_1
-      clab:
-        name: et1
-      ifindex: 1
-      ifname: Ethernet1
-      linkindex: 1
-      name: '[Access VLAN red] x1 -> dut'
-      neighbors:
-      - ifname: eth1
-        node: dut
-      type: lan
-      vlan:
-        access: red
-        access_id: 42
-    - bridge: ml_17_2
-      clab:
-        name: et2
-      ifindex: 2
-      ifname: Ethernet2
+    - ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.6/30
       linkindex: 2
-      name: '[Access VLAN red] x1 -> dut'
+      mtu: 1500
+      name: x2 -> dut
       neighbors:
-      - ifname: eth2
+      - bgp:
+          local_as: 65101
+        ifname: Ethernet0/2
+        ipv4: 10.1.0.5/30
         node: dut
-      type: lan
-      vlan:
-        access: red
-        access_id: 42
-    - bridge: ml_17_3
-      clab:
-        name: et3
-      ifindex: 3
-      ifname: Ethernet3
-      linkindex: 3
-      name: '[Access VLAN red] x1 -> dut'
-      neighbors:
-      - ifname: eth3
-        node: dut
-      type: lan
-      vlan:
-        access: red
-        access_id: 42
-    - bridge_group: 1
-      ifindex: 40000
-      ifname: Vlan42
-      name: VLAN red (42) -> [dut]
-      neighbors:
-      - ifname: vlan42
-        node: dut
-      type: svi
-      virtual_interface: true
-      vlan:
-        mode: bridge
-        name: red
+      role: external
+      type: p2p
     loopback:
       ifindex: 0
-      ifname: Loopback0
-      ipv4: 10.0.0.2/32
+      ifname: lo
+      ipv4: 172.42.2.1/24
       neighbors: []
       type: loopback
       virtual_interface: true
     mgmt:
-      ifname: Management0
-      ipv4: 192.168.17.102
-      mac: 08:4f:a9:02:00:00
+      ifname: eth0
+      ipv4: 192.168.17.103
+      mac: 08:4f:a9:03:00:00
     module:
-    - vlan
-    - stp
-    name: x1
+    - bgp
+    mtu: 1500
+    name: x2
     role: router
-    stp:
-      enable: true
-      protocol: stp
-    vlan:
-      max_bridge_group: 1
-    vlans:
-      red:
-        bridge_group: 1
-        id: 42
-        mode: bridge
-        prefix:
-          allocation: id_based
-          ipv4: 172.16.0.0/24
+  x3:
+    af:
+      ipv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65000
+      community:
+        ebgp:
+        - standard
+        - large
+        ibgp:
+        - standard
+        - large
+        - extended
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      ipv4: true
+      neighbors:
+      - _source_intf:
+          ifindex: 0
+          ifname: lo
+          ipv4: 10.0.0.4/32
+          neighbors: []
+          type: loopback
+          virtual_interface: true
+        activate:
+          ipv4: true
+        as: 65000
+        ipv4: 10.0.0.1
+        name: dut
+        type: ibgp
+      next_hop_self: true
+      originate:
+      - 172.42.3.0/24
+      router_id: 10.0.0.4
+    box: quay.io/frrouting/frr:10.3.1
+    clab:
+      binds:
+      - clab_files/x3/daemons:/etc/frr/daemons
+      - clab_files/x3/hosts:/etc/hosts
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts
+      kind: linux
+    device: frr
+    hostname: clab-ml_17-x3
+    id: 4
+    interfaces:
+    - ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.10/30
+      linkindex: 3
+      mtu: 1500
+      name: x3 -> dut
+      neighbors:
+      - ifname: Ethernet0/3
+        ipv4: 10.1.0.9/30
+        node: dut
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
+      type: p2p
+    loopback:
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.4/32
+      neighbors: []
+      ospf:
+        area: 0.0.0.0
+        passive: false
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.17.104
+      mac: 08:4f:a9:04:00:00
+    module:
+    - ospf
+    - bgp
+    mtu: 1500
+    name: x3
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.0
+      router_id: 10.0.0.4
+    role: router
+ospf:
+  area: 0.0.0.0
 plugin:
 - multilab
 provider: clab
-stp:
-  enable: true
-  protocol: stp
 validate:
-- devices:
-  - eos
-  fail: Third link is not forwarding; DUT probably did not set port priority
-  name: eth3_fwd
+- description: Check OSPF adjacencies with DUT
+  name: ospf_adj_dut
   nodes:
-  - x1
-  pass: Third link is forwarding; DUT set the correct port priority
-  show: spanning-tree | json
-  stop_on_error: true
-  valid: 'spanningTreeInstances.MST0.interfaces.Ethernet3.state == ''forwarding''
-
-    '
+  - x3
+  plugin: ospf_neighbor(nodes.dut.ospf.router_id)
   wait: 40
-  wait_msg: Waiting for STP to enable third link
-- devices:
-  - eos
-  fail: The root port priority on the first link is not 12 (192)
-  name: eth1_prio
+  wait_msg: Waiting for OSPF adjacency process to complete
+- description: Check BGP sessions with DUT (wait up to 10 seconds)
+  name: session
   nodes:
   - x1
-  pass: First link has root port priority 12 (192)
-  show: spanning-tree interface Ethernet1 detail | json
-  valid: spanningTreeInstances.MST0.detail.designatedPortPriority == 192
-- devices:
-  - eos
-  fail: The root port priority on the second link is not 10 (160)
-  name: eth2_prio
+  - x2
+  - x3
+  plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+  wait: 20
+  wait_msg: Wait for BGP sessions to be established
+- description: Check whether DUT advertises the beacon prefix
+  name: prefix
   nodes:
   - x1
-  pass: Second link has root port priority 10 (160)
-  show: spanning-tree interface Ethernet2 detail | json
-  valid: spanningTreeInstances.MST0.detail.designatedPortPriority == 160
-- devices:
-  - eos
-  fail: The root port priority on the third link is not zero
-  name: eth3_prio
+  - x2
+  plugin: bgp_prefix('172.42.42.0/24')
+  wait: 20
+  wait_msg: Wait for BGP prefix origination and BGP convergence
+- description: Check whether DUT propagates EBGP routes to IBGP
+  name: prop_ebgp
+  nodes:
+  - x2
+  plugin: bgp_prefix('172.42.1.0/24')
+  wait: 3
+  wait_msg: Wait for BGP convergence
+- description: Check whether DUT sets the correct NH for EBGP routes sent to local-as
+    IBGP session
+  level: warning
+  name: prop_ebgp_nh
+  nodes:
+  - x2
+  plugin: bgp_prefix('172.42.1.0/24',best=True)
+  wait_msg: Wait for BGP convergence
+- description: Check whether DUT propagates local-as IBGP routes to EBGP
+  name: prop_la_ibgp
   nodes:
   - x1
-  pass: Third link has root port priority zero
-  show: spanning-tree interface Ethernet3 detail | json
-  valid: spanningTreeInstances.MST0.detail.designatedPortPriority == 0
-vlans:
-  red:
-    host_count: 0
-    id: 42
-    mode: bridge
-    neighbors:
-    - ifname: Vlan42
-      node: x1
-    - ifname: vlan42
-      node: dut
-    prefix:
-      allocation: id_based
-      ipv4: 172.16.0.0/24
+  plugin: bgp_prefix('172.42.2.0/24',best=True)
+  wait: 3
+- description: Check whether DUT propagates real IBGP routes over IBGP local-as session
+  level: warning
+  name: prop_internal
+  nodes:
+  - x2
+  plugin: bgp_prefix('172.42.3.0/24')
+  wait: 3
+  wait_msg: Wait for BGP convergence
+- description: Check whether DUT fixes the next hop of IBGP routes sent over IBGP
+    local-as session
+  level: warning
+  name: nh_internal
+  nodes:
+  - x2
+  plugin: bgp_prefix('172.42.3.0/24',best=True)
+  wait_msg: Wait for BGP convergence

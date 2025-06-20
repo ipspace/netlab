@@ -671,7 +671,18 @@ defaults:
         type: int
       import: list
       links: list
-      loopback: null
+      loopback:
+        _alt_types:
+        - bool
+        - prefix_str
+        - NoneType
+        ipv4:
+          type: ipv4
+          use: host_prefix
+        ipv6:
+          type: ipv6
+          use: host_prefix
+        pool: addr_pool
       rd: rd
     vrf_group:
       _description: VRF groups
@@ -895,6 +906,10 @@ defaults:
       - extended
     config_after:
     - routing
+    - ospf
+    - isis
+    - eigrp
+    - ripv2
     ebgp_role: external
     features:
       activate_af: Can control activation of individual address families
@@ -1461,6 +1476,8 @@ defaults:
             set:
               community:
                 append: true
+                delete: clist
+                delete_list: true
                 standard: true
               locpref: true
               med: true
@@ -1629,6 +1646,8 @@ defaults:
             set:
               community:
                 append: true
+                delete: clist
+                delete_list: true
                 standard: true
               locpref: true
               med: true
@@ -1854,6 +1873,7 @@ defaults:
           import:
           - connected
           - ospf
+          - static
           - vrf
           ipv6_lla: true
           local_as: true
@@ -1883,13 +1903,20 @@ defaults:
               vlan: 4094
           passive: false
         ospf:
+          default: true
           import:
           - bgp
           - connected
+          - static
           - vrf
           priority: true
           timers: true
           unnumbered: true
+        routing:
+          static:
+            discard: true
+            inter_vrf: true
+            vrf: true
         stp:
           enable_per_port: true
           port_type: true
@@ -1944,6 +1971,11 @@ defaults:
         bfd: {}
         bgp:
           activate_af: true
+          import:
+          - ospf
+          - connected
+          - static
+          - vrf
           ipv6_lla: true
           local_as: true
           local_as_ibgp: false
@@ -1972,6 +2004,11 @@ defaults:
           - 1000
         ospf:
           default: true
+          import:
+          - bgp
+          - connected
+          - static
+          - vrf
           password: true
           priority: true
           timers: true
@@ -1998,6 +2035,7 @@ defaults:
               weight: true
           prefix: true
           static:
+            discard: true
             inter_vrf: true
             vrf: true
         stp:
@@ -2318,6 +2356,12 @@ defaults:
       virtualbox:
         image: arista/veos
     fortios:
+      clab:
+        image: vrnetlab/vr-fortios:7.4.8
+        interface:
+          name: eth{ifindex}
+        node:
+          kind: fortinet_fortigate
       description: Fortinet FortiOS firewall
       external:
         image: none
@@ -2336,9 +2380,11 @@ defaults:
         ansible_user: admin
         collections:
         - fortinet.fortios
+        mgmt_if: port1
         netlab_config_tasks: true
         netlab_console_connection: ssh
         netlab_skip_missing_template: true
+        netlab_vdom: root
         vdom: root
       ifindex_offset: 2
       interface_name: port{ifindex}
@@ -2346,8 +2392,8 @@ defaults:
         build: https://netlab.tools/labs/fortios/
         create_template: fortios.xml.j2
         image: fortinet/fortios
+      loopback: false
       loopback_interface_name: loopback{ifindex}
-      mgmt_if: port1
       mtu: 1500
     frr:
       clab:
@@ -2665,6 +2711,8 @@ defaults:
             set:
               community:
                 append: true
+                delete: clist
+                delete_list: true
                 standard: true
               locpref: true
               med: true
@@ -2821,6 +2869,8 @@ defaults:
             set:
               community:
                 append: true
+                delete: clist
+                delete_list: true
                 standard: true
               locpref: true
               med: true
@@ -2863,8 +2913,8 @@ defaults:
       clab:
         build: https://github.com/hellt/vrnetlab/tree/master/vios
         group_vars:
-          ansible_ssh_pass: VR-netlab9
-          ansible_user: vrnetlab
+          ansible_ssh_pass: admin
+          ansible_user: admin
           netlab_check_retries: 50
         image: vrnetlab/cisco_vios:15.9.3
         interface:
@@ -2972,6 +3022,8 @@ defaults:
             set:
               community:
                 append: true
+                delete: clist
+                delete_list: true
                 standard: true
               locpref: true
               med: true
@@ -3023,8 +3075,8 @@ defaults:
       clab:
         build: https://github.com/hellt/vrnetlab/tree/master/vios
         group_vars:
-          ansible_ssh_pass: VR-netlab9
-          ansible_user: vrnetlab
+          ansible_ssh_pass: admin
+          ansible_user: admin
           netlab_check_retries: 50
         image: vrnetlab/cisco_vios:15.9.3
         interface:
@@ -3133,6 +3185,8 @@ defaults:
             set:
               community:
                 append: true
+                delete: clist
+                delete_list: true
                 standard: true
               locpref: true
               med: true
@@ -5575,13 +5629,13 @@ defaults:
   paths:
     collect:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks/fetch-config
+      - /home/pipi/netlab_gh/netsim/ansible/tasks/fetch-config
     custom:
       dirs:
       - /home/pipi/net101/tools/tests/integration/stp
       - /work/netlab_cicd
       - /home/pipi/.netlab
-      - /home/pipi/net101/tools/netsim/extra
+      - /home/pipi/netlab_gh/netsim/extra
       files:
       - '{{ custom_config + ''/'' + inventory_hostname + ''.'' + netlab_device_type
         + ''-'' + node_provider + ''.j2'' }}'
@@ -5612,7 +5666,7 @@ defaults:
       - '{{ custom_config }}/deploy.yml'
     deploy:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks
+      - /home/pipi/netlab_gh/netsim/ansible/tasks
       files:
       - '{{ netlab_device_type }}/{{ config_module }}-{{ provider|default(netlab_provider)
         }}.yml'
@@ -5635,10 +5689,10 @@ defaults:
     - /work/netlab_cicd
     - /home/pipi/net101/tools/tests/integration/stp
     - /home/pipi/.netlab
-    - /home/pipi/net101/tools/netsim/extra
+    - /home/pipi/netlab_gh/netsim/extra
     ready:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check
+      - /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check
       files:
       - '{{netlab_device_type}}-{{provider|default(netlab_provider)}}.yml'
       - '{{netlab_device_type}}.yml'
@@ -5655,10 +5709,10 @@ defaults:
       - '{{netlab_device_type}}/{{config_module}}.j2'
     templates:
       dirs:
-      - /home/pipi/net101/tools/netsim/daemons
-      - /home/pipi/net101/tools/netsim/ansible/templates
+      - /home/pipi/netlab_gh/netsim/daemons
+      - /home/pipi/netlab_gh/netsim/ansible/templates
     validate:
-    - /home/pipi/net101/tools/netsim/validate
+    - /home/pipi/netlab_gh/netsim/validate
   plugin:
   - multilab
   ports:
@@ -6039,6 +6093,7 @@ defaults:
       cat8000v: true
       csr: true
       cumulus: true
+      cumulus_nvue: true
       dellos10: true
       dnsmasq: true
       eos: true
