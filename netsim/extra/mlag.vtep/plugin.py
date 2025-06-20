@@ -3,7 +3,7 @@
 #
 
 from netsim.utils import log
-from netsim.augment import addressing
+from netsim.augment import addressing, links
 from netsim import data
 from box import Box
 
@@ -28,19 +28,23 @@ def pre_link_transform(topology: Box) -> None:
       continue                                      # Nope - carry on
 
     # Allocate a shared IP for both peers
-    vtep_a = addressing.get(topology.pools, [POOL_NAME, 'vrf_loopback'])['ipv4']
+    vtep_a = None
     peers = [ i.node for i in l.interfaces ]
     for node_name in peers:
       node = topology.nodes[ node_name ]
       if node.get('lag.mlag.vtep',None) is False:
         continue                                    # Skip nodes for which the plugin is disabled
       if 'vxlan' in node.module:
-          vtep_loopback = data.get_empty_box()
-          vtep_loopback.type = 'loopback'           # Assign same static IP to both nodes
-          vtep_loopback.interfaces = [ { 'node': node_name, 'ipv4': str(vtep_a.network_address)+"/32" } ]
-          vtep_loopback._linkname = f"MLAG VTEP VXLAN interface shared between {' - '.join(peers)}"
-          vtep_loopback.vxlan.vtep = True
-          topology.links.append(vtep_loopback)
+        if not vtep_a:
+          pool = node.get('loopback.pool',POOL_NAME)
+          vtep_a = addressing.get(topology.pools, [pool, 'vrf_loopback'])['ipv4']
+        vtep_loopback = data.get_empty_box()
+        vtep_loopback.type = 'loopback'             # Assign same static IP to both nodes
+        vtep_loopback.interfaces = [ { 'node': node_name, 'ipv4': str(vtep_a) } ]
+        vtep_loopback._linkname = f"MLAG VTEP VXLAN interface shared between {' - '.join(peers)}"
+        vtep_loopback.vxlan.vtep = True
+        vtep_loopback.linkindex = links.get_next_linkindex(topology)
+        topology.links.append(vtep_loopback)
 
       if log.debug_active('links'):                 # pragma: no cover (debugging)
         print(f'\nmlag.vtep Create VTEP loopback link for {node_name}: {vtep_loopback}')
