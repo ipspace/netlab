@@ -29,7 +29,7 @@ class FRR(_Quirks):
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
     mods = node.get('module',[])
-    if 'stp' in mods:
+    if 'stp' in mods and node.get('stp.enable',True):
       if log.debug_active('quirks'):
         print(f'FRR: Checking STP for {node.name}')
       check_stp_on_trunks(node,topology)
