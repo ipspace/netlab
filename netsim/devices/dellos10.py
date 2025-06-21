@@ -112,13 +112,6 @@ def check_nssa_area_limitations(node: Box) -> None:
           more_hints = [ 'Dell OS10 does not support NSSA for OSPFv3' ],
           node=node,
           quirk='ospfv3_nssa')
-      if 'external_range' in area or 'external_filter' in area:
-        report_quirk(
-          f'{node.name} cannot summarize type-7 NSSA routes (area {area.area})',
-          more_hints = [ 'Dell OS10 cannot configure NSSA type-7 ranges' ],
-          node=node,
-          category=Warning,
-          quirk='ospf_nssa_range')
 
 class OS10(_Quirks):
 
