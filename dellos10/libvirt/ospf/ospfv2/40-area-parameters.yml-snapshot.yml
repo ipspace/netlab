@@ -7,9 +7,9 @@ addressing:
     ipv4: 10.0.0.0/24
     prefix: 32
   mgmt:
-    _bridge: nl_mgmt_32
-    _network: nl_mgmt_32
-    ipv4: 192.168.32.0/24
+    _bridge: nl_mgmt_17
+    _network: nl_mgmt_17
+    ipv4: 192.168.17.0/24
     mac: 08-4F-A9-00-00-00
     prefix: 24
     start: 100
@@ -668,7 +668,18 @@ defaults:
         type: int
       import: list
       links: list
-      loopback: null
+      loopback:
+        _alt_types:
+        - bool
+        - prefix_str
+        - NoneType
+        ipv4:
+          type: ipv4
+          use: host_prefix
+        ipv6:
+          type: ipv6
+          use: host_prefix
+        pool: addr_pool
       rd: rd
     vrf_group:
       _description: VRF groups
@@ -1149,6 +1160,7 @@ defaults:
           ldp: true
           vpn: true
         ospf:
+          areas: true
           default: true
           import:
           - bgp
@@ -1441,7 +1453,9 @@ defaults:
           ldp: true
           vpn: true
         ospf:
-          areas: true
+          areas:
+            external_filter: Cisco IOS cannot suppress NSSA type-7 ranges
+            external_range: Cisco IOS cannot configure NSSA type-7 ranges
           default:
             policy: true
           import:
@@ -1612,7 +1626,9 @@ defaults:
           ldp: true
           vpn: true
         ospf:
-          areas: true
+          areas:
+            external_filter: Cisco IOS cannot suppress NSSA type-7 ranges
+            external_range: Cisco IOS cannot configure NSSA type-7 ranges
           default:
             policy: true
           import:
@@ -1877,6 +1893,7 @@ defaults:
           import:
           - connected
           - ospf
+          - static
           - vrf
           ipv6_lla: true
           local_as: true
@@ -1911,10 +1928,16 @@ defaults:
           import:
           - bgp
           - connected
+          - static
           - vrf
           priority: true
           timers: true
           unnumbered: true
+        routing:
+          static:
+            discard: true
+            inter_vrf: true
+            vrf: true
         stp:
           enable_per_port: true
           port_type: true
@@ -2001,7 +2024,9 @@ defaults:
           reserved_ifindex_range:
           - 1000
         ospf:
-          areas: true
+          areas:
+            external_filter: Dell OS10 cannot suppress NSSA type-7 ranges
+            external_range: Dell OS10 cannot configure NSSA type-7 ranges
           default: true
           import:
           - bgp
@@ -2278,7 +2303,9 @@ defaults:
           ldp: true
           vpn: true
         ospf:
-          areas: true
+          areas:
+            external_filter: Arista EOS cannot suppress NSSA type-7 ranges
+            external_range: Arista EOS cannot configure NSSA type-7 ranges
           default:
             policy: true
           import:
@@ -2357,6 +2384,12 @@ defaults:
       virtualbox:
         image: arista/veos
     fortios:
+      clab:
+        image: vrnetlab/vr-fortios:7.4.8
+        interface:
+          name: eth{ifindex}
+        node:
+          kind: fortinet_fortigate
       description: Fortinet FortiOS firewall
       external:
         image: none
@@ -2375,9 +2408,11 @@ defaults:
         ansible_user: admin
         collections:
         - fortinet.fortios
+        mgmt_if: port1
         netlab_config_tasks: true
         netlab_console_connection: ssh
         netlab_skip_missing_template: true
+        netlab_vdom: root
         vdom: root
       ifindex_offset: 2
       interface_name: port{ifindex}
@@ -2385,8 +2420,8 @@ defaults:
         build: https://netlab.tools/labs/fortios/
         create_template: fortios.xml.j2
         image: fortinet/fortios
+      loopback: false
       loopback_interface_name: loopback{ifindex}
-      mgmt_if: port1
       mtu: 1500
     frr:
       clab:
@@ -2667,7 +2702,9 @@ defaults:
           ldp: true
           vpn: true
         ospf:
-          areas: true
+          areas:
+            external_filter: Cisco IOS cannot suppress NSSA type-7 ranges
+            external_range: Cisco IOS cannot configure NSSA type-7 ranges
           default:
             policy: true
           import:
@@ -2826,7 +2863,9 @@ defaults:
           ldp: true
           vpn: true
         ospf:
-          areas: true
+          areas:
+            external_filter: Cisco IOS cannot suppress NSSA type-7 ranges
+            external_range: Cisco IOS cannot configure NSSA type-7 ranges
           default:
             policy: true
           import:
@@ -2980,7 +3019,9 @@ defaults:
           ldp: true
           vpn: true
         ospf:
-          areas: true
+          areas:
+            external_filter: Cisco IOS cannot suppress NSSA type-7 ranges
+            external_range: Cisco IOS cannot configure NSSA type-7 ranges
           default:
             policy: true
           import:
@@ -3144,7 +3185,9 @@ defaults:
           ldp: true
           vpn: true
         ospf:
-          areas: true
+          areas:
+            external_filter: Cisco IOS cannot suppress NSSA type-7 ranges
+            external_range: Cisco IOS cannot configure NSSA type-7 ranges
           default:
             policy: true
           import:
@@ -5306,18 +5349,18 @@ defaults:
     change:
       addressing:
         mgmt:
-          _bridge: nl_mgmt_32
-          _network: nl_mgmt_32
-          ipv4: 192.168.32.0/24
+          _bridge: nl_mgmt_17
+          _network: nl_mgmt_17
+          ipv4: 192.168.17.0/24
       defaults:
-        name: ml_32
+        name: ml_17
         providers:
           libvirt:
-            tunnel_id: '32'
-            vifprefix: vgif_32
-      name: ml_32
-    id: 32
-  name: ml_32
+            tunnel_id: '17'
+            vifprefix: vgif_17
+      name: ml_17
+    id: 17
+  name: ml_17
   netlab:
     capture:
       command: tcpdump -i {intf}
@@ -5347,7 +5390,26 @@ defaults:
               _subtype: prefix_str
               type: list
             external_range:
-              _subtype: prefix_str
+              _subtype:
+                _alt_types:
+                - prefix_str
+                _keys:
+                  cost:
+                    max_value: 65535
+                    min_value: 1
+                    type: int
+                  ipv4:
+                    type: ipv4
+                    use: prefix
+                  ipv6:
+                    type: ipv6
+                    use: prefix
+                  type:
+                    type: str
+                    valid_values:
+                    - e1
+                    - e2
+                type: dict
               type: list
             filter:
               _subtype: prefix_str
@@ -5360,7 +5422,19 @@ defaults:
               - stub
               - nssa
             range:
-              _subtype: prefix_str
+              _subtype:
+                _alt_types:
+                - prefix_str
+                cost:
+                  max_value: 65535
+                  min_value: 1
+                  type: int
+                ipv4:
+                  type: ipv4
+                  use: prefix
+                ipv6:
+                  type: ipv6
+                  use: prefix
               type: list
           type: list
         bfd:
@@ -5452,7 +5526,26 @@ defaults:
               _subtype: prefix_str
               type: list
             external_range:
-              _subtype: prefix_str
+              _subtype:
+                _alt_types:
+                - prefix_str
+                _keys:
+                  cost:
+                    max_value: 65535
+                    min_value: 1
+                    type: int
+                  ipv4:
+                    type: ipv4
+                    use: prefix
+                  ipv6:
+                    type: ipv6
+                    use: prefix
+                  type:
+                    type: str
+                    valid_values:
+                    - e1
+                    - e2
+                type: dict
               type: list
             filter:
               _subtype: prefix_str
@@ -5465,7 +5558,19 @@ defaults:
               - stub
               - nssa
             range:
-              _subtype: prefix_str
+              _subtype:
+                _alt_types:
+                - prefix_str
+                cost:
+                  max_value: 65535
+                  min_value: 1
+                  type: int
+                ipv4:
+                  type: ipv4
+                  use: prefix
+                ipv6:
+                  type: ipv6
+                  use: prefix
               type: list
           type: list
         bfd:
@@ -5542,7 +5647,26 @@ defaults:
               _subtype: prefix_str
               type: list
             external_range:
-              _subtype: prefix_str
+              _subtype:
+                _alt_types:
+                - prefix_str
+                _keys:
+                  cost:
+                    max_value: 65535
+                    min_value: 1
+                    type: int
+                  ipv4:
+                    type: ipv4
+                    use: prefix
+                  ipv6:
+                    type: ipv6
+                    use: prefix
+                  type:
+                    type: str
+                    valid_values:
+                    - e1
+                    - e2
+                type: dict
               type: list
             filter:
               _subtype: prefix_str
@@ -5555,7 +5679,19 @@ defaults:
               - stub
               - nssa
             range:
-              _subtype: prefix_str
+              _subtype:
+                _alt_types:
+                - prefix_str
+                cost:
+                  max_value: 65535
+                  min_value: 1
+                  type: int
+                ipv4:
+                  type: ipv4
+                  use: prefix
+                ipv6:
+                  type: ipv6
+                  use: prefix
               type: list
           type: list
         default:
@@ -5723,7 +5859,7 @@ defaults:
     custom:
       dirs:
       - /home/pipi/net101/tools/tests/integration/ospf/ospfv2
-      - /work/netlab_cicd/sample
+      - /work/netlab_cicd
       - /home/pipi/.netlab
       - /home/pipi/net101/tools/netsim/extra
       files:
@@ -5776,7 +5912,7 @@ defaults:
       - deploy-config/{{ ansible_network_os }}-{{ node_provider }}.yml
       - deploy-config/{{ ansible_network_os }}.yml
     plugin:
-    - /work/netlab_cicd/sample
+    - /work/netlab_cicd
     - /home/pipi/net101/tools/tests/integration/ospf/ospfv2
     - /home/pipi/.netlab
     - /home/pipi/net101/tools/netsim/extra
@@ -5949,8 +6085,8 @@ defaults:
           group
       start: vagrant up --provider libvirt
       stop: vagrant destroy -f
-      tunnel_id: '32'
-      vifprefix: vgif_32
+      tunnel_id: '17'
+      vifprefix: vgif_17
     virtualbox:
       cleanup:
       - Vagrantfile
@@ -6184,6 +6320,7 @@ defaults:
       cat8000v: true
       csr: true
       cumulus: true
+      cumulus_nvue: true
       dellos10: true
       dnsmasq: true
       eos: true
@@ -6772,7 +6909,7 @@ libvirt:
     clab: true
 links:
 - _linkname: links[1]
-  bridge: ml_32_1
+  bridge: ml_17_1
   interfaces:
   - ifindex: 1
     ifname: ethernet1/1/1
@@ -6793,7 +6930,7 @@ links:
     ipv4: 10.1.0.0/30
   type: lan
 - _linkname: links[2]
-  bridge: ml_32_2
+  bridge: ml_17_2
   interfaces:
   - ifindex: 2
     ifname: ethernet1/1/2
@@ -6815,7 +6952,7 @@ links:
     ipv4: 10.1.0.4/30
   type: lan
 - _linkname: links[3]
-  bridge: ml_32_3
+  bridge: ml_17_3
   interfaces:
   - ifindex: 3
     ifname: ethernet1/1/3
@@ -6836,7 +6973,7 @@ links:
     ipv4: 10.1.0.8/30
   type: lan
 - _linkname: links[4]
-  bridge: ml_32_4
+  bridge: ml_17_4
   interfaces:
   - ifindex: 4
     ifname: ethernet1/1/4
@@ -6858,7 +6995,7 @@ links:
     ipv4: 10.1.0.12/30
   type: lan
 - _linkname: links[5]
-  bridge: ml_32_5
+  bridge: ml_17_5
   interfaces:
   - ifindex: 5
     ifname: ethernet1/1/5
@@ -6877,7 +7014,7 @@ links:
     ipv4: 10.1.0.16/30
   type: lan
 - _linkname: links[6]
-  bridge: ml_32_6
+  bridge: ml_17_6
   interfaces:
   - ifindex: 2
     ifname: eth2
@@ -6893,7 +7030,7 @@ links:
   role: stub
   type: lan
 - _linkname: links[7]
-  bridge: ml_32_7
+  bridge: ml_17_7
   interfaces:
   - ifindex: 3
     ifname: eth3
@@ -6908,8 +7045,24 @@ links:
     ipv4: 172.16.1.0/24
   role: stub
   type: lan
+- _linkname: links[8]
+  bridge: ml_17_8
+  interfaces:
+  - ifindex: 4
+    ifname: eth4
+    ipv4: 10.19.1.1/24
+    node: r11
+  libvirt:
+    provider:
+      clab: true
+  linkindex: 8
+  node_count: 1
+  prefix:
+    ipv4: 172.16.2.0/24
+  role: stub
+  type: lan
 - _linkname: vrfs.tenant.links[1]
-  bridge: ml_32_8
+  bridge: ml_17_9
   interfaces:
   - ifindex: 6
     ifname: ethernet1/1/6
@@ -6922,7 +7075,7 @@ links:
   libvirt:
     provider:
       clab: true
-  linkindex: 8
+  linkindex: 9
   node_count: 2
   ospf:
     area: 0.0.0.11
@@ -6931,7 +7084,7 @@ links:
   type: lan
   vrf: tenant
 - _linkname: vrfs.tenant.links[2]
-  bridge: ml_32_9
+  bridge: ml_17_10
   interfaces:
   - ifindex: 7
     ifname: ethernet1/1/7
@@ -6944,7 +7097,7 @@ links:
   libvirt:
     provider:
       clab: true
-  linkindex: 9
+  linkindex: 10
   node_count: 2
   ospf:
     area: 0.0.0.21
@@ -6963,7 +7116,7 @@ message: 'This lab tests numerous combinations of OSPF area parameters. It tests
 
   * Suppression of inter-area routes in stub/NSSA area
 
-  * Area ranges and suppressed ranges
+  * Area ranges (including explicit range cost) and suppressed ranges
 
   * Summarization and suppression of NSSA routes
 
@@ -6974,7 +7127,7 @@ module:
 - routing
 - ospf
 - vrf
-name: ml_32
+name: ml_17
 nodes:
   dut:
     af:
@@ -6986,7 +7139,7 @@ nodes:
     device: dellos10
     id: 1
     interfaces:
-    - bridge: ml_32_1
+    - bridge: ml_17_1
       ifindex: 1
       ifname: ethernet1/1/1
       ipv4: 10.1.0.1/30
@@ -7004,7 +7157,7 @@ nodes:
         network_type: point-to-point
         passive: false
       type: lan
-    - bridge: ml_32_2
+    - bridge: ml_17_2
       ifindex: 2
       ifname: ethernet1/1/2
       ipv4: 10.1.0.5/30
@@ -7023,7 +7176,7 @@ nodes:
         network_type: point-to-point
         passive: false
       type: lan
-    - bridge: ml_32_3
+    - bridge: ml_17_3
       ifindex: 3
       ifname: ethernet1/1/3
       ipv4: 10.1.0.9/30
@@ -7041,7 +7194,7 @@ nodes:
         network_type: point-to-point
         passive: false
       type: lan
-    - bridge: ml_32_4
+    - bridge: ml_17_4
       ifindex: 4
       ifname: ethernet1/1/4
       ipv4: 10.1.0.13/30
@@ -7060,7 +7213,7 @@ nodes:
         network_type: point-to-point
         passive: false
       type: lan
-    - bridge: ml_32_5
+    - bridge: ml_17_5
       ifindex: 5
       ifname: ethernet1/1/5
       ipv4: 10.1.0.17/30
@@ -7078,14 +7231,14 @@ nodes:
         network_type: point-to-point
         passive: false
       type: lan
-    - bridge: ml_32_8
+    - bridge: ml_17_9
       ifindex: 6
       ifname: ethernet1/1/6
       ipv4: 10.1.0.21/30
       libvirt:
         provider:
           clab: true
-      linkindex: 8
+      linkindex: 9
       name: dut -> v1
       neighbors:
       - ifname: eth1
@@ -7093,14 +7246,14 @@ nodes:
         node: v1
       type: lan
       vrf: tenant
-    - bridge: ml_32_9
+    - bridge: ml_17_10
       ifindex: 7
       ifname: ethernet1/1/7
       ipv4: 10.1.0.25/30
       libvirt:
         provider:
           clab: true
-      linkindex: 9
+      linkindex: 10
       name: dut -> v2
       neighbors:
       - ifname: eth1
@@ -7120,7 +7273,7 @@ nodes:
       virtual_interface: true
     mgmt:
       ifname: mgmt1/1/1
-      ipv4: 192.168.32.101
+      ipv4: 192.168.17.101
       mac: 08:4f:a9:01:00:00
     module:
     - ospf
@@ -7143,6 +7296,8 @@ nodes:
         range:
         - &id002
           ipv4: 10.17.0.0/16
+        - cost: 42
+          ipv4: 10.19.0.0/16
       - _area_int: 12
         area: 0.0.0.12
         default:
@@ -7163,6 +7318,9 @@ nodes:
         external_range:
         - &id004
           ipv4: 10.19.2.0/24
+        - cost: 42
+          ipv4: 10.19.4.0/24
+          type: e2
         inter_area: true
         kind: nssa
       router_id: 10.0.0.1
@@ -7193,6 +7351,8 @@ nodes:
             kind: stub
             range:
             - *id002
+            - cost: 42
+              ipv4: 10.19.0.0/16
           - _area_int: 21
             area: 0.0.0.21
             inter_area: false
@@ -7201,11 +7361,11 @@ nodes:
             connected:
               auto: true
           interfaces:
-          - bridge: ml_32_8
+          - bridge: ml_17_9
             ifindex: 6
             ifname: ethernet1/1/6
             ipv4: 10.1.0.21/30
-            linkindex: 8
+            linkindex: 9
             name: dut -> v1
             neighbors:
             - ifname: eth1
@@ -7217,11 +7377,11 @@ nodes:
               passive: false
             type: lan
             vrf: tenant
-          - bridge: ml_32_9
+          - bridge: ml_17_10
             ifindex: 7
             ifname: ethernet1/1/7
             ipv4: 10.1.0.25/30
-            linkindex: 9
+            linkindex: 10
             name: dut -> v2
             neighbors:
             - ifname: eth1
@@ -7233,7 +7393,7 @@ nodes:
               passive: false
             type: lan
             vrf: tenant
-          router_id: 10.0.0.1
+          router_id: 10.1.0.1
         rd: '65000:1'
         vrfidx: 100
   r11:
@@ -7252,10 +7412,10 @@ nodes:
     config:
     - ospf.areas
     device: frr
-    hostname: clab-ml_32-r11
+    hostname: clab-ml_17-r11
     id: 3
     interfaces:
-    - bridge: ml_32_1
+    - bridge: ml_17_1
       ifindex: 1
       ifname: eth1
       ipv4: 10.1.0.2/30
@@ -7274,7 +7434,7 @@ nodes:
         network_type: point-to-point
         passive: false
       type: lan
-    - bridge: ml_32_6
+    - bridge: ml_17_6
       ifindex: 2
       ifname: eth2
       ipv4: 10.17.1.1/24
@@ -7287,11 +7447,24 @@ nodes:
         passive: true
       role: stub
       type: lan
-    - bridge: ml_32_7
+    - bridge: ml_17_7
       ifindex: 3
       ifname: eth3
       ipv4: 10.18.1.1/24
       linkindex: 7
+      mtu: 1500
+      name: r11 -> stub
+      neighbors: []
+      ospf:
+        area: 0.0.0.11
+        passive: true
+      role: stub
+      type: lan
+    - bridge: ml_17_8
+      ifindex: 4
+      ifname: eth4
+      ipv4: 10.19.1.1/24
+      linkindex: 8
       mtu: 1500
       name: r11 -> stub
       neighbors: []
@@ -7312,7 +7485,7 @@ nodes:
       virtual_interface: true
     mgmt:
       ifname: eth0
-      ipv4: 192.168.32.103
+      ipv4: 192.168.17.103
       mac: 08:4f:a9:03:00:00
     module:
     - ospf
@@ -7331,6 +7504,8 @@ nodes:
         kind: stub
         range:
         - *id002
+        - cost: 42
+          ipv4: 10.19.0.0/16
       router_id: 10.0.0.3
     provider: clab
     role: router
@@ -7350,10 +7525,10 @@ nodes:
     config:
     - ospf.areas
     device: frr
-    hostname: clab-ml_32-r12
+    hostname: clab-ml_17-r12
     id: 4
     interfaces:
-    - bridge: ml_32_2
+    - bridge: ml_17_2
       ifindex: 1
       ifname: eth1
       ipv4: 10.1.0.6/30
@@ -7385,7 +7560,7 @@ nodes:
       virtual_interface: true
     mgmt:
       ifname: eth0
-      ipv4: 192.168.32.104
+      ipv4: 192.168.17.104
       mac: 08:4f:a9:04:00:00
     module:
     - ospf
@@ -7421,10 +7596,10 @@ nodes:
     config:
     - ospf.areas
     device: frr
-    hostname: clab-ml_32-r21
+    hostname: clab-ml_17-r21
     id: 5
     interfaces:
-    - bridge: ml_32_3
+    - bridge: ml_17_3
       ifindex: 1
       ifname: eth1
       ipv4: 10.1.0.10/30
@@ -7455,7 +7630,7 @@ nodes:
       virtual_interface: true
     mgmt:
       ifname: eth0
-      ipv4: 192.168.32.105
+      ipv4: 192.168.17.105
       mac: 08:4f:a9:05:00:00
     module:
     - ospf
@@ -7489,10 +7664,10 @@ nodes:
     config:
     - ospf.areas
     device: frr
-    hostname: clab-ml_32-r22
+    hostname: clab-ml_17-r22
     id: 6
     interfaces:
-    - bridge: ml_32_4
+    - bridge: ml_17_4
       ifindex: 1
       ifname: eth1
       ipv4: 10.1.0.14/30
@@ -7524,7 +7699,7 @@ nodes:
       virtual_interface: true
     mgmt:
       ifname: eth0
-      ipv4: 192.168.32.106
+      ipv4: 192.168.17.106
       mac: 08:4f:a9:06:00:00
     module:
     - routing
@@ -7544,6 +7719,9 @@ nodes:
         - *id003
         external_range:
         - *id004
+        - cost: 42
+          ipv4: 10.19.4.0/24
+          type: e2
         inter_area: true
         kind: nssa
       import:
@@ -7566,6 +7744,10 @@ nodes:
         nexthop:
           discard: true
           idx: 0
+      - ipv4: 10.19.4.1/32
+        nexthop:
+          discard: true
+          idx: 0
   rb:
     af:
       ipv4: true
@@ -7580,10 +7762,10 @@ nodes:
       image: quay.io/frrouting/frr:10.2.2
       kind: linux
     device: frr
-    hostname: clab-ml_32-rb
+    hostname: clab-ml_17-rb
     id: 2
     interfaces:
-    - bridge: ml_32_5
+    - bridge: ml_17_5
       ifindex: 1
       ifname: eth1
       ipv4: 10.1.0.18/30
@@ -7614,7 +7796,7 @@ nodes:
       virtual_interface: true
     mgmt:
       ifname: eth0
-      ipv4: 192.168.32.102
+      ipv4: 192.168.17.102
       mac: 08:4f:a9:02:00:00
     module:
     - ospf
@@ -7643,17 +7825,17 @@ nodes:
     config:
     - ospf.areas
     device: frr
-    hostname: clab-ml_32-v1
+    hostname: clab-ml_17-v1
     id: 7
     interfaces:
-    - bridge: ml_32_8
+    - bridge: ml_17_9
       ifindex: 1
       ifname: eth1
       ipv4: 10.1.0.22/30
       libvirt:
         provider:
           clab: true
-      linkindex: 8
+      linkindex: 9
       mtu: 1500
       name: v1 -> dut
       neighbors:
@@ -7678,7 +7860,7 @@ nodes:
       virtual_interface: true
     mgmt:
       ifname: eth0
-      ipv4: 192.168.32.107
+      ipv4: 192.168.17.107
       mac: 08:4f:a9:07:00:00
     module:
     - ospf
@@ -7697,6 +7879,8 @@ nodes:
         kind: stub
         range:
         - *id002
+        - cost: 42
+          ipv4: 10.19.0.0/16
       router_id: 10.0.0.7
     provider: clab
     role: router
@@ -7716,17 +7900,17 @@ nodes:
     config:
     - ospf.areas
     device: frr
-    hostname: clab-ml_32-v2
+    hostname: clab-ml_17-v2
     id: 8
     interfaces:
-    - bridge: ml_32_9
+    - bridge: ml_17_10
       ifindex: 1
       ifname: eth1
       ipv4: 10.1.0.26/30
       libvirt:
         provider:
           clab: true
-      linkindex: 9
+      linkindex: 10
       mtu: 1500
       name: v2 -> dut
       neighbors:
@@ -7751,7 +7935,7 @@ nodes:
       virtual_interface: true
     mgmt:
       ifname: eth0
-      ipv4: 192.168.32.108
+      ipv4: 192.168.17.108
       mac: 08:4f:a9:08:00:00
     module:
     - ospf
@@ -7780,6 +7964,8 @@ ospf:
     kind: stub
     range:
     - *id002
+    - cost: 42
+      ipv4: 10.19.0.0/16
   - _area_int: 12
     area: 0.0.0.12
     default:
@@ -7798,6 +7984,9 @@ ospf:
     - *id003
     external_range:
     - *id004
+    - cost: 42
+      ipv4: 10.19.4.0/24
+      type: e2
     inter_area: true
     kind: nssa
 plugin:
@@ -7872,6 +8061,13 @@ validate:
   plugin: ospf_prefix('10.17.0.0/16')
   wait: 10
   wait_msg: Waiting for SPF run
+- description: Check for area ranges with specified cost
+  fail: Inter-area routes do not have the correct cost
+  level: warning
+  name: a_range_c
+  nodes:
+  - rb
+  plugin: ospf_prefix('10.19.0.0/16',cost=52)
 - description: Check for more-specific prefixes in area ranges
   fail: Inter-area routes are not summarized
   name: am_range
@@ -7928,6 +8124,13 @@ validate:
   nodes:
   - rb
   plugin: ospf_prefix('10.19.2.0/24')
+- description: Check NSSA type-7 (external) range with explicit cost
+  fail: NSSA range is missing or has incorrect cost
+  level: warning
+  name: nc_range
+  nodes:
+  - rb
+  plugin: ospf_prefix('10.19.4.0/24',cost=42)
 - description: Check NSSA type-7 (external) filter
   fail: NSSA summaries are not suppressed
   level: warning
