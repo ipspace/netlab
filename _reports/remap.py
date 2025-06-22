@@ -23,15 +23,14 @@ LOG_MAP: dict = {
 
 def summary_results(test_data: Box, log_path: str) -> Box:
   summary = Box(default_box=True,box_dots=True)
-  summary.result = '✅'
   for kw in SUMMARY_MAP.keys():
     if kw not in test_data:
       continue
 
-    if isinstance(test_data[kw],Box) and 'warning' in test_data[kw]:
+    if isinstance(test_data[kw],Box) and 'warning' in test_data[kw] and summary.status != 'warning':
       summary.result = "<span style='color: orange;'>&#x2714;</span>"
+      summary.status = 'warning'
       summary.url = f'{log_path}-{LOG_MAP[kw]}.log'
-      return summary
 
     if test_data[kw] is False:
       summary.result = SUMMARY_MAP[kw]
@@ -40,7 +39,10 @@ def summary_results(test_data: Box, log_path: str) -> Box:
         summary.result = 'caveat'
       return summary
   
-  summary.passed = True
+  if 'result' not in summary:
+    summary.result = '✅'
+    summary.passed = True
+
   return summary
 
 def remap_summary(results: Box, remap: Box, path: str) -> None:
