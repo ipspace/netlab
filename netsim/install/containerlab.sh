@@ -8,7 +8,7 @@ Docker/Containerlab Installation Script
 =====================================================================
 This script installs Docker and containerlab on a Debian or Ubuntu
 system. The script was tested on Debian 12 (bookworm) and Ubuntu 20.04,
-22.04, and 24.04.
+22.04, and 24.04, as well as Pop!_OS 22.04 LTS.
 
 NOTE: the script is set to abort on first error. If the installation
 completed you're probably OK even though you might have seen errors
@@ -43,9 +43,10 @@ echo "Install Docker GPG key and set up Docker repository"
 # Begin code to identify distribution and populate DISTRIBUTION variable - ghostinthenet - 20220417
 if [ -f /etc/debian_version ]; then
  if [ -f /etc/lsb-release ]; then
-  if [[ $(grep DISTRIB_ID /etc/lsb-release | awk -F'=' '{print $2;}') == 'Ubuntu' ]]; then
+  # Make sure both Pop!_OS and Ubuntu are supported, but identify the DISTRIBUTION as 'ubuntu' for Docker downloads
+  if [[ $(awk -F'=' '$1~/DISTRIB_ID/ && $2~/(Pop|Ubuntu)/ {print "MATCH";}' /etc/lsb-release) == 'MATCH' ]]; then
    DISTRIBUTION='ubuntu'
-  # Exit if lsb-release distribution ID isn't Ubuntu - ghostinthenet 20220418
+  # Exit if lsb-release distribution ID isn't Pop or Ubuntu - ghostinthenet 20220418
   else
    echo "Installed distribution is an untested Ubuntu derivative..."
    exit 1
@@ -70,6 +71,14 @@ curl -fsSL https://download.docker.com/linux/$DISTRIBUTION/gpg | $SUDO gpg --dea
 echo "deb [arch=$(dpkg --print-architecture)] https://download.docker.com/linux/$DISTRIBUTION $(lsb_release -cs) stable" | $SUDO tee /etc/apt/sources.list.d/docker.list > /dev/null
 #
 echo "Install Docker Engine"
+
+# Make sure no other process is blocking the apt-get update -- wait long enough
+# for any GUI-based system triggered interference to complete (e.g. packagekitd with Pop!_OS Desktop)
+echo "...If any triggered process is blocking the apt update, wait for it to complete."
+echo "Adjust the waiting time as necessary. Currently set to  11 seconds..."
+sleep 11s
+echo "Continuing.."
+
 $SUDO apt-get update
 $SUDO apt-get install -y $FLAG_QUIET docker-ce docker-ce-cli containerd.io
 echo "Install containerlab version $CONTAINERLAB_VERSION"

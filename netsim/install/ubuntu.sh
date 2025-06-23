@@ -40,7 +40,7 @@ echo "Install missing packages (also a pretty long operation)"
 # linux-modules-extra-$(uname -r) should exist, but it won't if we're running
 # on a kernel that has been purged from the package server; in that case the
 # user will likely need to reboot.
-# Note: not all Ubuntu-based distributives might have this package available
+# Note: not all Ubuntu-based distributions might have this package available
 # or need it to be installed (e.g. Pop!_OS).
 EXTRA="linux-modules-extra-$(uname -r)"
 if [[ $EXTRA == $(apt-cache show $EXTRA | awk -F': ' '/^Package: /{print $2; }') ]]
