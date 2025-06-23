@@ -1,17 +1,21 @@
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+[WARNING]: Found variable using reserved name: hosts
 
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [probe]
+ok: [p_global]
+ok: [p_vrf]
 ok: [dut]
 
 TASK [Find device readiness script] ********************************************
-ok: [probe]
+ok: [p_global]
+ok: [p_vrf]
 ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
-skipping: [probe]
+skipping: [p_global]
+skipping: [p_vrf]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/ioll2-clab.yml for dut
 
 TASK [Check if 'sshpass' is installed] *****************************************
@@ -29,37 +33,47 @@ ok: [dut] =>
   msg: Node dut is ready.
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, p_global, p_vrf
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
-ok: [probe]
+ok: [p_global]
+ok: [p_vrf]
 ok: [dut]
 
 TASK [Find configuration template for normalize] *******************************
-ok: [probe]
+ok: [p_global]
+ok: [p_vrf]
 ok: [dut]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
-skipping: [probe]
+skipping: [p_global]
+skipping: [p_vrf]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [p_global]
+ok: [p_vrf]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [probe]
+skipping: [p_global]
+skipping: [p_vrf]
 ok: [dut] => 
   msg: |-
     normalize configuration for dut
     =========================================
     !
     interface Ethernet0/1
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0101
-
-TASK [Find configuration deployment deploy_script for normalize] ***************
-skipping: [probe]
-ok: [dut]
+    !
+    interface Ethernet0/2
+     shutdown
+     mac-address 52dc.cafe.0102
 
 TASK [Deploy normalize configuration] ******************************************
-skipping: [probe]
+skipping: [p_global]
+skipping: [p_vrf]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
 
 TASK [ios_config: deploying normalize from /home/pipi/net101/tools/netsim/ansible/templates/normalize/ioll2.j2] ***
@@ -69,24 +83,32 @@ device including the indentation
 changed: [dut]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, p_global, p_vrf
 
 TASK [Figure out whether to deploy the module initial on current device] *******
-ok: [probe]
+ok: [p_global]
+ok: [p_vrf]
 ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
-ok: [probe]
+ok: [p_global]
+ok: [p_vrf]
 ok: [dut]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
-skipping: [probe]
+skipping: [p_global]
+skipping: [p_vrf]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [p_global]
+ok: [p_vrf]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [probe] => 
+ok: [p_global] => 
   msg: |-
-    initial configuration for probe
+    initial configuration for p_global
     =========================================
     #!/bin/bash
     #
@@ -103,6 +125,14 @@ ok: [probe] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
     #
     # Get the current next hop for the default route
     #
@@ -126,6 +156,12 @@ ok: [probe] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -138,28 +174,27 @@ ok: [probe] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
+    ip link set dev eth1 mtu 1500
     ip link set eth1 up
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
     #
     cat >/tmp/config <<CONFIG
-    hostname probe
+    hostname p_global
     !
+    ip forwarding
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
@@ -169,9 +204,117 @@ ok: [probe] =>
     !
     interface eth1
      no shutdown
-     description probe -> dut [external]
+     description p_global -> dut [external]
      ip address 10.1.0.2/30
      ipv6 address 2001:db8:3::2/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
+ok: [p_vrf] => 
+  msg: |-
+    initial configuration for p_vrf
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.autoconf=0
+    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname p_vrf
+    !
+    ip forwarding
+    ipv6 forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.3/32
+     ipv6 address 2001:db8:1:3::1/64
+    !
+    interface eth1
+     no shutdown
+     description p_vrf -> dut [external]
+     ip address 10.1.0.6/30
+     ipv6 address 2001:db8:3:1::2/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -189,16 +332,31 @@ ok: [dut] =>
     !
     lldp run
     !
-    ip host probe 10.0.0.2 10.1.0.2
+    ip host dut-customer 10.1.0.5 10.2.0.1
+    ip host p_global 10.0.0.2 10.1.0.2
+    ip host p_vrf 10.0.0.3 10.1.0.6
     !
     ip routing
     !
     ipv6 unicast-routing
     !
+    vrf definition customer
+     rd 65000:1
+     route-target import 65000:1
+     route-target export 65000:1
+    !
+     address-family ipv4
+     exit-address-family
+    !
+     address-family ipv6
+     exit-address-family
+    !
+  
+    !
     !
     interface Loopback0
-     ip address 10.0.0.1 255.255.255.255
-     ipv6 address 2001:DB8:1:1::1/64
+     ip address 10.0.0.42 255.255.255.255
+     ipv6 address 2001:DB8:42:1::1/128
     !
     interface Ethernet0/0
      no lldp transmit
@@ -206,10 +364,28 @@ ok: [dut] =>
     !
     interface Ethernet0/1
      no switchport
-     description dut -> probe [external]
-     mtu 1500
+     description dut -> p_global [external]
+     ip mtu 1500
+     ipv6 mtu 1500
      ip address 10.1.0.1 255.255.255.252
      ipv6 address 2001:DB8:3::1/64
+     no shutdown
+    !
+    interface Ethernet0/2
+     no switchport
+     vrf forwarding customer
+     description dut -> p_vrf [external]
+     ip mtu 1500
+     ipv6 mtu 1500
+     ip address 10.1.0.5 255.255.255.252
+     ipv6 address 2001:DB8:3:1::1/64
+     no shutdown
+    !
+    interface Loopback1
+     vrf forwarding customer
+     description VRF Loopback customer
+     ip address 10.2.0.1 255.255.255.255
+     ipv6 address 2001:DB8:4::1/64
      no shutdown
     !
     !
@@ -220,77 +396,102 @@ ok: [dut] =>
     no banner login
     no banner incoming
 
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [probe]
-ok: [dut]
-
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for probe
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for p_global, p_vrf
 
 TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [probe -> localhost]
+changed: [p_global -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
-skipping: [probe]
+skipping: [p_global]
+skipping: [p_vrf]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for probe
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for p_global, p_vrf
 
 TASK [template] ****************************************************************
-changed: [probe]
+changed: [p_global]
+changed: [p_vrf]
 
 TASK [set_fact] ****************************************************************
-ok: [probe]
+ok: [p_global]
+ok: [p_vrf]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [probe]
+changed: [p_global]
+changed: [p_vrf]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-skipping: [probe]
+skipping: [p_global]
+skipping: [p_vrf]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [probe]
+ok: [p_global]
+ok: [p_vrf]
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe => (item=routing)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe => (item=bgp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, p_global, p_vrf => (item=routing)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, p_global, p_vrf => (item=bgp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, p_global, p_vrf => (item=vrf)
 
 TASK [Figure out whether to deploy the module routing on current device] *******
-ok: [probe]
+ok: [p_global]
+ok: [p_vrf]
 ok: [dut]
 
 TASK [Find configuration template for routing] *********************************
-ok: [probe]
+skipping: [p_global]
+skipping: [p_vrf]
 ok: [dut]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
-skipping: [probe]
+skipping: [p_global]
+skipping: [p_vrf]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [p_global]
+skipping: [p_vrf]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [probe] => 
-  msg: |-
-    routing configuration for probe
-    =========================================
-    !
-    !
+skipping: [p_global]
+skipping: [p_vrf]
 ok: [dut] => 
   msg: |-
     routing configuration for dut
     =========================================
     !
     !
+    route-map med_17-ipv4 permit 10
+      set metric 17
+    !
+    route-map med_17-ipv6 permit 10
+      set metric 17
+    !
+    route-map med_17-vpnv4 permit 10
+      set metric 17
+    !
+    route-map med_17-vpnv6 permit 10
+      set metric 17
+    !
     route-map med_42-ipv4 permit 10
       set metric 42
     !
     route-map med_42-ipv6 permit 10
+      set metric 42
+    !
+    route-map med_42-vpnv4 permit 10
+      set metric 42
+    !
+    route-map med_42-vpnv6 permit 10
       set metric 42
   
     !
@@ -300,45 +501,38 @@ ok: [dut] =>
     ! Static routes
     !
 
-TASK [Find configuration deployment deploy_script for routing] *****************
-ok: [probe]
-ok: [dut]
-
 TASK [Deploy routing configuration] ********************************************
+skipping: [p_global]
+skipping: [p_vrf]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for probe
 
 TASK [ios_config: deploying routing from /home/pipi/net101/tools/netsim/ansible/templates/routing/ios.j2] ***
 changed: [dut]
 
-TASK [template] ****************************************************************
-changed: [probe]
-
-TASK [set_fact] ****************************************************************
-ok: [probe]
-
-TASK [run /tmp/config.sh to deploy routing config from /home/pipi/net101/tools/netsim/ansible/templates/routing/frr.j2] ***
-skipping: [probe]
-
-TASK [run vtysh to import routing config from /home/pipi/net101/tools/netsim/ansible/templates/routing/frr.j2] ***
-changed: [probe]
-
 TASK [Figure out whether to deploy the module bgp on current device] ***********
-ok: [probe]
+ok: [p_global]
+ok: [p_vrf]
 ok: [dut]
 
 TASK [Find configuration template for bgp] *************************************
-ok: [probe]
+ok: [p_global]
+ok: [p_vrf]
 ok: [dut]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
-skipping: [probe]
+skipping: [p_global]
+skipping: [p_vrf]
+
+TASK [Find configuration deployment deploy_script for bgp] *********************
+ok: [p_global]
+ok: [p_vrf]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [probe] => 
+ok: [p_global] => 
   msg: |-
-    bgp configuration for probe
+    bgp configuration for p_global
     =========================================
     !
     router bgp 65100
@@ -387,6 +581,57 @@ ok: [probe] =>
     !
     !
     do write
+ok: [p_vrf] => 
+  msg: |-
+    bgp configuration for p_vrf
+    =========================================
+    !
+    router bgp 65101
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.3
+    !
+      neighbor 10.1.0.5 remote-as 65000
+      neighbor 10.1.0.5 description dut
+    !
+      neighbor 2001:db8:3:1::1 remote-as 65000
+      neighbor 2001:db8:3:1::1 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.3/32
+    !
+    !
+    !
+      neighbor 10.1.0.5 activate
+      no neighbor 10.1.0.5 send-community all
+      neighbor 10.1.0.5 send-community standard
+      neighbor 10.1.0.5 send-community large
+    !
+     address-family ipv6 unicast
+    !
+  
+    !
+      network 2001:db8:1:3::/64
+    !
+    !
+    !
+      neighbor 2001:db8:3:1::1 activate
+      no neighbor 2001:db8:3:1::1 send-community all
+      neighbor 2001:db8:3:1::1 send-community standard
+      neighbor 2001:db8:3:1::1 send-community large
+    !
+    !
+    !
+    do write
 ok: [dut] => 
   msg: |-
     bgp configuration for dut
@@ -399,19 +644,19 @@ ok: [dut] =>
      bgp update-delay 5
      bgp nopeerup-delay cold-boot 1
      bgp nopeerup-delay user-initiated 1
-     bgp router-id 10.0.0.1
+     bgp router-id 10.0.0.42
       neighbor 10.1.0.2 remote-as 65100
-      neighbor 10.1.0.2 description probe
+      neighbor 10.1.0.2 description p_global
   
       neighbor 2001:db8:3::2 remote-as 65100
-      neighbor 2001:db8:3::2 description probe
+      neighbor 2001:db8:3::2 description p_global
   
     !
      address-family ipv4
       bgp scan-time 5
   
     !
-      network 10.0.0.1 mask 255.255.255.255
+      network 10.0.0.42 mask 255.255.255.255
   
     !
     !
@@ -423,7 +668,7 @@ ok: [dut] =>
       bgp scan-time 5
   
     !
-      network 2001:db8:1:1::/64
+      network 2001:db8:42:1::1/128
   
     !
     !
@@ -433,28 +678,95 @@ ok: [dut] =>
   
     !
 
-TASK [Find configuration deployment deploy_script for bgp] *********************
-ok: [probe]
-ok: [dut]
-
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for probe
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for p_global, p_vrf
 
 TASK [ios_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/ios.j2] ***
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [probe]
+changed: [p_vrf]
+changed: [p_global]
 
 TASK [set_fact] ****************************************************************
-ok: [probe]
+ok: [p_global]
+ok: [p_vrf]
 
 TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-skipping: [probe]
+skipping: [p_global]
+skipping: [p_vrf]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [probe]
+changed: [p_global]
+changed: [p_vrf]
+
+TASK [Figure out whether to deploy the module vrf on current device] ***********
+ok: [p_global]
+ok: [p_vrf]
+ok: [dut]
+
+TASK [Find configuration template for vrf] *************************************
+skipping: [p_global]
+skipping: [p_vrf]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [p_global]
+skipping: [p_vrf]
+
+TASK [Find configuration deployment deploy_script for vrf] *********************
+skipping: [p_global]
+skipping: [p_vrf]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [p_global]
+skipping: [p_vrf]
+ok: [dut] => 
+  msg: |-
+    vrf configuration for dut
+    =========================================
+    !
+    router bgp 65000
+     address-family ipv4 vrf customer
+      bgp router-id 10.0.0.42
+      redistribute connected
+  
+    !
+      network 10.2.0.1 mask 255.255.255.255
+  
+    !
+      neighbor 10.1.0.6 remote-as 65101
+      neighbor 10.1.0.6 description p_vrf
+  
+      neighbor 10.1.0.6 activate
+      neighbor 10.1.0.6 advertisement-interval 0
+      neighbor 10.1.0.6 send-community standard
+  
+     address-family ipv6 vrf customer
+      bgp router-id 10.0.0.42
+      redistribute connected
+  
+    !
+      network 2001:db8:4::/64
+  
+    !
+      neighbor 2001:db8:3:1::2 remote-as 65101
+      neighbor 2001:db8:3:1::2 description p_vrf
+  
+      neighbor 2001:db8:3:1::2 activate
+      neighbor 2001:db8:3:1::2 advertisement-interval 0
+      neighbor 2001:db8:3:1::2 send-community standard
+
+TASK [Deploy vrf configuration] ************************************************
+skipping: [p_global]
+skipping: [p_vrf]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
+
+TASK [ios_config: deploying vrf from /home/pipi/net101/tools/netsim/ansible/templates/vrf/ios.j2] ***
+changed: [dut]
 
 PLAY [Deploy custom deployment templates] **************************************
 
@@ -486,8 +798,9 @@ TASK [ios_config: deploying bgp.policy from /home/pipi/net101/tools/netsim/extra
 changed: [dut]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=42   changed=5    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-probe                      : ok=35   changed=7    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+dut                        : ok=49   changed=6    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+p_global                   : ok=31   changed=5    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+p_vrf                      : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
 
 
 

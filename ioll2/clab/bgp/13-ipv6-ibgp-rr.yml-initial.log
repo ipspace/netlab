@@ -22,7 +22,7 @@ skipping: [r1]
 skipping: [r2]
 skipping: [rr2]
 skipping: [x1]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/ioll2-clab.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/ioll2-clab.yml for dut
 
 TASK [Check if 'sshpass' is installed] *****************************************
 ok: [dut -> localhost]
@@ -39,7 +39,7 @@ ok: [dut] =>
   msg: Node dut is ready.
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, rr2, x1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, rr2, x1
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [r1]
@@ -92,16 +92,16 @@ skipping: [r1]
 skipping: [r2]
 skipping: [rr2]
 skipping: [x1]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
 
-TASK [ios_config: deploying normalize from /home/pipi/netlab_gh/netsim/ansible/templates/normalize/ioll2.j2] ***
+TASK [ios_config: deploying normalize from /home/pipi/net101/tools/netsim/ansible/templates/normalize/ioll2.j2] ***
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
 should be similar to how they appear if present in the running configuration on
 device including the indentation
 changed: [dut]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, rr2, x1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, rr2, x1
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [r1]
@@ -152,6 +152,14 @@ ok: [r1] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -174,6 +182,12 @@ ok: [r1] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -192,26 +206,26 @@ ok: [r1] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+    ip link set eth2 down
     sysctl -qw net.ipv6.conf.eth2.autoconf=0
     sysctl -qw net.ipv6.conf.eth2.accept_ra=0
-    ip link set eth2 down
-    ip link set eth2 up
     ip link set dev eth2 mtu 1500
+    ip link set eth2 up
+    ip link set eth3 down
     sysctl -qw net.ipv6.conf.eth3.autoconf=0
     sysctl -qw net.ipv6.conf.eth3.accept_ra=0
-    ip link set eth3 down
-    ip link set eth3 up
     ip link set dev eth3 mtu 1500
+    ip link set eth3 up
+    ip link set eth4 down
     sysctl -qw net.ipv6.conf.eth4.autoconf=0
     sysctl -qw net.ipv6.conf.eth4.accept_ra=0
-    ip link set eth4 down
-    ip link set eth4 up
     ip link set dev eth4 mtu 1500
+    ip link set eth4 up
   
     #
     # Add vtysh.conf file
@@ -223,16 +237,16 @@ ok: [r1] =>
     cat >/tmp/config <<CONFIG
     hostname r1
     !
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
      no shutdown
      ! no ip address
-     ipv6 address 2001:db8:1:a::1/64
+     ipv6 address 2001:db8:1::a/128
     !
     interface eth1
      no shutdown
@@ -290,6 +304,14 @@ ok: [r2] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -312,6 +334,12 @@ ok: [r2] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -324,11 +352,11 @@ ok: [r2] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -340,16 +368,16 @@ ok: [r2] =>
     cat >/tmp/config <<CONFIG
     hostname r2
     !
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
      no shutdown
      ! no ip address
-     ipv6 address 2001:db8:1:3::1/64
+     ipv6 address 2001:db8:1::3/128
     !
     interface eth1
      no shutdown
@@ -383,6 +411,14 @@ ok: [rr2] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -405,6 +441,12 @@ ok: [rr2] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -417,11 +459,11 @@ ok: [rr2] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -433,16 +475,16 @@ ok: [rr2] =>
     cat >/tmp/config <<CONFIG
     hostname rr2
     !
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
      no shutdown
      ! no ip address
-     ipv6 address 2001:db8:1:2::1/64
+     ipv6 address 2001:db8:1::2/128
     !
     interface eth1
      no shutdown
@@ -467,11 +509,13 @@ ok: [dut] =>
     lldp run
     !
     !
+    ip routing
+    !
     ipv6 unicast-routing
     !
     !
     interface Loopback0
-     ipv6 address 2001:DB8:1:1::1/64
+     ipv6 address 2001:DB8:1::1/128
     !
     interface Ethernet0/0
      no lldp transmit
@@ -518,6 +562,14 @@ ok: [x1] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -540,6 +592,12 @@ ok: [x1] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -552,11 +610,11 @@ ok: [x1] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -568,10 +626,10 @@ ok: [x1] =>
     cat >/tmp/config <<CONFIG
     hostname x1
     !
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
@@ -593,10 +651,10 @@ ok: [x1] =>
     exit 0
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for r1, r2, rr2, x1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for r1, r2, rr2, x1
 
-TASK [ios_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/ios.j2] ***
+TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
@@ -609,13 +667,13 @@ skipping: [rr2]
 skipping: [x1]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, rr2, x1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, rr2, x1
 
 TASK [template] ****************************************************************
-changed: [r1]
-changed: [rr2]
-changed: [x1]
 changed: [r2]
+changed: [r1]
+changed: [x1]
+changed: [rr2]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -623,13 +681,13 @@ ok: [r2]
 ok: [rr2]
 ok: [x1]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [r2]
 changed: [r1]
 changed: [rr2]
 changed: [x1]
 
-TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r1]
 skipping: [r2]
 skipping: [rr2]
@@ -645,329 +703,8 @@ ok: [x1]
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, rr2, x1 => (item=bgp)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, rr2, x1 => (item=ospf)
-
-TASK [Figure out whether to deploy the module bgp on current device] ***********
-ok: [r1]
-ok: [r2]
-ok: [rr2]
-ok: [x1]
-ok: [dut]
-
-TASK [Find configuration template for bgp] *************************************
-ok: [r1]
-ok: [r2]
-ok: [rr2]
-ok: [dut]
-ok: [x1]
-
-TASK [fail] ********************************************************************
-skipping: [dut]
-skipping: [r1]
-skipping: [r2]
-skipping: [rr2]
-skipping: [x1]
-
-TASK [Find configuration deployment deploy_script for bgp] *********************
-ok: [r1]
-ok: [r2]
-ok: [rr2]
-ok: [dut]
-ok: [x1]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [r1] => 
-  msg: |-
-    bgp configuration for r1
-    =========================================
-    !
-    router bgp 65000
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.10
-    !
-      neighbor 2001:db8:1:1::1 remote-as 65000
-      neighbor 2001:db8:1:1::1 description dut
-      neighbor 2001:db8:1:1::1 update-source lo
-    !
-      neighbor 2001:db8:1:2::1 remote-as 65000
-      neighbor 2001:db8:1:2::1 description rr2
-      neighbor 2001:db8:1:2::1 update-source lo
-    !
-     address-family ipv6 unicast
-    !
-  
-    !
-      network 2001:db8:1:a::/64
-    !
-      network 2001:db8:cafe:1::/64
-    !
-    !
-      neighbor 2001:db8:1:1::1 activate
-      neighbor 2001:db8:1:1::1 next-hop-self
-      no neighbor 2001:db8:1:1::1 send-community all
-      neighbor 2001:db8:1:1::1 send-community standard
-      neighbor 2001:db8:1:1::1 send-community large
-      neighbor 2001:db8:1:1::1 send-community extended
-    !
-      neighbor 2001:db8:1:2::1 activate
-      neighbor 2001:db8:1:2::1 next-hop-self
-      no neighbor 2001:db8:1:2::1 send-community all
-      neighbor 2001:db8:1:2::1 send-community standard
-      neighbor 2001:db8:1:2::1 send-community large
-      neighbor 2001:db8:1:2::1 send-community extended
-    !
-    !
-    !
-    do write
-ok: [r2] => 
-  msg: |-
-    bgp configuration for r2
-    =========================================
-    !
-    router bgp 65000
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.3
-    !
-      neighbor 2001:db8:1:1::1 remote-as 65000
-      neighbor 2001:db8:1:1::1 description dut
-      neighbor 2001:db8:1:1::1 update-source lo
-    !
-      neighbor 2001:db8:1:2::1 remote-as 65000
-      neighbor 2001:db8:1:2::1 description rr2
-      neighbor 2001:db8:1:2::1 update-source lo
-    !
-     address-family ipv6 unicast
-    !
-  
-    !
-      network 2001:db8:1:3::/64
-    !
-    !
-    !
-      neighbor 2001:db8:1:1::1 activate
-      neighbor 2001:db8:1:1::1 next-hop-self
-      no neighbor 2001:db8:1:1::1 send-community all
-      neighbor 2001:db8:1:1::1 send-community standard
-      neighbor 2001:db8:1:1::1 send-community large
-      neighbor 2001:db8:1:1::1 send-community extended
-    !
-      neighbor 2001:db8:1:2::1 activate
-      neighbor 2001:db8:1:2::1 next-hop-self
-      no neighbor 2001:db8:1:2::1 send-community all
-      neighbor 2001:db8:1:2::1 send-community standard
-      neighbor 2001:db8:1:2::1 send-community large
-      neighbor 2001:db8:1:2::1 send-community extended
-    !
-    !
-    !
-    do write
-ok: [rr2] => 
-  msg: |-
-    bgp configuration for rr2
-    =========================================
-    !
-    router bgp 65000
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.2
-      bgp cluster-id 10.0.0.43
-    !
-      neighbor 2001:db8:1:1::1 remote-as 65000
-      neighbor 2001:db8:1:1::1 description dut
-      neighbor 2001:db8:1:1::1 update-source lo
-    !
-      neighbor 2001:db8:1:a::1 remote-as 65000
-      neighbor 2001:db8:1:a::1 description r1
-      neighbor 2001:db8:1:a::1 update-source lo
-    !
-      neighbor 2001:db8:1:3::1 remote-as 65000
-      neighbor 2001:db8:1:3::1 description r2
-      neighbor 2001:db8:1:3::1 update-source lo
-    !
-     address-family ipv6 unicast
-    !
-  
-    !
-      network 2001:db8:1:2::/64
-    !
-    !
-    !
-      neighbor 2001:db8:1:1::1 activate
-      neighbor 2001:db8:1:1::1 next-hop-self
-      no neighbor 2001:db8:1:1::1 send-community all
-      neighbor 2001:db8:1:1::1 send-community standard
-      neighbor 2001:db8:1:1::1 send-community large
-      neighbor 2001:db8:1:1::1 send-community extended
-    !
-      neighbor 2001:db8:1:a::1 activate
-      neighbor 2001:db8:1:a::1 next-hop-self
-      neighbor 2001:db8:1:a::1 route-reflector-client
-      no neighbor 2001:db8:1:a::1 send-community all
-      neighbor 2001:db8:1:a::1 send-community standard
-      neighbor 2001:db8:1:a::1 send-community large
-      neighbor 2001:db8:1:a::1 send-community extended
-    !
-      neighbor 2001:db8:1:3::1 activate
-      neighbor 2001:db8:1:3::1 next-hop-self
-      neighbor 2001:db8:1:3::1 route-reflector-client
-      no neighbor 2001:db8:1:3::1 send-community all
-      neighbor 2001:db8:1:3::1 send-community standard
-      neighbor 2001:db8:1:3::1 send-community large
-      neighbor 2001:db8:1:3::1 send-community extended
-    !
-    !
-    !
-    do write
-ok: [dut] => 
-  msg: |-
-    bgp configuration for dut
-    =========================================
-    !
-    ip bgp-community new-format
-    !
-    router bgp 65000
-     no bgp default ipv4-unicast
-     bgp update-delay 5
-     bgp nopeerup-delay cold-boot 1
-     bgp nopeerup-delay user-initiated 1
-     bgp router-id 10.0.0.1
-     bgp cluster-id 10.0.0.42
-      neighbor 2001:db8:1:2::1 remote-as 65000
-      neighbor 2001:db8:1:2::1 description rr2
-      neighbor 2001:db8:1:2::1 update-source Loopback0
-  
-      neighbor 2001:db8:1:a::1 remote-as 65000
-      neighbor 2001:db8:1:a::1 description r1
-      neighbor 2001:db8:1:a::1 update-source Loopback0
-  
-      neighbor 2001:db8:1:3::1 remote-as 65000
-      neighbor 2001:db8:1:3::1 description r2
-      neighbor 2001:db8:1:3::1 update-source Loopback0
-  
-      neighbor 2001:db8:3:3::2 remote-as 65101
-      neighbor 2001:db8:3:3::2 description x1
-  
-    !
-     address-family ipv6
-      bgp scan-time 5
-  
-    !
-      network 2001:db8:1:1::/64
-  
-    !
-    !
-      neighbor 2001:db8:1:2::1 activate
-      neighbor 2001:db8:1:2::1 advertisement-interval 0
-      neighbor 2001:db8:1:2::1 next-hop-self
-      neighbor 2001:db8:1:2::1 send-community standard
-      neighbor 2001:db8:1:2::1 send-community extended
-  
-      neighbor 2001:db8:1:a::1 activate
-      neighbor 2001:db8:1:a::1 advertisement-interval 0
-      neighbor 2001:db8:1:a::1 next-hop-self
-      neighbor 2001:db8:1:a::1 route-reflector-client
-      neighbor 2001:db8:1:a::1 send-community standard
-      neighbor 2001:db8:1:a::1 send-community extended
-  
-      neighbor 2001:db8:1:3::1 activate
-      neighbor 2001:db8:1:3::1 advertisement-interval 0
-      neighbor 2001:db8:1:3::1 next-hop-self
-      neighbor 2001:db8:1:3::1 route-reflector-client
-      neighbor 2001:db8:1:3::1 send-community standard
-      neighbor 2001:db8:1:3::1 send-community extended
-  
-      neighbor 2001:db8:3:3::2 activate
-      neighbor 2001:db8:3:3::2 advertisement-interval 0
-      neighbor 2001:db8:3:3::2 send-community standard
-  
-    !
-ok: [x1] => 
-  msg: |-
-    bgp configuration for x1
-    =========================================
-    !
-    router bgp 65101
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.4
-    !
-      neighbor 2001:db8:3:3::1 remote-as 65000
-      neighbor 2001:db8:3:3::1 description dut
-    !
-     address-family ipv6 unicast
-    !
-  
-    !
-      network 2001:db8:cafe:e::/64
-    !
-    !
-    !
-      neighbor 2001:db8:3:3::1 activate
-      no neighbor 2001:db8:3:3::1 send-community all
-      neighbor 2001:db8:3:3::1 send-community standard
-      neighbor 2001:db8:3:3::1 send-community large
-    !
-    !
-    !
-    do write
-
-TASK [Deploy bgp configuration] ************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2, rr2, x1
-
-TASK [ios_config: deploying bgp from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/ios.j2] ***
-changed: [dut]
-
-TASK [template] ****************************************************************
-changed: [r2]
-changed: [r1]
-changed: [rr2]
-changed: [x1]
-
-TASK [set_fact] ****************************************************************
-ok: [r1]
-ok: [r2]
-ok: [rr2]
-ok: [x1]
-
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
-skipping: [r1]
-skipping: [r2]
-skipping: [rr2]
-skipping: [x1]
-
-TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [r1]
-changed: [r2]
-changed: [x1]
-changed: [rr2]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, rr2, x1 => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, rr2, x1 => (item=bgp)
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [r1]
@@ -1112,31 +849,352 @@ ok: [rr2] =>
 
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [x1]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2, rr2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2, rr2
 
-TASK [ios_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/ios.j2] ***
+TASK [ios_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/ios.j2] ***
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [r1]
-changed: [r2]
 changed: [rr2]
+changed: [r2]
+changed: [r1]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
 ok: [r2]
 ok: [rr2]
 
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 skipping: [r1]
 skipping: [r2]
 skipping: [rr2]
 
-TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+changed: [r2]
 changed: [r1]
 changed: [rr2]
+
+TASK [Figure out whether to deploy the module bgp on current device] ***********
+ok: [r1]
+ok: [rr2]
+ok: [r2]
+ok: [x1]
+ok: [dut]
+
+TASK [Find configuration template for bgp] *************************************
+ok: [r1]
+ok: [r2]
+ok: [x1]
+ok: [rr2]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r1]
+skipping: [r2]
+skipping: [rr2]
+skipping: [x1]
+
+TASK [Find configuration deployment deploy_script for bgp] *********************
+ok: [r1]
+ok: [r2]
+ok: [rr2]
+ok: [x1]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [r1] => 
+  msg: |-
+    bgp configuration for r1
+    =========================================
+    !
+    router bgp 65000
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.10
+    !
+      neighbor 2001:db8:1::1 remote-as 65000
+      neighbor 2001:db8:1::1 description dut
+      neighbor 2001:db8:1::1 update-source lo
+    !
+      neighbor 2001:db8:1::2 remote-as 65000
+      neighbor 2001:db8:1::2 description rr2
+      neighbor 2001:db8:1::2 update-source lo
+    !
+     address-family ipv6 unicast
+    !
+  
+    !
+      network 2001:db8:1::a/128
+    !
+      network 2001:db8:cafe:1::/64
+    !
+    !
+      neighbor 2001:db8:1::1 activate
+      neighbor 2001:db8:1::1 next-hop-self
+      no neighbor 2001:db8:1::1 send-community all
+      neighbor 2001:db8:1::1 send-community standard
+      neighbor 2001:db8:1::1 send-community large
+      neighbor 2001:db8:1::1 send-community extended
+    !
+      neighbor 2001:db8:1::2 activate
+      neighbor 2001:db8:1::2 next-hop-self
+      no neighbor 2001:db8:1::2 send-community all
+      neighbor 2001:db8:1::2 send-community standard
+      neighbor 2001:db8:1::2 send-community large
+      neighbor 2001:db8:1::2 send-community extended
+    !
+    !
+    !
+    do write
+ok: [r2] => 
+  msg: |-
+    bgp configuration for r2
+    =========================================
+    !
+    router bgp 65000
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.3
+    !
+      neighbor 2001:db8:1::1 remote-as 65000
+      neighbor 2001:db8:1::1 description dut
+      neighbor 2001:db8:1::1 update-source lo
+    !
+      neighbor 2001:db8:1::2 remote-as 65000
+      neighbor 2001:db8:1::2 description rr2
+      neighbor 2001:db8:1::2 update-source lo
+    !
+     address-family ipv6 unicast
+    !
+  
+    !
+      network 2001:db8:1::3/128
+    !
+    !
+    !
+      neighbor 2001:db8:1::1 activate
+      neighbor 2001:db8:1::1 next-hop-self
+      no neighbor 2001:db8:1::1 send-community all
+      neighbor 2001:db8:1::1 send-community standard
+      neighbor 2001:db8:1::1 send-community large
+      neighbor 2001:db8:1::1 send-community extended
+    !
+      neighbor 2001:db8:1::2 activate
+      neighbor 2001:db8:1::2 next-hop-self
+      no neighbor 2001:db8:1::2 send-community all
+      neighbor 2001:db8:1::2 send-community standard
+      neighbor 2001:db8:1::2 send-community large
+      neighbor 2001:db8:1::2 send-community extended
+    !
+    !
+    !
+    do write
+ok: [rr2] => 
+  msg: |-
+    bgp configuration for rr2
+    =========================================
+    !
+    router bgp 65000
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.2
+      bgp cluster-id 10.0.0.43
+    !
+      neighbor 2001:db8:1::1 remote-as 65000
+      neighbor 2001:db8:1::1 description dut
+      neighbor 2001:db8:1::1 update-source lo
+    !
+      neighbor 2001:db8:1::a remote-as 65000
+      neighbor 2001:db8:1::a description r1
+      neighbor 2001:db8:1::a update-source lo
+    !
+      neighbor 2001:db8:1::3 remote-as 65000
+      neighbor 2001:db8:1::3 description r2
+      neighbor 2001:db8:1::3 update-source lo
+    !
+     address-family ipv6 unicast
+    !
+  
+    !
+      network 2001:db8:1::2/128
+    !
+    !
+    !
+      neighbor 2001:db8:1::1 activate
+      neighbor 2001:db8:1::1 next-hop-self
+      no neighbor 2001:db8:1::1 send-community all
+      neighbor 2001:db8:1::1 send-community standard
+      neighbor 2001:db8:1::1 send-community large
+      neighbor 2001:db8:1::1 send-community extended
+    !
+      neighbor 2001:db8:1::a activate
+      neighbor 2001:db8:1::a next-hop-self
+      neighbor 2001:db8:1::a route-reflector-client
+      no neighbor 2001:db8:1::a send-community all
+      neighbor 2001:db8:1::a send-community standard
+      neighbor 2001:db8:1::a send-community large
+      neighbor 2001:db8:1::a send-community extended
+    !
+      neighbor 2001:db8:1::3 activate
+      neighbor 2001:db8:1::3 next-hop-self
+      neighbor 2001:db8:1::3 route-reflector-client
+      no neighbor 2001:db8:1::3 send-community all
+      neighbor 2001:db8:1::3 send-community standard
+      neighbor 2001:db8:1::3 send-community large
+      neighbor 2001:db8:1::3 send-community extended
+    !
+    !
+    !
+    do write
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+    !
+    ip bgp-community new-format
+    !
+    router bgp 65000
+     no bgp default ipv4-unicast
+     bgp update-delay 5
+     bgp nopeerup-delay cold-boot 1
+     bgp nopeerup-delay user-initiated 1
+     bgp router-id 10.0.0.1
+     bgp cluster-id 10.0.0.42
+      neighbor 2001:db8:1::2 remote-as 65000
+      neighbor 2001:db8:1::2 description rr2
+      neighbor 2001:db8:1::2 update-source Loopback0
+  
+      neighbor 2001:db8:1::a remote-as 65000
+      neighbor 2001:db8:1::a description r1
+      neighbor 2001:db8:1::a update-source Loopback0
+  
+      neighbor 2001:db8:1::3 remote-as 65000
+      neighbor 2001:db8:1::3 description r2
+      neighbor 2001:db8:1::3 update-source Loopback0
+  
+      neighbor 2001:db8:3:3::2 remote-as 65101
+      neighbor 2001:db8:3:3::2 description x1
+  
+    !
+     address-family ipv6
+      bgp scan-time 5
+  
+    !
+      network 2001:db8:1::1/128
+  
+    !
+    !
+      neighbor 2001:db8:1::2 activate
+      neighbor 2001:db8:1::2 advertisement-interval 0
+      neighbor 2001:db8:1::2 next-hop-self
+      neighbor 2001:db8:1::2 send-community standard
+      neighbor 2001:db8:1::2 send-community extended
+  
+      neighbor 2001:db8:1::a activate
+      neighbor 2001:db8:1::a advertisement-interval 0
+      neighbor 2001:db8:1::a next-hop-self
+      neighbor 2001:db8:1::a route-reflector-client
+      neighbor 2001:db8:1::a send-community standard
+      neighbor 2001:db8:1::a send-community extended
+  
+      neighbor 2001:db8:1::3 activate
+      neighbor 2001:db8:1::3 advertisement-interval 0
+      neighbor 2001:db8:1::3 next-hop-self
+      neighbor 2001:db8:1::3 route-reflector-client
+      neighbor 2001:db8:1::3 send-community standard
+      neighbor 2001:db8:1::3 send-community extended
+  
+      neighbor 2001:db8:3:3::2 activate
+      neighbor 2001:db8:3:3::2 advertisement-interval 0
+      neighbor 2001:db8:3:3::2 send-community standard
+  
+    !
+ok: [x1] => 
+  msg: |-
+    bgp configuration for x1
+    =========================================
+    !
+    router bgp 65101
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.4
+    !
+      neighbor 2001:db8:3:3::1 remote-as 65000
+      neighbor 2001:db8:3:3::1 description dut
+    !
+     address-family ipv6 unicast
+    !
+  
+    !
+      network 2001:db8:cafe:e::/64
+    !
+    !
+    !
+      neighbor 2001:db8:3:3::1 activate
+      no neighbor 2001:db8:3:3::1 send-community all
+      neighbor 2001:db8:3:3::1 send-community standard
+      neighbor 2001:db8:3:3::1 send-community large
+    !
+    !
+    !
+    do write
+
+TASK [Deploy bgp configuration] ************************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2, rr2, x1
+
+TASK [ios_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/ios.j2] ***
+changed: [dut]
+
+TASK [template] ****************************************************************
+changed: [x1]
 changed: [r2]
+changed: [rr2]
+changed: [r1]
+
+TASK [set_fact] ****************************************************************
+ok: [r1]
+ok: [r2]
+ok: [rr2]
+ok: [x1]
+
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+skipping: [r1]
+skipping: [r2]
+skipping: [rr2]
+skipping: [x1]
+
+TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+changed: [r2]
+changed: [x1]
+changed: [r1]
+changed: [rr2]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched

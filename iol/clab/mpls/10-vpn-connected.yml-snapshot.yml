@@ -680,7 +680,18 @@ defaults:
         type: int
       import: list
       links: list
-      loopback: null
+      loopback:
+        _alt_types:
+        - bool
+        - prefix_str
+        - NoneType
+        ipv4:
+          type: ipv4
+          use: host_prefix
+        ipv6:
+          type: ipv6
+          use: host_prefix
+        pool: addr_pool
       rd: rd
     vrf_group:
       _description: VRF groups
@@ -905,6 +916,10 @@ defaults:
       - extended
     config_after:
     - routing
+    - ospf
+    - isis
+    - eigrp
+    - ripv2
     ebgp_role: external
     features:
       activate_af: Can control activation of individual address families
@@ -1471,6 +1486,8 @@ defaults:
             set:
               community:
                 append: true
+                delete: clist
+                delete_list: true
                 standard: true
               locpref: true
               med: true
@@ -1639,6 +1656,8 @@ defaults:
             set:
               community:
                 append: true
+                delete: clist
+                delete_list: true
                 standard: true
               locpref: true
               med: true
@@ -1864,6 +1883,7 @@ defaults:
           import:
           - connected
           - ospf
+          - static
           - vrf
           ipv6_lla: true
           local_as: true
@@ -1893,13 +1913,20 @@ defaults:
               vlan: 4094
           passive: false
         ospf:
+          default: true
           import:
           - bgp
           - connected
+          - static
           - vrf
           priority: true
           timers: true
           unnumbered: true
+        routing:
+          static:
+            discard: true
+            inter_vrf: true
+            vrf: true
         stp:
           enable_per_port: true
           port_type: true
@@ -1954,6 +1981,11 @@ defaults:
         bfd: {}
         bgp:
           activate_af: true
+          import:
+          - ospf
+          - connected
+          - static
+          - vrf
           ipv6_lla: true
           local_as: true
           local_as_ibgp: false
@@ -1982,6 +2014,11 @@ defaults:
           - 1000
         ospf:
           default: true
+          import:
+          - bgp
+          - connected
+          - static
+          - vrf
           password: true
           priority: true
           timers: true
@@ -2008,6 +2045,7 @@ defaults:
               weight: true
           prefix: true
           static:
+            discard: true
             inter_vrf: true
             vrf: true
         stp:
@@ -2328,6 +2366,12 @@ defaults:
       virtualbox:
         image: arista/veos
     fortios:
+      clab:
+        image: vrnetlab/vr-fortios:7.4.8
+        interface:
+          name: eth{ifindex}
+        node:
+          kind: fortinet_fortigate
       description: Fortinet FortiOS firewall
       external:
         image: none
@@ -2346,9 +2390,11 @@ defaults:
         ansible_user: admin
         collections:
         - fortinet.fortios
+        mgmt_if: port1
         netlab_config_tasks: true
         netlab_console_connection: ssh
         netlab_skip_missing_template: true
+        netlab_vdom: root
         vdom: root
       ifindex_offset: 2
       interface_name: port{ifindex}
@@ -2356,8 +2402,8 @@ defaults:
         build: https://netlab.tools/labs/fortios/
         create_template: fortios.xml.j2
         image: fortinet/fortios
+      loopback: false
       loopback_interface_name: loopback{ifindex}
-      mgmt_if: port1
       mtu: 1500
     frr:
       clab:
@@ -2567,7 +2613,7 @@ defaults:
           ansible_user: admin
           netlab_check_retries: 20
           netlab_device_type: iol
-        image: vrnetlab/cisco_iol:17.12.01
+        image: vrnetlab/cisco_iol:17.15.01
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         node:
@@ -2674,6 +2720,8 @@ defaults:
             set:
               community:
                 append: true
+                delete: clist
+                delete_list: true
                 standard: true
               locpref: true
               med: true
@@ -2722,7 +2770,7 @@ defaults:
           ansible_user: admin
           netlab_check_retries: 20
           netlab_device_type: ioll2
-        image: vrnetlab/cisco_iol:L2-17.12.01
+        image: vrnetlab/cisco_iol:L2-17.15.01
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         mtu: 1500
@@ -2831,6 +2879,8 @@ defaults:
             set:
               community:
                 append: true
+                delete: clist
+                delete_list: true
                 standard: true
               locpref: true
               med: true
@@ -2874,8 +2924,8 @@ defaults:
       clab:
         build: https://github.com/hellt/vrnetlab/tree/master/vios
         group_vars:
-          ansible_ssh_pass: VR-netlab9
-          ansible_user: vrnetlab
+          ansible_ssh_pass: admin
+          ansible_user: admin
           netlab_check_retries: 50
         image: vrnetlab/cisco_vios:15.9.3
         interface:
@@ -2983,6 +3033,8 @@ defaults:
             set:
               community:
                 append: true
+                delete: clist
+                delete_list: true
                 standard: true
               locpref: true
               med: true
@@ -3034,8 +3086,8 @@ defaults:
       clab:
         build: https://github.com/hellt/vrnetlab/tree/master/vios
         group_vars:
-          ansible_ssh_pass: VR-netlab9
-          ansible_user: vrnetlab
+          ansible_ssh_pass: admin
+          ansible_user: admin
           netlab_check_retries: 50
         image: vrnetlab/cisco_vios:15.9.3
         interface:
@@ -3144,6 +3196,8 @@ defaults:
             set:
               community:
                 append: true
+                delete: clist
+                delete_list: true
                 standard: true
               locpref: true
               med: true
@@ -5130,8 +5184,8 @@ defaults:
       vsrx: true
   module:
   - routing
-  - bgp
   - ospf
+  - bgp
   - mpls
   - vrf
   mpls:
@@ -6058,6 +6112,7 @@ defaults:
       cat8000v: true
       csr: true
       cumulus: true
+      cumulus_nvue: true
       dellos10: true
       dnsmasq: true
       eos: true
@@ -6806,8 +6861,8 @@ message: 'The tested device (DUT) is a PE-router running MPLS/VPN with two VRFs.
   '
 module:
 - routing
-- bgp
 - ospf
+- bgp
 - mpls
 - vrf
 mpls:
@@ -6848,7 +6903,7 @@ nodes:
         vpnv4: 10.0.0.6
       next_hop_self: true
       router_id: 10.0.0.5
-    box: vrnetlab/cisco_iol:17.12.01
+    box: vrnetlab/cisco_iol:17.15.01
     clab:
       kind: cisco_iol
     device: iol
@@ -6926,8 +6981,8 @@ nodes:
       ipv4: 192.168.17.105
       mac: 08:4f:a9:05:00:00
     module:
-    - bgp
     - ospf
+    - bgp
     - mpls
     - vrf
     mpls:
@@ -7500,8 +7555,8 @@ nodes:
       ipv4: 192.168.17.106
       mac: 08:4f:a9:06:00:00
     module:
-    - bgp
     - ospf
+    - bgp
     - mpls
     - vrf
     mpls:

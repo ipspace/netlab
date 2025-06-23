@@ -215,7 +215,7 @@ ok: [r1] =>
     interface eth1
      no shutdown
      description r1 -> dut
-     ! no ip address
+     ip address 10.1.0.2/30
      ipv6 address 2001:db8:3::2/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
@@ -323,7 +323,7 @@ ok: [r2] =>
     interface eth1
      no shutdown
      description r2 -> dut
-     ! no ip address
+     ip address 10.1.0.6/30
      ipv6 address 2001:db8:3:1::2/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
@@ -356,7 +356,7 @@ ok: [r3] =>
     #
     # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
     #
-    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=1
     #
     #
@@ -416,7 +416,6 @@ ok: [r3] =>
     cat >/tmp/config <<CONFIG
     hostname r3
     !
-    ip forwarding
     ipv6 forwarding
     vrf mgmt
      exit-vrf
@@ -425,14 +424,14 @@ ok: [r3] =>
     !
     interface lo
      no shutdown
-     ip address 10.0.0.4/32
-     ipv6 address 2001:db8:1:4::1/64
+     ! no ip address
+     ipv6 address 2001:db8:cafe:2000::4/128
     !
     interface eth1
      no shutdown
      description r3 -> dut
      ! no ip address
-     ipv6 address 2001:db8:3:2::2/64
+     ipv6 address 2001:db8:13::2/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -464,7 +463,7 @@ ok: [r4] =>
     #
     # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
     #
-    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=1
     #
     #
@@ -524,7 +523,6 @@ ok: [r4] =>
     cat >/tmp/config <<CONFIG
     hostname r4
     !
-    ip forwarding
     ipv6 forwarding
     vrf mgmt
      exit-vrf
@@ -533,14 +531,14 @@ ok: [r4] =>
     !
     interface lo
      no shutdown
-     ip address 10.0.0.5/32
-     ipv6 address 2001:db8:1:5::1/64
+     ! no ip address
+     ipv6 address 2001:db8:cafe:2000::5/128
     !
     interface eth1
      no shutdown
      description r4 -> dut
      ! no ip address
-     ipv6 address 2001:db8:3:3::2/64
+     ipv6 address 2001:db8:13:1::2/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
@@ -558,12 +556,12 @@ ok: [dut] =>
     !
     lldp run
     !
-    ip host dut-blue 2001:db8:3:2::1 2001:db8:3:3::1 2001:db8:cafe:1::1
-    ip host dut-red 2001:db8:3::1 2001:db8:3:1::1 2001:db8:cafe::1
-    ip host r1 10.0.0.2 2001:db8:1:2::1 2001:db8:3::2
-    ip host r2 10.0.0.3 2001:db8:1:3::1 2001:db8:3:1::2
-    ip host r3 10.0.0.4 2001:db8:1:4::1 2001:db8:3:2::2
-    ip host r4 10.0.0.5 2001:db8:1:5::1 2001:db8:3:3::2
+    ip host dut-blue 2001:db8:13::1 2001:db8:13:1::1 2001:db8:cafe:2001::1
+    ip host dut-red 10.1.0.1 10.1.0.5 10.2.0.1 2001:db8:3::1 2001:db8:3:1::1 2001:db8:cafe::1
+    ip host r1 10.0.0.2 10.1.0.2 2001:db8:1:2::1 2001:db8:3::2
+    ip host r2 10.0.0.3 10.1.0.6 2001:db8:1:3::1 2001:db8:3:1::2
+    ip host r3 2001:db8:cafe:2000::4 2001:db8:13::2
+    ip host r4 2001:db8:cafe:2000::5 2001:db8:13:1::2
     !
     ip routing
     !
@@ -582,6 +580,9 @@ ok: [dut] =>
      route-target import 65000:1
      route-target export 65000:1
     !
+     address-family ipv4
+     exit-address-family
+    !
      address-family ipv6
      exit-address-family
     !
@@ -599,14 +600,18 @@ ok: [dut] =>
     interface Ethernet0/1
      vrf forwarding red
      description dut -> r1
+     ip mtu 1500
      ipv6 mtu 1500
+     ip address 10.1.0.1 255.255.255.252
      ipv6 address 2001:DB8:3::1/64
      no shutdown
     !
     interface Ethernet0/2
      vrf forwarding red
      description dut -> r2
+     ip mtu 1500
      ipv6 mtu 1500
+     ip address 10.1.0.5 255.255.255.252
      ipv6 address 2001:DB8:3:1::1/64
      no shutdown
     !
@@ -614,26 +619,27 @@ ok: [dut] =>
      vrf forwarding blue
      description dut -> r3
      ipv6 mtu 1500
-     ipv6 address 2001:DB8:3:2::1/64
+     ipv6 address 2001:DB8:13::1/64
      no shutdown
     !
     interface Ethernet1/0
      vrf forwarding blue
      description dut -> r4
      ipv6 mtu 1500
-     ipv6 address 2001:DB8:3:3::1/64
+     ipv6 address 2001:DB8:13:1::1/64
      no shutdown
     !
     interface Loopback1
-     vrf forwarding red
-     description VRF Loopback red
-     ipv6 address 2001:DB8:CAFE::1/64
+     vrf forwarding blue
+     description VRF Loopback blue
+     ipv6 address 2001:DB8:CAFE:2001::1/64
      no shutdown
     !
     interface Loopback2
-     vrf forwarding blue
-     description VRF Loopback blue
-     ipv6 address 2001:DB8:CAFE:1::1/64
+     vrf forwarding red
+     description VRF Loopback red
+     ip address 10.2.0.1 255.255.255.255
+     ipv6 address 2001:DB8:CAFE::1/64
      no shutdown
     !
     !
@@ -662,8 +668,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for
 
 TASK [template] ****************************************************************
 changed: [r1]
-changed: [r2]
 changed: [r4]
+changed: [r2]
 changed: [r3]
 
 TASK [set_fact] ****************************************************************
@@ -713,9 +719,9 @@ ok: [dut]
 TASK [Find configuration template for ospf] ************************************
 ok: [r1]
 ok: [r2]
+ok: [r4]
 ok: [r3]
 ok: [dut]
-ok: [r4]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -751,6 +757,11 @@ ok: [r1] =>
     interface lo
     !
      ip ospf area 0.0.0.2
+    !
+    interface eth1
+    ! r1 -> dut
+     ip ospf area 0.0.0.2
+     ip ospf network point-to-point
     !
   
     !
@@ -796,6 +807,11 @@ ok: [r2] =>
     !
      ip ospf area 0.0.0.2
     !
+    interface eth1
+    ! r2 -> dut
+     ip ospf area 0.0.0.2
+     ip ospf network point-to-point
+    !
   
     !
     ! OSPFv3 FRR configuration
@@ -824,23 +840,6 @@ ok: [r3] =>
   msg: |-
     ospf configuration for r3
     =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.4
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.3
-    !
-  
     !
     ! OSPFv3 FRR configuration
     !
@@ -873,23 +872,6 @@ ok: [r4] =>
     ospf configuration for r4
     =========================================
     !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.5
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.4
-    !
-  
-    !
     ! OSPFv3 FRR configuration
     !
     interface lo
@@ -921,8 +903,8 @@ TASK [ios_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/tem
 ok: [dut]
 
 TASK [template] ****************************************************************
-changed: [r2]
 changed: [r1]
+changed: [r2]
 changed: [r4]
 changed: [r3]
 
@@ -939,9 +921,9 @@ skipping: [r3]
 skipping: [r4]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [r1]
 changed: [r2]
 changed: [r4]
+changed: [r1]
 changed: [r3]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
@@ -998,9 +980,30 @@ ok: [dut] =>
      ospfv3 101 ipv6 area 0.0.0.4
      ospfv3 network point-to-point
     !
-    interface Loopback2
+    interface Loopback1
     ! VRF Loopback blue
      ospfv3 101 ipv6 area 0.0.0.0
+    !
+  
+    router ospf 100 vrf red
+     router-id 10.0.0.1
+  
+     redistribute connected
+  
+    !
+    interface Ethernet0/1
+    ! dut -> r1
+     ip ospf 100 area 0.0.0.2
+     ip ospf network point-to-point
+    !
+    interface Ethernet0/2
+    ! dut -> r2
+     ip ospf 100 area 0.0.0.2
+     ip ospf network point-to-point
+    !
+    interface Loopback2
+    ! VRF Loopback red
+     ip ospf 100 area 0.0.0.2
     !
   
     router ospfv3 100
@@ -1020,7 +1023,7 @@ ok: [dut] =>
      ospfv3 100 ipv6 area 0.0.0.2
      ospfv3 network point-to-point
     !
-    interface Loopback1
+    interface Loopback2
     ! VRF Loopback red
      ospfv3 100 ipv6 area 0.0.0.2
     !

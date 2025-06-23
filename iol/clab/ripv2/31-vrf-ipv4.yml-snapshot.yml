@@ -677,7 +677,18 @@ defaults:
         type: int
       import: list
       links: list
-      loopback: null
+      loopback:
+        _alt_types:
+        - bool
+        - prefix_str
+        - NoneType
+        ipv4:
+          type: ipv4
+          use: host_prefix
+        ipv6:
+          type: ipv6
+          use: host_prefix
+        pool: addr_pool
       rd: rd
     vrf_group:
       _description: VRF groups
@@ -902,6 +913,10 @@ defaults:
       - extended
     config_after:
     - routing
+    - ospf
+    - isis
+    - eigrp
+    - ripv2
     ebgp_role: external
     features:
       activate_af: Can control activation of individual address families
@@ -1206,7 +1221,6 @@ defaults:
         image: aruba/cx
       loopback_interface_name: loopback {ifindex}
       mgmt_if: mgmt
-      provider: libvirt
       tunnel_interface_name: tunnel {ifindex}
     asav:
       description: Cisco ASAv
@@ -1469,6 +1483,8 @@ defaults:
             set:
               community:
                 append: true
+                delete: clist
+                delete_list: true
                 standard: true
               locpref: true
               med: true
@@ -1637,6 +1653,8 @@ defaults:
             set:
               community:
                 append: true
+                delete: clist
+                delete_list: true
                 standard: true
               locpref: true
               med: true
@@ -1862,6 +1880,7 @@ defaults:
           import:
           - connected
           - ospf
+          - static
           - vrf
           ipv6_lla: true
           local_as: true
@@ -1891,13 +1910,20 @@ defaults:
               vlan: 4094
           passive: false
         ospf:
+          default: true
           import:
           - bgp
           - connected
+          - static
           - vrf
           priority: true
           timers: true
           unnumbered: true
+        routing:
+          static:
+            discard: true
+            inter_vrf: true
+            vrf: true
         stp:
           enable_per_port: true
           port_type: true
@@ -1952,6 +1978,11 @@ defaults:
         bfd: {}
         bgp:
           activate_af: true
+          import:
+          - ospf
+          - connected
+          - static
+          - vrf
           ipv6_lla: true
           local_as: true
           local_as_ibgp: false
@@ -1980,6 +2011,11 @@ defaults:
           - 1000
         ospf:
           default: true
+          import:
+          - bgp
+          - connected
+          - static
+          - vrf
           password: true
           priority: true
           timers: true
@@ -2006,6 +2042,7 @@ defaults:
               weight: true
           prefix: true
           static:
+            discard: true
             inter_vrf: true
             vrf: true
         stp:
@@ -2044,7 +2081,6 @@ defaults:
       loopback_interface_name: loopback{ifindex}
       mgmt_if: mgmt1/1/1
       mtu: 1500
-      provider: libvirt
     dnsmasq:
       clab:
         build: https://netlab.tools/netlab/clab/#netlab-clab-build
@@ -2322,12 +2358,17 @@ defaults:
         image: arista/veos
       loopback_interface_name: Loopback{ifindex}
       mgmt_if: Management1
-      provider: libvirt
       role: router
       tunnel_interface_name: Tunnel{ifindex}
       virtualbox:
         image: arista/veos
     fortios:
+      clab:
+        image: vrnetlab/vr-fortios:7.4.8
+        interface:
+          name: eth{ifindex}
+        node:
+          kind: fortinet_fortigate
       description: Fortinet FortiOS firewall
       external:
         image: none
@@ -2346,9 +2387,11 @@ defaults:
         ansible_user: admin
         collections:
         - fortinet.fortios
+        mgmt_if: port1
         netlab_config_tasks: true
         netlab_console_connection: ssh
         netlab_skip_missing_template: true
+        netlab_vdom: root
         vdom: root
       ifindex_offset: 2
       interface_name: port{ifindex}
@@ -2356,8 +2399,9 @@ defaults:
         build: https://netlab.tools/labs/fortios/
         create_template: fortios.xml.j2
         image: fortinet/fortios
+      loopback: false
       loopback_interface_name: loopback{ifindex}
-      mgmt_if: port1
+      mtu: 1500
     frr:
       clab:
         group_vars:
@@ -2542,7 +2586,6 @@ defaults:
       loopback_interface_name: lo{ifindex if ifindex else ""}
       mgmt_if: eth0
       mtu: 1500
-      provider: clab
       role: router
       routing:
         _rm_per_af: true
@@ -2567,7 +2610,7 @@ defaults:
           ansible_user: admin
           netlab_check_retries: 20
           netlab_device_type: iol
-        image: vrnetlab/cisco_iol:17.12.01
+        image: vrnetlab/cisco_iol:17.15.01
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         node:
@@ -2674,6 +2717,8 @@ defaults:
             set:
               community:
                 append: true
+                delete: clist
+                delete_list: true
                 standard: true
               locpref: true
               med: true
@@ -2722,7 +2767,7 @@ defaults:
           ansible_user: admin
           netlab_check_retries: 20
           netlab_device_type: ioll2
-        image: vrnetlab/cisco_iol:L2-17.12.01
+        image: vrnetlab/cisco_iol:L2-17.15.01
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         mtu: 1500
@@ -2831,6 +2876,8 @@ defaults:
             set:
               community:
                 append: true
+                delete: clist
+                delete_list: true
                 standard: true
               locpref: true
               med: true
@@ -2874,8 +2921,8 @@ defaults:
       clab:
         build: https://github.com/hellt/vrnetlab/tree/master/vios
         group_vars:
-          ansible_ssh_pass: VR-netlab9
-          ansible_user: vrnetlab
+          ansible_ssh_pass: admin
+          ansible_user: admin
           netlab_check_retries: 50
         image: vrnetlab/cisco_vios:15.9.3
         interface:
@@ -2983,6 +3030,8 @@ defaults:
             set:
               community:
                 append: true
+                delete: clist
+                delete_list: true
                 standard: true
               locpref: true
               med: true
@@ -3034,8 +3083,8 @@ defaults:
       clab:
         build: https://github.com/hellt/vrnetlab/tree/master/vios
         group_vars:
-          ansible_ssh_pass: VR-netlab9
-          ansible_user: vrnetlab
+          ansible_ssh_pass: admin
+          ansible_user: admin
           netlab_check_retries: 50
         image: vrnetlab/cisco_vios:15.9.3
         interface:
@@ -3144,6 +3193,8 @@ defaults:
             set:
               community:
                 append: true
+                delete: clist
+                delete_list: true
                 standard: true
               locpref: true
               med: true
@@ -3903,9 +3954,7 @@ defaults:
           isis: true
           ospfv2: true
           ospfv3: true
-        vxlan:
-          requires:
-          - evpn
+        vxlan: {}
       graphite:
         icon: router
       group_vars:
@@ -5128,8 +5177,8 @@ defaults:
       vptx: true
       vsrx: true
   module:
-  - bgp
   - ripv2
+  - bgp
   - vrf
   mpls:
     attributes:
@@ -6058,6 +6107,7 @@ defaults:
       cat8000v: true
       csr: true
       cumulus: true
+      cumulus_nvue: true
       dellos10: true
       dnsmasq: true
       eos: true
@@ -6747,8 +6797,8 @@ message: 'The device under test has two VRFs with two interfaces in each VRF.
 
   '
 module:
-- bgp
 - ripv2
+- bgp
 - vrf
 name: ml_17
 nodes:
@@ -6772,7 +6822,7 @@ nodes:
       neighbors: []
       next_hop_self: true
       router_id: 10.0.0.1
-    box: vrnetlab/cisco_iol:17.12.01
+    box: vrnetlab/cisco_iol:17.15.01
     clab:
       kind: cisco_iol
     device: iol
@@ -6847,8 +6897,8 @@ nodes:
       ipv4: 192.168.17.101
       mac: 08:4f:a9:01:00:00
     module:
-    - bgp
     - ripv2
+    - bgp
     - vrf
     name: dut
     provider: clab
@@ -7013,7 +7063,6 @@ nodes:
     - ripv2
     mtu: 1500
     name: r1
-    provider: clab
     ripv2:
       af:
         ipv4: true
@@ -7094,7 +7143,6 @@ nodes:
     - bgp
     mtu: 1500
     name: r2
-    provider: clab
     role: router
   r3:
     af:
@@ -7143,7 +7191,6 @@ nodes:
     - ripv2
     mtu: 1500
     name: r3
-    provider: clab
     ripv2:
       af:
         ipv4: true
@@ -7224,7 +7271,6 @@ nodes:
     - bgp
     mtu: 1500
     name: r4
-    provider: clab
     role: router
 plugin:
 - multilab

@@ -1,130 +1,136 @@
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+[WARNING]: Found variable using reserved name: hosts
 
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [h1]
 ok: [h2]
-ok: [r1]
 ok: [r2]
+ok: [r1]
 
 TASK [Find device readiness script] ********************************************
 ok: [h1]
 ok: [h2]
-ok: [r1]
 ok: [r2]
+ok: [r1]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [h1]
 skipping: [h2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/ioll2-clab.yml for r1, r2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/iol-clab.yml for r2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/ioll2-clab.yml for r1
+
+TASK [Check if 'sshpass' is installed] *****************************************
+ok: [r2 -> localhost]
+
+TASK [Check for 'timeout' command] *********************************************
+ok: [r2 -> localhost]
+
+TASK [Execute local ssh command to check iol readiness] ************************
+FAILED - RETRYING: [r2 -> localhost]: Execute local ssh command to check iol readiness (20 retries left).
+FAILED - RETRYING: [r2 -> localhost]: Execute local ssh command to check iol readiness (19 retries left).
+ok: [r2 -> localhost]
+
+TASK [Confirm r2 SSH server works] *********************************************
+ok: [r2] => 
+  msg: Node r2 is ready.
 
 TASK [Check if 'sshpass' is installed] *****************************************
 ok: [r1 -> localhost]
 
 TASK [Check for 'timeout' command] *********************************************
 ok: [r1 -> localhost]
-ok: [r2 -> localhost]
 
 TASK [Execute local ssh command to check ioll2 readiness] **********************
-FAILED - RETRYING: [r2 -> localhost]: Execute local ssh command to check ioll2 readiness (20 retries left).
-FAILED - RETRYING: [r1 -> localhost]: Execute local ssh command to check ioll2 readiness (20 retries left).
 ok: [r1 -> localhost]
-ok: [r2 -> localhost]
 
 TASK [Confirm r1 SSH server works] *********************************************
 ok: [r1] => 
   msg: Node r1 is ready.
-ok: [r2] => 
-  msg: Node r2 is ready.
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, r1, r2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, r2, r1
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [h1]
 ok: [h2]
-ok: [r1]
 ok: [r2]
+ok: [r1]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [h1]
 ok: [h2]
-ok: [r1]
 ok: [r2]
+ok: [r1]
 
 TASK [fail] ********************************************************************
 skipping: [h1]
 skipping: [h2]
-skipping: [r1]
 skipping: [r2]
+skipping: [r1]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [h1]
+ok: [h2]
+ok: [r2]
+ok: [r1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
 skipping: [h2]
+skipping: [r2]
 ok: [r1] => 
   msg: |-
     normalize configuration for r1
     =========================================
     !
     interface Ethernet0/1
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0301
     !
     interface Ethernet0/2
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0302
-ok: [r2] => 
-  msg: |-
-    normalize configuration for r2
-    =========================================
-    !
-    interface Ethernet0/1
-     no switchport
-     mac-address 52dc.cafe.0401
-    !
-    interface Ethernet0/2
-     no switchport
-     mac-address 52dc.cafe.0402
-
-TASK [Find configuration deployment deploy_script for normalize] ***************
-skipping: [h1]
-skipping: [h2]
-ok: [r1]
-ok: [r2]
 
 TASK [Deploy normalize configuration] ******************************************
 skipping: [h1]
 skipping: [h2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for r1, r2
+skipping: [r2]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for r1
 
 TASK [ios_config: deploying normalize from /home/pipi/net101/tools/netsim/ansible/templates/normalize/ioll2.j2] ***
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
 should be similar to how they appear if present in the running configuration on
 device including the indentation
 changed: [r1]
-changed: [r2]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, r1, r2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, r2, r1
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [h1]
 ok: [h2]
-ok: [r1]
 ok: [r2]
+ok: [r1]
 
 TASK [Find configuration template for initial] *********************************
 ok: [h1]
 ok: [h2]
-ok: [r1]
 ok: [r2]
+ok: [r1]
 
 TASK [fail] ********************************************************************
 skipping: [h1]
 skipping: [h2]
-skipping: [r1]
 skipping: [r2]
+skipping: [r1]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [h1]
+ok: [h2]
+ok: [r2]
+ok: [r1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [h1] => 
@@ -143,10 +149,15 @@ ok: [h1] =>
   
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
     # Disable IPv4 and IPv6 forwarding
     #
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
+  
     #
     # Interface addressing, create any bond devices
     #
@@ -157,14 +168,6 @@ ok: [h1] =>
     set -e
     ip -6 addr add 2001:db8:1::1/64 dev eth1
     ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    #
-    #
-    #
-    # Print the final routing table
-    ip route
 ok: [h2] => 
   msg: |-
     initial configuration for h2
@@ -181,10 +184,15 @@ ok: [h2] =>
   
     ### One-Shot configuration (non-Ubuntu VM or container)
     #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
     # Disable IPv4 and IPv6 forwarding
     #
     sysctl -w net.ipv4.ip_forward=0
     sysctl -w net.ipv6.conf.all.forwarding=0
+  
     #
     # Interface addressing, create any bond devices
     #
@@ -195,14 +203,49 @@ ok: [h2] =>
     set -e
     ip -6 addr add 2001:db8:1:1::2/64 dev eth1
     ip link set dev eth1 mtu 1500
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    #
-    #
-    #
-    # Print the final routing table
-    ip route
+ok: [r2] => 
+  msg: |-
+    initial configuration for r2
+    =========================================
+    hostname r2
+    !
+    no ip domain lookup
+    !
+    lldp run
+    !
+    ip host h1 2001:db8:1::1
+    ip host h2 2001:db8:1:1::2
+    ip host r1 2001:db8:0:3::1 2001:db8:1::3
+    !
+    ip routing
+    !
+    ipv6 unicast-routing
+    !
+    !
+    interface Loopback0
+     ipv6 address 2001:DB8:0:4::1/64
+    !
+    interface Ethernet0/0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Ethernet0/1
+     description r2 -> r1
+     ipv6 enable
+     no shutdown
+    !
+    interface Ethernet0/2
+     description r2 -> h2 [stub]
+     ipv6 address 2001:DB8:1:1::4/64
+     no shutdown
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
+    !
+    no banner exec
+    no banner login
+    no banner incoming
 ok: [r1] => 
   msg: |-
     initial configuration for r1
@@ -213,6 +256,8 @@ ok: [r1] =>
     !
     lldp run
     !
+    !
+    ip routing
     !
     ipv6 unicast-routing
     !
@@ -227,14 +272,14 @@ ok: [r1] =>
     interface Ethernet0/1
      no switchport
      description r1 -> h1 [stub]
-     mtu 1500
+     ipv6 mtu 1500
      ipv6 address 2001:DB8:1::3/64
      no shutdown
     !
     interface Ethernet0/2
      no switchport
      description r1 -> r2
-     mtu 1500
+     ipv6 mtu 1500
      ipv6 enable
      no shutdown
     !
@@ -245,70 +290,22 @@ ok: [r1] =>
     no banner exec
     no banner login
     no banner incoming
-ok: [r2] => 
-  msg: |-
-    initial configuration for r2
-    =========================================
-    hostname r2
-    !
-    no ip domain lookup
-    !
-    lldp run
-    !
-    !
-    ipv6 unicast-routing
-    !
-    !
-    interface Loopback0
-     ipv6 address 2001:DB8:0:4::1/64
-    !
-    interface Ethernet0/0
-     no lldp transmit
-     no lldp receive
-    !
-    interface Ethernet0/1
-     no switchport
-     description r2 -> r1
-     mtu 1500
-     ipv6 enable
-     no shutdown
-    !
-    interface Ethernet0/2
-     no switchport
-     description r2 -> h2 [stub]
-     mtu 1500
-     ipv6 address 2001:DB8:1:1::4/64
-     no shutdown
-    !
-    !
-    line vty 0 4
-     exec-timeout 0 0
-    !
-    no banner exec
-    no banner login
-    no banner incoming
-
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [h1]
-ok: [h2]
-ok: [r1]
-ok: [r2]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for r1, r2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for r2, r1
 
 TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -319,12 +316,12 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-wyzu9l05.sh] ***********************
-changed: [h2 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-510gyf1c.sh] ***********************
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
 changed: [r1]
@@ -350,6 +347,10 @@ ok: [r2]
 TASK [fail] ********************************************************************
 skipping: [r1]
 skipping: [r2]
+
+TASK [Find configuration deployment deploy_script for eigrp] *******************
+ok: [r1]
+ok: [r2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [r1] => 
@@ -389,10 +390,6 @@ ok: [r2] =>
      ipv6 eigrp 2
     !
 
-TASK [Find configuration deployment deploy_script for eigrp] *******************
-ok: [r1]
-ok: [r2]
-
 TASK [Deploy eigrp configuration] **********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for r1, r2
 
@@ -404,8 +401,8 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-h2                         : ok=16   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+h1                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+h2                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
 r1                         : ok=29   changed=3    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
-r2                         : ok=28   changed=3    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
+r2                         : ok=26   changed=2    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
 
