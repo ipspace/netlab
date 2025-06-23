@@ -668,7 +668,18 @@ defaults:
         type: int
       import: list
       links: list
-      loopback: null
+      loopback:
+        _alt_types:
+        - bool
+        - prefix_str
+        - NoneType
+        ipv4:
+          type: ipv4
+          use: host_prefix
+        ipv6:
+          type: ipv6
+          use: host_prefix
+        pool: addr_pool
       rd: rd
     vrf_group:
       _description: VRF groups
@@ -1149,6 +1160,7 @@ defaults:
           ldp: true
           vpn: true
         ospf:
+          areas: true
           default: true
           import:
           - bgp
@@ -1441,7 +1453,9 @@ defaults:
           ldp: true
           vpn: true
         ospf:
-          areas: true
+          areas:
+            external_filter: Cisco IOS cannot suppress NSSA type-7 ranges
+            external_range: Cisco IOS cannot configure NSSA type-7 ranges
           default:
             policy: true
           import:
@@ -1612,7 +1626,9 @@ defaults:
           ldp: true
           vpn: true
         ospf:
-          areas: true
+          areas:
+            external_filter: Cisco IOS cannot suppress NSSA type-7 ranges
+            external_range: Cisco IOS cannot configure NSSA type-7 ranges
           default:
             policy: true
           import:
@@ -1877,6 +1893,7 @@ defaults:
           import:
           - connected
           - ospf
+          - static
           - vrf
           ipv6_lla: true
           local_as: true
@@ -1911,10 +1928,16 @@ defaults:
           import:
           - bgp
           - connected
+          - static
           - vrf
           priority: true
           timers: true
           unnumbered: true
+        routing:
+          static:
+            discard: true
+            inter_vrf: true
+            vrf: true
         stp:
           enable_per_port: true
           port_type: true
@@ -2001,7 +2024,9 @@ defaults:
           reserved_ifindex_range:
           - 1000
         ospf:
-          areas: true
+          areas:
+            external_filter: Dell OS10 cannot suppress NSSA type-7 ranges
+            external_range: Dell OS10 cannot configure NSSA type-7 ranges
           default: true
           import:
           - bgp
@@ -2277,7 +2302,9 @@ defaults:
           ldp: true
           vpn: true
         ospf:
-          areas: true
+          areas:
+            external_filter: Arista EOS cannot suppress NSSA type-7 ranges
+            external_range: Arista EOS cannot configure NSSA type-7 ranges
           default:
             policy: true
           import:
@@ -2356,6 +2383,12 @@ defaults:
       virtualbox:
         image: arista/veos
     fortios:
+      clab:
+        image: vrnetlab/vr-fortios:7.4.8
+        interface:
+          name: eth{ifindex}
+        node:
+          kind: fortinet_fortigate
       description: Fortinet FortiOS firewall
       external:
         image: none
@@ -2374,9 +2407,11 @@ defaults:
         ansible_user: admin
         collections:
         - fortinet.fortios
+        mgmt_if: port1
         netlab_config_tasks: true
         netlab_console_connection: ssh
         netlab_skip_missing_template: true
+        netlab_vdom: root
         vdom: root
       ifindex_offset: 2
       interface_name: port{ifindex}
@@ -2384,8 +2419,8 @@ defaults:
         build: https://netlab.tools/labs/fortios/
         create_template: fortios.xml.j2
         image: fortinet/fortios
+      loopback: false
       loopback_interface_name: loopback{ifindex}
-      mgmt_if: port1
       mtu: 1500
     frr:
       clab:
@@ -2596,7 +2631,7 @@ defaults:
           ansible_user: admin
           netlab_check_retries: 20
           netlab_device_type: iol
-        image: vrnetlab/cisco_iol:17.12.01
+        image: vrnetlab/cisco_iol:17.15.01
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         node:
@@ -2666,7 +2701,9 @@ defaults:
           ldp: true
           vpn: true
         ospf:
-          areas: true
+          areas:
+            external_filter: Cisco IOS cannot suppress NSSA type-7 ranges
+            external_range: Cisco IOS cannot configure NSSA type-7 ranges
           default:
             policy: true
           import:
@@ -2753,7 +2790,7 @@ defaults:
           ansible_user: admin
           netlab_check_retries: 20
           netlab_device_type: ioll2
-        image: vrnetlab/cisco_iol:L2-17.12.01
+        image: vrnetlab/cisco_iol:L2-17.15.01
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         mtu: 1500
@@ -2825,7 +2862,9 @@ defaults:
           ldp: true
           vpn: true
         ospf:
-          areas: true
+          areas:
+            external_filter: Cisco IOS cannot suppress NSSA type-7 ranges
+            external_range: Cisco IOS cannot configure NSSA type-7 ranges
           default:
             policy: true
           import:
@@ -2979,7 +3018,9 @@ defaults:
           ldp: true
           vpn: true
         ospf:
-          areas: true
+          areas:
+            external_filter: Cisco IOS cannot suppress NSSA type-7 ranges
+            external_range: Cisco IOS cannot configure NSSA type-7 ranges
           default:
             policy: true
           import:
@@ -3143,7 +3184,9 @@ defaults:
           ldp: true
           vpn: true
         ospf:
-          areas: true
+          areas:
+            external_filter: Cisco IOS cannot suppress NSSA type-7 ranges
+            external_range: Cisco IOS cannot configure NSSA type-7 ranges
           default:
             policy: true
           import:
@@ -5347,7 +5390,26 @@ defaults:
               _subtype: prefix_str
               type: list
             external_range:
-              _subtype: prefix_str
+              _subtype:
+                _alt_types:
+                - prefix_str
+                _keys:
+                  cost:
+                    max_value: 65535
+                    min_value: 1
+                    type: int
+                  ipv4:
+                    type: ipv4
+                    use: prefix
+                  ipv6:
+                    type: ipv6
+                    use: prefix
+                  type:
+                    type: str
+                    valid_values:
+                    - e1
+                    - e2
+                type: dict
               type: list
             filter:
               _subtype: prefix_str
@@ -5360,7 +5422,19 @@ defaults:
               - stub
               - nssa
             range:
-              _subtype: prefix_str
+              _subtype:
+                _alt_types:
+                - prefix_str
+                cost:
+                  max_value: 65535
+                  min_value: 1
+                  type: int
+                ipv4:
+                  type: ipv4
+                  use: prefix
+                ipv6:
+                  type: ipv6
+                  use: prefix
               type: list
           type: list
         bfd:
@@ -5452,7 +5526,26 @@ defaults:
               _subtype: prefix_str
               type: list
             external_range:
-              _subtype: prefix_str
+              _subtype:
+                _alt_types:
+                - prefix_str
+                _keys:
+                  cost:
+                    max_value: 65535
+                    min_value: 1
+                    type: int
+                  ipv4:
+                    type: ipv4
+                    use: prefix
+                  ipv6:
+                    type: ipv6
+                    use: prefix
+                  type:
+                    type: str
+                    valid_values:
+                    - e1
+                    - e2
+                type: dict
               type: list
             filter:
               _subtype: prefix_str
@@ -5465,7 +5558,19 @@ defaults:
               - stub
               - nssa
             range:
-              _subtype: prefix_str
+              _subtype:
+                _alt_types:
+                - prefix_str
+                cost:
+                  max_value: 65535
+                  min_value: 1
+                  type: int
+                ipv4:
+                  type: ipv4
+                  use: prefix
+                ipv6:
+                  type: ipv6
+                  use: prefix
               type: list
           type: list
         bfd:
@@ -5542,7 +5647,26 @@ defaults:
               _subtype: prefix_str
               type: list
             external_range:
-              _subtype: prefix_str
+              _subtype:
+                _alt_types:
+                - prefix_str
+                _keys:
+                  cost:
+                    max_value: 65535
+                    min_value: 1
+                    type: int
+                  ipv4:
+                    type: ipv4
+                    use: prefix
+                  ipv6:
+                    type: ipv6
+                    use: prefix
+                  type:
+                    type: str
+                    valid_values:
+                    - e1
+                    - e2
+                type: dict
               type: list
             filter:
               _subtype: prefix_str
@@ -5555,7 +5679,19 @@ defaults:
               - stub
               - nssa
             range:
-              _subtype: prefix_str
+              _subtype:
+                _alt_types:
+                - prefix_str
+                cost:
+                  max_value: 65535
+                  min_value: 1
+                  type: int
+                ipv4:
+                  type: ipv4
+                  use: prefix
+                ipv6:
+                  type: ipv6
+                  use: prefix
               type: list
           type: list
         default:
@@ -6184,6 +6320,7 @@ defaults:
       cat8000v: true
       csr: true
       cumulus: true
+      cumulus_nvue: true
       dellos10: true
       dnsmasq: true
       eos: true
@@ -6879,6 +7016,19 @@ links:
     ipv4: 172.16.1.0/24
   role: stub
   type: stub
+- _linkname: links[8]
+  bridge: ml_32_8
+  interfaces:
+  - ifindex: 4
+    ifname: eth4
+    ipv4: 10.19.1.1/24
+    node: r11
+  linkindex: 8
+  node_count: 1
+  prefix:
+    ipv4: 172.16.2.0/24
+  role: stub
+  type: stub
 - _linkname: vrfs.tenant.links[1]
   interfaces:
   - ifindex: 6
@@ -6889,7 +7039,7 @@ links:
     ifname: eth1
     ipv4: 10.1.0.22/30
     node: v1
-  linkindex: 8
+  linkindex: 9
   node_count: 2
   ospf:
     area: 0.0.0.11
@@ -6907,7 +7057,7 @@ links:
     ifname: eth1
     ipv4: 10.1.0.26/30
     node: v2
-  linkindex: 9
+  linkindex: 10
   node_count: 2
   ospf:
     area: 0.0.0.21
@@ -6926,7 +7076,7 @@ message: 'This lab tests numerous combinations of OSPF area parameters. It tests
 
   * Suppression of inter-area routes in stub/NSSA area
 
-  * Area ranges and suppressed ranges
+  * Area ranges (including explicit range cost) and suppressed ranges
 
   * Summarization and suppression of NSSA routes
 
@@ -7041,7 +7191,7 @@ nodes:
       ifindex: 6
       ifname: ethernet-1/6
       ipv4: 10.1.0.21/30
-      linkindex: 8
+      linkindex: 9
       name: dut -> v1
       neighbors:
       - ifname: eth1
@@ -7054,7 +7204,7 @@ nodes:
       ifindex: 7
       ifname: ethernet-1/7
       ipv4: 10.1.0.25/30
-      linkindex: 9
+      linkindex: 10
       name: dut -> v2
       neighbors:
       - ifname: eth1
@@ -7096,6 +7246,8 @@ nodes:
         range:
         - &id002
           ipv4: 10.17.0.0/16
+        - cost: 42
+          ipv4: 10.19.0.0/16
       - _area_int: 12
         area: 0.0.0.12
         default:
@@ -7116,6 +7268,9 @@ nodes:
         external_range:
         - &id004
           ipv4: 10.19.2.0/24
+        - cost: 42
+          ipv4: 10.19.4.0/24
+          type: e2
         inter_area: true
         kind: nssa
       router_id: 10.0.0.1
@@ -7146,6 +7301,8 @@ nodes:
             kind: stub
             range:
             - *id002
+            - cost: 42
+              ipv4: 10.19.0.0/16
           - _area_int: 21
             area: 0.0.0.21
             inter_area: false
@@ -7159,7 +7316,7 @@ nodes:
             ifindex: 6
             ifname: ethernet-1/6
             ipv4: 10.1.0.21/30
-            linkindex: 8
+            linkindex: 9
             name: dut -> v1
             neighbors:
             - ifname: eth1
@@ -7176,7 +7333,7 @@ nodes:
             ifindex: 7
             ifname: ethernet-1/7
             ipv4: 10.1.0.25/30
-            linkindex: 9
+            linkindex: 10
             name: dut -> v2
             neighbors:
             - ifname: eth1
@@ -7188,7 +7345,7 @@ nodes:
               passive: false
             type: p2p
             vrf: tenant
-          router_id: 10.0.0.1
+          router_id: 10.1.0.1
         rd: '65000:1'
         vrfidx: 100
   r11:
@@ -7251,6 +7408,19 @@ nodes:
         passive: true
       role: stub
       type: stub
+    - bridge: ml_32_8
+      ifindex: 4
+      ifname: eth4
+      ipv4: 10.19.1.1/24
+      linkindex: 8
+      mtu: 1500
+      name: r11 -> stub
+      neighbors: []
+      ospf:
+        area: 0.0.0.11
+        passive: true
+      role: stub
+      type: stub
     loopback:
       ifindex: 0
       ifname: lo
@@ -7282,6 +7452,8 @@ nodes:
         kind: stub
         range:
         - *id002
+        - cost: 42
+          ipv4: 10.19.0.0/16
       router_id: 10.0.0.3
     role: router
   r12:
@@ -7480,6 +7652,9 @@ nodes:
         - *id003
         external_range:
         - *id004
+        - cost: 42
+          ipv4: 10.19.4.0/24
+          type: e2
         inter_area: true
         kind: nssa
       import:
@@ -7498,6 +7673,10 @@ nodes:
           discard: true
           idx: 0
       - ipv4: 10.19.3.1/32
+        nexthop:
+          discard: true
+          idx: 0
+      - ipv4: 10.19.4.1/32
         nexthop:
           discard: true
           idx: 0
@@ -7579,7 +7758,7 @@ nodes:
     - ifindex: 1
       ifname: eth1
       ipv4: 10.1.0.22/30
-      linkindex: 8
+      linkindex: 9
       mtu: 1500
       name: v1 -> dut
       neighbors:
@@ -7623,6 +7802,8 @@ nodes:
         kind: stub
         range:
         - *id002
+        - cost: 42
+          ipv4: 10.19.0.0/16
       router_id: 10.0.0.7
     role: router
   v2:
@@ -7647,7 +7828,7 @@ nodes:
     - ifindex: 1
       ifname: eth1
       ipv4: 10.1.0.26/30
-      linkindex: 9
+      linkindex: 10
       mtu: 1500
       name: v2 -> dut
       neighbors:
@@ -7700,6 +7881,8 @@ ospf:
     kind: stub
     range:
     - *id002
+    - cost: 42
+      ipv4: 10.19.0.0/16
   - _area_int: 12
     area: 0.0.0.12
     default:
@@ -7718,6 +7901,9 @@ ospf:
     - *id003
     external_range:
     - *id004
+    - cost: 42
+      ipv4: 10.19.4.0/24
+      type: e2
     inter_area: true
     kind: nssa
 plugin:
@@ -7792,6 +7978,13 @@ validate:
   plugin: ospf_prefix('10.17.0.0/16')
   wait: 10
   wait_msg: Waiting for SPF run
+- description: Check for area ranges with specified cost
+  fail: Inter-area routes do not have the correct cost
+  level: warning
+  name: a_range_c
+  nodes:
+  - rb
+  plugin: ospf_prefix('10.19.0.0/16',cost=52)
 - description: Check for more-specific prefixes in area ranges
   fail: Inter-area routes are not summarized
   name: am_range
@@ -7823,7 +8016,7 @@ validate:
   - rb
   plugin: ospf_prefix(nodes.r22.routing.static[0].ipv4)
   stop_on_error: true
-  wait: 10
+  wait: 15
 - description: Check NSSA-to-backbone summarization
   fail: NSSA external route that should be summarized is advertised into backbone
     area
@@ -7848,6 +8041,13 @@ validate:
   nodes:
   - rb
   plugin: ospf_prefix('10.19.2.0/24')
+- description: Check NSSA type-7 (external) range with explicit cost
+  fail: NSSA range is missing or has incorrect cost
+  level: warning
+  name: nc_range
+  nodes:
+  - rb
+  plugin: ospf_prefix('10.19.4.0/24',cost=42)
 - description: Check NSSA type-7 (external) filter
   fail: NSSA summaries are not suppressed
   level: warning
