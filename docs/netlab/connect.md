@@ -29,7 +29,8 @@ The rest of the arguments are passed to SSH or docker exec command
 ```
 
 ```{tip}
-The [**‌--show** option](netlab-connect-show) must be used _after_ the host parameter, as the **‌--show** option consumes all arguments specified after it.
+* The [**‌--show** option](netlab-connect-show) must be used _after_ the host parameter, as the **‌--show** option consumes all arguments specified after it.
+* **‌netlab connect** connects to a single node. Use a bash script described in the [**netlab report** examples](netlab-report-examples) if you want to use a single command to connect to multiple nodes in a multi-window environment.
 ```
 
 ## Collecting Device Data
@@ -58,6 +59,10 @@ The [**‌--show** option](netlab-connect-show) must be used _after_ the host pa
 Command line parameters specified after the device name are passed to the **ssh** or **docker exec** command, allowing you to execute a single command on a lab device.
 
 If you want to process the results of the command executed on a lab device, use **netlab connect -q** to remove the "_we are going to connect to device X_" message.
+
+```{tip}
+Use [**‌netlab exec**](netlab-exec) if you want to execute the same command on multiple devices
+```
 
 (netlab-connect-show)=
 ## Executing a Show Command
