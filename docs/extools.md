@@ -50,6 +50,7 @@ _netlab_ includes definitions for the following tools:
    extool/suzieq.md
    extool/edgeshark.md
    extool/nso.md
+   extool/nuts.md
 ```
 
 It's relatively easy to add your own tools to the **defaults.tools** dictionary. Read [](dev/extools.md) for more details.
