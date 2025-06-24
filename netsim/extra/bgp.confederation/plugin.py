@@ -2,6 +2,7 @@ import typing
 from box import Box
 from netsim import api
 from netsim.utils import log
+from netsim.augment import devices
 
 _config_name = 'bgp.confederation'
 _requires    = [ 'bgp' ]
@@ -17,9 +18,16 @@ def post_transform(topology: Box) -> None:
       continue
 
     bgp_as = ndata.get('bgp.as')
-    for casn,cdata in confed.items():
+    for casn,cdata in confed.items():                       # Iterate over all confederations
       members = cdata.get('members',[])
-      if bgp_as in members:
+      if bgp_as in members:                                 # If this node is a member...
+
+        features = devices.get_device_features(ndata,topology.defaults)
+        if not features.get('bgp.confederation'):           # Check plugin support
+          log.error( f"Node {ndata.name}({ndata.device}) does not support the bgp.confederation plugin",
+                     category=log.IncorrectAttr,module=_config_name)
+          continue
+
         ndata.bgp.confederation['as'] = casn
         ndata.bgp.confederation.peers = [ m for m in members if m!=bgp_as ]
         api.node_config(ndata,_config_name)                 # Remember that we have to do extra configuration
@@ -30,7 +38,7 @@ def post_transform(topology: Box) -> None:
             continue
           for nb2 in neighbor.get('bgp.neighbors',[]):
             if nb2.name == n and nb2.type=='ebgp':
-              nb2['as'] = casn
+              nb2['as'] = casn                              # Update peer to use the confederation AS instead
 
         # TODO: Apply ibgp type community exchange, confed is really a new type of ebgp peer
 
