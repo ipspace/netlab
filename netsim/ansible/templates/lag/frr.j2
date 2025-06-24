@@ -1,1 +1,19 @@
 {% include "linux.j2" %}
+
+# ESI-LAG config in FRR
+cat >/tmp/esi_lag_config <<CONFIG
+
+{% for intf in interfaces if intf.type == 'lag' and intf.lag.esi is defined %}
+interface {{ intf.ifname }}
+{%   if intf.lag._esi_auto_derive|default(false) %}
+    evpn mh es-id {{intf.lag._esi_manual}}
+{%   else %}
+    evpn mh es-id {{intf.lag.esi}}
+{%   endif %}
+!
+{% endfor %}
+!
+do write
+CONFIG
+vtysh -f /tmp/esi_lag_config
+vtysh -c 'clear bgp *'
