@@ -146,6 +146,21 @@ def nvue_check_ospf_vrf_loopbacks(node: Box) -> None:
       node=node)
 
 """
+In case VXLAN is used in combination with mlag, require that the mlag.vtep plugin be enabled.
+If not, the VXLAN anycast IP does not get provisioned, and the device fails to bringup the VXLAN interface
+"""
+def nvue_mlag_vxlan_require_plugin(node: Box, topology: Box) -> None:
+  if not node.get('lag.mlag.peer'):
+    return
+  if 'mlag.vtep' in topology.get('plugin',[]):
+    return
+  report_quirk(
+      f'Node {node.name} uses MLAG with VXLAN, which requires the mlag.vtep plugin to work',
+      quirk='vxlan_mlag_vtep_plugin',
+      more_data="Without this plugin, VXLAN interfaces will remain DOWN due to missing anycast IP",
+      node=node)
+
+"""
 In case of shared MLAG VTEP, marks the VTEP such that the correct configuration can be applied
 """
 def mark_shared_mlag_vtep(node: Box, topology: Box) -> None:
@@ -190,7 +205,8 @@ class Cumulus_Nvue(_Quirks):
     if 'stp' in mods:
       nvue_check_stp_features(node,topology)
 
-    if 'vxlan' in mods:
+    if 'vxlan' in mods and 'lag' in mods:
+      nvue_mlag_vxlan_require_plugin(node,topology)
       mark_shared_mlag_vtep(node,topology)
     if 'vlan' in mods:
       nvue_check_native_routed_on_mixed_trunk(node,topology)
