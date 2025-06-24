@@ -1,0 +1,16 @@
+{% for nn,nd in nodes.items()
+     if nd.ansible_connection|default('') in ['ssh','paramiko','network_cli']
+       and ('ipv4' in nd.mgmt or 'ipv6' in nd.mgmt) %}
+{{ nn }}:
+  hostname: "{{ nd.mgmt.ipv4|default(nd.mgmt.ipv6) }}"
+  username: "{{ nd.ansible_user }}"
+  password: "{{ nd.ansible_ssh_pass }}"
+  connection_options:
+    netmiko:
+      extras: &id001
+        session_log: {{ nn }}.log
+        session_log_file_mode: append
+    napalm:
+      extras:
+        optional_args: *id001
+{% endfor %}
