@@ -50,6 +50,7 @@ Even more BGP features are implemented in the following plugins:
 * [bgp.originate](../plugins/bgp.originate.md): creates loopback interfaces instead of static routes to originate additional IPv4 or IPv6 prefixes
 * [ebgp.multihop](../plugins/ebgp.multihop.md): implements multihop EBGP sessions.
 * [bgp.domain](../plugins/bgp.domain.md): allows you to build topologies that reuse the same BGP ASN in different network parts.
+* [bgp.confederation](../plugins/bgp.confederation.md): allows you to configure BGP confederations.
 
 (bgp-platform)=
 ## Platform Support
