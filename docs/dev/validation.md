@@ -87,16 +87,21 @@ Validator recognizes standard Python data types (**str**, **int**, **bool**, **l
 
 | Data type.     | Meaning |
 |----------------|---------|
-| **asn**        | AS number (an integer between 1 and 65535) |
+| **addr_pool**  | [Address pool](address-pools) |
+| **asn**        | AS number (2-octer or 4-octet) |
+| **asn2**       | 2-octet ASN |
+| **bool_false** | The only valid value is *false* |
 | **device**     | Valid device (platform) identifier |
 | **id**         | Identifier (containing A-Z, a-z, 0-9 and underscore) |
 | **ipv4**       | An IPv4 address, prefix, integer (offset in a subnet), or bool (unnumbered) |
 | **ipv6**       | An IPv6 address, prefix, integer (offset in a subnet), or bool (LLA only) |
 | **mac**        | MAC address in any format recognized by the `netaddr` library |
+| **named_pfx**  | [named prefix](named-prefixes) |
 | **net**        | IS-IS NET/NSAP |
 | **node_id**    | Valid node name |
 | **prefix_str** | An IPv4 or IPv6 prefix |
 | **rd**         | Route distinguisher (ASN:ID or IP:ID) |
+| **r_proto**    | Routing protocol identifier |
  
 The data type can be specified as a string (without additional parameters) or a dictionary with a **type** attribute (data type as a string) and other type-specific validation parameters.
 
@@ -115,8 +120,10 @@ All attributes defined with a dictionary (**mode** in the above example, but not
 
 * **true_value** -- value to use when the parameter is set to *True*
 * **_requires** -- a list of modules that must be enabled in global- or node context to allow the use of this attribute. See `vrfs` in `modules/vrf.yml` and `vlans` in `modules/vlan.yml` for more details.
-* **_required** (bool) -- the attribute must be present if the parent in the parent dictionary
+* **_required** (bool) -- the attribute must be present in the parent dictionary[^CRQ]
 * **_alt_types** -- [alternate data types](validation-alt-types)
+
+[^CRQ]: This does not make the parent dictionary mandatory, but if it's present, it must have the required attribute. Use a chain of `_required` attributes if you want to enforce the presence of an attribute deep in the data structure.
 
 See [](validation-definition-examples) for more details.
 

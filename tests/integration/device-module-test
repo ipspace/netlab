@@ -202,11 +202,11 @@ def execute(
 
   return subprocess.run(cmd.split(' '),stdout=log_stream,stderr=err_stream)
 
-def extract_warning(test: str, args: argparse.Namespace) -> list:
-  log_name = f"{args.logdir}/{os.path.basename(test)}-validate.log"
+def extract_warning(test: str, args: argparse.Namespace, step: str = 'validate') -> list:
+  log_name = f"{args.logdir}/{os.path.basename(test)}-{step}.log"
   log_lines = pathlib.Path(log_name).read_text().split('\n')
-  w_pfx = '[WARNING]'
-  return [ line.replace(w_pfx,'').strip() for line in log_lines if line.startswith(w_pfx) ]
+  w_prefixes = ['[WARNING]','Warning in ']
+  return [ line.replace(w_pfx,'').strip() for w_pfx in w_prefixes for line in log_lines if line.startswith(w_pfx) ]
 
 def run_cleanup(args: argparse.Namespace,final: bool = True, abort: bool = True) -> None:
   if execute(f"netlab down --cleanup --force --force",args,test="cleanup",log="down",err="down").returncode == 0:
@@ -260,8 +260,12 @@ def run_test(test: str, args: argparse.Namespace,first: bool) -> None:
   c_time = time.strftime('%H:%M:%S',time.localtime())
   print(f"{c_time} {test}:",end=" ",flush=True)
   if execute(f"netlab create {test_path}",args,test=test,log="create",err="create").returncode == 0:
-    print("create(ok)",end=" ",flush=True)
-    log_result(test,'create',True)
+    warnings = extract_warning(test,args,step='create')
+    if warnings:
+      print_fail("create",fail_status='WARNING',fail_color="bright_yellow")
+    else:
+      print("create(ok)",end=" ",flush=True)
+    log_result(test,'create',{ 'warning': warnings } if warnings else True)
     shutil.copyfile(src="netlab.snapshot.yml",dst=f"{args.logdir}/{os.path.basename(test)}-snapshot.yml")
   else:
     print_fail("create",fail_color="bright_cyan")
@@ -314,7 +318,7 @@ def run_test(test: str, args: argparse.Namespace,first: bool) -> None:
   elif valid.returncode == 2:
     print("validate(SKIPPED)",end=" ",flush=True)
   elif valid.returncode == 3:
-    log_result(test,'validate','warning',warning=extract_warning(test=test,args=args))
+    log_result(test,'validate',{'warning': extract_warning(test=test,args=args)})
     print_fail("validate",fail_status='WARNING',fail_color="bright_yellow")
   else:
     if args.quiet or args.batch:
