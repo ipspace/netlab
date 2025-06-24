@@ -26,6 +26,8 @@ def post_transform(topology: Box) -> None:
 
         for nb in ndata.get('bgp.neighbors',[]):            # Update remote AS used by ebgp peers
           neighbor = topology.nodes[ nb.name ]
+          if neighbor.get('bgp.as') in members:             # Skip members of the same confederation
+            continue
           for nb2 in neighbor.get('bgp.neighbors',[]):
             if nb2.name == n and nb2.type=='ebgp':
               nb2['as'] = casn
