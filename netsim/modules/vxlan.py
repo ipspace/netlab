@@ -105,9 +105,10 @@ def node_set_vtep(node: Box, topology: Box) -> bool:
     if intf.get('type', '') == 'loopback' and 'vxlan' in intf and intf.vxlan.get('vtep', False):
       if intf.vxlan.get('shared_vtep'):
         shared_vtep = intf
-      else:
-        vtep_interface = intf
-        loopback_name = intf.ifname
+        if node.get('vxlan.flooding','static')!='static':           # For static VXLAN, shared VTEP replaces both single ones
+          break
+      vtep_interface = intf
+      loopback_name = intf.ifname
       break
 
   if topology.defaults.vxlan.use_v6_vtep:
