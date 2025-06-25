@@ -95,6 +95,7 @@ def assign_vni(toponode: Box, obj_path: str, topology: Box) -> None:
 def node_set_vtep(node: Box, topology: Box) -> bool:
   # default vtep interface & interface name
   vtep_interface = node.loopback
+  shared_vtep = None
   loopback_name = devices.get_loopback_name(node,topology)
   if not loopback_name:
     log.fatal("Can't find the loopback name of VXLAN-capable device {node.device}",module="vxlan",header=True)
@@ -102,8 +103,11 @@ def node_set_vtep(node: Box, topology: Box) -> bool:
   # Search for additional loopback interfaces with vxlan.vtep' flag, and use the first one
   for intf in node.interfaces:
     if intf.get('type', '') == 'loopback' and 'vxlan' in intf and intf.vxlan.get('vtep', False):
-      vtep_interface = intf
-      loopback_name = intf.ifname
+      if intf.vxlan.get('shared_vtep'):
+        shared_vtep = intf
+      else:
+        vtep_interface = intf
+        loopback_name = intf.ifname
       break
 
   if topology.defaults.vxlan.use_v6_vtep:
@@ -129,6 +133,8 @@ def node_set_vtep(node: Box, topology: Box) -> bool:
   #
   node.vxlan.vtep = _rp_utils.get_intf_address(vtep_interface[vtep_af])
   node.vxlan.vtep_interface = loopback_name
+  if shared_vtep:
+    node.vxlan.shared_vtep = _rp_utils.get_intf_address(shared_vtep[vtep_af])
   return True
 
 #

@@ -1,12 +1,13 @@
 ---
 message: |
   The devices under test are an MLAG pair of VLAN-to-VXLAN bridges providing two
-  access VLANs and two VXLAN VNIs using EVPN signalled VXLAN tunnels. Both VLANs are
-  using the same IP prefix to identify potential inter-VLAN leaking.
+  access VLANs and two VXLAN VNIs using EVPN signalled VXLAN tunnels. The VLANs use different
+  IP prefix to test inter-vlan routing, with symmetric IRB using RT5
 
   The pair uses the mlag.vtep plugin to provision an anycast MLAG VTEP across
   both, such that both devices are equivalent from the perspective of the 3rd
-  VTEP (FRR).
+  VTEP (FRR). However, for RT5 the DUT should use the specific local VTEP IP as nexthop, not
+  the shared IP (which can be suboptimal)
 
   The network uses BGP EVPN as the control plane for VXLAN
 
@@ -17,7 +18,7 @@ message: |
   * x2 -- an orphan host attached to dut_b
   * xr -- a host attached to remote VTEP
 
-  All hosts within a single VLAN should be able to ping each other.
+  All hosts within both VLANs should be able to ping each other.
 
   Please note it might take a while for the lab to work due to STP learning
   phase and/or OSPF peering delays
@@ -25,6 +26,12 @@ message: |
 plugin: [ mlag.vtep ]
 
 bgp.as: 65000
+
+gateway.protocol: anycast
+
+vrfs:
+  customer:
+    evpn.transit_vni: 5042
 
 groups:
   _auto_create: True
@@ -41,7 +48,7 @@ groups:
 
   switches:
     members: [ dut_a, dut_b ]
-    module: [ vlan, vxlan, ospf, lag, bgp, evpn ]
+    module: [ vlan, vxlan, ospf, lag, bgp, evpn, gateway, vrf ]
 
   probes:
     members: [ xs ]
@@ -51,14 +58,18 @@ groups:
 
 vlans:
   red:
-    mode: bridge
-    prefix:
-      ipv4: 172.31.1.0/24
+    mode: irb
+    role: external
+    vrf: customer
+    gateway: True
+    vni: 1000
     links: [ xs-rr, dut_a-r1, dut_b-r2 ]      # Single-connected hosts
   blue:
-    mode: bridge
-    prefix:
-      ipv4: 172.31.1.0/24
+    mode: irb
+    role: external
+    vrf: customer
+    gateway: True
+    vni: 1001
     links: [ xs-br, dut_a-b1, dut_b-b2 ]      # Single-connected hosts
 
 vxlan.vlans: [ red, blue ]
@@ -112,8 +123,23 @@ validate:
     description: Ping-based reachability test in VLAN blue
     nodes: [ bl, b1, b2 ]
     plugin: ping('br')
-  inter_vlan:
-    description: Ping-based reachability test between blue and red VLANs
-    nodes: [ rl ]
+  inter_vlan_bl:
+    description: Ping-based reachability test between blue and red VLANs bl
+    nodes: [ rl, r1, r2, rr ]
     devices: [ linux ]
-    plugin: ping('br',expect='fail')
+    plugin: ping('bl')
+  inter_vlan_b1:
+    description: Ping-based reachability test between blue and red VLANs b1
+    nodes: [ rl, r1, r2, rr ]
+    devices: [ linux ]
+    plugin: ping('b1')
+  inter_vlan_b2:
+    description: Ping-based reachability test between blue and red VLANs b2
+    nodes: [ rl, r1, r2, rr ]
+    devices: [ linux ]
+    plugin: ping('b2')
+  inter_vlan_br:
+    description: Ping-based reachability test between blue and red VLANs br
+    nodes: [ rl, r1, r2, rr ]
+    devices: [ linux ]
+    plugin: ping('br')
