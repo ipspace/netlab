@@ -12,27 +12,70 @@ _config_name = 'evpn.es'
 _requires = [ 'evpn' ]
 _execute_after = [ 'evpn', 'lag' ]
 
+# Ethernet Segments can be supported on LAG and "physical interfaces", which means the following types for netlab
+_es_supported_on = [ 'lag', # LAG interfaces
+                     'p2p', 'stub', 'lan'  # other physical interfaces
+                    ]
+
 def post_transform(topology: Box) -> None:
     global _config_name
     for node in topology.nodes.values():
         features = devices.get_device_features(node,topology.defaults)
         es_supported = 'evpn.es' in features
         if not es_supported: continue
+        # Load Ethernet Segments data and expand it
+        es_data = node.get('evpn.ethernet_segments', {})
+        for intf in node.get('interfaces',[]):
+            intf_es = intf.get('evpn.es', '')
+            if not intf_es: continue
+            if intf_es and intf.type not in _es_supported_on:
+                log.error(
+                    f'Node {node.name}({node.device}) does not support EVPN Ethernet Segment on {intf.type} interfaces (found on: {intf.ifname})',
+                    category=log.IncorrectAttr,
+                    module='evpn.es')
+                return
+            # Check for explicit lag support
+            if intf.type == 'lag' and not features.get('evpn.es.lag', False):
+                log.error(
+                    f'Node {node.name}({node.device}) does not support EVPN Ethernet Segment on LAG interfaces (found on: {intf.ifname})',
+                    category=log.IncorrectAttr,
+                    module='evpn.es')
+                return
+            # Check for other interface support (except lag)
+            if intf.type in list(set(_es_supported_on) - set(['lag'])) and not features.get('evpn.es.interface', False):
+                log.error(
+                    f'Node {node.name}({node.device}) does not support EVPN Ethernet Segment on "physical" interfaces (found on: {intf.ifname})',
+                    category=log.IncorrectAttr,
+                    module='evpn.es')
+                return
+            if intf_es not in es_data:
+                log.error(
+                    f'Node {node.name}({node.device}) invalid EVPN Ethernet Segment configured on interface {intf.ifname}',
+                    category=log.IncorrectAttr,
+                    module='evpn.es')
+                return
+            intf_es_data = es_data[intf_es]
+            # if auto value, and not lacp system id is defined (or not lag or not supported), trigger an error
+            if es_data[intf_es].get('auto',False):
+                if intf.type != 'lag':
+                    log.error(
+                        f'Node {node.name}({node.device}) cannot use auto ESI on non-LAG interface ({intf.ifname})',
+                        category=log.IncorrectAttr,
+                        module='evpn.es')
+                    return
+                if not intf.get('lag.lacp_system_id',False):
+                    log.error(
+                        f'Node {node.name}({node.device}) cannot use auto ESI on LAG interface without "lacp_system_id" ({intf.ifname})',
+                        category=log.IncorrectAttr,
+                        module='evpn.es')
+                    return
+                if not features.get('evpn.es.esi_auto', False):
+                    log.error(
+                        f'Node {node.name}({node.device}) cannot use auto ESI on interface {intf.ifname} - auto generation not supported.',
+                        category=log.IncorrectAttr,
+                        module='evpn.es')
+                    return
+            intf.evpn._esi = intf_es_data
+        
         api.node_config(node,_config_name)
     return
-
-
-"""
-OLD CODE
-
-          # Convert "esi: true" to auto-derived ESI value
-          # depending on platform support, either platform auto-derivation or this manually generated ESI can be used.
-          if i.lag.get('esi', False) is True:
-            i.lag._esi_auto_derive = True
-            i.lag._esi_manual = "00:{}:00:00:00".format(i.lag.lacp_system_id)
-        elif i.lag.get('esi', False) and not features.lag.get('esi', False):
-          log.error(f'Node {node.name}({node.device}) does not support ESI-LAG configured on interface {i.ifname}',
-            category=log.IncorrectAttr,
-            module='lag')
-
-"""
