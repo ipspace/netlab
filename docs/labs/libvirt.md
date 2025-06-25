@@ -53,6 +53,7 @@ You have to use the following box names when installing or building the Vagrant 
 | [Linux](linux.md)      | generic/ubuntu2004          |
 | Mikrotik RouterOS 6    | mikrotik/chr                |
 | Mikrotik RouterOS 7    | mikrotik/chr7               |
+| OpenBSD                | netlab/openbsd              |
 | Sonic                  | netlab/sonic                |
 
 The following Vagrant boxes are automatically downloaded from Vagrant Cloud when you're using them for the first time in your lab topology:
@@ -88,6 +89,7 @@ These documents contain box-building recipes using the **netlab libvirt** utilit
 * [Juniper vPTX](vptx.md)
 * [Juniper vSRX 3.0](vsrx.md)
 * [Mikrotik RouterOS 7](routeros7.md) - based on the original [Mikrotik RouterOS](http://stefano.dscnet.org/a/mikrotik_vagrant/) by [Stefano Sasso](http://stefano.dscnet.org)
+* [OpenBSD](openbsd.md)
 * [Sonic](sonic.md)
 * [VyOS](https://github.com/ssasso/packer-vyos-vagrant) by [Stefano Sasso](http://stefano.dscnet.org) - if you don't want to use the one from Vagrant Cloud.
 
@@ -309,6 +311,7 @@ providers.libvirt.probe: []
    vsrx.md
    vptx.md
    linux.md
+   openbsd.md
    routeros7.md
    sonic.md
 ..

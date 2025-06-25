@@ -40,6 +40,7 @@
 | Mikrotik RouterOS 7 (CHR) [❗](caveats-routeros7) | routeros7           | minimal |
 | Nokia SR Linux [❗](caveats-srlinux) | srlinux | full       |
 | Nokia SR OS [❗](caveats-sros)    | sros    | full          |
+| OpenBSD                           | openbsd | best effort   |
 | Sonic [❗](caveats-sonic)         | sonic   | minimal       |
 | VyOS 1.4 [❗](caveats-vyos)       | vyos    | full          |
 
@@ -71,6 +72,7 @@ Most devices behave as routers (or layer-3 switches); the following devices can 
 | dnsmasq               | ❌  | ✅ | ❌  |
 | FRRouting             | ✅ | ✅ | ❌  |
 | Generic Linux         | ❌  | ✅ | ✅ |
+| Open BSD              | ❌  | ✅ | ❌  |
 
 **Notes:**
 
@@ -119,6 +121,7 @@ You cannot use all supported network devices with all virtualization providers. 
 | Mikrotik RouterOS 7 | [✅](build-chr7)  |  ❌  |  ❌  |
 | Nokia SR Linux      |  ❌  |  ❌  | ✅  |
 | Nokia SR OS         |  ❌  |  ❌  | ✅  |
+| OpenBSD             | [✅](build-openbsd)  |  ❌  |  ❌  | 
 | Sonic               | [✅](build-sonic)  |  ❌  |  ❌  | 
 | VyOS                | ✅  |  ❌  | ✅[❗](caveats-vyos) |
 
@@ -149,6 +152,7 @@ Configuration files for Virtualbox and KVM/libvirt environments specify the numb
 | Juniper vPTX               | vptx               |    4 |   8192 | virtio |
 | Mikrotik RouterOS 6        | routeros           |    1 |    256 | virtio |
 | Mikrotik RouterOS 7        | routeros7          |    2 |    256 | e1000                      |
+| OpenBSD                    | openbsd            |    1 | 1024 | virtio |
 | Sonic                      | sonic              |    2 | 4096 | virtio |
 | VyOS                       | vyos               |    2 |   1024 | virtio |
 
@@ -179,6 +183,7 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 | Mikrotik RouterOS 7   | ✅ | ✅ |
 | Nokia SR Linux        | ✅ | ✅ |
 | Nokia SR OS           | ✅ | ✅ |
+| OpenBSD               | ✅ | ❌  |
 | Sonic                 | ✅ | ✅ |
 | VyOS                  | ✅ | ✅ |
 
@@ -210,6 +215,7 @@ The following system-wide features are configured on supported network operating
 | Mikrotik RouterOS 7      | ✅ | ✅ | ✅[❗](caveats-routeros7) | ✅ | ✅ |
 | Nokia SR Linux           | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Nokia SR OS              | ✅  | ✅  | ✅  | ✅  | ✅  |
+| OpenBSD                  | ✅  | ✅  |  ❌  | ✅  | ✅  |
 | Sonic                    | ✅  | ✅  |  ❌  | ✅  | ✅  |
 | VyOS                     | ✅  | ✅  | ✅  | ✅  | ✅  |
 
@@ -237,6 +243,7 @@ The following interface parameters are configured on supported network operating
 | Mikrotik RouterOS 7   | ✅  |  ❌  | ✅  | ✅  |
 | Nokia SR Linux        | ✅  |  ❌  | ✅  | ✅  |
 | Nokia SR OS           | ✅  |  ❌  | ✅  | ✅  |
+| OpenBSD               |  ❌  |  ❌  | ✅  |  ❌  |
 | Sonic                 | ✅  | ✅  | ✅  | ✅  |
 | VyOS                  | ✅  |  ❌  | ✅  | ✅  |
 
@@ -263,6 +270,7 @@ The following interface addresses are supported on various platforms:
 | Mikrotik RouterOS 7   | ✅  | ✅  |  ❌  |
 | Nokia SR Linux        | ✅  | ✅  |  ❌  |
 | Nokia SR OS           | ✅  | ✅  | ✅  |
+| OpenBSD               | ✅  | ✅  |  ❌  |
 | Sonic                 | ✅  | ✅  | ✅  |
 | VyOS                  | ✅  | ✅  | ✅  |
 
@@ -417,6 +425,7 @@ Core *netlab* functionality and all multi-protocol routing protocol configuratio
 | Mikrotik RouterOS 7   | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ |
 | Nokia SR Linux        | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ |
 | Nokia SR OS           | ✅ | ❌ | ❌ | ❌ | ✅ | ✅ |
+| OpenBSD               | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Sonic                 | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ |
 | VyOS                  | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ |
 
