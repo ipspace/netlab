@@ -21,6 +21,7 @@
    plugins/ospf.areas.md
    plugins/vrrp.version.md
    plugins/firewall.zonebased.md
+   plugins/evpn.es.md
 ```
 
 Plugins needed by a topology file are listed in the **plugin** top-level element, for example:

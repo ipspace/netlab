@@ -20,6 +20,7 @@ _es_supported_on = [ 'lag', # LAG interfaces
 def post_transform(topology: Box) -> None:
     global _config_name
     for node in topology.nodes.values():
+        if not 'evpn' in node.module: continue
         features = devices.get_device_features(node,topology.defaults)
         es_supported = 'evpn.es' in features
         if not es_supported: continue
@@ -30,7 +31,8 @@ def post_transform(topology: Box) -> None:
             if not intf_es: continue
             if intf_es and intf.type not in _es_supported_on:
                 log.error(
-                    f'Node {node.name}({node.device}) does not support EVPN Ethernet Segment on {intf.type} interfaces (found on: {intf.ifname})',
+                    f'EVPN Ethernet Segment is supported only on LAG or "physical" interfaces '
+                    f'(found on: Node {node.name}({node.device}) - interface {intf.ifname} ({intf.type}))',
                     category=log.IncorrectAttr,
                     module='evpn.es')
                 return
@@ -51,7 +53,7 @@ def post_transform(topology: Box) -> None:
             if intf_es not in es_data:
                 log.error(
                     f'Node {node.name}({node.device}) invalid EVPN Ethernet Segment configured on interface {intf.ifname}',
-                    category=log.IncorrectAttr,
+                    category=log.IncorrectValue,
                     module='evpn.es')
                 return
             intf_es_data = es_data[intf_es]
@@ -82,6 +84,9 @@ def post_transform(topology: Box) -> None:
                         category=log.IncorrectAttr,
                         module='evpn.es')
                     return
+            # if interface is _mlag, ESI-LAG have the precedence: pop _mlag
+            if intf.type == 'lag' and '_mlag' in intf.lag:
+                intf.lag.pop('_mlag')
             intf.evpn._esi = intf_es_data
         
         api.node_config(node,_config_name)

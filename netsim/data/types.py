@@ -833,23 +833,17 @@ def must_be_mac(value: typing.Any) -> dict:
 
 @type_test()
 def must_be_esi_value(value: typing.Any) -> dict:
+  # Allow only Type 0 ESI value to be supplied
   _value_msg = '10-byte ESI Value in format 00:XX:XX:XX:XX:XX:XX:XX:XX:XX'
+
   if not isinstance(value,str):
     return { '_type': '10-byte ESI Value' }
 
-  try:
-    esi_bytes = value.split(":")
-    if len(esi_bytes) != 10:
-      return { '_value': _value_msg }
-    for b in esi_bytes:
-      # check for range 00-FF
-      int_b = int(b, 16)
-      if int_b < 0x00 or int_b > 0xFF:
-        return { '_value': _value_msg }
-    if not value.startswith("00:"):
-      return { '_value': _value_msg + " - must start with '00:'" }
-  except Exception as ex:
-    return { '_type': '10-byte ESI Value' }
+  if not value.startswith("00:"):
+    return { '_value': _value_msg + " - must start with '00:'" }
+
+  if not re.match(r"^00(:[0-9a-fA-F]{2}){9}$", value):
+    return { '_value': _value_msg }
 
   return { '_valid': True }
 
