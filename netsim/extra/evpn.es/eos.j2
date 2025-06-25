@@ -1,0 +1,39 @@
+{### STILL NOT WORKING - TO BE UPDATED WITH NEW PLUGIN DATA ###}
+
+{% for intf in interfaces if intf.type == 'lag' %}
+interface {{ intf.ifname }}
+{%  if '_mlag' in intf.lag and intf.lag.esi is not defined %}
+ description {{ intf.name }} (part of mlag {{ intf.lag.ifindex }})
+ switchport
+ mlag {{ intf.lag.ifindex }}
+{% else %}
+ description {{ intf.name }}
+{%  endif %}
+!
+{%  if intf.lag.esi is defined %}
+ lacp system-id {{intf.lag.lacp_system_id}}
+ evpn ethernet-segment
+{#  ! need to add route-target import 0202.0202.0202 #}
+{%   if intf.lag._esi_auto_derive|default(false) %}
+  identifier auto lacp
+{%   else %}
+{# IDENTIFIER AS IS DOES NOT WORK... Arista wants it in format: 0000:0000:0000:0000:0000 #}
+  identifier {{intf.lag.esi}}
+{%   endif %}
+!
+{%  endif %}
+!
+{%   for ch in interfaces if ch.lag._parentindex|default(None) == intf.lag.ifindex %}
+!
+{%     set _lag_mode = 
+         'on' if intf.lag.lacp|default('') == 'off' else
+         'active' if intf.lag.lacp_mode|default('') == 'active' else 
+         'passive' %}
+interface {{ ch.ifname }}
+ description {{ ch.name }} in channel-group {{ intf.lag.ifindex }}
+ channel-group {{ intf.lag.ifindex }} mode {{ _lag_mode }}
+{%     if intf.lag.lacp|default('') == 'fast' %}
+ lacp timer fast
+{%     endif %}
+{%   endfor %}
+{% endfor %}
