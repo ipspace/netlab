@@ -55,6 +55,13 @@ def post_transform(topology: Box) -> None:
                     module='evpn.es')
                 return
             intf_es_data = es_data[intf_es]
+            # if none of auto or id value is specified, trigger error
+            if intf_es_data is None or not (es_data[intf_es].get('auto',False) or es_data[intf_es].get('id',False)):
+                log.error(
+                    f'Node {node.name}({node.device}) no valid EVPN Ethernet Segment Identifier configuration for {intf_es} (on interface {intf.ifname})',
+                    category=log.IncorrectAttr,
+                    module='evpn.es')
+                return
             # if auto value, and not lacp system id is defined (or not lag or not supported), trigger an error
             if es_data[intf_es].get('auto',False):
                 if intf.type != 'lag':
