@@ -63,10 +63,18 @@ check_pvrst - check if PVRST protocol is requested, not supported on virtual net
 """
 def check_pvrst_on_virtual_networks(node:Box, topology: Box) -> None:
   if node.get('stp.protocol',None) == 'pvrst':
-    features = devices.get_device_features(node,topology.defaults)
-    if 'virtual-network' in features.vlan.svi_interface_name:
+    err_data = []
+    for intf in node.interfaces:
+      if intf.type != 'svi' or 'virtual-network' not in intf.ifname:
+        continue
+      if 'stp' in intf and intf.get('stp.enable',True):
+        err_data.append(f'SVI interface {intf.ifname}')
+
+    # TODO check vlans too
+
+    if err_data:
       report_quirk(
-        f'Dell OS10 (node {node.name}) does not support PVRST on virtual networks (used for VLANs)',
+        f'Dell OS10 (node {node.name}) does not support PVRST on virtual networks (used for VXLAN VLANs)',
         quirk='pvrst_on_virtual_networks',
         node=node)
 
@@ -81,7 +89,7 @@ def check_vrrp_on_virtual_networks(node:Box, topology: Box) -> None:
 
   if err_data:
     report_quirk(
-      f'Dell OS10 (node {node.name}) does not support VRRP on virtual networks (used for VLANs)',
+      f'Dell OS10 (node {node.name}) does not support VRRP on virtual networks (used for VXLAN VLANs)',
       quirk='vrrp_on_virtual_networks',
       more_data=err_data,
       node=node)
