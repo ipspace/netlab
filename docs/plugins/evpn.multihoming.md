@@ -15,6 +15,7 @@ The plugin includes Jinja2 templates for the following platforms:
 | Operating system    | ES on LAG (ESI-LAG) | ES on other interfaces | Auto ESI |
 | ------------------- | :--: | :--: | :--: |
 | Arista EOS          |  ✅  |  ✅  |  ✅  |
+| Cumulus NVUE        |  ✅  |  ❌  |  ❌  |
 | vJunos Switch       |  ✅  |  ✅  |  ✅  |
 
 
