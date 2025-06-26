@@ -1,5 +1,5 @@
-(plugin-evpn-es)=
-# EVPN Ethernet Segment (EVPN Multihoming)
+(plugin-evpn-multihoming)=
+# EVPN Multihoming (EVPN Ethernet Segment)
 
 This plugin allows for simple EVPN Ethernet Segment configuration, also know as EVPN Multihoming.
 
@@ -20,9 +20,11 @@ The plugin includes Jinja2 templates for the following platforms:
 
 ## Using the Plugin
 
-* Add `plugin: [ evpn.es ]` to the lab topology.
+* Add `plugin: [ evpn.multihoming ]` to the lab topology.
 * Define a set of *ethernet segments* on the topology top-level
 * Include the **evpn.es** attribute in the device interface
+
+**NOTE**: EVPN Multihoming, for ESI-LAG, requires that all LAG interfaces belonging to the same *ethernet segment* share the same (unique) LACP System ID. This can be achieved using the `lag.lacp_system_id` attribute - which can accept a "real" mac address value or an integer (*1-65535*) value: in that case it will generate a mac value in the format `02:xx:yy:xx:yy:00` (i.e., `1` will become `02:00:01:00:01:00`).
 
 ### Supported attributes
 
@@ -37,7 +39,7 @@ Interface level attributes:
 ## Example
 
 ```
-plugin: [ 'evpn.es' ]
+plugin: [ 'evpn.multihoming' ]
 
 defaults.vxlan.start_vni: 20000
 bgp.as: 65000

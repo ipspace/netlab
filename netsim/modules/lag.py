@@ -68,7 +68,7 @@ check_mlag_support - check if the given node supports mlag
 def check_mlag_support(node: str, linkname: str, topology: Box) -> bool:
   _n = topology.nodes[node]
   features = devices.get_device_features(_n,topology.defaults)
-  if not (features.lag.get('mlag',False) or features.get('evpn.es.lag',False)):
+  if not (features.lag.get('mlag',False) or features.get('evpn.multihoming.lag',False)):
     log.error(f'Node {_n.name} ({_n.device}) does not support MLAG or ESI-LAG, cannot be part of peerlink or M-side of LAG {linkname}',
       category=log.IncorrectValue,
       module='lag')
@@ -479,7 +479,7 @@ class LAG(_Module):
             lacp_sys_id_str = f"02{sys_id_int:0>4X}{sys_id_int:0>4X}00"
             i.lag.lacp_system_id = str(netaddr.EUI(lacp_sys_id_str, dialect = netaddr.mac_unix_expanded))
         # check for ESI-LAG support, to avoid generating errors for missing MC-LAG feature
-        if 'evpn.es' in topology.get('plugin',[]) and features.get('evpn.es.lag', False) and i.get('evpn.es', False):
+        if 'evpn.multihoming' in topology.get('plugin',[]) and features.get('evpn.multihoming.lag', False) and i.get('evpn.es', False):
           uses_esi_lag = True
 
     if uses_mlag and not (has_peerlink or uses_esi_lag):

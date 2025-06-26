@@ -125,5 +125,5 @@ class EOS(_Quirks):
       passive_stub_interfaces(node,topology)
     if 'eos' in node:
       configure_ceos_attributes(node,topology)
-    if 'evpn.es' in topology.get('plugin',[]):
+    if 'evpn.multihoming' in topology.get('plugin',[]):
       esi_identifier_format(node,topology)
