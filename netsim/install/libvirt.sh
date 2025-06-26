@@ -53,6 +53,13 @@ $SUDO sh -c 'echo "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_rel
 #
 # Pin vagrant version to one we know works
 cat <<FILE | $SUDO tee /etc/apt/preferences.d/vagrant
+#
+# We have to pin the vagrant version because the newer versions contain bugs that
+# can completely ruin the virtualization environment, leaving stale VMs running
+#
+# See https://github.com/ipspace/netlab/issues/2185 and
+# https://github.com/ipspace/netlab/issues/2436 for details
+#
 Package: vagrant
 Pin: version 2.4.3-1
 Pin-Priority: 1000
