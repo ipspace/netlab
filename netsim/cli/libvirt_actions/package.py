@@ -23,7 +23,9 @@ from ...providers.libvirt import create_vagrant_network,LIBVIRT_MANAGEMENT_NETWO
 from ...providers import get_cpu_model
 
 def package_parse(args: typing.List[str], settings: Box) -> argparse.Namespace:
-  devs = [ k for k in settings.devices.keys() if settings.devices[k].libvirt.create or settings.devices[k].libvirt.create_template ]
+  devs = [ k for k in settings.devices.keys() 
+               if 'create' in settings.devices[k].libvirt 
+                  or settings.devices[k].libvirt.create_template ]
   parser = argparse.ArgumentParser(
     prog='netlab libvirt package',
     description='Package a virtual machine into a libvirt Vagrant box')
@@ -225,6 +227,10 @@ def lp_create_bootstrap_iso(args: argparse.Namespace,settings: Box) -> None:
 
 def lp_create_vm(args: argparse.Namespace,settings: Box) -> None:
   devdata = settings.devices[args.device]
+  if devdata.libvirt.create is False:
+    log.section_header('SKIPPING',"We don't have to start/configure the virtual machine")
+    return
+
   log.section_header('STARTING','Starting the network device virtual machine')
   print(f"""
 We'll start the VM from the newly-created virtual disk. When the
