@@ -7,17 +7,16 @@ from . import _Quirks,need_ansible_collection,report_quirk
 from ..utils import log, routing as _rp_utils
 from ..augment import devices
 
-def check_ospf_on_virtual_networks(node: Box, iflist: BoxList, vname: str) -> None:
-  name = node.name
+def check_ospf_on_virtual_networks(node: Box) -> None:
   err_data = []
-  for intf in iflist:
-    if 'ospf' not in intf or intf.type != 'svi' or 'virtual-network' not in intf.ifname:
-      continue
-    err_data.append(f'Interface {intf.ifname} VRF {vname}')
+  for vname in node.get('vxlan.vlans',[]):
+    vlan = node.get(f"vlans.{vname}",{})
+    if 'ospf' in vlan:
+      err_data.append(f'VXLAN VLAN {vname} (VNI {vlan.vni})')
 
   if err_data:
     report_quirk(
-      f'node {name} cannot run OSPF on virtual-network (SVI) interfaces',
+      f'node {node.name} cannot run OSPF on virtual-network (SVI) interfaces used for VXLAN VLANs',
       quirk='svi_ospf',
       more_data=err_data,
       node=node)
@@ -119,9 +118,7 @@ class OS10(_Quirks):
     if 'vxlan' in mods:
       update_vxlan_svi_names(node,topology)           # Use virtual-network for VXLAN VLANs (with 'vni')
       if 'ospf' in mods:                              # OSPF not supported on virtual-network interfaces
-        check_ospf_on_virtual_networks(node,node.interfaces,'default')
-        for vname,vdata in node.get('vrfs',{}).items():
-          check_ospf_on_virtual_networks(node,vdata.get('ospf.interfaces',[]),vname)
+        check_ospf_on_virtual_networks(node)
       if 'gateway' in mods and 'vrrp' in node.get('gateway',{}):
         check_vrrp_on_virtual_networks(node,topology) # Neither is VRRP
 
