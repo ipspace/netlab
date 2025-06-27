@@ -7,10 +7,10 @@ NUTS is a Pytest plugin enabling network testing using YAML files.
 
 ```
 tools:
-  suzieq:
+  nuts:
 ```
 
-* Use the **netlab connect nuts** command to run pytest or **netlab connect suzieq bash** to open a shell in the docker container.
+* Use the **netlab connect nuts** command to run pytest or **netlab connect nuts bash** to open a shell in the docker container.
 
 **Notes:**
 
