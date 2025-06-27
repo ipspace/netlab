@@ -16,6 +16,7 @@ The plugin includes Jinja2 templates for the following platforms:
 | Cisco IOSv/IOS-XE[^18v] | ✅ | ✅ |
 | Cumulus Linux 4.x   |  ✅  |  ✅  |
 | Cumulus 5.x (NVUE)  |  ✅  |  ✅  |
+| Dell OS10           |  ✅  |  ✅  |
 | FRR                 |  ✅  |  ✅  |
 | JunOS               |  ✅  |  ✅  |
 | Nokia SR Linux      |  ✅  |  ❌   |
