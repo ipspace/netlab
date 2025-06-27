@@ -22,7 +22,7 @@ def check_loopback(node: Box, topology: Box) -> None:
       category=Warning,
       node=node)
 
-class FRR(_Quirks):
+class OpenBSD(_Quirks):
 
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
