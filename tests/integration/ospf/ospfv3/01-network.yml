@@ -2,7 +2,8 @@
 message: |
   This lab tests the OSPFv3 network type settings. The device under test has two
   interfaces with OSPF network type set to 'broadcast' and 'point-to-point'. It
-  has to establish OSPFv3 adjacencies over both.
+  has to establish OSPFv3 adjacencies over both and propagate OSPF LSAs to enable
+  X1 and X2 to build an end-to-end path.
 
 defaults.sources.extra: [ ../../wait_times.yml ]
 module: [ ospf ]
@@ -36,3 +37,15 @@ validate:
     wait: ospfv3_adj_lan
     nodes: [ x1, x2 ]
     plugin: ospf6_neighbor(nodes.dut.ospf.router_id)
+  x1_lb:
+    description: Check route to X1 on X2
+    wait_msg: Waiting for SPF run
+    wait: ospfv3_spf
+    nodes: [ x2 ]
+    plugin: ospf6_prefix(nodes.x1.loopback.ipv6)
+  x2_lb:
+    description: Check route to X2 on X1
+    wait_msg: Waiting for SPF run
+    wait: ospfv3_spf
+    nodes: [ x1 ]
+    plugin: ospf6_prefix(nodes.x2.loopback.ipv6)
