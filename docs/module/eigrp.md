@@ -25,43 +25,29 @@ The EIGRP configuration module is automatically removed from a node that does no
 
 ## Link Parameters
 
-* **eigrp.passive** -- Make this link/interface a passive interface regardless of the global passive interface rules (note: cannot be used to make an interface active).
+* **eigrp.passive: True** -- Make this link/interface a passive interface
+* **eigrp: False** -- Do not run EIGRP on this link/interface (see also [](routing_disable))
 
 ## Using Link Roles
 
 Link roles are used together with link types to decide whether to include an interface in an EIGRP process and whether to make an interface passive:
 
-* External links (links with **role: external**) are not included in the IPv4 EIGRP process on Nexus OS, or in the IPv6 EIGRP processes.
-* External links are configured as *passive* IPv4 EIGRP interfaces on Cisco IOS/IOS XE.
-
-The following interfaces are also configured as passive EIGRP interfaces:
-
-* Interfaces with **role** set to **passive**.
-* Interfaces connected to links with a single router or routing daemon attached.
-
-**Notes:** 
-
-* The BGP module could set link role -- links with devices from different AS numbers attached to them get a role specified in **defaults.bgp.ebgp_role** parameter. The system default value of that parameter is **external**, making inter-AS links passive or excluded from the EIGRP process (see above).
-* Management interfaces are never added to the Nexus-OS EIGRP processes or the IPv6 EIGRP process on Cisco IOS/IOS-XE. However, as the Cisco IOS/IOS-XE IPv4 EIGRP configuration uses **network 0.0.0.0 255.255.255.255** statement, the management interface could become part of an EIGRP process if it's not in the management VRF. The management interface is made *passive* to ensure there's no exchange of EIGRP updates over it.
+* External links (links with **role: external**, see also [](routing_external)) are not included in the EIGRP process.
+* Interfaces connected to links with **role: passive**, or links with a single router or routing daemon, are automatically marked as **passive**.
+* Management interfaces are in the management VRF and are never added to the EIGRP processes.
 
 ## Example
 
 We want to create a three-router EIGRP network testing IOS, IOS-XE, and Nexus OS EIGRP implementation.
 
-All devices run EIGRP:
+All devices run EIGRP with AS 2:
 
 ```
 module: [ eigrp ]
+eigrp.as: 2
 ```
 
-We'll use EIGRP AS 2:
-
-```
-eigrp:
-  as: 2
-```
-
-In our lab, we'll use IPv4 and IPv6 addressing. IPv6 addresses will be configured on loopback and LAN interfaces but not on P2P interfaces.
+In our lab, we'll use IPv4 and IPv6 addressing. IPv6 addresses will be configured on loopback and LAN interfaces, but not on P2P interfaces.
 
 ```
 addressing:
@@ -73,19 +59,16 @@ addressing:
     ipv6: 2001:db8:1::/48
 ```
 
-The lab has three nodes, each one of them running a different operating system:
+The lab has three nodes, each of which is running a different operating system:
 
 ```
 nodes:
-- name: r1
-  device: iosv
-- name: r2
-  device: csr
-- name: s1
-  device: nxos
+  r1: { device: iosv }
+  r2: { device: csr }
+  s1: { device: nxos }
 ```
 
-All three devices share a LAN interface with bandwidth set to 100 Mbps. Each device is also connected to one or two P2P links and a stub interface.
+All three devices share a LAN interface with the bandwidth set to 100 Mbps. Each device is also connected to one or two P2P links and a stub interface.
 
 ```
 links:
@@ -110,11 +93,15 @@ The above topology generates the following device configurations [^1].
 
 ```
 router eigrp 2
- network 0.0.0.0 255.255.255.255
+ eigrp router-id 172.18.1.1
+ network 172.18.1.1 0.0.0.0
+ network 172.19.0.1 0.0.0.0
+ network 10.1.0.1 0.0.0.0
+ network 172.19.1.1 0.0.0.0
  passive-interface GigabitEthernet0/3
- passive-interface GigabitEthernet0/0
 !
 ipv6 router eigrp 2
+ eigrp router-id 172.18.1.1
  passive-interface GigabitEthernet0/3
 !
 interface Loopback0
@@ -130,19 +117,24 @@ interface GigabitEthernet0/2
 !
 interface GigabitEthernet0/3
  ipv6 eigrp 2
- description Stub interface
+ description r1 -> stub [stub]
 ```
 
 #### R2 (Cisco IOS-XE)
 
 ```
 router eigrp 2
- network 0.0.0.0 255.255.255.255
+ network 10.1.0.2 0.0.0.0
+ network 10.1.0.5 0.0.0.0
+ network 172.18.1.2 0.0.0.0
+ network 172.19.0.2 0.0.0.0
+ network 172.19.2.2 0.0.0.0
  passive-interface GigabitEthernet5
- passive-interface GigabitEthernet1
+ eigrp router-id 172.18.1.2
 !
 ipv6 router eigrp 2
  passive-interface GigabitEthernet5
+ eigrp router-id 172.18.1.2
 !
 interface Loopback0
  ipv6 eigrp 2
@@ -159,7 +151,7 @@ interface GigabitEthernet4
  description r2 -> s1
 !
 interface GigabitEthernet5
- description Stub interface
+ description r2 -> stub [stub]
  ipv6 eigrp 2
 ```
 
@@ -169,7 +161,8 @@ interface GigabitEthernet5
 feature eigrp
 !
 router eigrp 2
- address-family ipv6 unicast
+  router-id 172.18.1.3
+  address-family ipv6 unicast
 !
 interface loopback0
  ip router eigrp 2
@@ -186,7 +179,7 @@ interface Ethernet1/2
  ip router eigrp 2
 !
 interface Ethernet1/3
- description Stub interface
+ description s1 -> stub [stub]
  ip router eigrp 2
  ipv6 router eigrp 2
  ip passive-interface eigrp 2
@@ -205,17 +198,12 @@ addressing:
     ipv6: 2001:db8:1::/48
 
 module: [ eigrp ]
-
-eigrp:
-  as: 2
+eigrp.as: 2
 
 nodes:
-- name: r1
-  device: iosv
-- name: r2
-  device: csr
-- name: s1
-  device: nxos
+  r1: { device: iosv }
+  r2: { device: csr }
+  s1: { device: nxos }
 
 links:
 - r1:
