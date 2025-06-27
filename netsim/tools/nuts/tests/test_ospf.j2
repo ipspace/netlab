@@ -1,6 +1,5 @@
-{% set modules = nodes.values() | sum(attribute='module', start=[]) | unique %}
+{% set ns = namespace(found=false) %}
 {% set neighbors_by_host = {} %}
-{% if 'ospf' in modules %}
 - test_class: TestNetmikoOspfNeighbors
   test_data:
 {% for nn,nd in nodes.items()
@@ -11,16 +10,30 @@
 {%        for remote_interface in nodes[neighbor.node].interfaces if remote_interface.ifname == neighbor.ifname %}
 {%          if remote_interface.ospf %}
 {%            set _ = neighbors_by_host.update({nn: neighbors_by_host.get(nn, []) + [neighbor]}) %}
+{%            if nd.ospf.af.ipv4 %}
+{%            set ns.found = true %}
     - host: {{ nn }}
       local_port: {{ interface.ifname }}
       neighbor_id: {{ nodes[neighbor.node].ospf.router_id }}
       # state: FULL/BDR
       neighbor_address: {{ neighbor.ipv4.split('/')[0] }}
+{%            endif %}
+{%            if nd.ospf.af.ipv6 %}
+{%            set ns.found = true %}
+    - host: {{ nn }}
+      local_port: {{ interface.ifname }}
+      neighbor_id: {{ nodes[neighbor.node].ospf.router_id }}
+      # state: FULL/BDR
+      neighbor_address: {{ neighbor.ipv6.split('/')[0] }}
+{%            endif %}
 {%          endif %}
 {%        endfor %}
 {%      endfor %}
 {%    endfor %}
 {% endfor %}
+{% if not ns.found %}
+    []  # No OSPF tests created
+{% endif %}
 
 - test_class: TestNetmikoOspfNeighborsCount
   test_data:
@@ -28,6 +41,6 @@
     - host: {{ nn }}
       neighbor_count: {{ nd | length }}
 {% endfor %}
-{% else %}
-# No tests
+{% if not ns.found %}
+    []  # No OSPF tests created
 {% endif %}
