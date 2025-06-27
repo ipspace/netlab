@@ -40,7 +40,7 @@
 | Mikrotik RouterOS 7 (CHR) [❗](caveats-routeros7) | routeros7           | minimal |
 | Nokia SR Linux [❗](caveats-srlinux) | srlinux | full       |
 | Nokia SR OS [❗](caveats-sros)    | sros    | full          |
-| OpenBSD                           | openbsd | best effort   |
+| OpenBSD [❗](caveats-openbsd)     | openbsd | best effort   |
 | Sonic [❗](caveats-sonic)         | sonic   | minimal       |
 | VyOS 1.4 [❗](caveats-vyos)       | vyos    | full          |
 
@@ -72,7 +72,7 @@ Most devices behave as routers (or layer-3 switches); the following devices can 
 | dnsmasq               | ❌  | ✅ | ❌  |
 | FRRouting             | ✅ | ✅ | ❌  |
 | Generic Linux         | ❌  | ✅ | ✅ |
-| Open BSD              | ❌  | ✅ | ❌  |
+| Open BSD              | ✅ | ✅ | ❌  |
 
 **Notes:**
 
@@ -121,7 +121,7 @@ You cannot use all supported network devices with all virtualization providers. 
 | Mikrotik RouterOS 7 | [✅](build-chr7)  |  ❌  |  ❌  |
 | Nokia SR Linux      |  ❌  |  ❌  | ✅  |
 | Nokia SR OS         |  ❌  |  ❌  | ✅  |
-| OpenBSD             | [✅](build-openbsd)  |  ❌  |  ❌  | 
+| OpenBSD             | [✅](build-openbsd)  |  ❌  | [✅](clab-vrnetlab) |
 | Sonic               | [✅](build-sonic)  |  ❌  |  ❌  | 
 | VyOS                | ✅  |  ❌  | ✅[❗](caveats-vyos) |
 
