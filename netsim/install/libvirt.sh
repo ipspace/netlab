@@ -50,6 +50,20 @@ set -e
 # changed to new method - ghostinthenet - 20220417
 curl -fsSL https://apt.releases.hashicorp.com/gpg | $SUDO gpg --dearmor -o /etc/apt/trusted.gpg.d/hashicorp-security.gpg
 $SUDO sh -c 'echo "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" > /etc/apt/sources.list.d/vagrant.list'
+#
+# Pin vagrant version to one we know works
+cat <<FILE | $SUDO tee /etc/apt/preferences.d/vagrant
+#
+# We have to pin the vagrant version because the newer versions contain bugs that
+# can completely ruin the virtualization environment, leaving stale VMs running
+#
+# See https://github.com/ipspace/netlab/issues/2185 and
+# https://github.com/ipspace/netlab/issues/2436 for details
+#
+Package: vagrant
+Pin: version 2.4.3-1
+Pin-Priority: 1000
+FILE
 $SUDO apt-get update
 $SUDO apt-get install -y --allow-downgrades $FLAG_QUIET ruby-dev ruby-libvirt vagrant=2.4.3-1
 vagrant plugin install vagrant-libvirt --plugin-version=0.12.2
