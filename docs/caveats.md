@@ -463,6 +463,13 @@ Other caveats:
 * An SR OS interface cannot use an unnumbered IPv4 address in combination with IPv6 GUA
 * SR OS requires the IPv6 prefix configured on the global loopback interface to be a /128 prefix. _netlab_ automatically adjusts the **loopback.ipv6** prefix.
 
+(caveats-openbsd)=
+## OpenBSD
+
+* The virtual disk size of the `qcow2` image you can download from https://bsd-cloud-image.org/ is too small to survive the kernel reordering OpenBSD performs after every boot.
+* The kernel reordering is disabled in the Vagrant box, leaving you with approximately 170 MB of free disk space. You'll have a bit less than that in the *vrnetlab* container.
+* The default role of OpenBSD nodes is **host** unless the node has a loopback interface, in which case the **host** mode is automatically changed to **router** (contrary to most other network devices, OpenBSD does not you allow you to reach non-connected IP addresses unless the IPv4/IPv6 forwarding is enabled).
+
 (caveats-sonic)=
 ## Sonic
 

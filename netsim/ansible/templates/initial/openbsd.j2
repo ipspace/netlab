@@ -1,0 +1,53 @@
+{#
+  This script configures an OpenBSD host
+#}
+#!/bin/bash
+#
+set -e
+set -x
+#
+# Create bash profile script
+#
+cat <<SCRIPT >/root/.bash_profile
+#!/bin/bash
+#
+export PS1="\h(bash)$ "
+SCRIPT
+hostname {{ inventory_hostname.replace("_","-") }}
+{% include 'linux/hosts.j2' +%}
+{% if role == 'router' %}
+sysctl net.inet.ip.forwarding=1
+sysctl net.inet6.ip6.forwarding=1
+{% endif %}
+
+{% macro ifconfig(intf,alias='') %}
+{%   if not alias %}
+set +e
+ifconfig {{ intf.ifname }} inet delete
+ifconfig {{ intf.ifname }} inet6 delete
+set -e
+{%   endif %}
+{% if intf.ipv4 is string %}
+ifconfig {{ intf.ifname }} inet {{ intf.ipv4 }} {{ alias }}
+{% endif %}
+{% if intf.ipv6 is defined %}
+{%   if intf.ipv6 is string %}
+ifconfig {{ intf.ifname }} inet6 {{ intf.ipv6 }} {{ alias }}
+{%   else %}
+ifconfig {{ intf.ifname }} inet6
+{%   endif %}
+{% else %}
+ifconfig {{ intf.ifname }} -inet6
+{% endif %}
+{% if intf.mtu is defined %}
+ifconfig {{ intf.ifname }} mtu {{ intf.mtu }}
+{% endif %}
+{% endmacro %}
+#
+# Interface configuration
+{% if loopback is defined %}
+{{   ifconfig(loopback,alias='alias') }}
+{% endif %}
+{% for intf in interfaces %}
+{{   ifconfig(intf) }}
+{% endfor %}

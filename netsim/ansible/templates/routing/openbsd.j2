@@ -1,0 +1,23 @@
+{% macro sr_add(sr_entry) %}
+{%   for sr_af in ['ipv4','ipv6'] if sr_af in sr_entry %}
+route add {{ '-mpath ' if sr_entry.nexthop.idx else '' }}{{ sr_entry[sr_af] }} {{ sr_entry.nexthop[sr_af] }}
+{%   endfor %}
+{% endmacro %}
+#!/bin/bash
+#
+set -e
+set -x
+#
+{% set sr_list = routing.static|default([]) %}
+{% for intf in sr_list|map(attribute='nexthop.intf',default='')|unique if intf %}
+echo Flushing routes to {{ intf }}
+route flush -iface {{ intf }} -priority static
+{% endfor %}
+#
+#
+{% for sr_entry in sr_list if 'intf' in sr_entry.nexthop %}
+{%   if loop.first %}
+echo Adding direct static routes
+{%   endif %}
+{{ sr_add(sr_entry) -}}
+{% endfor %}
