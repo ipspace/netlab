@@ -108,7 +108,7 @@ def update_vxlan_svi_names(node:Box, topology: Box) -> None:
       continue
     vlan = topology.vlans[ intf.vlan.name ]
     if 'vni' in vlan:
-      intf.ifname.replace('vlan','virtual-network')
+      intf.ifname = intf.ifname.replace('vlan','virtual-network')
 
 class OS10(_Quirks):
 
