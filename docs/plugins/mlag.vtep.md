@@ -33,7 +33,7 @@ nodes:
     lag.mlag.vtep: False
 ```
 
-The MLAG VTEP works for both static VXLAN and EVPN signalled topologies. IGP configuration is automatically applied based on active modules.
+The MLAG VTEP works for both static VXLAN and EVPN signalled topologies, using either IPv4 or IPv6 VTEPs. IGP configuration is automatically applied based on active modules.
 
 ## Customizing the Address Allocation Pool
 
@@ -43,13 +43,18 @@ addressing.mlag_vtep.ipv4: 10.99.99.0/24
 ```
 The plugin will use the `loopback.pool` from the first node in the pair, if provided.
 
+## EVPN next hop addressing for single-attached hosts
+
+Some platforms (e.g. Cumulus NVUE with FRR, EOS) support announcing the shared VTEP address for RT2 prefixes while using a unique VTEP loopback for RT5. This enables more optimal
+routing in case of single-attached hosts
+
 ## Sample Topologies
 
 The _netlab_ integration tests include anycast VTEP on an MLAG pair using VXLAN ingress replication and EVPN control plane. 
 
 Both lab topologies use:
 
-* VXLAN transport of bridged VLANs
+* VXLAN IPv4 transport of bridged VLANs
 * Linux hosts dual-attached to the MLAG pair
 * Single-attached (orphan) Linux hosts
 * OSPFv2 as the core routing protocol and IBGP as the EVPN control-plane protocol

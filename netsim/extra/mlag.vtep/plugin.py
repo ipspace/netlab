@@ -38,7 +38,14 @@ def pre_link_transform(topology: Box) -> None:
         af = 'ipv6' if topology.get('vxlan.use_v6_vtep',False) else 'ipv4'
         if not vtep_a:
           pool = node.get('loopback.pool',POOL_NAME)
-          vtep_a = addressing.get(topology.pools, [pool, 'vrf_loopback'])[af]
+          prefix = addressing.get(topology.pools, [pool, 'vrf_loopback'])
+          if af in prefix:
+            vtep_a = prefix[af]
+          else:
+            log.error(
+              f'Loopback pool {pool} does not provide an address for {af} to use as shared VTEP',
+              log.MissingValue,
+              _config_name)
         vtep_loopback = data.get_empty_box()
         vtep_loopback.type = 'loopback'              # Assign same static IP to both nodes
         vtep_loopback.interfaces = [ { 'node': node_name, af: str(vtep_a) } ]
@@ -46,7 +53,7 @@ def pre_link_transform(topology: Box) -> None:
         vtep_loopback.vxlan.vtep = True
         vtep_loopback.linkindex = links.get_next_linkindex(topology)
         topology.links.append(vtep_loopback)
-        node.vxlan._shared_vtep = str(vtep_a)
+        node.vxlan._shared_vtep = _rp_utils.get_intf_address(vtep_a)
 
       if log.debug_active('links'):                  # pragma: no cover (debugging)
         print(f'\nmlag.vtep Create VTEP loopback link for {node_name}: {vtep_loopback}')
