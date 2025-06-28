@@ -28,7 +28,7 @@ def pre_link_transform(topology: Box) -> None:
       continue                                       # Nope - carry on
 
     # Allocate a shared IP for both peers
-    vtep_a = None
+    vtep_a : str = ""
     peers = [ i.node for i in l.interfaces ]
     for node_name in peers:
       node = topology.nodes[ node_name ]
