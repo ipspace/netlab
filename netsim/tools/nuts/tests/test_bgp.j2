@@ -3,7 +3,7 @@
   test_data:
 {% for nn,nd in nodes.items() %}
 {%   for neighbor in nd.bgp.neighbors %}
-{%     if neighbor.ipv4 %}
+{%     if "ipv4" in neighbor %}
 {%     set ns.found = true %}
     - host: {{ nn }}
       local_id: {{ nd.bgp.router_id }}
@@ -14,7 +14,7 @@
       is_enabled: true
       is_up: true
 {%     endif %}
-{%     if neighbor.ipv6 %}
+{%     if "ipv6" in neighbor %}
 {%     set ns.found = true %}
     - host: {{ nn }}
       local_id: {{ nd.bgp.router_id }}
@@ -33,10 +33,11 @@
 
 - test_class: TestNapalmBgpNeighborsCount
   test_data:
-{% for nn,nd in nodes.items() if nd.bgp.neighbors %}
+{% if ns.found %}
+{%   for nn,nd in nodes.items() if nd.bgp.neighbors %}
     - host: {{ nn }}
       neighbor_count: {{ nd.bgp.neighbors | length }}
-{% endfor %}
-{% if not ns.found %}
+{%   endfor %}
+{% else %}
     []  # No BGP tests created
 {% endif %}
