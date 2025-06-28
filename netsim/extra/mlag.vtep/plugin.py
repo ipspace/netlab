@@ -46,6 +46,7 @@ def pre_link_transform(topology: Box) -> None:
               f'Loopback pool {pool} does not provide an address for {af} to use as shared VTEP',
               log.MissingValue,
               _config_name)
+            return
         vtep_loopback = data.get_empty_box()
         vtep_loopback.type = 'loopback'              # Assign same static IP to both nodes
         vtep_loopback.interfaces = [ { 'node': node_name, af: str(vtep_a) } ]
