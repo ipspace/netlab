@@ -694,7 +694,18 @@ defaults:
         type: int
       import: list
       links: list
-      loopback: null
+      loopback:
+        _alt_types:
+        - bool
+        - prefix_str
+        - NoneType
+        ipv4:
+          type: ipv4
+          use: host_prefix
+        ipv6:
+          type: ipv6
+          use: host_prefix
+        pool: addr_pool
       rd: rd
     vrf_group:
       _description: VRF groups
@@ -1062,6 +1073,10 @@ defaults:
       - extended
     config_after:
     - routing
+    - ospf
+    - isis
+    - eigrp
+    - ripv2
     ebgp_role: external
     features:
       activate_af: Can control activation of individual address families
@@ -1156,6 +1171,7 @@ defaults:
         image: netlab/bird:latest
       daemon_config:
         bgp: /etc/bird/bgp.mod.conf
+        bgp@session: /etc/bird/bgp.session.conf
         bird: /etc/bird/bird.conf
         ospf: /etc/bird/ospf.mod.conf
         routing: /etc/bird/routing.mod.conf
@@ -1164,6 +1180,7 @@ defaults:
         bfd: true
         bgp:
           activate_af: true
+          bfd: true
           community:
             2octet:
             - standard
@@ -1174,6 +1191,8 @@ defaults:
             standard:
             - standard
             - large
+          default_originate: true
+          gtsm: true
           import:
           - ospf
           - connected
@@ -1181,7 +1200,13 @@ defaults:
           ipv6_lla: false
           local_as: true
           local_as_ibgp: true
+          passive: true
+          password: true
+          remove_private_as: true
           rfc8950: true
+          rs: true
+          rs_client: true
+          timers: true
         dhcp: false
         initial:
           ipv4:
@@ -2077,6 +2102,7 @@ defaults:
           import:
           - connected
           - ospf
+          - static
           - vrf
           ipv6_lla: true
           local_as: true
@@ -2106,13 +2132,20 @@ defaults:
               vlan: 4094
           passive: false
         ospf:
+          default: true
           import:
           - bgp
           - connected
+          - static
           - vrf
           priority: true
           timers: true
           unnumbered: true
+        routing:
+          static:
+            discard: true
+            inter_vrf: true
+            vrf: true
         stp:
           enable_per_port: true
           port_type: true
@@ -2170,6 +2203,11 @@ defaults:
           allowas_in: true
           bfd: true
           default_originate: true
+          import:
+          - ospf
+          - connected
+          - static
+          - vrf
           ipv6_lla: true
           local_as: true
           local_as_ibgp: false
@@ -2202,6 +2240,11 @@ defaults:
           - 1000
         ospf:
           default: true
+          import:
+          - bgp
+          - connected
+          - static
+          - vrf
           password: true
           priority: true
           timers: true
@@ -2228,6 +2271,7 @@ defaults:
               weight: true
           prefix: true
           static:
+            discard: true
             inter_vrf: true
             vrf: true
         stp:
@@ -2240,7 +2284,7 @@ defaults:
           - pvrst
         vlan:
           model: switch
-          svi_interface_name: virtual-network{vlan}
+          svi_interface_name: vlan{vlan}
         vrf:
           bgp: true
           ospfv2: true
@@ -2563,6 +2607,12 @@ defaults:
       virtualbox:
         image: arista/veos
     fortios:
+      clab:
+        image: vrnetlab/vr-fortios:7.4.8
+        interface:
+          name: eth{ifindex}
+        node:
+          kind: fortinet_fortigate
       description: Fortinet FortiOS firewall
       external:
         image: none
@@ -2581,9 +2631,11 @@ defaults:
         ansible_user: admin
         collections:
         - fortinet.fortios
+        mgmt_if: port1
         netlab_config_tasks: true
         netlab_console_connection: ssh
         netlab_skip_missing_template: true
+        netlab_vdom: root
         vdom: root
       ifindex_offset: 2
       interface_name: port{ifindex}
@@ -2591,8 +2643,8 @@ defaults:
         build: https://netlab.tools/labs/fortios/
         create_template: fortios.xml.j2
         image: fortinet/fortios
+      loopback: false
       loopback_interface_name: loopback{ifindex}
-      mgmt_if: port1
       mtu: 1500
     frr:
       clab:
@@ -2604,7 +2656,7 @@ defaults:
           - vtysh
           - -c
           - show $@
-        image: quay.io/frrouting/frr:10.2.2
+        image: quay.io/frrouting/frr:10.3.1
         kmods: null
         node:
           config_templates:
@@ -2814,7 +2866,7 @@ defaults:
           ansible_user: admin
           netlab_check_retries: 20
           netlab_device_type: iol
-        image: vrnetlab/cisco_iol:17.12.01
+        image: vrnetlab/cisco_iol:17.15.01
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         node:
@@ -2981,7 +3033,7 @@ defaults:
           ansible_user: admin
           netlab_check_retries: 20
           netlab_device_type: ioll2
-        image: vrnetlab/cisco_iol:L2-17.12.01
+        image: vrnetlab/cisco_iol:L2-17.15.01
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         mtu: 1500
@@ -3145,8 +3197,8 @@ defaults:
       clab:
         build: https://github.com/hellt/vrnetlab/tree/master/vios
         group_vars:
-          ansible_ssh_pass: VR-netlab9
-          ansible_user: vrnetlab
+          ansible_ssh_pass: admin
+          ansible_user: admin
           netlab_check_retries: 50
         image: vrnetlab/cisco_vios:15.9.3
         interface:
@@ -3318,8 +3370,8 @@ defaults:
       clab:
         build: https://github.com/hellt/vrnetlab/tree/master/vios
         group_vars:
-          ansible_ssh_pass: VR-netlab9
-          ansible_user: vrnetlab
+          ansible_ssh_pass: admin
+          ansible_user: admin
           netlab_check_retries: 50
         image: vrnetlab/cisco_vios:15.9.3
         interface:
@@ -3333,11 +3385,16 @@ defaults:
         bfd: {}
         bgp:
           activate_af: true
+          allowas_in: true
+          as_override: true
+          bfd: true
           community:
             extended:
             - extended
             standard:
             - standard
+          default_originate: true
+          gtsm: true
           import:
           - ospf
           - isis
@@ -3347,6 +3404,12 @@ defaults:
           - vrf
           local_as: true
           local_as_ibgp: true
+          passive: true
+          password: true
+          remove_private_as: true
+          rs: true
+          rs_client: true
+          timers: true
           vrf_local_as: true
         dhcp:
           client:
@@ -3526,17 +3589,6 @@ defaults:
         image: cisco/iosxr
       loopback_interface_name: Loopback{ifindex}
       mgmt_if: MgmtEth0/RP0/CPU0/0
-    junos:
-      features:
-        bgp:
-          allowas_in: true
-          as_override: true
-          bfd: true
-          default_originate: true
-          passive: true
-          password: true
-          remove_private_as: true
-          timers: true
     linux:
       clab:
         features:
@@ -3805,15 +3857,7 @@ defaults:
         image: none
       features:
         bfd: {}
-        bgp:
-          allowas_in: true
-          as_override: true
-          default_originate: true
-          gtsm: true
-          passive: true
-          password: true
-          remove_private_as: true
-          timers: true
+        bgp: {}
         eigrp: {}
         evpn:
           irb: true
@@ -3908,12 +3952,7 @@ defaults:
       external:
         image: none
       features:
-        bgp:
-          allowas_in: true
-          as_override: true
-          default_originate: true
-          password: true
-          remove_private_as: true
+        bgp: {}
         mpls:
           ldp: true
           vpn: true
@@ -5196,10 +5235,6 @@ defaults:
       members: []
       vars:
         netlab_show_config: true
-    external:
-      _default_group: true
-      device: frr
-      members: []
   hints:
     cli:
       interrupt: Use 'netlab status' command to display the status of your lab and
@@ -5967,13 +6002,13 @@ defaults:
   paths:
     collect:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks/fetch-config
+      - /home/pipi/netlab_gh/netsim/ansible/tasks/fetch-config
     custom:
       dirs:
       - /home/pipi/net101/tools/tests/integration/evpn
       - /work/netlab_cicd
       - /home/pipi/.netlab
-      - /home/pipi/net101/tools/netsim/extra
+      - /home/pipi/netlab_gh/netsim/extra
       files:
       - '{{ custom_config + ''/'' + inventory_hostname + ''.'' + netlab_device_type
         + ''-'' + node_provider + ''.j2'' }}'
@@ -6004,7 +6039,7 @@ defaults:
       - '{{ custom_config }}/deploy.yml'
     deploy:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks
+      - /home/pipi/netlab_gh/netsim/ansible/tasks
       files:
       - '{{ netlab_device_type }}/{{ config_module }}-{{ provider|default(netlab_provider)
         }}.yml'
@@ -6027,10 +6062,10 @@ defaults:
     - /work/netlab_cicd
     - /home/pipi/net101/tools/tests/integration/evpn
     - /home/pipi/.netlab
-    - /home/pipi/net101/tools/netsim/extra
+    - /home/pipi/netlab_gh/netsim/extra
     ready:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check
+      - /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check
       files:
       - '{{netlab_device_type}}-{{provider|default(netlab_provider)}}.yml'
       - '{{netlab_device_type}}.yml'
@@ -6047,10 +6082,10 @@ defaults:
       - '{{netlab_device_type}}/{{config_module}}.j2'
     templates:
       dirs:
-      - /home/pipi/net101/tools/netsim/daemons
-      - /home/pipi/net101/tools/netsim/ansible/templates
+      - /home/pipi/netlab_gh/netsim/daemons
+      - /home/pipi/netlab_gh/netsim/ansible/templates
     validate:
-    - /home/pipi/net101/tools/netsim/validate
+    - /home/pipi/netlab_gh/netsim/validate
   plugin:
   - multilab
   ports:
@@ -6432,6 +6467,7 @@ defaults:
       cat8000v: true
       csr: true
       cumulus: true
+      cumulus_nvue: true
       dellos10: true
       dnsmasq: true
       eos: true
@@ -7016,10 +7052,6 @@ groups:
     module:
     - bgp
     - evpn
-  external:
-    _default_group: true
-    device: frr
-    members: []
   hosts:
     device: linux
     members:
@@ -7042,6 +7074,8 @@ groups:
     - l2
     - spine
     node_data:
+      clab:
+        image: quay.io/frrouting/frr:10.2.2
       provider: clab
 input:
 - /home/pipi/net101/tools/tests/integration/evpn/13-vxlan-ebgp-allowas.yml
@@ -7432,7 +7466,7 @@ nodes:
       sessions:
         ipv4:
         - ebgp
-    box: quay.io/frrouting/frr:10.2.2
+    box: quay.io/frrouting/frr:10.3.1
     clab:
       binds:
       - clab_files/l2/daemons:/etc/frr/daemons
@@ -7440,6 +7474,7 @@ nodes:
       config_templates:
       - daemons:/etc/frr/daemons
       - hosts:/etc/hosts
+      image: quay.io/frrouting/frr:10.2.2
       kind: linux
     config:
     - bgp.session
@@ -7586,7 +7621,7 @@ nodes:
       sessions:
         ipv4:
         - ebgp
-    box: quay.io/frrouting/frr:10.2.2
+    box: quay.io/frrouting/frr:10.3.1
     clab:
       binds:
       - clab_files/spine/daemons:/etc/frr/daemons
@@ -7594,6 +7629,7 @@ nodes:
       config_templates:
       - daemons:/etc/frr/daemons
       - hosts:/etc/hosts
+      image: quay.io/frrouting/frr:10.2.2
       kind: linux
     device: frr
     evpn:
@@ -7681,7 +7717,7 @@ vlans:
     - ifname: eth1
       ipv4: 172.31.1.4/24
       node: h1
-    - ifname: virtual-network1000
+    - ifname: vlan1000
       node: l1
     - ifname: eth1
       ipv4: 172.31.1.5/24

@@ -1,8 +1,11 @@
 addressing:
   l2only: {}
   lan:
+    ipv4: 172.16.0.0/16
     ipv6: 2001:db8:2::/48
     prefix: 24
+  lan_v6only:
+    ipv6: 2001:db8:12::/48
   loopback:
     ipv4: 10.0.0.0/24
     ipv6: 2001:db8:1::/48
@@ -15,13 +18,20 @@ addressing:
     prefix: 24
     start: 100
   p2p:
+    ipv4: 10.1.0.0/16
     ipv6: 2001:db8:3::/48
     prefix: 30
+  p2p_v6only:
+    ipv6: 2001:db8:13::/48
   router_id:
     ipv4: 10.0.0.0/24
     prefix: 32
+  vrf_lb_v6only:
+    ipv6: 2001:db8:cafe:2000::/56
+    prefix6: 128
   vrf_loopback:
-    ipv6: 2001:db8:cafe::/48
+    ipv4: 10.2.0.0/24
+    ipv6: 2001:db8:cafe::/56
     prefix: 32
 defaults:
   _globals:
@@ -47,8 +57,10 @@ defaults:
   addressing:
     l2only: null
     lan:
-      ipv4: false
+      ipv4: 172.16.0.0/16
       ipv6: 2001:db8:2::/48
+    lan_v6only:
+      ipv6: 2001:db8:12::/48
     loopback:
       ipv4: 10.0.0.0/24
       ipv6: 2001:db8:1::/48
@@ -57,14 +69,19 @@ defaults:
       mac: 08-4F-A9-00-00-00
       start: 100
     p2p:
-      ipv4: false
+      ipv4: 10.1.0.0/16
       ipv6: 2001:db8:3::/48
+    p2p_v6only:
+      ipv6: 2001:db8:13::/48
     router_id:
       ipv4: 10.0.0.0/24
       prefix: 32
+    vrf_lb_v6only:
+      ipv6: 2001:db8:cafe:2000::/56
+      prefix6: 128
     vrf_loopback:
-      ipv4: false
-      ipv6: 2001:db8:cafe::/48
+      ipv4: 10.2.0.0/24
+      ipv6: 2001:db8:cafe::/56
       prefix: 32
   attributes:
     _prefix:
@@ -673,7 +690,18 @@ defaults:
         type: int
       import: list
       links: list
-      loopback: null
+      loopback:
+        _alt_types:
+        - bool
+        - prefix_str
+        - NoneType
+        ipv4:
+          type: ipv4
+          use: host_prefix
+        ipv6:
+          type: ipv6
+          use: host_prefix
+        pool: addr_pool
       rd: rd
     vrf_group:
       _description: VRF groups
@@ -1880,6 +1908,7 @@ defaults:
           import:
           - connected
           - ospf
+          - static
           - vrf
           ipv6_lla: true
           local_as: true
@@ -1909,13 +1938,20 @@ defaults:
               vlan: 4094
           passive: false
         ospf:
+          default: true
           import:
           - bgp
           - connected
+          - static
           - vrf
           priority: true
           timers: true
           unnumbered: true
+        routing:
+          static:
+            discard: true
+            inter_vrf: true
+            vrf: true
         stp:
           enable_per_port: true
           port_type: true
@@ -2003,6 +2039,11 @@ defaults:
           - 1000
         ospf:
           default: true
+          import:
+          - bgp
+          - connected
+          - static
+          - vrf
           password: true
           priority: true
           timers: true
@@ -2042,7 +2083,7 @@ defaults:
           - pvrst
         vlan:
           model: switch
-          svi_interface_name: virtual-network{vlan}
+          svi_interface_name: vlan{vlan}
         vrf:
           bgp: true
           ospfv2: true
@@ -2351,6 +2392,12 @@ defaults:
       virtualbox:
         image: arista/veos
     fortios:
+      clab:
+        image: vrnetlab/vr-fortios:7.4.8
+        interface:
+          name: eth{ifindex}
+        node:
+          kind: fortinet_fortigate
       description: Fortinet FortiOS firewall
       external:
         image: none
@@ -2369,9 +2416,11 @@ defaults:
         ansible_user: admin
         collections:
         - fortinet.fortios
+        mgmt_if: port1
         netlab_config_tasks: true
         netlab_console_connection: ssh
         netlab_skip_missing_template: true
+        netlab_vdom: root
         vdom: root
       ifindex_offset: 2
       interface_name: port{ifindex}
@@ -2379,8 +2428,8 @@ defaults:
         build: https://netlab.tools/labs/fortios/
         create_template: fortios.xml.j2
         image: fortinet/fortios
+      loopback: false
       loopback_interface_name: loopback{ifindex}
-      mgmt_if: port1
       mtu: 1500
     frr:
       clab:
@@ -2590,7 +2639,7 @@ defaults:
           ansible_user: admin
           netlab_check_retries: 20
           netlab_device_type: iol
-        image: vrnetlab/cisco_iol:17.12.01
+        image: vrnetlab/cisco_iol:17.15.01
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         node:
@@ -2746,7 +2795,7 @@ defaults:
           ansible_user: admin
           netlab_check_retries: 20
           netlab_device_type: ioll2
-        image: vrnetlab/cisco_iol:L2-17.12.01
+        image: vrnetlab/cisco_iol:L2-17.15.01
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         mtu: 1500
@@ -2899,8 +2948,8 @@ defaults:
       clab:
         build: https://github.com/hellt/vrnetlab/tree/master/vios
         group_vars:
-          ansible_ssh_pass: VR-netlab9
-          ansible_user: vrnetlab
+          ansible_ssh_pass: admin
+          ansible_user: admin
           netlab_check_retries: 50
         image: vrnetlab/cisco_vios:15.9.3
         interface:
@@ -3061,8 +3110,8 @@ defaults:
       clab:
         build: https://github.com/hellt/vrnetlab/tree/master/vios
         group_vars:
-          ansible_ssh_pass: VR-netlab9
-          ansible_user: vrnetlab
+          ansible_ssh_pass: admin
+          ansible_user: admin
           netlab_check_retries: 50
         image: vrnetlab/cisco_vios:15.9.3
         interface:
@@ -5156,6 +5205,7 @@ defaults:
       vsrx: true
   module:
   - vrf
+  - routing
   mpls:
     attributes:
       global:
@@ -6047,6 +6097,7 @@ defaults:
         static:
           _subtype: static_entry
           type: list
+      node_copy: {}
       route_map:
         match:
         - prefix
@@ -6078,6 +6129,7 @@ defaults:
       cat8000v: true
       csr: true
       cumulus: true
+      cumulus_nvue: true
       dellos10: true
       dnsmasq: true
       eos: true
@@ -6672,10 +6724,12 @@ links:
   interfaces:
   - ifindex: 1
     ifname: ethernet1/1/1
+    ipv4: 172.16.0.1/24
     ipv6: 2001:db8:2::1/64
     node: dut
   - ifindex: 1
     ifname: eth1
+    ipv4: 172.16.0.2/24
     ipv6: 2001:db8:2::2/64
     node: h1
   libvirt:
@@ -6684,6 +6738,7 @@ links:
   linkindex: 1
   node_count: 2
   prefix:
+    ipv4: 172.16.0.0/24
     ipv6: 2001:db8:2::/64
   role: stub
   type: lan
@@ -6693,10 +6748,12 @@ links:
   interfaces:
   - ifindex: 2
     ifname: ethernet1/1/2
+    ipv4: 172.16.1.1/24
     ipv6: 2001:db8:2:1::1/64
     node: dut
   - ifindex: 1
     ifname: eth1
+    ipv4: 172.16.1.3/24
     ipv6: 2001:db8:2:1::3/64
     node: h2
   libvirt:
@@ -6705,6 +6762,7 @@ links:
   linkindex: 2
   node_count: 2
   prefix:
+    ipv4: 172.16.1.0/24
     ipv6: 2001:db8:2:1::/64
   role: stub
   type: lan
@@ -6714,10 +6772,12 @@ links:
   interfaces:
   - ifindex: 3
     ifname: ethernet1/1/3
+    ipv4: 172.16.2.1/24
     ipv6: 2001:db8:2:2::1/64
     node: dut
   - ifindex: 1
     ifname: eth1
+    ipv4: 172.16.2.4/24
     ipv6: 2001:db8:2:2::4/64
     node: h3
   libvirt:
@@ -6726,6 +6786,7 @@ links:
   linkindex: 3
   node_count: 2
   prefix:
+    ipv4: 172.16.2.0/24
     ipv6: 2001:db8:2:2::/64
   role: stub
   type: lan
@@ -6735,10 +6796,12 @@ links:
   interfaces:
   - ifindex: 4
     ifname: ethernet1/1/4
+    ipv4: 172.16.3.1/24
     ipv6: 2001:db8:2:3::1/64
     node: dut
   - ifindex: 1
     ifname: eth1
+    ipv4: 172.16.3.5/24
     ipv6: 2001:db8:2:3::5/64
     node: h4
   libvirt:
@@ -6747,6 +6810,7 @@ links:
   linkindex: 4
   node_count: 2
   prefix:
+    ipv4: 172.16.3.0/24
     ipv6: 2001:db8:2:3::/64
   role: stub
   type: lan
@@ -6765,12 +6829,14 @@ message: 'The device under test has two VRFs with two interfaces in each VRF.
   '
 module:
 - vrf
+- routing
 name: ml_17
 nodes:
   dut:
     af:
       ipv4: true
       ipv6: true
+      vpnv4: true
       vpnv6: true
     box: dell/os10
     device: dellos10
@@ -6779,6 +6845,7 @@ nodes:
     - bridge: ml_17_1
       ifindex: 1
       ifname: ethernet1/1/1
+      ipv4: 172.16.0.1/24
       ipv6: 2001:db8:2::1/64
       libvirt:
         provider:
@@ -6787,6 +6854,7 @@ nodes:
       name: dut -> h1
       neighbors:
       - ifname: eth1
+        ipv4: 172.16.0.2/24
         ipv6: 2001:db8:2::2/64
         node: h1
       role: stub
@@ -6795,6 +6863,7 @@ nodes:
     - bridge: ml_17_2
       ifindex: 2
       ifname: ethernet1/1/2
+      ipv4: 172.16.1.1/24
       ipv6: 2001:db8:2:1::1/64
       libvirt:
         provider:
@@ -6803,6 +6872,7 @@ nodes:
       name: dut -> h2
       neighbors:
       - ifname: eth1
+        ipv4: 172.16.1.3/24
         ipv6: 2001:db8:2:1::3/64
         node: h2
       role: stub
@@ -6811,6 +6881,7 @@ nodes:
     - bridge: ml_17_3
       ifindex: 3
       ifname: ethernet1/1/3
+      ipv4: 172.16.2.1/24
       ipv6: 2001:db8:2:2::1/64
       libvirt:
         provider:
@@ -6819,6 +6890,7 @@ nodes:
       name: dut -> h3
       neighbors:
       - ifname: eth1
+        ipv4: 172.16.2.4/24
         ipv6: 2001:db8:2:2::4/64
         node: h3
       role: stub
@@ -6827,6 +6899,7 @@ nodes:
     - bridge: ml_17_4
       ifindex: 4
       ifname: ethernet1/1/4
+      ipv4: 172.16.3.1/24
       ipv6: 2001:db8:2:3::1/64
       libvirt:
         provider:
@@ -6835,6 +6908,7 @@ nodes:
       name: dut -> h4
       neighbors:
       - ifname: eth1
+        ipv4: 172.16.3.5/24
         ipv6: 2001:db8:2:3::5/64
         node: h4
       role: stub
@@ -6878,6 +6952,7 @@ nodes:
     vrfs:
       blue:
         af:
+          ipv4: true
           ipv6: true
         export:
         - '65000:2'
@@ -6894,6 +6969,7 @@ nodes:
         vrfidx: 101
       red:
         af:
+          ipv4: true
           ipv6: true
         export:
         - '65000:1'
@@ -6910,6 +6986,7 @@ nodes:
         vrfidx: 100
   h1:
     af:
+      ipv4: true
       ipv6: true
     box: python:3.13-alpine
     clab:
@@ -6923,8 +7000,12 @@ nodes:
     id: 2
     interfaces:
     - bridge: ml_17_1
+      gateway:
+        ipv4: 172.16.0.1/24
+        ipv6: 2001:db8:2::1/64
       ifindex: 1
       ifname: eth1
+      ipv4: 172.16.0.2/24
       ipv6: 2001:db8:2::2/64
       libvirt:
         provider:
@@ -6934,6 +7015,7 @@ nodes:
       name: h1 -> dut
       neighbors:
       - ifname: ethernet1/1/1
+        ipv4: 172.16.0.1/24
         ipv6: 2001:db8:2::1/64
         node: dut
         vrf: red
@@ -6943,12 +7025,41 @@ nodes:
       ifname: eth0
       ipv4: 192.168.17.102
       mac: 08:4f:a9:02:00:00
+    module:
+    - routing
     mtu: 1500
     name: h1
     provider: clab
     role: host
+    routing:
+      static:
+      - ipv4: 172.16.0.0/16
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.0.1
+          ipv6: 2001:db8:2::1
+      - ipv4: 10.0.0.0/24
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.0.1
+          ipv6: 2001:db8:2::1
+      - ipv4: 10.1.0.0/16
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.0.1
+          ipv6: 2001:db8:2::1
+      - ipv4: 10.2.0.0/24
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.0.1
+          ipv6: 2001:db8:2::1
   h2:
     af:
+      ipv4: true
       ipv6: true
     box: python:3.13-alpine
     clab:
@@ -6962,8 +7073,12 @@ nodes:
     id: 3
     interfaces:
     - bridge: ml_17_2
+      gateway:
+        ipv4: 172.16.1.1/24
+        ipv6: 2001:db8:2:1::1/64
       ifindex: 1
       ifname: eth1
+      ipv4: 172.16.1.3/24
       ipv6: 2001:db8:2:1::3/64
       libvirt:
         provider:
@@ -6973,6 +7088,7 @@ nodes:
       name: h2 -> dut
       neighbors:
       - ifname: ethernet1/1/2
+        ipv4: 172.16.1.1/24
         ipv6: 2001:db8:2:1::1/64
         node: dut
         vrf: red
@@ -6982,12 +7098,41 @@ nodes:
       ifname: eth0
       ipv4: 192.168.17.103
       mac: 08:4f:a9:03:00:00
+    module:
+    - routing
     mtu: 1500
     name: h2
     provider: clab
     role: host
+    routing:
+      static:
+      - ipv4: 172.16.0.0/16
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.1.1
+          ipv6: 2001:db8:2:1::1
+      - ipv4: 10.0.0.0/24
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.1.1
+          ipv6: 2001:db8:2:1::1
+      - ipv4: 10.1.0.0/16
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.1.1
+          ipv6: 2001:db8:2:1::1
+      - ipv4: 10.2.0.0/24
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.1.1
+          ipv6: 2001:db8:2:1::1
   h3:
     af:
+      ipv4: true
       ipv6: true
     box: python:3.13-alpine
     clab:
@@ -7001,8 +7146,12 @@ nodes:
     id: 4
     interfaces:
     - bridge: ml_17_3
+      gateway:
+        ipv4: 172.16.2.1/24
+        ipv6: 2001:db8:2:2::1/64
       ifindex: 1
       ifname: eth1
+      ipv4: 172.16.2.4/24
       ipv6: 2001:db8:2:2::4/64
       libvirt:
         provider:
@@ -7012,6 +7161,7 @@ nodes:
       name: h3 -> dut
       neighbors:
       - ifname: ethernet1/1/3
+        ipv4: 172.16.2.1/24
         ipv6: 2001:db8:2:2::1/64
         node: dut
         vrf: blue
@@ -7021,12 +7171,41 @@ nodes:
       ifname: eth0
       ipv4: 192.168.17.104
       mac: 08:4f:a9:04:00:00
+    module:
+    - routing
     mtu: 1500
     name: h3
     provider: clab
     role: host
+    routing:
+      static:
+      - ipv4: 172.16.0.0/16
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.2.1
+          ipv6: 2001:db8:2:2::1
+      - ipv4: 10.0.0.0/24
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.2.1
+          ipv6: 2001:db8:2:2::1
+      - ipv4: 10.1.0.0/16
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.2.1
+          ipv6: 2001:db8:2:2::1
+      - ipv4: 10.2.0.0/24
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.2.1
+          ipv6: 2001:db8:2:2::1
   h4:
     af:
+      ipv4: true
       ipv6: true
     box: python:3.13-alpine
     clab:
@@ -7040,8 +7219,12 @@ nodes:
     id: 5
     interfaces:
     - bridge: ml_17_4
+      gateway:
+        ipv4: 172.16.3.1/24
+        ipv6: 2001:db8:2:3::1/64
       ifindex: 1
       ifname: eth1
+      ipv4: 172.16.3.5/24
       ipv6: 2001:db8:2:3::5/64
       libvirt:
         provider:
@@ -7051,6 +7234,7 @@ nodes:
       name: h4 -> dut
       neighbors:
       - ifname: ethernet1/1/4
+        ipv4: 172.16.3.1/24
         ipv6: 2001:db8:2:3::1/64
         node: dut
         vrf: blue
@@ -7060,10 +7244,38 @@ nodes:
       ifname: eth0
       ipv4: 192.168.17.105
       mac: 08:4f:a9:05:00:00
+    module:
+    - routing
     mtu: 1500
     name: h4
     provider: clab
     role: host
+    routing:
+      static:
+      - ipv4: 172.16.0.0/16
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.3.1
+          ipv6: 2001:db8:2:3::1
+      - ipv4: 10.0.0.0/24
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.3.1
+          ipv6: 2001:db8:2:3::1
+      - ipv4: 10.1.0.0/16
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.3.1
+          ipv6: 2001:db8:2:3::1
+      - ipv4: 10.2.0.0/24
+        nexthop:
+          idx: 0
+          intf: eth1
+          ipv4: 172.16.3.1
+          ipv6: 2001:db8:2:3::1
 plugin:
 - multilab
 provider: libvirt
