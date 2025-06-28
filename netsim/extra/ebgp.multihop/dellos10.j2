@@ -1,0 +1,30 @@
+{% macro ebgp_session(n,af) -%}
+  neighbor {{ n[af] }}
+{%   if n.multihop is defined %}
+    ebgp-multihop {{ n.multihop }}
+{%   endif %}
+{%   if n._source_intf is defined %}
+    update-source {{ n._source_intf.ifname }}
+{%   endif %}
+  exit
+{% endmacro %}
+!
+router bgp {{ bgp.as }}
+{% for af in ['ipv4','ipv6'] %}
+{%   for n in bgp.neighbors if n[af] is defined %}
+{{     ebgp_session(n,af) -}}
+{%   endfor %}
+{% endfor %}
+!
+{% if vrfs is defined %}
+{%   for vname,vdata in vrfs.items() %}
+  vrf {{ vname }}
+{%     for af in ('ipv4','ipv6') if af in vdata.af|default({}) %}
+{%       for n in vdata.bgp.neighbors if n[af] is defined %}
+{{         ebgp_session(n,af) -}}
+{%       endfor %}
+{%     endfor %}
+{%   endfor %}
+{% endif %}
+
+do clear ip bgp *
