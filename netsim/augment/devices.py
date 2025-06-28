@@ -75,8 +75,11 @@ The checking algorithm is specified with the check_mode parameter:
   be 'False' (not supported) or a string (error message)
 """
 class FC_MODE(Enum):
-  BLACKLIST = 1
-  WHITELIST = 2
+  BLACKLIST    = 1
+  WHITELIST    = 2
+  OK           = 1
+  ERR_ATTR     = -2
+  ERR_OPTIONAL = -1
 
 def optional_features_error(
       node: Box,
@@ -98,7 +101,7 @@ def check_optional_features(
         attribute: str,             # Path to the feature to check
         check_mode: FC_MODE = FC_MODE.WHITELIST,
         category: typing.Optional[typing.Union[typing.Type[Warning],typing.Type[Exception]]] = None,
-        features: typing.Optional[Box] = None) -> bool:
+        features: typing.Optional[Box] = None) -> FC_MODE:
 
   error = False
   module = attribute.split('.')[0]
@@ -107,11 +110,11 @@ def check_optional_features(
     features = d_features.get(attribute,False)
 
   if features is True:              # We got to a TRUE value, this stuff is supported
-    return True
+    return FC_MODE.OK
 
   if features is False:             # The device has no idea about the required feature, get out of here
     optional_features_error(node,attribute,path,module,category)
-    return False
+    return FC_MODE.ERR_OPTIONAL if category is Warning else FC_MODE.ERR_ATTR
 
   if isinstance(features,str):      # Custom error message
     log.error(
@@ -119,24 +122,26 @@ def check_optional_features(
       category=Warning if category is None else category,
       more_data=f'Used in {path}',
       module=module)
-    return False
+    return FC_MODE.ERR_OPTIONAL if category is None or category is Warning else FC_MODE.ERR_ATTR
 
   if isinstance(data,Box) and isinstance(features,Box):
-    OK = True
+    OK = FC_MODE.OK
     for kw in data.keys():          # Check all subfeatures
       if kw in features:            # Subfeature is mentioned, do a recursive check
-        OK = OK and check_optional_features(
-                      data[kw],f'{path}.{kw}',node,topology,
-                      f'{attribute}.{kw}',check_mode,category,features[kw])
+        stat = check_optional_features(
+                  data[kw],f'{path}.{kw}',node,topology,
+                  f'{attribute}.{kw}',check_mode,category,features[kw])
+        if stat.value < OK.value:
+          OK = stat
         continue                    # ... and move to the next feature
       if check_mode == FC_MODE.BLACKLIST:
         continue                    # Subfeature is not mentioned, we're in blacklist mode == > OK
       optional_features_error(node,f'{attribute}.{kw}',f'{path}.{kw}',module,category)
-      OK = False                    # In whitelisting mode a missing subfeature is an error
+      OK = FC_MODE.ERR_ATTR         # In whitelisting mode a missing subfeature is an error
 
     return OK                       # Return the final result
   else:                             # Assume the feature is supported
-    return True
+    return FC_MODE.OK
 
 """
 Get device loopback name (built-in loopback if ifindex == 0 else an additional loopback)

@@ -279,13 +279,15 @@ def route_aggregation(ndata: Box, topology: Box) -> None:
     api.node_config(ndata,_config_name)                     # Remember that we have to do extra configuration
     bpath = f'nodes.{ndata.name}' + (f'.vrfs.{vname}' if vname else '')
     for a_idx,a_entry in enumerate(bdata.aggregate):        # Now check every aggregation entry
-      devices.check_optional_features(                      # ... for optional features that
-        data=a_entry,                                       # ... might not be supported by this device
-        path=bpath+f'.aggregate[{a_idx}]',
-        node=ndata,
-        topology=topology,
-        attribute='bgp.aggregate',
-        check_mode=devices.FC_MODE.BLACKLIST)
+      stat = devices.check_optional_features(               # ... for optional features that
+                data=a_entry,                               # ... might not be supported by this device
+                path=bpath+f'.aggregate[{a_idx}]',
+                node=ndata,
+                topology=topology,
+                attribute='bgp.aggregate',
+                check_mode=devices.FC_MODE.BLACKLIST)
+      if stat == devices.FC_MODE.ERR_ATTR:
+        break
       for policy_kw in ['suppress_policy','attributes']:    # Finally, two attributes use routing policies
         if policy_kw in a_entry:                            # ... so if they are present
           pname = a_entry[policy_kw]                        # ... we need to import routing policies
