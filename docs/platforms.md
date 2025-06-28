@@ -104,7 +104,7 @@ You cannot use all supported network devices with all virtualization providers. 
 | Cisco IOL          |  ❌ | ❌  |  ✅[❗](clab-vrnetlab) |
 | Cisco IOL L2       |  ❌ | ❌  |  ✅[❗](clab-vrnetlab) |
 | Cisco IOSv         | [✅](build-iosv)  | ✅  |  ✅[❗](clab-vrnetlab) |
-| Cisco IOSvL2       | [✅](build-iosvl2)|  ❌  |  ❌  |
+| Cisco IOSvL2       | [✅](build-iosvl2)|  ❌  | ✅[❗](clab-vrnetlab) |
 | Cisco IOS XRv      | [✅](build-iosxr) |  ❌  | ✅  |
 | Cisco Nexus 9300v  | [✅](build-nxos) | ✅  |  ✅[❗](clab-vrnetlab)  |
 | Cumulus Linux      | ✅  | ✅  | ✅[❗](caveats-cumulus) |
