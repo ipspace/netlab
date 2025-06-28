@@ -1,6 +1,9 @@
 (extool-nuts)=
 # Network Unit Testing System (NUTS)
 
+_This integration is experimental. Please report any issues you encounter on the [NUTS GitHub repository](https://github.com/network-unit-testing-system/nuts/issues)._
+
+
 [NUTS](https://github.com/network-unit-testing-system/nuts) is a Pytest plugin that enables automated network testing using simple YAML files. It’s ideal for validating your network configuration and state.
 
 * Add the following lines to the lab topology file to use NUTS with _netlab_:
@@ -12,9 +15,11 @@ tools:
 
 Then use one of the following commands to interact with the test container:
 
-* `netlab connect nuts` — Runs pytest inside the NUTS Docker container.
+* `netlab connect nuts` — Opens a shell in the NUTS Docker container for manual test execution and debugging.
 
-* `netlab connect nuts bash` — Opens a shell in the NUTS Docker container for manual test execution and debugging.
+* After connecting:
+  * `pytest` — Runs the tests inside the NUTS Docker container.
+  * `pip install <pkg>` — Install additional Python packages. For example NAPALM Community Drivers.
 
 All necessary files (including default test templates) are created in the `nuts/` directory and mounted automatically into the container.
 
