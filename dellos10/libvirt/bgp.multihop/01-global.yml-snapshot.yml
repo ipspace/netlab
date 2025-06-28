@@ -2,9 +2,11 @@ addressing:
   l2only: {}
   lan:
     ipv4: 172.16.0.0/16
+    ipv6: 2001:db8:2::/48
     prefix: 24
   loopback:
     ipv4: 10.0.0.0/24
+    ipv6: 2001:db8:1::/48
     prefix: 32
   mgmt:
     _bridge: nl_mgmt_17
@@ -15,6 +17,7 @@ addressing:
     start: 100
   p2p:
     ipv4: 10.1.0.0/16
+    ipv6: 2001:db8:3::/48
     prefix: 30
   router_id:
     ipv4: 10.0.0.0/24
@@ -27,16 +30,36 @@ bgp:
   community:
     ebgp:
     - standard
-    - extended
     ibgp:
     - standard
     - extended
+  multihop:
+    sessions:
+    - _linkname: bgp.multihop[1]
+      interfaces:
+      - _bgp_session: true
+        bgp:
+          multihop: 255
+        ifindex: 20000
+        ifname: _ebgp_multihop_4
+        ipv4: 10.0.0.1/32
+        ipv6: 2001:db8:1:1::1/64
+        node: dut
+      - _bgp_session: true
+        bgp:
+          multihop: 255
+          passive: true
+        ifindex: 20000
+        ifname: _ebgp_multihop_4
+        ipv4: 10.0.0.3/32
+        ipv6: 2001:db8:1:3::1/64
+        node: pe2
   next_hop_self: true
 defaults:
   _globals:
     _modlist:
-    - bfd
     - bgp
+    - bfd
     - dhcp
     - eigrp
     - evpn
@@ -206,6 +229,19 @@ defaults:
       sequence:
         max_value: 32767
         min_value: 1
+        type: int
+    exbs_timers:
+      hold:
+        max_value: 3600
+        min_value: 3
+        type: int
+      keepalive:
+        max_value: 300
+        min_value: 1
+        type: int
+      min_hold:
+        max_value: 3600
+        min_value: 3
         type: int
     global:
       addressing:
@@ -806,6 +842,10 @@ defaults:
         advertise_roles: list
         as: asn
         as_list: dict
+        bfd:
+          _requires:
+          - bfd
+          type: bool
         community:
           _alt_types:
           - str
@@ -821,12 +861,60 @@ defaults:
           - large
           - 2octet
         ebgp_role: str
+        gtsm:
+          max_value: 254
+          min_value: 1
+          true_value: 1
+          type: int
+        multihop:
+          activate:
+            ipv4:
+              type: list
+              valid_values:
+              - ipv4
+              - ipv6
+              - ipv4_label
+              - ipv6_label
+              - 6pe
+              - vpnv4
+              - vpnv6
+              - evpn
+            ipv6:
+              type: list
+              valid_values:
+              - ipv4
+              - ipv6
+              - ipv4_label
+              - ipv6_label
+              - 6pe
+              - vpnv4
+              - vpnv6
+              - evpn
+          sessions: list
         next_hop_self: bool
+        password: str
         replace_global_as: bool
         rr_cluster_id:
           type: ipv4
           use: id
         rr_list: list
+        session:
+          apply:
+            _list_to_dict: true
+            ebgp:
+              _alt_types:
+              - NoneType
+              create_empty: false
+              true_value:
+              - '*'
+              type: list
+            ibgp:
+              _alt_types:
+              - NoneType
+              create_empty: false
+              true_value:
+              - '*'
+              type: list
         sessions:
           ipv4:
           - ibgp
@@ -836,13 +924,79 @@ defaults:
           - ibgp
           - ebgp
           - localas_ibgp
+        tcp_ao:
+          true_value: hmac-sha-1
+          type: str
+          valid_values:
+          - aes-128-cmac
+          - hmac-sha-1
+          - ''
+        timers: exbs_timers
       interface:
+        allowas_in:
+          max_value: 10
+          min_value: 1
+          true_value: 1
+          type: int
+        as_override: bool
+        bfd:
+          _requires:
+          - bfd
+          type: bool
+        default_originate: bool
+        description: str
+        gtsm:
+          max_value: 254
+          min_value: 1
+          true_value: 1
+          type: int
         local_as: asn
+        passive: bool
+        password: str
+        remove_private_as:
+          true_value:
+          - 'on'
+          type: list
+          valid_values:
+          - 'on'
+          - all
+          - replace
+          - ingress
+          - ingress-all
+          - ingress-replace
         replace_global_as: bool
+        tcp_ao:
+          true_value: hmac-sha-1
+          type: str
+          valid_values:
+          - aes-128-cmac
+          - hmac-sha-1
+          - ''
+        timers: exbs_timers
       link:
         advertise:
           _intra_as: true
           type: bool
+        bfd:
+          _requires:
+          - bfd
+          type: bool
+        gtsm:
+          max_value: 254
+          min_value: 1
+          true_value: 1
+          type: int
+        multihop: int
+        password: str
+        rs: bool
+        tcp_ao:
+          true_value: hmac-sha-1
+          type: str
+          valid_values:
+          - aes-128-cmac
+          - hmac-sha-1
+          - ''
+        timers: exbs_timers
       node:
         activate:
           ipv4:
@@ -857,6 +1011,10 @@ defaults:
         as:
           _required: true
           type: asn
+        bfd:
+          _requires:
+          - bfd
+          type: bool
         community:
           _alt_types:
           - str
@@ -871,8 +1029,39 @@ defaults:
           - extended
           - large
           - 2octet
+        default_originate: bool
+        gtsm:
+          max_value: 254
+          min_value: 1
+          true_value: 1
+          type: int
         import: _r_import
         local_as: asn
+        multihop:
+          activate:
+            ipv4:
+              type: list
+              valid_values:
+              - ipv4
+              - ipv6
+              - ipv4_label
+              - ipv6_label
+              - 6pe
+              - vpnv4
+              - vpnv6
+              - evpn
+            ipv6:
+              type: list
+              valid_values:
+              - ipv4
+              - ipv6
+              - ipv4_label
+              - ipv6_label
+              - 6pe
+              - vpnv4
+              - vpnv6
+              - evpn
+          sessions: list
         next_hop_self: bool
         originate:
           _subtype:
@@ -880,6 +1069,8 @@ defaults:
             type: ipv4
             use: subnet_prefix
           type: list
+        passive: bool
+        password: str
         replace_global_as: bool
         router_id:
           type: ipv4
@@ -888,6 +1079,24 @@ defaults:
         rr_cluster_id:
           type: ipv4
           use: id
+        rs: bool
+        session:
+          apply:
+            _list_to_dict: true
+            ebgp:
+              _alt_types:
+              - NoneType
+              create_empty: false
+              true_value:
+              - '*'
+              type: list
+            ibgp:
+              _alt_types:
+              - NoneType
+              create_empty: false
+              true_value:
+              - '*'
+              type: list
         sessions:
           ipv4:
           - ibgp
@@ -897,9 +1106,31 @@ defaults:
           - ibgp
           - ebgp
           - localas_ibgp
+        tcp_ao:
+          true_value: hmac-sha-1
+          type: str
+          valid_values:
+          - aes-128-cmac
+          - hmac-sha-1
+          - ''
+        timers: exbs_timers
       node_copy:
       - local_as
       - replace_global_as
+      session:
+        attr:
+        - as_override
+        - allowas_in
+        - default_originate
+        - password
+        - passive
+        - gtsm
+        - timers
+        - tcp_ao
+        - bfd
+        - remove_private_as
+        - rs
+        - description
       vrf:
         import: _r_import
         router_id:
@@ -932,6 +1163,7 @@ defaults:
       advertise_roles: null
       as_list: null
       ebgp_role: null
+      multihop: null
       rr_list: null
     supported_on:
       arubacx: true
@@ -1011,6 +1243,7 @@ defaults:
         image: netlab/bird:latest
       daemon_config:
         bgp: /etc/bird/bgp.mod.conf
+        bgp@session: /etc/bird/bgp.session.conf
         bird: /etc/bird/bird.conf
         ospf: /etc/bird/ospf.mod.conf
         routing: /etc/bird/routing.mod.conf
@@ -1019,6 +1252,7 @@ defaults:
         bfd: true
         bgp:
           activate_af: true
+          bfd: true
           community:
             2octet:
             - standard
@@ -1029,6 +1263,8 @@ defaults:
             standard:
             - standard
             - large
+          default_originate: true
+          gtsm: true
           import:
           - ospf
           - connected
@@ -1036,7 +1272,13 @@ defaults:
           ipv6_lla: false
           local_as: true
           local_as_ibgp: true
+          passive: true
+          password: true
+          remove_private_as: true
           rfc8950: true
+          rs: true
+          rs_client: true
+          timers: true
         dhcp: false
         initial:
           ipv4:
@@ -1124,6 +1366,10 @@ defaults:
         bfd: {}
         bgp:
           activate_af: true
+          allowas_in: true
+          bfd: true
+          default_originate: true
+          gtsm: true
           import:
           - ospf
           - connected
@@ -1131,6 +1377,11 @@ defaults:
           - vrf
           local_as: true
           local_as_ibgp: false
+          multihop:
+            vrf: true
+          password: true
+          remove_private_as: true
+          timers: true
           vrf_local_as: true
         evpn:
           asymmetrical_irb: true
@@ -1278,6 +1529,7 @@ defaults:
       daemon: true
       daemon_config:
         bgp: /etc/bird/bgp.mod.conf
+        bgp@session: /etc/bird/bgp.session.conf
         bird: /etc/bird/bird.conf
         ospf: /etc/bird/ospf.mod.conf
         routing: /etc/bird/routing.mod.conf
@@ -1289,6 +1541,7 @@ defaults:
         bfd: {}
         bgp:
           activate_af: true
+          bfd: true
           community:
             2octet:
             - standard
@@ -1299,6 +1552,8 @@ defaults:
             standard:
             - standard
             - large
+          default_originate: true
+          gtsm: true
           import:
           - ospf
           - connected
@@ -1306,7 +1561,13 @@ defaults:
           ipv6_lla: false
           local_as: true
           local_as_ibgp: true
+          passive: true
+          password: true
+          remove_private_as: true
           rfc8950: true
+          rs: true
+          rs_client: true
+          timers: true
         initial:
           ipv4:
             unnumbered: peer
@@ -1388,11 +1649,16 @@ defaults:
         bfd: {}
         bgp:
           activate_af: true
+          allowas_in: true
+          as_override: true
+          bfd: true
           community:
             extended:
             - extended
             standard:
             - standard
+          default_originate: true
+          gtsm: true
           import:
           - ospf
           - isis
@@ -1402,6 +1668,14 @@ defaults:
           - vrf
           local_as: true
           local_as_ibgp: true
+          multihop:
+            vrf: true
+          passive: true
+          password: true
+          remove_private_as: true
+          rs: true
+          rs_client: true
+          timers: true
           vrf_local_as: true
         dhcp:
           client:
@@ -1558,11 +1832,16 @@ defaults:
         bfd: {}
         bgp:
           activate_af: true
+          allowas_in: true
+          as_override: true
+          bfd: true
           community:
             extended:
             - extended
             standard:
             - standard
+          default_originate: true
+          gtsm: true
           import:
           - ospf
           - isis
@@ -1572,6 +1851,14 @@ defaults:
           - vrf
           local_as: true
           local_as_ibgp: true
+          multihop:
+            vrf: true
+          passive: true
+          password: true
+          remove_private_as: true
+          rs: true
+          rs_client: true
+          timers: true
           vrf_local_as: true
         dhcp:
           client:
@@ -1731,6 +2018,9 @@ defaults:
         bfd: {}
         bgp:
           activate_af: true
+          allowas_in: true
+          as_override: true
+          bfd: true
           community:
             2octet:
             - standard
@@ -1741,6 +2031,9 @@ defaults:
             standard:
             - standard
             - large
+          default_originate: true
+          description: true
+          gtsm: true
           import:
           - ospf
           - ripv2
@@ -1749,7 +2042,15 @@ defaults:
           - vrf
           ipv6_lla: true
           local_as: true
+          multihop:
+            vrf: true
+          passive: true
+          password: true
+          remove_private_as: true
           rfc8950: true
+          rs: true
+          rs_client: true
+          timers: true
           vrf_local_as: true
         dhcp:
           client:
@@ -1877,6 +2178,7 @@ defaults:
       features:
         bgp:
           activate_af: true
+          allowas_in: true
           import:
           - connected
           - ospf
@@ -1885,6 +2187,7 @@ defaults:
           ipv6_lla: true
           local_as: true
           local_as_ibgp: true
+          multihop: true
           rfc8950: true
           vrf_local_as: true
         evpn:
@@ -1978,6 +2281,9 @@ defaults:
         bfd: {}
         bgp:
           activate_af: true
+          allowas_in: true
+          bfd: true
+          default_originate: true
           import:
           - ospf
           - connected
@@ -1986,6 +2292,11 @@ defaults:
           ipv6_lla: true
           local_as: true
           local_as_ibgp: false
+          multihop: true
+          passive: false
+          password: true
+          remove_private_as: true
+          timers: true
           vrf_local_as: true
         evpn:
           asymmetrical_irb: true
@@ -2211,6 +2522,9 @@ defaults:
         bfd: {}
         bgp:
           activate_af: true
+          allowas_in: true
+          as_override: true
+          bfd: true
           community:
             2octet:
             - standard
@@ -2221,6 +2535,8 @@ defaults:
             standard:
             - standard
             - large
+          default_originate: true
+          gtsm: true
           import:
           - ospf
           - isis
@@ -2231,6 +2547,17 @@ defaults:
           ipv6_lla: true
           local_as: true
           local_as_ibgp: true
+          multihop:
+            vrf: true
+          passive: true
+          password: true
+          remove_private_as: true
+          rs_client: true
+          tcp_ao:
+          - libvirt
+          - virtualbox
+          - external
+          timers: true
           vrf_local_as: true
         dhcp:
           client:
@@ -2427,6 +2754,9 @@ defaults:
         bfd: {}
         bgp:
           activate_af: true
+          allowas_in: true
+          as_override: true
+          bfd: true
           community:
             2octet:
             - standard
@@ -2437,6 +2767,9 @@ defaults:
             standard:
             - standard
             - large
+          default_originate: true
+          description: true
+          gtsm: true
           import:
           - ospf
           - ripv2
@@ -2447,7 +2780,15 @@ defaults:
           ipv6_lla: true
           local_as: true
           local_as_ibgp: true
+          multihop:
+            vrf: true
+          passive: true
+          password: true
+          remove_private_as: true
           rfc8950: true
+          rs: true
+          rs_client: true
+          timers: true
           vrf_local_as: true
         evpn:
           asymmetrical_irb: true
@@ -2623,11 +2964,16 @@ defaults:
         bfd: {}
         bgp:
           activate_af: true
+          allowas_in: true
+          as_override: true
+          bfd: true
           community:
             extended:
             - extended
             standard:
             - standard
+          default_originate: true
+          gtsm: true
           import:
           - ospf
           - isis
@@ -2637,6 +2983,14 @@ defaults:
           - vrf
           local_as: true
           local_as_ibgp: true
+          multihop:
+            vrf: true
+          passive: true
+          password: true
+          remove_private_as: true
+          rs: true
+          rs_client: true
+          timers: true
           vrf_local_as: true
         dhcp:
           client:
@@ -2781,11 +3135,16 @@ defaults:
         bfd: {}
         bgp:
           activate_af: true
+          allowas_in: true
+          as_override: true
+          bfd: true
           community:
             extended:
             - extended
             standard:
             - standard
+          default_originate: true
+          gtsm: true
           import:
           - ospf
           - isis
@@ -2795,6 +3154,14 @@ defaults:
           - vrf
           local_as: true
           local_as_ibgp: true
+          multihop:
+            vrf: true
+          passive: true
+          password: true
+          remove_private_as: true
+          rs: true
+          rs_client: true
+          timers: true
           vrf_local_as: true
         dhcp:
           client:
@@ -2935,11 +3302,16 @@ defaults:
         bfd: {}
         bgp:
           activate_af: true
+          allowas_in: true
+          as_override: true
+          bfd: true
           community:
             extended:
             - extended
             standard:
             - standard
+          default_originate: true
+          gtsm: true
           import:
           - ospf
           - isis
@@ -2949,6 +3321,14 @@ defaults:
           - vrf
           local_as: true
           local_as_ibgp: true
+          multihop:
+            vrf: true
+          passive: true
+          password: true
+          remove_private_as: true
+          rs: true
+          rs_client: true
+          timers: true
           vrf_local_as: true
         dhcp:
           client:
@@ -3097,11 +3477,16 @@ defaults:
         bfd: {}
         bgp:
           activate_af: true
+          allowas_in: true
+          as_override: true
+          bfd: true
           community:
             extended:
             - extended
             standard:
             - standard
+          default_originate: true
+          gtsm: true
           import:
           - ospf
           - isis
@@ -3111,6 +3496,14 @@ defaults:
           - vrf
           local_as: true
           local_as_ibgp: true
+          multihop:
+            vrf: true
+          passive: true
+          password: true
+          remove_private_as: true
+          rs: true
+          rs_client: true
+          timers: true
           vrf_local_as: true
         dhcp:
           client:
@@ -3378,6 +3771,7 @@ defaults:
           bandwidth: true
           bfd: true
           default_originate: true
+          description: true
           gtsm: true
           import:
           - ospf
@@ -3789,6 +4183,9 @@ defaults:
         bfd: {}
         bgp:
           activate_af: true
+          allowas_in: true
+          as_override: true
+          bfd: true
           community:
             2octet:
             - standard
@@ -3799,6 +4196,7 @@ defaults:
             standard:
             - standard
             - large
+          default_originate: true
           import:
           - ospf
           - isis
@@ -3808,6 +4206,13 @@ defaults:
           ipv6_lla: true
           local_as: true
           local_as_ibgp: true
+          multihop: true
+          passive: true
+          password: true
+          remove_private_as: true
+          rs_client: true
+          tcp_ao: false
+          timers: true
           vrf_local_as: true
         evpn:
           asymmetrical_irb: true
@@ -3917,6 +4322,9 @@ defaults:
         bfd: {}
         bgp:
           activate_af: true
+          allowas_in: true
+          as_override: true
+          default_originate: true
           import:
           - ospf
           - isis
@@ -3926,6 +4334,10 @@ defaults:
           ipv6_lla: false
           local_as: true
           local_as_ibgp: true
+          multihop:
+            vrf: true
+          password: true
+          tcp_ao: true
           vrf_local_as: true
         evpn:
           asymmetrical_irb: true
@@ -4060,8 +4472,18 @@ defaults:
         bfd: {}
         bgp:
           activate_af: true
+          allowas_in: true
+          as_override: true
+          bfd: true
+          default_originate: true
           local_as: true
           local_as_ibgp: true
+          multihop:
+            vrf: true
+          passive: true
+          password: true
+          remove_private_as: true
+          timers: true
           vrf_local_as: true
         gateway:
           protocol:
@@ -4152,8 +4574,18 @@ defaults:
         bfd: {}
         bgp:
           activate_af: true
+          allowas_in: true
+          as_override: true
+          bfd: true
+          default_originate: true
           local_as: true
           local_as_ibgp: true
+          multihop:
+            vrf: true
+          passive: true
+          password: true
+          remove_private_as: true
+          timers: true
           vrf_local_as: true
         evpn:
           asymmetrical_irb: true
@@ -4242,8 +4674,18 @@ defaults:
         bfd: {}
         bgp:
           activate_af: true
+          allowas_in: true
+          as_override: true
+          bfd: true
+          default_originate: true
           local_as: true
           local_as_ibgp: true
+          multihop:
+            vrf: true
+          passive: true
+          password: true
+          remove_private_as: true
+          timers: true
           vrf_local_as: true
         gateway:
           protocol:
@@ -4334,8 +4776,18 @@ defaults:
         bfd: {}
         bgp:
           activate_af: true
+          allowas_in: true
+          as_override: true
+          bfd: true
+          default_originate: true
           local_as: true
           local_as_ibgp: true
+          multihop:
+            vrf: true
+          passive: true
+          password: true
+          remove_private_as: true
+          timers: true
           vrf_local_as: true
         gateway:
           protocol:
@@ -4428,8 +4880,18 @@ defaults:
         bfd: {}
         bgp:
           activate_af: true
+          allowas_in: true
+          as_override: true
+          bfd: true
+          default_originate: true
           local_as: true
           local_as_ibgp: true
+          multihop:
+            vrf: true
+          passive: true
+          password: true
+          remove_private_as: true
+          timers: true
           vrf_local_as: true
         gateway:
           protocol:
@@ -4528,6 +4990,9 @@ defaults:
         bfd: {}
         bgp:
           activate_af: true
+          allowas_in: true
+          as_override: true
+          default_originate: true
           import:
           - ospf
           - ripv2
@@ -4536,6 +5001,8 @@ defaults:
           - vrf
           ipv6_lla: true
           local_as: true
+          password: true
+          remove_private_as: true
           vrf_local_as: true
         evpn:
           asymmetrical_irb: true
@@ -4740,12 +5207,9 @@ defaults:
         - ebgp
         vlans: list
         vrfs: list
-      node_copy: {}
       node_vlan:
         export: list
         import: list
-      transport:
-        valid_values: {}
       vlan:
         evi: rd
         export: list
@@ -4785,7 +5249,7 @@ defaults:
     - bgp
     session:
     - ibgp
-    start_transit_vni: 10000
+    start_transit_vni: 200000
     supported_on:
       arubacx: true
       cumulus: true
@@ -5220,11 +5684,8 @@ defaults:
       vptx: true
       vsrx: true
   module:
-  - vlan
-  - routing
+  - ospf
   - bgp
-  - vxlan
-  - evpn
   mpls:
     attributes:
       global:
@@ -5686,7 +6147,7 @@ defaults:
       - /home/pipi/netlab_gh/netsim/ansible/tasks/fetch-config
     custom:
       dirs:
-      - /home/pipi/net101/tools/tests/integration/evpn
+      - /home/pipi/net101/tools/tests/integration/bgp.multihop
       - /work/netlab_cicd
       - /home/pipi/.netlab
       - /home/pipi/netlab_gh/netsim/extra
@@ -5741,7 +6202,7 @@ defaults:
       - deploy-config/{{ ansible_network_os }}.yml
     plugin:
     - /work/netlab_cicd
-    - /home/pipi/net101/tools/tests/integration/evpn
+    - /home/pipi/net101/tools/tests/integration/bgp.multihop
     - /home/pipi/.netlab
     - /home/pipi/netlab_gh/netsim/extra
     ready:
@@ -6116,7 +6577,6 @@ defaults:
         static:
           _subtype: static_entry
           type: list
-      node_copy: {}
       route_map:
         match:
         - prefix
@@ -6515,7 +6975,6 @@ defaults:
         trunk: null
       node:
         mode: null
-      node_copy: {}
       phy_ifattr:
         _selfloop_ifindex: null
         bandwidth: null
@@ -6538,7 +6997,6 @@ defaults:
         prefix: null
         stp: null
         vni: null
-      vlan_svi_no_propagate: {}
     config_after:
     - lag
     features:
@@ -6673,20 +7131,19 @@ defaults:
           - static
           - evpn
         vlans: list
-      node_copy: {}
     config_after:
     - vrf
     - bgp
     domain: global
     features:
       vtep6: VXLAN over IPv6
-    flooding: evpn
+    flooding: static
     no_propagate:
     - use_v6_vtep
     - start_vni
     requires:
     - vlan
-    start_vni: 20000
+    start_vni: 100000
     supported_on:
       arubacx: true
       csr: true
@@ -6709,63 +7166,31 @@ defaults:
   warnings:
     duplicate_address: true
   workdir: /work/netlab_cicd
-evpn:
-  as: 65000
-  session:
-  - ibgp
-  - ebgp
-  vlans:
-  - red
 groups:
   all:
     _default_group: true
     members: []
     vars:
       netlab_show_config: true
-  as65100:
+  as65000:
     members:
-    - spine
-  as65201:
+    - dut
+  as65101:
     members:
-    - l1
-  as65202:
-    members:
-    - l2
-  core:
-    members:
-    - spine
-    module:
-    - bgp
-    - evpn
+    - pe2
   external:
     _default_group: true
     device: eos
     members: []
-  hosts:
-    device: linux
-    members:
-    - h1
-    - h2
-    node_data:
-      provider: clab
-  switches:
-    members:
-    - l1
-    - l2
-    module:
-    - vlan
-    - vxlan
-    - bgp
-    - evpn
-  x_switches:
+  probes:
     device: frr
     members:
-    - l2
+    - pe2
+    - c1
     node_data:
       provider: clab
 input:
-- /home/pipi/net101/tools/tests/integration/evpn/15-vxlan-ebgp-unnumbered.yml
-- /home/pipi/net101/tools/tests/integration/evpn/topology-defaults.yml
+- /home/pipi/net101/tools/tests/integration/bgp.multihop/01-global.yml
 - /home/pipi/.netlab.yml
 - package:topology-defaults.yml
 libvirt:
@@ -6773,503 +7198,166 @@ libvirt:
     clab: true
 links:
 - _linkname: links[1]
+  bridge: ml_17_1
   interfaces:
   - ifindex: 1
     ifname: ethernet1/1/1
-    ipv4: true
-    node: l1
+    ipv4: 10.1.0.1/30
+    ipv6: 2001:db8:3::1/64
+    node: dut
   - ifindex: 1
-    ifname: ethernet1/1/1
-    ipv4: true
-    node: spine
+    ifname: eth1
+    ipv4: 10.1.0.2/30
+    ipv6: 2001:db8:3::2/64
+    node: c1
+  libvirt:
+    provider:
+      clab: true
   linkindex: 1
-  mtu: 1600
   node_count: 2
   prefix:
-    ipv4: true
-  role: external
-  type: p2p
+    ipv4: 10.1.0.0/30
+    ipv6: 2001:db8:3::/64
+  type: lan
 - _linkname: links[2]
   bridge: ml_17_2
   interfaces:
+  - ifindex: 2
+    ifname: eth2
+    ipv4: 10.1.0.5/30
+    ipv6: 2001:db8:3:1::2/64
+    node: c1
   - ifindex: 1
     ifname: eth1
-    ipv4: true
-    node: l2
-  - ifindex: 2
-    ifname: ethernet1/1/2
-    ipv4: true
-    node: spine
+    ipv4: 10.1.0.6/30
+    ipv6: 2001:db8:3:1::3/64
+    node: pe2
   libvirt:
     provider:
       clab: true
   linkindex: 2
-  mtu: 1600
   node_count: 2
   prefix:
-    ipv4: true
-  role: external
+    ipv4: 10.1.0.4/30
+    ipv6: 2001:db8:3:1::/64
   type: lan
-- _linkname: vlans.red.links[1]
+- _linkname: links[3]
   bridge: ml_17_3
   interfaces:
-  - _vlan_mode: bridge
-    ifindex: 2
+  - ifindex: 2
     ifname: ethernet1/1/2
-    node: l1
-    vlan:
-      access: red
-  - ifindex: 1
-    ifname: eth1
-    ipv4: 172.31.1.4/24
-    node: h1
-  libvirt:
-    provider:
-      clab: true
+    ipv4: 192.168.42.1/24
+    ipv6: 2001:db8:42::1/64
+    node: dut
   linkindex: 3
-  node_count: 2
+  node_count: 1
   prefix:
-    allocation: id_based
-    ipv4: 172.31.1.0/24
-  type: lan
-  vlan:
-    access: red
-- _linkname: vlans.red.links[2]
-  bridge: ml_17_4
-  interfaces:
-  - _vlan_mode: bridge
-    ifindex: 2
-    ifname: eth2
-    node: l2
-    vlan:
-      access: red
-  - ifindex: 1
-    ifname: eth1
-    ipv4: 172.31.1.5/24
-    node: h2
-  libvirt:
-    provider:
-      clab: true
-  linkindex: 4
-  node_count: 2
-  prefix:
-    allocation: id_based
-    ipv4: 172.31.1.0/24
-  type: lan
-  vlan:
-    access: red
-message: 'The devices under test are an EVPN leaf and an EVPN spine device using EVPN
-
-  over unnumbered EBGP session. The EVPN leaf device should originate the EVPN
-
-  routes, and the EVPN spine device should propagate EVPN AF routes between
-
-  PE-devices, resulting in VXLAN-based VLAN extension.
-
-
-  * h1 and h2 should be able to ping each other
-
-
-  Please note it might take a while for the lab to work due to
-
-  STP learning phase
+    _name: beacon
+    ipv4: 192.168.42.0/24
+    ipv6: 2001:db8:42::/64
+  role: stub
+  type: stub
+message: 'Use this topology to test the (global) EBGP multihop implementation
 
   '
 module:
-- vlan
-- routing
+- ospf
 - bgp
-- vxlan
-- evpn
 name: ml_17
 nodes:
-  h1:
+  c1:
     af:
-      ipv4: true
-    box: python:3.13-alpine
-    clab:
-      binds:
-      - clab_files/h1/hosts:/etc/hosts
-      config_templates:
-      - hosts:/etc/hosts
-      kind: linux
-    device: linux
-    hostname: clab-ml_17-h1
-    id: 4
-    interfaces:
-    - bridge: ml_17_3
-      ifindex: 1
-      ifname: eth1
-      ipv4: 172.31.1.4/24
-      libvirt:
-        provider:
-          clab: true
-      linkindex: 3
-      mtu: 1500
-      name: h1 -> [l1,h2,l2]
-      neighbors:
-      - ifname: virtual-network1000
-        node: l1
-      - ifname: eth1
-        ipv4: 172.31.1.5/24
-        node: h2
-      - ifname: vlan1000
-        node: l2
-      type: lan
-    mgmt:
-      ifname: eth0
-      ipv4: 192.168.17.104
-      mac: 08:4f:a9:04:00:00
-    module:
-    - routing
-    mtu: 1500
-    name: h1
-    provider: clab
-    role: host
-    routing:
-      static: []
-  h2:
-    af:
-      ipv4: true
-    box: python:3.13-alpine
-    clab:
-      binds:
-      - clab_files/h2/hosts:/etc/hosts
-      config_templates:
-      - hosts:/etc/hosts
-      kind: linux
-    device: linux
-    hostname: clab-ml_17-h2
-    id: 5
-    interfaces:
-    - bridge: ml_17_4
-      ifindex: 1
-      ifname: eth1
-      ipv4: 172.31.1.5/24
-      linkindex: 4
-      mtu: 1500
-      name: h2 -> [h1,l1,l2]
-      neighbors:
-      - ifname: eth1
-        ipv4: 172.31.1.4/24
-        node: h1
-      - ifname: virtual-network1000
-        node: l1
-      - ifname: vlan1000
-        node: l2
-      type: lan
-    mgmt:
-      ifname: eth0
-      ipv4: 192.168.17.105
-      mac: 08:4f:a9:05:00:00
-    module:
-    - routing
-    mtu: 1500
-    name: h2
-    provider: clab
-    role: host
-    routing:
-      static: []
-  l1:
-    af:
-      ipv4: true
-    bgp:
-      advertise_loopback: true
-      as: 65201
-      community:
-        ebgp:
-        - standard
-        - extended
-        ibgp:
-        - standard
-        - extended
-        localas_ibgp:
-        - standard
-        - extended
-      ipv4: true
-      neighbors:
-      - activate:
-          ipv4: true
-        as: 65100
-        evpn: true
-        ifindex: 1
-        ipv4: true
-        ipv4_rfc8950: true
-        local_if: ethernet1/1/1
-        name: spine
-        type: ebgp
-      next_hop_self: true
-      router_id: 10.0.0.2
-    box: dell/os10
-    device: dellos10
-    evpn:
-      session:
-      - ibgp
-      - ebgp
-      vlans:
-      - red
-    id: 2
-    interfaces:
-    - _parent_intf: loopback0
-      _parent_ipv4: 10.0.0.2/32
-      _unnumbered_peer: 10.0.0.1/32
-      ifindex: 1
-      ifname: ethernet1/1/1
       ipv4: true
       ipv6: true
-      libvirt:
-        type: tunnel
-      linkindex: 1
-      mtu: 1600
-      name: l1 -> spine
-      neighbors:
-      - ifname: ethernet1/1/1
-        ipv4: true
-        node: spine
-      remote_id: 1
-      remote_ifindex: 1
-      role: external
-      type: p2p
-    - bridge: ml_17_3
-      ifindex: 2
-      ifname: ethernet1/1/2
-      libvirt:
-        provider:
-          clab: true
-      linkindex: 3
-      name: '[Access VLAN red] l1 -> h1'
-      neighbors:
-      - ifname: eth1
-        ipv4: 172.31.1.4/24
-        node: h1
-      type: lan
-      vlan:
-        access: red
-        access_id: 1000
-    - bridge_group: 1
-      ifindex: 40000
-      ifname: virtual-network1000
-      name: VLAN red (1000) -> [h1,h2,l2]
-      neighbors:
-      - ifname: eth1
-        ipv4: 172.31.1.4/24
-        node: h1
-      - ifname: eth1
-        ipv4: 172.31.1.5/24
-        node: h2
-      - ifname: vlan1000
-        node: l2
-      role: external
-      type: svi
-      virtual_interface: true
-      vlan:
-        mode: bridge
-        name: red
-    loopback:
-      ifindex: 0
-      ifname: loopback0
-      ipv4: 10.0.0.2/32
-      neighbors: []
-      type: loopback
-      virtual_interface: true
-    mgmt:
-      ifname: mgmt1/1/1
-      ipv4: 192.168.17.102
-      mac: 08:4f:a9:02:00:00
-    module:
-    - vlan
-    - bgp
-    - vxlan
-    - evpn
-    mtu: 1500
-    name: l1
-    provider: libvirt
-    vlan:
-      max_bridge_group: 1
-    vlans:
-      red:
-        bridge_group: 1
-        evpn:
-          evi: 1000
-          export:
-          - 65000:1000
-          import:
-          - 65000:1000
-          rd: 10.0.0.2:1000
-        id: 1000
-        mode: bridge
-        prefix:
-          allocation: id_based
-          ipv4: 172.31.1.0/24
-        role: external
-        vni: 1000
-    vxlan:
-      domain: global
-      flooding: evpn
-      vlans:
-      - red
-      vtep: 10.0.0.2
-      vtep_interface: loopback0
-  l2:
-    af:
-      ipv4: true
-    bgp:
-      advertise_loopback: true
-      as: 65202
-      community:
-        ebgp:
-        - standard
-        - large
-        - extended
-        ibgp:
-        - standard
-        - large
-        - extended
-        localas_ibgp:
-        - standard
-        - large
-        - extended
-      ipv4: true
-      neighbors:
-      - activate:
-          ipv4: true
-        as: 65100
-        evpn: true
-        ifindex: 1
-        ipv4: true
-        ipv4_rfc8950: true
-        local_if: eth1
-        name: spine
-        type: ebgp
-      next_hop_self: true
-      router_id: 10.0.0.3
     box: quay.io/frrouting/frr:10.3.1
     clab:
       binds:
-      - clab_files/l2/daemons:/etc/frr/daemons
-      - clab_files/l2/hosts:/etc/hosts
+      - clab_files/c1/daemons:/etc/frr/daemons
+      - clab_files/c1/hosts:/etc/hosts
       config_templates:
       - daemons:/etc/frr/daemons
       - hosts:/etc/hosts
       kind: linux
     device: frr
-    evpn:
-      session:
-      - ibgp
-      - ebgp
-      vlans:
-      - red
-    hostname: clab-ml_17-l2
-    id: 3
+    hostname: clab-ml_17-c1
+    id: 2
     interfaces:
-    - _parent_intf: lo
-      _parent_ipv4: 10.0.0.3/32
-      bridge: ml_17_2
+    - bridge: ml_17_1
       ifindex: 1
       ifname: eth1
-      ipv4: true
-      ipv6: true
+      ipv4: 10.1.0.2/30
+      ipv6: 2001:db8:3::2/64
       libvirt:
         provider:
           clab: true
-      linkindex: 2
-      mtu: 1600
-      name: l2 -> spine
+      linkindex: 1
+      mtu: 1500
+      name: c1 -> dut
       neighbors:
-      - ifname: ethernet1/1/2
-        ipv4: true
-        node: spine
-      role: external
+      - ifname: ethernet1/1/1
+        ipv4: 10.1.0.1/30
+        ipv6: 2001:db8:3::1/64
+        node: dut
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
       type: lan
-    - bridge: ml_17_4
+    - bridge: ml_17_2
       ifindex: 2
       ifname: eth2
-      linkindex: 4
+      ipv4: 10.1.0.5/30
+      ipv6: 2001:db8:3:1::2/64
+      linkindex: 2
       mtu: 1500
-      name: '[Access VLAN red] l2 -> h2'
+      name: c1 -> pe2
       neighbors:
       - ifname: eth1
-        ipv4: 172.31.1.5/24
-        node: h2
+        ipv4: 10.1.0.6/30
+        ipv6: 2001:db8:3:1::3/64
+        node: pe2
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
       type: lan
-      vlan:
-        access: red
-        access_id: 1000
-    - bridge_group: 1
-      ifindex: 40000
-      ifname: vlan1000
-      name: VLAN red (1000) -> [h1,l1,h2]
-      neighbors:
-      - ifname: eth1
-        ipv4: 172.31.1.4/24
-        node: h1
-      - ifname: virtual-network1000
-        node: l1
-      - ifname: eth1
-        ipv4: 172.31.1.5/24
-        node: h2
-      role: external
-      type: svi
-      virtual_interface: true
-      vlan:
-        mode: bridge
-        name: red
     loopback:
       ifindex: 0
       ifname: lo
-      ipv4: 10.0.0.3/32
+      ipv4: 10.0.0.2/32
+      ipv6: 2001:db8:1:2::1/64
       neighbors: []
+      ospf:
+        area: 0.0.0.0
+        passive: false
       type: loopback
       virtual_interface: true
     mgmt:
       ifname: eth0
-      ipv4: 192.168.17.103
-      mac: 08:4f:a9:03:00:00
+      ipv4: 192.168.17.102
+      mac: 08:4f:a9:02:00:00
     module:
-    - vlan
-    - bgp
-    - vxlan
-    - evpn
+    - ospf
     mtu: 1500
-    name: l2
+    name: c1
+    ospf:
+      af:
+        ipv4: true
+        ipv6: true
+      area: 0.0.0.0
+      router_id: 10.0.0.2
     provider: clab
     role: router
-    vlan:
-      max_bridge_group: 1
-    vlans:
-      red:
-        bridge_group: 1
-        evpn:
-          evi: 1000
-          export:
-          - 65000:1000
-          import:
-          - 65000:1000
-          rd: 10.0.0.3:1000
-        id: 1000
-        mode: bridge
-        prefix:
-          allocation: id_based
-          ipv4: 172.31.1.0/24
-        role: external
-        vni: 1000
-    vxlan:
-      domain: global
-      flooding: evpn
-      vlans:
-      - red
-      vtep: 10.0.0.3
-      vtep_interface: lo
-  spine:
+  dut:
     af:
       ipv4: true
+      ipv6: true
     bgp:
       advertise_loopback: true
-      as: 65100
+      as: 65000
       community:
         ebgp:
         - standard
-        - extended
         ibgp:
         - standard
         - extended
@@ -7277,82 +7365,81 @@ nodes:
         - standard
         - extended
       ipv4: true
+      ipv6: true
       neighbors:
-      - activate:
+      - _source_intf:
+          ifindex: 0
+          ifname: loopback0
+          ipv4: 10.0.0.1/32
+          ipv6: 2001:db8:1:1::1/64
+          neighbors: []
+          ospf:
+            area: 0.0.0.0
+            passive: false
+          type: loopback
+          virtual_interface: true
+        activate:
           ipv4: true
-        as: 65201
-        evpn: true
-        ifindex: 1
-        ipv4: true
-        ipv4_rfc8950: true
-        local_if: ethernet1/1/1
-        name: l1
-        type: ebgp
-      - activate:
-          ipv4: true
-        as: 65202
-        evpn: true
-        ifindex: 2
-        ipv4: true
-        ipv4_rfc8950: true
-        local_if: ethernet1/1/2
-        name: l2
+          ipv6: true
+        as: 65101
+        ifindex: 20000
+        ipv4: 10.0.0.3
+        ipv6: 2001:db8:1:3::1
+        multihop: 255
+        name: pe2
         type: ebgp
       next_hop_self: true
       router_id: 10.0.0.1
     box: dell/os10
+    config:
+    - ebgp.multihop
     device: dellos10
-    evpn:
-      session:
-      - ibgp
-      - ebgp
-      vlans: []
     id: 1
     interfaces:
-    - _parent_intf: loopback0
-      _parent_ipv4: 10.0.0.1/32
-      _unnumbered_peer: 10.0.0.2/32
+    - bridge: ml_17_1
       ifindex: 1
       ifname: ethernet1/1/1
-      ipv4: true
-      ipv6: true
-      libvirt:
-        type: tunnel
-      linkindex: 1
-      mtu: 1600
-      name: spine -> l1
-      neighbors:
-      - ifname: ethernet1/1/1
-        ipv4: true
-        node: l1
-      remote_id: 2
-      remote_ifindex: 1
-      role: external
-      type: p2p
-    - _parent_intf: loopback0
-      _parent_ipv4: 10.0.0.1/32
-      bridge: ml_17_2
-      ifindex: 2
-      ifname: ethernet1/1/2
-      ipv4: true
-      ipv6: true
+      ipv4: 10.1.0.1/30
+      ipv6: 2001:db8:3::1/64
       libvirt:
         provider:
           clab: true
-      linkindex: 2
-      mtu: 1600
-      name: spine -> l2
+      linkindex: 1
+      name: dut -> c1
       neighbors:
       - ifname: eth1
-        ipv4: true
-        node: l2
-      role: external
+        ipv4: 10.1.0.2/30
+        ipv6: 2001:db8:3::2/64
+        node: c1
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
       type: lan
+    - bgp:
+        advertise: true
+      bridge: ml_17_3
+      ifindex: 2
+      ifname: ethernet1/1/2
+      ipv4: 192.168.42.1/24
+      ipv6: 2001:db8:42::1/64
+      linkindex: 3
+      name: dut -> stub
+      neighbors: []
+      ospf:
+        area: 0.0.0.0
+        passive: true
+      role: stub
+      type: stub
     loopback:
       ifindex: 0
       ifname: loopback0
       ipv4: 10.0.0.1/32
+      ipv6: 2001:db8:1:1::1/64
       neighbors: []
+      ospf:
+        area: 0.0.0.0
+        passive: false
       type: loopback
       virtual_interface: true
     mgmt:
@@ -7360,52 +7447,180 @@ nodes:
       ipv4: 192.168.17.101
       mac: 08:4f:a9:01:00:00
     module:
+    - ospf
     - bgp
-    - evpn
     mtu: 1500
-    name: spine
+    name: dut
+    ospf:
+      af:
+        ipv4: true
+        ipv6: true
+      area: 0.0.0.0
+      router_id: 10.0.0.1
     provider: libvirt
+  pe2:
+    af:
+      ipv4: true
+      ipv6: true
+    bgp:
+      _session_clear:
+      - 10.0.0.1
+      - 2001:db8:1:1::1
+      advertise_loopback: true
+      as: 65101
+      community:
+        ebgp:
+        - standard
+        - large
+        ibgp:
+        - standard
+        - large
+        - extended
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      ipv4: true
+      ipv6: true
+      neighbors:
+      - _source_intf:
+          ifindex: 0
+          ifname: lo
+          ipv4: 10.0.0.3/32
+          ipv6: 2001:db8:1:3::1/64
+          neighbors: []
+          ospf:
+            area: 0.0.0.0
+            passive: false
+          type: loopback
+          virtual_interface: true
+        activate:
+          ipv4: true
+          ipv6: true
+        as: 65000
+        ifindex: 20000
+        ipv4: 10.0.0.1
+        ipv6: 2001:db8:1:1::1
+        multihop: 255
+        name: dut
+        passive: true
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.3
+    box: quay.io/frrouting/frr:10.3.1
+    clab:
+      binds:
+      - clab_files/pe2/daemons:/etc/frr/daemons
+      - clab_files/pe2/hosts:/etc/hosts
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts
+      kind: linux
+    config:
+    - bgp.session
+    - ebgp.multihop
+    device: frr
+    hostname: clab-ml_17-pe2
+    id: 3
+    interfaces:
+    - bridge: ml_17_2
+      ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.6/30
+      ipv6: 2001:db8:3:1::3/64
+      linkindex: 2
+      mtu: 1500
+      name: pe2 -> c1
+      neighbors:
+      - ifname: eth2
+        ipv4: 10.1.0.5/30
+        ipv6: 2001:db8:3:1::2/64
+        node: c1
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
+      type: lan
+    loopback:
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.3/32
+      ipv6: 2001:db8:1:3::1/64
+      neighbors: []
+      ospf:
+        area: 0.0.0.0
+        passive: false
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.17.103
+      mac: 08:4f:a9:03:00:00
+    module:
+    - ospf
+    - bgp
+    mtu: 1500
+    name: pe2
+    ospf:
+      af:
+        ipv4: true
+        ipv6: true
+      area: 0.0.0.0
+      router_id: 10.0.0.3
+    provider: clab
+    role: router
+ospf:
+  area: 0.0.0.0
 plugin:
+- bgp.session
 - multilab
+- ebgp.multihop
+prefix:
+  beacon:
+    _name: beacon
+    ipv4: 192.168.42.0/24
+    ipv6: 2001:db8:42::/64
 provider: libvirt
 validate:
-- description: Ping-based reachability test in VLAN red
-  name: ping_red
+- description: Check OSPFv2 adjacency with DUT
+  name: ospf
   nodes:
-  - h1
-  plugin: ping('h2')
+  - c1
+  plugin: ospf_neighbor(nodes.dut.ospf.router_id)
+  wait: 50
+  wait_msg: Waiting for OSPF adjacency process to complete
+- description: Check OSPFv3 adjacency with DUT
+  name: ospf6
+  nodes:
+  - c1
+  plugin: ospf6_neighbor(nodes.dut.ospf.router_id)
+  wait: 20
+  wait_msg: Waiting for OSPF adjacency process to complete
+- description: Check IPv4 EBGP sessions with DUT
+  name: bgp
+  nodes:
+  - pe2
+  plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+  wait: 40
+  wait_msg: Wait for BGP sessions to be established
+- description: Check IPv6 EBGP sessions with DUT
+  name: bgp6
+  nodes:
+  - pe2
+  plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6')
+  wait: 40
+  wait_msg: Wait for BGP sessions to be established
+- description: Check whether DUT propagates the IPv4 beacon prefix
+  name: prefix
+  nodes:
+  - pe2
+  plugin: bgp_prefix(prefix.beacon.ipv4)
   wait: 30
-  wait_msg: Waiting for STP to wake up
-vlans:
-  red:
-    evpn:
-      evi: 1000
-      export:
-      - 65000:1000
-      import:
-      - 65000:1000
-    host_count: 2
-    id: 1000
-    mode: bridge
-    neighbors:
-    - ifname: eth1
-      ipv4: 172.31.1.4/24
-      node: h1
-    - ifname: virtual-network1000
-      node: l1
-    - ifname: eth1
-      ipv4: 172.31.1.5/24
-      node: h2
-    - ifname: vlan1000
-      node: l2
-    prefix:
-      allocation: id_based
-      ipv4: 172.31.1.0/24
-    role: external
-    vni: 1000
-vxlan:
-  domain: global
-  flooding: evpn
-  use_v6_vtep: false
-  vlans:
-  - red
+  wait_msg: Wait for BGP convergence
+- description: Check whether DUT propagates the IPv6 beacon prefix
+  name: prefix6
+  nodes:
+  - pe2
+  plugin: bgp_prefix(prefix.beacon.ipv6,af='ipv6')
+  wait: 30
+  wait_msg: Wait for BGP convergence
