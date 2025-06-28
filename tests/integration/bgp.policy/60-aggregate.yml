@@ -1,0 +1,273 @@
+---
+message: |
+  This lab checks the "bgp.aggregate" part of the "bgp.policy" plugin. It checks:
+
+  * The generation of aggregate prefixes
+  * The suppression of more-specific prefixes
+  * The attributes applied to the aggregate with a routing policy
+  * The use of routing policy as a suppress map
+
+plugin: [ bgp.policy, test.vrf_check ]
+module: [ bgp ]
+
+defaults.sources.extra: [ defaults-ds.yml, ../wait_times.yml ]
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1, x2, v1, v2 ]
+
+vrfs:
+  tenant:
+    links: [ v1-dut, dut-v2 ]
+
+nodes:
+  dut:
+    module: [ bgp, vrf, routing ]
+    bgp.as: 65000
+    bgp.aggregate:
+    - 10.1.0.0/16
+    - 2001:db8:1001::/48
+    - ipv4: 10.2.0.0/16
+      ipv6: 2001:db8:1002::/48
+      summary_only: True
+    - ipv4: 10.3.0.0/16
+      ipv6: 2001:db8:1003::/48
+      summary_only: True
+      attributes: med_73
+    - ipv4: 10.4.0.0/16
+      ipv6: 2001:db8:1004::/48
+      suppress_policy: suppress_2
+
+    routing.prefix:
+      suppress_2:
+      - ipv4: 10.4.2.0/24
+        ipv6: 2001:db8:1004:2::/64
+
+    routing.policy:
+      med_73:
+      - set.med: 73
+      suppress_2:
+      - match.prefix: suppress_2
+
+    vrfs:
+      tenant:
+        bgp.aggregate:
+        - 10.100.0.0/16
+        - 2001:db8:2001::/48
+
+  x1:
+    module: [ bgp, routing ]
+    bgp.import: [ static ]
+    bgp.as: 65100
+    routing.static:
+    - ipv4: 10.1.1.0/24
+      ipv6: 2001:db8:1001:1::/64
+      nexthop.discard: True
+    - ipv4: 10.2.1.0/24
+      ipv6: 2001:db8:1002:1::/64
+      nexthop.discard: True
+    - ipv4: 10.3.1.0/24
+      ipv6: 2001:db8:1003:1::/64
+      nexthop.discard: True
+    - ipv4: 10.4.1.0/24
+      ipv6: 2001:db8:1004:1::/64
+      nexthop.discard: True
+    - ipv4: 10.4.2.0/24
+      ipv6: 2001:db8:1004:2::/64
+      nexthop.discard: True
+
+  x2:
+    bgp.as: 65101
+
+  v1:
+    module: [ bgp, routing ]
+    bgp.import: [ static ]
+    bgp.as: 65200
+    routing.static:
+    - ipv4: 10.100.1.0/24
+      ipv6: 2001:db8:2001:1::/64
+      nexthop.discard: True
+
+  v2:
+    bgp.as: 65201
+
+links: [ x1-dut, dut-x2 ]
+
+validate:
+  ebgp_v4:
+    description: Check IPv4 EBGP sessions with DUT
+    wait: ebgp_session
+    wait_msg: Waiting for IPv4 EBGP session
+    nodes: [ x1, x2, v1, v2 ]
+    stop_on_error: True
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+
+  ebgp_v6:
+    description: Check IPv6 EBGP sessions with DUT
+    wait: ebgp_session
+    wait_msg: Waiting for IPv6 EBGP session
+    nodes: [ x1, x2, v1, v2 ]
+    stop_on_error: True
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6')
+
+  pfx_x1_v4:
+    description: Check for IPv4 X1 LB prefix on x2
+    wait_msg: Waiting for the propagation of BGP updates
+    fail: DUT is not propagating simple IPv4 BGP prefixes
+    wait: bgp_scan_time
+    stop_on_error: True
+    nodes: [ x2 ]
+    plugin: bgp_prefix(nodes.x1.loopback.ipv4)
+
+  pfx_x1_v6:
+    description: Check for IPv6 X1 LB prefix on x2
+    wait_msg: Waiting for the propagation of BGP updates
+    fail: DUT is not propagating simple IPv6 BGP prefixes
+    wait: bgp_scan_time
+    stop_on_error: True
+    nodes: [ x2 ]
+    plugin: bgp_prefix(nodes.x1.loopback.ipv6,af='ipv6')
+
+  pfx_v1_v4:
+    description: Check for IPv4 V1 LB prefix on v2
+    wait_msg: Waiting for the propagation of BGP updates
+    fail: DUT is not propagating simple IPv4 BGP prefixes
+    wait: bgp_scan_time
+    stop_on_error: True
+    nodes: [ v2 ]
+    plugin: bgp_prefix(nodes.v1.loopback.ipv4)
+
+  pfx_v1_v6:
+    description: Check for IPv6 V1 LB prefix on v2
+    wait_msg: Waiting for the propagation of BGP updates
+    fail: DUT is not propagating simple IPv6 BGP prefixes
+    wait: bgp_scan_time
+    stop_on_error: True
+    nodes: [ v2 ]
+    plugin: bgp_prefix(nodes.v1.loopback.ipv6,af='ipv6')
+
+  pfx_a1_v4:
+    description: Check for first IPv4 aggregate prefix
+    fail: DUT is not doing simple IPv4 aggregation
+    wait: bgp_scan_long
+    stop_on_error: True
+    nodes: [ x2 ]
+    plugin: bgp_prefix('10.1.0.0/16')
+
+  pfx_a1_v6:
+    description: Check for first IPv6 aggregate prefix
+    fail: DUT is not doing simple IPv6 aggregation
+    wait: bgp_scan_long
+    stop_on_error: True
+    nodes: [ x2 ]
+    plugin: bgp_prefix('2001:db8:1001::/48',af='ipv6')
+
+  pfx_s1_v4:
+    description: Check for more-specific prefix in first IPv4 aggregate
+    fail: DUT is not advertising original prefixes in simple BGP aggregate
+    nodes: [ x2 ]
+    plugin: bgp_prefix('10.1.1.0/24')
+
+  pfx_s1_v6:
+    description: Check for more-specific prefix in first IPv6 aggregate
+    fail: DUT is not advertising original prefixes in simple BGP aggregate
+    nodes: [ x2 ]
+    plugin: bgp_prefix('2001:db8:1001:1::/64',af='ipv6')
+
+  vrf_a1_v4:
+    description: Check for VRF IPv4 aggregate prefix
+    fail: DUT is not doing simple IPv4 aggregation in VRFs
+    wait: bgp_scan_time
+    nodes: [ v2 ]
+    plugin: bgp_prefix('10.100.0.0/16')
+
+  vrf_a1_v6:
+    description: Check for VRF IPv6 aggregate prefix
+    fail: DUT is not doing simple IPv6 aggregation in VRFs
+    wait: bgp_scan_time
+    nodes: [ v2 ]
+    plugin: bgp_prefix('2001:db8:2001::/48',af='ipv6')
+
+  pfx_a2_v4:
+    description: Check for the second IPv4 aggregate prefix
+    fail: DUT is not doing summary-only IPv4 aggregation
+    wait: bgp_scan_time
+    nodes: [ x2 ]
+    plugin: bgp_prefix('10.2.0.0/16')
+
+  pfx_a2_v6:
+    description: Check for the second IPv6 aggregate prefix
+    fail: DUT is not doing summary-only IPv6 aggregation
+    wait: bgp_scan_time
+    nodes: [ x2 ]
+    plugin: bgp_prefix('2001:db8:1001::/48',af='ipv6')
+
+  pfx_s2_v4:
+    description: Check for more-specific prefix in summary-only IPv4 aggregate
+    fail: DUT is advertising original prefixes in summary-only BGP aggregate
+    nodes: [ x2 ]
+    plugin: bgp_prefix('10.2.1.0/24',state='missing')
+
+  pfx_s2_v6:
+    description: Check for more-specific prefix in summary-only IPv6 aggregate
+    fail: DUT is advertising original prefixes in summary-only BGP aggregate
+    nodes: [ x2 ]
+    plugin: bgp_prefix('2001:db8:1002:1::/64',af='ipv6',state='missing')
+
+  pfx_a3_v4:
+    description: Check for an IPv4 aggregate prefix with custom attributes
+    fail: DUT is not setting attributes on aggregate prefixes
+    level: warning
+    nodes: [ x2 ]
+    plugin: bgp_prefix('10.3.0.0/16',med=73)
+
+  pfx_a3_v6:
+    description: Check for an IPv6 aggregate prefix with custom attributes
+    fail: DUT is not setting attributes on aggregate prefixes
+    level: warning
+    nodes: [ x2 ]
+    plugin: bgp_prefix('2001:db8:1003::/48',af='ipv6',med=73)
+
+  pfx_a4_v4:
+    description: Check for an IPv4 aggregate prefix with suppress map
+    fail: DUT is not advertising an aggregate prefix with suppress map
+    stop_on_error: True
+    nodes: [ x2 ]
+    plugin: bgp_prefix('10.4.0.0/16')
+
+  pfx_a4_v6:
+    description: Check for an IPv4 aggregate prefix with suppress map
+    fail: DUT is not advertising an aggregate prefix with suppress map
+    stop_on_error: True
+    nodes: [ x2 ]
+    plugin: bgp_prefix('2001:db8:1004::/48',af='ipv6')
+
+  pfx_s4a_v4:
+    description: Check for advertised more-specific prefix in IPv4 aggregate with suppress-map
+    fail: DUT is not advertising original prefixes that do not match suppress-map
+    level: warning
+    nodes: [ x2 ]
+    plugin: bgp_prefix('10.4.1.0/24')
+
+  pfx_s4a_v6:
+    description: Check for advertised more-specific prefix in IPv6 aggregate with suppress-map
+    fail: DUT is not advertising original prefixes that do not match suppress-map
+    level: warning
+    nodes: [ x2 ]
+    plugin: bgp_prefix('2001:db8:1004:1::/64',af='ipv6')
+
+  pfx_s4s_v4:
+    description: Check for suppressed more-specific prefix in IPv4 aggregate with suppress-map
+    fail: DUT is advertising original prefixes that match suppress-map
+    level: warning
+    nodes: [ x2 ]
+    plugin: bgp_prefix('10.4.2.0/24',state='missing')
+
+  pfx_s4s_v6:
+    description: Check for suppressed more-specific prefix in IPv6 aggregate with suppress-map
+    fail: DUT is advertising original prefixes that match suppress-map
+    level: warning
+    nodes: [ x2 ]
+    plugin: bgp_prefix('2001:db8:1004:2::/64',af='ipv6',state='missing')

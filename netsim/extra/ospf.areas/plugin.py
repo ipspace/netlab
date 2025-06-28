@@ -124,21 +124,24 @@ def prune_ospf_areas(ndata: Box) -> bool:
 Check whether the node supports all ospf.areas features used in area definitions
 '''
 def check_node_support(ndata: Box,topology: Box) -> bool:
-  OK = True
+  OK = devices.FC_MODE.OK
   for (o_data,_,vname) in _ospf.rp_data(ndata,'ospf'):
     if 'areas' not in o_data:
       continue
     path = f'nodes.{ndata.name}' + (f'.vrfs.{vname}' if vname else '')
     for a_entry in o_data.areas:
-      OK = OK and devices.check_optional_features(
-                    data=a_entry,
-                    path=path+f'.ospf.areas[area={a_entry.area}]',
-                    node=ndata,
-                    topology=topology,
-                    attribute='ospf.areas',
-                    check_mode=devices.FC_MODE.BLACKLIST)
-
-  return OK
+      stat = devices.check_optional_features(
+                data=a_entry,
+                path=path+f'.ospf.areas[area={a_entry.area}]',
+                node=ndata,
+                topology=topology,
+                attribute='ospf.areas',
+                check_mode=devices.FC_MODE.BLACKLIST)
+      if stat.value < OK.value:
+        OK = stat
+      if stat == devices.FC_MODE.ERR_ATTR:
+        return False
+  return OK == devices.FC_MODE.OK
 
 '''
 post_transform hook
