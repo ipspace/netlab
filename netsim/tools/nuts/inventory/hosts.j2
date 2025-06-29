@@ -1,49 +1,24 @@
-{% set napalm_platform = {
-  'nxos': 'nxos_ssh',
-  'asav': 'ios',
-  'cat8000c': 'ios',
-  'iol': 'ios',
-  'ioll2': 'ios',
-  'iosv': 'ios',
-  'iosvl2': 'ios',
-  'iosxr': 'iosxr',
-  'vmx': 'junos',
-  'vptx': 'junos',
-  'vsrx': 'junos',
-  'vjunos-switch': 'junos',
-  'vjunos-router': 'junos',
-  'srlinux': 'srl',
-  'routeros': 'ros',
-  'routeros7': 'ros',
-  'arubacx': 'aoscx',
-} %}
-{% set netmiko_platform = {
-  'asav': 'cisco_asa',
-  'srlinux': 'nokia_srl',
-  'sros': 'nokia_sros',
-  'routeros': 'mikrotik_routeros',
-  'routeros7': 'mikrotik_routeros',
-  'arubacx': 'aruba_aoscx',
-  'fortios': 'fortinet',
-  'dellos10': 'dell_os10',
-} %}
-{% for nn,nd in nodes.items()
-     if nd.ansible_connection|default('') in ['ssh','paramiko','network_cli']
-       and ('ipv4' in nd.mgmt or 'ipv6' in nd.mgmt) %}
+{% for nn,nd in nodes.items() if nd.ansible_connection|default('') in ['ssh','paramiko','network_cli'] %}
 {{ nn }}:
   hostname: "{{ nd.mgmt.ipv4|default(nd.mgmt.ipv6) }}"
   username: "{{ nd.ansible_user }}"
   password: "{{ nd.ansible_ssh_pass }}"
-  platform: "{% if nd.device in napalm_platform %}{{ napalm_platform[nd.device] }}{% else %}{{ nd.device }}{% endif %}"
+  platform: "{{ nd.device }}"
   connection_options:
     netmiko:
-{%  if nd.device in netmiko_platform %}
-      platform: "{{ netmiko_platform[nd.device] }}"
+{%  if nd.device in defaults.tools.nuts.inventory.netmiko %}
+      platform: "{{ defaults.tools.nuts.inventory.netmiko[nd.device] }}"
 {%  endif %}
       extras: &id{{ loop.index0 }}
         session_log: "session_log_{{ nn }}.log"
         session_log_file_mode: append
     napalm:
+{%  if nd.device in defaults.tools.nuts.inventory.napalm %}
+{%    set napalm_platform = defaults.tools.nuts.inventory.napalm[nd.device] %}
+      platform: "{{ napalm_platform }}"
+{%    if defaults.tools.nuts.inventory.napalm_using_netmiko.get(napalm_platform, False) %}
       extras:
         optional_args: *id{{ loop.index0 }}
+{%    endif %}
+{%  endif %}
 {% endfor %}
