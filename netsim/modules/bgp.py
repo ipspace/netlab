@@ -14,6 +14,32 @@ from ..data.validate import validate_item
 from ..augment import devices
 from ..utils import log, routing as _rp_utils
 
+BGP_DEFAULT_SESSIONS: typing.Dict[str,list] = {
+}
+
+BGP_VALID_SESSION_TYPE: list = []
+
+BGP_DEFAULT_COMMUNITY_KW: typing.Final[dict] = {
+  'standard': 'standard',
+  'extended': 'extended'
+}
+
+BGP_INHERIT_COMMUNITY: Box
+
+def setup_bgp_constants(topology: Box) -> None:
+  global BGP_DEFAULT_SESSIONS, BGP_VALID_SESSION_TYPE, BGP_INHERIT_COMMUNITY
+
+  # Valid session types are reconstructed from the valid values of the bgp.sessions.ipv4 global attribute
+  # We're assuming there's no difference between IPv4 and IPv6
+  BGP_VALID_SESSION_TYPE = [ v for v in topology.defaults.bgp.attributes['global'].sessions.ipv4 ]
+
+  # We're assuming all address families are active on all session types
+  for af in log.AF_LIST:
+    BGP_DEFAULT_SESSIONS[af] = BGP_VALID_SESSION_TYPE
+
+  # Finally, copy the pointer to BGP community inheritance
+  BGP_INHERIT_COMMUNITY = topology.defaults.bgp.attributes._inherit_community
+
 def check_bgp_parameters(node: Box, topology: Box) -> None:
   if not "bgp" in node:  # pragma: no cover (should have been tested and reported by the caller)
     return
@@ -53,13 +79,10 @@ def check_bgp_parameters(node: Box, topology: Box) -> None:
           valid_values=topology['defaults.bgp.attributes.global.community.ibgp'],
           module='bgp')
 
-BGP_VALID_AF: typing.Final[list] = ['ipv4','ipv6']
-BGP_VALID_SESSION_TYPE: typing.Final[list] = ['ibgp','ebgp','localas_ibgp']
-
 def validate_bgp_sessions(node: Box, sessions: Box, attribute: str) -> bool:
   OK = True
   for k in list(sessions.keys()):
-    if not k in BGP_VALID_AF:
+    if not k in log.AF_LIST:
       log.error(
         f'Invalid address family in bgp.{attribute} in node {node.name}',
         log.IncorrectValue,
@@ -411,11 +434,6 @@ build_bgp_sessions: create BGP session data structure
 * Set BGP AF flags
 """
 
-BGP_DEFAULT_SESSIONS: typing.Final[dict] = {
-  'ipv4': [ 'ibgp', 'ebgp', 'localas_ibgp' ],
-  'ipv6': [ 'ibgp', 'ebgp', 'localas_ibgp' ]
-}
-
 def build_bgp_sessions(node: Box, topology: Box) -> None:
   if not isinstance(node.get('bgp',None),Box) or not node.get('bgp.as',None):   # Sanity check
     log.fatal(
@@ -579,15 +597,12 @@ def process_as_list(topology: Box) -> None:
 
       node.bgp = node_data[name] + node.bgp
 
-BGP_DEFAULT_COMMUNITY_KW: typing.Final[dict] = {
-  'standard': 'standard',
-  'extended': 'extended'
-}
-
 """
 bgp_transform_community_list: transform _netlab_ community keywords into device keywords
 """
 def bgp_transform_community_list(node: Box, topology: Box) -> None:
+  global BGP_DEFAULT_COMMUNITY_KW,BGP_INHERIT_COMMUNITY
+
   clist = node.get('bgp.community')
   if not clist:
     return
@@ -605,8 +620,9 @@ def bgp_transform_community_list(node: Box, topology: Box) -> None:
           module='bgp',
           more_hints=[ f"Valid values are {','.join(kw_xform.keys())}" ])
     
-  if 'localas_ibgp' not in clist:
-    clist.localas_ibgp = clist.ibgp
+  for i_kw in BGP_INHERIT_COMMUNITY:            # Finally, set up the missing community propagation values
+    if i_kw not in clist:                       # for rare BGP session types
+      clist[i_kw] = clist[BGP_INHERIT_COMMUNITY[i_kw]]
 
   for s_type in list(clist.keys()):
     clist[s_type] = data.kw_list_transform(kw_xform,clist[s_type])
@@ -718,6 +734,9 @@ class BGP(_Module):
   global bgp.rr attribute. Also, delete the global bgp.rr attribute so it's not propagated
   down to nodes
   """
+  def module_pre_transform(self, topology: Box) -> None:
+    setup_bgp_constants(topology)
+
   def node_pre_transform(self, node: Box, topology: Box) -> None:
     if "rr_list" in topology.get("bgp",{}):
       if node.name in topology.bgp.rr_list:
