@@ -36,6 +36,7 @@ def create_tool_config(tool: str, topology: Box) -> None:
       log.error(f'No destination file specified for tool configuration\n... tool {tool}\n... config {config}')
       continue
     fname = f'{tool}/{config.dest}'
+    Path(fname).parent.mkdir(exist_ok=True, parents=True)
     if 'render' in config:
       config_text = render_tool_config(tool,config.render,topology)
       config_src  = f'rendering "{config.render}" format'

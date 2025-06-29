@@ -1,0 +1,87 @@
+#
+# Network Unit Testing System (NUTS) tool
+#
+runtime: docker     # Default: start in a Docker container
+docker:
+  up:
+    docker run --rm -itd --name '{name}_nuts'
+      {sys.docker_net}
+      -v './nuts':/nuts
+      -w /nuts
+      ghcr.io/network-unit-testing-system/nuts
+  message:
+    Use 'netlab connect nuts' to connect to the NUTS container.
+    Run 'pytest' in the container to execute tests.
+  connect:
+    docker exec -it '{name}_nuts' bash
+  down:
+    docker kill '{name}_nuts'
+  cleanup:
+    docker volume rm '{name}_nuts'
+config:
+- dest: nr-config.yaml
+  template: nr-config.yaml
+- dest: inventory/groups.yaml
+  template: inventory/groups.yaml
+- dest: inventory/hosts.yaml
+  template: inventory/hosts.j2
+- dest: tests/test_interfaces.yaml
+  template: tests/test_interfaces.j2
+- dest: tests/test_ospf.yaml
+  template: tests/test_ospf.j2
+- dest: tests/test_bgp.yaml
+  template: tests/test_bgp.j2
+
+# Defaults for NUTS
+inventory:
+  napalm: &napalm_platforms
+    nxos: nxos_ssh
+    asav: ios
+    cat8000c: ios
+    iol: ios
+    ioll2: ios
+    iosv: ios
+    iosvl2: ios
+    iosxr: iosxr
+    vmx: junos
+    vptx: junos
+    vsrx: junos
+    vjunos-switch: junos
+    vjunos-router: junos
+    srlinux: srl
+    routeros: ros
+    routeros7: ros
+    arubacx: aoscx
+  netmiko:
+    nxos: cisco_nxos
+    cat8000c: cisco_xe
+    iol: cisco_xe
+    ioll2: cisco_xe
+    iosv: cisco_xe
+    iosvl2: cisco_xe
+    iosxr: iosxr
+    vmx: juniper_junos
+    vptx: juniper_junos
+    vsrx: juniper_junos
+    vjunos-switch: juniper_junos
+    vjunos-router: juniper_junos
+    asav: cisco_asa
+    srlinux: nokia_srl
+    sros: nokia_sros
+    routeros: mikrotik_routeros
+    routeros7: mikrotik_routeros
+    arubacx: aruba_aoscx
+    fortios: fortinet
+    dellos10: dell_os10
+  napalm_using_netmiko:
+    nxos_ssh: True
+    ios: True
+test_creation:
+  interface: *napalm_platforms
+  bgp: *napalm_platforms
+  ospf:
+    cat8000c: cisco_xe
+    iol: cisco_xe
+    ioll2: cisco_xe
+    iosv: cisco_xe
+    iosvl2: cisco_xe

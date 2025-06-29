@@ -1,0 +1,24 @@
+{% for nn,nd in nodes.items() if nd.ansible_connection|default('') in ['ssh','paramiko','network_cli'] %}
+{{ nn }}:
+  hostname: "{{ nd.mgmt.ipv4|default(nd.mgmt.ipv6) }}"
+  username: "{{ nd.ansible_user }}"
+  password: "{{ nd.ansible_ssh_pass }}"
+  platform: "{{ nd.device }}"
+  connection_options:
+    netmiko:
+{%  if nd.device in defaults.tools.nuts.inventory.netmiko %}
+      platform: "{{ defaults.tools.nuts.inventory.netmiko[nd.device] }}"
+{%  endif %}
+      extras: &id{{ loop.index0 }}
+        session_log: "session_log_{{ nn }}.log"
+        session_log_file_mode: append
+    napalm:
+{%  if nd.device in defaults.tools.nuts.inventory.napalm %}
+{%    set napalm_platform = defaults.tools.nuts.inventory.napalm[nd.device] %}
+      platform: "{{ napalm_platform }}"
+{%    if defaults.tools.nuts.inventory.napalm_using_netmiko.get(napalm_platform, False) %}
+      extras:
+        optional_args: *id{{ loop.index0 }}
+{%    endif %}
+{%  endif %}
+{% endfor %}

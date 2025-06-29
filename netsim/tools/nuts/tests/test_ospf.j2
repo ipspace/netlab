@@ -1,0 +1,52 @@
+{% set ns = namespace(found=false) %}
+{% set neighbors_by_host = {} %}
+- test_class: TestNetmikoOspfNeighbors
+  test_data:
+{% for nn,nd in nodes.items()
+     if nd.ansible_connection|default('') in ['ssh','paramiko','network_cli'] and
+     "ospf" in nd and nd.device in defaults.tools.nuts.test_creation.ospf %}
+{%    for interface in nd.interfaces if interface.ospf %}
+{%      for neighbor in interface.neighbors %}
+{#        Can not use "nodes[neighbor.node] | community.general.json_query('interfaces[?ifname==`' ~ neighbor.ifname ~ '`] | [0]')" #}
+{%        for remote_interface in nodes[neighbor.node].interfaces if remote_interface.ifname == neighbor.ifname %}
+{%          if remote_interface.ospf %}
+{%            set _ = neighbors_by_host.update({nn: neighbors_by_host.get(nn, []) + [neighbor]}) %}
+{%            if nd.ospf.af.ipv4 %}
+{%            set ns.found = true %}
+    - host: {{ nn }}
+      local_port: {{ interface.ifname }}
+      neighbor_id: {{ nodes[neighbor.node].ospf.router_id }}
+      # state: FULL/BDR
+{%              if neighbor.ipv4 is string %}
+      neighbor_address: {{ neighbor.ipv4.split('/')[0] }}
+{%              endif %}
+{%            endif %}
+{%            if nd.ospf.af.ipv6 %}
+{%            set ns.found = true %}
+    - host: {{ nn }}
+      local_port: {{ interface.ifname }}
+      neighbor_id: {{ nodes[neighbor.node].ospf.router_id }}
+      # state: FULL/BDR
+{%              if neighbor.ipv4 is string %}
+      neighbor_address: {{ neighbor.ipv6.split('/')[0] }}
+{%              endif %}
+{%            endif %}
+{%          endif %}
+{%        endfor %}
+{%      endfor %}
+{%    endfor %}
+{% endfor %}
+{% if not ns.found %}
+    []  # No OSPF tests created
+{% endif %}
+
+- test_class: TestNetmikoOspfNeighborsCount
+  test_data:
+{% if ns.found %}
+{%   for nn,nd in neighbors_by_host.items() %}
+    - host: {{ nn }}
+      neighbor_count: {{ nd | length }}
+{%   endfor %}
+{% else %}
+    []  # No OSPF tests created
+{% endif %}

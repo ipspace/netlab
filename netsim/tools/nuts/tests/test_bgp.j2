@@ -1,0 +1,47 @@
+{% set ns = namespace(found=false) %}
+- test_class: TestNapalmBgpNeighbors
+  test_data:
+{% for nn,nd in nodes.items()
+     if nd.ansible_connection|default('') in ['ssh','paramiko','network_cli'] and
+     "bgp" in nd and nd.device in defaults.tools.nuts.test_creation.bgp %}
+{%   if "neighbors" in nd.bgp %}
+{%     for neighbor in nd.bgp.neighbors %}
+{%       if "ipv4" in neighbor %}
+{%       set ns.found = true %}
+    - host: {{ nn }}
+      local_id: {{ nd.bgp.router_id }}
+      local_as: {{ nd.bgp.as }}
+      peer: {{ neighbor.ipv4 }}
+      remote_as: {{ neighbor.as }}
+      remote_id: {{ nodes[neighbor.name].bgp.router_id }}
+      is_enabled: true
+      is_up: true
+{%       endif %}
+{%       if "ipv6" in neighbor %}
+{%       set ns.found = true %}
+    - host: {{ nn }}
+      local_id: {{ nd.bgp.router_id }}
+      local_as: {{ nd.bgp.as }}
+      peer: {{ neighbor.ipv6 }}
+      remote_as: {{ neighbor.as }}
+      remote_id: {{ nodes[neighbor.name].bgp.router_id }}
+      is_enabled: true
+      is_up: true
+{%       endif %}
+{%     endfor %}
+{%   endif %}
+{% endfor %}
+{% if not ns.found %}
+    []  # No BGP tests created
+{% endif %}
+
+- test_class: TestNapalmBgpNeighborsCount
+  test_data:
+{% if ns.found %}
+{%   for nn,nd in nodes.items() if "bgp" in nd and nd.bgp.neighbors %}
+    - host: {{ nn }}
+      neighbor_count: {{ nd.bgp.neighbors | length }}
+{%   endfor %}
+{% else %}
+    []  # No BGP tests created
+{% endif %}
