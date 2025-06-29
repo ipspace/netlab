@@ -1,8 +1,9 @@
 (extool-nuts)=
 # Network Unit Testing System (NUTS)
 
-_This integration is experimental. Please report any issues you encounter on the [NUTS GitHub repository](https://github.com/network-unit-testing-system/nuts/issues)._
-
+```{warning}
+This integration is experimental. Please report any issues you encounter on the [NUTS GitHub repository](https://github.com/network-unit-testing-system/nuts/issues).
+```
 
 [NUTS](https://github.com/network-unit-testing-system/nuts) is a Pytest plugin that enables automated network testing using simple YAML files. It’s ideal for validating your network configuration and state.
 
