@@ -12,6 +12,7 @@ The following implementation nodes for configuration deployment, initial device 
    bfd.md
    gateway.md
    ospf.md
+   ospf.areas.md
    routing.md
    vlan.md
    vrf.md

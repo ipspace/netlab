@@ -437,6 +437,7 @@ Fortinet example (**vdom** variable is set as an Ansible group variable in syste
 ... more tasks...
 ```
 
+(dev-config-initial-tests)=
 ## Integration Tests
 
 You can use the following integration tests in the `tests/integration/initial` directory to test your implementation:

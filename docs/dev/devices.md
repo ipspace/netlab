@@ -1,3 +1,4 @@
+(dev-new-devices)=
 # Contributing New Devices
 
 Adding new devices to *netlab* shouldn't be too hard:
