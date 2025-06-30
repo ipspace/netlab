@@ -43,10 +43,10 @@ addressing.mlag_vtep.ipv4: 10.99.99.0/24
 ```
 The plugin will use the `loopback.pool` from the first node in the pair, if provided.
 
-## EVPN next hop addressing for single-attached hosts
+## Differentiated next hop addressing for EVPN RT2 and RT5 routes
 
-Some platforms (e.g. Cumulus NVUE with FRR, EOS) support announcing the shared VTEP address for RT2 prefixes while using a unique VTEP loopback for RT5. This enables more optimal
-routing in case of single-attached hosts
+Some platforms (e.g. Cumulus NVUE with FRR, EOS) support announcing the shared VTEP address for RT2 prefixes while using a unique VTEP loopback for RT5. This enables better MAC scale (half the number of routes) with more optimal
+routing (e.g. in case of single attached hosts) and ECMP (potentially utilizing the full combined bandwidth of all uplinks in parallel, depending on flow hashing)
 
 ## Sample Topologies
 
