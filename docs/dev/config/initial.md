@@ -33,10 +33,10 @@ no banner incoming
 
 Use the following variables to set global configuration parameters:
 
-* **inventory_hostname** -- device name. You might need to remove special characters (underscore, dots...) from the device name.
-* **af.ipv4** and **af.ipv6** -- global flags indicating whether IPv4 or IPv6 is enabled on this device.
-* **mtu** -- system-wide MTU (when supported by the device)
-* **role** -- enable or disable IPv4/IPv6 routing based on device role (only for devices that [support multiple roles](dev-device-roles))
+* **inventory_hostname** -- device name. You might need to remove special characters (most likely underscores) from the device name.
+* **af.ipv4** and **af.ipv6** are flags indicating whether IPv4 or IPv6 is enabled on this device. If the address family is not active on the device, the flags are missing, and the only value you'll ever see is **True**.
+* **mtu** -- system-wide MTU (when supported by the device, otherwise you'll get **mtu** setting on individual interfaces)
+* **role** -- enable or disable IPv4/IPv6 packet forwarding and IPv6 RA based on device role (only for devices that [support multiple roles](dev-device-roles))
 
 For example, Arista EOS needs explicit configuration of IPv4 and IPv6 routing. It also supports system-wide MTU:
 
@@ -79,9 +79,11 @@ The device data model assumes every network device has a primary loopback interf
 * **loopback.ipv4** -- IPv4 loopback address in CIDR format when available.
 * **loopback.ipv6** -- IPv6 loopback address in CIDR format when available.
 * **loopback.ifname** -- Loopback interface name.
+* **type** set to `loopback`
+* **virtual_interface** set to `True`
 
 ```{tip}
-You could use the **‌netlab_interfaces** list to configure the loopback interface like any other interface. If you take this approach, you should skip interface parameters not applicable to the loopback interface(s) while configuring them.
+You could use the **‌netlab_interfaces** list to configure the loopback interface like any other interface. If you take this approach, you should use the **‌type** or **virtual_interface** attributes to skip interface parameters not applicable to the loopback interface(s) while configuring them.
 ```
 
 Either address family might be missing -- you have to check the presence of attributes in your configuration templates. Arista EOS example:
@@ -110,7 +112,7 @@ interface {{ loopback.ifname }
 
 ## Management Interface Configuration
 
-If you decide to run LLDP on your device (highly recommended), turn it off on the management interface. The management interface name SHOULD be specified in **mgmt.ifname** parameter; use a default value in case something goes wrong. Nexus OS example:
+If you decide to run LLDP on your device (highly recommended), turn it off on the management interface. The management interface name is specified in **mgmt.ifname** parameter. Nexus OS example:
 
 ```
 interface {{ mgmt.ifname|default('GigabitEthernet0/0') }}
@@ -120,18 +122,21 @@ interface {{ mgmt.ifname|default('GigabitEthernet0/0') }}
 
 ## Configuring Interfaces
 
-Data-plane device interfaces are specified in the **interfaces** list. Each interface might have these parameters:
+Data-plane device interfaces are specified in the **interfaces** list. Interface definition always has these parameters:
 
 * **ifname** -- interface name (always present)
 * **type** -- link type, for example: `stub` (optional)
+
+It might also have these (optional) parameters:
+
 * **virtual_interface** -- the interface is a virtual interface (loopback, VLAN interface, subinterface...). Use this parameter to skip physical interface configuration (for example, bandwidth)
-* **role** -- link role (as set by **role** link attribute -- optional)
-* **mtu** -- interface MTU (optional)
+* **role** -- link role (as set by **role** link attribute)
+* **mtu** -- interface MTU
 * **_use_ip_mtu** -- a hint that the interface MTU is lower than the **min_phy_mtu** accepted by your device and that you should configure IPv4/IPv6 MTU instead of interface MTU.
-* **bandwidth** -- interface bandwidth (optional)
-* **name** -- interface description (optional)
-* **ipv4** -- IPv4 interface address (optional)
-* **ipv6** -- IPv6 interface address (optional)
+* **bandwidth** -- interface bandwidth
+* **name** -- interface description
+* **ipv4** -- IPv4 interface address
+* **ipv6** -- IPv6 interface address
 * **_parent_intf** -- name of the parent interface of unnumbered IPv4 interfaces
 * **_parent_ipv4** -- IPv4 address of the parent interface of unnumbered IPv4 interfaces
 
@@ -182,7 +187,7 @@ interface {{ l.ifname }}
 {% endfor %}
 ```
 
-When running as a [router](dev-device-roles), your device MUST send IPv6 router advertisements on IPv6-enabled interfaces. When running as a host, it *should* listen to IPv6 router advertisements to get a default route (the **features.initial.ipv6.use_ra** [device feature](dev-device-features) controls this behavior). Arista EOS example:
+When running as a [router](dev-device-roles), your device MUST send IPv6 router advertisements on IPv6-enabled interfaces. When running as a host, it *should* listen to IPv6 router advertisements to get a default route. Arista EOS example:
 
 ```
 {#
@@ -202,6 +207,10 @@ When running as a [router](dev-device-roles), your device MUST send IPv6 router 
 {% endif %}
 ```
 
+```{note}
+A device that listens to IPv6 RAs in host mode SHOULD have the **features.initial.ipv6.use_ra** [device feature](dev-device-features) set to *‌True*. _netlab_ generates IPv6 static routes for *‌host* nodes without this feature.
+```
+
 ### Virtual Interfaces
 
 If you have to configure additional parameters on physical interfaces (for example, choosing between switch ports and router interfaces), use the **virtual_interface** parameter to decide whether to include the configuration commands related to physical interfaces. Arista EOS example:
@@ -213,13 +222,13 @@ If you have to configure additional parameters on physical interfaces (for examp
 {% endif %}
 ```
 
-If you use the **netlab_interfaces** list to configure the interfaces, check the interface type (`l.type`). It is set to **loopback** for loopback interfaces or **stub** for stub interfaces (interfaces with no neighbors).
+You can also check the interface type (`l.type`). It is set to **loopback** for loopback interfaces or **stub** for stub interfaces (interfaces with no neighbors).
 
 ### Setting Interface Description
 
 You might want to implement slightly more complex interface descriptions than what _netlab_ generates. For example:
 
-* Interface name is not set on stub interfaces.
+* The interface name is not set on stub interfaces.
 * You might want to add a link role to the interface description.
 
 Cisco IOS example:
@@ -307,12 +316,12 @@ interface {{ l.ifname }}
 
 ### Setting Interface MAC Address
 
-The interface MAC address is not part of the device data model. If you have to set it (for example, Arista EOS requires a unique MAC address on every interface), use device ID (**id**) and interface index (**ifindex** in interface data) in a configuration template similar to this one:
+The interface MAC address is not part of the device data model. If you have to set it (for example, Arista EOS requires a unique MAC address on every interface), use device ID (**id**) and interface index (**ifdata.ifindex** in interface data) in a configuration template similar to this one:
 
 ```
-{% for l in interfaces %}
-interface {{ l.ifname }}
- mac-address {{ '52dc.cafe.%02x%02x' % ( id,l.ifindex ) }}
+{% for ifdata in interfaces %}
+interface {{ ifdata.ifname }}
+ mac-address {{ '52dc.cafe.%02x%02x' % ( id,ifdata.ifindex ) }}
 !
 {% endfor %}
 ```
@@ -321,7 +330,7 @@ interface {{ l.ifname }}
 
 Your device might support static host-to-address mapping. If that's the case, configuring it is worthwhile -- users troubleshooting their configurations might appreciate seeing hostnames instead of IP addresses.
 
-[Ansible output module](../../outputs/ansible.md) creates a dictionary mapping node names into IPv4/IPv6 address lists. The first address in the list is the loopback IP address (assuming the node has a loopback interface). Here's a sample dictionary for a small lab with a router and two hosts:
+[Ansible output module](../../outputs/ansible.md) creates a dictionary mapping node names to IPv4/IPv6 address lists. The first address in the list is the loopback IP address (assuming the node has a loopback interface). Here's a sample dictionary for a small lab with a router and two hosts:
 
 ```
 hosts:
@@ -355,7 +364,7 @@ ip host {{ hname }} {{ hdata.ipv4[0] }}
 **Notes:**
 
 * The configuration template iterates over all devices with usable IP addresses
-* It skips the current device or devices that don't have IPv4 address family configured
+* It skips the current device or devices that don't have the IPv4 address family configured
 * For all other devices, it takes the first IPv4 address in the list of IPv4 addresses and configures that as the static DNS entry.
 
 If your device supports multiple IP addresses associated with a single hostname, use this template (Arista EOS):
@@ -431,9 +440,13 @@ Fortinet example (**vdom** variable is set as an Ansible group variable in syste
 
 You can use the following integration tests in the `tests/integration/initial` directory to test your implementation:
 
-* **interfaces.yml** -- basic interface parameters, including IPv6 addresses, MTU and bandwidth
-* **loopback.yml** -- additional loopback interfaces
-* **unnumbered.yml** -- unnumbered IPv4 and IPv6 interfaces
+* **01-interfaces.yml** -- basic interface parameters, including IPv6 addresses, MTU and bandwidth
+* **02-loopback.yml** -- additional loopback interfaces
+* **03-unnumbered.yml** -- unnumbered IPv4 and IPv6 interfaces (no validation)
+* **04-mtu.yml** -- setting MTUs
+* **05-host.yml** -- Device running in *host* mode -- no IP forwarding, no IPv6 RAs
+* **06-bridge.yml** -- Device running in *bridge* mode -- multiple layer-2 forwarding domains, no IP access to the device.
+* **07-router.yml** -- Device running in *router* mode -- IP forwarding, IPv6 RAs
 
 To use an integration test to test your configuration templates:
 
@@ -441,5 +454,6 @@ To use an integration test to test your configuration templates:
 * Execute `netlab initial -o` to create device configurations in the `config` directory.
 * Inspect device configurations before proceeding.
 * Execute `netlab initial` to deploy device configurations
+* Execute `netlab validate` to run validation tests
 
-To use an integration test in a CI/CD pipeline, execute `netlab up -d <device> <topology-name>`.
+To use an integration test in a CI/CD pipeline, execute `netlab up -d <device> <topology-name> --validate`.
