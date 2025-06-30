@@ -1,8 +1,8 @@
 # Configuring VRFs
 
-This document describes the device data model parameters one should consider when creating a VRF configuration template. For a wider picture, please see [](../device-features.md) or [](../devices.md).
+This document describes the device data model parameters one should consider when creating a VRF configuration template. For a wider picture, please see [](dev-device-features) or [](../devices.md).
 
-This document assumes you're using an Ansible task list that is able to deploy device configuration from a template. If you plan to use Ansible modules to build device configuration, you'll find some guidance in [Using Ansible Configuration Modules](ospf-ansible-config) section of OSPF implementation guide.
+This document assumes you're using an Ansible task list that is able to deploy device configuration from a template. If you plan to use Ansible modules to build device configuration, you'll find some guidance in the [Using Ansible Configuration Modules](dev-ospf-ansible-config) section of the OSPF implementation guide.
 
 **Notes:**
 
@@ -130,6 +130,8 @@ You can configure all of these features in `netsim/templates/vrf/<nos>.j2` templ
 * Configure VRF BGP address families in `netsim/templates/vrf/<nos>.bgp.j2`
 * Include these templates in `netsim/templates/vrf/<nos>.j2` template based on presence of **bgp.as** attribute (the device is running BGP) or **ospf** attribute of a VRF dictionary (VRF is running OSPF)
 
+Even better, use routing protocol configuration macros (example in [](dev-ospf-macro)).
+
 Cisco IOS example:
 
 ```
@@ -256,7 +258,7 @@ router bgp {{ bgp.as }}
 
 ### Configure OSPF
 
-You could use the same _shared macro_ approach to configure VRF OSPF interface, but it's probably simpler to just copy-paste the [global OSPF configuration code](ospf.md) and change OSPF process ID (or a similar configuration construct) to refer to in-VRF OSPF process:
+It's best to use the same _[shared macro](dev-ospf-macro)_ approach to configure VRF OSPF instances, but of course you can also copy-paste the [global OSPF configuration code](ospf.md) and change OSPF process ID (or a similar configuration construct) to refer to in-VRF OSPF process:
 
 * The main VRF template uses **vdata** variable to refer to the VRF parameters -- OSPF parameters are available within **vdata.ospf** dictionary.
 * Use **vdata.vrfidx** as the OSPF process ID

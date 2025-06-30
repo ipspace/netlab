@@ -1,14 +1,15 @@
+(dev-config-ospf)
 # Configuring OSPF
 
 This document describes the device data model parameters one should consider when creating an OSPF configuration template. For a wider picture, please see [contributing new devices](../devices.md) document.
 
-Most of the document assumes you already created an Ansible task list that is able to deploy device configuration from a template. If you plan to use Ansible modules to build initial device configuration, see [Using Ansible Configuration Modules](ospf-ansible-config) section at the bottom of this document.
+Most of the document assumes you already created an Ansible task list that is able to deploy device configuration from a template. If you plan to use Ansible modules to build initial device configuration, see [Using Ansible Configuration Modules](dev-ospf-ansible-config) section at the bottom of this document.
 
 **Notes:**
 
 * The device configuration template (in Jinja2 format) should be stored in `netsim/templates/ospf/<nos>.j2` with **nos** being the value of **netlab_device_type** or **ansible_network_os** variable (see [Using Your Devices with Ansible Playbooks](../devices.md#using-your-device-with-ansible-playbooks) for more details.
 * Most of the data model attributes are optional. Use `if sth is defined`, `sth|default(value)` or `if 'sth' in ifdata` in your Jinja2 templates to check for presence of optional attributes. Try to be consistent ;)
-* If you want to support OSPFv2 and OSPFv3, start with the [](ospf-af) section.
+* If you want to support OSPFv2 and OSPFv3, start with the [](dev-ospf-af) section.
 
 ```eval_rst
 .. contents:: Table of Contents
@@ -17,10 +18,22 @@ Most of the document assumes you already created an Ansible task list that is ab
    :backlinks: none
 ```
 
-(ospf-af)=
+(dev-ospf-features)=
+## Device Features
+
+You can use the following device **features.ospf** [device features](dev-device-features) to specify which parts of the OSPF data model your configuration templates implement:
+
+* **unnumbered** -- OSPF runs over unnumbered interfaces
+* **default** -- generation of default route
+* **import** -- redistribution from other routing protocols
+* **timers** -- OSPF timers
+* **priority** -- DR election priority
+* **password** -- Simple OSPFv2 authentication
+
+(dev-ospf-af)=
 ## Supporting Multiple Address Families
 
-**ospf.af** variable contains a dictionary of address families configured on the device:
+**ospf.af** variable contains a dictionary of address families configured on the device. The variable is present in global and VRF data structures.
 
 * **ospf.af.ipv4** -- there is at least one interface on which you could run OSPFv2
 * **ospf.af.ipv6** -- there is at least one interface on which you could run OSPFv3
@@ -45,9 +58,12 @@ Use something similar to the following example as the stub template:
 
 ## Global OSPF Configuration
 
-*netlab* data model assumes a single OSPF process running in the global routing table. Device-wide parameters are set in **ospf** dictionary:
+*netlab* data model assumes a single OSPF process running in the global routing table (if you need a separate process ID for OSPFv3, add one to the OSPFv2 process ID). Device-wide parameters are set in the node **ospf** dictionary:
 
 * **ospf.process** -- OSPF process ID (optional)
+
+These parameters are set in the node or VRF **ospf** dictionary:
+
 * **ospf.router_id** -- OSPF router ID (always present, should be an IPv4 address)
 * **ospf.reference_bandwidth** -- reference bandwidth (optional)
 * **ospf.unnumbered** -- OSPF is ran on at least one unnumbered IPV4 interface (optional)
@@ -79,9 +95,9 @@ ipv6 router ospf {{ pid }}
 
 ## Loopback Configuration
 
-The device data model assumes that the loopback interface will be placed into the default OSPF area. Use **ospf.area** and **loopback.ipv4** or **loopback.ipv6** attributes to configure OSPF on the loopback interface.
+The device data model assumes that the loopback interface will be placed into the default OSPF area, and creates **ospf.area** attribute in the **loopback** interface, making it possible to . iterate over **netlab_interfaces** list (see also [](dev-config-initial)) when configuring OSPF.
 
-Nexus OS example (**pid** variable was set in the [](#global-ospf-configuration)).
+However, if you insist on configuring the loopback interface separately, look at the Nexus OS example (**pid** variable was set in the [](#global-ospf-configuration)).
 
 ```
 interface loopback0
@@ -89,7 +105,7 @@ interface loopback0
 !
 ```
 
-Cisco IOS OSPFv3 example:
+... and the Cisco IOS OSPFv3 example:
 
 ```
 {% if 'ipv6' in loopback %}
@@ -97,8 +113,6 @@ interface Loopback0
  ipv6 ospf {{ pid }} area {{ ospf.area }}
 {% endif %}
 ```
-
-Alternatively, use the **netlab_interfaces** list and configure the loopback interface like any other interface (the OSPF configuration module sets the **ospf.area** parameter on the loopback interface).
 
 ## Configuring OSPF Interfaces
 
@@ -109,12 +123,19 @@ OSPF interface parameters are specified within the **ospf** dictionary on indivi
 * **passive** -- interface is a passive OSPF interface (optional)
 * **cost** -- interface cost
 * **bfd** -- BFD is active on the interface (see [](igp-bfd-interaction) and [](igp-bfd-config) for more details).
+* **timers.hello** -- Hello timer
+* **timers.dead** -- Dead interval
+* **priority** -- DR priority
+* **password** -- Simple OSPF authentication password
 
 ```{tip}
-The **ospf.area‌** parameter is also present on the loopback interface
+* The **ospf.area‌** parameter is also present on the loopback interface
+* The OSPF timers have to be enabled with the **‌ospf.timers** device feature
+* The DR priority is enabled with the **‌ospf.priority** device feature
+* The OSPF password is enabled with the **‌ospf.password** device feature
 ```
 
-The interface part of the OSPF configuration template starts with a **for** loop over all configured interfaces that have OSPF parameters. You MUST check for presence of **ospf** interface dictionary to exclude external (inter-AS) interfaces from the OSPF routing process.
+The interface part of the OSPF configuration template starts with a **for** loop over all configured interfaces that have OSPF parameters. You MUST check for the presence of the **ospf** interface dictionary to exclude external (inter-AS) interfaces from the OSPF routing process.
 
 You might want to use the interface description as a comment to help you troubleshoot the final configuration snippets:
 
@@ -136,10 +157,10 @@ interface {{ l.ifname }}
 {% endfor %}
 ```
 
-The rest of the interface configuration should check the presence of various attributes you decided to support. Nexus OS OSPFv2-only example:
+The rest of the interface configuration should check the presence of various attributes you decided to support. Nexus OS OSPFv2 example:
 
 ```
-{% for l in interfaces if 'ospf' in l %}
+{% for l in interfaces if 'ospf' in l and 'ipv4' in l %}
 interface {{ l.ifname }}
 ! {{ l.name|default("") }}
  ip router ospf {{ pid }} area {{ l.ospf.area }}
@@ -230,7 +251,77 @@ router ospf {{ pid }}
 {% endif %}
 ```
 
-(ospf-ansible-config)=
+(dev-ospf-macro)=
+## Using Macros for Global- and VRF Configuration
+
+Most devices use a very similar OSPF configuration for the global and the VRF routing processes. It thus makes sense to create that OSPF configuration only once. We're commonly using Jinja2 macros to do that (examples are taken from Arista EOS templates):
+
+1. Define a configuration macro in the **_device_.ospfv2.j2** and **_device_ospfv3.j2** configuration templates:
+
+```
+{% macro config(ospf_pid,ospf_vrf,ospf_data,intf_data,bgp={}) %}
+```
+
+   The parameters passed to the macro depend on the information you need to configure the OSPF routing process. Arista EOS needs process ID, VRF name, and BGP information (for route redistribution). You should always pass the "global" OSPF parameters and the interface list to the macro.
+
+2. Import macros into the OSPF configuration template:
+
+```
+{% import "eos.ospfv2.j2" as ospfv2 %}
+{% import "eos.ospfv3.j2" as ospfv3 %}
+```
+
+3. Call configuration macros based on OSPF address families running on the box:
+
+```
+{% set ospf_pid = ospf.process|default(1) %}
+{% if ospf.af.ipv4 is defined %}
+{{   ospfv2.config(ospf_pid,False,ospf,netlab_interfaces) }}
+{% endif %}
+{% if ospf.af.ipv6 is defined %}
+{{   ospfv3.config(ospf_pid,False,ospf,netlab_interfaces) }}
+{% endif %}
+```
+
+   Use **ospf** (node data) and **netlab_interfaces** when configuring global interfaces[^ORV]. Pass the global process ID to the macro and False as the VRF name (if you need these parameters)
+
+4. In the configuration macro, configure global or VRF OSPF process:
+
+```
+{% if ospf_vrf %}
+router ospf {{ ospf_pid }} vrf {{ ospf_vrf }}
+{% else %}
+router ospf {{ ospf_pid }}
+{% endif %}
+```
+
+[^ORV]: The **ospf** parameters are removed from the VRF interfaces in the **interfaces** list, so you don't need to check the VRF membership of individual interfaces.
+
+When using the same configuration macros in the VRF configuration template:
+
+1. Import macros from the OSPF directory:
+
+```
+{% import "templates/ospf/eos.ospfv2.j2" as ospfv2 %}
+{% import "templates/ospf/eos.ospfv3.j2" as ospfv3 %}
+```
+
+2. When iterating over VRFs, check for **ospf** dictionary in VRF data and then call OSPFv2 or OSPFv3 macro based on the **ospf.af** flags.
+
+```
+{% for vname,vdata in vrfs.items() if 'ospf' in vdata %}
+{%   if vdata.af.ipv4|default(False) %}
+{{     ospfv2.config(vdata.vrfidx,vname,vdata.ospf,vdata.ospf.interfaces|default([]),bgp|default({})) }}
+{%   endif %}
+{%   if vdata.af.ipv6|default(False) %}
+{{     ospfv3.config(vdata.vrfidx,vname,vdata.ospf,vdata.ospf.interfaces|default([]),bgp|default({})) }}
+{%   endif %}
+{% endfor %}
+```
+
+   When calling the macro, use the VRF OSPF data (`vdata.ospf`) as the **ospf** parameter, the VRF OSPF interfaces (`vdata.ospf.interfaces`) as the **interfaces** parameter, and the `vdata.vrfidx` (_netlab_'s internal VRF index) as the process ID.
+
+(dev-ospf-ansible-config)=
 ## Using Ansible Configuration Modules
 
 You might be forced to use Ansible configuration modules instead of generating and deploying a device configuration from a Jinja2 template. In that case, create the list of Ansible tasks needed to configure your device in `netsim/tasks/<nos>/ospf.yml` with **nos** being the value of **ansible_network_os** variable (see [Using Your Devices with Ansible Playbooks](../devices.md#using-your-device-with-ansible-playbooks) for more details.

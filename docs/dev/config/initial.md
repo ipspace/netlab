@@ -1,3 +1,4 @@
+(dev-config-initial)=
 # Initial Device Configuration
 
 This document describes the device data model parameters to consider when creating an initial device configuration template. Please see the [contributing new devices](../devices.md) document for a broader picture.

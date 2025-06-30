@@ -2,7 +2,7 @@
 
 This document describes the device data model parameters one should consider when creating a BGP device configuration template. For a wider picture, please see the [contributing new devices](../devices.md) document.
 
-Most of the document assumes you already created an Ansible task list that is able to deploy device configuration from a template. If you plan to use Ansible modules to build initial device configuration, see [](ospf-ansible-config) for more details.
+Most of the document assumes you already created an Ansible task list that is able to deploy device configuration from a template. If you plan to use Ansible modules to build initial device configuration, see [](dev-ospf-ansible-config) for more details.
 
 **Notes:**
 
