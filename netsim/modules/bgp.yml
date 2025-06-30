@@ -15,6 +15,17 @@ no_propagate:
 transform_after: [ vlan ]
 config_after: [ routing, ospf, isis, eigrp, ripv2 ]
 next_hop_self: true
+
+_top:                         # Define custom data types used by the BGP module
+  attributes:
+    bgp_session_type:
+      _description: BGP session types
+      type: str
+      valid_values:           # Valid values are structured like a dict to allow plugins to add values
+        ibgp:
+        ebgp:
+        localas_ibgp:
+
 attributes:
   global:
     as: asn
@@ -24,11 +35,11 @@ attributes:
     ebgp_role: str
     as_list: dict
     sessions:
-      ipv4: [ ibgp, ebgp, localas_ibgp ]
-      ipv6: [ ibgp, ebgp, localas_ibgp ]
+      ipv4: { type: list, _subtype: bgp_session_type }
+      ipv6: { type: list, _subtype: bgp_session_type }
     activate:
-      ipv4: [ ibgp, ebgp, localas_ibgp ]
-      ipv6: [ ibgp, ebgp, localas_ibgp ]
+      ipv4: { type: list, _subtype: bgp_session_type }
+      ipv6: { type: list, _subtype: bgp_session_type }
     advertise_loopback: bool
     advertise_roles: list
     community:
@@ -36,6 +47,9 @@ attributes:
       ebgp: [ standard, extended, large, 2octet ]
       _alt_types: [ str, BoxList ]
     replace_global_as: bool
+
+  _inherit_community:                 # This is a lookup table for rare session types so you don't
+    localas_ibgp: ibgp                # have to specify them in bgp.community attribute
 
   node:
     as:
