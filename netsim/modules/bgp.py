@@ -31,7 +31,7 @@ def setup_bgp_constants(topology: Box) -> None:
 
   # Valid session types are reconstructed from the valid values of the bgp.sessions.ipv4 global attribute
   # We're assuming there's no difference between IPv4 and IPv6
-  BGP_VALID_SESSION_TYPE = [ v for v in topology.defaults.bgp.attributes['global'].sessions.ipv4 ]
+  BGP_VALID_SESSION_TYPE = [ v for v in topology.defaults.attributes.bgp_session_type.valid_values ]
 
   # We're assuming all address families are active on all session types
   for af in log.AF_LIST:
