@@ -680,7 +680,18 @@ defaults:
         type: int
       import: list
       links: list
-      loopback: null
+      loopback:
+        _alt_types:
+        - bool
+        - prefix_str
+        - NoneType
+        ipv4:
+          type: ipv4
+          use: host_prefix
+        ipv6:
+          type: ipv6
+          use: host_prefix
+        pool: addr_pool
       rd: rd
     vrf_group:
       _description: VRF groups
@@ -772,6 +783,8 @@ defaults:
     advertise_roles:
     - stub
     attributes:
+      _inherit_community:
+        localas_ibgp: ibgp
       as_list:
         _keytype: int
         _subtype:
@@ -981,6 +994,7 @@ defaults:
     - ripv2
     - static
     validate:
+      bgp_scan_long: 15
       bgp_scan_time: 5
       ebgp_session: 30
       isis_adj_p2p: 20
@@ -1887,6 +1901,7 @@ defaults:
           import:
           - connected
           - ospf
+          - static
           - vrf
           ipv6_lla: true
           local_as: true
@@ -1920,10 +1935,16 @@ defaults:
           import:
           - bgp
           - connected
+          - static
           - vrf
           priority: true
           timers: true
           unnumbered: true
+        routing:
+          static:
+            discard: true
+            inter_vrf: true
+            vrf: true
         stp:
           enable_per_port: true
           port_type: true
@@ -2363,6 +2384,12 @@ defaults:
       virtualbox:
         image: arista/veos
     fortios:
+      clab:
+        image: vrnetlab/vr-fortios:7.4.8
+        interface:
+          name: eth{ifindex}
+        node:
+          kind: fortinet_fortigate
       description: Fortinet FortiOS firewall
       external:
         image: none
@@ -2381,9 +2408,11 @@ defaults:
         ansible_user: admin
         collections:
         - fortinet.fortios
+        mgmt_if: port1
         netlab_config_tasks: true
         netlab_console_connection: ssh
         netlab_skip_missing_template: true
+        netlab_vdom: root
         vdom: root
       ifindex_offset: 2
       interface_name: port{ifindex}
@@ -2391,8 +2420,8 @@ defaults:
         build: https://netlab.tools/labs/fortios/
         create_template: fortios.xml.j2
         image: fortinet/fortios
+      loopback: false
       loopback_interface_name: loopback{ifindex}
-      mgmt_if: port1
       mtu: 1500
     frr:
       clab:
@@ -2602,7 +2631,7 @@ defaults:
           ansible_user: admin
           netlab_check_retries: 20
           netlab_device_type: iol
-        image: vrnetlab/cisco_iol:17.12.01
+        image: vrnetlab/cisco_iol:17.15.01
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         node:
@@ -2758,7 +2787,7 @@ defaults:
           ansible_user: admin
           netlab_check_retries: 20
           netlab_device_type: ioll2
-        image: vrnetlab/cisco_iol:L2-17.12.01
+        image: vrnetlab/cisco_iol:L2-17.15.01
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         mtu: 1500
@@ -2955,7 +2984,8 @@ defaults:
           - vrrp
         initial:
           ipv4:
-            unnumbered: false
+            unnumbered:
+            - tunnel
           ipv6:
             lla: true
             use_ra: true
@@ -3071,12 +3101,12 @@ defaults:
         image: cisco/iosv
     iosvl2:
       clab:
-        build: https://github.com/hellt/vrnetlab/tree/master/vios
+        build: https://github.com/hellt/vrnetlab/tree/master/viosl2
         group_vars:
           ansible_ssh_pass: admin
           ansible_user: admin
           netlab_check_retries: 50
-        image: vrnetlab/cisco_vios:15.9.3
+        image: vrnetlab/cisco_viosl2:15.2.2020
         interface:
           name: eth{ifindex}
         node:
@@ -3117,7 +3147,8 @@ defaults:
           - vrrp
         initial:
           ipv4:
-            unnumbered: false
+            unnumbered:
+            - tunnel
           ipv6:
             lla: true
             use_ra: true
@@ -3598,6 +3629,43 @@ defaults:
       mgmt_if: mgmt0
       virtualbox:
         image: cisco/nexus9300v
+    openbsd:
+      clab:
+        build: https://containerlab.dev/manual/kinds/openbsd/
+        group_vars:
+          ansible_ssh_pass: admin
+          ansible_user: admin
+          netlab_check_command: who
+        image: vrnetlab/openbsd_openbsd:7.7
+        node:
+          kind: openbsd
+      description: OpenBSD
+      external:
+        image: none
+      features:
+        initial:
+          roles:
+          - host
+        routing:
+          static: true
+      graphite:
+        icon: server
+      group_vars:
+        ansible_connection: paramiko
+        ansible_network_os: openbsd
+        ansible_python_interpreter: auto_silent
+        ansible_ssh_pass: vagrant
+        ansible_user: openbsd
+        docker_shell: sh -il
+      ifindex_offset: 1
+      interface_name: vio{ifindex}
+      libvirt:
+        create_iso: openbsd
+        create_template: openbsd.xml.j2
+        image: netlab/openbsd
+      loopback_interface_name: lo{ifindex}
+      mgmt_if: vio0
+      role: host
     routeros:
       description: Mikrotik RouterOS version 6
       external:
@@ -3730,7 +3798,7 @@ defaults:
       clab:
         group_vars:
           srlinux_grpc_port: 57400
-        image: ghcr.io/nokia/srlinux:25.3.2
+        image: ghcr.io/nokia/srlinux:25.3.3
         interface:
           name: e1-{ifindex}
         node:
@@ -4864,6 +4932,10 @@ defaults:
       members: []
       vars:
         netlab_show_config: true
+    external:
+      _default_group: true
+      device: srlinux
+      members: []
   hints:
     cli:
       interrupt: Use 'netlab status' command to display the status of your lab and
@@ -5629,13 +5701,13 @@ defaults:
   paths:
     collect:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks/fetch-config
+      - /home/pipi/net101/tools/netsim/ansible/tasks/fetch-config
     custom:
       dirs:
       - /home/pipi/net101/tools/tests/integration/ospf/ospfv3
       - /work/netlab_cicd
       - /home/pipi/.netlab
-      - /home/pipi/netlab_gh/netsim/extra
+      - /home/pipi/net101/tools/netsim/extra
       files:
       - '{{ custom_config + ''/'' + inventory_hostname + ''.'' + netlab_device_type
         + ''-'' + node_provider + ''.j2'' }}'
@@ -5666,7 +5738,7 @@ defaults:
       - '{{ custom_config }}/deploy.yml'
     deploy:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks
+      - /home/pipi/net101/tools/netsim/ansible/tasks
       files:
       - '{{ netlab_device_type }}/{{ config_module }}-{{ provider|default(netlab_provider)
         }}.yml'
@@ -5690,10 +5762,10 @@ defaults:
     - /work/netlab_cicd
     - /home/pipi/net101/tools/tests/integration/ospf/ospfv3
     - /home/pipi/.netlab
-    - /home/pipi/netlab_gh/netsim/extra
+    - /home/pipi/net101/tools/netsim/extra
     ready:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check
+      - /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check
       files:
       - '{{netlab_device_type}}-{{provider|default(netlab_provider)}}.yml'
       - '{{netlab_device_type}}.yml'
@@ -5710,10 +5782,10 @@ defaults:
       - '{{netlab_device_type}}/{{config_module}}.j2'
     templates:
       dirs:
-      - /home/pipi/netlab_gh/netsim/daemons
-      - /home/pipi/netlab_gh/netsim/ansible/templates
+      - /home/pipi/net101/tools/netsim/daemons
+      - /home/pipi/net101/tools/netsim/ansible/templates
     validate:
-    - /home/pipi/netlab_gh/netsim/validate
+    - /home/pipi/net101/tools/netsim/validate
   plugin:
   - multilab
   ports:
@@ -6094,6 +6166,7 @@ defaults:
       cat8000v: true
       csr: true
       cumulus: true
+      cumulus_nvue: true
       dellos10: true
       dnsmasq: true
       eos: true
@@ -6106,6 +6179,7 @@ defaults:
       junos: true
       linux: true
       none: true
+      openbsd: true
       srlinux: true
       sros: true
       vjunos-router: true
@@ -6417,6 +6491,97 @@ defaults:
           /etc/ncs/ncs.conf; docker exec -it {name}-cisco-nso sed -i.backup -e "/<webui>/a
           <package-upload> <enabled>true</enabled> </package-upload>" /etc/ncs/ncs.conf;
       runtime: docker
+    nuts:
+      config:
+      - dest: nr-config.yaml
+        template: nr-config.yaml
+      - dest: inventory/groups.yaml
+        template: inventory/groups.yaml
+      - dest: inventory/hosts.yaml
+        template: inventory/hosts.j2
+      - dest: tests/test_interfaces.yaml
+        template: tests/test_interfaces.j2
+      - dest: tests/test_ospf.yaml
+        template: tests/test_ospf.j2
+      - dest: tests/test_bgp.yaml
+        template: tests/test_bgp.j2
+      docker:
+        cleanup: docker volume rm '{name}_nuts'
+        connect: docker exec -it '{name}_nuts' bash
+        down: docker kill '{name}_nuts'
+        message: Use 'netlab connect nuts' to connect to the NUTS container. Run 'pytest'
+          in the container to execute tests.
+        up: docker run --rm -itd --name '{name}_nuts' {sys.docker_net} -v './nuts':/nuts
+          -w /nuts ghcr.io/network-unit-testing-system/nuts
+      inventory:
+        napalm:
+          arubacx: aoscx
+          asav: ios
+          cat8000c: ios
+          iol: ios
+          ioll2: ios
+          iosv: ios
+          iosvl2: ios
+          iosxr: iosxr
+          nxos: nxos_ssh
+          routeros: ros
+          routeros7: ros
+          srlinux: srl
+          vjunos-router: junos
+          vjunos-switch: junos
+          vmx: junos
+          vptx: junos
+          vsrx: junos
+        napalm_using_netmiko:
+          ios: true
+          nxos_ssh: true
+        netmiko:
+          arubacx: aruba_aoscx
+          asav: cisco_asa
+          cat8000c: cisco_xe
+          dellos10: dell_os10
+          fortios: fortinet
+          iol: cisco_xe
+          ioll2: cisco_xe
+          iosv: cisco_xe
+          iosvl2: cisco_xe
+          iosxr: iosxr
+          nxos: cisco_nxos
+          routeros: mikrotik_routeros
+          routeros7: mikrotik_routeros
+          srlinux: nokia_srl
+          sros: nokia_sros
+          vjunos-router: juniper_junos
+          vjunos-switch: juniper_junos
+          vmx: juniper_junos
+          vptx: juniper_junos
+          vsrx: juniper_junos
+      runtime: docker
+      test_creation:
+        bgp:
+          arubacx: aoscx
+          asav: ios
+          cat8000c: ios
+          iol: ios
+          ioll2: ios
+          iosv: ios
+          iosvl2: ios
+          iosxr: iosxr
+          nxos: nxos_ssh
+          routeros: ros
+          routeros7: ros
+          srlinux: srl
+          vjunos-router: junos
+          vjunos-switch: junos
+          vmx: junos
+          vptx: junos
+          vsrx: junos
+        ospf:
+          cat8000c: cisco_xe
+          iol: cisco_xe
+          ioll2: cisco_xe
+          iosv: cisco_xe
+          iosvl2: cisco_xe
     suzieq:
       config:
       - dest: suzieq-inventory.yml
@@ -6663,6 +6828,10 @@ groups:
   as65100:
     members:
     - x1
+  external:
+    _default_group: true
+    device: srlinux
+    members: []
   probes:
     device: frr
     members:
@@ -6749,7 +6918,7 @@ nodes:
         type: ebgp
       next_hop_self: true
       router_id: 10.0.0.1
-    box: ghcr.io/nokia/srlinux:25.3.2
+    box: ghcr.io/nokia/srlinux:25.3.3
     clab:
       kind: srl
       type: ixrd2
