@@ -1037,21 +1037,30 @@ def interface_feature_check(nodes: Box, defaults: Box) -> None:
   for node,ndata in nodes.items():
     features = devices.get_device_features(ndata,defaults)
     for ifdata in ndata.get('interfaces',[]):
-      more_info = f'Interface {ifdata.ifname} (link {ifdata.name})'
+      more_data = f'Interface {ifdata.ifname} (link {ifdata.name})'
       if 'ipv4' in ifdata:
         if ifdata.ipv4 is True:
-          if not features.initial.ipv4.unnumbered:
+          f_v4_unnum = features.initial.ipv4.unnumbered
+          if not f_v4_unnum:
             log.error(
-              text=f'Device {ndata.device} (node {node}) does not support unnumbered IPv4 interfaces',
-              more_hints=more_info,
+              text=f'Invalid unnumbered IPv4 interface {ifdata.ifname} ({ifdata.name}) on node {node} ',
+              more_hints=f'Device {ndata.device} (node {node}) does not support unnumbered IPv4 interfaces',
               category=log.IncorrectValue,
               module='interfaces')
-          elif features.initial.ipv4.unnumbered == 'peer':
+          elif isinstance(f_v4_unnum,list):
+            if ifdata.type not in features.initial.ipv4.unnumbered:
+              log.error(
+                text=f'Node {node} uses unsupported unnumbered IPv4 interface type {ifdata.type}',
+                more_data=more_data,
+                more_hints=f'Device {ndata.device} supports only {",".join(f_v4_unnum)} unnumbered IPv4 interfaces',
+                category=log.IncorrectValue,
+                module='interfaces')
+          elif f_v4_unnum == 'peer':
             if len(ifdata.neighbors)!=1 or ifdata.neighbors[0].get('ipv4',False) is not True:
               log.error(
-                text=f'Unnumbered interfaces on device {ndata.device} (node {node}) require a single unnumbered IPv4 peer',
-                more_hints=more_info,
-                category=log.MissingDependency,
+                text=f'The unnumbered IPv4 interface {ifdata.ifname} ({ifdata.name}) on node {node} is not supported',
+                more_hints=f'Device {ndata.device} can have unnumbered IPv4 interfaces with a single unnumbered peer',
+                category=log.IncorrectType,
                 module='interfaces')
 
       if 'ipv6' in ifdata:
@@ -1059,7 +1068,7 @@ def interface_feature_check(nodes: Box, defaults: Box) -> None:
           log.error(
             f'Device {ndata.device} (node {node}) does not support LLA-only IPv6 interfaces',
             category=log.IncorrectValue,
-            more_hints=more_info,
+            more_data=more_data,
             module='interfaces')
 
 '''
