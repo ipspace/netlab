@@ -11,9 +11,13 @@ def check_vlan_ospf(node: Box, iflist: BoxList, vname: str) -> None:
   name = node.name
   err_data = []
   for intf in iflist:
-    if 'ospf' not in intf or intf.type != 'svi':
+    if 'ospf' not in intf or intf.type != 'svi':              # ospf.interfaces is not renamed
       continue
-    err_data.append(f'Interface {intf.ifname} VRF {vname}')
+    if 'vlan' in intf:
+      vlan = node.get(f"vlans.{intf.vlan.name}",{})
+      if 'vni' not in vlan:
+        continue                                              # Skip non-VXLAN interfaces
+    err_data.append(f'Interface {intf.ifname} VNI {vlan.vni} VRF {vname}')
 
   if err_data:
     report_quirk(
@@ -59,34 +63,20 @@ def check_anycast_gateways(node: Box) -> None:
       node=node)
 
 """
-check_pvrst - check if PVRST protocol is requested, not supported on virtual network interfaces
-"""
-def check_pvrst_on_virtual_networks(node:Box, topology: Box) -> None:
-  if node.get('stp.protocol',None) == 'pvrst':
-    features = devices.get_device_features(node,topology.defaults)
-    if 'virtual-network' in features.vlan.svi_interface_name:
-      report_quirk(
-        f'Dell OS10 (node {node.name}) does not support PVRST on virtual networks (used for VLANs)',
-        quirk='pvrst_on_virtual_networks',
-        node=node)
-
-"""
 check_vrrp - check if VRRP protocol is requested, not supported on virtual network interfaces
 """
 def check_vrrp_on_virtual_networks(node:Box, topology: Box) -> None:
-  features = devices.get_device_features(node,topology.defaults)
-  if 'virtual-network' in features.vlan.svi_interface_name:
-    err_data = []
-    for intf in node.interfaces:
-      if intf.type == 'svi' and intf.get('gateway.vrrp',None):
-        err_data.append(f'Interface {intf.ifname}')
+  err_data = []
+  for intf in node.interfaces:
+    if intf.type == 'svi' and 'virtual-network' in intf.ifname and intf.get('gateway.vrrp',None):
+      err_data.append(f'SVI interface {intf.ifname}')
 
-    if err_data:
-      report_quirk(
-        f'Dell OS10 (node {node.name}) does not support VRRP on virtual networks (used for VLANs)',
-        quirk='vrrp_on_virtual_networks',
-        more_data=err_data,
-        node=node)
+  if err_data:
+    report_quirk(
+      f'Dell OS10 (node {node.name}) does not support VRRP on virtual networks (used for VXLAN VLANs)',
+      quirk='vrrp_on_virtual_networks',
+      more_data=err_data,
+      node=node)
 
 """
 check_expanded_communities - Check for unsupported 'expanded' communities or regex
@@ -113,25 +103,46 @@ def check_nssa_area_limitations(node: Box) -> None:
           node=node,
           quirk='ospfv3_nssa')
 
+"""
+Update the names of SVI interfaces to use 'virtual-network' instead of 'vlan' when a VNI is assigned
+"""
+def update_vxlan_svi_names(node:Box, topology: Box) -> None:
+  for intf in node.interfaces:
+    if intf.type != 'svi': 
+      continue
+    vlan = topology.vlans[ intf.vlan.name ]
+    if 'vni' in vlan:
+      new_ifname = intf.ifname.replace('vlan','virtual-network')
+      for n in intf.neighbors:                        # Also update ifname in neighbor lists
+        nb = topology.nodes[ n.node ]
+        for nb_if in nb.interfaces:
+          for n2 in nb_if.neighbors:
+            if n2.node==node.name and n2.ifname==intf.ifname:
+              n2.ifname = new_ifname
+      intf.ifname = new_ifname
+
 class OS10(_Quirks):
 
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
     mods = node.get('module',[])
+
+    if 'vxlan' in mods:
+      update_vxlan_svi_names(node,topology)           # Use virtual-network for VXLAN VLANs (with 'vni')
+      if 'ospf' in mods:                              # OSPF not supported on virtual-network interfaces
+        check_vlan_ospf(node,node.interfaces,'default')
+        for vname,vdata in node.get('vrfs',{}).items():
+          check_vlan_ospf(node,vdata.get('ospf.interfaces',[]),vname)
+      if 'gateway' in mods and 'vrrp' in node.get('gateway',{}):
+        check_vrrp_on_virtual_networks(node,topology) # Neither is VRRP
+
     if 'ospf' in mods:
-      check_vlan_ospf(node,node.interfaces,'default')
-      for vname,vdata in node.get('vrfs',{}).items():
-        check_vlan_ospf(node,vdata.get('ospf.interfaces',[]),vname)
       check_ospf_originate_default(node)
       check_nssa_area_limitations(node)
-    
+
     if 'gateway' in mods:
       if 'anycast' in node.get('gateway',{}):
         check_anycast_gateways(node)
-      if 'vrrp' in node.get('gateway',{}):
-        check_vrrp_on_virtual_networks(node,topology)
-    if 'stp' in mods:
-      check_pvrst_on_virtual_networks(node,topology)
     if 'routing' in mods:
       check_expanded_communities(node,topology)
 
