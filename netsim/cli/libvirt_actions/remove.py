@@ -17,20 +17,18 @@ from box import Box
 
 from ...utils import strings, status, templates, log, read as _read, files as _files
 from ...data.types import must_be_id
-from .. import external_commands
+from .. import external_commands,error_and_exit
 from .. import parser_add_debug, parser_add_verbose
 from ...providers.libvirt import create_vagrant_network,LIBVIRT_MANAGEMENT_NETWORK_NAME
 from ...providers import get_cpu_model
 
 def remove_parse(args: typing.List[str], settings: Box) -> argparse.Namespace:
-  devs = [ k for k in settings.devices.keys() if settings.devices[k].libvirt.image ]
   parser = argparse.ArgumentParser(
     prog='netlab libvirt remove',
     description='Remove a libvirt Vagrant box')
   parser.add_argument(
     dest='device',
     action='store',
-    choices=devs,
     nargs='?',
     help='Remove a Vagrant box for the specified device')
   parser.add_argument(
@@ -214,16 +212,23 @@ def remove_box(args: argparse.Namespace) -> None:
 def run(cli_args: typing.List[str], topology: Box) -> None:
   settings = topology.defaults
   args = remove_parse(cli_args,settings)
+  use_show = 'Use "netlab show images -p libvirt" to display devices with libvirt Vagrant boxes'
+
   if args.device and args.box:
     abort('You can specify a device or a box name but not both')
   if args.device:
+    if args.device not in settings.devices:
+      error_and_exit(f'Invalid device {args.device}',more_hints=use_show)
     args.box = topology.defaults.devices[args.device].libvirt.image
     if not args.box:
-      abort(f'netlab defaults do not specify the libvirt Vagrant box name for {args.device}')
-
+      error_and_exit(
+        f'netlab defaults do not specify the libvirt Vagrant box name for {args.device}',
+        more_hints=use_show)
   if args.cleanup:
     volume_purge_confirm(args)
     purge_volume(args)
   else:
+    if not args.box:
+      error_and_exit('You have to specify a device or a Vagrant box',more_hints=use_show)
     find_vagrant_box(args)
     remove_box(args)
