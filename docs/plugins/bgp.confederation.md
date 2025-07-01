@@ -42,3 +42,6 @@ The plugin implements BGP confederation for these devices:
 The plugin defines a new global attribute: 
 
 * **bgp.confederation** (dict) -- a mapping of external-facing AS numbers to internal members
+
+Internally, the plugin adds a new type of BGP session **confed_ebgp** to account for the fact that federated AS peers are more like iBGP peers than eBGP (e.g., they typically exchange extended communities).
+**bgp.sessions** settings for such peers are inherited from **ibgp** (and currently cannot be controlled separately)
