@@ -280,6 +280,7 @@ The **netlab show images** command displays built-in box/container names for sup
 
 ```text
 usage: netlab show images [-h] [--system] [--format {table,text,yaml}] [-d DEVICE]
+                          [-p PROVIDER]
 
 Display default device images
 
@@ -288,8 +289,9 @@ options:
   --system              Display system information (without user defaults)
   --format {table,text,yaml}
                         Output format (table, text, yaml)
-  -d DEVICE, --device DEVICE
-                        Display information for a single device
+  -d, --device DEVICE   Display information for a single device
+  -p, --provider PROVIDER
+                        Display information for a single virtualization provider
 ```
 
 **Examples:**
@@ -300,21 +302,34 @@ options:
 $ netlab show images -d eos
 eos image names by virtualization provider
 
-+--------+-------------+-------------+--------------+
-| device | libvirt     | virtualbox  | clab         |
-+========+=============+=============+==============+
-| eos    | arista/veos | arista/veos | ceos:4.31.2F |
-+--------+-------------+-------------+--------------+
+┏━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━┓
+┃ device ┃ clab         ┃ libvirt     ┃ virtualbox  ┃
+┡━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━┩
+│ eos    │ ceos:4.33.1F │ arista/veos │ arista/veos │
+└────────┴──────────────┴─────────────┴─────────────┘
 ```
 
-* Display Vagrant boxes and container names for Cumulus Linux in YAML format:
+* Display the container name for Cisco IOL:
+
+```text
+$ netlab show images -d iol -p clab
+iol image names for provider clab
+
+┏━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ device ┃ clab                        ┃
+┡━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ iol    │ vrnetlab/cisco_iol:17.12.01 │
+└────────┴─────────────────────────────┘
+```
+
+* Display Vagrant boxes and container names for Cisco Nexus OS  in YAML format:
 
 ```yaml
-$ netlab show images -d cumulus --format yaml
-cumulus:
-  clab: networkop/cx:4.4.0
-  libvirt: CumulusCommunity/cumulus-vx:4.4.0
-  virtualbox: CumulusCommunity/cumulus-vx:4.3.0
+$ netlab show images -d nxos --format yaml
+nxos:
+  clab: vrnetlab/vr-n9kv:9.3.8
+  libvirt: cisco/nexus9300v
+  virtualbox: cisco/nexus9300v
 ```
 
 (netlab-show-modules)=

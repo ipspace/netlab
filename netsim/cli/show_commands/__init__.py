@@ -17,6 +17,13 @@ def parser_add_device(parser: argparse.ArgumentParser) -> None:
     default='*',
     help='Display information for a single device')
 
+def parser_add_provider(parser: argparse.ArgumentParser) -> None:
+  parser.add_argument(
+    '-p','--provider',
+    dest='provider',
+    action='store',
+    help='Display information for a single virtualization provider')
+
 def parser_add_module(parser: argparse.ArgumentParser) -> None:
   parser.add_argument(
     '-m','--module',
