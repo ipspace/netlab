@@ -1,32 +1,7 @@
 #!/bin/bash
-
+#
 # Install a specific version of Containerlab
 CONTAINERLAB_VERSION="0.62.2"
-
-cat <<EOM
-Docker/Containerlab Installation Script
-=====================================================================
-This script installs Docker and containerlab on a Debian or Ubuntu
-system. The script was tested on Debian 12 (bookworm) and Ubuntu 20.04,
-22.04, and 24.04.
-
-NOTE: the script is set to abort on first error. If the installation
-completed you're probably OK even though you might have seen errors
-during the installation process.
-=====================================================================
-
-EOM
-
-if [[ -z "$FLAG_YES" ]]; then
-  # Remove implied default of Y - ghostinthenet 20220418
-  read -p "Are you sure you want to proceed [y/n]: " -n 1 -r
-  echo
-  if ! [[ $REPLY =~ [Yy] ]]; then
-   echo "Aborting..."
-   exit 1
-  fi
-  FLAG_YES="Y"
-fi
 #
 set -e
 REPLACE="--upgrade"
@@ -80,18 +55,4 @@ set -e
 if [[ -z "$G" ]]; then
   echo "Add user $USER to docker group"
   $SUDO usermod -a -G docker $USER
-  echo ".. You might need to log out and log in if you want to use Docker commands"
-  echo
 fi
-cat <<EOM
-
-=====================================================================
-Docker and Containerlab were successfully installed.
-
-To test the installation:
-
-* Log out
-* Log back in
-* Run 'netlab test clab'
-=====================================================================
-EOM

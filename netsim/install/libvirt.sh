@@ -1,28 +1,4 @@
 #!/bin/bash
-cat <<EOM
-Libvirt/Ubuntu Installation Script
-=====================================================================
-This script installs Libvirt, Vagrant, and vagrant-libvirt plugin
-on a Ubuntu system. The script was tested on Debian 12 (bookworm) and
-Ubuntu 20.04, 22.04, and 24.04.
-
-NOTE: the script is set to abort on first error. If the installation
-completed you're probably OK even though you might have seen errors
-during the installation process.
-=====================================================================
-
-EOM
-
-if [[ -z "$FLAG_YES" ]]; then
-  # Remove implied default of Y - ghostinthenet 20220418
-  read -p "Are you sure you want to proceed [y/n]: " -n 1 -r
-  echo
-  if ! [[ $REPLY =~ [Yy] ]]; then
-   echo "Aborting..."
-   exit 1
-  fi
-  FLAG_YES="Y"
-fi
 #
 set -e
 #
@@ -75,6 +51,4 @@ set -e
 if [[ -z "$G" ]]; then
   echo "Add user $USER to libvirt group"
   $SUDO usermod -a -G libvirt $USER
-  echo ".. You might need to log out and log in to start using netlab with libvirt"
-  echo
 fi

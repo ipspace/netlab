@@ -12,7 +12,7 @@ from box import Box
 
 from ..utils import log,strings,read
 from ..utils.files import get_moddir
-from . import external_commands
+from . import external_commands,error_and_exit
 
 #
 # CLI parser for 'netlab install' command
@@ -43,6 +43,11 @@ def install_parse(args: typing.List[str], setup: Box) -> argparse.Namespace:
     action='store_true',
     help='Install Python libraries into user .local directory')
   parser.add_argument(
+    '--all',
+    dest='all',
+    action='store_true',
+    help='Run all installation scripts')
+  parser.add_argument(
     '--dry-run',
     dest='dry_run',
     action='store_true',
@@ -50,7 +55,6 @@ def install_parse(args: typing.List[str], setup: Box) -> argparse.Namespace:
   parser.add_argument(
     dest='script',
     action='store',
-    choices=list(setup.scripts.keys()),
     nargs="*",
     help='Run the specified installation script')
 
@@ -64,6 +68,7 @@ def check_crazy_pip3(args: argparse.Namespace) -> None:
   syspath = sysconfig.get_path("stdlib")
   if os.path.exists(f'{syspath}/EXTERNALLY-MANAGED'):
     if not args.yes:
+      print()
       log.info(
         "Your Linux distribution includes a scared version of Python",
         more_hints=[
@@ -76,6 +81,7 @@ def check_crazy_pip3(args: argparse.Namespace) -> None:
     os.environ['FLAG_PIP'] = os.environ['FLAG_PIP'] + ' --break-system-packages'
 
   if not args.user and not args.yes:
+    print()
     log.info(
       "We will install Python libraries into system directories",
       more_hints=[
@@ -142,27 +148,23 @@ Checks whether it's OK to run the specified installation script:
 * Is 'apt-get' command used and available?
 * Is 'pip3' command used, available, and are we using virtual environment
 """
-def check_script(path: str, args: argparse.Namespace) -> None:
-  script = Path(path)
-  cmds = script.read_text()
-
-  if ' apt-get ' in cmds:
+def check_script(script: str, setup: Box, args: argparse.Namespace) -> None:
+  s_data = setup.scripts[script]
+  if 'apt' in s_data.uses:
     if not external_commands.has_command('apt-get'):
-      log.error(
+      error_and_exit(
         'This script uses apt-get command that is not available on your system',
-        more_hints='Most netlab installation scripts work on Ubuntu (and probably on Debian)',
+        more_hints='Most netlab installation scripts work on Ubuntu and Debian)',
         category=log.IncorrectType)
-      log.fatal('Aborting installation request')
 
-  if ' pip3 ' not in cmds:
+  if 'pip' not in s_data.uses:
     return
 
   if not external_commands.has_command('pip3'):
-    log.error(
+    error_and_exit(
       'This script uses pip3 command that is not available on your system',
       more_hints="Install pip3 (for example, with 'sudo apt-get install python-pip3')",
       category=log.IncorrectType)
-    log.fatal('Aborting installation request')
 
   if os.environ.get('VIRTUAL_ENV',None):
     log.info(
@@ -173,6 +175,35 @@ def check_script(path: str, args: argparse.Namespace) -> None:
     return
 
   check_crazy_pip3(args)
+
+"""
+Display what the installation script will do and ask for user confirmation
+"""
+def script_confirm(script: str,setup: Box, args: argparse.Namespace) -> None:
+  if args.quiet:
+    return
+
+  s_data = setup.scripts[script]
+  if s_data.intro:
+    print()
+    log.info(s_data.intro,more_hints = setup.shared.intro or None)
+    print()
+
+  if not args.yes and not strings.confirm("Are you sure you want to proceed"):
+    error_and_exit('User aborted the installation process',category=Warning)
+
+"""
+Installation script has completed
+"""
+def script_completed(script: str,setup: Box, args: argparse.Namespace) -> None:
+  if args.quiet:
+    return
+
+  s_data = setup.scripts[script]
+  log.section_header('Done   ',f'Completed {s_data.description} installation')
+  if s_data.epilog:
+    print()
+    log.info(s_data.epilog)
 
 def display_usage(setup: Box) -> None:
   t_usage = []
@@ -190,24 +221,34 @@ def run(cli_args: typing.List[str]) -> None:
     return
 
   args = install_parse(cli_args,setup)
+  for script in args.script:
+    if script not in setup.scripts:
+      error_and_exit(
+        f'Unknown installation script {script}',
+        more_hints='Run "netlab install" to display the available installation scripts')
+
   set_quiet_flags(args)
   set_sudo_flag()
   for script in setup.scripts.keys():
-    if script not in args.script:
+    if script not in args.script and not args.all:
       continue
     script_path = f'{get_moddir()}/install/{script}.sh'
     if not os.path.exists(script_path):
       log.fatal("Installation script {script} does not exist")
 
-    check_script(script_path,args)
-
-    if args.verbose:
-      print("Running installation script: %s" % script_path)
+    log.section_header('Install',setup.scripts[script].description)
+    script_confirm(script,setup,args)
+    check_script(script,setup,args)
+    if not args.quiet:
+      log.section_header('Running',f'{script} installation script')
 
     try:
       if not external_commands.run_command(['bash',script_path],ignore_errors=True):
         print()
         log.fatal(f"Installation script {script}.sh failed, exiting")
+      else:
+        script_completed(script,setup,args)
+
     except KeyboardInterrupt as ex:
       print()
       log.fatal('User aborted the installation request')
