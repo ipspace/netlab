@@ -160,18 +160,6 @@ def nvue_mlag_vxlan_require_plugin(node: Box, topology: Box) -> None:
       more_data="Without this plugin, VXLAN interfaces will remain DOWN due to missing anycast IP",
       node=node)
 
-"""
-In case of shared MLAG VTEP, marks the VTEP such that the correct configuration can be applied
-"""
-def mark_shared_mlag_vtep(node: Box, topology: Box) -> None:
-  local_vtep = node.get('vxlan.vtep',None)
-  if not local_vtep:
-    return
-  for n in topology.nodes.values():
-    if n!=node and n.get('vxlan.vtep',None)==local_vtep:
-      node.vxlan._shared_vtep = n.name
-      return
-
 def nvue_check_nssa_summarize(node: Box) -> None:
   for (odata,_,_) in _rp_utils.rp_data(node,'ospf'):
     if 'areas' not in odata:
@@ -207,7 +195,7 @@ class Cumulus_Nvue(_Quirks):
 
     if 'vxlan' in mods and 'lag' in mods:
       nvue_mlag_vxlan_require_plugin(node,topology)
-      mark_shared_mlag_vtep(node,topology)
+
     if 'vlan' in mods:
       nvue_check_native_routed_on_mixed_trunk(node,topology)
 
