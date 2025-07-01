@@ -13,27 +13,8 @@ echo "Update the package list"
 echo
 echo "Install support software"
 $SUDO apt-get install -y $FLAG_APT ca-certificates curl gnupg lsb-release iptables
-echo "Install Docker GPG key and set up Docker repository"
+echo "Install Docker GPG key and set up Docker repository for $DISTRIBUTION"
 
-# Begin code to identify distribution and populate DISTRIBUTION variable - ghostinthenet - 20220417
-if [ -f /etc/debian_version ]; then
- if [ -f /etc/lsb-release ]; then
-  if [[ $(grep DISTRIB_ID /etc/lsb-release | awk -F'=' '{print $2;}') == 'Ubuntu' ]]; then
-   DISTRIBUTION='ubuntu'
-  # Exit if lsb-release distribution ID isn't Ubuntu - ghostinthenet 20220418
-  else
-   echo "Installed distribution is an untested Ubuntu derivative..."
-   exit 1
-  fi
- else
-  DISTRIBUTION='debian'
- fi
-else
- echo 'Installed distribution is neither Debian nor Ubuntu. Aborting...'
- exit 1
-fi
-
-# End code to identify distribution and populate DISTRIBUTION variable - ghostinthenet - 20220417
 set +e
 $SUDO rm /usr/share/keyrings/docker-archive-keyring.gpg 2>/dev/null
 # Re-referenced to default APT GPG keyring directory - ghostinthenet - 20220417
