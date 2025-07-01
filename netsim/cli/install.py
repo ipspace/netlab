@@ -6,26 +6,22 @@
 import typing
 import argparse
 import os
-import glob
 import sysconfig
-import subprocess
 from pathlib import Path
+from box import Box
 
-from ..utils import log,strings
+from ..utils import log,strings,read
+from ..utils.files import get_moddir
 from . import external_commands
 
 #
 # CLI parser for 'netlab install' command
 #
-def install_parse(args: typing.List[str]) -> argparse.Namespace:
-  moddir = Path(__file__).resolve().parent.parent
-  choices = map(
-    lambda x: Path(x).stem,
-    glob.glob(str(moddir / "install/*sh")))
-
+def install_parse(args: typing.List[str], setup: Box) -> argparse.Namespace:
   parser = argparse.ArgumentParser(
     prog='netlab install',
-    description='Install additional software')
+    description='Install additional software',
+    epilog='Run "netlab install" with no arguments to get install script descriptions')
   parser.add_argument(
     '-v','--verbose',
     dest='verbose',
@@ -54,7 +50,7 @@ def install_parse(args: typing.List[str]) -> argparse.Namespace:
   parser.add_argument(
     dest='script',
     action='store',
-    choices=list(choices),
+    choices=list(setup.scripts.keys()),
     nargs="*",
     help='Run the specified installation script')
 
@@ -94,6 +90,26 @@ def check_crazy_pip3(args: argparse.Namespace) -> None:
     os.environ['SUDO'] = ""
     os.environ['FLAG_PIP']  = os.environ['FLAG_PIP'] + ' --user'
     os.environ['FLAG_USER'] = 'Y'
+
+"""
+set_quiet_flags: based on CLI flags, set flags for PIP/APT
+"""
+def set_quiet_flags(args: argparse.Namespace) -> None:
+  os.environ['FLAG_PIP'] = ''
+  os.environ['FLAG_APT'] = ''
+  os.environ['FLAG_QUIET'] = ''
+
+  if args.verbose:
+    os.environ['FLAG_APT'] = '-V'
+    os.environ['FLAG_PIP'] = '-v'
+
+  if args.quiet:
+    os.environ['FLAG_APT'] = '-qq'
+    os.environ['FLAG_QUIET'] = '-qq'
+    os.environ['FLAG_PIP'] = '-qq'
+
+  if args.yes:
+    os.environ['FLAG_YES'] = 'Y'
 
 """
 set_sudo_flag: figures out whether we have 'sudo' installed and whether the user
@@ -158,30 +174,28 @@ def check_script(path: str, args: argparse.Namespace) -> None:
 
   check_crazy_pip3(args)
 
+def display_usage(setup: Box) -> None:
+  t_usage = []
+  for s_name,s_data in setup.scripts.items():
+    t_usage.append([ s_name, s_data.get('description','') ])
+  strings.print_table(['Script','Installs'],t_usage,inter_row_line=False)
+
 def run(cli_args: typing.List[str]) -> None:
+  setup = read.read_yaml(filename='package:install/install.yml')
+  if setup is None or not setup:
+    log.fatal('Cannot read the installation configuration file package:install/install.yml')
+
   if not cli_args:
-    log.fatal("Specify an installation script to run or use -h to get help","install")
+    display_usage(setup)
+    return
 
-  args = install_parse(cli_args)
-
-  moddir = Path(__file__).resolve().parent.parent
-  os.environ['FLAG_PIP'] = ''
-
-  if args.verbose:
-    os.environ['FLAG_APT'] = '-V'
-    os.environ['FLAG_PIP'] = '-v'
-
-  if args.quiet:
-    os.environ['FLAG_APT'] = '-qq'
-    os.environ['FLAG_QUIET'] = '-qq'
-    os.environ['FLAG_PIP'] = '-qq'
-
-  if args.yes:
-    os.environ['FLAG_YES'] = 'Y'
-
+  args = install_parse(cli_args,setup)
+  set_quiet_flags(args)
   set_sudo_flag()
-  for script in args.script:
-    script_path = str(moddir / "install" / (script+".sh"))
+  for script in setup.scripts.keys():
+    if script not in args.script:
+      continue
+    script_path = f'{get_moddir()}/install/{script}.sh'
     if not os.path.exists(script_path):
       log.fatal("Installation script {script} does not exist")
 
