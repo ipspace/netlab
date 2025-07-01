@@ -15,9 +15,11 @@ def init(topology: Box) -> None:
 
   for af in log.AF_LIST:
     if CONFED_EBGP in topology.get(f'bgp.sessions.{af}',{}):
-      log.error( f"Cannot use {CONFED_EBGP} in bgp.sessions", category=Warning )
+      log.error( f"Cannot use {CONFED_EBGP} in bgp.sessions", category=Warning,
+                 more_hints=["Settings are inherited from the 'ibgp' key"] )
     if CONFED_EBGP in topology.get(f'bgp.activate.{af}',{}):
-      log.error( f"Cannot use {CONFED_EBGP} in bgp.activate", category=Warning )
+      log.error( f"Cannot use {CONFED_EBGP} in bgp.activate", category=Warning,
+                 more_hints=["Settings are inherited from the 'ibgp' key"] )
 
 def post_transform(topology: Box) -> None:
   global _config_name
