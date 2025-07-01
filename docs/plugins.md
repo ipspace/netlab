@@ -13,6 +13,7 @@
    plugins/bonding.md
    plugins/ebgp.multihop.md
    plugins/bgp.originate.md
+   plugins/bgp.confederation.md
    plugins/check.config.md
    plugins/fabric.md
    plugins/mlag.vtep.md
