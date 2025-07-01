@@ -8,11 +8,11 @@ REPLACE="--upgrade"
 IGNORE="--ignore-installed"
 #
 echo "Update the package list"
-$SUDO apt-get $FLAG_QUIET update
+. apt-get-update.sh
 #
 echo
 echo "Install support software"
-$SUDO apt-get install -y $FLAG_QUIET ca-certificates curl gnupg lsb-release iptables
+$SUDO apt-get install -y $FLAG_APT ca-certificates curl gnupg lsb-release iptables
 echo "Install Docker GPG key and set up Docker repository"
 
 # Begin code to identify distribution and populate DISTRIBUTION variable - ghostinthenet - 20220417
@@ -45,8 +45,8 @@ curl -fsSL https://download.docker.com/linux/$DISTRIBUTION/gpg | $SUDO gpg --dea
 echo "deb [arch=$(dpkg --print-architecture)] https://download.docker.com/linux/$DISTRIBUTION $(lsb_release -cs) stable" | $SUDO tee /etc/apt/sources.list.d/docker.list > /dev/null
 #
 echo "Install Docker Engine"
-$SUDO apt-get update
-$SUDO apt-get install -y $FLAG_QUIET docker-ce docker-ce-cli containerd.io
+. apt-get-update.sh
+$SUDO apt-get install -y $FLAG_APT docker-ce docker-ce-cli containerd.io
 echo "Install containerlab version $CONTAINERLAB_VERSION"
 $SUDO bash "-c" "$(curl -sL https://get.containerlab.dev)" -- -v $CONTAINERLAB_VERSION
 set +e

@@ -5,7 +5,7 @@ set -e
 # Comment the next line if you want to have verbose installation messages
 #
 echo "Update package list and upgrade the existing packages"
-$SUDO apt-get update -y $FLAG_QUIET 
+. apt-get-update.sh
 $SUDO apt-get upgrade -y $FLAG_APT
 #
 # Install missing packages
