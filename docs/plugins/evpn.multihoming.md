@@ -19,7 +19,21 @@ The plugin includes Jinja2 templates for the following platforms:
 | vJunos Switch       |  ✅  |  ✅  |  ✅  |
 
 
-## Using the Plugin
+## Using the Plugin (auto mode)
+
+* Add `plugin: [ evpn.multihoming ]` to the lab topology.
+* Include the **evpn.es** attribute in the device interface
+
+netlab will generate, for each *Ethernet Segment*, ESI value (*Ethernet Segment ID*) and LACP System ID (for *ESI-LAG*).
+
+**NOTE**: Ethernet Segments ID will be generated starting from an integer value, which will be used as the first 5 most significant bytes (excluding the initial `0x00`). This is to:
+
+* be able to generate a 6-bytes LACP System ID starting with `0x02`.
+* be able to generate unique *ES-Import* target for each auto generated ESI value.
+
+## Using the Plugin (manual mode)
+
+It is also possible to manually define ESI values for your *Ethernet Segments*. In that case:
 
 * Add `plugin: [ evpn.multihoming ]` to the lab topology.
 * Define a set of *ethernet segments* on the topology top-level
@@ -35,14 +49,56 @@ The plugin adds the following attributes defined at topology level:
     * **auto** (bool) -- Use ESI auto generation based on LACP System ID. If both `id` and `auto` are specified, explicit `id` takes over.
 
 Interface level attributes:
-* **evpn.es** (str) -- ethernet segment name as defined on `evpn.ethernet_segments`.
+* **evpn.es** (str) -- ethernet segment name (can be defined on `evpn.ethernet_segments`).
 
-## Example
+## Example (auto mode)
 
 ```
 plugin: [ 'evpn.multihoming' ]
 
-defaults.vxlan.start_vni: 20000
+bgp.as: 65000
+
+groups:
+  _auto_create: true
+  switches:
+    members: [ s1, s2 ]
+    module: [ vlan, vxlan, ospf, bgp, evpn, lag ]
+  probes:
+    members: [ x1 ]
+    module: [ lag, vlan ]
+    device: eos
+  hosts:
+    members: [ h1, h2, h3 ]
+    device: linux
+    provider: clab
+
+vlans:
+  red:
+    mode: bridge
+    links: [ h1-x1, h2-s1, h3-s2 ]
+
+links:
+# EVPN/VXLAN Switch to Switch Link
+- s1:
+  s2:
+  mtu: 1600
+# ESI-LAG
+- lag:
+    members:
+    - s1:
+        evpn.es: seg_1
+      x1:
+    - s2:
+        evpn.es: seg_1
+      x1:
+  vlan.access: red
+```
+
+## Example (manual mode)
+
+```
+plugin: [ 'evpn.multihoming' ]
+
 bgp.as: 65000
 
 evpn.ethernet_segments:
