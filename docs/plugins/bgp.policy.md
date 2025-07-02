@@ -61,6 +61,7 @@ The plugin implements BGP routing policies and individual BGP policy attributes 
 | Cisco IOSv/IOSvL2   |✅ |✅ |✅ |✅|✅ |✅[❗](caveats-iosv) |✅|
 | Cisco IOS-XE[^18v]  |✅ |✅ |✅ |✅|✅ |✅[❗](caveats-iosv) |✅|
 | Cumulus Linux       |✅ |✅ |✅ |✅|✅ |✅| ❌ |
+| Dell OS10           |❌ |✅ |✅ |✅| ❌ | ❌ |✅|
 | FRR                 |✅ |✅ |✅ |✅|✅ |✅| ✅|
 | Junos               |✅ |✅ |✅ |✅|✅ | ❌ | ❌ |
 | Nokia SR Linux      |✅ |✅ |✅ | ❌ | ❌ | ❌ | ❌ |
