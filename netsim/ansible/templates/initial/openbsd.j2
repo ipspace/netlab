@@ -1,53 +1,64 @@
 {#
   This script configures an OpenBSD host
 #}
-#!/bin/bash
+#!/bin/sh
 #
 set -e
 set -x
-#
-# Create bash profile script
-#
-cat <<SCRIPT >/root/.bash_profile
-#!/bin/bash
-#
-export PS1="\h(bash)$ "
-SCRIPT
+
 hostname {{ inventory_hostname.replace("_","-") }}
 {% include 'linux/hosts.j2' +%}
+
 {% if role == 'router' %}
+#
+# Enable forwarding
+#
 sysctl net.inet.ip.forwarding=1
 sysctl net.inet6.ip6.forwarding=1
+echo -n > /etc/rad.conf
 {% endif %}
 
 {% macro ifconfig(intf,alias='') %}
 {%   if not alias %}
-set +e
-ifconfig {{ intf.ifname }} inet delete
-ifconfig {{ intf.ifname }} inet6 delete
-set -e
+ifconfig {{ intf.ifname }} -inet
+ifconfig {{ intf.ifname }} -inet6
 {%   endif %}
 {% if intf.ipv4 is string %}
 ifconfig {{ intf.ifname }} inet {{ intf.ipv4 }} {{ alias }}
 {% endif %}
 {% if intf.ipv6 is defined %}
-{%   if intf.ipv6 is string %}
-ifconfig {{ intf.ifname }} inet6 {{ intf.ipv6 }} {{ alias }}
-{%   else %}
-ifconfig {{ intf.ifname }} inet6
+{%   set is_host = role == 'host' %}
+{%   if role == 'router' %}
+echo interface {{ intf.ifname }} >> /etc/rad.conf
 {%   endif %}
-{% else %}
-ifconfig {{ intf.ifname }} -inet6
+{%   if intf.ipv6 is string %}
+ifconfig {{ intf.ifname }} inet6 {{ intf.ipv6 }}{% if is_host %} autoconf{% endif +%}
+{%   else %}
+ifconfig {{ intf.ifname }} inet6 eui64{% if is_host %} autoconf{% endif +%}
+{%   endif %}
 {% endif %}
 {% if intf.mtu is defined %}
 ifconfig {{ intf.ifname }} mtu {{ intf.mtu }}
 {% endif %}
+{% if intf.name is defined %}
+ifconfig {{ intf.ifname }} description "{{ intf.name }}"
+{% endif %}
 {% endmacro %}
 #
 # Interface configuration
+#
 {% if loopback is defined %}
 {{   ifconfig(loopback,alias='alias') }}
 {% endif %}
 {% for intf in interfaces %}
 {{   ifconfig(intf) }}
 {% endfor %}
+
+{% if role == 'router' %}
+#
+# (re-)start RA daemon
+#
+pkill -q rad || true
+rad
+{% endif %}
+
