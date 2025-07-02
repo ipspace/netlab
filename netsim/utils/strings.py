@@ -56,6 +56,7 @@ def wrap_text_into_lines(
       initial_indent=first_line,
       subsequent_indent=next_line,
       width=width).fill(line)
+    first_line = next_line
     lines.extend(wrap_line.split('\n'))
   
   return lines

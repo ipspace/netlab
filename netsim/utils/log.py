@@ -362,7 +362,7 @@ def info(
   else:
     mod_txt += ' [INFO] '
 
-  print(f'{mod_txt}{text}')
+  print(strings.wrap_error_message(f'{mod_txt}{text}',indent))
   if more_hints is not None:                                        # Caller supplied hints, print them with HINT label
     print_more_hints(more_hints,h_warning=True,indent=indent)
 
