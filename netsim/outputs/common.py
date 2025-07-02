@@ -5,7 +5,7 @@
 import typing
 from box import Box
 from ..augment import devices
-from ..data import get_empty_box
+from ..data import get_empty_box,get_box
 
 topo_to_host = { 'mgmt.ipv4': 'ansible_host', 'hostname': 'ansible_host', 'id': 'id' }
 topo_to_host_skip = [ 'name','device' ]
@@ -65,7 +65,7 @@ def adjust_inventory_host(
   return host
 
 def create_adjusted_topology(topology: Box, ignore: typing.Optional[list] = ['name']) -> Box:
-  topo_copy = topology.copy()
+  topo_copy = get_box(topology.to_dict())
   for node in list(topo_copy.nodes.keys()):
     topo_copy.nodes[node] = adjust_inventory_host(
                               node=topo_copy.nodes[node],

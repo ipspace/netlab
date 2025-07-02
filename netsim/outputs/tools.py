@@ -12,6 +12,7 @@ from . import _TopologyOutput,check_writeable,common as outputs_common
 from ..tools import _ToolOutput
 from ..utils import templates,strings,log
 from ..utils import files as _files
+from ..data import get_box
 
 def render_tool_config(tool: str, fmt: str, topology: Box) -> str:
     output_module = _ToolOutput.load(tool)
@@ -26,7 +27,7 @@ def create_tool_config(tool: str, topology: Box) -> None:
   if not tdata.get('config',[]):
     return
   
-  topo_data = topology.copy()
+  topo_data = get_box(topology.to_dict())
   topo_data[tool] = tdata
   Path(f'./{tool}').mkdir(exist_ok=True)
   log.status_created()
