@@ -114,6 +114,7 @@ Device parameters file can also include numerous *features*. The following featu
 * **features.initial.ipv6.lla** -- The device supports IPv6 interfaces using just link-local addresses.
 * **features.initial.ipv6.use_ra** -- The device (when running as a host) listens to IPv6 RA messages to generate a default route
 * **features.initial.roles** -- The list of roles a device can have (default: `[ router ]`)
+* **features.groups** -- The groups this device belongs to. You can set this feature to [`[ unprovisioned ]`](group-special-names) for devices that _netlab_ cannot configure yet. Don't forget to remove the **unprovisioned** group once you implement the Ansible [device configuration task list](dev-new-devices-configure).
 
 ```{tip}
 Please note that the MTU used by netlab is always the layer-3 MTU. If your device expects layer-2 MTU configuration, add the size of the layer-2 header to the interface **mtu** variable.
@@ -207,6 +208,7 @@ features:
     subif_name:
   vxlan: true
 ```
+
 ## Vagrant Template File
 
 If you'll use a Vagrant box to start the network device as a VM, you have to add a template that will generate the part of *Vagrantfile* (or *containerlab* configuration file) describing your virtual machine. See `netsim/templates/provider/...` directories for more details.
@@ -264,6 +266,7 @@ clab:
     ansible_become_method: enable
 ```
 
+(dev-new-devices-configure)=
 ## Configuring the Device
 
 To configure your device (including initial device configuration), you'll have to create an Ansible task list that deploys configuration snippets onto your device. *netlab* merges configuration snippets with existing device configuration (instead of building a complete configuration and replacing it).

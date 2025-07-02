@@ -14,7 +14,7 @@ from ..utils import log
 from .. import data
 from .. import utils
 from .. import providers
-from . import devices,addressing,links
+from . import devices,addressing,links,groups
 from ..data.validate import validate_attributes,get_object_attributes
 from ..data.types import must_be_int,must_be_string,must_be_id,must_be_device
 from ..data import global_vars,is_true_int
@@ -296,6 +296,9 @@ def find_node_device(n: Box, topology: Box) -> bool:
 
   if dev_def.get('node.module') and 'module' not in n:      # Have to copy default device module into node data
     n.module = dev_def.node.module                          # ... before modules are initialized
+
+  for group in dev_def.features.get('group',[]):
+    groups.add_node_to_group(n.name,group,topology)
 
   if 'attributes' in dev_def:                               # Add any device specific attributes to the data model
     topology.defaults.attributes = topology.defaults.attributes + dev_def.attributes

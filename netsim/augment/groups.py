@@ -299,24 +299,24 @@ def auto_create_members(
 '''
 Add node-level group settings to global groups
 '''
+def add_node_to_group(node: str, group: str, topology: Box) -> None:
+  g_data = topology.groups[group]
+  if g_data.get('type','node') != 'node':
+    log.error(
+      f"Cannot add node {node} to non-node group {group}",
+      category=log.IncorrectType,
+      module='groups')
+
+  data.append_to_list(g_data,'members',node)
+
 def add_node_level_groups(topology: Box) -> None:
   for name,n in topology.nodes.items():
     if not 'group' in n:
       continue
 
-    must_be_list(n,'group',f'nodes.{name}')
-
-    for grpname in n.group:
-      # Sanity check for node groups
-      if topology.groups[grpname].get('type','node') != 'node':
-        log.error(
-          f"Cannot use the 'group' attribute in node {n.name} to add a node to a non-node group {grpname}",
-          category=log.IncorrectType,
-          module='groups')
-        continue
-
-      # Add node name to the target group
-      data.append_to_list(topology.groups[grpname],'members',name)
+    if must_be_list(n,'group',f'nodes.{name}'):
+      for grpname in n.group:
+        add_node_to_group(name,grpname,topology)
 
 '''
 Check recursive group definitions
