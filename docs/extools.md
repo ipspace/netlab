@@ -1,3 +1,4 @@
+(tools-intro)=
 # Integrating External Tools
 
 Some user might want to use _netlab_ with external management tools (example: Graphite, SuzieQ, Prometheus...). _netlab_ can automatically generate the configuration files for these tools and start them as the last step in the **netlab up** process (after the lab has been configured).
