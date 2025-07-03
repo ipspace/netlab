@@ -26,6 +26,7 @@ The following table describes per-platform support of individual STP features:
 [^OS10]: PVRST is enabled by default, but will require custom VLAN templates as Netlab uses virtual networks (which don't support STP)
 [^FRR]: STP is disabled by default; STP is not supported on VLAN trunks as FRR sends BPDUs tagged, you could use Cumulus instead
 [^IOLL2]: Per Vlan RSTP is enabled by default. STP,RSTP are emulated with MSTP.
+
 ```{tip}
 MSTP/RSTP ports fall back to regular STP upon receiving a plain STP BPDU.
 ```
