@@ -2,7 +2,7 @@
 {{ name or i.ifname }}
 {%- endmacro %}
 
-{% macro declare_router(i,sub_path="",intf_cfg=False) -%}
+{% macro declare_router(i,sub_path="",intf_cfg=False,vrf_config=True) -%}
 {#
     This macro selects the SR/OS service in which the current object
     is configured. The global routing instance is "router Base" unless
@@ -32,7 +32,7 @@
                     else "service/vprn[service-name="+service_name+"]" %}
 
 {# Minimal service config must exist #}
-{%  if not in_base %}
+{%  if not in_base and vrf_config %}
 - path: configure/{{ base_path }}
   val:
    customer: "1"
@@ -42,6 +42,20 @@
 {%  endif %}
 
 - path: configure/{{ base_path }}{{ sub_path }}
+{%- endmacro %}
+
+{#
+   This macro is just a convenient wrapper around the more generic declare_router
+   macro. That one expects an interface data structure and extracts VRF from it,
+   this one takes VRF as the parameter (it can also be missing) and fakes the minimal
+   data structure that makes declare_router happy
+#}
+{% macro configure_router(vrf="",sub_path="") -%}
+{%   if vrf  %}
+{{     declare_router({ 'vrf': vrf },sub_path=sub_path) }}
+{%   else %}
+{{     declare_router({},sub_path=sub_path) }}
+{%   endif %}
 {%- endmacro %}
 
 {% macro declare_interface(i,name=None) %}

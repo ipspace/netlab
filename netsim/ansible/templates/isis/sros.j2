@@ -1,4 +1,4 @@
-{% from "templates/initial/sros.j2" import if_name, declare_router with context %}
+{% from "templates/initial/sros.j2" import if_name, configure_router with context %}
 {% from 'templates/routing/_redistribute.sros.j2' import import_protocols with context %}
 
 {% macro isis_export_policy(isis,vrf) %}
@@ -10,13 +10,13 @@
 {{  import_protocols(isis.import) | indent(4,first=True) }}
 {% endmacro %}
 
-{% macro isis_router(vrf_data,isis,intf_list) %}
-{% set vname = vrf_data.vrf|default('default') %}
+{% macro isis_router(isis,intf_list=[],vrf_name="") %}
+{% set vname = vrf_name or 'default' %}
 {% if isis.import is defined %}
 {{   isis_export_policy(isis,vname) }}
 {% endif %}
 {% set kw_level = {'level-1': '1', 'level-2': '2', 'level-1-2': '1/2'} %}
-{{ declare_router(vrf_data) }}
+{{ configure_router(vrf_name) }}
   val:
     isis:
     - isis-instance: 0
@@ -71,5 +71,5 @@
 
 updates:
 {% if isis is defined %}
-{{ isis_router({},isis,netlab_interfaces) }}
+{{ isis_router(isis,netlab_interfaces) }}
 {% endif %}
