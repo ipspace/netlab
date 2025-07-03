@@ -3,17 +3,17 @@
 set -e
 #
 echo "Update the package list"
-$SUDO apt-get $FLAG_QUIET update
+. apt-get-update.sh
 #
 echo
 echo "Install common libraries and support software"
-$SUDO apt-get install -y $FLAG_QUIET libxslt-dev libxml2-dev zlib1g-dev genisoimage
-$SUDO apt-get install -y $FLAG_QUIET ebtables dnsmasq-base sshpass tree jq bridge-utils curl lsb-release
+$SUDO apt-get install -y $FLAG_APT libxslt-dev libxml2-dev zlib1g-dev genisoimage
+$SUDO apt-get install -y $FLAG_APT ebtables dnsmasq-base sshpass tree jq bridge-utils curl lsb-release
 echo ".. common libraries installed"
 echo
 echo "Install libvirt packages"
-$SUDO apt-get install -y $FLAG_QUIET libvirt-dev qemu-kvm cpu-checker virtinst
-$SUDO apt-get install -y $FLAG_QUIET libvirt-daemon-system libvirt-clients
+$SUDO apt-get install -y $FLAG_APT libvirt-dev qemu-kvm cpu-checker virtinst
+$SUDO apt-get install -y $FLAG_APT libvirt-daemon-system libvirt-clients
 echo ".. libvirt packages installed"
 echo
 echo "Install vagrant"
@@ -40,8 +40,8 @@ Package: vagrant
 Pin: version 2.4.3-1
 Pin-Priority: 1000
 FILE
-$SUDO apt-get update
-$SUDO apt-get install -y --allow-downgrades $FLAG_QUIET ruby-dev ruby-libvirt vagrant=2.4.3-1
+. apt-get-update.sh
+$SUDO apt-get install -y --allow-downgrades $FLAG_APT ruby-dev ruby-libvirt vagrant=2.4.3-1
 vagrant plugin install vagrant-libvirt --plugin-version=0.12.2
 echo ".. vagrant installed"
 echo

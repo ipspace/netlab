@@ -105,6 +105,11 @@ def set_quiet_flags(args: argparse.Namespace) -> None:
   os.environ['FLAG_APT'] = ''
   os.environ['FLAG_QUIET'] = ''
 
+  if args.verbose and args.quiet:
+    error_and_exit(
+      'Cannot specify --quiet and --verbose at the same time',
+      more_hints='Take a break and make up your mind')
+
   if args.verbose:
     os.environ['FLAG_APT'] = '-V'
     os.environ['FLAG_PIP'] = '-v'
@@ -156,6 +161,7 @@ def check_script(script: str, setup: Box, args: argparse.Namespace) -> None:
         'This script uses apt-get command that is not available on your system',
         more_hints='Most netlab installation scripts work on Ubuntu and Debian)',
         category=log.IncorrectType)
+    os.environ['FLAG_APT'] = os.environ.get('FLAG_APT','') + " -o DPkg::Lock::Timeout=30"
 
   if 'pip' not in s_data.uses:
     return
@@ -229,10 +235,12 @@ def run(cli_args: typing.List[str]) -> None:
 
   set_quiet_flags(args)
   set_sudo_flag()
+  install_path = f'{get_moddir()}/install'
+  os.environ['PATH'] = install_path + ":" + os.environ['PATH']
   for script in setup.scripts.keys():
     if script not in args.script and not args.all:
       continue
-    script_path = f'{get_moddir()}/install/{script}.sh'
+    script_path = f'{install_path}/{script}.sh'
     if not os.path.exists(script_path):
       log.fatal("Installation script {script} does not exist")
 
