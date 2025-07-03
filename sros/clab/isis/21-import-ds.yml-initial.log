@@ -1,3 +1,7 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -426,6 +430,7 @@ ok: [dut] =>
   
   
   
+  
     updates:
   
     - path: configure/router[router-name=Base]
@@ -616,9 +621,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, r2, r3
 
 TASK [template] ****************************************************************
-changed: [r2]
-changed: [x1]
 changed: [r3]
+changed: [x1]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -626,8 +631,8 @@ ok: [r2]
 ok: [r3]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x1]
 changed: [r2]
+changed: [x1]
 changed: [r3]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -639,69 +644,400 @@ PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
+ok: [x1]
 ok: [r2]
 ok: [r3]
-ok: [x1]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, r3, x1 => (item=routing)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, r3, x1 => (item=bgp)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, r3, x1 => (item=isis)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, r3, x1 => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, r2, r3 => (item=routing)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, r2, r3 => (item=isis)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, r2, r3 => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, r2, r3 => (item=bgp)
 
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [dut]
+ok: [x1]
 ok: [r2]
 ok: [r3]
-ok: [x1]
 
 TASK [Find configuration template for routing] *********************************
 skipping: [dut]
+skipping: [x1]
 skipping: [r2]
 skipping: [r3]
-skipping: [x1]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
+skipping: [x1]
 skipping: [r2]
 skipping: [r3]
-skipping: [x1]
 
 TASK [Find configuration deployment deploy_script for routing] *****************
 skipping: [dut]
+skipping: [x1]
 skipping: [r2]
 skipping: [r3]
-skipping: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
+skipping: [x1]
 skipping: [r2]
 skipping: [r3]
-skipping: [x1]
 
 TASK [Deploy routing configuration] ********************************************
 skipping: [dut]
+skipping: [x1]
 skipping: [r2]
 skipping: [r3]
+
+TASK [Figure out whether to deploy the module isis on current device] **********
+ok: [dut]
+ok: [x1]
+ok: [r2]
+ok: [r3]
+
+TASK [Find configuration template for isis] ************************************
 skipping: [x1]
+skipping: [r2]
+ok: [dut]
+ok: [r3]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [r2]
+skipping: [r3]
+
+TASK [Find configuration deployment deploy_script for isis] ********************
+skipping: [x1]
+skipping: [r2]
+ok: [dut]
+ok: [r3]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [x1]
+skipping: [r2]
+ok: [r3] => 
+  msg: |-
+    isis configuration for r3
+    =========================================
+    !
+    !
+    ipv6 forwarding
+    !
+    router isis Gandalf
+     log-adjacency-changes
+     hostname dynamic
+     is-type level-1-2
+     metric-style wide
+     lsp-timers gen-interval 1 refresh-interval 900 max-lifetime 1800
+     net 49.0001.0000.0000.0004.00
+     topology ipv6-unicast
+  
+  
+  
+  
+    !
+    interface lo
+    !
+     ip router isis Gandalf
+     ipv6 router isis Gandalf
+    !
+    interface eth1
+    ! r3 -> dut
+     ip router isis Gandalf
+     ipv6 router isis Gandalf
+     isis network point-to-point
+    !
+  
+    !
+    do write
+ok: [dut] => 
+  msg: |-
+    isis configuration for dut
+    =========================================
+  
+  
+  
+    updates:
+    - path: configure/policy-options/policy-statement[name=isis_default_export]
+      val:
+        default-action:
+          action-type: reject
+        entry:
+        - entry-id: 100
+          from:
+            protocol:
+              name: [ bgp ]
+          action:
+            action-type: accept
+        - entry-id: 110
+          from:
+            protocol:
+              name: [ ospf ]
+          action:
+            action-type: accept
+        - entry-id: 120
+          from:
+            protocol:
+              name: [ ospf3 ]
+          action:
+            action-type: accept
+  
+  
+  
+  
+    - path: configure/router[router-name=Base]
+  
+      val:
+        isis:
+        - isis-instance: 0
+          system-id: "0000.0000.0001"
+          admin-state: enable
+          area-address: ["49.0001"]
+          export-policy: [ isis_default_export ]
+          level:
+          - level-number: "1"
+            wide-metrics-only: True
+          - level-number: "2"
+            wide-metrics-only: True
+          level-capability: "1/2"
+          multi-topology:
+            ipv6-unicast: True
+          interface:
+          - interface-name: system
+            interface-type: broadcast
+            passive: False
+          - interface-name: eth-1/1/c2
+            interface-type: point-to-point
+            passive: False
+          - interface-name: eth-1/1/c3
+            interface-type: point-to-point
+            passive: False
+
+TASK [Deploy isis configuration] ***********************************************
+skipping: [x1]
+skipping: [r2]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r3
+
+TASK [Generate gNMI YAML configuration] ****************************************
+ok: [dut]
+
+TASK [Update isis node configuration from gNMI template /home/pipi/net101/tools/netsim/ansible/templates/isis/sros.j2] ***
+changed: [dut]
+
+TASK [debug] *******************************************************************
+skipping: [dut]
+
+TASK [template] ****************************************************************
+changed: [r3]
+
+TASK [set_fact] ****************************************************************
+ok: [r3]
+
+TASK [run /tmp/config.sh to deploy isis config from /home/pipi/net101/tools/netsim/ansible/templates/isis/frr.j2] ***
+skipping: [r3]
+
+TASK [run vtysh to import isis config from /home/pipi/net101/tools/netsim/ansible/templates/isis/frr.j2] ***
+changed: [r3]
+
+TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [dut]
+ok: [x1]
+ok: [r2]
+ok: [r3]
+
+TASK [Find configuration template for ospf] ************************************
+skipping: [x1]
+skipping: [r3]
+ok: [dut]
+ok: [r2]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [r2]
+skipping: [r3]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+skipping: [x1]
+skipping: [r3]
+ok: [dut]
+ok: [r2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [x1]
+skipping: [r3]
+ok: [r2] => 
+  msg: |-
+    ospf configuration for r2
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.3
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! r2 -> dut
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    ! OSPFv3 FRR configuration
+    !
+    interface lo
+    !
+     ipv6 ospf6 area 0.0.0.0
+    !
+    interface eth1
+    ! r2 -> dut
+     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 network point-to-point
+    !
+    !
+    router ospf6
+     ospf6 router-id 10.0.0.3
+     timers lsa min-arrival 100
+     timers throttle spf 10 50 500
+  
+  
+    exit
+  
+    !
+    do write
+ok: [dut] => 
+  msg: |-
+    ospf configuration for dut
+    =========================================
+  
+  
+  
+  
+    updates:
+    - path: configure/policy-options/policy-statement[name=ospf_default_export]
+      val:
+        default-action:
+          action-type: reject
+        entry:
+        - entry-id: 100
+          from:
+            protocol:
+              name: [ isis ]
+          action:
+            action-type: accept
+  
+  
+  
+  
+    - path: configure/router[router-name=Base]/ospf[ospf-instance=0]
+  
+      val:
+        export-policy: [ ospf_default_export ]
+        asbr: {}
+        admin-state: enable
+        router-id: 10.0.0.1
+        area:
+        - area-id: "0.0.0.0"
+          interface:
+          - interface-name: "system"
+  
+          - interface-name: "eth-1/1/c2"
+            interface-type: "point-to-point"
+  
+          - interface-name: "eth-1/1/c3"
+            interface-type: "point-to-point"
+  
+  
+    - path: configure/policy-options/policy-statement[name=ospf_default_export]
+      val:
+        default-action:
+          action-type: reject
+        entry:
+        - entry-id: 100
+          from:
+            protocol:
+              name: [ isis ]
+          action:
+            action-type: accept
+  
+  
+  
+  
+    - path: configure/router[router-name=Base]/ospf3[ospf-instance=0]
+  
+      val:
+        export-policy: [ ospf_default_export ]
+        asbr: {}
+        admin-state: enable
+        router-id: 10.0.0.1
+        area:
+        - area-id: "0.0.0.0"
+          interface:
+          - interface-name: "system"
+  
+          - interface-name: "eth-1/1/c2"
+            interface-type: "point-to-point"
+  
+          - interface-name: "eth-1/1/c3"
+            interface-type: "point-to-point"
+
+TASK [Deploy ospf configuration] ***********************************************
+skipping: [x1]
+skipping: [r3]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r2
+
+TASK [Generate gNMI YAML configuration] ****************************************
+ok: [dut]
+
+TASK [Update ospf node configuration from gNMI template /home/pipi/net101/tools/netsim/ansible/templates/ospf/sros.j2] ***
+changed: [dut]
+
+TASK [debug] *******************************************************************
+skipping: [dut]
+
+TASK [template] ****************************************************************
+changed: [r2]
+
+TASK [set_fact] ****************************************************************
+ok: [r2]
+
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+skipping: [r2]
+
+TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+changed: [r2]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [dut]
+ok: [x1]
 ok: [r2]
 ok: [r3]
-ok: [x1]
 
 TASK [Find configuration template for bgp] *************************************
 skipping: [r2]
-skipping: [r3]
 ok: [dut]
+skipping: [r3]
 ok: [x1]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
+skipping: [x1]
 skipping: [r2]
 skipping: [r3]
-skipping: [x1]
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 skipping: [r2]
@@ -712,6 +1048,57 @@ ok: [x1]
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r2]
 skipping: [r3]
+ok: [x1] => 
+  msg: |-
+    bgp configuration for x1
+    =========================================
+    !
+    router bgp 65100
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+  
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.2
+    !
+      neighbor 10.1.0.1 remote-as 65000
+      neighbor 10.1.0.1 description dut
+    !
+      neighbor 2001:db8:3::1 remote-as 65000
+      neighbor 2001:db8:3::1 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.2/32
+    !
+    !
+    !
+      neighbor 10.1.0.1 activate
+      no neighbor 10.1.0.1 send-community all
+      neighbor 10.1.0.1 send-community standard
+      neighbor 10.1.0.1 send-community large
+    !
+     address-family ipv6 unicast
+    !
+  
+    !
+      network 2001:db8:1:2::/64
+    !
+    !
+    !
+      neighbor 2001:db8:3::1 activate
+      no neighbor 2001:db8:3::1 send-community all
+      neighbor 2001:db8:3::1 send-community standard
+      neighbor 2001:db8:3::1 send-community large
+    !
+    !
+    !
+    do write
 ok: [dut] => 
   msg: |-
     bgp configuration for dut
@@ -857,57 +1244,6 @@ ok: [dut] =>
           family:
             ipv4: False
             ipv6: True
-ok: [x1] => 
-  msg: |-
-    bgp configuration for x1
-    =========================================
-    !
-    router bgp 65100
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.2
-    !
-      neighbor 10.1.0.1 remote-as 65000
-      neighbor 10.1.0.1 description dut
-    !
-      neighbor 2001:db8:3::1 remote-as 65000
-      neighbor 2001:db8:3::1 description dut
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-      network 10.0.0.2/32
-    !
-    !
-    !
-      neighbor 10.1.0.1 activate
-      no neighbor 10.1.0.1 send-community all
-      neighbor 10.1.0.1 send-community standard
-      neighbor 10.1.0.1 send-community large
-    !
-     address-family ipv6 unicast
-    !
-  
-    !
-      network 2001:db8:1:2::/64
-    !
-    !
-    !
-      neighbor 2001:db8:3::1 activate
-      no neighbor 2001:db8:3::1 send-community all
-      neighbor 2001:db8:3::1 send-community standard
-      neighbor 2001:db8:3::1 send-community large
-    !
-    !
-    !
-    do write
 
 TASK [Deploy bgp configuration] ************************************************
 skipping: [r2]
@@ -935,383 +1271,6 @@ skipping: [x1]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [x1]
-
-TASK [Figure out whether to deploy the module isis on current device] **********
-ok: [dut]
-ok: [r2]
-ok: [r3]
-ok: [x1]
-
-TASK [Find configuration template for isis] ************************************
-skipping: [r2]
-ok: [dut]
-skipping: [x1]
-ok: [r3]
-
-TASK [fail] ********************************************************************
-skipping: [dut]
-skipping: [r2]
-skipping: [r3]
-skipping: [x1]
-
-TASK [Find configuration deployment deploy_script for isis] ********************
-skipping: [r2]
-skipping: [x1]
-ok: [dut]
-ok: [r3]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [r2]
-skipping: [x1]
-ok: [r3] => 
-  msg: |-
-    isis configuration for r3
-    =========================================
-    !
-    !
-    ipv6 forwarding
-    !
-    router isis Gandalf
-     log-adjacency-changes
-     hostname dynamic
-     is-type level-1-2
-     metric-style wide
-     lsp-timers gen-interval 1 refresh-interval 900 max-lifetime 1800
-     net 49.0001.0000.0000.0004.00
-     topology ipv6-unicast
-  
-  
-  
-  
-    !
-    interface lo
-    !
-     ip router isis Gandalf
-     ipv6 router isis Gandalf
-    !
-    interface eth1
-    ! r3 -> dut
-     ip router isis Gandalf
-     ipv6 router isis Gandalf
-     isis network point-to-point
-    !
-  
-    !
-    do write
-ok: [dut] => 
-  msg: |-
-    isis configuration for dut
-    =========================================
-  
-  
-  
-    updates:
-    - path: configure/policy-options/policy-statement[name=isis_default_export]
-      val:
-        default-action:
-          action-type: reject
-        entry:
-        - entry-id: 100
-          from:
-            protocol:
-              name: [ bgp ]
-          action:
-            action-type: accept
-        - entry-id: 110
-          from:
-            protocol:
-              name: [ ospf ]
-          action:
-            action-type: accept
-        - entry-id: 120
-          from:
-            protocol:
-              name: [ ospf3 ]
-          action:
-            action-type: accept
-  
-  
-  
-  
-    - path: configure/router[router-name=Base]
-      val:
-        isis:
-        - isis-instance: 0
-          system-id: "0000.0000.0001"
-          admin-state: enable
-          area-address: ["49.0001"]
-          export-policy: [ isis_default_export ]
-          level:
-          - level-number: "1"
-            wide-metrics-only: True
-          - level-number: "2"
-            wide-metrics-only: True
-          level-capability: "1/2"
-          multi-topology:
-            ipv6-unicast: True
-          interface:
-          - interface-name: system
-            interface-type: broadcast
-            passive: False
-          - interface-name: eth-1/1/c2
-            interface-type: point-to-point
-            passive: False
-          - interface-name: eth-1/1/c3
-            interface-type: point-to-point
-            passive: False
-
-TASK [Deploy isis configuration] ***********************************************
-skipping: [r2]
-skipping: [x1]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r3
-
-TASK [Generate gNMI YAML configuration] ****************************************
-ok: [dut]
-
-TASK [Update isis node configuration from gNMI template /home/pipi/net101/tools/netsim/ansible/templates/isis/sros.j2] ***
-changed: [dut]
-
-TASK [debug] *******************************************************************
-skipping: [dut]
-
-TASK [template] ****************************************************************
-changed: [r3]
-
-TASK [set_fact] ****************************************************************
-ok: [r3]
-
-TASK [run /tmp/config.sh to deploy isis config from /home/pipi/net101/tools/netsim/ansible/templates/isis/frr.j2] ***
-skipping: [r3]
-
-TASK [run vtysh to import isis config from /home/pipi/net101/tools/netsim/ansible/templates/isis/frr.j2] ***
-changed: [r3]
-
-TASK [Figure out whether to deploy the module ospf on current device] **********
-ok: [dut]
-ok: [r2]
-ok: [r3]
-ok: [x1]
-
-TASK [Find configuration template for ospf] ************************************
-skipping: [r3]
-ok: [dut]
-skipping: [x1]
-ok: [r2]
-
-TASK [fail] ********************************************************************
-skipping: [dut]
-skipping: [r2]
-skipping: [r3]
-skipping: [x1]
-
-TASK [Find configuration deployment deploy_script for ospf] ********************
-skipping: [r3]
-skipping: [x1]
-ok: [dut]
-ok: [r2]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [r3]
-skipping: [x1]
-ok: [r2] => 
-  msg: |-
-    ospf configuration for r2
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.3
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! r2 -> dut
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    ! OSPFv3 FRR configuration
-    !
-    interface lo
-    !
-     ipv6 ospf6 area 0.0.0.0
-    !
-    interface eth1
-    ! r2 -> dut
-     ipv6 ospf6 area 0.0.0.0
-     ipv6 ospf6 network point-to-point
-    !
-    !
-    router ospf6
-     ospf6 router-id 10.0.0.3
-     timers lsa min-arrival 100
-     timers throttle spf 10 50 500
-  
-  
-    exit
-  
-    !
-    do write
-ok: [dut] => 
-  msg: |-
-    ospf configuration for dut
-    =========================================
-  
-  
-  
-    updates:
-  
-    - path: configure/policy-options/policy-statement[name=ospf_default_export]
-      val:
-        default-action:
-          action-type: reject
-        entry:
-        - entry-id: 100
-          from:
-            protocol:
-              name: [ isis ]
-          action:
-            action-type: accept
-  
-  
-  
-  
-    - path: configure/router[router-name=Base]/ospf[ospf-instance=0]
-      val:
-        export-policy: [ ospf_default_export ]
-        asbr: {}
-  
-  
-  
-  
-    - path: configure/router[router-name=Base]/ospf[ospf-instance=0]
-      val:
-        admin-state: enable
-        router-id: 10.0.0.1
-        area:
-        - area-id: "0.0.0.0"
-          interface:
-          - interface-name: "system"
-  
-  
-  
-    - path: configure/router[router-name=Base]/ospf[ospf-instance=0]
-      val:
-        admin-state: enable
-        router-id: 10.0.0.1
-        area:
-        - area-id: "0.0.0.0"
-          interface:
-          - interface-name: "eth-1/1/c2"
-            interface-type: "point-to-point"
-  
-  
-  
-    - path: configure/router[router-name=Base]/ospf[ospf-instance=0]
-      val:
-        admin-state: enable
-        router-id: 10.0.0.1
-        area:
-        - area-id: "0.0.0.0"
-          interface:
-          - interface-name: "eth-1/1/c3"
-            interface-type: "point-to-point"
-  
-  
-  
-    - path: configure/policy-options/policy-statement[name=ospf_default_export]
-      val:
-        default-action:
-          action-type: reject
-        entry:
-        - entry-id: 100
-          from:
-            protocol:
-              name: [ isis ]
-          action:
-            action-type: accept
-  
-  
-  
-  
-    - path: configure/router[router-name=Base]/ospf3[ospf-instance=0]
-      val:
-        export-policy: [ ospf_default_export ]
-        asbr: {}
-  
-  
-  
-  
-    - path: configure/router[router-name=Base]/ospf3[ospf-instance=0]
-      val:
-        admin-state: enable
-        router-id: 10.0.0.1
-        area:
-        - area-id: "0.0.0.0"
-          interface:
-          - interface-name: "system"
-  
-  
-  
-    - path: configure/router[router-name=Base]/ospf3[ospf-instance=0]
-      val:
-        admin-state: enable
-        router-id: 10.0.0.1
-        area:
-        - area-id: "0.0.0.0"
-          interface:
-          - interface-name: "eth-1/1/c2"
-            interface-type: "point-to-point"
-  
-  
-  
-    - path: configure/router[router-name=Base]/ospf3[ospf-instance=0]
-      val:
-        admin-state: enable
-        router-id: 10.0.0.1
-        area:
-        - area-id: "0.0.0.0"
-          interface:
-          - interface-name: "eth-1/1/c3"
-            interface-type: "point-to-point"
-
-TASK [Deploy ospf configuration] ***********************************************
-skipping: [r3]
-skipping: [x1]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r2
-
-TASK [Generate gNMI YAML configuration] ****************************************
-ok: [dut]
-
-TASK [Update ospf node configuration from gNMI template /home/pipi/net101/tools/netsim/ansible/templates/ospf/sros.j2] ***
-changed: [dut]
-
-TASK [debug] *******************************************************************
-skipping: [dut]
-
-TASK [template] ****************************************************************
-changed: [r2]
-
-TASK [set_fact] ****************************************************************
-ok: [r2]
-
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-skipping: [r2]
-
-TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [r2]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
