@@ -31,7 +31,7 @@ MSTP/RSTP ports fall back to regular STP upon receiving a plain STP BPDU.
 ## Global Parameters
 
 * **stp.protocol** (one of `stp`, `mstp`, `rstp` or `pvrst`) -- Global STP flavor to run on supporting nodes, default `stp`
-* **stp.stub_port_type** (one of `normal`, `edge`, `network`, `auto` or `none`) -- Port type to configure on ports with only hosts connected, default `none`
+* **stp.stub_port_type** (one of `normal`, `edge`, `network`, `auto` or `none`) -- Port type to configure on ports with only hosts connected, default `none` (not set). When set, this overrides any more specific **stp.port_type** value set at node or vlan level
 
 ## Global, Node, Link, Interface, and VLAN Parameters
 
@@ -49,4 +49,4 @@ You can set the **‌stp.enable** parameter in the **‌vlans** dictionary to en
 ## Interface Parameters
 
 * **stp.port_priority** (int 0..15) -- STP port priority for selecting between multiple ports; ports are blocked based on priority (lower value = higher priority). The priority is sent over the wire (4 bits) as the most significant part of the port ID; it is used by the node *receiving* it (!) to decide which port(s) to unblock. Note that on many platforms, the value that ends up in the configuration is a multiple (x16) of this attribute
-* **stp.port_type** (one of `normal`, `edge`, `network` or `auto`) -- STP port type for this interface, default `normal`
+* **stp.port_type** (one of `normal`, `edge`, `network` or `auto`) -- STP port type for this interface, default `normal`. Ignored if this is a stub port and **stp.stub_port_type** is set
