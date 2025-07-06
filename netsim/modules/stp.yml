@@ -6,17 +6,18 @@ transform_after: [ vlan ]
 config_after: [ vlan ]
 no_propagate: [ stub_port_type ]
 
-enable: True           # By default, enable STP on all devices where this module is activated
-protocol: "stp"        # Default to basic 802.1D STP protocol, users may explicitly enable fancier newer flavors
-stub_port_type: "none" # Port type to configure on ports with only hosts connected, default 'none' (disabled)
+enable: True            # By default, enable STP on all devices where this module is activated
+protocol: "stp"         # Default to basic 802.1D STP protocol, users may explicitly enable fancier newer flavors
+stub_port_type: "none"  # Port type to configure on ports with only hosts connected, default 'none' (disabled)
 
 attributes:
   global:
     enable: bool
     stub_port_type: { type: str, valid_values: [ 'normal', 'edge', 'network', 'auto', 'none' ] }
-    port_type: { type: str, valid_values: [ normal, edge, network, auto ] } # Apply this port_type to every interface that has only hosts connected
-    protocol: { type: str, valid_values: [ stp, rstp, mstp, pvrst ] }
+    # Apply this port_type to every interface that has only hosts connected
+    port_type: { type: str, valid_values: [ normal, edge, network, auto ] }
     # mstp = IEEE 802.1s, pvrst = Per-VLAN Rapid Spanning Tree (802.1w)
+    protocol: { type: str, valid_values: [ stp, rstp, mstp, pvrst ] }
   node:
     enable:
       copy: global
@@ -28,26 +29,22 @@ attributes:
   link:
     enable:
       copy: global
-    port_type:                 # Also applies to VLANs (?)
+    port_type:                  # Also applies to VLANs (?)
       copy: global
 
-  intf_to_neighbor: False # By default, do not include STP attributes in neighbors
+  intf_to_neighbor: False       # By default, do not include STP attributes in neighbors
   interface:
     enable: bool
-    port_priority: { type: int, min_value: 0, max_value: 15 }               # 4-bit value, default '8' if not set
+    # 4-bit value, default '8' if not set
+    port_priority: { type: int, min_value: 0, max_value: 15 }
     port_type: { type: str, valid_values: [ normal, edge, network, auto ] }
 
-_top: # Modification of global defaults
+_top:                           # Modification of global defaults
   attributes:
     node_vlan:
+      # Per-VLAN STP priority for this node, implies pvrst
       stp.priority: { type: int, min_value: 0, max_value: 61440 }
       stp.enable: bool
-      # Per-VLAN STP priority for this node, implies pvrst
-
-    # vlan:
-    #   port_type:
-    #     copy: global
-
 
 features:
   supported_protocols: Subset of supported STP variants
