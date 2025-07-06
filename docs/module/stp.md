@@ -13,6 +13,7 @@ The following table describes per-platform support of individual STP features:
 | ------------------ |:---:|:---:|:---:|:---:|:---:|
 | Arista EOS[^EOS]   | ✅  | ✅  | ✅  | ✅ |  ✅ |
 | Cisco IOL L2^[IOLL2]   | ✅  | ✅  | ✅  | ✅ |  ✅ |
+| Cisco IOSV L2^[IOLL2]   | ✅  | ✅  | ✅  | ✅ |  ✅ |
 | Aruba AOS-CX[^AOSCX] | ❗  | ✅  | ❌  | ✅ |  ✅ |
 | Cumulus Linux 4.x[^CL] | ✅  |  ❌  | ✅  | ❌   |  ✅ |
 | Cumulus 5.x (NVUE)[^CL] | ✅  |  ❌  | ✅  | ❌   |  ✅ |
