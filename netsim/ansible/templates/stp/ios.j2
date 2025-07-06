@@ -1,0 +1,65 @@
+{% if not stp.enable|default(True)  %}
+no spanning-tree vlan 1-4094
+{% else %}
+
+{%  set proto_map = { 'stp': 'mst', 'rstp': 'mst', 'pvrst': 'rapid-pvst', 'mstp': 'mst' } %}
+{%  set mode = proto_map[stp.protocol] %}
+
+{# options are stp  rstp, rapid-pvst or mstp (default if not set) #}
+
+spanning-tree mode {{ mode }} 
+spanning-tree pathcost method long
+
+{% if stp.port.type is defined and stp.port.type == 'auto' %}
+spanning-tree portfast default
+{% endif %}
+
+{% if 'priority' in stp %}
+{% if stp.protocol != 'pvrst' %}
+spanning-tree mst 0 priority {{ stp.priority }}
+{% endif %}
+{% endif %}
+
+{# Check for per-VLAN enable and priority; implies Rapid-PVST #}
+{% if vlans is defined and stp.protocol == 'pvrst' %}
+{%   for vname,vdata in vlans.items() %}
+{%     if not vdata.stp.enable|default(True) %}
+no spanning-tree vlan {{ vdata.id }}
+{%     elif vdata.stp.priority is defined %}
+spanning-tree vlan {{ vdata.id }} priority {{ vdata.stp.priority }}
+{%     elif  stp.priority is defined %}
+spanning-tree vlan {{ vdata.id }} priority {{ stp.priority }}
+{%     endif %}
+{%   endfor +%}
+{% endif %}
+
+{% for ifdata in interfaces if 'stp' in ifdata %}
+{%   if ifdata.vlan.trunk_id is defined or ifdata.vlan.access_id is defined %}
+interface {{ ifdata.ifname }}
+{%    if not ifdata.stp.enable|default(True) %}
+ ! Disable STP on this interface, i.e. dont receive or send BPDUs
+ spanning-tree bpdufilter enable
+{%    elif 'port_priority' in ifdata.stp %}
+#
+# Use 16x port_priority to get the correct 4-bit value on the wire
+#
+{%      if stp.protocol == 'pvrst' %}
+ spanning-tree port-priority {{ ifdata.stp.port_priority * 16 }}
+{%      else %}
+ spanning-tree mst 0 port-priority {{ ifdata.stp.port_priority * 16 }}        
+{%      endif %} 
+{%    endif %} 
+{%   endif %}
+{%   if ifdata.stp.port_type is defined %}
+{%   set _ptype = ifdata.stp.port_type %}
+{%    if _ptype == 'network' or _ptype == 'normal'%}
+ no spanning-tree portfast 
+{%    elif _ptype == 'edge' %}
+ spanning-tree portfast
+{%      if ifdata.vlan.trunk_id is defined%}
+ spanning-tree portfast trunk
+{%      endif %} 
+{%    endif %} {# _ptype #}
+{%   endif %} {# ifdata.stp.port.type#}
+{% endfor %}
+{% endif %} {# stp.enable #}
