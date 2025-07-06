@@ -728,6 +728,14 @@ def vlan_ebgp_role_set(topology: Box, EBGP_ROLE: str) -> None:
     vdata.pop('_as_set',None)                               # ... and clean up
     vdata.pop('_bgp_attr',None)
 
+"""
+Make sure BGP data always has the expected attributes (currently: neighbors, might be others in the future)
+"""
+def sanitize_bgp_data(node: Box) -> None:
+  for (b_data,_,_) in _rp_utils.rp_data(node,'bgp'):
+    if 'neighbors' not in b_data:
+      b_data.neighbors = []
+
 class BGP(_Module):
   """
   Node pre-transform: set bgp.rr node attribute to _true_ if the node name is in the
@@ -787,3 +795,4 @@ class BGP(_Module):
     bgp_transform_community_list(node,topology)
     _routing.check_vrf_protocol_support(node,'bgp',None,'bgp',topology)
     _routing.process_imports(node,'bgp',topology,global_vars.get_const('vrf_igp_protocols',['connected']))
+    sanitize_bgp_data(node)
