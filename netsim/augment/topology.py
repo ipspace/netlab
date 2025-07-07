@@ -15,12 +15,33 @@ from .. import data
 from ..data.validate import validate_attributes,get_object_attributes
 from ..data.types import must_be_list,must_be_string,must_be_dict
 
+"""
+Generate topology name from the lab topology file location:
+
+* Take the first entry in the 'input' list (the original topology name)
+* Expand it to full path, then take the rightmost directory name from the path
+* Make an ID out of the directory name (removing everything but ASCII letters
+  and numbers)
+* Remove underscores from ID (see #2424)
+* If nothing is left, assume the topology name is 'default'
+"""
+def name_from_path(topology: Box) -> str:
+  topo_name = os.path.basename(os.path.dirname(os.path.realpath(topology['input'][0])))
+  topo_name = strings.make_id(topo_name).replace('_','')
+  if not topo_name:
+    topo_name = 'default'
+  return topo_name
+
+"""
+Basic topology sanity check:
+
+* It should have a name (set one from lab topology directory if needed) that
+  should be a string
+* The 'module' attribute (if present) must be a list
+"""
 def topology_sanity_check(topology: Box) -> None:
   if not 'name' in topology:
-    topo_name = os.path.basename(os.path.dirname(os.path.realpath(topology['input'][0])))[:12]
-    for bad_char in (' ','.'):
-      topo_name = topo_name.replace(bad_char,'_')
-    topology.name = strings.make_id(topo_name)
+    topology.name = name_from_path(topology)[:12]
 
   if 'module' in topology:
     must_be_list(topology,'module','')
@@ -29,6 +50,9 @@ def topology_sanity_check(topology: Box) -> None:
   if must_be_string(topology,'name','',module='topology'):
     topology.defaults.name = topology.name
 
+"""
+Check required topology elements (currently: nodes)
+"""
 def check_required_elements(topology: Box) -> None:
   invalid_topo = False
   for rq in ['nodes']:
