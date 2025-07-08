@@ -8,7 +8,9 @@
 import typing
 import argparse
 import os
+import re
 import sys
+import time
 
 from box import Box
 from pathlib import Path
@@ -260,6 +262,24 @@ def reload_saved_config(args: argparse.Namespace, topology: Box) -> None:
   print("Saved configurations reloaded")
 
 """
+Check the state of the external tool container
+"""
+def check_tool_status(tool: str, status: typing.Optional[str], topology: Box) -> bool:
+  if status is None:
+    return False
+
+  if not re.search('(?i)warning.*platform.*match',status):
+    return True
+
+  log.info(f'Platform mismatch between {tool} container image and your hardware, checking tool status')
+  time.sleep(0.5)
+  c_stat = external_commands.run_command(
+              f'docker inspect {topology.name}_{tool}',
+              ignore_errors=True,return_stdout=True,check_result=True)
+
+  return bool(c_stat)
+
+"""
 Deploy external tools
 """
 def start_external_tools(args: argparse.Namespace, topology: Box) -> None:
@@ -273,21 +293,31 @@ def start_external_tools(args: argparse.Namespace, topology: Box) -> None:
 
   lab_status_change(topology,f'starting external tools')
   log.section_header('Starting','external tools')
+  t_count = 0
+  t_success = 0
   for tool in topology.tools.keys():
     cmds = external_commands.get_tool_command(tool,'up',topology)
     if cmds is None:
       continue
-    external_commands.execute_tool_commands(cmds,topology)
+
+    t_count += 1
+    status = external_commands.execute_tool_commands(cmds,topology)
+    if not is_dry_run() and not check_tool_status(tool,status,topology):
+      log.error(f'Failed to start {tool}',module='tools',category=Warning,skip_header=True)
+      continue
     msg = external_commands.get_tool_message(tool,topology)
     if not is_dry_run():
-      print(f"... {tool} tool started")
+      t_success += 1
+      log.status_success()
+      print(f"{tool} tool started")
 
     if msg:
       print(("DRY_RUN: " if is_dry_run() else "") + msg + "\n")
 
-  lab_status_change(topology,f'external tools started')
-  log.status_success()
-  print("External tools started")
+  lab_status_change(topology,f'{t_success}/{t_count} external tools started')
+  if not is_dry_run():
+    log.partial_success(t_success,t_count)
+    print(f"{t_success}/{t_count} external tools started")
 
 """
 Main "lab start" process
