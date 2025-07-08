@@ -22,13 +22,7 @@ ID_SET = 'esi_auto_id'
 _auto_segments = {}
 
 # structure used to report used ESI, to generate user warnings
-_esi_stats = Box(default_box=True,box_dots=True)
-# count ESI usage references
-_esi_stats.esi_reference = {}
-# map used lacp sys id for ESI
-_esi_stats.esi_lacp_id = {}
-# map assigned LACP ID to node+interface
-_esi_stats.esi_lacp_id_info = {}
+_esi_stats = data.get_empty_box()
 
 # transform a 10-bytes ESI value to int
 #  consider only the first most significant 5 bytes (excluding initial 00) - see below
@@ -70,27 +64,18 @@ def _generate_es_struct(esname: str) -> dict:
     return _auto_segments[esname]
 
 def _update_esi_stats(node: Box, interface: Box, esi_name: str, esi_data: dict) -> None:
+    global _esi_stats
     if log.debug_active('plugin'):
         print(f"evpn.multihoming: CALLED ESI STATS {node.name} {interface.ifname} {esi_name} {esi_data}")
-    # initialize struct if required
-    global _esi_stats
-    if esi_name not in _esi_stats.esi_reference: _esi_stats.esi_reference[esi_name] = []
-    if esi_name not in _esi_stats.esi_lacp_id: _esi_stats.esi_lacp_id[esi_name] = set()  # use set to avoid duplicates
-    if esi_name not in _esi_stats.esi_lacp_id_info: _esi_stats.esi_lacp_id_info[esi_name] = {}
     
     # increment usage data
-    _esi_stats.esi_reference[esi_name].append(f"{node.name}->{interface.ifname}")
+    data.append_to_list(_esi_stats.esi_reference,esi_name,f"{node.name}->{interface.ifname}")
 
     # handle ESI-LAG case
     if interface.type == 'lag' and interface.get('lag.lacp_system_id',False):
         lacp_sys_id = interface.lag.lacp_system_id
-        _esi_stats.esi_lacp_id[esi_name].add(lacp_sys_id)
-        if lacp_sys_id in _esi_stats.esi_lacp_id_info[esi_name]:
-            # update
-            _esi_stats.esi_lacp_id_info[esi_name][lacp_sys_id].append(f"{node.name}->{interface.ifname}")
-        else:
-            # create
-            _esi_stats.esi_lacp_id_info[esi_name][lacp_sys_id] = [ f"{node.name}->{interface.ifname}" ]
+        _esi_stats.esi_lacp_id[esi_name][lacp_sys_id] = True
+        data.append_to_list(_esi_stats.esi_lacp_id_info[esi_name],lacp_sys_id,f"{node.name}->{interface.ifname}")
     return
 
 def _generate_esi_warnings() -> None:
