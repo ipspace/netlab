@@ -408,6 +408,17 @@ def status_created() -> None:
 def status_success() -> None:
   status_green('SUCCESS','OK: ')
 
+"""
+Partial success status
+"""
+def partial_success(s_cnt: int, t_cnt: int) -> None:
+  if s_cnt == t_cnt:
+    status_success()
+  elif s_cnt == 0:
+    strings.print_colored_text(strings.pad_err_code('ERROR'),'red')
+  else:
+    strings.print_colored_text(strings.pad_err_code('PARTIAL'),'yellow')
+
 def section_header(label: str, text: str, color: str = 'green') -> None:
   if not strings.rich_color:
     print(f'{label} {text}')
