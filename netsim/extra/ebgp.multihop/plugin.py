@@ -83,6 +83,7 @@ def pre_link_transform(topology: Box) -> None:
       if 'vrf' in intf:
         intf.bgp._vrf = intf.vrf
       intf._bgp_session = True
+      intf._phantom_link = True
       intf.ifname = f'_ebgp_multihop_{s.linkindex}'
 
   topology.links.extend(sessions)

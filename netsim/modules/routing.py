@@ -829,6 +829,8 @@ def resolve_node_nexthop(sr_data: Box, node: Box, topology: Box) -> Box:
 
   node_found = False
   for intf in node.interfaces:
+    if intf.get('_phantom_link',False):
+      continue
     for ngb in intf.neighbors:
       if ngb.node != sr_data.nexthop.node:
         continue
