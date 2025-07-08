@@ -251,15 +251,30 @@ def get_local_addr() -> str:
 #
 # Execute external tool commands
 #
-def execute_tool_commands(cmds: list, topology: Box) -> None:
+def execute_tool_commands(cmds: list, topology: Box) -> typing.Optional[str]:
   topology.sys.docker_net = ""
   topology.sys.ipaddr = get_local_addr()
   if docker_is_used(topology):
     topology.sys.docker_net = f"--network={topology.addressing.mgmt.get('_network',None) or 'netlab_mgmt'}"
 
+  output = ''
   for cmd in cmds:
     cmd = strings.eval_format(cmd,topology)
-    run_command(cmd = [ 'bash', '-c', cmd ],check_result=True)
+    status = run_command(
+              cmd = [ 'bash', '-c', cmd + " 2>&1"],   # Redirect STDERR to STDOUT to collect it
+              check_result=True,                      # I want to get the status
+              ignore_errors=True,                     # ... returned but not reported
+              return_stdout=True)                     # ... and we need STDOUT content to look for the warnings
+    if not isinstance(status,str):
+      log.error(
+        f'Failed to execute {cmd}',module='tools',
+        category=log.ErrorAbort,
+        skip_header=True)
+      return None
+    else:
+      output += status
+
+  return output
 
 #
 # Get the "how to connect to the tool" message
