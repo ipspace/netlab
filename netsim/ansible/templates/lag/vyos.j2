@@ -1,0 +1,35 @@
+#!/bin/vbash
+source /opt/vyatta/etc/functions/script-template
+
+if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+    exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+fi
+
+# Configuration items start here
+configure
+
+{% for l in interfaces if l.type == 'lag' %}
+
+{%   for i in interfaces if i.lag._parentindex|default(None) == l.lag.ifindex %}
+set interfaces bonding {{ l.ifname }} member interface {{ i.ifname }}
+{%   endfor %}
+
+{%    set _lacp = l.lag.lacp|default(lag.lacp) %}
+{%    if _lacp=='fast' or _lacp=='slow' %}
+set interfaces bonding {{ l.ifname }} mode 802.3ad
+set interfaces bonding {{ l.ifname }} lacp-rate {{_lacp}}
+{%    elif _lacp=='off' %}
+set interfaces bonding {{ l.ifname }} mode xor-hash
+{%    endif %}
+
+{%   if l.lag.lacp_system_id is defined %}
+set interfaces bonding {{ l.ifname }} system-mac {{ l.lag.lacp_system_id }}
+{%   endif %}
+
+{% endfor %}
+
+# Commit, save and exit from subshell
+
+commit
+save
+exit
