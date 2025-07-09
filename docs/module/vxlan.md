@@ -1,3 +1,4 @@
+(module-vxlan)=
 # VXLAN Configuration Module
 
 This configuration module configures the VXLAN data plane, VLAN-to-VXLAN mapping, and static head-end replication.
@@ -101,6 +102,7 @@ links:
 
 However, if you specify multiple loopback links with the **vxlan.vtep** attribute, **only the first one will be considered**.
 
+(vxlan-rp)=
 ## Interactions with the Routing Protocols
 
 _netlab_ treats VXLAN-based VLANs like any other VLAN and enables routing protocols on them. However, when the cost of the overlay (VLAN) interface is lower than the cost of the underlay path, routing black holes could occur ([more details](https://blog.ipspace.net/2022/10/use-vrf-for-vxlan-vlans/)).
