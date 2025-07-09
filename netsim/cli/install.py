@@ -7,6 +7,8 @@ import typing
 import argparse
 import os
 import sysconfig
+import csv
+import yaml
 from pathlib import Path
 from box import Box
 
@@ -59,6 +61,28 @@ def install_parse(args: typing.List[str], setup: Box) -> argparse.Namespace:
     help='Run the specified installation script')
 
   return parser.parse_args(args)
+
+"""
+read_config_setup: Read the installation configuration file and add information
+from /etc/os-release file (if it exists)
+"""
+def read_config_setup() -> Box:
+  cf_name = 'package:install/install.yml'
+  setup = read.read_yaml(filename=cf_name)
+  if setup is None or not setup:
+    log.fatal(f'Cannot read the installation configuration file {cf_name}')
+  
+  os_release = Path('/etc/os-release')
+  if not os_release.exists():
+    log.info(f"The {os_release} file does not exist. I have no idea what operating system you're using")
+    setup.distro.ID = "unknown"
+  else:
+    try:
+      with open(os_release) as stream:
+        setup.distro = dict(csv.reader(stream, delimiter="="))
+    except Exception as ex:
+      error_and_exit(f'Cannot read {str(os_release)}: {str(ex)}')
+  return setup
 
 """
 check_crazy_pip3: deals with crazy pip3 that thinks installing Python packages in
@@ -148,6 +172,29 @@ def set_sudo_flag() -> None:
   log.fatal('Installation aborted')
 
 """
+Select the most appropriate distribution settings for the current script
+"""
+def select_distro(script: str, setup: Box, args: argparse.Namespace) -> None:
+  s_data = setup.scripts[script]
+  distro = None
+  if setup.distro.ID in s_data.distro:                # Perfect match
+    distro = setup.distro.ID
+  else:                                               # Otherwise iterate over target distros and    
+    for t_distro in s_data.distro:                    # ... compare them to ID_LIKE
+      if t_distro in setup.distro.ID_LIKE:
+        distro = t_distro                             # ... the first match is considered the best
+        break
+
+  if distro is None:
+    error_and_exit(
+      f"We don't have {script} installation script for your Linux distribution ({setup.distro.ID})",
+      more_hints=f'This script is only available for {",".join(s_data.distro)}')
+  else:
+    os.environ['DISTRIBUTION'] = distro
+    if args.verbose:
+      log.info(f"Running installation script for {distro}")
+
+"""
 Checks whether it's OK to run the specified installation script:
 
 * Is 'apt-get' command used and available?
@@ -155,6 +202,8 @@ Checks whether it's OK to run the specified installation script:
 """
 def check_script(script: str, setup: Box, args: argparse.Namespace) -> None:
   s_data = setup.scripts[script]
+  if 'distro' in s_data:
+    select_distro(script,setup,args)
   if 'apt' in s_data.uses:
     if not external_commands.has_command('apt-get'):
       error_and_exit(
@@ -218,9 +267,7 @@ def display_usage(setup: Box) -> None:
   strings.print_table(['Script','Installs'],t_usage,inter_row_line=False)
 
 def run(cli_args: typing.List[str]) -> None:
-  setup = read.read_yaml(filename='package:install/install.yml')
-  if setup is None or not setup:
-    log.fatal('Cannot read the installation configuration file package:install/install.yml')
+  setup = read_config_setup()
 
   if not cli_args:
     display_usage(setup)
