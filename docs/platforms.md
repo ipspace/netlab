@@ -26,7 +26,7 @@
 | Cisco IOS XRv  [❗](caveats-iosxr) | iosxr  | minimal       |
 | Cisco Nexus 9300v [❗](caveats-nxos) | nxos | best effort   |
 | Cumulus Linux 4.x/5.x [❗](caveats-cumulus) | cumulus | end of life |
-| Cumulus Linux 5.x (NVUE) [❗](caveats-cumulus-nvue)                            | cumulus_nvue | best effort |
+| Cumulus Linux 5.x (NVUE) [❗](caveats-cumulus-nvue) | cumulus_nvue | minimal |
 | Dell OS10 [❗](caveats-os10) | dellos10     | full          | 
 | Fortinet FortiOS [❗](caveats-fortios) | fortios | minimal  |
 | FRRouting (FRR) [❗](caveats-frr) | frr     | full          |
