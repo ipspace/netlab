@@ -1,16 +1,16 @@
 # VXLAN Configuration Module
 
-This configuration module configures VXLAN data plane, VLAN-to-VXLAN mapping, and static head-end replication.
+This configuration module configures the VXLAN data plane, VLAN-to-VXLAN mapping, and static head-end replication.
 
 The module supports the following features:
 
 * VLAN-to-VXLAN bridging implementing _VLAN-based Service Interface_ as defined in RFC 7432/RFC 8365.
 * Single VXLAN interface per device
-* Default loopback address used as the VTEP IP address
+* The default loopback interface is used as the VTEP IP address; you can also specify an alternate loopback interface as the VTEP source interface
 * Static per-VLAN or per-node ingress replication
 * Mapping a subset of VLANs into VXLAN VNIs
 
-The module requires VLAN module (to set up **vlans** dictionary) and should be used with a routing protocol module to establish VTEP-to-VTEP connectivity.
+The module requires the VLAN module (to set up the **vlans** dictionary) and should be used with a routing protocol module to establish VTEP-to-VTEP connectivity.
 
 ```eval_rst
 .. contents:: Table of Contents
@@ -21,7 +21,7 @@ The module requires VLAN module (to set up **vlans** dictionary) and should be u
 
 ## Platform Support
 
-The following table describes per-platform support of individual VXLAN features:
+The following table describes the per-platform support of individual VXLAN features:
 
 | Operating system   | VXLAN<br>bridging | Per-VLAN<br>replication | IPv6 VTEP |
 | ------------------ | :-: | :-: | :-: |
@@ -44,12 +44,12 @@ See [VXLAN Integration Tests Results](https://release.netlab.tools/_html/coverag
 
 ## Global and Node Parameters
 
-* **vxlan.domain** (node or global) -- Ingress replication domain. Optional, default: **global**. Use this parameter when you want to build several isolated bridging domains within your lab.
+* **vxlan.domain** (node or global) -- Ingress replication domain. Optional, default: **global**. Use this parameter to build several isolated bridging domains within your lab.
 * **vxlan.flooding** (node or global) -- A mechanism used to implement VXLAN flooding. Optional, default: **static**.
-* **vxlan.vlans** (node or global) -- list of VLANs to be mapped into VXLAN VNIs.  When missing, defaults to all VLANs.
-* **vxlan.use_v6_vtep** (global) -- Use the IPv6 Loopback address as VTEP address. To be used on the devices where you need to explicitly set the local VTEP address, or with *static* flooding to generate the flooding list with IPv6 addresses.
+* **vxlan.vlans** (node or global) -- the list of VLANs to be mapped into VXLAN VNIs.  When missing, defaults to all VLANs.
+* **vxlan.use_v6_vtep** (global) -- Use the IPv6 Loopback address as VTEP address. Use this parameter to enable VXLAN-over-IPv6 with ingress replication. All VXLAN-enabled lab devices must support VXLAN-over-IPv6 transport.
 
-The only supported value for **vxlan.flooding** parameter is **static** -- statically configured ingress replication
+The only supported value for **vxlan.flooding** parameter for non-EVPN deployments is **static** (statically configured ingress replication). The EVPN module changes the default **vxlan.flooding** value to **evpn**.
 
 ## Module Parameters
 
@@ -67,29 +67,29 @@ To change the module defaults, set **defaults.vxlan._value_** parameter(s) in la
 
 ## Selecting VXLAN-enabled VLANs
 
-Global VLANs that should be extended with VXLAN transport are specified in **vxlan.vlans** global- or node-level list. When that parameter is missing, all VLANs use VXLAN transport.
+Global VLANs that should be extended with VXLAN transport are specified in the **vxlan.vlans** global- or node-level list. When that parameter is missing, all VLANs use VXLAN transport.
 
 VLANs specified in the **vxlan.vlans** list must be valid VLAN names, but do not have to be present on every node.
 
-You can also enable a VLAN for VXLAN transport by setting **vni** VLAN parameter to an integer value.
+You can also enable a VLAN for VXLAN transport by setting the **vni** VLAN parameter to an integer value.
 
 ## Auto-Assign VNI
 
-All VLANs specified in the **vxlan.vlans** list will get a **vni** attribute. To disable the auto-assignment for individual VLANs, set **vni** VLAN parameter to an integer value (static VNI) or *False* (no VNI).
+All VLANs specified in the **vxlan.vlans** list will get a **vni** attribute. To turn off the auto-assignment for individual VLANs, set the **vni** VLAN parameter to an integer value (static VNI) or *False* (no VNI).
 
-For every VLAN, the VXLAN configuration module tries to use `vxlan.start_vni + vlan.id` as the VLAN VNI, and reverts to sequentially-allocated values when that VNI is already in use.
+For every VLAN, the VXLAN configuration module tries to use `vxlan.start_vni + vlan.id` as the VLAN VNI and reverts to sequentially allocated values when that VNI is already in use.
 
 ## Building Ingress Replication Lists
 
 The VXLAN module builds ingress replication lists for all nodes with **vxlan.flooding** set to **static**. Each VLAN-specific ingress replication list includes the VTEP IP addresses of all other nodes in the same **vxlan.domain** that have a VLAN with the same **vni** attribute.
 
-All VLAN-specific ingress replication lists are merged into a node-level ingress replication list. Some devices support per-VLAN replication lists while others might use node-level replication list; the only difference is the amount of irrelevant traffic replicated across the VXLAN transport network.
+All VLAN-specific ingress replication lists are merged into a node-level ingress replication list. Some devices support per-VLAN replication lists while others might use node-level replication lists; the only difference is the amount of irrelevant traffic replicated across the VXLAN transport network.
 
 ## Changing the VXLAN VTEP Source interface/address
 
-By default, every node uses the first loopback interface/address as the default VTEP Source interface/address.
+_netlab_ assumes you want to use the first loopback interface/address as the VTEP source interface/address.
 
-If you want your node to use a different loopback interface as VXLAN source, you need to define a *loopback link*, and add the **vxlan.vtep** attribute set to **true**, i.e.:
+If you want your node to use a different loopback interface as VXLAN VTEP, you need to define a *loopback link*, and add the **vxlan.vtep** attribute set to **true**, i.e.:
 
 ```
 links:
@@ -99,11 +99,21 @@ links:
   vxlan.vtep: true
 ```
 
-If you specify multiple loopback links with the **vxlan.vtep** attribute, **only the first one will be considered**.
+However, if you specify multiple loopback links with the **vxlan.vtep** attribute, **only the first one will be considered**.
+
+## Interactions with the Routing Protocols
+
+_netlab_ treats VXLAN-based VLANs like any other VLAN and enables routing protocols on them. However, when the cost of the overlay (VLAN) interface is lower than the cost of the underlay path, routing black holes could occur ([more details](https://blog.ipspace.net/2022/10/use-vrf-for-vxlan-vlans/)).
+
+You can solve this problem in numerous ways:
+
+* Use layer-2-only VLANs (set **[vlan.mode](module-vlan-definition)** to **bridge**)
+* Put VXLAN-enabled VLANs in a VRF
+* [Disable underlay routing protocols](routing_disable) on VXLAN-based VLANs with a VLAN setting similar to **vlans.tenant.ospf: False**
 
 ## Example
 
-We want to create a simple two-switch network transporting two VLANs across VXLAN backbone. We have to define the VLANs first:
+We want to create a simple two-switch network transporting two VLANs across a VXLAN backbone. We have to define the VLANs first:
 
 ```
 vlans:
