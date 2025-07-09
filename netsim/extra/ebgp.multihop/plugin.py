@@ -12,16 +12,6 @@ _config_name = 'ebgp.multihop'
 _execute_after = [ 'ebgp.utils', 'bgp.session' ]
 _requires    = [ 'bgp' ]
 
-def pre_transform(topology: Box) -> None:
-  global _config_name
-  session_idx  = data.find_in_list(['ebgp.utils','bgp.session'],topology.plugin)
-  multihop_idx = data.find_in_list([ _config_name ],topology.plugin)
-
-  if session_idx is not None and multihop_idx is not None and session_idx > multihop_idx:
-    log.error(
-      'ebgp.multihop plugin must be included after bgp.session/ebgp.utils plugin',
-      log.IncorrectValue,'ebgp.multihop')
-
 def pre_link_transform(topology: Box) -> None:
   if not 'multihop' in topology.get('bgp',{}):
     return
@@ -41,7 +31,7 @@ def pre_link_transform(topology: Box) -> None:
     
     s.type = 'tunnel'
     s.linkindex = links.get_next_linkindex(topology)
-    s._bgp_session = True
+    s._phantom_link = True
 
     validate_attributes(
       data=s,                                         # Validate pseudo-link data
@@ -82,7 +72,7 @@ def pre_link_transform(topology: Box) -> None:
       intf.bgp.multihop = 255
       if 'vrf' in intf:
         intf.bgp._vrf = intf.vrf
-      intf._bgp_session = True
+      intf._mh_bgp_session = True
       intf._phantom_link = True
       intf.ifname = f'_ebgp_multihop_{s.linkindex}'
 
@@ -137,28 +127,17 @@ def augment_af_activation(ndata: Box, topology: Box) -> None:
           chg.pop(bgp_af,None)                                    # Otherwise remove it
 
 '''
-remove_fake_interfaces: remove all fake interfaces created to build BGP neighbor adjacencies
+Check whether a node has EBGP multihop sessions
 '''
-def remove_fake_interfaces(ndata: Box, topology: Box) -> bool:
-  intf_count = len(ndata.interfaces)
-  ndata.interfaces = [ intf for intf in ndata.interfaces if not intf.get('_bgp_session',None) ]
+def ebgp_multihop_sessions(ndata: Box, topology: Box) -> bool:
+  mh_intf = [ intf for intf in ndata.interfaces if intf.get('_mh_bgp_session',False) ]
+  if not mh_intf:                                 # Do we have any fake interfaces for MH EBGP sessions?
+    return False
 
-  return len(ndata.interfaces) != intf_count
-
-'''
-cleanup_interfaces: remove fake interfaces from global interface list and VRF OSPF interface list
-'''
-def cleanup_interfaces(ndata: Box, topology: Box) -> None:
-  changed = remove_fake_interfaces(ndata,topology)  # Cleanup global interface list
-  for vname,vdata in ndata.get('vrfs',{}).items():  # Iterate over VRFs
-    if 'ospf' in vdata:                             # .. and cleanup OSPF interface list if needed
-      v_chg   = remove_fake_interfaces(vdata.ospf,topology)
-      changed = changed or v_chg
-
-  if changed:                                       # Did the interface count change?
-    check_multihop_support(ndata,topology)
-    api.node_config(ndata,_config_name)             # We must have some multihop sessions, add extra config
-    augment_af_activation(ndata,topology)
+  check_multihop_support(ndata,topology)          # Check that the node supports it
+  api.node_config(ndata,_config_name)             # We must have some multihop sessions, add extra config
+  augment_af_activation(ndata,topology)           # ... and activate relevant address families on these sessions
+  return True
 
 '''
 fix_vrf_loopbacks:
@@ -180,7 +159,7 @@ def fix_vrf_loopbacks(ndata: Box, topology: Box) -> None:
         if af in lb:                                            # ... removing whatever might have come from the
           ngb[af] = str(ipaddress.ip_interface(lb[af]).ip)      # ... global loopback
 
-    if '_src_vrf' in ngb:                                       # Is out endpoint in a VRF?
+    if '_src_vrf' in ngb:                                       # Is our endpoint in a VRF?
       if not isinstance(features.bgp.multihop,Box) or features.bgp.multihop.vrf is not True:
         log.error(
           f'Device {ndata.device} does not support VRF EBGP multihop sessions (node {ndata.name}, VRF {ngb._src_vrf})',
@@ -212,7 +191,14 @@ post_transform processing:
 def post_transform(topology: Box) -> None:
   global _config_name
   for ndata in topology.nodes.values():
-    fix_vrf_loopbacks(ndata,topology)
-    cleanup_interfaces(ndata,topology)
+    if ebgp_multihop_sessions(ndata,topology):
+      fix_vrf_loopbacks(ndata,topology)
 
-  topology.links = [ link for link in topology.links if not link.get('_bgp_session',None) ]
+'''
+Cleanup: remove interfaces and links with _phantom_link flag
+'''
+def cleanup(topology: Box) -> None:
+  for ndata in topology.nodes.values():
+    ndata.interfaces = [ intf for intf in ndata.interfaces if not intf.get('_phantom_link',None) ]
+
+  topology.links = [ link for link in topology.links if not link.get('_phantom_link',None) ]
