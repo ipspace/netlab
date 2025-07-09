@@ -1,0 +1,18 @@
+#!/bin/bash
+
+{### STILL NOT WORKING - to be better investigated ###}
+
+# ESI-LAG config in FRR
+cat >/tmp/esi_lag_config <<CONFIG
+evpn mh startup-delay 1
+!
+{% for intf in interfaces if intf.type == 'lag' and intf.evpn._esi is defined %}
+interface {{ intf.ifname }}
+  evpn mh es-id {{intf.evpn._esi.id}}
+!
+{% endfor %}
+!
+do write
+CONFIG
+vtysh -f /tmp/esi_lag_config
+vtysh -c 'clear bgp *'

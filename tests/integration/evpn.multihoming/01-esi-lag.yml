@@ -1,0 +1,97 @@
+message: |
+  The devices under test are an ESI-LAG pair connected to an Arista EOS switch. The
+  Arista EOS switch should have a working LAG, and the attached hosts should be
+  able to ping each other.
+
+plugin: [ 'evpn.multihoming' ]
+
+defaults.vxlan.start_vni: 20000
+bgp.as: 65000
+
+evpn.ethernet_segments:
+  #seg_1.auto: true
+  seg_1.id: 00:11:22:33:44:55:66:77:88:99
+
+groups:
+  _auto_create: true
+  switches:
+    members: [ s1, s2 ]
+    module: [ vlan, vxlan, ospf, bgp, evpn, lag ]
+    evpn._junos_default_macvrf: true  # let's keep it simple for now
+  probes:
+    members: [ x1 ]
+    module: [ lag, vlan ]
+    device: eos
+  hosts:
+    members: [ h1, h2, h3 ]
+    device: linux
+    provider: clab
+
+vlans:
+  red:
+    mode: bridge
+    links: [ h1-x1, h2-s1, h3-s2 ]
+
+links:
+# EVPN/VXLAN Link
+- s1:
+  s2:
+  mtu: 1600
+# ESI-LAG
+- lag:
+    members:
+    - s1:
+        lag.lacp_system_id: 1
+        evpn.es: seg_1
+      x1:
+    - s2:
+        lag.lacp_system_id: 1
+        evpn.es: seg_1
+      x1:
+  vlan.access: red
+
+defaults.devices.dellos10.netlab_validate.lag.wait: 120
+
+validate:
+  lag:
+    description: Check LAG ports on X1
+    wait: 30
+    wait_msg: Waiting for LAG to start
+    nodes: [ x1 ]
+    devices: [ eos ]
+    pass: The LAG is active
+    fail: X1 cannot establish a LAG with both switches in MLAG pair
+    show: port-channel | json
+    valid: >-
+      len(portChannels['Port-Channel1'].activePorts) == 2
+
+  ping:
+    description: End-to-end connectivity test
+    nodes: [ h2, h3 ]
+    wait_msg: Waiting for STP to enable the ports
+    # devices on libvirt require more time (i.e., Test succeeded in 51.8 seconds)
+    wait: 60
+    plugin: ping('h1')
+
+  orphan:
+    description: Disable one of the links on X1
+    nodes: [ x1 ]
+    config:
+      template: ifdown
+      variable.state: down
+
+  failover:
+    description: End-to-end connectivity after a LAG member failure
+    nodes: [ h2, h3 ]
+    wait_msg: Waiting for ESI-LAG convergence
+    level: warning
+    # devices on libvirt require more time (i.e., Test succeeded in 51.8 seconds)
+    wait: 60
+    plugin: ping('h1')
+
+  recover:
+    description: Re-enable the link on X1
+    nodes: [ x1 ]
+    config:
+      template: ifdown
+      variable.state: up

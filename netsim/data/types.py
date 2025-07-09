@@ -832,6 +832,22 @@ def must_be_mac(value: typing.Any) -> dict:
   return { '_valid': True }
 
 @type_test()
+def must_be_esi_value(value: typing.Any) -> dict:
+  # Allow only Type 0 ESI value to be supplied
+  _value_msg = '10-byte ESI Value in format 00:XX:XX:XX:XX:XX:XX:XX:XX:XX'
+
+  if not isinstance(value,str):
+    return { '_type': '10-byte ESI Value' }
+
+  if not value.startswith("00:"):
+    return { '_value': _value_msg + " - must start with '00:'" }
+
+  if not re.match(r"^00(:[0-9a-fA-F]{2}){9}$", value):
+    return { '_value': _value_msg }
+
+  return { '_valid': True }
+
+@type_test()
 def must_be_net(value: typing.Any) -> dict:
   if not isinstance(value,str):
     return { '_type': 'IS-IS NET/NSAP' }

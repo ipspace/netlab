@@ -101,6 +101,13 @@ def passive_stub_interfaces(node: Box, topology: Box) -> None:
 
     intf.ospf.network_type = 'point-to-point'
 
+def esi_identifier_format(node: Box, topology: Box) -> None:
+  # Arista EOS, in EVPN ESI, wants ESI in format: 0000:0000:0000:0000:0000
+  for intf in node.interfaces:
+    if intf.get('evpn._esi.id'):
+      esi = intf.evpn._esi.id.replace(":", "")
+      intf.evpn._esi._eos_id = ':'.join(esi[i:i+4] for i in range(0, len(esi), 4))
+
 class EOS(_Quirks):
 
   @classmethod
@@ -118,3 +125,5 @@ class EOS(_Quirks):
       passive_stub_interfaces(node,topology)
     if 'eos' in node:
       configure_ceos_attributes(node,topology)
+    if 'evpn.multihoming' in topology.get('plugin',[]):
+      esi_identifier_format(node,topology)

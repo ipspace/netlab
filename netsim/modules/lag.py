@@ -68,8 +68,8 @@ check_mlag_support - check if the given node supports mlag
 def check_mlag_support(node: str, linkname: str, topology: Box) -> bool:
   _n = topology.nodes[node]
   features = devices.get_device_features(_n,topology.defaults)
-  if not features.lag.get('mlag',False):
-    log.error(f'Node {_n.name} ({_n.device}) does not support MLAG, cannot be part of peerlink or M-side of LAG {linkname}',
+  if not (features.lag.get('mlag',False) or features.get('evpn.multihoming.lag',False)):
+    log.error(f'Node {_n.name} ({_n.device}) does not support MLAG or ESI-LAG, cannot be part of peerlink or M-side of LAG {linkname}',
       category=log.IncorrectValue,
       module='lag')
     return False
@@ -439,6 +439,7 @@ class LAG(_Module):
     features = devices.get_device_features(node,topology.defaults)
     has_peerlink = False
     uses_mlag = False
+    uses_esi_lag = False
     for i in node.interfaces:
       if i.get(PEERLINK_ID_ATT,None):          # Fill in peer loopback IP and vMAC for MLAG peer links
         populate_mlag_peer(node,i,topology)
@@ -470,9 +471,19 @@ class LAG(_Module):
             log.error(f'Node {node.name}: IP address directly on MLAG interface {i.ifname} is not supported, use a VLAN instead',
               category=log.IncorrectAttr,
               module='lag')
-    
-    if uses_mlag and not has_peerlink:
-      log.error(f'Node {node.name} uses MLAG but has no peerlink (lag with {PEERLINK_ID_ATT}) configured',
+        # LACP System-ID generation, if needed
+        if i.lag.get('lacp_system_id', False):
+          # Convert 'int(0-65535)' type lacp_system_id to a real MAC value in format: 02:xx:yy:xx:yy:00
+          if isinstance(i.lag.lacp_system_id,int):
+            sys_id_int = i.lag.lacp_system_id
+            lacp_sys_id_str = f"02{sys_id_int:0>4X}{sys_id_int:0>4X}00"
+            i.lag.lacp_system_id = str(netaddr.EUI(lacp_sys_id_str, dialect = netaddr.mac_unix_expanded))
+        # check for ESI-LAG support, to avoid generating errors for missing MC-LAG feature
+        if 'evpn.multihoming' in topology.get('plugin',[]) and features.get('evpn.multihoming.lag', False) and i.get('evpn.es', False):
+          uses_esi_lag = True
+
+    if uses_mlag and not (has_peerlink or uses_esi_lag):
+      log.error(f'Node {node.name} uses MLAG but has no peerlink (lag with {PEERLINK_ID_ATT}) or ESI-LAG configured',
         category=log.IncorrectAttr,
         module='lag')
 
