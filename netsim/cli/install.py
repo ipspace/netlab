@@ -14,7 +14,7 @@ from box import Box
 
 from ..utils import log,strings,read
 from ..utils.files import get_moddir
-from . import external_commands,error_and_exit
+from . import external_commands,error_and_exit,set_dry_run
 
 #
 # CLI parser for 'netlab install' command
@@ -83,6 +83,18 @@ def read_config_setup() -> Box:
     except Exception as ex:
       error_and_exit(f'Cannot read {str(os_release)}: {str(ex)}')
   return setup
+
+"""
+Adjust installation configuration:
+
+* Update 'env' dictionary from topology variables
+"""
+def adjust_setup(setup: Box, topology: Box, args: argparse.Namespace) -> None:
+  for k,v in setup.env.items():
+    if v in topology.defaults:
+      os.environ[k] = topology.defaults[v]
+      if args.verbose:
+        print(f'ENV: {k}={os.environ[k]}')
 
 """
 check_crazy_pip3: deals with crazy pip3 that thinks installing Python packages in
@@ -274,6 +286,9 @@ def run(cli_args: typing.List[str]) -> None:
     return
 
   args = install_parse(cli_args,setup)
+  topology = read.system_defaults()
+  adjust_setup(setup,topology,args)
+
   for script in args.script:
     if script not in setup.scripts:
       error_and_exit(
@@ -281,6 +296,7 @@ def run(cli_args: typing.List[str]) -> None:
         more_hints='Run "netlab install" to display the available installation scripts')
 
   set_quiet_flags(args)
+  set_dry_run(args)
   set_sudo_flag()
   install_path = f'{get_moddir()}/install'
   os.environ['PATH'] = install_path + ":" + os.environ['PATH']
