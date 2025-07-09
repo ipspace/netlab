@@ -43,6 +43,10 @@ router bgp {{ bgp.as }}
   bgp log-neighbor-changes
   no bgp default ipv4-unicast
   no bgp default ipv6-unicast
+{% if bgp.confederation is defined %}
+  bgp confederation identifier {{ bgp.confederation.as }}
+  bgp confederation peers {{ bgp.confederation.peers|join(' ') }}
+{% endif %}
 {% if bgp.router_id|ipv4 %}
   router-id {{ bgp.router_id }}
 {% endif %}
@@ -78,6 +82,9 @@ router bgp {{ bgp.as }}
   neighbor {{ peer }} activate
 {%       if n.type == 'ibgp' and bgp.next_hop_self|default(False) %}
   neighbor {{ peer }} route-map next-hop-self-{{ af }} out
+{%       endif %}
+{%       if n.type == 'confed_ebgp' and bgp.next_hop_self|default(False) %}
+  neighbor {{ peer }} next-hop-self
 {%       endif %}
 {%       if n.type == 'localas_ibgp' %}
   neighbor {{ peer }} next-hop-self

@@ -5,7 +5,10 @@ router bgp {{ bgp.as }}
   no bgp default ipv4-unicast
   bgp default show-hostname
   bgp default show-nexthop-hostname
-
+{% if bgp.confederation is defined %}
+  bgp confederation identifier {{ bgp.confederation.as }}
+  bgp confederation peers {{ bgp.confederation.peers|join(' ') }}
+{% endif %}
   ! Consider AS paths of same length but with different AS as ECMP candidates
   bgp bestpath as-path multipath-relax
 
@@ -65,13 +68,11 @@ router bgp {{ bgp.as }}
                   else False %}
 {%     if peer %}
   neighbor {{ peer }} activate
-{%       if n.type == 'ibgp' %}
-{%         if bgp.next_hop_self is defined and bgp.next_hop_self %}
+{%       if n.type in ['ibgp','confed_ebgp'] and bgp.next_hop_self|default(False) %}
   neighbor {{ peer }} next-hop-self
-{%         endif %}
-{%         if bgp.rr|default('') and not n.rr|default('') %}
+{%       endif %}
+{%       if n.type == 'ibgp' and bgp.rr|default('') and not n.rr|default('') %}
   neighbor {{ peer }} route-reflector-client
-{%         endif %}
 {%       endif %}
 {%       if n.type == 'localas_ibgp' %}
   neighbor {{ peer }} route-reflector-client

@@ -11,7 +11,7 @@ This configuration module configures the BGP routing process and BGP neighbors o
 More interesting BGP topologies can be created with [custom plugins](../plugins.md).
 
 ```{note}
-Use **[netlab report](../netlab/report.md)** or **[netlab create -o report](../netlab/create.md)** commands to create reports on BGP autonomous systems and BGP neighbors. Use **[‌netlab show reports bgp](netlab-show-reports)** command to display available BGP reports.
+Use **[netlab report](../netlab/report.md)** or **[netlab create -o report](../netlab/create.md)** commands to create reports on BGP autonomous systems and BGP neighbors. Use the **[‌netlab show reports bgp](netlab-show-reports)** command to display available BGP reports.
 ```
 
 ```eval_rst
@@ -32,8 +32,8 @@ _netlab_ BGP configuration module supports these features:
 * IBGP sessions between loopback interfaces
 * EBGP sessions between auto-generated IPv6 link-local addresses
 * RFC8950-style IPv4 address family on EBGP IPv6 LLA sessions and regular IPv6 BGP sessions
-* BGP route reflectors
-* Next-hop-self control on IBGP sessions
+* BGP route reflectors and BGP confederations
+* Next-hop-self control on IBGP and confederation EBGP sessions
 * BGP community propagation
 * Configurable activation of default address families
 * Configurable link prefix advertisement
@@ -58,39 +58,56 @@ _netlab_ supports most BGP features on [all platforms supporting BGP configurati
 
 The following features are only supported on a subset of platforms:
 
-|   Operating system       | IPv6 LLA<br />EBGP<br />sessions | Unnumbered<br />IPv4 EBGP<br />sessions[^INTv4] | RFC 8950<br>IPv4<br />next hops[^RFC8950] | Configurable<br>default AF |
+|   Operating system       | Configurable<br>default AF | BGP<br>confederations | Route<br>import | VRF route<br>import |
 | ------------------------ | :-: | :-: | :-: | :-: |
-| Arista EOS               |  ✅ |  ✅ |  ❌  |  ✅ |
-| Aruba AOS-CX             |  ❌  |  ❌  |  ❌  |  ✅ |
-| BIRD                     |  ❌  |  ❌  |  ✅  |  ✅ |
-| Cisco IOS/IOS XE[^18v]   |  ❌  |  ❌  |  ❌  |  ✅ |
-| Cisco IOS XRv            |  ❌  |  ❌  |  ❌  |  ✅ |
-| Cumulus Linux 4.x        |  ✅ |  ✅ |  ✅ |  ✅ |
-| Cumulus Linux 5.x (NVUE) |  ✅ |  ✅ |  ✅  |  ✅ |
-| Dell OS10                |  ✅ |  ✅ |  ❌  |  ✅ |
-| FRR                      |  ✅ |  ✅ |  ✅ |  ✅ |
-| Nokia SR Linux           |  ✅ |  ✅ |  ❌  |  ✅ |
-| Nokia SR OS              |  ❌  |  ❌  |  ❌  |  ✅ |
-| Sonic                    |  ✅ |  ✅ |  ❌  |  ✅ |
-| VyOS                     |  ✅ |  ✅ |  ❌  |  ✅ |
-
-[^RFC8950]: IPv6 next hops for IPv4 prefixes advertised over a regular (non-LLA) IPv6 EBGP session. The use of RFC 8950-style next hops over IPv6 LLA session used to implement interface EBGP sessions is documented in the *Unnumbered IPv4 EBGP sessions* column.
-
-|   Operating system       | EBGP<br>local AS | IBGP<br>local AS | Route<br>import | VRF route<br>import |
-| ------------------------ | :-: | :-: | :-: | :-: |
-| Arista EOS               |  ✅ |  ✅ |  ✅ |  ✅ |
+| Arista EOS               |  ✅ | ✅ |  ✅ |  ✅ |
 | Aruba AOS-CX             |  ✅ |  ❌  |  ✅ |  ✅ |
-| BIRD                     |  ✅ |  ✅ |  ❌  |  ❌  |
-| Cisco IOS/IOS XE[^18v]   |  ✅ |  ✅ |  ✅ |  ✅ |
+| BIRD                     |  ✅ |  ❌  |  ❌  |  ❌  |
+| Cisco IOS/IOS XE[^18v]   |  ✅ | ✅ |  ✅ |  ✅ |
+| Cisco IOS XRv            |  ✅ |  ❌  |  ❌  |  ❌  |
 | Cumulus Linux 4.x        |  ✅ |  ❌  |  ✅ |  ✅ |
-| Cumulus Linux 5.x (NVUE) |  ✅ |  ✅ |  ✅ |  ❌ |
-| Dell OS10                |  ✅ |  ❌  |  ✅  |  ✅  |
-| FRR                      |  ✅ |  ✅ |  ✅ |  ✅ |
-| JunOS                    |  ✅ |  ✅ |  ❌  |  ❌  |
-| Nokia SR Linux           |  ✅ |  ✅ |  ✅ [❗](caveats-srlinux) |  ✅ [❗](caveats-srlinux) |
-| Nokia SR OS              |  ✅ |  ✅ |  ✅ [❗](caveats-sros) |  ✅ [❗](caveats-sros) |
-| Sonic                    |  ✅ |  ✅ |  ❌  |  ❌  |
+| Cumulus Linux 5.x (NVUE) |  ✅ |  ❌  |  ✅ |  ❌ |
+| Dell OS10                |  ✅ | ✅ |  ✅ |  ✅ |
+| FRR                      |  ✅ | ✅ |  ✅ |  ✅ |
+| Junos[^Junos]            |  ✅ |  ❌  |  ❌  |  ❌  |
+| Nokia SR Linux           |  ✅ |  ❌  |  ✅ [❗](caveats-srlinux) |  ✅ [❗](caveats-srlinux) |
+| Nokia SR OS              |  ✅ |  ❌  |  ✅ [❗](caveats-sros) |  ✅ [❗](caveats-sros) |
+| Sonic                    |  ✅ |  ❌  |  ❌  |  ❌  |
 | VyOS                     |  ✅ |  ❌  |  ✅ |  ✅ |
+
+These devices support EBGP sessions between IPv6 LLA or IPv4 AF on IPv6 EBGP sessions:
+
+|   Operating system       | IPv6 LLA<br />EBGP<br />sessions | Unnumbered<br />IPv4 EBGP<br />sessions[^INTv4] | RFC 8950<br>IPv4<br />next hops[^RFC8950] |
+| ------------------------ | :-: | :-: | :-: |
+| Arista EOS               |  ✅ |  ✅ |  ❌  |
+| BIRD                     |  ❌  |  ❌  |  ✅ |
+| Cumulus Linux 4.x        |  ✅ |  ✅ |  ✅ |
+| Cumulus Linux 5.x (NVUE) |  ✅ |  ✅ |  ✅ |
+| Dell OS10                |  ✅ |  ✅ |  ❌  |
+| FRR                      |  ✅ |  ✅ |  ✅ |
+| Nokia SR Linux           |  ✅ |  ✅ |  ❌  |
+| Sonic                    |  ✅ |  ✅ |  ❌  |
+| VyOS                     |  ✅ |  ✅ |  ❌  |
+
+[^RFC8950]: IPv6 next hops for IPv4 prefixes advertised over a regular (non-LLA) IPv6 EBGP session. RFC 8950-style next hops over IPv6 LLA sessions used to implement interface EBGP sessions are documented in the *Unnumbered IPv4 EBGP sessions* column.
+
+These devices support BGP local-AS functionality to build EBGP or IBGP sessions:
+
+|   Operating system       | EBGP<br>local AS | IBGP<br>local AS |
+| ------------------------ | :-: | :-: |
+| Arista EOS               |  ✅ |  ✅ |
+| Aruba AOS-CX             |  ✅ |  ❌  |
+| BIRD                     |  ✅ |  ✅ |
+| Cisco IOS/IOS XE[^18v]   |  ✅ |  ✅ |
+| Cumulus Linux 4.x        |  ✅ |  ❌  |
+| Cumulus Linux 5.x (NVUE) |  ✅ |  ✅ |
+| Dell OS10                |  ✅ |  ❌  |
+| FRR                      |  ✅ |  ✅ |
+| JunOS                    |  ✅ |  ✅ |
+| Nokia SR Linux           |  ✅ |  ✅ |
+| Nokia SR OS              |  ✅ |  ✅ |
+| Sonic                    |  ✅ |  ✅ |
+| VyOS                     |  ✅ |  ❌  |
 
 ```{tip}
 * See [BGP Integration Tests Results](https://release.netlab.tools/_html/coverage.bgp) for more details.
@@ -98,6 +115,8 @@ The following features are only supported on a subset of platforms:
 ```
 
 [^18v]: Includes Cisco IOSv, IOSvL2, Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL) and IOL Layer-2 images
+
+[^Junos]: Includes vMX, vSRX, vPTX, vJunos-evolved, vJunos-switch, and vJunos-router
 
 [^INTv4]: IPv4 address family activated on an EBGP session established between IPv6 LLA interfaces and using IPv6 next hop for IPv4 prefixes according to RFC 8950
 
@@ -109,7 +128,7 @@ You could use *global* or *per-node* parameters to configure BGP autonomous syst
 * Specify BGP AS and route reflector status of individual nodes with **bgp.as** and **bgp.rr** node parameters.
 * Using a global **as_list**, specify members and route reflectors in multiple autonomous systems in your lab.
 
-The simplest way to build a network with a single BGP autonomous system is to specify the BGP AS number in global **bgp.as** parameter and the list of route reflectors in the global **bgp.rr_list** parameter (See [IBGP-over-OSPF Data Center Fabric example](bgp_example/ibgp.md) for details):
+The simplest way to build a network with a single BGP autonomous system is to specify the BGP AS number in the global **bgp.as** parameter and the list of route reflectors in the global **bgp.rr_list** parameter (See [IBGP-over-OSPF Data Center Fabric example](bgp_example/ibgp.md) for details):
 
 ```
 bgp:
@@ -144,6 +163,7 @@ bgp:
 
 Advanced global configuration parameters include:
 
+* **bgp.confederation** -- defines BGP confederations ([more details](bgp-confederations))
 * **bgp.community** -- configure BGP community propagation. By default, standard and extended communities are propagated to IBGP neighbors, and standard communities are propagated to EBGP neighbors. See *[BGP Community Propagation](#bgp-communities-propagation)* for more details.
 * **bgp.advertise_roles** -- a list of link types and roles. Links matching any element of the list will be advertised into BGP. See *[Advertised BGP Prefixes](bgp-advertise-prefix)* for details.
 * **bgp.ebgp_role** -- link role set on links connecting nodes from different autonomous systems. See *[Interaction with IGP](#interaction-with-igp)* for details.
@@ -154,20 +174,20 @@ Advanced global configuration parameters include:
 Instead of using a global list of autonomous systems, you could specify a BGP autonomous system and route reflector role on individual nodes using these parameters:
 
 * **bgp.as**: AS number -- specified on a node, or as default global value (propagated to all nodes without a specified AS number)
-* **bgp.rr** -- the node is a BGP route reflector within its autonomous system.
+* **bgp.rr** -- The node is a BGP route reflector within its autonomous system.
 
 ```{note}
-* **bgp.as** parameter *must* be specified for every node using the BGP configuration module.
+* The **bgp.as** parameter *must* be specified for every node using the BGP configuration module.
 * The node AS number could be derived from the global **bgp.as_list**, from the default (global) value of **bgp.as** parameter, or specified on the node itself. Explore [simple BGP example](bgp_example/simple.md) to see how to combine the global AS number with the node AS number.
 * Specifying a BGP autonomous system on individual nodes makes sense when each node uses a different BGP AS. See [EBGP leaf-and-spine fabric example](bgp_example/ebgp.md) for details.
 ```
 
 Additional per-node BGP configuration parameters include:
 
-* **bgp.advertise_loopback** -- when set to `False`, the IP prefixes configured on loopback interfaces are not advertised in BGP. See also [*Advanced Global Configuration Parameters*](#advanced-global-configuration-parameters).
+* **bgp.advertise_loopback** -- When set to `False`, BGP does not advertise the IP prefix configured on the loopback interface. See also [*Advanced Global Configuration Parameters*](#advanced-global-configuration-parameters).
 * **bgp.community** -- override global BGP community propagation defaults for this node. See *[](bgp-community-propagation)* for more details.
 * **bgp.import** -- [import (redistribute) IPv4 and IPv6 routes](routing_import) into global BGP instance (default: **false**)
-* **bgp.local_as** -- the autonomous system used on all EBGP sessions. See *[IBGP local-as](bgp-ibgp-localas)* on how this could result in **IBGP** sessions as well.
+* **bgp.local_as** -- the autonomous system used on all EBGP sessions. See *[IBGP local-as](bgp-ibgp-localas)* on how this could also result in **IBGP** sessions.
 * **bgp.next_hop_self** -- Use *next-hop-self* on IBGP sessions. This parameter can also be specified as a global value; the system default is **true**.
 * **bgp.originate** -- a list of additional prefixes to advertise. The advertised prefixes are supported with a static route pointing to *Null0*.
 * **bgp.router_id** -- Set a static router ID. The default **router_id** is taken from the IPv4 address of the loopback interface or the **router_id** address pool if the device does not have a loopback interface or there is no usable IPv4 address on the loopback interface.
@@ -205,7 +225,7 @@ Finally, the BGP configuration module supports these advanced node parameters th
 **Limitations:**
 
 * IBGP sessions cannot be used within a VRF instance. You can use the BGP **local-as** functionality to create what looks like an IBGP session to the BGP neighbors.
-* You should not use the same BGP AS number on PE- and CE-routers; that would trigger the creation of impossible IBGP sessions between global PE loopbacks and in-VRF CE loopbacks. Use [](plugin-bgp-domain) if you want to build a topology with overlapping AS numbers.
+* You should not use the same BGP AS number on PE- and CE-routers; that would trigger the creation of impossible IBGP sessions between global PE loopbacks and in-VRF CE loopbacks. Use [](plugin-bgp-domain) to build a topology with overlapping AS numbers.
 
 ## Link-Level Parameters
 
@@ -213,7 +233,7 @@ You can also use these link-level parameters to influence the BGP prefix adverti
 
 * **bgp.advertise** -- The BGP process will advertise the link IP prefix.
 
-You can also [disable all EBGP sessions on a link](routing_disable).
+You can also [turn off all EBGP sessions on a link](routing_disable).
 
 See [examples](#more-examples) for sample usage guidelines.
 
@@ -229,7 +249,7 @@ links:
     bgp.local_as: 65101
 ```
 
-You can also [disable all EBGP sessions on an interface](routing_disable).
+You can also [turn off all EBGP sessions on an interface](routing_disable).
 
 (bgp-advertise-prefix)=
 ## Advertised BGP Prefixes
@@ -279,7 +299,7 @@ An IP prefix assigned to a link with the **‌role** set to **‌stub** will not
 
 ### Using bgp.originate Node Attribute
 
-If you set **bgp.originate** parameter on a node, _netlab_ adds a static route for the prefix pointing to *Null0* and configures the BGP prefix.
+When you set the **bgp.originate** parameter on a node, _netlab_ adds discard static routes for the IPv4 prefixes listed in that parameter prefix (the static routes point to *Null0*) and configures the corresponding BGP prefix.
 
 For example, PE1 advertises `172.16.0.0/19' in the following topology. Please note that while the prefix is advertised via BGP, it does not have reachable IP addresses (the BGP prefix is based on a discard-everything static route).
 
@@ -320,7 +340,7 @@ _netlab_ generates a warning for routers that have IBGP sessions without an unde
 **EBGP Sessions**
 
 * Whenever multiple nodes connected to the same link use different AS numbers, you'll get a full mesh of EBGP sessions between them[^EB_D].
-* Global (**bgp.as**) and local (**bgp.local_as**) autonomous systems are considered when deciding to create a session between two adjacent nodes, allowing you to create EBGP sessions between nodes belonging to the same AS or IBGP sessions between nodes belonging to different AS.
+* Global (**bgp.as**), local (**bgp.local_as**), and [confederation](bgp-confederations) autonomous systems are considered when deciding to create a session between two adjacent nodes, allowing you to create EBGP sessions between nodes belonging to the same AS or IBGP sessions between nodes belonging to different AS.
 * Parallel EBGP sessions are established for all IP address families configured on the link[^BSESS]. See also [IPv6 support](#ipv6-support).
 
 [^EB_D]: Unless you disabled EBGP sessions with the **bgp.sessions** parameter ([more details](bgp-advanced-node))
@@ -339,12 +359,12 @@ Use the **netlab show module --module bgp --feature ipv6_lla** command to displa
 
 *netlab* can use IPv6 EBGP sessions to transport IPv4 address family with IPv6 next hops (RFC 8950) -- the functionality commonly used to implement *interface EBGP sessions*. *netlab* will enable IPv4 AF over IPv6 LLA EBGP sessions when the **unnumbered** link- or interface attribute is set, or when **ipv4** interface address or link prefix is set to *True*.
 
-Use the **netlab show module --module bgp --feature ipv6_lla** command to display devices on which you can use the IPv4 address family on IPv6 LLA EBGP sessions and the **netlab show module --module bgp --feature rfc8950** command to display devices on which you can use the IPv4 address family on regular IPv6 EBGP sessions.
+Use the **netlab show module --module bgp --feature ipv6_lla** command to display devices on which you can use the IPv4 address family on IPv6 LLA EBGP sessions, and the **netlab show module --module bgp --feature rfc8950** command to display devices on which you can use the IPv4 address family on regular IPv6 EBGP sessions.
 
 (bgp-ibgp-localas)=
 **IBGP Sessions Resulting from Matching bgp.local_as on an EBGP Session**
 
-When **bgp.local_as** is configured with the same value as the neighbor AS, the result is an IBGP session. Most platforms treat such `localas_ibgp` sessions no different from regular `ibgp` sessions, but there could be subtle differences (and even bugs)
+When **bgp.local_as** is configured with the same value as the neighbor AS, the result is an IBGP session. Most platforms treat such `localas_ibgp` sessions no differently from regular `ibgp` sessions, but there could be subtle differences (and even bugs)
 
 ## IPv6 Support
 
@@ -357,15 +377,15 @@ All BGP configuration templates include IPv4 and IPv6 address family configurati
 
 No additional checks are performed regarding the viability of IPv4 or IPv6 BGP sessions. For example:
 
-* You could configure IPv6 addresses on loopback interfaces but not P2P links. The IPv6 IBGP sessions would be configured but would not because the transport network would not support IPv6.
-* You could configure IPv4 and IPv6 addresses throughout the network but use OSPFv2 as the routing protocol. EBGP IPv6 sessions would work, but IBGP IPv6 sessions would not.
+* You could configure IPv6 addresses on loopback interfaces, but not P2P links. The IPv6 IBGP sessions would be configured, but would not work because the transport network would not support IPv6.
+* You could configure IPv4 and IPv6 addresses throughout the network, but use OSPFv2 as the routing protocol. EBGP IPv6 sessions would work, but IBGP IPv6 sessions would not.
 * You could configure addresses on individual nodes connected to an inter-AS link. If you configure IPv6 addresses on some nodes but not others, the system might configure useless EBGP sessions.
 
 ## Interaction with IGP
 
 The BGP transformation module can set link *role* on links used for EBGP sessions. The link role (when not specified on the link itself) is set to the value of **defaults.bgp.ebgp_role** (default system value: **external**).
 
-**Consequence:** The default settings exclude links with EBGP sessions from IGP processes ([more details](routing_external)). See the [Simple BGP Example](bgp_example/simple.md) for more details.
+**Consequence:** The default settings exclude links with EBGP sessions from IGP processes ([more details](routing_external)). For more details, see the [Simple BGP Example](bgp_example/simple.md).
 
 (bgp-community-propagation)=
 ## BGP Communities Propagation
@@ -419,7 +439,31 @@ The **bgp.community** values can contain these keywords:
 
 [^NAL]: Some devices might not propagate the large communities when using the **standard** keyword.
 
-Only some devices support **large** and **2octet** keywords. Use **[netlab show modules -m bgp](netlab-show-modules)** command to display BGP capabilities supported by individual devices and check the **community** column for more details. Devices without a value in that column support **standard** and **extended** keywords, but the meaning of the **standard** keyword might vary. Some devices (for example, Cisco IOSv and IOS XE) propagate large BGP communities as soon as the propagation of standard communities is configured. In contrast, others (for example, Arista EOS) require an explicit configuration of **large** community propagation.
+Only some devices support **large** and **2octet** keywords. Use the **[netlab show modules -m bgp](netlab-show-modules)** command to display BGP capabilities supported by individual devices and check the **community** column for more details. Devices without a value in that column support **standard** and **extended** keywords, but the meaning of the **standard** keyword might vary. Some devices (for example, Cisco IOSv and IOS XE) propagate large BGP communities as soon as the propagation of standard communities is configured. In contrast, others (for example, Arista EOS) require an explicit configuration of **large** community propagation.
+
+(bgp-confederations)=
+## BGP Confederations
+
+BGP confederations are defined in the global **bgp.confederation** dictionary. The dictionary keys are confederation AS numbers; the values are the lists of confederation members. For example, this is how you would define   confederation AS 65000 with members 65001, 65002, and 65003:
+
+```
+bgp.confederation:
+  65000:
+    members: [ 65001, 65002, 65003 ]
+```
+
+EBGP sessions between confederation peers are built the same way as all other EBGP sessions; the session type is set to **confed_ebgp** to allow you to control address family activation and community propagation over confederation EBGP sessions.
+
+BGP confederations usually assume a single IGP across all confederation members; _netlab_ bypasses that requirement with the **next-hop-self** option on confederation EBGP sessions.
+
+The current _netlab_ implementation of BGP confederations does not support[^CWP]:
+
+* Single IGP across the confederation members
+* Confederation-wide BGP next hops (they are always changed at the member AS boundary)
+* Confederation EBGP sessions in VRFs
+* Confederation EBGP sessions in combination with BGP local-as functionality
+
+[^CWP]: Note to people who prefer not to read the documentation: issues claiming one of these caveats does not work will be closed immediately and with extreme prejudice.
 
 ## Related Plugins
 
