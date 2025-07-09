@@ -3,17 +3,19 @@
 
 *netlab* uses *Vagrant* with the *vagrant-libvirt* plugin to start virtual machines in the libvirt/KVM environment.
 
-To use libvirt/KVM environment on a Linux bare-metal server or a Linux VM:
+To use the libvirt/KVM environment on a Linux bare-metal server or a Linux VM:
 
 * Install *netlab* ([Linux server](../install/linux.md), [Ubuntu virtual machine](../install/ubuntu-vm.md))
-* If you're using Ubuntu, execute **netlab install libvirt** to install KVM, libvirt, Vagrant, and vagrant-libvirt. You'll have to install the software manually on other Linux distributions.
+* If you're using Ubuntu, Debian, or one of their derivatives, execute **netlab install libvirt** to install KVM, libvirt, Vagrant, and the vagrant-libvirt plugin.
+* You'll have to install the same software manually on Linux distributions not based on Debian. Make sure your *libvirt* installation creates the *default* storage pool.
 * [Download or build Vagrant boxes](#vagrant-boxes)
 * Create [lab topology file](../topology-overview.md). *libvirt* is the default virtualization provider and does not have to be specified in the topology file
 * [Fix the installation checks](libvirt-probes) if you're not using Ubuntu or Debian.
 * Start the lab with **[netlab up](../netlab/up.md)**
 
 ```{warning}
-You MUST use **netlab up** to start the lab to ensure the virtual machines get correct management IP addresses -- **netlab up** creates the [*vagrant-libvirt* management network](libvirt-mgmt) with predefined IP address range and DHCP bindings.
+* You MUST use **netlab up** to start the lab to ensure the virtual machines get correct management IP addresses -- **netlab up** creates the [*vagrant-libvirt* management network](libvirt-mgmt) with predefined IP address range and DHCP bindings.
+* **vagrant-libvirt** plugin creates VM disks (volumes) in the *‌default* storage pool. That setting cannot be changed; you MUST have a *‌default* storage pool in your *‌libvirt* installation. The *‌default* storage pool is usually created when you install *‌libvirt*; use the **‌virsh pool-list** command to verify that.
 ```
 
 ```eval_rst
@@ -94,7 +96,7 @@ These documents contain box-building recipes using the **netlab libvirt** utilit
 * [VyOS](https://github.com/ssasso/packer-vyos-vagrant) by [Stefano Sasso](http://stefano.dscnet.org) - if you don't want to use the one from Vagrant Cloud.
 
 ```{note}
-For more Vagrant details, watch the *[Network Simulation Tools](https://my.ipspace.net/bin/list?id=NetTools#SIMULATE)* part of *[Network Automation Tools](https://www.ipspace.net/Network_Automation_Tools)* webinar.
+For more Vagrant details, watch the *[Network Simulation Tools](https://my.ipspace.net/bin/list?id=NetTools#SIMULATE)* part of the *[Network Automation Tools](https://www.ipspace.net/Network_Automation_Tools)* webinar.
 ```
 
 (libvirt-vm-settings)=
@@ -104,28 +106,18 @@ The following node parameters influence the VM configuration created by *vagrant
 
 * **cpu** -- number of virtual CPUs allocated to the VM
 * **memory** -- VM memory (in MB)
-* **libvirt.nic_model_type** -- VM NIC model (example: e1000). Default _netlab_ settings usually work fine.
+* **libvirt.nic_model_type** -- VM NIC model (example: e1000). The default _netlab_ settings usually work fine.
 * **libvirt.nic_adapter_count** -- maximum number of VM NICs (default: 8)
 * **libvirt.uuid** -- sets the libvirt VM UUID (some devices use the UUID to create their serial numbers). The value of this parameter is not checked[^UUID].
 
-[^UUID]: In other words, you're on your own. After starting a lab, you can get a valid VM UUID with **virsh dumpxml _vm_name_|grep uuid** command (use **netlab status** to display the VM name).
+[^UUID]: In other words, you're on your own. After starting a lab, you can get a valid VM UUID with the **virsh dumpxml _vm_name_|grep uuid** command (use **netlab status** to display the VM name).
 
 (libvirt-box-replace)=
 ### Replacing Vagrant Boxes
 
 If you want to rebuild and install a Vagrant box with the same version number, you must manually remove the old box. You must also delete the corresponding volume (disk image) from the *libvirt* storage pool (the *vagrant-libvirt* plugin installs new boxes but does not clean up the old ones).
 
-To delete an old version of a Vagrant box, use a procedure similar to the one described below:
-
-* Use `vagrant box list` to list the installed boxes
-* Use `vagrant box remove <box-name> --box-version=<box-version>` to delete the Vagrant box[^VV]
-* Use `virsh vol-list --pool default`[^DP] to list the installed Vagrant boxes
-* Find the relevant volume name, for example, `cisco-VAGRANTSLASH-iosxr_vagrant_box_image_7.4.2_box.img` for an IOS XR 7.4.2 image
-* Delete the volume with `virsh vol-delete --pool default <volume-name>`
-
-[^VV]: You don't have to specify the box version unless you created multiple versions of the same box.
-
-[^DP]: *libvirt* environment created with the **netlab install libvirt** installation script uses the *default* storage pool. A custom installation might use a different storage pool name.
+Use the **[netlab libvirt remove](netlab-libvirt-remove)** command to remove a Vagrant box and the corresponding *libvirt* volume.
 
 The new Vagrant box will be copied into the *libvirt* storage pool the next time you use the affected device in your lab.
 
@@ -141,7 +133,7 @@ The new Vagrant box will be copied into the *libvirt* storage pool the next time
 (libvirt-capture)=
 ### Packet Capture
 
-The *libvirt* point-to-point UDP tunnels are not implemented as Linux interfaces, making it impossible to start packet capture on the VM interfaces attached to point-to-point tunnels. The VMs must be attached to Linux bridges for the **[netlab capture](netlab-capture)** command to work.
+The *libvirt* point-to-point UDP tunnels are not implemented as Linux interfaces, making it impossible to start packet capture on the VM interfaces attached to point-to-point tunnels. The VMs must be connected to Linux bridges for the **[netlab capture](netlab-capture)** command to work.
 
 Add **type: lan** to a point-to-point link between two virtual machines to change its implementation into a Linux bridge. You can also set the **defaults.providers.libvirt.p2p_bridge** parameter to *True* if you don't want to use UDP tunnels for point-to-point links (see [](defaults-topology) and [](defaults-user-file) for more information on changing system defaults).
 
@@ -157,7 +149,7 @@ Lab networks are created as private, very-isolated *libvirt* networks without a 
 
 [^MACVTAP]: The default value for the **libvirt.public** attribute is **bridge** which creates a *[macvtap](https://virt.kernelnewbies.org/MacVTap)* interface for every node connected to the link.
 
-Example: use the following topology to connect your lab to the outside world through `r1` on a Linux server that uses `enp86s0` as the name of the Ethernet interface:
+Example: Use the following topology to connect your lab to the outside world through `r1` on a Linux server that uses `enp86s0` as the name of the Ethernet interface:
 
 ```
 defaults.device: cumulus
@@ -210,18 +202,18 @@ You can change the parameters of the management network in the **addressing.mgmt
 (libvirt-mgmt-ip)=
 ### VM Management IPv4 Addresses
 
-The only way to assign a management IPv4 address to a network device started as a virtual machine is through DHCP, and *vagrant*, together with *libvirt* (and *dnsmasq*), provides a seamless implementation. IPv6 management addresses do not work as most Vagrant boxes do not use DHCPv6.
+The only way to assign a management IPv4 address to a network device started as a virtual machine is through DHCP, and *vagrant*, together with *libvirt* (and *dnsmasq*), provides a seamless implementation. IPv6 management addresses do not work, as most Vagrant boxes do not use DHCPv6.
 
 *netlab* creates static DHCP mappings in the management network ([see above](libvirt-mgmt)) and asks *vagrant-libvirt* to set the MAC address of the VM management interface to a well-known value, ensuring that each VM gets the expected management IPv4- and MAC address assigned by *netlab* based on the [device node ID](node-augment) and the **[start](address-pool-specs)** parameter of the [**mgmt** address pool](../addressing.md).
 
-You can change the IPv4 address of a device's management interface with the **mgmt.ipv4** node parameters to have fixed management IPv4 addresses for your virtual machines (for example, to be accessed from an external management tool or to match an existing deployment). However, it is recommended to use the auto-generated IPs, which are guaranteed to not overlap.
+You can change the IPv4 address of a device's management interface with the **mgmt.ipv4** node parameters to have fixed management IPv4 addresses for your virtual machines (for example, to be accessed from an external management tool or to match an existing deployment). However, it is recommended to use the auto-generated IPs, which are guaranteed not to overlap.
 
 (libvirt-port-forwarding)=
 ### Port Forwarding
 
 *netlab* supports *vagrant-libvirt* port forwarding -- mapping of TCP ports on VM management IP address to ports on the host. You can use port forwarding to access the lab devices via the host's external IP address without exposing the management network to the outside world.
 
-Port forwarding is turned off by default and can be enabled by configuring the **defaults.providers.libvirt.forwarded** dictionary. Dictionary keys are TCP port names (`ssh`, `http`, `https`, or `netconf`), and dictionary values are the start values of host ports. *netlab* assigns a unique host port to every VM forwarded port based on the start value and VM node ID.
+Port forwarding is turned off by default and can be enabled by configuring the **defaults.providers.libvirt.forwarded** dictionary. Dictionary keys are TCP port names (`ssh`, `http`, `https`, or `netconf`), and dictionary values are the start values of host ports. *netlab* assigns a unique host port to every VM's forwarded port based on the start value and VM node ID.
 
 For example, when given the following topology...
 
@@ -243,7 +235,7 @@ nodes:
 
 ## Starting Virtual Machines in Batches
 
-*vagrant-libvirt* plugin tries to start all virtual machines specified in `Vagrantfile` in parallel. The resulting strain on CPU resources might cause VM boot failures in large topologies. As a workaround, you can configure **libvirt** virtualization provider to execute a series of `vagrant up` commands to start the virtual machines in smaller batches:
+*vagrant-libvirt* plugin tries to start all virtual machines specified in `Vagrantfile` in parallel. The resulting strain on CPU resources might cause VM boot failures in large topologies. As a workaround, you can configure the **libvirt** virtualization provider to execute a series of `vagrant up` commands to start the virtual machines in smaller batches:
 
 * Configure the batch size with **defaults.providers.libvirt.batch_size** parameter (an integer between 1 and 50)
 * Configure idle interval between batches (if needed) with **defaults.providers.libvirt.batch_interval** parameter (between 1 and 1000 seconds).
