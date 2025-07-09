@@ -21,6 +21,7 @@ def pre_link_transform(topology: Box) -> None:
 
   sessions = links.adjust_link_list(topology.bgp.multihop.sessions,topology.nodes,'bgp.multihop[{link_cnt}]')
   topology.bgp.multihop.sessions = sessions
+  next_linkindex = links.get_next_linkindex(topology)
   for s in sessions:
     for attr in list(s.keys()):                       # Change session attributes into BGP link attributes
       # Skip internal attributes and BGP/VRF attributes already within BGP namespace
@@ -30,7 +31,8 @@ def pre_link_transform(topology: Box) -> None:
       s.pop(attr,None)
     
     s.type = 'tunnel'
-    s.linkindex = links.get_next_linkindex(topology)
+    s.linkindex = next_linkindex
+    next_linkindex += 1
     s._phantom_link = True
 
     validate_attributes(
