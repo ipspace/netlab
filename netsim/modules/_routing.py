@@ -297,6 +297,8 @@ def build_vrf_interface_list(
       continue
     if 'vrf' not in l:                                                # Interface not in a VRF?
       continue
+    if l.get('_phantom_link',False):                                  # Is this an interface on a phantom link?
+      continue                                                        # Skip it, the interface will be removed anyway
     if node.vrfs[l.vrf][proto] is True:                               # Handle 'force' the protocol by setting it to True
       node.vrfs[l.vrf][proto] = { 'active': True }
     elif node.vrfs[l.vrf][proto] is False:                            # Skip protocols disabled on VRF level
