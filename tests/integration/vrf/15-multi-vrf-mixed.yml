@@ -11,6 +11,8 @@ message: |
 
 defaults.interfaces.mtu: 1500
 
+defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
+
 groups:
   ce_ospf:
     members: [ r1, r3 ]
@@ -59,7 +61,7 @@ validate:
   blue_ospf:
     description: Check OSPF adjacencies in blue VRF
     wait_msg: Waiting for OSPF adjacencies to form
-    wait: 30
+    wait: ospfv2_adj_p2p
     nodes: [ r3 ]
     plugin: ospf_neighbor(nodes.dut.vrfs.blue.ospf.router_id)
     stop_on_error: true
@@ -68,18 +70,18 @@ validate:
     wait_msg: Waiting for EBGP sessions to start
     nodes: [ r2, r4 ]
     plugin: bgp_neighbor(node.bgp.neighbors,'dut')
-    wait: 20
+    wait: ebgp_session
     stop_on_error: true
   red_c_ospf:
     description: Check connected subnet as OSPF prefix on R1
-    wait: 15
+    wait: ospf_import
     wait_msg: Waiting for OSPF convergence
     fail: DUT is not redistributing connected subnets into OSPF
     nodes: [ r1 ]
     plugin: ospf_prefix(nodes.r2.interfaces[0].ipv4)
   red_c_bgp:
     description: Check connected subnet as BGP prefix on R2
-    wait: 10
+    wait: bgp_scan_long
     wait_msg: Waiting for BGP convergence
     fail: DUT is not redistributing connected subnets into BGP
     nodes: [ r2 ]
@@ -88,25 +90,25 @@ validate:
     description: Check for BGP prefix on OSPF
     wait_msg: Waiting for BGP and OSPF convergence
     fail: BGP is not redistributed into OSPF
-    wait: 10
+    wait: ospfv2_spf
     nodes: [ r1 ]
     plugin: ospf_prefix(nodes.r2.loopback.ipv4)
   red_ospf_bgp:
     description: Check for OSPF prefix in BGP
     wait_msg: Waiting for BGP and OSPF convergence
     fail: OSPF is not redistributed into BGP
-    wait: 3
+    wait: bgp_scan_time
     nodes: [ r2 ]
-    plugin: bgp_prefix(nodes.r2.loopback.ipv4)
+    plugin: bgp_prefix(nodes.r1.loopback.ipv4)
   red_lb_ping:
     description: Loopback-to-loopback reachability test in VRF red
     wait_msg: Waiting for BGP and OSPF to start
-    wait: 5
+    wait: ping
     nodes: [ r1 ]
     plugin: ping('r2',src=nodes.r1.loopback.ipv4)
   red_p_ospf:
     description: Check for reachability of connected routes in OSPF
-    wait: 5
+    wait: ping
     nodes: [ r2 ]
     plugin: ping('r1')
   red_p_bgp:
@@ -115,7 +117,7 @@ validate:
     plugin: ping('r2')
   blue_lb_ping:
     description: Loopback-to-loopback reachability test in VRF blue
-    wait: 10
+    wait: ping
     nodes: [ r3 ]
     plugin: ping('r4',src=nodes.r3.loopback.ipv4)
   inter_vrf:
