@@ -20,7 +20,6 @@ defaults:
       - startup-delay
       - restart-policy
       template: clab.j2
-      version: 0.68.0
       start: sudo -E containerlab deploy --reconfigure -t clab.yml
       stop: sudo -E containerlab destroy --cleanup -t clab.yml
       act_probe: docker ps
@@ -923,7 +922,6 @@ defaults:
           - connected
           - static
           - vrf
-          confederation: true
         evpn:
           asymmetrical_irb: true
           irb: true
@@ -1077,7 +1075,6 @@ defaults:
             - extended
             2octet:
             - standard
-          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -1217,6 +1214,8 @@ defaults:
           eos:
             serialnumber: str
             systemmacaddr: mac
+      warnings:
+        ospf_stub: false
     fortios:
       description: Fortinet FortiOS firewall
       interface_name: port{ifindex}
@@ -1353,7 +1352,6 @@ defaults:
             - extended
             2octet:
             - standard
-          confederation: true
         evpn:
           irb: true
           asymmetrical_irb: true
@@ -2900,6 +2898,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        loopback_ipv6: false
     unknown:
       description: Generic Unknown Device
       interface_name: eth{ifindex}
@@ -3398,6 +3398,7 @@ defaults:
       description: VyOS VM/container
       interface_name: eth{ifindex}
       loopback_interface_name: dum{ifindex}
+      lag_interface_name: bond{lag.ifindex}
       mgmt_if: eth0
       libvirt:
         image: vyos/current
@@ -3432,6 +3433,8 @@ defaults:
           protocol:
           - vrrp
         isis: {}
+        lag:
+          passive: false
         mpls:
           ldp: true
           vpn:
@@ -4460,7 +4463,6 @@ defaults:
         ibgp:
         ebgp:
         localas_ibgp:
-        confed_ebgp:
     rp_entry:
       _description: Routing policy entry
       action:
@@ -4762,6 +4764,25 @@ defaults:
     ifname:
       neighbors: 5
       maxlength: 255
+    validate:
+      ping: 5
+      vxlan_ping: 20
+      ra_send: 30
+      ospfv2_adj_p2p: 30
+      ospfv2_adj_lan: 50
+      ospfv2_spf: 10
+      ospfv3_adj_p2p: 30
+      ospfv3_adj_lan: 50
+      ospfv3_spf: 10
+      ospf_import: 20
+      ebgp_session: 30
+      ibgp_session: 30
+      bgp_scan_time: 5
+      bgp_scan_long: 15
+      bgp_ios_redist: 60
+      isis_adj_p2p: 20
+      isis_spf: 15
+      stp_forwarding: 40
   hints:
     evpn:
       irb_group: >
@@ -4854,18 +4875,18 @@ defaults:
       command_args: --immediate-mode -l -vv
   paths:
     validate:
-    - /home/pipi/net101/tools/netsim/validate
+    - /home/pipi/netlab_gh/netsim/validate
     plugin:
     - /work/netlab_cicd
     - /home/pipi/net101/tools/tests/integration/bgp
     - /home/pipi/.netlab
-    - /home/pipi/net101/tools/netsim/extra
+    - /home/pipi/netlab_gh/netsim/extra
     custom:
       dirs:
       - /home/pipi/net101/tools/tests/integration/bgp
       - /work/netlab_cicd
       - /home/pipi/.netlab
-      - /home/pipi/net101/tools/netsim/extra
+      - /home/pipi/netlab_gh/netsim/extra
       files:
       - "{{ custom_config + '/' + inventory_hostname + '.' + netlab_device_type +
         '-' + node_provider + '.j2' }}"
@@ -4896,7 +4917,7 @@ defaults:
       - '{{ custom_config }}/deploy.yml'
     deploy:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks
+      - /home/pipi/netlab_gh/netsim/ansible/tasks
       tasks_generic:
       - deploy-config/{{ netlab_device_type }}-{{ node_provider }}.yml
       - deploy-config/{{ netlab_device_type }}.yml
@@ -4917,8 +4938,8 @@ defaults:
       - deploy-config/{{ ansible_network_os }}.yml
     templates:
       dirs:
-      - /home/pipi/net101/tools/netsim/daemons
-      - /home/pipi/net101/tools/netsim/ansible/templates
+      - /home/pipi/netlab_gh/netsim/daemons
+      - /home/pipi/netlab_gh/netsim/ansible/templates
     t_files:
       files:
       - '{{config_module}}/{{netlab_device_type}}-{{provider|default(netlab_provider)}}.j2'
@@ -4930,7 +4951,7 @@ defaults:
       - '{{netlab_device_type}}/{{config_module}}.j2'
     ready:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check
+      - /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check
       files:
       - '{{netlab_device_type}}-{{provider|default(netlab_provider)}}.yml'
       - '{{netlab_device_type}}.yml'
@@ -4938,7 +4959,7 @@ defaults:
       - '{{ansible_network_os}}.yml'
     collect:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks/fetch-config
+      - /home/pipi/netlab_gh/netsim/ansible/tasks/fetch-config
   ports:
     ssh: 22
     http: 80
@@ -4946,6 +4967,8 @@ defaults:
     netconf: 830
   warnings:
     duplicate_address: true
+    providers:
+      change: false
   bfd:
     min_echo_rx: 0
     multiplier: 3
@@ -5031,7 +5054,6 @@ defaults:
       advertise_roles:
       rr_list:
       as_list:
-      confederation:
     transform_after:
     - vlan
     config_after:
@@ -5082,16 +5104,8 @@ defaults:
           - str
           - BoxList
         replace_global_as: bool
-        confederation:
-          type: dict
-          _keytype: asn
-          _subtype:
-            members:
-              type: list
-              _subtype: asn
       _inherit_community:
         localas_ibgp: ibgp
-        confed_ebgp: ibgp
       node:
         as:
           type: asn
@@ -5176,7 +5190,6 @@ defaults:
       ipv6_lla: Can run EBGP sessions over IPv6 link-local addresses
       rfc8950: Can run IPv4 AF over regular IPv6 EBGP session
       community: Granular BGP community propagation
-      confederation: BGP confederations
       import: Import routes from other routing protocols
     warnings:
       missing_igp: true
@@ -5738,6 +5751,7 @@ defaults:
       vjunos-switch: true
       vptx: true
       vsrx: true
+      vyos: true
   mpls:
     config_after:
     - vlan
@@ -6802,6 +6816,8 @@ defaults:
   sources:
     extra:
     - defaults-ipv6.yml
+    - ../wait_times.yml
+    - ../warnings.yml
     list: []
     user: []
     system: []
@@ -6927,10 +6943,6 @@ nodes:
         - standard
         - large
         - extended
-        confed_ebgp:
-        - standard
-        - large
-        - extended
       next_hop_self: true
       as: 65000
       router_id: 10.0.0.1
@@ -6980,10 +6992,6 @@ nodes:
         - standard
         - large
         localas_ibgp:
-        - standard
-        - large
-        - extended
-        confed_ebgp:
         - standard
         - large
         - extended
@@ -7056,10 +7064,6 @@ nodes:
         - standard
         - large
         localas_ibgp:
-        - standard
-        - large
-        - extended
-        confed_ebgp:
         - standard
         - large
         - extended
@@ -7156,7 +7160,7 @@ links:
 validate:
 - description: Check EBGP sessions with DUT (wait up to 10 seconds)
   wait_msg: Waiting for EBGP session to be established
-  wait: 20
+  wait: 30
   nodes:
   - x1
   - x2
@@ -7164,7 +7168,7 @@ validate:
   name: session
 - description: Check whether DUT propagates the beacon prefix
   wait_msg: Waiting for BGP convergence
-  wait: 3
+  wait: 5
   nodes:
   - x1
   plugin: bgp_prefix('2001:db8:cafe:1::/64',af='ipv6')
@@ -7172,6 +7176,8 @@ validate:
 input:
 - /home/pipi/net101/tools/tests/integration/bgp/11-ipv6-ebgp.yml
 - /home/pipi/net101/tools/tests/integration/bgp/defaults-ipv6.yml
+- /home/pipi/net101/tools/tests/integration/wait_times.yml
+- /home/pipi/net101/tools/tests/integration/warnings.yml
 - /home/pipi/.netlab.yml
 - package:topology-defaults.yml
 plugin:

@@ -4,378 +4,6 @@ message: |
   Use this topology to test the 'local AS' functionality on VRF EBGP sessions.
   The device under test uses a different AS on DUT-X1 session and shall still
   propagate routes between X1 and X2
-module:
-- bgp
-- vrf
-groups:
-  probes:
-    device: frr
-    members:
-    - x1
-    - x2
-    module:
-    - bgp
-    node_data:
-      provider: clab
-  external:
-    device: frr
-    members: []
-    _default_group: true
-  all:
-    vars:
-      netlab_show_config: true
-    members: []
-    _default_group: true
-  as65000:
-    members:
-    - dut
-  as65100:
-    members:
-    - x1
-  as65101:
-    members:
-    - x2
-vrfs:
-  tenant:
-    id: 1
-    rd: '65000:1'
-    import:
-    - '65000:1'
-    export:
-    - '65000:1'
-nodes:
-  dut:
-    bgp:
-      advertise_loopback: true
-      community:
-        ibgp:
-        - standard
-        - large
-        - extended
-        ebgp:
-        - standard
-        - large
-        localas_ibgp:
-        - standard
-        - large
-        - extended
-        confed_ebgp:
-        - standard
-        - large
-        - extended
-      next_hop_self: true
-      as: 65000
-      router_id: 10.0.0.1
-      neighbors: []
-      ipv4: true
-    name: dut
-    interfaces:
-    - bgp:
-        local_as: 65002
-      ipv4: 10.1.0.1/30
-      vrf: tenant
-      linkindex: 1
-      role: external
-      type: p2p
-      name: dut -> x1
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 10.1.0.2/30
-        ifname: eth1
-        node: x1
-    - ipv4: 10.1.0.5/30
-      vrf: tenant
-      linkindex: 2
-      role: external
-      type: p2p
-      name: dut -> x2
-      ifindex: 2
-      ifname: eth2
-      mtu: 1500
-      neighbors:
-      - ipv4: 10.1.0.6/30
-        ifname: eth1
-        node: x2
-    device: frr
-    clab:
-      kind: linux
-      config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts
-      binds:
-      - clab_files/dut/daemons:/etc/frr/daemons
-      - clab_files/dut/hosts:/etc/hosts
-    box: quay.io/frrouting/frr:10.3.1
-    module:
-    - bgp
-    - vrf
-    vrf:
-      as: 65000
-    id: 1
-    role: router
-    mtu: 1500
-    provider: clab
-    af:
-      ipv4: true
-      vpnv4: true
-    mgmt:
-      ifname: eth0
-      mac: 08:4f:a9:01:00:00
-      ipv4: 192.168.17.101
-    hostname: clab-ml_17-dut
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.1/32
-    vrfs:
-      tenant:
-        id: 1
-        rd: '65000:1'
-        import:
-        - '65000:1'
-        export:
-        - '65000:1'
-        bgp:
-          neighbors:
-          - ifindex: 1
-            local_as: 65002
-            name: x1
-            as: 65100
-            type: ebgp
-            ipv4: 10.1.0.2
-            activate:
-              ipv4: true
-          - ifindex: 2
-            name: x2
-            as: 65101
-            type: ebgp
-            ipv4: 10.1.0.6
-            activate:
-              ipv4: true
-          import:
-            connected:
-              auto: true
-        af:
-          ipv4: true
-        vrfidx: 100
-  x1:
-    bgp:
-      advertise_loopback: true
-      community:
-        ibgp:
-        - standard
-        - large
-        - extended
-        ebgp:
-        - standard
-        - large
-        localas_ibgp:
-        - standard
-        - large
-        - extended
-        confed_ebgp:
-        - standard
-        - large
-        - extended
-      next_hop_self: true
-      as: 65100
-      originate:
-      - 172.42.42.0/24
-      router_id: 10.0.0.2
-      neighbors:
-      - ifindex: 1
-        name: dut
-        as: 65002
-        type: ebgp
-        ipv4: 10.1.0.1
-        activate:
-          ipv4: true
-      ipv4: true
-    name: x1
-    interfaces:
-    - ipv4: 10.1.0.2/30
-      linkindex: 1
-      role: external
-      type: p2p
-      name: x1 -> dut
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - bgp:
-          local_as: 65002
-        ipv4: 10.1.0.1/30
-        vrf: tenant
-        ifname: eth1
-        node: dut
-    device: frr
-    module:
-    - bgp
-    clab:
-      kind: linux
-      config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts
-      binds:
-      - clab_files/x1/daemons:/etc/frr/daemons
-      - clab_files/x1/hosts:/etc/hosts
-    box: quay.io/frrouting/frr:10.3.1
-    id: 2
-    role: router
-    mtu: 1500
-    provider: clab
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: 08:4f:a9:02:00:00
-      ipv4: 192.168.17.102
-    hostname: clab-ml_17-x1
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.2/32
-  x2:
-    bgp:
-      advertise_loopback: true
-      community:
-        ibgp:
-        - standard
-        - large
-        - extended
-        ebgp:
-        - standard
-        - large
-        localas_ibgp:
-        - standard
-        - large
-        - extended
-        confed_ebgp:
-        - standard
-        - large
-        - extended
-      next_hop_self: true
-      as: 65101
-      router_id: 10.0.0.3
-      neighbors:
-      - ifindex: 1
-        name: dut
-        as: 65000
-        type: ebgp
-        ipv4: 10.1.0.5
-        activate:
-          ipv4: true
-      ipv4: true
-    name: x2
-    interfaces:
-    - ipv4: 10.1.0.6/30
-      linkindex: 2
-      role: external
-      type: p2p
-      name: x2 -> dut
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 10.1.0.5/30
-        vrf: tenant
-        ifname: eth2
-        node: dut
-    device: frr
-    module:
-    - bgp
-    clab:
-      kind: linux
-      config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts
-      binds:
-      - clab_files/x2/daemons:/etc/frr/daemons
-      - clab_files/x2/hosts:/etc/hosts
-    box: quay.io/frrouting/frr:10.3.1
-    id: 3
-    role: router
-    mtu: 1500
-    provider: clab
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: 08:4f:a9:03:00:00
-      ipv4: 192.168.17.103
-    hostname: clab-ml_17-x2
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.3/32
-links:
-- _linkname: vrfs.tenant.links[1]
-  interfaces:
-  - bgp:
-      local_as: 65002
-    node: dut
-    ipv4: 10.1.0.1/30
-    ifindex: 1
-    ifname: eth1
-  - node: x1
-    ipv4: 10.1.0.2/30
-    ifindex: 1
-    ifname: eth1
-  vrf: tenant
-  linkindex: 1
-  role: external
-  node_count: 2
-  type: p2p
-  prefix:
-    ipv4: 10.1.0.0/30
-- interfaces:
-  - node: dut
-    ipv4: 10.1.0.5/30
-    ifindex: 2
-    ifname: eth2
-  - node: x2
-    ipv4: 10.1.0.6/30
-    ifindex: 1
-    ifname: eth1
-  _linkname: vrfs.tenant.links[2]
-  vrf: tenant
-  linkindex: 2
-  role: external
-  node_count: 2
-  type: p2p
-  prefix:
-    ipv4: 10.1.0.4/30
-validate:
-- description: Check EBGP sessions with DUT (wait up to 10 seconds)
-  wait_msg: Wait for BGP sessions to be established
-  wait: 20
-  nodes:
-  - x1
-  - x2
-  plugin: bgp_neighbor(node.bgp.neighbors,'dut')
-  name: session
-- description: Check whether DUT propagates the beacon prefix
-  wait: 20
-  wait_msg: Wait for BGP prefix origination and BGP convergence
-  nodes:
-  - x2
-  plugin: bgp_prefix('172.42.42.0/24')
-  name: prefix
-input:
-- /home/pipi/net101/tools/tests/integration/bgp/09-vrf-localas.yml
-- /home/pipi/.netlab.yml
-- package:topology-defaults.yml
 defaults:
   provider: clab
   providers:
@@ -393,7 +21,6 @@ defaults:
       - startup-delay
       - restart-policy
       template: clab.j2
-      version: 0.68.0
       start: sudo -E containerlab deploy --reconfigure -t clab.yml
       stop: sudo -E containerlab destroy --cleanup -t clab.yml
       act_probe: docker ps
@@ -1296,7 +923,6 @@ defaults:
           - connected
           - static
           - vrf
-          confederation: true
         evpn:
           asymmetrical_irb: true
           irb: true
@@ -1450,7 +1076,6 @@ defaults:
             - extended
             2octet:
             - standard
-          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -1590,6 +1215,8 @@ defaults:
           eos:
             serialnumber: str
             systemmacaddr: mac
+      warnings:
+        ospf_stub: false
     fortios:
       description: Fortinet FortiOS firewall
       interface_name: port{ifindex}
@@ -1726,7 +1353,6 @@ defaults:
             - extended
             2octet:
             - standard
-          confederation: true
         evpn:
           irb: true
           asymmetrical_irb: true
@@ -3273,6 +2899,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        loopback_ipv6: false
     unknown:
       description: Generic Unknown Device
       interface_name: eth{ifindex}
@@ -3771,6 +3399,7 @@ defaults:
       description: VyOS VM/container
       interface_name: eth{ifindex}
       loopback_interface_name: dum{ifindex}
+      lag_interface_name: bond{lag.ifindex}
       mgmt_if: eth0
       libvirt:
         image: vyos/current
@@ -3805,6 +3434,8 @@ defaults:
           protocol:
           - vrrp
         isis: {}
+        lag:
+          passive: false
         mpls:
           ldp: true
           vpn:
@@ -4829,7 +4460,6 @@ defaults:
         ibgp:
         ebgp:
         localas_ibgp:
-        confed_ebgp:
     rp_entry:
       _description: Routing policy entry
       action:
@@ -5131,6 +4761,25 @@ defaults:
     ifname:
       neighbors: 5
       maxlength: 255
+    validate:
+      ping: 5
+      vxlan_ping: 20
+      ra_send: 30
+      ospfv2_adj_p2p: 30
+      ospfv2_adj_lan: 50
+      ospfv2_spf: 10
+      ospfv3_adj_p2p: 30
+      ospfv3_adj_lan: 50
+      ospfv3_spf: 10
+      ospf_import: 20
+      ebgp_session: 30
+      ibgp_session: 30
+      bgp_scan_time: 5
+      bgp_scan_long: 15
+      bgp_ios_redist: 60
+      isis_adj_p2p: 20
+      isis_spf: 15
+      stp_forwarding: 40
   hints:
     evpn:
       irb_group: >
@@ -5223,18 +4872,18 @@ defaults:
       command_args: --immediate-mode -l -vv
   paths:
     validate:
-    - /home/pipi/net101/tools/netsim/validate
+    - /home/pipi/netlab_gh/netsim/validate
     plugin:
     - /work/netlab_cicd
     - /home/pipi/net101/tools/tests/integration/bgp
     - /home/pipi/.netlab
-    - /home/pipi/net101/tools/netsim/extra
+    - /home/pipi/netlab_gh/netsim/extra
     custom:
       dirs:
       - /home/pipi/net101/tools/tests/integration/bgp
       - /work/netlab_cicd
       - /home/pipi/.netlab
-      - /home/pipi/net101/tools/netsim/extra
+      - /home/pipi/netlab_gh/netsim/extra
       files:
       - "{{ custom_config + '/' + inventory_hostname + '.' + netlab_device_type +
         '-' + node_provider + '.j2' }}"
@@ -5265,7 +4914,7 @@ defaults:
       - '{{ custom_config }}/deploy.yml'
     deploy:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks
+      - /home/pipi/netlab_gh/netsim/ansible/tasks
       tasks_generic:
       - deploy-config/{{ netlab_device_type }}-{{ node_provider }}.yml
       - deploy-config/{{ netlab_device_type }}.yml
@@ -5286,8 +4935,8 @@ defaults:
       - deploy-config/{{ ansible_network_os }}.yml
     templates:
       dirs:
-      - /home/pipi/net101/tools/netsim/daemons
-      - /home/pipi/net101/tools/netsim/ansible/templates
+      - /home/pipi/netlab_gh/netsim/daemons
+      - /home/pipi/netlab_gh/netsim/ansible/templates
     t_files:
       files:
       - '{{config_module}}/{{netlab_device_type}}-{{provider|default(netlab_provider)}}.j2'
@@ -5299,7 +4948,7 @@ defaults:
       - '{{netlab_device_type}}/{{config_module}}.j2'
     ready:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check
+      - /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check
       files:
       - '{{netlab_device_type}}-{{provider|default(netlab_provider)}}.yml'
       - '{{netlab_device_type}}.yml'
@@ -5307,7 +4956,7 @@ defaults:
       - '{{ansible_network_os}}.yml'
     collect:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks/fetch-config
+      - /home/pipi/netlab_gh/netsim/ansible/tasks/fetch-config
   ports:
     ssh: 22
     http: 80
@@ -5315,6 +4964,8 @@ defaults:
     netconf: 830
   warnings:
     duplicate_address: true
+    providers:
+      change: false
   bfd:
     min_echo_rx: 0
     multiplier: 3
@@ -5400,7 +5051,6 @@ defaults:
       advertise_roles:
       rr_list:
       as_list:
-      confederation:
     transform_after:
     - vlan
     config_after:
@@ -5451,16 +5101,8 @@ defaults:
           - str
           - BoxList
         replace_global_as: bool
-        confederation:
-          type: dict
-          _keytype: asn
-          _subtype:
-            members:
-              type: list
-              _subtype: asn
       _inherit_community:
         localas_ibgp: ibgp
-        confed_ebgp: ibgp
       node:
         as:
           type: asn
@@ -5546,7 +5188,6 @@ defaults:
       ipv6_lla: Can run EBGP sessions over IPv6 link-local addresses
       rfc8950: Can run IPv4 AF over regular IPv6 EBGP session
       community: Granular BGP community propagation
-      confederation: BGP confederations
       import: Import routes from other routing protocols
     warnings:
       missing_igp: true
@@ -6107,6 +5748,7 @@ defaults:
       vjunos-switch: true
       vptx: true
       vsrx: true
+      vyos: true
   mpls:
     config_after:
     - vlan
@@ -7170,8 +6812,10 @@ defaults:
       vjunos-switch: true
       vyos: true
   sources:
+    extra:
+    - ../wait_times.yml
+    - ../warnings.yml
     list: []
-    extra: []
     user: []
     system: []
   groups:
@@ -7212,6 +6856,368 @@ defaults:
   - bgp
   - vrf
   name: ml_17
+module:
+- bgp
+- vrf
+groups:
+  probes:
+    device: frr
+    members:
+    - x1
+    - x2
+    module:
+    - bgp
+    node_data:
+      provider: clab
+  external:
+    device: frr
+    members: []
+    _default_group: true
+  all:
+    vars:
+      netlab_show_config: true
+    members: []
+    _default_group: true
+  as65000:
+    members:
+    - dut
+  as65100:
+    members:
+    - x1
+  as65101:
+    members:
+    - x2
+vrfs:
+  tenant:
+    id: 1
+    rd: '65000:1'
+    import:
+    - '65000:1'
+    export:
+    - '65000:1'
+nodes:
+  dut:
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      next_hop_self: true
+      as: 65000
+      router_id: 10.0.0.1
+      neighbors: []
+      ipv4: true
+    name: dut
+    interfaces:
+    - bgp:
+        local_as: 65002
+      ipv4: 10.1.0.1/30
+      vrf: tenant
+      linkindex: 1
+      role: external
+      type: p2p
+      name: dut -> x1
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 10.1.0.2/30
+        ifname: eth1
+        node: x1
+    - ipv4: 10.1.0.5/30
+      vrf: tenant
+      linkindex: 2
+      role: external
+      type: p2p
+      name: dut -> x2
+      ifindex: 2
+      ifname: eth2
+      mtu: 1500
+      neighbors:
+      - ipv4: 10.1.0.6/30
+        ifname: eth1
+        node: x2
+    device: frr
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts
+      binds:
+      - clab_files/dut/daemons:/etc/frr/daemons
+      - clab_files/dut/hosts:/etc/hosts
+    box: quay.io/frrouting/frr:10.3.1
+    module:
+    - bgp
+    - vrf
+    vrf:
+      as: 65000
+    id: 1
+    role: router
+    mtu: 1500
+    provider: clab
+    af:
+      ipv4: true
+      vpnv4: true
+    mgmt:
+      ifname: eth0
+      mac: 08:4f:a9:01:00:00
+      ipv4: 192.168.17.101
+    hostname: clab-ml_17-dut
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.1/32
+    vrfs:
+      tenant:
+        id: 1
+        rd: '65000:1'
+        import:
+        - '65000:1'
+        export:
+        - '65000:1'
+        bgp:
+          neighbors:
+          - ifindex: 1
+            local_as: 65002
+            name: x1
+            as: 65100
+            type: ebgp
+            ipv4: 10.1.0.2
+            activate:
+              ipv4: true
+          - ifindex: 2
+            name: x2
+            as: 65101
+            type: ebgp
+            ipv4: 10.1.0.6
+            activate:
+              ipv4: true
+          import:
+            connected:
+              auto: true
+        af:
+          ipv4: true
+        vrfidx: 100
+  x1:
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      next_hop_self: true
+      as: 65100
+      originate:
+      - 172.42.42.0/24
+      router_id: 10.0.0.2
+      neighbors:
+      - ifindex: 1
+        name: dut
+        as: 65002
+        type: ebgp
+        ipv4: 10.1.0.1
+        activate:
+          ipv4: true
+      ipv4: true
+    name: x1
+    interfaces:
+    - ipv4: 10.1.0.2/30
+      linkindex: 1
+      role: external
+      type: p2p
+      name: x1 -> dut
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - bgp:
+          local_as: 65002
+        ipv4: 10.1.0.1/30
+        vrf: tenant
+        ifname: eth1
+        node: dut
+    device: frr
+    module:
+    - bgp
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts
+      binds:
+      - clab_files/x1/daemons:/etc/frr/daemons
+      - clab_files/x1/hosts:/etc/hosts
+    box: quay.io/frrouting/frr:10.3.1
+    id: 2
+    role: router
+    mtu: 1500
+    provider: clab
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: 08:4f:a9:02:00:00
+      ipv4: 192.168.17.102
+    hostname: clab-ml_17-x1
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.2/32
+  x2:
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      next_hop_self: true
+      as: 65101
+      router_id: 10.0.0.3
+      neighbors:
+      - ifindex: 1
+        name: dut
+        as: 65000
+        type: ebgp
+        ipv4: 10.1.0.5
+        activate:
+          ipv4: true
+      ipv4: true
+    name: x2
+    interfaces:
+    - ipv4: 10.1.0.6/30
+      linkindex: 2
+      role: external
+      type: p2p
+      name: x2 -> dut
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 10.1.0.5/30
+        vrf: tenant
+        ifname: eth2
+        node: dut
+    device: frr
+    module:
+    - bgp
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts
+      binds:
+      - clab_files/x2/daemons:/etc/frr/daemons
+      - clab_files/x2/hosts:/etc/hosts
+    box: quay.io/frrouting/frr:10.3.1
+    id: 3
+    role: router
+    mtu: 1500
+    provider: clab
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: 08:4f:a9:03:00:00
+      ipv4: 192.168.17.103
+    hostname: clab-ml_17-x2
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.3/32
+links:
+- _linkname: vrfs.tenant.links[1]
+  interfaces:
+  - bgp:
+      local_as: 65002
+    node: dut
+    ipv4: 10.1.0.1/30
+    ifindex: 1
+    ifname: eth1
+  - node: x1
+    ipv4: 10.1.0.2/30
+    ifindex: 1
+    ifname: eth1
+  vrf: tenant
+  linkindex: 1
+  role: external
+  node_count: 2
+  type: p2p
+  prefix:
+    ipv4: 10.1.0.0/30
+- interfaces:
+  - node: dut
+    ipv4: 10.1.0.5/30
+    ifindex: 2
+    ifname: eth2
+  - node: x2
+    ipv4: 10.1.0.6/30
+    ifindex: 1
+    ifname: eth1
+  _linkname: vrfs.tenant.links[2]
+  vrf: tenant
+  linkindex: 2
+  role: external
+  node_count: 2
+  type: p2p
+  prefix:
+    ipv4: 10.1.0.4/30
+validate:
+- description: Check EBGP sessions with DUT (wait up to 10 seconds)
+  wait_msg: Wait for BGP sessions to be established
+  wait: 30
+  nodes:
+  - x1
+  - x2
+  plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+  name: session
+- description: Check whether DUT propagates the beacon prefix
+  wait: 15
+  wait_msg: Wait for BGP prefix origination and BGP convergence
+  nodes:
+  - x2
+  plugin: bgp_prefix('172.42.42.0/24')
+  name: prefix
+input:
+- /home/pipi/net101/tools/tests/integration/bgp/09-vrf-localas.yml
+- /home/pipi/net101/tools/tests/integration/wait_times.yml
+- /home/pipi/net101/tools/tests/integration/warnings.yml
+- /home/pipi/.netlab.yml
+- package:topology-defaults.yml
 plugin:
 - multilab
 name: ml_17
