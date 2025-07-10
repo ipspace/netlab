@@ -6,7 +6,7 @@ def post_transform(topology: Box) -> None:
     ndata = topology.nodes[n]
     for intf in ndata.interfaces:
       if intf.get('vlan.trunk'):
-        log.warning(text=f'Adding native VLAN 1 to interface {intf.ifname} on node {n}')
+        log.info(text=f'Adding native VLAN 1 to interface {intf.ifname} on node {n}')
         intf.vlan.access_id = 1
         intf.vlan.trunk.untagged = {}
         intf.vlan.native = 'untagged'
