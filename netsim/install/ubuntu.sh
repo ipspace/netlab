@@ -11,14 +11,6 @@ $SUDO apt-get upgrade -y $FLAG_APT
 # Install missing packages
 #
 echo "Install missing packages (also a pretty long operation)"
-# Add linux-modules-extra for e.g. vrf
-# linux-modules-extra-$(uname -r) should exist, but it won't if we're running
-# on a kernel that has been purged from the package server; in that case the
-# user will likely need to reboot.
-EXTRA=""
-if apt-cache show linux-modules-extra-$(uname -r) > /dev/null; then
-  EXTRA="linux-modules-extra-$(uname -r)"
-fi
 # Added curl, which is not installed by default on Debian - ghostinthenet - 20220417
 $SUDO apt-get -y $FLAG_APT install python3 python3-setuptools ifupdown python3-pip curl $EXTRA
 echo "Install nice-to-have packages"
@@ -30,3 +22,12 @@ echo "Install Python development and build modules"
 $SUDO apt-get -y $FLAG_APT install build-essential python3-dev libffi-dev libssh-dev
 echo "Installing XML libraries"
 $SUDO apt-get -y $FLAG_APT install libxslt1-dev libssl-dev
+# Add linux-modules-extra for e.g. vrf
+# linux-modules-extra-$(uname -r) should exist, but it won't if we're running
+# on a kernel that has been purged from the package server; in that case the
+# user will likely need to reboot.
+EXTRA="linux-modules-extra-$(uname -r)"
+if [ -n "$(apt-cache search $EXTRA)" ]; then
+  echo "Installing additional Linux kernel modules"
+  sudo apt-get -y $FLAG_APT install $EXTRA
+fi
