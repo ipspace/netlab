@@ -1,3 +1,7 @@
-./run-tests.py -d dellos10 -p libvirt -t vlan --limit 70
-./run-tests.py -d dellos10 -p libvirt -t vlan --limit 02
-./run-tests.py -d dellos10 -p libvirt -t evpn --limit 13
+./run-tests.py -d arubacx -p libvirt -t vxlan --limit 04
+./run-tests.py -d arubacx -p libvirt -t routing --limit 03
+./run-tests.py -d arubacx -p libvirt -t bgp_policy --limit 31
+./run-tests.py -d arubacx -p libvirt -t bgp_policy --limit 41
+./run-tests.py -d arubacx -p libvirt -t vrf --limit 15
+./run-tests.py -d arubacx -p libvirt -t vrf --limit 21
+./run-tests.py -d arubacx -p libvirt -t vrf --limit 23
