@@ -4,6 +4,8 @@ message: |
   cluster-id) and next-hop handling (change next hop on EBGP but not on
   reflected route).
 
+defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
+
 module: [ bgp, ospf ]
 plugin: [ bgp.session ]
 
@@ -44,31 +46,31 @@ links:
 validate:
   ospf_adj_dut:
     description: Check OSPF adjacencies with DUT
-    wait: 40
+    wait: ospfv2_adj_p2p
     nodes: [ r1 ]
     wait_msg: Waiting for OSPF adjacency process to complete
     plugin: ospf_neighbor(nodes.dut.ospf.router_id)
   ospf_adj_r1:
     description: Check OSPF adjacencies with R1
-    wait: 10
+    wait: ospfv2_adj_p2p
     nodes: [ r2, rr2 ]
     wait_msg: Waiting for OSPF adjacency process to complete
     plugin: ospf_neighbor(nodes.r1.ospf.router_id)
   session:
     description: Check BGP sessions with DUT
     wait_msg: Wait for BGP sessions to be established
-    wait: 30
+    wait: ibgp_session
     nodes: [ r1, r2, rr2, x1 ]
     plugin: bgp_neighbor(node.bgp.neighbors,'dut')
   prefix:
-    wait: 5
+    wait: bgp_scan_time
     description: Check whether DUT propagates the external beacon prefix
     wait_msg: Wait for BGP convergence
     nodes: [ r1, r2, rr2 ]
     plugin: bgp_prefix('172.42.42.0/24')
   nhs:
     description: Check next-hop handling on DUT
-    wait: 5
+    wait: bgp_scan_time
     wait_msg: Wait for BGP convergence
     nodes: [ r1, r2 ]
     plugin: >
@@ -77,12 +79,12 @@ validate:
         nh=nodes.dut.loopback.ipv4 if 'loopback' in nodes.dut else nodes.dut.interfaces[0].ipv4)
   reflect:
     description: Check route reflection on DUT
-    wait: 5
+    wait: bgp_scan_time
     nodes: [ r2 ]
     plugin: bgp_prefix('172.0.42.0/24',peer=nodes.dut.bgp.router_id)
   inact:
     description: Check route reflection of inactive routes on DUT
-    wait: 2
+    wait: bgp_scan_time
     nodes: [ r2 ]
     level: warning
     plugin: bgp_prefix('10.0.0.10/32',peer=nodes.dut.bgp.router_id)
