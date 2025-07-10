@@ -2,10 +2,11 @@ groups:
   router:
     members:
     - r1
-    - r2
     module:
     - vlan
     - vxlan
+    - ospf
+    - vrf
     node_data:
       vlans:
         blue: {}
@@ -53,29 +54,17 @@ links:
   prefix:
     ipv4: 10.1.0.0/30
   type: p2p
-- _linkname: links[3]
-  interfaces:
-  - ifindex: 3
-    ifname: Ethernet3
-    ipv4: 10.1.0.6/30
-    node: s2
-  - ifindex: 1
-    ifname: eth1
-    ipv4: 10.1.0.5/30
-    node: r2
-  linkindex: 3
-  node_count: 2
-  prefix:
-    ipv4: 10.1.0.4/30
-  type: p2p
 module:
 - vlan
+- ospf
+- vrf
 - vxlan
 name: input
 nodes:
   r1:
     af:
       ipv4: true
+      vpnv4: true
     box: none
     clab:
       env:
@@ -97,48 +86,51 @@ nodes:
       - ifname: Ethernet2
         ipv4: 10.1.0.2/30
         node: s2
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
       type: p2p
     - bridge_group: 1
       ifindex: 40000
       ifname: Vlan1000
       ipv4: 172.16.0.3/24
-      name: VLAN red (1000) -> [s2,s1,r2]
+      name: VLAN red (1000) -> [s2,s1]
       neighbors:
       - ifname: Vlan1000
         node: s2
       - ifname: Vlan1000
         node: s1
-      - ifname: Vlan1000
-        ipv4: 172.16.0.4/24
-        node: r2
       type: svi
       virtual_interface: true
       vlan:
         mode: irb
         name: red
+      vrf: tenant
     - bridge_group: 2
       ifindex: 40001
       ifname: Vlan1001
       ipv4: 172.16.1.3/24
-      name: VLAN blue (1001) -> [s2,s1,r2]
+      name: VLAN blue (1001) -> [s2,s1]
       neighbors:
       - ifname: Vlan1001
         node: s2
       - ifname: Vlan1001
         node: s1
-      - ifname: Vlan1001
-        ipv4: 172.16.1.4/24
-        node: r2
       type: svi
       virtual_interface: true
       vlan:
         mode: irb
         name: blue
+      vrf: tenant
     loopback:
       ifindex: 0
       ifname: Loopback0
       ipv4: 10.0.0.3/32
       neighbors: []
+      ospf:
+        area: 0.0.0.0
+        passive: false
       type: loopback
       virtual_interface: true
     mgmt:
@@ -147,8 +139,15 @@ nodes:
       mac: 08:4f:a9:03:00:00
     module:
     - vlan
+    - ospf
+    - vrf
     - vxlan
     name: r1
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.0
+      router_id: 10.0.0.3
     role: router
     vlan:
       max_bridge_group: 2
@@ -161,9 +160,9 @@ nodes:
           allocation: id_based
           ipv4: 172.16.1.0/24
         vni: 101001
+        vrf: tenant
         vtep_list:
         - 10.0.0.2
-        - 10.0.0.4
       red:
         bridge_group: 1
         id: 1000
@@ -172,9 +171,22 @@ nodes:
           allocation: id_based
           ipv4: 172.16.0.0/24
         vni: 101000
+        vrf: tenant
         vtep_list:
         - 10.0.0.2
-        - 10.0.0.4
+    vrf:
+      as: 65000
+    vrfs:
+      tenant:
+        af:
+          ipv4: true
+        export:
+        - '65000:1'
+        id: 1
+        import:
+        - '65000:1'
+        rd: '65000:1'
+        vrfidx: 100
     vxlan:
       domain: global
       flooding: static
@@ -185,112 +197,6 @@ nodes:
       vtep_interface: Loopback0
       vtep_list:
       - 10.0.0.2
-      - 10.0.0.4
-  r2:
-    af:
-      ipv4: true
-    box: none
-    device: none
-    hostname: clab-input-r2
-    id: 4
-    interfaces:
-    - ifindex: 1
-      ifname: eth1
-      ipv4: 10.1.0.5/30
-      linkindex: 3
-      name: r2 -> s2
-      neighbors:
-      - ifname: Ethernet3
-        ipv4: 10.1.0.6/30
-        node: s2
-      type: p2p
-    - bridge_group: 1
-      ifindex: 40000
-      ifname: Vlan1000
-      ipv4: 172.16.0.4/24
-      name: VLAN red (1000) -> [s2,s1,r1]
-      neighbors:
-      - ifname: Vlan1000
-        node: s2
-      - ifname: Vlan1000
-        node: s1
-      - ifname: Vlan1000
-        ipv4: 172.16.0.3/24
-        node: r1
-      type: svi
-      virtual_interface: true
-      vlan:
-        mode: irb
-        name: red
-    - bridge_group: 2
-      ifindex: 40001
-      ifname: Vlan1001
-      ipv4: 172.16.1.4/24
-      name: VLAN blue (1001) -> [s2,s1,r1]
-      neighbors:
-      - ifname: Vlan1001
-        node: s2
-      - ifname: Vlan1001
-        node: s1
-      - ifname: Vlan1001
-        ipv4: 172.16.1.3/24
-        node: r1
-      type: svi
-      virtual_interface: true
-      vlan:
-        mode: irb
-        name: blue
-    loopback:
-      ifindex: 0
-      ifname: Loopback0
-      ipv4: 10.0.0.4/32
-      neighbors: []
-      type: loopback
-      virtual_interface: true
-    mgmt:
-      ifname: eth0
-      ipv4: 192.168.121.104
-      mac: 08:4f:a9:04:00:00
-    module:
-    - vlan
-    - vxlan
-    name: r2
-    vlan:
-      max_bridge_group: 2
-    vlans:
-      blue:
-        bridge_group: 2
-        id: 1001
-        mode: irb
-        prefix:
-          allocation: id_based
-          ipv4: 172.16.1.0/24
-        vni: 101001
-        vtep_list:
-        - 10.0.0.2
-        - 10.0.0.3
-      red:
-        bridge_group: 1
-        id: 1000
-        mode: irb
-        prefix:
-          allocation: id_based
-          ipv4: 172.16.0.0/24
-        vni: 101000
-        vtep_list:
-        - 10.0.0.2
-        - 10.0.0.3
-    vxlan:
-      domain: global
-      flooding: static
-      vlans:
-      - red
-      - blue
-      vtep: 10.0.0.4
-      vtep_interface: Loopback0
-      vtep_list:
-      - 10.0.0.2
-      - 10.0.0.3
   s1:
     af:
       ipv4: true
@@ -324,16 +230,13 @@ nodes:
     - bridge_group: 1
       ifindex: 40000
       ifname: Vlan1001
-      name: VLAN blue (1001) -> [s2,r1,r2]
+      name: VLAN blue (1001) -> [s2,r1]
       neighbors:
       - ifname: Vlan1001
         node: s2
       - ifname: Vlan1001
         ipv4: 172.16.1.3/24
         node: r1
-      - ifname: Vlan1001
-        ipv4: 172.16.1.4/24
-        node: r2
       type: svi
       virtual_interface: true
       vlan:
@@ -342,16 +245,13 @@ nodes:
     - bridge_group: 2
       ifindex: 40001
       ifname: Vlan1000
-      name: VLAN red (1000) -> [s2,r1,r2]
+      name: VLAN red (1000) -> [s2,r1]
       neighbors:
       - ifname: Vlan1000
         node: s2
       - ifname: Vlan1000
         ipv4: 172.16.0.3/24
         node: r1
-      - ifname: Vlan1000
-        ipv4: 172.16.0.4/24
-        node: r2
       type: svi
       virtual_interface: true
       vlan:
@@ -433,32 +333,21 @@ nodes:
       - ifname: Ethernet1
         ipv4: 10.1.0.1/30
         node: r1
-      type: p2p
-    - clab:
-        name: et3
-      ifindex: 3
-      ifname: Ethernet3
-      ipv4: 10.1.0.6/30
-      linkindex: 3
-      name: s2 -> r2
-      neighbors:
-      - ifname: eth1
-        ipv4: 10.1.0.5/30
-        node: r2
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
       type: p2p
     - bridge_group: 1
       ifindex: 40000
       ifname: Vlan1001
-      name: VLAN blue (1001) -> [s1,r1,r2]
+      name: VLAN blue (1001) -> [s1,r1]
       neighbors:
       - ifname: Vlan1001
         node: s1
       - ifname: Vlan1001
         ipv4: 172.16.1.3/24
         node: r1
-      - ifname: Vlan1001
-        ipv4: 172.16.1.4/24
-        node: r2
       type: svi
       virtual_interface: true
       vlan:
@@ -467,16 +356,13 @@ nodes:
     - bridge_group: 2
       ifindex: 40001
       ifname: Vlan1000
-      name: VLAN red (1000) -> [s1,r1,r2]
+      name: VLAN red (1000) -> [s1,r1]
       neighbors:
       - ifname: Vlan1000
         node: s1
       - ifname: Vlan1000
         ipv4: 172.16.0.3/24
         node: r1
-      - ifname: Vlan1000
-        ipv4: 172.16.0.4/24
-        node: r2
       type: svi
       virtual_interface: true
       vlan:
@@ -487,6 +373,9 @@ nodes:
       ifname: Loopback0
       ipv4: 10.0.0.2/32
       neighbors: []
+      ospf:
+        area: 0.0.0.0
+        passive: false
       type: loopback
       virtual_interface: true
     mgmt:
@@ -496,7 +385,13 @@ nodes:
     module:
     - vlan
     - vxlan
+    - ospf
     name: s2
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.0
+      router_id: 10.0.0.2
     role: router
     vlan:
       max_bridge_group: 2
@@ -512,7 +407,6 @@ nodes:
         vni: 101001
         vtep_list:
         - 10.0.0.3
-        - 10.0.0.4
       red:
         bridge_group: 2
         id: 1000
@@ -523,7 +417,6 @@ nodes:
         vni: 101000
         vtep_list:
         - 10.0.0.3
-        - 10.0.0.4
     vxlan:
       domain: global
       flooding: static
@@ -534,7 +427,8 @@ nodes:
       vtep_interface: Loopback0
       vtep_list:
       - 10.0.0.3
-      - 10.0.0.4
+ospf:
+  area: 0.0.0.0
 provider: clab
 vlans:
   blue:
@@ -548,9 +442,6 @@ vlans:
     - ifname: Vlan1001
       ipv4: 172.16.1.3/24
       node: r1
-    - ifname: Vlan1001
-      ipv4: 172.16.1.4/24
-      node: r2
     prefix:
       allocation: id_based
       ipv4: 172.16.1.0/24
@@ -566,13 +457,12 @@ vlans:
     - ifname: Vlan1000
       ipv4: 172.16.0.3/24
       node: r1
-    - ifname: Vlan1000
-      ipv4: 172.16.0.4/24
-      node: r2
     prefix:
       allocation: id_based
       ipv4: 172.16.0.0/24
     vni: 101000
+vrf:
+  as: 65000
 vxlan:
   domain: global
   flooding: static
