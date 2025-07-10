@@ -2,10 +2,6 @@
 ---
 message: |
   Use this topology to test the import of OSPFv2 and OSPFv3 routes into BGP IPv4/IPv6 AF
-module:
-- routing
-- ospf
-- bgp
 defaults:
   provider: clab
   providers:
@@ -344,6 +340,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -516,6 +513,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -1220,6 +1218,8 @@ defaults:
           eos:
             serialnumber: str
             systemmacaddr: mac
+      warnings:
+        ospf_stub: false
       provider: clab
     fortios:
       description: Fortinet FortiOS firewall
@@ -1495,6 +1495,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -1651,6 +1652,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -1821,6 +1823,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -1984,6 +1987,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -2294,6 +2298,7 @@ defaults:
           - connected
           - static
           - vrf
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -2903,6 +2908,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        loopback_ipv6: false
     unknown:
       description: Generic Unknown Device
       interface_name: eth{ifindex}
@@ -4462,7 +4469,6 @@ defaults:
         ibgp:
         ebgp:
         localas_ibgp:
-        confed_ebgp:
     rp_entry:
       _description: Routing policy entry
       action:
@@ -4764,6 +4770,25 @@ defaults:
     ifname:
       neighbors: 5
       maxlength: 255
+    validate:
+      ping: 5
+      vxlan_ping: 20
+      ra_send: 30
+      ospfv2_adj_p2p: 30
+      ospfv2_adj_lan: 50
+      ospfv2_spf: 10
+      ospfv3_adj_p2p: 30
+      ospfv3_adj_lan: 50
+      ospfv3_spf: 10
+      ospf_import: 20
+      ebgp_session: 30
+      ibgp_session: 30
+      bgp_scan_time: 5
+      bgp_scan_long: 15
+      bgp_ios_redist: 60
+      isis_adj_p2p: 20
+      isis_spf: 15
+      stp_forwarding: 40
   hints:
     evpn:
       irb_group: >
@@ -4948,6 +4973,8 @@ defaults:
     netconf: 830
   warnings:
     duplicate_address: true
+    providers:
+      change: false
   bfd:
     min_echo_rx: 0
     multiplier: 3
@@ -5043,6 +5070,8 @@ defaults:
     - eigrp
     - ripv2
     next_hop_self: true
+    hooks:
+    - normalize
     attributes:
       global:
         as: asn
@@ -5093,7 +5122,6 @@ defaults:
               _subtype: asn
       _inherit_community:
         localas_ibgp: ibgp
-        confed_ebgp: ibgp
       node:
         as:
           type: asn
@@ -6801,13 +6829,15 @@ defaults:
       unknown: true
       vjunos-switch: true
       vyos: true
-  interfaces:
-    mtu: 1500
   sources:
+    extra:
+    - ../wait_times.yml
+    - ../warnings.yml
     list: []
-    extra: []
     user: []
     system: []
+  interfaces:
+    mtu: 1500
   groups:
     external:
       device: frr
@@ -6847,6 +6877,10 @@ defaults:
   - ospf
   - bgp
   name: ml_17
+module:
+- routing
+- ospf
+- bgp
 addressing:
   lan:
     ipv4: 172.16.0.0/16
@@ -6937,10 +6971,6 @@ nodes:
         - standard
         - large
         localas_ibgp:
-        - standard
-        - large
-        - extended
-        confed_ebgp:
         - standard
         - large
         - extended
@@ -7076,10 +7106,6 @@ nodes:
         - standard
         - large
         localas_ibgp:
-        - standard
-        - large
-        - extended
-        confed_ebgp:
         - standard
         - large
         - extended
@@ -7276,28 +7302,28 @@ links:
 validate:
 - description: IPv4 EBGP session (X1-DUT) should be established
   wait_msg: Wait for EBGP session
-  wait: 20
+  wait: 30
   nodes:
   - x1
   plugin: bgp_neighbor(node.bgp.neighbors,'dut')
   name: ipv4_ebgp
 - description: IPv6 EBGP session (X1-DUT) should be established
   wait_msg: Wait for EBGP session
-  wait: 20
+  wait: 30
   nodes:
   - x1
   plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6')
   name: ipv6_ebgp
 - description: OSPF session (R2-DUT) should be established
   wait_msg: Wait for OSPF session
-  wait: 20
+  wait: 30
   nodes:
   - r2
   plugin: ospf_neighbor(nodes.dut.ospf.router_id)
   name: ipv4_ospf
 - description: OSPFv3 session (R2-DUT) should be established
   wait_msg: Wait for OSPF session
-  wait: 20
+  wait: 30
   nodes:
   - r2
   plugin: ospf6_neighbor(nodes.dut.ospf.router_id)
@@ -7310,7 +7336,7 @@ validate:
   plugin: bgp_prefix(prefix.beacon.ipv4)
   name: import_v4
 - description: Check whether R2 IPv6 prefix is redistributed into BGP
-  wait: 15
+  wait: 60
   wait_msg: Waiting for the loopback prefix to be originated and redistributed
   nodes:
   - x1
@@ -7331,6 +7357,8 @@ validate:
   name: filter_v6
 input:
 - /home/pipi/net101/tools/tests/integration/bgp/31-import-policy.yml
+- /home/pipi/net101/tools/tests/integration/wait_times.yml
+- /home/pipi/net101/tools/tests/integration/warnings.yml
 - /home/pipi/.netlab.yml
 - package:topology-defaults.yml
 plugin:

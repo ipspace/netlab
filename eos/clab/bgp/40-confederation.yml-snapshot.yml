@@ -342,6 +342,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -514,6 +515,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -1495,6 +1497,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -1651,6 +1654,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -1821,6 +1825,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -1984,6 +1989,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -2294,6 +2300,7 @@ defaults:
           - connected
           - static
           - vrf
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -5066,6 +5073,8 @@ defaults:
     - eigrp
     - ripv2
     next_hop_self: true
+    hooks:
+    - normalize
     attributes:
       global:
         as: asn
@@ -6901,6 +6910,7 @@ groups:
     - x1
     - x2
     - r2
+    - r3
     node_data:
       provider: clab
   external:
@@ -7132,7 +7142,7 @@ nodes:
       neighbors:
       - ipv4: 10.1.0.10/30
         ipv6: 2001:db8:3:2::2/64
-        ifname: Ethernet1
+        ifname: eth1
         node: r3
     device: frr
     clab:
@@ -7185,11 +7195,6 @@ nodes:
         - large
         - extended
       next_hop_self: true
-      _cprop_order:
-      - standard
-      - extended
-      - large
-      - link-bandwidth
       as: 65003
       router_id: 10.0.0.3
       confederation:
@@ -7227,9 +7232,8 @@ nodes:
       type: p2p
       name: r3 -> r2
       ifindex: 1
-      ifname: Ethernet1
-      clab:
-        name: et1
+      ifname: eth1
+      mtu: 1500
       neighbors:
       - ipv4: 10.1.0.9/30
         ipv6: 2001:db8:3:2::1/64
@@ -7242,31 +7246,33 @@ nodes:
       type: p2p
       name: r3 -> x2
       ifindex: 2
-      ifname: Ethernet2
-      clab:
-        name: et2
+      ifname: eth2
+      mtu: 1500
       neighbors:
       - ipv4: 10.1.0.14/30
         ipv6: 2001:db8:3:3::2/64
         ifname: eth1
         node: x2
-    device: eos
+    device: frr
     clab:
-      kind: ceos
-      env:
-        INTFTYPE: et
-        CLAB_MGMT_VRF: management
-    box: ceos:4.33.1F
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts
+      binds:
+      - clab_files/r3/daemons:/etc/frr/daemons
+      - clab_files/r3/hosts:/etc/hosts
+    box: quay.io/frrouting/frr:10.3.1
     module:
     - bgp
     id: 3
     role: router
-    provider: clab
+    mtu: 1500
     af:
       ipv4: true
       ipv6: true
     mgmt:
-      ifname: Management0
+      ifname: eth0
       mac: 08:4f:a9:03:00:00
       ipv4: 192.168.17.103
     hostname: clab-ml_17-r3
@@ -7275,7 +7281,7 @@ nodes:
       neighbors: []
       virtual_interface: true
       ifindex: 0
-      ifname: Loopback0
+      ifname: lo
       ipv4: 10.0.0.3/32
       ipv6: 2001:db8:1:3::1/64
   x1:
@@ -7407,7 +7413,7 @@ nodes:
       neighbors:
       - ipv4: 10.1.0.13/30
         ipv6: 2001:db8:3:3::1/64
-        ifname: Ethernet2
+        ifname: eth2
         node: r3
     device: frr
     clab:
@@ -7489,7 +7495,7 @@ links:
     ipv4: 10.1.0.10/30
     ipv6: 2001:db8:3:2::2/64
     ifindex: 1
-    ifname: Ethernet1
+    ifname: eth1
   _linkname: links[3]
   linkindex: 3
   role: external
@@ -7503,7 +7509,7 @@ links:
     ipv4: 10.1.0.13/30
     ipv6: 2001:db8:3:3::1/64
     ifindex: 2
-    ifname: Ethernet2
+    ifname: eth2
   - node: x2
     ipv4: 10.1.0.14/30
     ipv6: 2001:db8:3:3::2/64
