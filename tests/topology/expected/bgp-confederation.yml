@@ -1,0 +1,646 @@
+bgp:
+  advertise_loopback: true
+  community:
+    ebgp:
+    - standard
+    ibgp:
+    - standard
+    - extended
+  confederation:
+    65000:
+      members:
+      - 65001
+      - 65002
+      - 65003
+  next_hop_self: true
+  sessions:
+    ipv4:
+    - confed_ebgp
+    ipv6:
+    - ebgp
+groups:
+  as65001:
+    members:
+    - dut
+  as65002:
+    members:
+    - r2
+  as65003:
+    members:
+    - r3
+  as65100:
+    members:
+    - x1
+  as65101:
+    members:
+    - x2
+  probes:
+    device: frr
+    members:
+    - x1
+    - x2
+    - r2
+    - r3
+    node_data:
+      provider: clab
+input:
+- topology/input/bgp-confederation.yml
+- package:topology-defaults.yml
+libvirt:
+  providers:
+    clab: true
+links:
+- _linkname: links[1]
+  bridge: input_1
+  interfaces:
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.1/30
+    ipv6: 2001:db8:3::1/64
+    node: dut
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.2/30
+    ipv6: 2001:db8:3::4/64
+    node: x1
+  libvirt:
+    provider:
+      clab: true
+  linkindex: 1
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.0/30
+    ipv6: 2001:db8:3::/64
+  role: external
+  type: lan
+- _linkname: links[2]
+  bridge: input_2
+  interfaces:
+  - ifindex: 2
+    ifname: eth2
+    ipv4: 10.1.0.5/30
+    ipv6: 2001:db8:3:1::1/64
+    node: dut
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.6/30
+    ipv6: 2001:db8:3:1::2/64
+    node: r2
+  libvirt:
+    provider:
+      clab: true
+  linkindex: 2
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.4/30
+    ipv6: 2001:db8:3:1::/64
+  role: external
+  type: lan
+- _linkname: links[3]
+  bridge: input_3
+  interfaces:
+  - ifindex: 2
+    ifname: eth2
+    ipv4: 10.1.0.9/30
+    ipv6: 2001:db8:3:2::2/64
+    node: r2
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.10/30
+    ipv6: 2001:db8:3:2::3/64
+    node: r3
+  libvirt:
+    provider:
+      clab: true
+  linkindex: 3
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.8/30
+    ipv6: 2001:db8:3:2::/64
+  role: external
+  type: lan
+- _linkname: links[4]
+  bridge: input_4
+  interfaces:
+  - ifindex: 2
+    ifname: eth2
+    ipv4: 10.1.0.13/30
+    ipv6: 2001:db8:3:3::3/64
+    node: r3
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.14/30
+    ipv6: 2001:db8:3:3::5/64
+    node: x2
+  libvirt:
+    provider:
+      clab: true
+  linkindex: 4
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.12/30
+    ipv6: 2001:db8:3:3::/64
+  role: external
+  type: lan
+message: 'Use this topology to test BGP confederations on IPv4 and IPv6 EBGP sessions
+
+  '
+module:
+- bgp
+name: input
+nodes:
+  dut:
+    af:
+      ipv4: true
+      ipv6: true
+    bgp:
+      advertise_loopback: true
+      as: 65001
+      community:
+        confed_ebgp:
+        - standard
+        - extended
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+        localas_ibgp:
+        - standard
+        - extended
+      confederation:
+        as: 65000
+        peers:
+        - 65002
+        - 65003
+      ipv4: true
+      ipv6: true
+      neighbors:
+      - activate:
+          ipv6: true
+        as: 65100
+        ifindex: 1
+        ipv6: 2001:db8:3::4
+        name: x1
+        type: ebgp
+      - activate:
+          ipv4: true
+        as: 65002
+        ifindex: 2
+        ipv4: 10.1.0.6
+        name: r2
+        type: confed_ebgp
+      next_hop_self: true
+      router_id: 10.0.0.1
+      sessions:
+        ipv4:
+        - confed_ebgp
+        ipv6:
+        - ebgp
+    box: none
+    device: none
+    id: 1
+    interfaces:
+    - bridge: input_1
+      ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.1/30
+      ipv6: 2001:db8:3::1/64
+      linkindex: 1
+      name: dut -> x1
+      neighbors:
+      - ifname: eth1
+        ipv4: 10.1.0.2/30
+        ipv6: 2001:db8:3::4/64
+        node: x1
+      role: external
+      type: lan
+    - bridge: input_2
+      ifindex: 2
+      ifname: eth2
+      ipv4: 10.1.0.5/30
+      ipv6: 2001:db8:3:1::1/64
+      linkindex: 2
+      name: dut -> r2
+      neighbors:
+      - ifname: eth1
+        ipv4: 10.1.0.6/30
+        ipv6: 2001:db8:3:1::2/64
+        node: r2
+      role: external
+      type: lan
+    loopback:
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.1/32
+      ipv6: 2001:db8:1:1::1/64
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.101
+      mac: 08:4f:a9:01:00:00
+    module:
+    - bgp
+    name: dut
+    role: router
+  r2:
+    af:
+      ipv4: true
+      ipv6: true
+    bgp:
+      advertise_loopback: true
+      as: 65002
+      community:
+        confed_ebgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        ibgp:
+        - standard
+        - large
+        - extended
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      confederation:
+        as: 65000
+        peers:
+        - 65001
+        - 65003
+      ipv4: true
+      ipv6: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65001
+        ifindex: 1
+        ipv4: 10.1.0.5
+        name: dut
+        type: confed_ebgp
+      - activate:
+          ipv4: true
+        as: 65003
+        ifindex: 2
+        ipv4: 10.1.0.10
+        name: r3
+        type: confed_ebgp
+      next_hop_self: true
+      router_id: 10.0.0.2
+      sessions:
+        ipv4:
+        - confed_ebgp
+        ipv6:
+        - ebgp
+    box: quay.io/frrouting/frr:10.3.1
+    clab:
+      binds:
+      - clab_files/r2/daemons:/etc/frr/daemons
+      - clab_files/r2/hosts:/etc/hosts
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts
+      kind: linux
+    device: frr
+    hostname: clab-input-r2
+    id: 2
+    interfaces:
+    - bridge: input_2
+      ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.6/30
+      ipv6: 2001:db8:3:1::2/64
+      linkindex: 2
+      mtu: 1500
+      name: r2 -> dut
+      neighbors:
+      - ifname: eth2
+        ipv4: 10.1.0.5/30
+        ipv6: 2001:db8:3:1::1/64
+        node: dut
+      role: external
+      type: lan
+    - bridge: input_3
+      ifindex: 2
+      ifname: eth2
+      ipv4: 10.1.0.9/30
+      ipv6: 2001:db8:3:2::2/64
+      linkindex: 3
+      mtu: 1500
+      name: r2 -> r3
+      neighbors:
+      - ifname: eth1
+        ipv4: 10.1.0.10/30
+        ipv6: 2001:db8:3:2::3/64
+        node: r3
+      role: external
+      type: lan
+    loopback:
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.2/32
+      ipv6: 2001:db8:1:2::1/64
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.102
+      mac: 08:4f:a9:02:00:00
+    module:
+    - bgp
+    mtu: 1500
+    name: r2
+    provider: clab
+    role: router
+  r3:
+    af:
+      ipv4: true
+      ipv6: true
+    bgp:
+      advertise_loopback: true
+      as: 65003
+      community:
+        confed_ebgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        ibgp:
+        - standard
+        - large
+        - extended
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      confederation:
+        as: 65000
+        peers:
+        - 65001
+        - 65002
+      ipv4: true
+      ipv6: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65002
+        ifindex: 1
+        ipv4: 10.1.0.9
+        name: r2
+        type: confed_ebgp
+      - activate:
+          ipv6: true
+        as: 65101
+        ifindex: 2
+        ipv6: 2001:db8:3:3::5
+        name: x2
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.3
+      sessions:
+        ipv4:
+        - confed_ebgp
+        ipv6:
+        - ebgp
+    box: quay.io/frrouting/frr:10.3.1
+    clab:
+      binds:
+      - clab_files/r3/daemons:/etc/frr/daemons
+      - clab_files/r3/hosts:/etc/hosts
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts
+      kind: linux
+    device: frr
+    hostname: clab-input-r3
+    id: 3
+    interfaces:
+    - bridge: input_3
+      ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.10/30
+      ipv6: 2001:db8:3:2::3/64
+      linkindex: 3
+      mtu: 1500
+      name: r3 -> r2
+      neighbors:
+      - ifname: eth2
+        ipv4: 10.1.0.9/30
+        ipv6: 2001:db8:3:2::2/64
+        node: r2
+      role: external
+      type: lan
+    - bridge: input_4
+      ifindex: 2
+      ifname: eth2
+      ipv4: 10.1.0.13/30
+      ipv6: 2001:db8:3:3::3/64
+      linkindex: 4
+      mtu: 1500
+      name: r3 -> x2
+      neighbors:
+      - ifname: eth1
+        ipv4: 10.1.0.14/30
+        ipv6: 2001:db8:3:3::5/64
+        node: x2
+      role: external
+      type: lan
+    loopback:
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.3/32
+      ipv6: 2001:db8:1:3::1/64
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.103
+      mac: 08:4f:a9:03:00:00
+    module:
+    - bgp
+    mtu: 1500
+    name: r3
+    provider: clab
+    role: router
+  x1:
+    af:
+      ipv4: true
+      ipv6: true
+    bgp:
+      advertise_loopback: true
+      as: 65100
+      community:
+        confed_ebgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        ibgp:
+        - standard
+        - large
+        - extended
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      ipv4: true
+      ipv6: true
+      neighbors:
+      - activate:
+          ipv6: true
+        as: 65000
+        ifindex: 1
+        ipv6: 2001:db8:3::1
+        name: dut
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.4
+      sessions:
+        ipv4:
+        - confed_ebgp
+        ipv6:
+        - ebgp
+    box: quay.io/frrouting/frr:10.3.1
+    clab:
+      binds:
+      - clab_files/x1/daemons:/etc/frr/daemons
+      - clab_files/x1/hosts:/etc/hosts
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts
+      kind: linux
+    device: frr
+    hostname: clab-input-x1
+    id: 4
+    interfaces:
+    - bridge: input_1
+      ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.2/30
+      ipv6: 2001:db8:3::4/64
+      linkindex: 1
+      mtu: 1500
+      name: x1 -> dut
+      neighbors:
+      - ifname: eth1
+        ipv4: 10.1.0.1/30
+        ipv6: 2001:db8:3::1/64
+        node: dut
+      role: external
+      type: lan
+    loopback:
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.4/32
+      ipv6: 2001:db8:1:4::1/64
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.104
+      mac: 08:4f:a9:04:00:00
+    module:
+    - bgp
+    mtu: 1500
+    name: x1
+    provider: clab
+    role: router
+  x2:
+    af:
+      ipv4: true
+      ipv6: true
+    bgp:
+      advertise_loopback: true
+      as: 65101
+      community:
+        confed_ebgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        ibgp:
+        - standard
+        - large
+        - extended
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      ipv4: true
+      ipv6: true
+      neighbors:
+      - activate:
+          ipv6: true
+        as: 65000
+        ifindex: 1
+        ipv6: 2001:db8:3:3::3
+        name: r3
+        type: ebgp
+      next_hop_self: true
+      router_id: 10.0.0.5
+      sessions:
+        ipv4:
+        - confed_ebgp
+        ipv6:
+        - ebgp
+    box: quay.io/frrouting/frr:10.3.1
+    clab:
+      binds:
+      - clab_files/x2/daemons:/etc/frr/daemons
+      - clab_files/x2/hosts:/etc/hosts
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts
+      kind: linux
+    device: frr
+    hostname: clab-input-x2
+    id: 5
+    interfaces:
+    - bridge: input_4
+      ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.14/30
+      ipv6: 2001:db8:3:3::5/64
+      linkindex: 4
+      mtu: 1500
+      name: x2 -> r3
+      neighbors:
+      - ifname: eth2
+        ipv4: 10.1.0.13/30
+        ipv6: 2001:db8:3:3::3/64
+        node: r3
+      role: external
+      type: lan
+    loopback:
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.5/32
+      ipv6: 2001:db8:1:5::1/64
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.105
+      mac: 08:4f:a9:05:00:00
+    module:
+    - bgp
+    mtu: 1500
+    name: x2
+    provider: clab
+    role: router
+provider: libvirt

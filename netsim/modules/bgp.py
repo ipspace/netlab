@@ -29,16 +29,24 @@ BGP_INHERIT_COMMUNITY: Box
 def setup_bgp_constants(topology: Box) -> None:
   global BGP_DEFAULT_SESSIONS, BGP_VALID_SESSION_TYPE, BGP_INHERIT_COMMUNITY
 
+  bgp_session_values = topology.defaults.attributes.bgp_session_type.valid_values
+  # Add confed_ebgp to valid values if the topology is using confederations
+  if 'bgp.confederation' in topology:
+    bgp_session_values.confed_ebgp = None
+
   # Valid session types are reconstructed from the valid values of the bgp.sessions.ipv4 global attribute
   # We're assuming there's no difference between IPv4 and IPv6
-  BGP_VALID_SESSION_TYPE = [ v for v in topology.defaults.attributes.bgp_session_type.valid_values ]
+  BGP_VALID_SESSION_TYPE = list(bgp_session_values)
 
   # We're assuming all address families are active on all session types
   for af in log.AF_LIST:
     BGP_DEFAULT_SESSIONS[af] = BGP_VALID_SESSION_TYPE
 
-  # Finally, copy the pointer to BGP community inheritance
+  # Finally, copy the pointer to BGP community inheritance and limit it to valid session types
   BGP_INHERIT_COMMUNITY = topology.defaults.bgp.attributes._inherit_community
+  for cst in list(BGP_INHERIT_COMMUNITY):
+    if cst not in BGP_VALID_SESSION_TYPE:
+      BGP_INHERIT_COMMUNITY.pop(cst)
 
 def check_bgp_parameters(node: Box, topology: Box) -> None:
   if not "bgp" in node:  # pragma: no cover (should have been tested and reported by the caller)
@@ -623,6 +631,12 @@ def check_confederation_data(topology: Box) -> None:
         category=log.MissingValue,
         module='bgp')
     for cm_asn in c_data.members:
+      if cm_asn in rev_map:
+        log.error(
+          f'Confederation member {cm_asn} is in confederations {c_asn} and {rev_map[cm_asn]}',
+          more_hints="While that's a valid BGP design, netlab does not support it",
+          category=log.IncorrectValue,
+          module='bgp')
       rev_map[cm_asn] = c_asn
       if cm_asn in bgp_confed:
         log.error(
@@ -796,14 +810,14 @@ def sanitize_bgp_data(node: Box) -> None:
       b_data.neighbors = []
 
 class BGP(_Module):
+  def module_normalize(self, topology: Box) -> None:
+    setup_bgp_constants(topology)
+
   """
   Node pre-transform: set bgp.rr node attribute to _true_ if the node name is in the
   global bgp.rr attribute. Also, delete the global bgp.rr attribute so it's not propagated
   down to nodes
   """
-  def module_pre_transform(self, topology: Box) -> None:
-    setup_bgp_constants(topology)
-
   def node_pre_transform(self, node: Box, topology: Box) -> None:
     if "rr_list" in topology.get("bgp",{}):
       if node.name in topology.bgp.rr_list:
