@@ -1,0 +1,44 @@
+---
+message: |
+  Use this topology to test BGP confederations on IPv4 and IPv6 EBGP sessions
+
+module: [ bgp ]
+defaults.device: none
+
+addressing:
+  loopback:
+    ipv6: 2001:db8:1::/48
+  lan:
+    ipv6: 2001:db8:2::/48
+  p2p:
+    ipv6: 2001:db8:3::/48
+
+groups:
+  probes:
+    device: frr
+    provider: clab
+    members: [ x1, x2, r2, r3 ]
+
+bgp.confederation:
+  65000:
+    members: [ 65001, 65002, 65003 ]
+
+bgp.sessions.ipv6: [ ebgp ]                 # No IPv6 confederation EBGP sessions
+bgp.sessions.ipv4: [ confed_ebgp ]          # IPv4 only on confederation EBGP
+
+nodes:
+  dut:
+    role: router
+    bgp.as: 65001
+#    bgp.community:                         # This needs #2467 to be fixed
+#      confed_ebgp: [ standard ]
+  r2:
+    bgp.as: 65002
+  r3:
+    bgp.as: 65003
+  x1:
+    bgp.as: 65100
+  x2:
+    bgp.as: 65101
+
+links: [ dut-x1, dut-r2, r2-r3, r3-x2 ]

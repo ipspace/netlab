@@ -21,24 +21,20 @@
 {%   if n._source_intf is defined %}
     update-source {{ n._source_intf.ifname }}
 {%   endif %}
-{%   if 'ibgp' in n.type %}
-{%     if bgp.next_hop_self is defined and bgp.next_hop_self %}
+{%   if n.type in ['ibgp','localas_ibgp','confed_ebgp'] and bgp.next_hop_self|default(False) %}
 {#
   In Dell OS10, next-hop-self is configured under AF
 #}
-{%       for af in ['ipv4','ipv6'] if n.activate[af]|default(False) and (af == t_af or unnumbered) %}
+{%     for af in ['ipv4','ipv6'] if n.activate[af]|default(False) and (af == t_af or unnumbered) %}
 !
     address-family {{ af }} unicast
       next-hop-self
     exit
-{%       endfor %}
-{%     endif -%}
-
-{%     if bgp.rr|default('') and not n.rr|default('') %}
+{%     endfor %}
+{%   endif  %}
+{%   if 'ibgp' in n.type and bgp.rr|default('') and not n.rr|default('') %}
     route-reflector-client
-{%     endif %}
-{%   endif -%}
-
+{%   endif %}
 {%   if n.type in bgp.community %}
 {%     for comm in ['standard','extended'] %}
 {%       if comm in bgp.community[n.type] %}

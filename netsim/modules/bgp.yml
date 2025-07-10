@@ -12,9 +12,11 @@ no_propagate:
   advertise_roles:
   rr_list:
   as_list:
+  confederation:
 transform_after: [ vlan ]
 config_after: [ routing, ospf, isis, eigrp, ripv2 ]
 next_hop_self: true
+hooks: [ normalize ]
 
 _top:                         # Define custom data types used by the BGP module
   attributes:
@@ -47,9 +49,17 @@ attributes:
       ebgp: [ standard, extended, large, 2octet ]
       _alt_types: [ str, BoxList ]
     replace_global_as: bool
+    confederation:
+      type: dict
+      _keytype: asn
+      _subtype:
+        members:
+          type: list
+          _subtype: asn
 
   _inherit_community:                 # This is a lookup table for rare session types so you don't
     localas_ibgp: ibgp                # have to specify them in bgp.community attribute
+    confed_ebgp: ibgp
 
   node:
     as:
@@ -97,6 +107,7 @@ features:
   ipv6_lla: Can run EBGP sessions over IPv6 link-local addresses
   rfc8950: Can run IPv4 AF over regular IPv6 EBGP session
   community: Granular BGP community propagation
+  confederation: BGP confederations
   import: Import routes from other routing protocols
 warnings:
   missing_igp: True

@@ -29,16 +29,24 @@ BGP_INHERIT_COMMUNITY: Box
 def setup_bgp_constants(topology: Box) -> None:
   global BGP_DEFAULT_SESSIONS, BGP_VALID_SESSION_TYPE, BGP_INHERIT_COMMUNITY
 
+  bgp_session_values = topology.defaults.attributes.bgp_session_type.valid_values
+  # Add confed_ebgp to valid values if the topology is using confederations
+  if 'bgp.confederation' in topology:
+    bgp_session_values.confed_ebgp = None
+
   # Valid session types are reconstructed from the valid values of the bgp.sessions.ipv4 global attribute
   # We're assuming there's no difference between IPv4 and IPv6
-  BGP_VALID_SESSION_TYPE = [ v for v in topology.defaults.attributes.bgp_session_type.valid_values ]
+  BGP_VALID_SESSION_TYPE = list(bgp_session_values)
 
   # We're assuming all address families are active on all session types
   for af in log.AF_LIST:
     BGP_DEFAULT_SESSIONS[af] = BGP_VALID_SESSION_TYPE
 
-  # Finally, copy the pointer to BGP community inheritance
+  # Finally, copy the pointer to BGP community inheritance and limit it to valid session types
   BGP_INHERIT_COMMUNITY = topology.defaults.bgp.attributes._inherit_community
+  for cst in list(BGP_INHERIT_COMMUNITY):
+    if cst not in BGP_VALID_SESSION_TYPE:
+      BGP_INHERIT_COMMUNITY.pop(cst)
 
 def check_bgp_parameters(node: Box, topology: Box) -> None:
   if not "bgp" in node:  # pragma: no cover (should have been tested and reported by the caller)
@@ -279,6 +287,10 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
       ngb_name = ngb_ifdata.node
       neighbor = topology.nodes[ngb_name]
       neighbor_real_as = neighbor.get('bgp.as',None)
+      neighbor_c_as    = neighbor.get('bgp.confederation.as',None)
+      neighbor_c_peers = neighbor.get('bgp.confederation.peers',[])
+      if neighbor_c_as and node_local_as not in neighbor_c_peers:
+        neighbor_real_as = neighbor_c_as
       try:                                                            # Try to get neighbor local_as
         neighbor_local_as = ( ngb_ifdata.get('bgp.local_as',None) or
                               neighbor.get('bgp.local_as',None) or
@@ -357,7 +369,13 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
         if not local_as_data is None:
           extra_data[k] = local_as_data               # ... and copy it into neighbor data
 
-      session_type = 'localas_ibgp' if neighbor_local_as == node_local_as else 'ebgp'
+      if neighbor_local_as == node_local_as:
+        session_type = 'localas_ibgp'
+      elif neighbor_local_as in node.get('bgp.confederation.peers',[]):
+        session_type = 'confed_ebgp'
+      else:
+        session_type = 'ebgp'
+
       if session_type == 'localas_ibgp':
         if not features.bgp.local_as_ibgp:
           log.error(
@@ -598,6 +616,61 @@ def process_as_list(topology: Box) -> None:
       node.bgp = node_data[name] + node.bgp
 
 """
+Check the confederation data (if it exists) against node AS numbers
+"""
+def check_confederation_data(topology: Box) -> None:
+  if 'bgp.confederation' not in topology:
+    return
+
+  rev_map: dict = {}
+  bgp_confed = topology.bgp.confederation
+  for c_asn,c_data in bgp_confed.items():
+    if not c_data.members:
+      log.error(
+        f'Confederation AS {c_asn} needs at least one member ASN',
+        category=log.MissingValue,
+        module='bgp')
+    for cm_asn in c_data.members:
+      if cm_asn in rev_map:
+        log.error(
+          f'Confederation member {cm_asn} is in confederations {c_asn} and {rev_map[cm_asn]}',
+          more_hints="While that's a valid BGP design, netlab does not support it",
+          category=log.IncorrectValue,
+          module='bgp')
+      rev_map[cm_asn] = c_asn
+      if cm_asn in bgp_confed:
+        log.error(
+          f'Confederation member AS {cm_asn} (part of AS {c_asn}) is itself also a confederation AS',
+          category=log.IncorrectValue,
+          module='bgp')
+
+  for ndata in topology.nodes.values():
+    if 'bgp.as' not in ndata:
+      continue
+    n_as = ndata.bgp['as']
+    if n_as in bgp_confed:
+      log.error(
+        f'Node {ndata.name} is using confederation ASN {n_as}',
+        more_hints='BGP speakers can use only confederation member ASNs, not the confederation ASN',
+        category=log.IncorrectValue,
+        module='bgp')
+    if n_as not in rev_map:
+      continue
+
+    c_as = rev_map[n_as]
+    d_features = devices.get_device_features(ndata,topology.defaults)
+    if not d_features.get('bgp.confederation',False):
+      log.error(
+        f'Node {ndata.name} (device {ndata.device}) uses member ASN {n_as} of confederation AS {c_as}',
+        more_hints=f'Device {ndata.device} does not support BGP confederations',
+        category=log.IncorrectType,
+        module='bgp')
+      continue
+
+    ndata.bgp.confederation['as'] = c_as
+    ndata.bgp.confederation.peers = [ asn for asn in bgp_confed[c_as].members if asn != n_as ]
+
+"""
 bgp_transform_community_list: transform _netlab_ community keywords into device keywords
 """
 def bgp_transform_community_list(node: Box, topology: Box) -> None:
@@ -737,14 +810,14 @@ def sanitize_bgp_data(node: Box) -> None:
       b_data.neighbors = []
 
 class BGP(_Module):
+  def module_normalize(self, topology: Box) -> None:
+    setup_bgp_constants(topology)
+
   """
   Node pre-transform: set bgp.rr node attribute to _true_ if the node name is in the
   global bgp.rr attribute. Also, delete the global bgp.rr attribute so it's not propagated
   down to nodes
   """
-  def module_pre_transform(self, topology: Box) -> None:
-    setup_bgp_constants(topology)
-
   def node_pre_transform(self, node: Box, topology: Box) -> None:
     if "rr_list" in topology.get("bgp",{}):
       if node.name in topology.bgp.rr_list:
@@ -772,7 +845,7 @@ class BGP(_Module):
       vlan_ebgp_role_set(topology,EBGP_ROLE)
 
   #
-  # Have to set BGP router IDs and cluster IDs before going into node_post_transform
+  # Have to set BGP router IDs, cluster IDs, and confederation data before going into node_post_transform
   #
   def module_post_transform(self, topology: Box) -> None:
     for n in topology.nodes.values():
@@ -780,6 +853,7 @@ class BGP(_Module):
         _routing.router_id(n,'bgp',topology.pools)
 
     build_bgp_rr_clusters(topology)
+    check_confederation_data(topology)
 
   #
   # Execute the rest of node post-transform code, including setting up the BGP session table
