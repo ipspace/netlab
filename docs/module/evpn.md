@@ -1,4 +1,4 @@
-# Ethernet Virtual Private Network (evpn) Configuration Module
+# Ethernet Virtual Private Network (EVPN) Configuration Module
 
 This configuration module configures the BGP EVPN address family to implement L2VPN or L3VPN. It supports:
 
@@ -19,7 +19,7 @@ This configuration module configures the BGP EVPN address family to implement L2
 
 ## Platform Support
 
-The following table describes per-platform support of individual EVPN/VXLAN features:
+The following table describes the per-platform support of individual EVPN/VXLAN features:
 
 | Operating system   | VLAN-based<br>service | VLAN Bundle<br>service | Asymmetric<br>IRB | Symmetric<br>IRB |
 | ------------------ | :-: | :-: | :-: | :-: |
@@ -35,14 +35,14 @@ The following table describes per-platform support of individual EVPN/VXLAN feat
 | vJunos-switch [❗](caveats-vjunos-switch) | ✅  |  ❌  | ✅  | ✅  |
 | VyOS               | ✅  |  ❌  | ✅  | ✅  |
 
-The following table describes per-platform support of individual EVPN/MPLS features:
+The following table describes the per-platform support of individual EVPN/MPLS features:
 
 | Operating system   | VLAN-based<br>service | VLAN Bundle<br>service | Asymmetric<br>IRB | Symmetric<br>IRB |
 | ------------------ | :-: | :-: | :-: | :-: |
 | Arista EOS         | ✅  | ✅  |  ❌  |  ❌  |
 
 ```{note}
-* Arista EOS requires anycast gateway for EVPN/MPLS symmetric IRB configuration.
+* Arista EOS requires an anycast gateway for EVPN/MPLS symmetric IRB configuration.
 ```
 
 Devices supporting [EVPN VLAN bundle services](evpn-bundle-service) implement the following bundle service types (see RFC 7432 section 6 for more details):
@@ -70,7 +70,7 @@ EVPN module supports IBGP- and EBGP-based EVPN:
 
 With additional nerd knobs ([more details](evpn-weird-designs)), it's possible to implement the more convoluted designs, including:
 
-* IBGP EVPN AF session established between loopback interfaces advertised with underlay EBGP IPv4 AF
+* IBGP EVPN AF session established between loopback interfaces, advertised with underlay EBGP IPv4 AF
 * EBGP EVPN AF session established between loopback interfaces advertised with underlay EBGP IPv4 AF (requires **ebgp.multihop** plugin)
 
 | Operating system   | IBGP over<br>EBGP | EBGP<br>over EBGP |
@@ -110,7 +110,7 @@ EVPN module supports these default/global/node parameters:
 
 * **evpn.transport** (global): Transport to use, `vxlan` (default) or `mpls`
 * **evpn.vrfs** (global or node parameter): A list of EVPN-enabled VRFs. The default value with VXLAN transport: all global VRFs with **evpn.transit_vni** parameter. There is no default value with MPLS transport.
-* **evpn.vlans** (global or node parameter): A list of EVPN-enabled VLANs. The default value with VXLAN transport: all global VLANs with **vni** parameter. There is no default value with MPLS transport.
+* **evpn.vlans** (global or node parameter): A list of EVPN-enabled VLANs. The default value with VXLAN transport: all global VLANs with the **vni** parameter. There is no default value with MPLS transport.
 * **evpn.session** (global or node parameter): A list of BGP session types on which the EVPN address family is enabled (default: `ibgp`)
 * **evpn.as** (global parameter): Autonomous system number for VLAN and VRF route targets. Default value: **bgp.as** (when set globally) or **vrf.as**.
 * **evpn.start_transit_vni** (system default parameter) -- the first symmetric IRB transit VNI, range 4096..16777215
@@ -128,7 +128,7 @@ EVPN-related VLAN parameters are set on the **vlans** dictionary. You can set th
 EVPN configuration module sets the following default EVI/RD/RT values for EVPN-enabled VLANs that are not part of a bundle service:
 
 * **evpn.evi**: `vlan-id`
-* **evpn.rd**: `router-id:evi` (according to Section 7.9 of RFC 7432 as the **evpn.evi** is set to **vlan.id**)
+* **evpn.rd**: `router-id:evi` (according to Section 7.9 of RFC 7432, as the **evpn.evi** is set to **vlan.id**)
 * **evpn.import** and **evpn.export**: `as:vlan-id` (according to Section 7.10 of RFC 7432 and Section 5.1.2.1 of RFC 8365)[^EAS]
 
 [^EAS]: The AS number used in EVPN route targets is described in [](evpn-global-parameters).
@@ -164,7 +164,7 @@ The **evpn.transit_vni** parameter must specify a globally unique VNI value. It 
 (evpn-asymmetric-irb)=
 ## Asymmetric IRB
 
-Asymmetric IRB is a forwarding paradigm in which the ingress PE device performs routing between source and destination VLAN followed by EVPN bridging. The egress PE device bridges between EPVN transport (VXLAN or MPLS pseudowire) and destination VLAN.
+Asymmetric IRB is a forwarding paradigm in which the ingress PE device performs routing between the source and destination VLANs, followed by EVPN bridging—the egress PE device bridges between EVPN transport (VXLAN or MPLS pseudowire) and the destination VLAN.
 
 To make asymmetric IRB work, all EVPN-enabled VLANs participating in a routing domain must be present on all participating PE devices. The EVPN configuration module strictly enforces that requirement; every EVPN-enabled VLAN belonging to a VRF that uses asymmetric IRB must be present on every node on which the parent VRF is defined.
 
@@ -190,7 +190,7 @@ groups:
 ```
 
 ```{tip}
-Disable OSPF in a VRF using asymmetric IRB unless you connected external router(s) to one of the participating VLANs
+Disable routing protocols in a VRF using asymmetric IRB unless you connected external router(s) to one of the participating VLANs (see also [](evpn-rp))
 ```
 
 (evpn-weird-designs)=
@@ -200,3 +200,22 @@ Implementing mainstream EVPN designs (IBGP+IGP, EBGP) with _netlab_ topologies i
 
 * **IBGP-over-EBGP** design assigns the same BGP AS number to all nodes (triggering IBGP EVPN sessions) and uses **bgp.local_as** on links to force EBGP sessions between adjacent nodes. Furthermore, you must limit the activation of IPv4 address family to EBGP sessions, and turn off IBGP-without-IGP warning ([sample topology](https://github.com/ipspace/netlab/blob/dev/tests/integration/evpn/12-vxlan-ibgp-ebgp.yml))
 * **EBGP-over-EBGP** design uses **[ebgp.multihop](plugin-ebgp-multihop)** plugin to establish additional EBGP sessions between device loopbacks. You have to activate EVPN AF on multihop EBGP sessions and limit IPv4 AF to direct EBGP sessions ([sample topology](https://github.com/ipspace/netlab/blob/dev/tests/integration/evpn/14-vxlan-ebgp-ebgp.yml)).
+
+Before using any design involving EBGP, please read [](evpn-rp).
+
+(evpn-rp)=
+## Interactions with Routing Protocols
+
+Like the [VXLAN case](vxlan-rp), _netlab_ enables all routing protocols configured on a node on EVPN-controlled VLANs. 
+
+That could result in severe routing instabilities. You should turn off routing protocols on EVPN-controlled VLANs (use a setting similar to **vlans._name_.ospf: False**), put EVPN-controlled VLANs in a VRF, or make them layer-2-only VLANs with **vlan.mode** set to **bridge**.
+
+If you're using EVPN to implement symmetrical IRB (**evpn.transit_vni** is set in a VRF), turn off routing protocols in the VRF unless you use the VRF to connect to CE-routers. Otherwise, the routers establish in-VRF IGP adjacencies over extended VLANs and use in-VRF IGP routes instead of EVPN routes for end-to-end connectivity.
+
+If you want to implement an EVPN L3VPN with CE-routers, use separate segments (not VXLAN-backed VLANs) for PE-CE connectivity. There is no way to block the establishment of PE-to-PE in-VRF IGP adjacencies if you expect to have the PE-CE IGP adjacencies on a VXLAN-backed VLAN.
+
+Finally, if you use EBGP with EVPN (simple EBGP, IBGP-over-EBGP, or EBGP-over-EBGP design), the PE devices have different AS numbers, and _netlab_ tries to establish VRF EBGP sessions between them whenever they share a VLAN. To prevent the formation of VRF EBGP sessions between the PE devices:
+
+* Use EVPN as a pure L3VPN (no stretched VLAN-over-VXLAN segments);
+* Disable BGP in the EVPN-controlled VRFs with a setting similar to **vrfs._tenant_vrf_.bgp: False**;
+* If you want to use BGP as the PE-CE routing protocol with stretched VLANs, disable BGP on stretched VLAN segments with a setting similar to **vlans._stretched_vlan_.bgp: False**.
