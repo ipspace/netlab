@@ -43,7 +43,7 @@ def lag_remove_virtual(node: Box, topology: Box) -> None:
     if intf.get('type') == 'lag' and 'virtual_interface' in intf:
         del intf['virtual_interface']
         report_quirk(
-            f'Cisco IOS layer-2 image PortChannel interface will be treated as physical.',
+            f'Cisco IOS layer-2 image: PortChannel interface will be treated as a physical interface.',
             more_data=f'Removing virtual_interface tag from (node {node.name} {intf.ifname})',
             node=node,
             quirk='lag_remove_virtual',
