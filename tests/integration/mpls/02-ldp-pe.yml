@@ -6,6 +6,8 @@ message:
   The validation test checks end-to-end connectivity across a BGP-free MPLS core
   between a set of linux hosts attached to the PE-routers.
 
+defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
+
 groups:
   _auto_create: True
   hosts:
@@ -37,17 +39,22 @@ links:
   h2:
   ospf: false
 
+defaults.devices.vptx.netlab_validate:
+  ospf.wait: 40
+  ldp.wait: 40
+  ibgp.wait: 40
+
 validate:
   ospf:
     description: Check OSPF sessions with DUT (wait up to 30 seconds)
-    wait: 30
+    wait: ospfv2_adj_p2p
     wait_msg: Waiting for OSPF adjacency
     nodes: [ p1 ]
     plugin: ospf_neighbor(nodes.dut.ospf.router_id)
     stop_on_error: true
   ldp:
     description: Check LDP session
-    wait: 30
+    wait: ldp_adj
     wait_msg: Waiting for LDP to start
     nodes: [ p1 ]
     show:
@@ -56,7 +63,7 @@ validate:
       neighbors[0].state == 'OPERATIONAL'
   ibgp:
     description: Check IBGP session
-    wait: 40
+    wait: ibgp_session
     wait_msg: Waiting for IBGP sessions to start
     nodes: [ pe2 ]
     plugin: bgp_neighbor(node.bgp.neighbors,'dut')
@@ -64,6 +71,6 @@ validate:
   ping:
     description: Ping-based end-to-end reachability test
     wait_msg: We might have to wait a bit longer
-    wait: 10
+    wait: ping_long
     nodes: [ h1 ]
     plugin: ping('h2')

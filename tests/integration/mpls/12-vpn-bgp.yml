@@ -9,6 +9,8 @@ message: |
   The validation tests check BGP prefixes on the CE-routers and perform
   end-to-end connectivity tests between CE-router loopbacks.
 
+defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
+
 groups:
   _auto_create: True
   ce_probes:
@@ -54,14 +56,14 @@ defaults.devices.vptx.netlab_validate:
 validate:
   pe_ospf:
     description: Check OSPF sessions with DUT (wait up to 30 seconds)
-    wait: 30
+    wait: ospfv2_adj_p2p
     wait_msg: Waiting for OSPF adjacency
     nodes: [ p1 ]
     plugin: ospf_neighbor(nodes.dut.ospf.router_id)
     stop_on_error: true
   ldp:
     description: Check LDP session
-    wait: 30
+    wait: ldp_adj
     wait_msg: Waiting for LDP to start
     nodes: [ p1 ]
     show:
@@ -70,7 +72,7 @@ validate:
       neighbors[0].state == 'OPERATIONAL'
   pe_ibgp:
     description: Check IBGP session between PE-routers
-    wait: 40
+    wait: ibgp_session
     wait_msg: Waiting for IBGP sessions to start
     nodes: [ pe2 ]
     plugin: bgp_neighbor(node.bgp.neighbors,'dut')
@@ -82,26 +84,26 @@ validate:
     stop_on_error: true
   ce_ebgp:
     description: Check PE-CE EBGP session
-    wait: 10
+    wait: ebgp_session
     wait_msg: Waiting for EBGP sessions to start
     nodes: [ ce1 ]
     plugin: bgp_neighbor(node.bgp.neighbors,'dut')
     stop_on_error: true
   pfx_ce1:
     description: Check CE2 BGP prefix on CE1
-    wait: 10
+    wait: bgp_scan_long
     wait_msg: Waiting for DUT to propagate CE2 prefix to CE1
     nodes: [ ce1 ]
     plugin: bgp_prefix(nodes.ce2.loopback.ipv4)
   pfx_ce2:
     description: Check CE1 BGP prefix on CE2
-    wait: 10
+    wait: bgp_scan_long
     wait_msg: Waiting for DUT to propagate CE1 prefix to VPNv4 AF
     nodes: [ ce2 ]
     plugin: bgp_prefix(nodes.ce1.loopback.ipv4)
   ping:
     description: Ping-based end-to-end reachability test
     wait_msg: Waiting for end-to-end MPLS path
-    wait: 10
+    wait: ping
     nodes: [ ce1 ]
     plugin: ping('ce2',src=node.loopback.ipv4)
