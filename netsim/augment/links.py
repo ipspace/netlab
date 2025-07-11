@@ -943,12 +943,14 @@ def count_link_nodes(link: Box, nodes: Box) -> None:
 Get the default link type based on number of nodes. Also used for default pool selection
 """
 def get_default_link_type(link: Box) -> str:
-  if link.node_count > 2:
+  if 'type' in link:
+    return link.type
+
+  if link.node_count > 2 or (link.node_count == 2 and link.get('gateway')):
     return 'lan'
   
   if link.get('host_count',0):
     return 'lan'
-  
   return 'p2p' if link.node_count == 2 else 'stub'
 
 def set_link_type_role(link: Box, pools: Box, nodes: Box, defaults: Box) -> None:

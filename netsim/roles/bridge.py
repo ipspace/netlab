@@ -104,7 +104,6 @@ def expand_multiaccess_links(topology: Box) -> None:
     b_name = link.get('bridge',None)
     if not b_name:                                          # Is this one of the relevant links?
       continue                                              # No, move on
-
     if b_name not in topology.nodes:                        # Is the bridge name equal to a node name?
       continue                                              # No, it's a name of a Linux bridge
 
@@ -142,6 +141,7 @@ def expand_multiaccess_links(topology: Box) -> None:
       l_data = get_box(link_data)                           # Copy the link data
       l_data._linkname = f'{link._linkname}.{link_cnt}'     # Create unique link and and linkindex
       l_data.linkindex = links.get_next_linkindex(topology)
+      l_data.type = 'lan'
       l_data.interfaces = [ get_box(br_intf), intf ]        # ... recreate P2P interfaces
       topology.links.append(l_data)                         # ... and append the new P2P link to the links
 
