@@ -136,6 +136,7 @@ def expand_multiaccess_links(topology: Box) -> None:
     br_node.vlans[vname].id = int_vlan_id                   # ... set its ID
     br_node.vlans[vname].mode = 'bridge'                    # ... and make it a L2-only VLAN
     br_intf.vlan.access = vname                             # ... and use it on the bridge interface
+    br_intf._vlan_mode = 'bridge'
 
     for link_cnt,intf in enumerate(link.interfaces,1):
       l_data = get_box(link_data)                           # Copy the link data
@@ -146,6 +147,9 @@ def expand_multiaccess_links(topology: Box) -> None:
 
     topology.links.remove(link)                             # Finally, remove original link
 
+"""
+pre_link_transform - executes after modules like lag have had a chance to create any extra links
+"""
 def pre_link_transform(topology: Box) -> None:
   if create_default_VLAN(topology):                         # If we have any bridge nodes ...
     add_default_access_vlan(topology)                       # Add 'vlan.access' to non-VLAN bridge ports  
