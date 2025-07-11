@@ -35,6 +35,14 @@ def vlan_1_tagged(node: Box, topology: Box) -> None:
         quirk='vlan.tagged_1',
         category=Warning)
 
+'''
+IOSv (classic) layer-2 image treats Port-Channel interfaces as physical interfaces
+'''
+def lag_remove_virtual(node: Box, topology: Box) -> None:
+  for intf in node.interfaces:
+    if intf.get('type') == 'lag' and 'virtual_interface' in intf:
+      del intf['virtual_interface']
+
 class IOSvL2(_IOS):
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
@@ -42,5 +50,6 @@ class IOSvL2(_IOS):
     if 'vlan' in mods:
       vlan_1_tagged(node,topology)
       check_reserved_vlans(node,topology)
-
+    if 'lag' in mods:
+        lag_remove_virtual(node,topology)
     common_ios_quirks(node,topology)

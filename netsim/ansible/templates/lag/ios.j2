@@ -1,0 +1,20 @@
+{% for intf in interfaces if intf.type == 'lag' %}
+{% set _switchport = intf.vlan is defined %}
+interface {{ intf.ifname }}
+ description {{ intf.name }}
+{% if _switchport %}
+ switchport 
+{% endif %}
+{% for ch in interfaces if ch.lag._parentindex|default(None) == intf.lag.ifindex %}
+{% set lag_mode = 
+'on' if intf.lag.lacp|default('') == 'off' else
+'active' if intf.lag.lacp_mode|default('') == 'active' else
+'passive' %}
+interface {{ ch.ifname }}
+ description {{ ch.name }} in channel-group {{ intf.lag.ifindex }}
+{% if _switchport %}
+ switchport 
+{% endif %}
+ channel-group {{ intf.lag.ifindex }} mode {{ lag_mode }}
+{% endfor %}
+{% endfor %}
