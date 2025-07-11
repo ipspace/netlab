@@ -41,13 +41,7 @@ IOSv (classic) layer-2 image treats Port-Channel interfaces as physical interfac
 def lag_remove_virtual(node: Box, topology: Box) -> None:
   for intf in node.interfaces:
     if intf.get('type') == 'lag' and 'virtual_interface' in intf:
-        del intf['virtual_interface']
-        report_quirk(
-            f'Cisco IOS layer-2 image: PortChannel interface will be treated as a physical interface.',
-            more_data=f'Removing virtual_interface tag from (node {node.name} {intf.ifname})',
-            node=node,
-            quirk='lag_remove_virtual',
-            category=Warning)
+      del intf['virtual_interface']
 
 class IOSvL2(_IOS):
   @classmethod
