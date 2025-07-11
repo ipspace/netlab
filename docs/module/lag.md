@@ -20,7 +20,7 @@ LAG is currently supported on these platforms:
 | JunOS[^Junos]         | ✅ | ✅ | ✅  | ❌ |
 
 [^Junos]: Includes vSRX, vPTX and vJunos-switch. vJunos-router (and vMX) do not support LAG.
-[^iol2]: Port-Channel interfaces will be treated like physical interfaces. Setting LACP rate is not avilable.
+[^iol2]: Port-Channel interfaces are treated like physical interfaces. Setting LACP rate is not available.
 
 ## Parameters
 
