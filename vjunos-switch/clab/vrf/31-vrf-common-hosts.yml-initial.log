@@ -1,3 +1,7 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Invalid characters were found in group names but not replaced, use
 -vvvv to see details
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
@@ -61,8 +65,8 @@ ok: [dut]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [h1]
-ok: [h2]
 ok: [srv]
+ok: [h2]
 ok: [dut]
 
 TASK [fail] ********************************************************************
@@ -73,8 +77,8 @@ skipping: [dut]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [h1]
-ok: [srv]
 ok: [h2]
+ok: [srv]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -249,14 +253,35 @@ ok: [dut] =>
   
   
     policy-options {
-      community tg_65000_2 members target:65000:2;
-      community tg_65000_3 members target:65000:3;
       community tg_65000_1 members target:65000:1;
+      community tg_65000_3 members target:65000:3;
+      community tg_65000_2 members target:65000:2;
     }
   
   
   
     policy-options {
+      policy-statement vrf-red-rt-export {
+        term 1 {
+          then {
+            community add tg_65000_1;
+            accept;
+          }
+        }
+      }
+  
+  
+  
+  
+      policy-statement vrf-red-rt-import {
+        term 1 {
+          from community [ tg_65000_1 tg_65000_3 ];
+          then accept;
+        }
+        term default {
+          then reject;
+        }
+      }
       policy-statement vrf-blue-rt-export {
         term 1 {
           then {
@@ -300,30 +325,25 @@ ok: [dut] =>
           then reject;
         }
       }
-      policy-statement vrf-red-rt-export {
-        term 1 {
-          then {
-            community add tg_65000_1;
-            accept;
-          }
-        }
-      }
-  
-  
-  
-  
-      policy-statement vrf-red-rt-import {
-        term 1 {
-          from community [ tg_65000_1 tg_65000_3 ];
-          then accept;
-        }
-        term default {
-          then reject;
-        }
-      }
     }
   
     routing-instances {
+  
+      red {
+        instance-type vrf;
+        route-distinguisher 65000:1;
+  
+        vrf-import vrf-red-rt-import;
+        vrf-export vrf-red-rt-export;
+  
+        routing-options {
+          auto-export;
+        }
+  
+        interface ge-0/0/0.0;
+  
+      }
+  
   
       blue {
         instance-type vrf;
@@ -353,22 +373,6 @@ ok: [dut] =>
         }
   
         interface ge-0/0/2.0;
-  
-      }
-  
-  
-      red {
-        instance-type vrf;
-        route-distinguisher 65000:1;
-  
-        vrf-import vrf-red-rt-import;
-        vrf-export vrf-red-rt-export;
-  
-        routing-options {
-          auto-export;
-        }
-  
-        interface ge-0/0/0.0;
   
       }
   
@@ -431,18 +435,18 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml f
 
 TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
-ok: [h2]
 ok: [srv]
+ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
 changed: [h1 -> localhost]
-changed: [h2 -> localhost]
 changed: [srv -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+changed: [h1 -> localhost]
 changed: [srv -> localhost]
 changed: [h2 -> localhost]
-changed: [h1 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -459,10 +463,10 @@ changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [srv -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-1i9829rn.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-fli17k7d.sh] ***********************
 changed: [h1 -> localhost]
-changed: [srv -> localhost]
 changed: [h2 -> localhost]
+changed: [srv -> localhost]
 
 TASK [junos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/junos.j2] ***
 changed: [dut]
@@ -476,8 +480,8 @@ ok: [srv]
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, h1, h2, srv => (item=vrf)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, h1, h2, srv => (item=routing)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, srv, dut => (item=vrf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, srv, dut => (item=routing)
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [h1]
@@ -492,10 +496,10 @@ skipping: [srv]
 ok: [dut]
 
 TASK [fail] ********************************************************************
-skipping: [dut]
 skipping: [h1]
 skipping: [h2]
 skipping: [srv]
+skipping: [dut]
 
 TASK [Find configuration deployment deploy_script for vrf] *********************
 skipping: [h1]
@@ -515,6 +519,46 @@ ok: [dut] =>
   
     policy-options {
       community x-route-permit-mark members large:65535:0:65536;
+  
+      policy-statement vrf-red-bgp-export {
+        term redis_bgp {
+          from {
+            protocol bgp;
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+        term redis_direct {
+          from {
+            protocol direct;
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+        term redis_ospf {
+          from {
+            protocol ospf;
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+        term redis_ospf3 {
+          from {
+            protocol ospf3;
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+      }
+  
   
       policy-statement vrf-blue-bgp-export {
         term redis_bgp {
@@ -595,50 +639,28 @@ ok: [dut] =>
         }
       }
   
-  
-      policy-statement vrf-red-bgp-export {
-        term redis_bgp {
-          from {
-            protocol bgp;
-          }
-          then {
-            community add x-route-permit-mark;
-            next policy;
-          }
-        }
-        term redis_direct {
-          from {
-            protocol direct;
-          }
-          then {
-            community add x-route-permit-mark;
-            next policy;
-          }
-        }
-        term redis_ospf {
-          from {
-            protocol ospf;
-          }
-          then {
-            community add x-route-permit-mark;
-            next policy;
-          }
-        }
-        term redis_ospf3 {
-          from {
-            protocol ospf3;
-          }
-          then {
-            community add x-route-permit-mark;
-            next policy;
-          }
-        }
-      }
-  
     }
   
   
     routing-instances {
+  
+      red {
+        routing-options {
+          autonomous-system 65000;
+          router-id 10.0.0.4
+        }
+  
+        protocols {
+          bgp {
+  
+            group ebgp-peers {
+              export [  ];
+              advertise-inactive;
+            }
+          }
+        }
+      }
+  
   
       blue {
         routing-options {
@@ -675,24 +697,6 @@ ok: [dut] =>
         }
       }
   
-  
-      red {
-        routing-options {
-          autonomous-system 65000;
-          router-id 10.0.0.4
-        }
-  
-        protocols {
-          bgp {
-  
-            group ebgp-peers {
-              export [  ];
-              advertise-inactive;
-            }
-          }
-        }
-      }
-  
     }
 
 TASK [Deploy vrf configuration] ************************************************
@@ -707,26 +711,26 @@ changed: [dut]
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [h1]
 ok: [h2]
-ok: [dut]
 ok: [srv]
+ok: [dut]
 
 TASK [Find configuration template for routing] *********************************
-skipping: [dut]
 ok: [h1]
-ok: [h2]
+skipping: [dut]
 ok: [srv]
+ok: [h2]
 
 TASK [fail] ********************************************************************
-skipping: [dut]
 skipping: [h1]
 skipping: [h2]
 skipping: [srv]
+skipping: [dut]
 
 TASK [Find configuration deployment deploy_script for routing] *****************
 skipping: [dut]
-ok: [h2]
 ok: [h1]
 ok: [srv]
+ok: [h2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
@@ -834,8 +838,8 @@ changed: [srv -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
 changed: [h1 -> localhost]
-changed: [srv -> localhost]
 changed: [h2 -> localhost]
+changed: [srv -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
 skipping: [h1]
@@ -852,10 +856,10 @@ changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [srv -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-v0pth7s5.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-1iqygbon.sh] ***********************
 changed: [h1 -> localhost]
-changed: [srv -> localhost]
 changed: [h2 -> localhost]
+changed: [srv -> localhost]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
