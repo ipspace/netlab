@@ -72,6 +72,7 @@ def add_default_access_vlan(topology: Box) -> None:
       if 'vlan' in intf:                                    # The interface has VLAN parameters, skip it
         continue
       intf.vlan.access = BR_DEFAULT
+      intf._vlan_mode = 'bridge'
 
 """
 Get next internal VLAN for an isolated bridge domain
@@ -145,7 +146,7 @@ def expand_multiaccess_links(topology: Box) -> None:
 
     topology.links.remove(link)                             # Finally, remove original link
 
-def pre_transform(topology: Box) -> None:
+def pre_link_transform(topology: Box) -> None:
   if create_default_VLAN(topology):                         # If we have any bridge nodes ...
     add_default_access_vlan(topology)                       # Add 'vlan.access' to non-VLAN bridge ports  
 

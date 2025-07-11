@@ -543,7 +543,7 @@ def get_vlan_interface_mode(intf: Box) -> typing.Optional[str]:
   if not vlan:
     return None
 
-  raise log.ErrorAbort('get_vlan_interface_mode called on an interface witout _vlan_mode')
+  raise log.ErrorAbort(f'get_vlan_interface_mode called on an interface without _vlan_mode: {intf}')
 
 """
 set_link_vlan_prefix: copy link attributes from VLAN for access/native VLAN links
