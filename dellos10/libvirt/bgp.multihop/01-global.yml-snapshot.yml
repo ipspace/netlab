@@ -145,6 +145,7 @@ defaults:
           - connected
           - static
           - vrf
+          confederation: true
         initial:
           system_mtu: true
           ipv4:
@@ -299,6 +300,7 @@ defaults:
             - extended
             2octet:
             - standard
+          confederation: true
         initial:
           system_mtu: true
           ipv4:
@@ -509,6 +511,7 @@ defaults:
             - extended
             2octet:
             - standard
+          confederation: true
         initial:
           ipv4:
             unnumbered: true
@@ -1053,6 +1056,7 @@ defaults:
           - connected
           - static
           - vrf
+          confederation: true
         bfd: {}
         dhcp:
           client:
@@ -1505,6 +1509,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        loopback_ipv6: false
     vyos:
       features:
         bgp:
@@ -1801,6 +1807,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         bfd: {}
         dhcp:
           client:
@@ -1954,6 +1961,9 @@ defaults:
           --import
         create_template: cat8000v.xml.j2
         create_iso: cat8000v
+      netlab_validate:
+        prefix:
+          wait: 40
     csr:
       features:
         bgp:
@@ -1986,6 +1996,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         bfd: {}
         dhcp:
           client:
@@ -2139,6 +2150,9 @@ defaults:
           --ram=4096 --disk path=vm.qcow2,bus=ide,format=qcow2 
           --network=network:vagrant-libvirt,model=virtio --graphics none 
           --import
+      netlab_validate:
+        prefix:
+          wait: 40
     fortios:
       description: Fortinet FortiOS firewall
       interface_name: port{ifindex}
@@ -2211,6 +2225,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         bfd: {}
         dhcp:
           client:
@@ -2348,6 +2363,9 @@ defaults:
         image: vrnetlab/cisco_iol:17.15.01
         node:
           kind: cisco_iol
+      netlab_validate:
+        prefix:
+          wait: 40
     ioll2:
       features:
         bgp:
@@ -2380,6 +2398,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         bfd: {}
         dhcp:
           client:
@@ -2527,6 +2546,9 @@ defaults:
           kind: cisco_iol
           type: l2
         mtu: 1500
+      netlab_validate:
+        prefix:
+          wait: 40
     iosv:
       features:
         bgp:
@@ -2559,6 +2581,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         bfd: {}
         dhcp:
           client:
@@ -2735,6 +2758,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         bfd: {}
         dhcp:
           client:
@@ -4653,6 +4677,13 @@ defaults:
           - str
           - BoxList
         replace_global_as: bool
+        confederation:
+          type: dict
+          _keytype: asn
+          _subtype:
+            members:
+              type: list
+              _subtype: asn
       node:
         bfd:
           type: bool
@@ -4858,6 +4889,7 @@ defaults:
       advertise_roles:
       rr_list:
       as_list:
+      confederation:
     ebgp_role: external
     advertise_roles:
     - stub
@@ -4877,6 +4909,8 @@ defaults:
     - eigrp
     - ripv2
     next_hop_self: true
+    hooks:
+    - normalize
     features:
       local_as: Supports local-as functionality
       vrf_local_as: Supports local-as within a VRF
@@ -4885,6 +4919,7 @@ defaults:
       ipv6_lla: Can run EBGP sessions over IPv6 link-local addresses
       rfc8950: Can run IPv4 AF over regular IPv6 EBGP session
       community: Granular BGP community propagation
+      confederation: BGP confederations
       import: Import routes from other routing protocols
     warnings:
       missing_igp: true
@@ -4941,6 +4976,7 @@ defaults:
       - startup-delay
       - restart-policy
       template: clab.j2
+      version: 0.68.0
       start: sudo -E containerlab deploy --reconfigure -t clab.yml
       stop: sudo -E containerlab destroy --cleanup -t clab.yml
       act_probe: docker ps
@@ -5398,6 +5434,7 @@ defaults:
       maxlength: 255
     validate:
       ping: 5
+      ping_long: 15
       vxlan_ping: 20
       ra_send: 30
       ospfv2_adj_p2p: 30
@@ -5411,9 +5448,12 @@ defaults:
       ibgp_session: 30
       bgp_scan_time: 5
       bgp_scan_long: 15
+      bgp_ios_redist: 60
       isis_adj_p2p: 20
       isis_spf: 15
+      ldp_adj: 30
       stp_forwarding: 40
+      lacp_setup: 10
   hints:
     evpn:
       irb_group: >
@@ -5598,6 +5638,8 @@ defaults:
     netconf: 830
   warnings:
     duplicate_address: true
+    providers:
+      change: false
   bfd:
     min_echo_rx: 0
     multiplier: 3
@@ -7255,14 +7297,18 @@ defaults:
     list: []
     user: []
     system: []
-  workdir: /work/netlab_cicd
-  device: dellos10
   groups:
+    external:
+      device: frr
+      members: []
+      _default_group: true
     all:
       vars:
         netlab_show_config: true
       members: []
       _default_group: true
+  workdir: /work/netlab_cicd
+  device: dellos10
   plugin:
   - multilab
   _globals:
@@ -7305,6 +7351,10 @@ groups:
     - c1
     node_data:
       provider: clab
+  external:
+    device: frr
+    members: []
+    _default_group: true
   all:
     vars:
       netlab_show_config: true
@@ -7743,14 +7793,14 @@ validate:
   name: bgp6
 - description: Check whether DUT propagates the IPv4 beacon prefix
   wait_msg: Wait for BGP convergence
-  wait: 5
+  wait: 15
   nodes:
   - pe2
   plugin: bgp_prefix(prefix.beacon.ipv4)
   name: prefix
 - description: Check whether DUT propagates the IPv6 beacon prefix
   wait_msg: Wait for BGP convergence
-  wait: 5
+  wait: 15
   nodes:
   - pe2
   plugin: bgp_prefix(prefix.beacon.ipv6,af='ipv6')

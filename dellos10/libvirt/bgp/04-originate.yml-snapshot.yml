@@ -3,40 +3,6 @@
 message: |
   Use this topology to test the origination and propagation
   of IPv4 prefixes.
-module:
-- ospf
-- bgp
-groups:
-  probes:
-    device: frr
-    members:
-    - x1
-    - x2
-    - r1
-    node_data:
-      provider: clab
-  external:
-    device: frr
-    members: []
-    _default_group: true
-  all:
-    vars:
-      netlab_show_config: true
-    members: []
-    _default_group: true
-  as65000:
-    members:
-    - dut
-    - r1
-  as65001:
-    members:
-    - dut2
-  as65100:
-    members:
-    - x1
-  as65101:
-    members:
-    - x2
 defaults:
   provider: libvirt
   providers:
@@ -375,6 +341,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -547,6 +514,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -1252,6 +1220,8 @@ defaults:
           eos:
             serialnumber: str
             systemmacaddr: mac
+      warnings:
+        ospf_stub: false
     fortios:
       description: Fortinet FortiOS firewall
       interface_name: port{ifindex}
@@ -1526,6 +1496,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -1682,6 +1653,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -1852,6 +1824,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -2015,6 +1988,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -2325,6 +2299,7 @@ defaults:
           - connected
           - static
           - vrf
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -2934,6 +2909,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        loopback_ipv6: false
     unknown:
       description: Generic Unknown Device
       interface_name: eth{ifindex}
@@ -4490,7 +4467,6 @@ defaults:
         ibgp:
         ebgp:
         localas_ibgp:
-        confed_ebgp:
     rp_entry:
       _description: Routing policy entry
       action:
@@ -4792,6 +4768,28 @@ defaults:
     ifname:
       neighbors: 5
       maxlength: 255
+    validate:
+      ping: 5
+      ping_long: 15
+      vxlan_ping: 20
+      ra_send: 30
+      ospfv2_adj_p2p: 30
+      ospfv2_adj_lan: 50
+      ospfv2_spf: 10
+      ospfv3_adj_p2p: 30
+      ospfv3_adj_lan: 50
+      ospfv3_spf: 10
+      ospf_import: 20
+      ebgp_session: 30
+      ibgp_session: 30
+      bgp_scan_time: 5
+      bgp_scan_long: 15
+      bgp_ios_redist: 60
+      isis_adj_p2p: 20
+      isis_spf: 15
+      ldp_adj: 30
+      stp_forwarding: 40
+      lacp_setup: 10
   hints:
     evpn:
       irb_group: >
@@ -4976,6 +4974,8 @@ defaults:
     netconf: 830
   warnings:
     duplicate_address: true
+    providers:
+      change: false
   bfd:
     min_echo_rx: 0
     multiplier: 3
@@ -5071,6 +5071,8 @@ defaults:
     - eigrp
     - ripv2
     next_hop_self: true
+    hooks:
+    - normalize
     attributes:
       global:
         as: asn
@@ -5121,7 +5123,6 @@ defaults:
               _subtype: asn
       _inherit_community:
         localas_ibgp: ibgp
-        confed_ebgp: ibgp
       node:
         as:
           type: asn
@@ -6829,13 +6830,15 @@ defaults:
       unknown: true
       vjunos-switch: true
       vyos: true
-  interfaces:
-    mtu: 1500
   sources:
+    extra:
+    - ../wait_times.yml
+    - ../warnings.yml
     list: []
-    extra: []
     user: []
     system: []
+  interfaces:
+    mtu: 1500
   groups:
     external:
       device: frr
@@ -6874,6 +6877,40 @@ defaults:
   - ospf
   - bgp
   name: ml_17
+module:
+- ospf
+- bgp
+groups:
+  probes:
+    device: frr
+    members:
+    - x1
+    - x2
+    - r1
+    node_data:
+      provider: clab
+  external:
+    device: frr
+    members: []
+    _default_group: true
+  all:
+    vars:
+      netlab_show_config: true
+    members: []
+    _default_group: true
+  as65000:
+    members:
+    - dut
+    - r1
+  as65001:
+    members:
+    - dut2
+  as65100:
+    members:
+    - x1
+  as65101:
+    members:
+    - x2
 nodes:
   dut:
     bgp:
@@ -6885,9 +6922,6 @@ nodes:
         ebgp:
         - standard
         localas_ibgp:
-        - standard
-        - extended
-        confed_ebgp:
         - standard
         - extended
       next_hop_self: true
@@ -7038,9 +7072,6 @@ nodes:
         localas_ibgp:
         - standard
         - extended
-        confed_ebgp:
-        - standard
-        - extended
       next_hop_self: true
       as: 65001
       router_id: 10.0.0.2
@@ -7099,10 +7130,6 @@ nodes:
         - standard
         - large
         localas_ibgp:
-        - standard
-        - large
-        - extended
-        confed_ebgp:
         - standard
         - large
         - extended
@@ -7175,10 +7202,6 @@ nodes:
         - standard
         - large
         localas_ibgp:
-        - standard
-        - large
-        - extended
-        confed_ebgp:
         - standard
         - large
         - extended
@@ -7283,10 +7306,6 @@ nodes:
         - standard
         - large
         localas_ibgp:
-        - standard
-        - large
-        - extended
-        confed_ebgp:
         - standard
         - large
         - extended
@@ -7442,7 +7461,7 @@ validate:
   name: bgp_adj
 - description: Check whether DUT originates the beacon prefix
   wait_msg: Wait for prefix origination and BGP convergence
-  wait: 30
+  wait: 15
   nodes:
   - x1
   - x2
@@ -7481,6 +7500,8 @@ validate:
   name: suppress_p2p
 input:
 - /home/pipi/net101/tools/tests/integration/bgp/04-originate.yml
+- /home/pipi/net101/tools/tests/integration/wait_times.yml
+- /home/pipi/net101/tools/tests/integration/warnings.yml
 - /home/pipi/.netlab.yml
 - package:topology-defaults.yml
 plugin:
