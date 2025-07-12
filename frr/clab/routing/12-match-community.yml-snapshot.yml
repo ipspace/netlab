@@ -2,494 +2,6 @@
 ---
 message: |
   Use this topology to test 'match.community' route-map option.
-plugin:
-- bgp.policy
-- multilab
-module:
-- routing
-- bgp
-groups:
-  probes:
-    device: frr
-    members:
-    - probe
-    - x1
-    node_data:
-      provider: clab
-  external:
-    device: frr
-    members: []
-    _default_group: true
-  all:
-    vars:
-      netlab_show_config: true
-    members: []
-    _default_group: true
-  as65000:
-    members:
-    - dut
-  as65100:
-    members:
-    - probe
-  as65101:
-    members:
-    - x1
-prefix:
-  any:
-    ipv4: 0.0.0.0/0
-    ipv6: ::/0
-  pf1:
-    _name: pf1
-    ipv4: 172.16.0.0/24
-  pf2:
-    _name: pf2
-    ipv4: 172.16.1.0/24
-nodes:
-  dut:
-    bgp:
-      advertise_loopback: true
-      community:
-        ibgp:
-        - standard
-        - large
-        - extended
-        ebgp:
-        - standard
-        - large
-        localas_ibgp:
-        - standard
-        - large
-        - extended
-      next_hop_self: true
-      as: 65000
-      router_id: 10.0.0.1
-      neighbors:
-      - ifindex: 1
-        name: probe
-        as: 65100
-        type: ebgp
-        ipv4: 10.1.0.2
-        activate:
-          ipv4: true
-        policy:
-          out: set_med
-      - ifindex: 2
-        name: x1
-        as: 65101
-        type: ebgp
-        ipv4: 10.1.0.6
-        activate:
-          ipv4: true
-      ipv4: true
-      _session_clear:
-      - 10.1.0.2
-    routing:
-      _rm_per_af: true
-      community:
-        c1:
-          value:
-          - action: permit
-            sequence: 10
-            _value: '65101:17'
-          type: standard
-          regexp: ''
-        c2:
-          value:
-          - action: deny
-            sequence: 10
-            _value: '65101:42'
-          - action: permit
-            sequence: 20
-            _value: .*
-            regexp: .*
-          type: expanded
-          regexp: regexp
-      policy:
-        set_med:
-        - match:
-            community: c1
-          set:
-            med: 120
-          action: permit
-          sequence: 10
-        - match:
-            community: c2
-          set:
-            med: 200
-          action: permit
-          sequence: 20
-        - set:
-            med: 72
-          action: permit
-          sequence: 30
-    id: 1
-    name: dut
-    interfaces:
-    - bgp:
-        policy:
-          out: set_med
-      ipv4: 10.1.0.1/30
-      linkindex: 1
-      role: external
-      type: p2p
-      name: dut -> probe
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 10.1.0.2/30
-        ifname: eth1
-        node: probe
-    - ipv4: 10.1.0.5/30
-      linkindex: 2
-      role: external
-      type: p2p
-      name: dut -> x1
-      ifindex: 2
-      ifname: eth2
-      mtu: 1500
-      neighbors:
-      - bgp:
-          policy:
-            out: set_comm
-        ipv4: 10.1.0.6/30
-        ifname: eth1
-        node: x1
-    device: frr
-    clab:
-      kind: linux
-      config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts
-      binds:
-      - clab_files/dut/daemons:/etc/frr/daemons
-      - clab_files/dut/hosts:/etc/hosts
-    box: quay.io/frrouting/frr:10.3.1
-    module:
-    - routing
-    - bgp
-    role: router
-    mtu: 1500
-    provider: clab
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: 08:4f:a9:01:00:00
-      ipv4: 192.168.17.101
-    hostname: clab-ml_17-dut
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.1/32
-    config:
-    - bgp.policy
-  probe:
-    bgp:
-      advertise_loopback: true
-      community:
-        ibgp:
-        - standard
-        - large
-        - extended
-        ebgp:
-        - standard
-        - large
-        localas_ibgp:
-        - standard
-        - large
-        - extended
-      next_hop_self: true
-      as: 65100
-      router_id: 10.0.0.2
-      neighbors:
-      - ifindex: 1
-        name: dut
-        as: 65000
-        type: ebgp
-        ipv4: 10.1.0.1
-        activate:
-          ipv4: true
-      ipv4: true
-    name: probe
-    interfaces:
-    - ipv4: 10.1.0.2/30
-      linkindex: 1
-      role: external
-      type: p2p
-      name: probe -> dut
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - bgp:
-          policy:
-            out: set_med
-        ipv4: 10.1.0.1/30
-        ifname: eth1
-        node: dut
-    device: frr
-    clab:
-      kind: linux
-      config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts
-      binds:
-      - clab_files/probe/daemons:/etc/frr/daemons
-      - clab_files/probe/hosts:/etc/hosts
-    box: quay.io/frrouting/frr:10.3.1
-    module:
-    - routing
-    - bgp
-    routing:
-      _rm_per_af: true
-    id: 2
-    role: router
-    mtu: 1500
-    provider: clab
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: 08:4f:a9:02:00:00
-      ipv4: 192.168.17.102
-    hostname: clab-ml_17-probe
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.2/32
-  x1:
-    bgp:
-      advertise_loopback: true
-      community:
-        ibgp:
-        - standard
-        - large
-        - extended
-        ebgp:
-        - standard
-        - large
-        localas_ibgp:
-        - standard
-        - large
-        - extended
-      next_hop_self: true
-      as: 65101
-      originate:
-      - 172.16.0.0/24
-      - 172.16.1.0/24
-      router_id: 10.0.0.3
-      neighbors:
-      - ifindex: 1
-        name: dut
-        as: 65000
-        type: ebgp
-        ipv4: 10.1.0.5
-        activate:
-          ipv4: true
-        policy:
-          out: set_comm
-      ipv4: true
-      _session_clear:
-      - 10.1.0.5
-    routing:
-      _rm_per_af: true
-      prefix:
-        pf1:
-        - action: permit
-          sequence: 10
-          ipv4: 172.16.0.0/24
-        pf2:
-        - action: permit
-          sequence: 10
-          ipv4: 172.16.1.0/24
-      policy:
-        set_comm:
-        - match:
-            prefix: pf1
-          set:
-            community:
-              standard:
-              - '65101:17'
-          action: permit
-          sequence: 10
-        - match:
-            prefix: pf2
-          set:
-            community:
-              standard:
-              - '65101:42'
-          action: permit
-          sequence: 20
-        - set:
-            community:
-              standard:
-              - '65101:1'
-          action: permit
-          sequence: 30
-      _prefix:
-        ipv4:
-          pf1:
-          - action: permit
-            sequence: 10
-            ipv4: 172.16.0.0/24
-          pf2:
-          - action: permit
-            sequence: 10
-            ipv4: 172.16.1.0/24
-        ipv6:
-          pf1:
-          - sequence: 10
-            action: deny
-            ipv6: ::/0
-          pf2:
-          - sequence: 10
-            action: deny
-            ipv6: ::/0
-    name: x1
-    interfaces:
-    - bgp:
-        policy:
-          out: set_comm
-      ipv4: 10.1.0.6/30
-      linkindex: 2
-      role: external
-      type: p2p
-      name: x1 -> dut
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 10.1.0.5/30
-        ifname: eth2
-        node: dut
-    device: frr
-    clab:
-      kind: linux
-      config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts
-      binds:
-      - clab_files/x1/daemons:/etc/frr/daemons
-      - clab_files/x1/hosts:/etc/hosts
-    box: quay.io/frrouting/frr:10.3.1
-    module:
-    - routing
-    - bgp
-    id: 3
-    role: router
-    mtu: 1500
-    provider: clab
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: 08:4f:a9:03:00:00
-      ipv4: 192.168.17.103
-    hostname: clab-ml_17-x1
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.3/32
-    config:
-    - bgp.policy
-links:
-- _linkname: links[1]
-  interfaces:
-  - bgp:
-      policy:
-        out: set_med
-    node: dut
-    ipv4: 10.1.0.1/30
-    ifindex: 1
-    ifname: eth1
-  - node: probe
-    ipv4: 10.1.0.2/30
-    ifindex: 1
-    ifname: eth1
-  linkindex: 1
-  role: external
-  node_count: 2
-  type: p2p
-  prefix:
-    ipv4: 10.1.0.0/30
-- _linkname: links[2]
-  interfaces:
-  - node: dut
-    ipv4: 10.1.0.5/30
-    ifindex: 2
-    ifname: eth2
-  - bgp:
-      policy:
-        out: set_comm
-    node: x1
-    ipv4: 10.1.0.6/30
-    ifindex: 1
-    ifname: eth1
-  linkindex: 2
-  role: external
-  node_count: 2
-  type: p2p
-  prefix:
-    ipv4: 10.1.0.4/30
-validate:
-- description: Check EBGP sessions with DUT (wait up to 10 seconds)
-  wait: 10
-  nodes:
-  - probe
-  - x1
-  plugin: bgp_neighbor(node.bgp.neighbors,'dut')
-  name: ebgp
-- description: Check for X1 loopback prefix on Probe
-  wait: 10
-  nodes:
-  - probe
-  plugin: bgp_prefix(nodes.x1.loopback.ipv4)
-  name: pfx_lb
-- description: Check for pfx_1 loopback prefix on Probe
-  wait: 10
-  nodes:
-  - probe
-  plugin: bgp_prefix(prefix.pf1.ipv4)
-  name: pfx_1
-- description: Check for pfx_2 loopback prefix on Probe
-  wait: 3
-  nodes:
-  - probe
-  plugin: bgp_prefix(prefix.pf2.ipv4)
-  name: pfx_2
-- description: Check MED of X1 loopback prefix
-  wait: 10
-  nodes:
-  - probe
-  plugin: >
-    bgp_prefix(nodes.x1.loopback.ipv4,med=200)
-  name: med_lb
-- description: Check MED of Prefix_1
-  nodes:
-  - probe
-  plugin: >
-    bgp_prefix(prefix.pf1.ipv4,med=120)
-  name: med_pfx1
-- description: Check MED of Prefix_2
-  nodes:
-  - probe
-  plugin: >
-    bgp_prefix(prefix.pf2.ipv4,med=72)
-  name: med_pfx2
-input:
-- /home/pipi/net101/tools/tests/integration/routing/12-match-community.yml
-- /home/pipi/.netlab.yml
-- package:topology-defaults.yml
 defaults:
   devices:
     eos:
@@ -694,6 +206,8 @@ defaults:
           eos:
             serialnumber: str
             systemmacaddr: mac
+      warnings:
+        ospf_stub: false
     frr:
       features:
         bgp:
@@ -1325,6 +839,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        loopback_ipv6: false
     none:
       features:
         bgp:
@@ -2459,6 +1975,9 @@ defaults:
           - pvrst
           enable_per_port: true
           port_type: true
+        lag:
+          mlag: false
+          passive: true
       description: IOSv L2 image
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
@@ -2492,6 +2011,7 @@ defaults:
           kind: cisco_iol
           type: l2
         mtu: 1500
+      lag_interface_name: Port-channel{lag.ifindex}
     iosv:
       features:
         bgp:
@@ -2806,6 +2326,9 @@ defaults:
           - pvrst
           enable_per_port: true
           port_type: true
+        lag:
+          mlag: false
+          passive: true
       description: IOSv L2 image
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
@@ -2845,6 +2368,7 @@ defaults:
         interface:
           name: eth{ifindex}
         build: https://github.com/hellt/vrnetlab/tree/master/viosl2
+      lag_interface_name: Port-channel{lag.ifindex}
     iosxr:
       description: Cisco IOS XRv
       mgmt_if: MgmtEth0/RP0/CPU0/0
@@ -3851,6 +3375,7 @@ defaults:
       description: VyOS VM/container
       interface_name: eth{ifindex}
       loopback_interface_name: dum{ifindex}
+      lag_interface_name: bond{lag.ifindex}
       mgmt_if: eth0
       libvirt:
         image: vyos/current
@@ -3888,6 +3413,8 @@ defaults:
           protocol:
           - vrrp
         isis: {}
+        lag:
+          passive: false
         mpls:
           ldp: true
           vpn:
@@ -4977,13 +4504,13 @@ defaults:
     suzieq:
       runtime: docker
       docker:
-        up: docker run --rm -itd --name '{name}_suzieq' {sys.docker_net} -v 
-          '{name}_suzieq':/parquet -v './suzieq':/suzieq netenglabs/suzieq-demo 
-          -c 'sq-poller -I /suzieq/suzieq-inventory.yml'
+        up: docker run -itd --name '{name}_suzieq' {sys.docker_net} -v 
+          '{name}_suzieq_data':/parquet -v './suzieq':/suzieq 
+          netenglabs/suzieq-demo -c 'sq-poller -I /suzieq/suzieq-inventory.yml'
         message: Use 'netlab connect suzieq' to start SuzieQ CLI
         connect: docker exec -it '{name}_suzieq' /usr/local/bin/suzieq-cli
-        down: docker kill '{name}_suzieq'
-        cleanup: docker volume rm '{name}_suzieq'
+        down: docker kill '{name}_suzieq'; docker rm '{name}_suzieq'
+        cleanup: docker volume rm '{name}_suzieq_data'
       config:
       - dest: suzieq-inventory.yml
         template: suzieq.inventory.j2
@@ -5659,6 +5186,31 @@ defaults:
     ifname:
       neighbors: 5
       maxlength: 255
+    validate:
+      ping: 5
+      ping_long: 15
+      vxlan_ping: 20
+      ping_xx_long: 40
+      ra_send: 30
+      ospfv2_adj_p2p: 30
+      ospfv2_adj_lan: 50
+      ospfv2_spf: 10
+      ospfv3_adj_p2p: 30
+      ospfv3_adj_lan: 50
+      ospfv3_spf: 10
+      ospf_import: 20
+      ebgp_session: 30
+      ibgp_session: 30
+      bgp_scan_time: 5
+      bgp_scan_long: 15
+      bgp_ios_redist: 60
+      isis_adj_p2p: 20
+      isis_spf: 15
+      rip_start: 60
+      rip_update: 20
+      ldp_adj: 30
+      stp_forwarding: 40
+      lacp_setup: 10
   hints:
     evpn:
       irb_group: >
@@ -5843,6 +5395,8 @@ defaults:
     netconf: 830
   warnings:
     duplicate_address: true
+    providers:
+      change: false
   bfd:
     min_echo_rx: 0
     multiplier: 3
@@ -6427,11 +5981,14 @@ defaults:
       dnsmasq: true
       eos: true
       frr: true
+      ioll2: true
+      iosvl2: true
       linux: true
       none: true
       vjunos-switch: true
       vptx: true
       vsrx: true
+      vyos: true
   mpls:
     config_after:
     - vlan
@@ -7495,8 +7052,10 @@ defaults:
       vjunos-switch: true
       vyos: true
   sources:
+    extra:
+    - ../wait_times.yml
+    - ../warnings.yml
     list: []
-    extra: []
     user: []
     system: []
   groups:
@@ -7537,6 +7096,496 @@ defaults:
   - routing
   - bgp
   name: ml_17
+plugin:
+- bgp.policy
+- multilab
+module:
+- routing
+- bgp
+groups:
+  probes:
+    device: frr
+    members:
+    - probe
+    - x1
+    node_data:
+      provider: clab
+  external:
+    device: frr
+    members: []
+    _default_group: true
+  all:
+    vars:
+      netlab_show_config: true
+    members: []
+    _default_group: true
+  as65000:
+    members:
+    - dut
+  as65100:
+    members:
+    - probe
+  as65101:
+    members:
+    - x1
+prefix:
+  any:
+    ipv4: 0.0.0.0/0
+    ipv6: ::/0
+  pf1:
+    _name: pf1
+    ipv4: 172.16.0.0/24
+  pf2:
+    _name: pf2
+    ipv4: 172.16.1.0/24
+nodes:
+  dut:
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      next_hop_self: true
+      as: 65000
+      router_id: 10.0.0.1
+      neighbors:
+      - ifindex: 1
+        name: probe
+        as: 65100
+        type: ebgp
+        ipv4: 10.1.0.2
+        activate:
+          ipv4: true
+        policy:
+          out: set_med
+      - ifindex: 2
+        name: x1
+        as: 65101
+        type: ebgp
+        ipv4: 10.1.0.6
+        activate:
+          ipv4: true
+      ipv4: true
+      _session_clear:
+      - 10.1.0.2
+    routing:
+      _rm_per_af: true
+      community:
+        c1:
+          value:
+          - action: permit
+            sequence: 10
+            _value: '65101:17'
+          type: standard
+          regexp: ''
+        c2:
+          value:
+          - action: deny
+            sequence: 10
+            _value: '65101:42'
+          - action: permit
+            sequence: 20
+            _value: .*
+            regexp: .*
+          type: expanded
+          regexp: regexp
+      policy:
+        set_med:
+        - match:
+            community: c1
+          set:
+            med: 120
+          action: permit
+          sequence: 10
+        - match:
+            community: c2
+          set:
+            med: 200
+          action: permit
+          sequence: 20
+        - set:
+            med: 72
+          action: permit
+          sequence: 30
+    id: 1
+    name: dut
+    interfaces:
+    - bgp:
+        policy:
+          out: set_med
+      ipv4: 10.1.0.1/30
+      linkindex: 1
+      role: external
+      type: p2p
+      name: dut -> probe
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 10.1.0.2/30
+        ifname: eth1
+        node: probe
+    - ipv4: 10.1.0.5/30
+      linkindex: 2
+      role: external
+      type: p2p
+      name: dut -> x1
+      ifindex: 2
+      ifname: eth2
+      mtu: 1500
+      neighbors:
+      - bgp:
+          policy:
+            out: set_comm
+        ipv4: 10.1.0.6/30
+        ifname: eth1
+        node: x1
+    device: frr
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts
+      binds:
+      - clab_files/dut/daemons:/etc/frr/daemons
+      - clab_files/dut/hosts:/etc/hosts
+    box: quay.io/frrouting/frr:10.3.1
+    module:
+    - routing
+    - bgp
+    role: router
+    mtu: 1500
+    provider: clab
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: 08:4f:a9:01:00:00
+      ipv4: 192.168.17.101
+    hostname: clab-ml_17-dut
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.1/32
+    config:
+    - bgp.policy
+  probe:
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      next_hop_self: true
+      as: 65100
+      router_id: 10.0.0.2
+      neighbors:
+      - ifindex: 1
+        name: dut
+        as: 65000
+        type: ebgp
+        ipv4: 10.1.0.1
+        activate:
+          ipv4: true
+      ipv4: true
+    name: probe
+    interfaces:
+    - ipv4: 10.1.0.2/30
+      linkindex: 1
+      role: external
+      type: p2p
+      name: probe -> dut
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - bgp:
+          policy:
+            out: set_med
+        ipv4: 10.1.0.1/30
+        ifname: eth1
+        node: dut
+    device: frr
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts
+      binds:
+      - clab_files/probe/daemons:/etc/frr/daemons
+      - clab_files/probe/hosts:/etc/hosts
+    box: quay.io/frrouting/frr:10.3.1
+    module:
+    - routing
+    - bgp
+    routing:
+      _rm_per_af: true
+    id: 2
+    role: router
+    mtu: 1500
+    provider: clab
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: 08:4f:a9:02:00:00
+      ipv4: 192.168.17.102
+    hostname: clab-ml_17-probe
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.2/32
+  x1:
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      next_hop_self: true
+      as: 65101
+      originate:
+      - 172.16.0.0/24
+      - 172.16.1.0/24
+      router_id: 10.0.0.3
+      neighbors:
+      - ifindex: 1
+        name: dut
+        as: 65000
+        type: ebgp
+        ipv4: 10.1.0.5
+        activate:
+          ipv4: true
+        policy:
+          out: set_comm
+      ipv4: true
+      _session_clear:
+      - 10.1.0.5
+    routing:
+      _rm_per_af: true
+      prefix:
+        pf1:
+        - action: permit
+          sequence: 10
+          ipv4: 172.16.0.0/24
+        pf2:
+        - action: permit
+          sequence: 10
+          ipv4: 172.16.1.0/24
+      policy:
+        set_comm:
+        - match:
+            prefix: pf1
+          set:
+            community:
+              standard:
+              - '65101:17'
+          action: permit
+          sequence: 10
+        - match:
+            prefix: pf2
+          set:
+            community:
+              standard:
+              - '65101:42'
+          action: permit
+          sequence: 20
+        - set:
+            community:
+              standard:
+              - '65101:1'
+          action: permit
+          sequence: 30
+      _prefix:
+        ipv4:
+          pf1:
+          - action: permit
+            sequence: 10
+            ipv4: 172.16.0.0/24
+          pf2:
+          - action: permit
+            sequence: 10
+            ipv4: 172.16.1.0/24
+        ipv6:
+          pf1:
+          - sequence: 10
+            action: deny
+            ipv6: ::/0
+          pf2:
+          - sequence: 10
+            action: deny
+            ipv6: ::/0
+    name: x1
+    interfaces:
+    - bgp:
+        policy:
+          out: set_comm
+      ipv4: 10.1.0.6/30
+      linkindex: 2
+      role: external
+      type: p2p
+      name: x1 -> dut
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 10.1.0.5/30
+        ifname: eth2
+        node: dut
+    device: frr
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts
+      binds:
+      - clab_files/x1/daemons:/etc/frr/daemons
+      - clab_files/x1/hosts:/etc/hosts
+    box: quay.io/frrouting/frr:10.3.1
+    module:
+    - routing
+    - bgp
+    id: 3
+    role: router
+    mtu: 1500
+    provider: clab
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: 08:4f:a9:03:00:00
+      ipv4: 192.168.17.103
+    hostname: clab-ml_17-x1
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.3/32
+    config:
+    - bgp.policy
+links:
+- _linkname: links[1]
+  interfaces:
+  - bgp:
+      policy:
+        out: set_med
+    node: dut
+    ipv4: 10.1.0.1/30
+    ifindex: 1
+    ifname: eth1
+  - node: probe
+    ipv4: 10.1.0.2/30
+    ifindex: 1
+    ifname: eth1
+  linkindex: 1
+  role: external
+  node_count: 2
+  type: p2p
+  prefix:
+    ipv4: 10.1.0.0/30
+- _linkname: links[2]
+  interfaces:
+  - node: dut
+    ipv4: 10.1.0.5/30
+    ifindex: 2
+    ifname: eth2
+  - bgp:
+      policy:
+        out: set_comm
+    node: x1
+    ipv4: 10.1.0.6/30
+    ifindex: 1
+    ifname: eth1
+  linkindex: 2
+  role: external
+  node_count: 2
+  type: p2p
+  prefix:
+    ipv4: 10.1.0.4/30
+validate:
+- description: Check EBGP sessions with DUT (wait up to 10 seconds)
+  wait: 30
+  nodes:
+  - probe
+  - x1
+  plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+  name: ebgp
+- description: Check for X1 loopback prefix on Probe
+  wait: 15
+  nodes:
+  - probe
+  plugin: bgp_prefix(nodes.x1.loopback.ipv4)
+  name: pfx_lb
+- description: Check for pfx_1 loopback prefix on Probe
+  wait: 15
+  nodes:
+  - probe
+  plugin: bgp_prefix(prefix.pf1.ipv4)
+  name: pfx_1
+- description: Check for pfx_2 loopback prefix on Probe
+  wait: 5
+  nodes:
+  - probe
+  plugin: bgp_prefix(prefix.pf2.ipv4)
+  name: pfx_2
+- description: Check MED of X1 loopback prefix
+  wait: 5
+  nodes:
+  - probe
+  plugin: >
+    bgp_prefix(nodes.x1.loopback.ipv4,med=200)
+  name: med_lb
+- description: Check MED of Prefix_1
+  nodes:
+  - probe
+  plugin: >
+    bgp_prefix(prefix.pf1.ipv4,med=120)
+  name: med_pfx1
+- description: Check MED of Prefix_2
+  nodes:
+  - probe
+  plugin: >
+    bgp_prefix(prefix.pf2.ipv4,med=72)
+  name: med_pfx2
+input:
+- /home/pipi/net101/tools/tests/integration/routing/12-match-community.yml
+- /home/pipi/net101/tools/tests/integration/wait_times.yml
+- /home/pipi/net101/tools/tests/integration/warnings.yml
+- /home/pipi/.netlab.yml
+- package:topology-defaults.yml
 name: ml_17
 _extra_module:
 - routing
