@@ -11,7 +11,7 @@ message: |
   * r3 and r4 should be able to ping each other
   * r1 should not be able to reach r3
 
-defaults.sources.extra: [ ipv6-defaults.yml ]
+defaults.sources.extra: [ ipv6-defaults.yml, ../wait_times.yml, ../warnings.yml ]
 
 groups:
   ce_rip:
@@ -54,11 +54,11 @@ validate:
     wait_msg: Waiting for EBGP sessions to start
     nodes: [ r2, r4 ]
     plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6')
-    wait: 20
+    wait: ebgp_session
     stop_on_error: true
   red_c_rip:
     description: Check connected subnet as RIPng prefix on R1
-    wait: 15
+    wait: rip_update
     wait_msg: Waiting for RIPng convergence
     fail: DUT is not redistributing connected subnets into RIPv2
     nodes: [ r1 ]
@@ -67,14 +67,14 @@ validate:
     description: Check for BGP prefix in RIPng
     wait_msg: Waiting for BGP and RIPng convergence
     fail: BGP is not redistributed into RIPng
-    wait: 10
+    wait: rip_update
     nodes: [ r1 ]
     plugin: rt_prefix(nodes.r2.loopback.ipv6,af='ipv6',proto='rip')
   red_rip_bgp:
     description: Check for RIPng prefix in BGP
     wait_msg: Waiting for RIPng and BGP convergence
     fail: RIPng is not redistributed into BGP
-    wait: 40
+    wait: bgp_ios_redist
     nodes: [ r2 ]
     plugin: bgp_prefix(nodes.r1.interfaces[0].ipv6,af='ipv6')
   red_lb_ping:
@@ -87,7 +87,7 @@ validate:
     plugin: ping(nodes.r1.interfaces[0].ipv6,af='ipv6')
   blue_lb_ping:
     description: Loopback-to-loopback reachability test in VRF blue
-    wait: 10
+    wait: ping_long
     nodes: [ r3 ]
     plugin: ping('r4',src=nodes.r3.interfaces[0].ipv6,af='ipv6')
   inter_vrf:
