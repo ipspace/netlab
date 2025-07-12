@@ -321,7 +321,9 @@ def build_vrf_interface_list(
     for neighbor in l.neighbors:                                      # ... iterate over the list of neighbors
       n_data = topology.nodes[neighbor.node]
       if proto in n_data.get('module',[]):                            # ... and check if at least one of them uses the IGP
-        node.vrfs[l.vrf][proto].active = True
+        for af in ['ipv4','ipv6']:                                    # ... and has at least one AF in common
+          if af in l and af in neighbor:                              # ... with our interface
+            node.vrfs[l.vrf][proto].active = True                     # Found one? Let's keep the routing protocol active
 
   # Time to cleanup IGP data
   for vname,vdata in node.get('vrfs',{}).items():                     # ... iterate over the list of VRFs
