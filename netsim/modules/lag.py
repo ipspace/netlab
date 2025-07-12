@@ -60,6 +60,11 @@ def check_lag_config(node: str, linkname: str, topology: Box) -> bool:
       category=log.IncorrectAttr,
       module='lag')
     return False
+  if _n.get('role',None)=='bridge':
+    log.error('The lag module is not designed to be used with bridge devices',
+      category=log.IncorrectAttr,
+      module='lag')
+    return False
   return True
 
 """
