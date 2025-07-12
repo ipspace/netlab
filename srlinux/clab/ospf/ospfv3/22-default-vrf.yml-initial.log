@@ -1,3 +1,7 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -5,87 +9,87 @@ PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
-ok: [xf]
 ok: [p1]
 ok: [p2]
+ok: [xf]
 
 TASK [Find device readiness script] ********************************************
 ok: [dut]
-ok: [xf]
 ok: [p1]
 ok: [p2]
+ok: [xf]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [dut]
-skipping: [xf]
 skipping: [p1]
 skipping: [p2]
+skipping: [xf]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, xf, p1, p2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, p1, p2, xf
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [dut]
-ok: [xf]
 ok: [p1]
 ok: [p2]
+ok: [xf]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [dut]
-ok: [xf]
 ok: [p1]
 ok: [p2]
+ok: [xf]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
-skipping: [xf]
 skipping: [p1]
 skipping: [p2]
+skipping: [xf]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [dut]
-ok: [xf]
 ok: [p1]
 ok: [p2]
+ok: [xf]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
-skipping: [xf]
 skipping: [p1]
 skipping: [p2]
+skipping: [xf]
 
 TASK [Deploy normalize configuration] ******************************************
 skipping: [dut]
-skipping: [xf]
 skipping: [p1]
 skipping: [p2]
+skipping: [xf]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, xf, p1, p2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, p1, p2, xf
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
-ok: [xf]
 ok: [p1]
 ok: [p2]
+ok: [xf]
 
 TASK [Find configuration template for initial] *********************************
 ok: [dut]
-ok: [xf]
 ok: [p1]
 ok: [p2]
+ok: [xf]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
-skipping: [xf]
 skipping: [p1]
 skipping: [p2]
+skipping: [xf]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [dut]
-ok: [xf]
 ok: [p1]
 ok: [p2]
+ok: [xf]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -212,15 +216,6 @@ ok: [dut] =>
   
   
     # TODO: vdata.rd, vdata.import/export, vdata.af
-    - path: /network-instance[name=d1]
-      value:
-       type: ip-vrf
-       interface:
-       - name: ethernet-1/1.0
-  
-  
-  
-    # TODO: vdata.rd, vdata.import/export, vdata.af
     - path: /network-instance[name=d2]
       value:
        type: ip-vrf
@@ -236,113 +231,15 @@ ok: [dut] =>
        type: ip-vrf
        interface:
        - name: lo0.1
-ok: [xf] => 
-  msg: |-
-    initial configuration for xf
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)# "
-    echo
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
-    #
-    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=1
-    #
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
   
-    # Set system defaults
-    #
-    # Send ARP requests from a sane source IP address
-    #
-    sysctl -w net.ipv4.conf.all.arp_announce=2
   
-    #
-    # Create loopbacks, stub and lag/bond devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
   
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    ip link set eth1 down
-    sysctl -qw net.ipv6.conf.eth1.autoconf=0
-    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set dev eth1 mtu 1500
-    ip link set eth1 up
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-  
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname xf
-    !
-    ipv6 forwarding
-    vrf mgmt
-     exit-vrf
-    !
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ! no ip address
-     ipv6 address 2001:db8:1:4::1/64
-    !
-    interface eth1
-     no shutdown
-     description xf -> dut [external]
-     ! no ip address
-     ipv6 address 2001:db8:3:2::2/64
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
+    # TODO: vdata.rd, vdata.import/export, vdata.af
+    - path: /network-instance[name=d1]
+      value:
+       type: ip-vrf
+       interface:
+       - name: ethernet-1/1.0
 ok: [p1] => 
   msg: |-
     initial configuration for p1
@@ -557,10 +454,117 @@ ok: [p2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [xf] => 
+  msg: |-
+    initial configuration for xf
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.autoconf=0
+    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname xf
+    !
+    ipv6 forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ! no ip address
+     ipv6 address 2001:db8:1:4::1/64
+    !
+    interface eth1
+     no shutdown
+     description xf -> dut [external]
+     ! no ip address
+     ipv6 address 2001:db8:3:2::2/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for xf, p1, p2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for p1, p2, xf
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [dut]
@@ -572,35 +576,35 @@ TASK [debug] *******************************************************************
 skipping: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [xf -> localhost]
+changed: [p1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
-skipping: [xf]
 skipping: [p1]
 skipping: [p2]
+skipping: [xf]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for xf, p1, p2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for p1, p2, xf
 
 TASK [template] ****************************************************************
+changed: [p2]
 changed: [xf]
 changed: [p1]
-changed: [p2]
 
 TASK [set_fact] ****************************************************************
-ok: [xf]
 ok: [p1]
 ok: [p2]
+ok: [xf]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [p1]
-changed: [xf]
 changed: [p2]
+changed: [xf]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-skipping: [xf]
 skipping: [p1]
 skipping: [p2]
+skipping: [xf]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -716,8 +720,8 @@ TASK [debug] *******************************************************************
 skipping: [dut]
 
 TASK [template] ****************************************************************
-changed: [p2]
 changed: [p1]
+changed: [p2]
 
 TASK [set_fact] ****************************************************************
 ok: [p1]
@@ -768,7 +772,6 @@ ok: [xf] =>
       no bgp default ipv4-unicast
       bgp default show-hostname
       bgp default show-nexthop-hostname
-  
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
@@ -926,6 +929,216 @@ ok: [dut] =>
     =========================================
   
     updates:
+  
+    - path: /network-instance[name=d2]
+      value:
+       type: ip-vrf
+  
+    - path: /routing-policy/prefix-set[name=default_route]
+      value:
+        prefix:
+        - ip-prefix: "0.0.0.0/0"
+          mask-length-range: exact
+        - ip-prefix: "::/0"
+          mask-length-range: exact
+    - path: /routing-policy/policy[name=d2_export_ospf]
+      value:
+        default-action:
+          policy-result: reject
+        statement:
+        - name: default
+          match:
+           prefix:
+            prefix-set: default_route
+          action:
+            policy-result: accept
+        - name: export_bgp
+          match:
+            protocol: bgp
+          action:
+            policy-result: accept
+        - name: export_local
+          match:
+            protocol: local
+          action:
+            policy-result: accept
+  
+  
+    - path: /network-instance[name=d2]
+      value:
+        router-id: 10.0.0.1
+        protocols:
+          ospf:
+            instance:
+            - name: "1"
+              version: ospf-v3
+              address-family: ipv6-unicast
+              admin-state: enable
+              max-ecmp-paths: 64
+              asbr: {}
+              export-policy: "d2_export_ospf"
+              area:
+              - area-id: 0.0.0.0
+                interface:
+                - interface-name: ethernet-1/2.0
+                  interface-type: "point-to-point"
+                  failure-detection:
+                    enable-bfd: False
+              - area-id: 0.0.0.0
+                interface:
+                - interface-name: lo0.1
+                  failure-detection:
+                    enable-bfd: False
+  
+  
+    - path: /routing-policy/community-set[name=C65000_2]
+      value:
+       member:
+       - "target:65000:2" # Single member, else matching is AND
+  
+    - path: /routing-policy/community-set[name=d2_export]
+      value:
+       member:
+       - "target:65000:2"
+  
+  
+    - path: /routing-policy/policy[name=d2_bgp_export]
+      value:
+        default-action:
+          policy-result: reject
+        statement:
+        - name: bgp
+          match:
+            protocol: bgp
+          action:
+            policy-result: next-policy
+            bgp:
+              communities:
+                remove:
+                  ibgp-mark
+        - name: export_local
+          match:
+            protocol: local
+          action:
+            policy-result: next-policy
+        - name: export_ospfv2
+          match:
+            protocol: ospfv2
+          action:
+            policy-result: next-policy
+        - name: export_ospfv3
+          match:
+            protocol: ospfv3
+          action:
+            policy-result: next-policy
+  
+  
+    - path: /network-instance[name=d2]/protocols/bgp
+      value:
+        admin-state: enable
+        autonomous-system: 65000
+        router-id: 10.0.0.1
+        ebgp-default-policy:
+          export-reject-all: False
+          import-reject-all: False
+  
+        afi-safi:
+        - afi-safi-name: ipv6-unicast
+          admin-state: enable
+  
+  
+    - path: /routing-policy/prefix-set[name=d2_bgp_advertise]
+      value:
+        prefix:
+        - ip-prefix: 2001:db8:cafe:43::/64
+          mask-length-range: exact
+  
+  
+  
+  
+    - path: /network-instance[name=d2]/protocols/bgp/group[group-name=ebgp]
+      value:
+        admin-state: enable
+    # neighbor: {'ifindex': 3, 'name': 'xf', 'as': 65100, 'type': 'ebgp', 'ipv6': '2001:db8:3:2::2', 'activate': {'ipv6': True}, '_src_vrf': 'd2'}
+    # ipv4: True
+    # ipv6: True
+        afi-safi:
+        - afi-safi-name: ipv4-unicast
+          admin-state: disable
+          send-community-type: ['standard', 'large']
+  
+          import-policy: ['accept_all']
+          export-policy: ['d2_bgp_export', 'accept_all']
+        - afi-safi-name: ipv6-unicast
+          admin-state: enable
+          send-community-type: ['standard', 'large']
+  
+          import-policy: ['accept_all']
+          export-policy: ['d2_bgp_export', 'accept_all']
+  
+        timers:
+          connect-retry: 10
+          _annotate_connect-retry: "Reduce default 120s to 10s"
+          minimum-advertisement-interval: 1
+  
+  
+    - path: /network-instance[name=d2]/protocols/bgp
+      value:
+        neighbor:
+        - peer-address: "2001:db8:3:2::2"
+          description: xf
+          peer-group: ebgp
+      # neighbor: {'ifindex': 3, 'name': 'xf', 'as': 65100, 'type': 'ebgp', 'ipv6': '2001:db8:3:2::2', 'activate': {'ipv6': True}, '_src_vrf': 'd2'}
+      # ipv4: True
+      # ipv6: True
+          afi-safi:
+          - afi-safi-name: ipv4-unicast
+            admin-state: disable
+            send-community-type: ['standard', 'large']
+  
+          - afi-safi-name: ipv6-unicast
+            admin-state: enable
+            send-community-type: ['standard', 'large']
+  
+  
+          peer-as: 65100
+  
+  
+  
+  
+    - path: /network-instance[name=d2]/protocols/bgp-vpn
+      value:
+       bgp-instance:
+       - id: 1
+         route-distinguisher:
+          rd: "65000:2"
+  
+    - path: /network-instance[name=d2]/inter-instance-policies
+      value:
+       apply-policy:
+        export-policy: "d2_vpn_export"
+        import-policy: "d2_vpn_import"
+  
+    - path: /routing-policy/policy[name=d2_vpn_export]
+      value:
+       default-action:
+        policy-result: "accept"
+        bgp:
+         communities:
+          add: "d2_export"
+  
+    - path: /routing-policy/policy[name=d2_vpn_import]
+      value:
+       default-action:
+        policy-result: "reject"
+       statement:
+       - name: 11
+         match:
+          bgp:
+           community-set: "C65000_2"
+         action:
+          policy-result: "accept"
+  
   
     - path: /network-instance[name=d1]
       value:
@@ -1088,216 +1301,6 @@ ok: [dut] =>
            community-set: "C65000_1"
          action:
           policy-result: "accept"
-  
-  
-    - path: /network-instance[name=d2]
-      value:
-       type: ip-vrf
-  
-    - path: /routing-policy/prefix-set[name=default_route]
-      value:
-        prefix:
-        - ip-prefix: "0.0.0.0/0"
-          mask-length-range: exact
-        - ip-prefix: "::/0"
-          mask-length-range: exact
-    - path: /routing-policy/policy[name=d2_export_ospf]
-      value:
-        default-action:
-          policy-result: reject
-        statement:
-        - name: default
-          match:
-           prefix:
-            prefix-set: default_route
-          action:
-            policy-result: accept
-        - name: export_bgp
-          match:
-            protocol: bgp
-          action:
-            policy-result: accept
-        - name: export_local
-          match:
-            protocol: local
-          action:
-            policy-result: accept
-  
-  
-    - path: /network-instance[name=d2]
-      value:
-        router-id: 10.0.0.1
-        protocols:
-          ospf:
-            instance:
-            - name: "1"
-              version: ospf-v3
-              address-family: ipv6-unicast
-              admin-state: enable
-              max-ecmp-paths: 64
-              asbr: {}
-              export-policy: "d2_export_ospf"
-              area:
-              - area-id: 0.0.0.0
-                interface:
-                - interface-name: ethernet-1/2.0
-                  interface-type: "point-to-point"
-                  failure-detection:
-                    enable-bfd: False
-              - area-id: 0.0.0.0
-                interface:
-                - interface-name: lo0.1
-                  failure-detection:
-                    enable-bfd: False
-  
-  
-    - path: /routing-policy/community-set[name=C65000_2]
-      value:
-       member:
-       - "target:65000:2" # Single member, else matching is AND
-  
-    - path: /routing-policy/community-set[name=d2_export]
-      value:
-       member:
-       - "target:65000:2"
-  
-  
-    - path: /routing-policy/policy[name=d2_bgp_export]
-      value:
-        default-action:
-          policy-result: reject
-        statement:
-        - name: bgp
-          match:
-            protocol: bgp
-          action:
-            policy-result: next-policy
-            bgp:
-              communities:
-                remove:
-                  ibgp-mark
-        - name: export_local
-          match:
-            protocol: local
-          action:
-            policy-result: next-policy
-        - name: export_ospfv2
-          match:
-            protocol: ospfv2
-          action:
-            policy-result: next-policy
-        - name: export_ospfv3
-          match:
-            protocol: ospfv3
-          action:
-            policy-result: next-policy
-  
-  
-    - path: /network-instance[name=d2]/protocols/bgp
-      value:
-        admin-state: enable
-        autonomous-system: 65000
-        router-id: 10.0.0.1
-        ebgp-default-policy:
-          export-reject-all: False
-          import-reject-all: False
-  
-        afi-safi:
-        - afi-safi-name: ipv6-unicast
-          admin-state: enable
-  
-  
-    - path: /routing-policy/prefix-set[name=d2_bgp_advertise]
-      value:
-        prefix:
-        - ip-prefix: 2001:db8:cafe:43::/64
-          mask-length-range: exact
-  
-  
-  
-  
-    - path: /network-instance[name=d2]/protocols/bgp/group[group-name=ebgp]
-      value:
-        admin-state: enable
-    # neighbor: {'_src_vrf': 'd2', 'activate': {'ipv6': True}, 'as': 65100, 'ifindex': 3, 'ipv6': '2001:db8:3:2::2', 'name': 'xf', 'type': 'ebgp'}
-    # ipv4: True
-    # ipv6: True
-        afi-safi:
-        - afi-safi-name: ipv4-unicast
-          admin-state: disable
-          send-community-type: ['standard', 'large']
-  
-          import-policy: ['accept_all']
-          export-policy: ['d2_bgp_export', 'accept_all']
-        - afi-safi-name: ipv6-unicast
-          admin-state: enable
-          send-community-type: ['standard', 'large']
-  
-          import-policy: ['accept_all']
-          export-policy: ['d2_bgp_export', 'accept_all']
-  
-        timers:
-          connect-retry: 10
-          _annotate_connect-retry: "Reduce default 120s to 10s"
-          minimum-advertisement-interval: 1
-  
-  
-    - path: /network-instance[name=d2]/protocols/bgp
-      value:
-        neighbor:
-        - peer-address: "2001:db8:3:2::2"
-          description: xf
-          peer-group: ebgp
-      # neighbor: {'_src_vrf': 'd2', 'activate': {'ipv6': True}, 'as': 65100, 'ifindex': 3, 'ipv6': '2001:db8:3:2::2', 'name': 'xf', 'type': 'ebgp'}
-      # ipv4: True
-      # ipv6: True
-          afi-safi:
-          - afi-safi-name: ipv4-unicast
-            admin-state: disable
-            send-community-type: ['standard', 'large']
-  
-          - afi-safi-name: ipv6-unicast
-            admin-state: enable
-            send-community-type: ['standard', 'large']
-  
-  
-          peer-as: 65100
-  
-  
-  
-  
-    - path: /network-instance[name=d2]/protocols/bgp-vpn
-      value:
-       bgp-instance:
-       - id: 1
-         route-distinguisher:
-          rd: "65000:2"
-  
-    - path: /network-instance[name=d2]/inter-instance-policies
-      value:
-       apply-policy:
-        export-policy: "d2_vpn_export"
-        import-policy: "d2_vpn_import"
-  
-    - path: /routing-policy/policy[name=d2_vpn_export]
-      value:
-       default-action:
-        policy-result: "accept"
-        bgp:
-         communities:
-          add: "d2_export"
-  
-    - path: /routing-policy/policy[name=d2_vpn_import]
-      value:
-       default-action:
-        policy-result: "reject"
-       statement:
-       - name: 11
-         match:
-          bgp:
-           community-set: "C65000_2"
-         action:
-          policy-result: "accept"
 
 TASK [Deploy vrf configuration] ************************************************
 skipping: [p1]
@@ -1319,9 +1322,9 @@ skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
 dut                        : ok=38   changed=3    unreachable=0    failed=0    skipped=13   rescued=0    ignored=0   
-p1                         : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+p1                         : ok=31   changed=5    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
 p2                         : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
-xf                         : ok=31   changed=5    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+xf                         : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
 
 
 

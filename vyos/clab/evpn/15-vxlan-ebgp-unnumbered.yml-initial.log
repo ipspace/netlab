@@ -1,3 +1,7 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -80,8 +84,8 @@ ok: [h1]
 ok: [h2]
 
 TASK [Find configuration template for initial] *********************************
-ok: [spine]
 ok: [l1]
+ok: [spine]
 ok: [l2]
 ok: [h1]
 ok: [h2]
@@ -97,8 +101,8 @@ TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [h1] => 
@@ -136,6 +140,67 @@ ok: [h1] =>
     ip addr add 172.31.1.4/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+ok: [spine] => 
+  msg: |-
+    initial configuration for spine
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+  
+    configure
+    set system host-name 'spine'
+  
+  
+    set interfaces dummy dum0 address 10.0.0.1/32
+  
+  
+  
+    set interfaces ethernet eth1 description 'spine -> l1 [external]'
+  
+    set interfaces ethernet eth1 mtu 1600
+  
+    # Need to set the same address as loopback (dum0) to make it behave as unnumbered
+    set interfaces ethernet eth1 address 10.0.0.1/32
+  
+    set interfaces ethernet eth1 ipv6
+  
+  
+  
+  
+    set interfaces ethernet eth2 description 'spine -> l2 [external]'
+  
+    set interfaces ethernet eth2 mtu 1600
+  
+    # Need to set the same address as loopback (dum0) to make it behave as unnumbered
+    set interfaces ethernet eth2 address 10.0.0.1/32
+  
+    set interfaces ethernet eth2 ipv6
+  
+  
+  
+    set service lldp interface all
+    >/dev/null 2>/dev/null set service lldp interface eth0 disable
+    >/dev/null 2>/dev/null set service lldp interface eth0 mode disable
+  
+    set service router-advert interface eth1
+    set service router-advert interface eth2
+  
+    set service ssh
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
+  
+    # Restart FRR to pick up the new hostname
+    sudo service frr restart
 ok: [h2] => 
   msg: |-
     initial configuration for h2
@@ -360,67 +425,6 @@ ok: [l2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [spine] => 
-  msg: |-
-    initial configuration for spine
-    =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
-  
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-    fi
-  
-    # Configuration items start here
-  
-    configure
-    set system host-name 'spine'
-  
-  
-    set interfaces dummy dum0 address 10.0.0.1/32
-  
-  
-  
-    set interfaces ethernet eth1 description 'spine -> l1 [external]'
-  
-    set interfaces ethernet eth1 mtu 1600
-  
-    # Need to set the same address as loopback (dum0) to make it behave as unnumbered
-    set interfaces ethernet eth1 address 10.0.0.1/32
-  
-    set interfaces ethernet eth1 ipv6
-  
-  
-  
-  
-    set interfaces ethernet eth2 description 'spine -> l2 [external]'
-  
-    set interfaces ethernet eth2 mtu 1600
-  
-    # Need to set the same address as loopback (dum0) to make it behave as unnumbered
-    set interfaces ethernet eth2 address 10.0.0.1/32
-  
-    set interfaces ethernet eth2 ipv6
-  
-  
-  
-    set service lldp interface all
-    >/dev/null 2>/dev/null set service lldp interface eth0 disable
-    >/dev/null 2>/dev/null set service lldp interface eth0 mode disable
-  
-    set service router-advert interface eth1
-    set service router-advert interface eth2
-  
-    set service ssh
-  
-    # Commit, save and exit from subshell
-  
-    commit
-    save
-    exit
-  
-    # Restart FRR to pick up the new hostname
-    sudo service frr restart
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for spine, l1
@@ -432,8 +436,8 @@ ok: [l1]
 ok: [spine]
 
 TASK [wait_for] ****************************************************************
-ok: [spine]
 ok: [l1]
+ok: [spine]
 
 TASK [set_fact] ****************************************************************
 ok: [spine]
@@ -477,8 +481,8 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
@@ -493,61 +497,61 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-j5tqf7xm.sh] ***********************
-changed: [h1 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-x1cidn62.sh] ***********************
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [h1]
-ok: [h2]
+ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [spine]
+ok: [h1]
+ok: [h2]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, l1, l2, spine => (item=vlan)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, l1, l2, spine => (item=routing)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, l1, l2, spine => (item=bgp)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, l1, l2, spine => (item=vxlan)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, l1, l2, spine => (item=evpn)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for spine, l1, l2, h1, h2 => (item=vlan)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for spine, l1, l2, h1, h2 => (item=routing)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for spine, l1, l2, h1, h2 => (item=bgp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for spine, l1, l2, h1, h2 => (item=vxlan)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for spine, l1, l2, h1, h2 => (item=evpn)
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
-ok: [h1]
-ok: [h2]
+ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [spine]
+ok: [h1]
+ok: [h2]
 
 TASK [Find configuration template for vlan] ************************************
-skipping: [h1]
-skipping: [h2]
 skipping: [spine]
+skipping: [h1]
 ok: [l1]
+skipping: [h2]
 ok: [l2]
 
 TASK [fail] ********************************************************************
-skipping: [h1]
-skipping: [h2]
+skipping: [spine]
 skipping: [l1]
 skipping: [l2]
-skipping: [spine]
-
-TASK [Find configuration deployment deploy_script for vlan] ********************
 skipping: [h1]
 skipping: [h2]
+
+TASK [Find configuration deployment deploy_script for vlan] ********************
 skipping: [spine]
+skipping: [h1]
+skipping: [h2]
 ok: [l1]
 ok: [l2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [spine]
 skipping: [h1]
 skipping: [h2]
-skipping: [spine]
 ok: [l1] => 
   msg: |-
     vlan configuration for l1
@@ -589,9 +593,9 @@ ok: [l2] =>
     ip link set dev vlan1000 up
 
 TASK [Deploy vlan configuration] ***********************************************
+skipping: [spine]
 skipping: [h1]
 skipping: [h2]
-skipping: [spine]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for l1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
@@ -626,37 +630,37 @@ TASK [run vtysh to import vlan config from /home/pipi/net101/tools/netsim/ansibl
 skipping: [l2]
 
 TASK [Figure out whether to deploy the module routing on current device] *******
-ok: [h1]
-ok: [h2]
+ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [spine]
+ok: [h1]
+ok: [h2]
 
 TASK [Find configuration template for routing] *********************************
+skipping: [spine]
 skipping: [l1]
 skipping: [l2]
 ok: [h1]
-skipping: [spine]
 ok: [h2]
 
 TASK [fail] ********************************************************************
+skipping: [spine]
+skipping: [l1]
+skipping: [l2]
 skipping: [h1]
 skipping: [h2]
-skipping: [l1]
-skipping: [l2]
-skipping: [spine]
 
 TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [spine]
 skipping: [l1]
 skipping: [l2]
-skipping: [spine]
 ok: [h1]
 ok: [h2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [spine]
 skipping: [l1]
 skipping: [l2]
-skipping: [spine]
 ok: [h1] => 
   msg: |-
     routing configuration for h1
@@ -689,9 +693,9 @@ ok: [h2] =>
     ip route
 
 TASK [Deploy routing configuration] ********************************************
+skipping: [spine]
 skipping: [l1]
 skipping: [l2]
-skipping: [spine]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
 
 TASK [Define script filename and determine whether to execute in netns] ********
@@ -718,91 +722,41 @@ TASK [Container configuration for routing based on /home/pipi/net101/tools/netsi
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-hyq_6g16.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-6fjncmkp.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
-ok: [h1]
-ok: [h2]
+ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [spine]
+ok: [h1]
+ok: [h2]
 
 TASK [Find configuration template for bgp] *************************************
 skipping: [h1]
-skipping: [h2]
-ok: [l1]
-ok: [l2]
 ok: [spine]
+ok: [l1]
+skipping: [h2]
+ok: [l2]
 
 TASK [fail] ********************************************************************
-skipping: [h1]
-skipping: [h2]
+skipping: [spine]
 skipping: [l1]
 skipping: [l2]
-skipping: [spine]
+skipping: [h1]
+skipping: [h2]
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 skipping: [h1]
 skipping: [h2]
+ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [spine]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
 skipping: [h2]
-ok: [l1] => 
-  msg: |-
-    bgp configuration for l1
-    =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
-  
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-    fi
-  
-    # Configuration items start here
-  
-    configure
-  
-    set protocols bgp system-as 65201
-  
-    set protocols bgp parameters router-id 10.0.0.2
-  
-  
-  
-    set protocols bgp neighbor eth1 interface remote-as 65100
-    set protocols bgp neighbor eth1 description 'spine'
-  
-  
-  
-  
-  
-    # Work on Family ipv4
-  
-  
-    set protocols bgp address-family ipv4-unicast network 10.0.0.2/32
-  
-  
-  
-  
-  
-    set protocols bgp neighbor eth1 address-family ipv4-unicast soft-reconfiguration inbound
-  
-    set protocols bgp neighbor eth1 address-family ipv4-unicast nexthop-self
-  
-  
-  
-  
-  
-    # Commit, save and exit from subshell
-  
-    commit
-    save
-    exit
 ok: [spine] => 
   msg: |-
     bgp configuration for spine
@@ -867,6 +821,56 @@ ok: [spine] =>
     commit
     save
     exit
+ok: [l1] => 
+  msg: |-
+    bgp configuration for l1
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+  
+    configure
+  
+    set protocols bgp system-as 65201
+  
+    set protocols bgp parameters router-id 10.0.0.2
+  
+  
+  
+    set protocols bgp neighbor eth1 interface remote-as 65100
+    set protocols bgp neighbor eth1 description 'spine'
+  
+  
+  
+  
+  
+    # Work on Family ipv4
+  
+  
+    set protocols bgp address-family ipv4-unicast network 10.0.0.2/32
+  
+  
+  
+  
+  
+    set protocols bgp neighbor eth1 address-family ipv4-unicast soft-reconfiguration inbound
+  
+    set protocols bgp neighbor eth1 address-family ipv4-unicast nexthop-self
+  
+  
+  
+  
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
 ok: [l2] => 
   msg: |-
     bgp configuration for l2
@@ -877,7 +881,6 @@ ok: [l2] =>
       no bgp default ipv4-unicast
       bgp default show-hostname
       bgp default show-nexthop-hostname
-  
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
@@ -907,28 +910,28 @@ ok: [l2] =>
 TASK [Deploy bgp configuration] ************************************************
 skipping: [h1]
 skipping: [h2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for l1, spine
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for spine, l1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
 TASK [wait_for_connection] *****************************************************
-skipping: [l1]
 skipping: [spine]
+skipping: [l1]
 
 TASK [wait_for] ****************************************************************
-skipping: [l1]
 skipping: [spine]
+skipping: [l1]
 
 TASK [set_fact] ****************************************************************
-ok: [l1]
 ok: [spine]
+ok: [l1]
 
 TASK [set_fact] ****************************************************************
-ok: [l1]
 ok: [spine]
+ok: [l1]
 
 TASK [template] ****************************************************************
-changed: [l1]
 changed: [spine]
+changed: [l1]
 
 TASK [execute config-bgp.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/vyos.j2] ***
 changed: [l1]
@@ -947,37 +950,37 @@ TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible
 changed: [l2]
 
 TASK [Figure out whether to deploy the module vxlan on current device] *********
-ok: [h1]
-ok: [h2]
+ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [spine]
+ok: [h1]
+ok: [h2]
 
 TASK [Find configuration template for vxlan] ***********************************
+skipping: [spine]
 skipping: [h1]
 skipping: [h2]
-skipping: [spine]
 ok: [l1]
 ok: [l2]
 
 TASK [fail] ********************************************************************
-skipping: [h1]
-skipping: [h2]
+skipping: [spine]
 skipping: [l1]
 skipping: [l2]
-skipping: [spine]
-
-TASK [Find configuration deployment deploy_script for vxlan] *******************
 skipping: [h1]
 skipping: [h2]
+
+TASK [Find configuration deployment deploy_script for vxlan] *******************
 skipping: [spine]
+skipping: [h1]
+skipping: [h2]
 ok: [l1]
 ok: [l2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [spine]
 skipping: [h1]
 skipping: [h2]
-skipping: [spine]
 ok: [l1] => 
   msg: |-
     vxlan configuration for l1
@@ -1052,9 +1055,9 @@ ok: [l2] =>
     exit $?
 
 TASK [Deploy vxlan configuration] **********************************************
+skipping: [spine]
 skipping: [h1]
 skipping: [h2]
-skipping: [spine]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for l1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
@@ -1089,36 +1092,71 @@ TASK [run vtysh to import vxlan config from /home/pipi/net101/tools/netsim/ansib
 skipping: [l2]
 
 TASK [Figure out whether to deploy the module evpn on current device] **********
-ok: [h1]
-ok: [h2]
+ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [spine]
+ok: [h1]
+ok: [h2]
 
 TASK [Find configuration template for evpn] ************************************
 skipping: [h1]
+ok: [spine]
 skipping: [h2]
 ok: [l1]
 ok: [l2]
-ok: [spine]
 
 TASK [fail] ********************************************************************
-skipping: [h1]
-skipping: [h2]
+skipping: [spine]
 skipping: [l1]
 skipping: [l2]
-skipping: [spine]
+skipping: [h1]
+skipping: [h2]
 
 TASK [Find configuration deployment deploy_script for evpn] ********************
 skipping: [h1]
 skipping: [h2]
+ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [spine]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
 skipping: [h2]
+ok: [spine] => 
+  msg: |-
+    evpn configuration for spine
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+    configure
+  
+    # Configure Generic EVPN Stuff
+    set protocols bgp address-family l2vpn-evpn advertise-svi-ip
+    set protocols bgp address-family l2vpn-evpn advertise-all-vni
+  
+    set protocols bgp neighbor eth1 address-family l2vpn-evpn soft-reconfiguration inbound
+  
+  
+    set protocols bgp neighbor eth2 address-family l2vpn-evpn soft-reconfiguration inbound
+  
+  
+  
+    # Configure VNI params
+  
+    # Work on L3VNI
+  
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
 ok: [l1] => 
   msg: |-
     evpn configuration for l1
@@ -1189,63 +1227,28 @@ ok: [l2] =>
     CONFIG
     vtysh -f /tmp/evpn_config
     vtysh -c 'clear bgp *'
-ok: [spine] => 
-  msg: |-
-    evpn configuration for spine
-    =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
-  
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-    fi
-  
-    # Configuration items start here
-    configure
-  
-    # Configure Generic EVPN Stuff
-    set protocols bgp address-family l2vpn-evpn advertise-svi-ip
-    set protocols bgp address-family l2vpn-evpn advertise-all-vni
-  
-    set protocols bgp neighbor eth1 address-family l2vpn-evpn soft-reconfiguration inbound
-  
-  
-    set protocols bgp neighbor eth2 address-family l2vpn-evpn soft-reconfiguration inbound
-  
-  
-  
-    # Configure VNI params
-  
-    # Work on L3VNI
-  
-  
-    # Commit, save and exit from subshell
-  
-    commit
-    save
-    exit
 
 TASK [Deploy evpn configuration] ***********************************************
 skipping: [h1]
 skipping: [h2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for l1, spine
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for spine, l1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
 TASK [wait_for_connection] *****************************************************
-skipping: [l1]
 skipping: [spine]
+skipping: [l1]
 
 TASK [wait_for] ****************************************************************
-skipping: [l1]
 skipping: [spine]
+skipping: [l1]
 
 TASK [set_fact] ****************************************************************
-ok: [l1]
 ok: [spine]
+ok: [l1]
 
 TASK [set_fact] ****************************************************************
-ok: [l1]
 ok: [spine]
+ok: [l1]
 
 TASK [template] ****************************************************************
 changed: [spine]

@@ -1,3 +1,7 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -10,8 +14,8 @@ ok: [srv]
 ok: [dut]
 
 TASK [Find device readiness script] ********************************************
-ok: [h2]
 ok: [h1]
+ok: [h2]
 ok: [srv]
 ok: [dut]
 
@@ -33,8 +37,8 @@ ok: [dut]
 TASK [Find configuration template for normalize] *******************************
 ok: [h1]
 ok: [h2]
-ok: [srv]
 ok: [dut]
+ok: [srv]
 
 TASK [fail] ********************************************************************
 skipping: [h1]
@@ -45,8 +49,8 @@ skipping: [dut]
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [h1]
 ok: [h2]
-ok: [srv]
 ok: [dut]
+ok: [srv]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
@@ -209,9 +213,9 @@ ok: [dut] =>
     configure
     set system host-name 'dut'
   
+    set vrf name red table 100
     set vrf name blue table 101
     set vrf name common table 102
-    set vrf name red table 100
   
     set interfaces dummy dum0 address 10.0.0.4/32
   
@@ -276,13 +280,13 @@ ok: [srv]
 
 TASK [Create a temporary file for the rendered script] *************************
 changed: [h1 -> localhost]
-changed: [h2 -> localhost]
 changed: [srv -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
-changed: [srv -> localhost]
 changed: [h2 -> localhost]
+changed: [srv -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -299,10 +303,10 @@ changed: [srv -> localhost]
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-drxryxga.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-ff8pe3i2.sh] ***********************
+changed: [srv -> localhost]
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
-changed: [srv -> localhost]
 
 TASK [wait_for_connection] *****************************************************
 ok: [dut]
@@ -325,20 +329,20 @@ changed: [dut]
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [dut]
 ok: [h1]
 ok: [h2]
 ok: [srv]
+ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, h1, h2, srv => (item=vrf)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, h1, h2, srv => (item=routing)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, srv, dut => (item=vrf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, srv, dut => (item=routing)
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
-ok: [dut]
 ok: [h1]
 ok: [h2]
 ok: [srv]
+ok: [dut]
 
 TASK [Find configuration template for vrf] *************************************
 skipping: [h1]
@@ -347,10 +351,10 @@ skipping: [srv]
 ok: [dut]
 
 TASK [fail] ********************************************************************
-skipping: [dut]
 skipping: [h1]
 skipping: [h2]
 skipping: [srv]
+skipping: [dut]
 
 TASK [Find configuration deployment deploy_script for vrf] *********************
 skipping: [h1]
@@ -379,6 +383,30 @@ ok: [dut] =>
     set protocols bgp system-as 65000
   
     # Enter vrf sublevel
+    edit vrf name red
+  
+  
+    set protocols bgp system-as 65000
+  
+    set protocols bgp parameters router-id 10.0.0.4
+  
+    set protocols bgp address-family ipv4-unicast rd vpn export 65000:1
+    set protocols bgp address-family ipv4-unicast route-target vpn import "65000:1 65000:3"
+    set protocols bgp address-family ipv4-unicast route-target vpn export "65000:1"
+    set protocols bgp address-family ipv4-unicast import vpn
+    set protocols bgp address-family ipv4-unicast export vpn
+    set protocols bgp address-family ipv4-unicast label vpn export auto
+  
+  
+  
+    set protocols bgp address-family ipv4-unicast redistribute connected
+  
+    # Define networks for VRF Loopback
+  
+  
+  
+    # Back to root level
+    top
     edit vrf name blue
   
   
@@ -427,30 +455,6 @@ ok: [dut] =>
   
     # Back to root level
     top
-    edit vrf name red
-  
-  
-    set protocols bgp system-as 65000
-  
-    set protocols bgp parameters router-id 10.0.0.4
-  
-    set protocols bgp address-family ipv4-unicast rd vpn export 65000:1
-    set protocols bgp address-family ipv4-unicast route-target vpn import "65000:1 65000:3"
-    set protocols bgp address-family ipv4-unicast route-target vpn export "65000:1"
-    set protocols bgp address-family ipv4-unicast import vpn
-    set protocols bgp address-family ipv4-unicast export vpn
-    set protocols bgp address-family ipv4-unicast label vpn export auto
-  
-  
-  
-    set protocols bgp address-family ipv4-unicast redistribute connected
-  
-    # Define networks for VRF Loopback
-  
-  
-  
-    # Back to root level
-    top
   
     # Commit, save and exit from subshell
   
@@ -483,10 +487,10 @@ TASK [execute config-vrf.sh to deploy vrf config from /home/pipi/net101/tools/ne
 changed: [dut]
 
 TASK [Figure out whether to deploy the module routing on current device] *******
-ok: [dut]
 ok: [h1]
 ok: [h2]
 ok: [srv]
+ok: [dut]
 
 TASK [Find configuration template for routing] *********************************
 skipping: [dut]
@@ -495,10 +499,10 @@ ok: [h2]
 ok: [srv]
 
 TASK [fail] ********************************************************************
-skipping: [dut]
 skipping: [h1]
 skipping: [h2]
 skipping: [srv]
+skipping: [dut]
 
 TASK [Find configuration deployment deploy_script for routing] *****************
 skipping: [dut]
@@ -612,8 +616,8 @@ changed: [srv -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
 changed: [h1 -> localhost]
-changed: [h2 -> localhost]
 changed: [srv -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
 skipping: [h1]
@@ -626,11 +630,11 @@ skipping: [h2]
 skipping: [srv]
 
 TASK [Container configuration for routing based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 changed: [srv -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-tbf3wjtx.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-01pydcq7.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [srv -> localhost]

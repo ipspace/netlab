@@ -1,3 +1,7 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -525,9 +529,9 @@ ok: [x1]
 ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x1]
-changed: [x2]
 changed: [probe]
+changed: [x2]
+changed: [x1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [probe]
@@ -544,8 +548,8 @@ ok: [x2]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1, x2 => (item=routing)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1, x2 => (item=bgp)
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1, x2 => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1, x2 => (item=bgp)
 
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [dut]
@@ -657,6 +661,168 @@ changed: [dut]
 
 TASK [execute config-routing.sh to deploy routing config from /home/pipi/net101/tools/netsim/ansible/templates/routing/vyos.j2] ***
 changed: [dut]
+
+TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [dut]
+ok: [probe]
+ok: [x1]
+ok: [x2]
+
+TASK [Find configuration template for ospf] ************************************
+skipping: [x1]
+ok: [dut]
+skipping: [x2]
+ok: [probe]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [probe]
+skipping: [x1]
+skipping: [x2]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+skipping: [x1]
+skipping: [x2]
+ok: [dut]
+ok: [probe]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [x1]
+skipping: [x2]
+ok: [dut] => 
+  msg: |-
+    ospf configuration for dut
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+  
+    configure
+  
+  
+    set protocols ospf parameters router-id 10.0.0.1
+  
+  
+  
+  
+    set protocols ospf interface dum0 passive
+    set protocols ospf interface dum0 area 0.0.0.0
+  
+  
+    set protocols ospf interface eth3 area 0.0.0.0
+  
+    set protocols ospf interface eth3 network point-to-point
+  
+  
+  
+    set protocols ospfv3 parameters router-id 10.0.0.1
+  
+  
+  
+  
+    set protocols ospfv3 interface dum0 passive
+    set protocols ospfv3 interface dum0 area 0.0.0.0
+  
+  
+    set protocols ospfv3 interface eth3 area 0.0.0.0
+  
+    set protocols ospfv3 interface eth3 network point-to-point
+  
+  
+  
+    commit
+    save
+    exit
+ok: [probe] => 
+  msg: |-
+    ospf configuration for probe
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.2
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! probe -> dut
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    ! OSPFv3 FRR configuration
+    !
+    interface lo
+    !
+     ipv6 ospf6 area 0.0.0.0
+    !
+    interface eth1
+    ! probe -> dut
+     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 network point-to-point
+    !
+    !
+    router ospf6
+     ospf6 router-id 10.0.0.2
+     timers lsa min-arrival 100
+     timers throttle spf 10 50 500
+  
+  
+    exit
+  
+    !
+    do write
+
+TASK [Deploy ospf configuration] ***********************************************
+skipping: [x1]
+skipping: [x2]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for probe
+
+TASK [wait_for_connection] *****************************************************
+skipping: [dut]
+
+TASK [wait_for] ****************************************************************
+skipping: [dut]
+
+TASK [set_fact] ****************************************************************
+ok: [dut]
+
+TASK [set_fact] ****************************************************************
+ok: [dut]
+
+TASK [template] ****************************************************************
+changed: [dut]
+
+TASK [execute config-ospf.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/vyos.j2] ***
+changed: [dut]
+
+TASK [template] ****************************************************************
+changed: [probe]
+
+TASK [set_fact] ****************************************************************
+ok: [probe]
+
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+skipping: [probe]
+
+TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+changed: [probe]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [dut]
@@ -828,7 +994,6 @@ ok: [probe] =>
       no bgp default ipv4-unicast
       bgp default show-hostname
       bgp default show-nexthop-hostname
-  
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
@@ -885,7 +1050,6 @@ ok: [x1] =>
       no bgp default ipv4-unicast
       bgp default show-hostname
       bgp default show-nexthop-hostname
-  
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
@@ -936,7 +1100,6 @@ ok: [x2] =>
       no bgp default ipv4-unicast
       bgp default show-hostname
       bgp default show-nexthop-hostname
-  
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
@@ -1001,8 +1164,8 @@ TASK [execute config-bgp.sh to deploy bgp config from /home/pipi/net101/tools/ne
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [probe]
 changed: [x1]
+changed: [probe]
 changed: [x2]
 
 TASK [set_fact] ****************************************************************
@@ -1016,171 +1179,9 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [x2]
+changed: [probe]
 changed: [x1]
-changed: [probe]
-
-TASK [Figure out whether to deploy the module ospf on current device] **********
-ok: [dut]
-ok: [probe]
-ok: [x1]
-ok: [x2]
-
-TASK [Find configuration template for ospf] ************************************
-skipping: [x1]
-ok: [dut]
-skipping: [x2]
-ok: [probe]
-
-TASK [fail] ********************************************************************
-skipping: [dut]
-skipping: [probe]
-skipping: [x1]
-skipping: [x2]
-
-TASK [Find configuration deployment deploy_script for ospf] ********************
-skipping: [x1]
-skipping: [x2]
-ok: [dut]
-ok: [probe]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [x1]
-skipping: [x2]
-ok: [dut] => 
-  msg: |-
-    ospf configuration for dut
-    =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
-  
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-    fi
-  
-    # Configuration items start here
-  
-    configure
-  
-  
-    set protocols ospf parameters router-id 10.0.0.1
-  
-  
-  
-  
-    set protocols ospf interface dum0 passive
-    set protocols ospf interface dum0 area 0.0.0.0
-  
-  
-    set protocols ospf interface eth3 area 0.0.0.0
-  
-    set protocols ospf interface eth3 network point-to-point
-  
-  
-  
-    set protocols ospfv3 parameters router-id 10.0.0.1
-  
-  
-  
-  
-    set protocols ospfv3 interface dum0 passive
-    set protocols ospfv3 interface dum0 area 0.0.0.0
-  
-  
-    set protocols ospfv3 interface eth3 area 0.0.0.0
-  
-    set protocols ospfv3 interface eth3 network point-to-point
-  
-  
-  
-    commit
-    save
-    exit
-ok: [probe] => 
-  msg: |-
-    ospf configuration for probe
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.2
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! probe -> dut
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    ! OSPFv3 FRR configuration
-    !
-    interface lo
-    !
-     ipv6 ospf6 area 0.0.0.0
-    !
-    interface eth1
-    ! probe -> dut
-     ipv6 ospf6 area 0.0.0.0
-     ipv6 ospf6 network point-to-point
-    !
-    !
-    router ospf6
-     ospf6 router-id 10.0.0.2
-     timers lsa min-arrival 100
-     timers throttle spf 10 50 500
-  
-  
-    exit
-  
-    !
-    do write
-
-TASK [Deploy ospf configuration] ***********************************************
-skipping: [x1]
-skipping: [x2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for probe
-
-TASK [wait_for_connection] *****************************************************
-skipping: [dut]
-
-TASK [wait_for] ****************************************************************
-skipping: [dut]
-
-TASK [set_fact] ****************************************************************
-ok: [dut]
-
-TASK [set_fact] ****************************************************************
-ok: [dut]
-
-TASK [template] ****************************************************************
-changed: [dut]
-
-TASK [execute config-ospf.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/vyos.j2] ***
-changed: [dut]
-
-TASK [template] ****************************************************************
-changed: [probe]
-
-TASK [set_fact] ****************************************************************
-ok: [probe]
-
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-skipping: [probe]
-
-TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [probe]
+changed: [x2]
 
 PLAY [Deploy custom deployment templates] **************************************
 

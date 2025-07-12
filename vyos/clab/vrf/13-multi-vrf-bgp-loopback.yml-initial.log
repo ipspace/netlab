@@ -1,3 +1,7 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -13,8 +17,8 @@ ok: [r4]
 TASK [Find device readiness script] ********************************************
 ok: [dut]
 ok: [r1]
-ok: [r2]
 ok: [r3]
+ok: [r2]
 ok: [r4]
 
 TASK [Wait for device to become ready] *****************************************
@@ -36,8 +40,8 @@ ok: [r4]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [dut]
-ok: [r1]
 ok: [r2]
+ok: [r1]
 ok: [r3]
 ok: [r4]
 
@@ -50,10 +54,10 @@ skipping: [r4]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [dut]
-ok: [r1]
 ok: [r2]
-ok: [r4]
+ok: [r1]
 ok: [r3]
+ok: [r4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
@@ -117,8 +121,8 @@ ok: [dut] =>
     configure
     set system host-name 'dut'
   
-    set vrf name blue table 101
     set vrf name red table 100
+    set vrf name blue table 101
   
     set interfaces dummy dum0 address 10.0.0.1/32
   
@@ -299,108 +303,6 @@ ok: [r1] =>
      no shutdown
      description r1 -> dut [external]
      ip address 10.1.0.2/30
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
-ok: [r4] => 
-  msg: |-
-    initial configuration for r4
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)# "
-    echo
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
-    #
-    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
-    #
-    sysctl -w net.ipv4.ip_forward=1
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    # Set system defaults
-    #
-    # Send ARP requests from a sane source IP address
-    #
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Create loopbacks, stub and lag/bond devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    ip link set eth1 down
-    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
-    ip link set eth1 up
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-  
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname r4
-    !
-    ip forwarding
-    vrf mgmt
-     exit-vrf
-    !
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ip address 10.0.0.5/32
-    !
-    interface eth1
-     no shutdown
-     description r4 -> dut [external]
-     ip address 10.1.0.14/30
     !
     do write
     CONFIG
@@ -610,6 +512,108 @@ ok: [r3] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [r4] => 
+  msg: |-
+    initial configuration for r4
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname r4
+    !
+    ip forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.5/32
+    !
+    interface eth1
+     no shutdown
+     description r4 -> dut [external]
+     ip address 10.1.0.14/30
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for dut
@@ -646,10 +650,10 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, r3, r4
 
 TASK [template] ****************************************************************
-changed: [r3]
 changed: [r2]
-changed: [r4]
 changed: [r1]
+changed: [r3]
+changed: [r4]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -658,10 +662,10 @@ ok: [r3]
 ok: [r4]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r3]
-changed: [r1]
 changed: [r2]
+changed: [r1]
 changed: [r4]
+changed: [r3]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r1]
@@ -690,8 +694,8 @@ ok: [r3]
 ok: [r4]
 
 TASK [Find configuration template for bgp] *************************************
-ok: [dut]
 ok: [r1]
+ok: [dut]
 ok: [r2]
 ok: [r3]
 ok: [r4]
@@ -711,6 +715,74 @@ ok: [r3]
 ok: [r4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [r1] => 
+  msg: |-
+    bgp configuration for r1
+    =========================================
+    !
+    router bgp 65101
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.2
+    !
+      neighbor 10.1.0.1 remote-as 65000
+      neighbor 10.1.0.1 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.2/32
+    !
+    !
+    !
+      neighbor 10.1.0.1 activate
+      no neighbor 10.1.0.1 send-community all
+      neighbor 10.1.0.1 send-community standard
+      neighbor 10.1.0.1 send-community large
+    !
+    !
+    !
+    do write
+ok: [r2] => 
+  msg: |-
+    bgp configuration for r2
+    =========================================
+    !
+    router bgp 65102
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.3
+    !
+      neighbor 10.1.0.5 remote-as 65000
+      neighbor 10.1.0.5 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.3/32
+    !
+    !
+    !
+      neighbor 10.1.0.5 activate
+      no neighbor 10.1.0.5 send-community all
+      neighbor 10.1.0.5 send-community standard
+      neighbor 10.1.0.5 send-community large
+    !
+    !
+    !
+    do write
 ok: [dut] => 
   msg: |-
     bgp configuration for dut
@@ -747,41 +819,6 @@ ok: [dut] =>
     commit
     save
     exit
-ok: [r4] => 
-  msg: |-
-    bgp configuration for r4
-    =========================================
-    !
-    router bgp 65104
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.5
-    !
-      neighbor 10.1.0.13 remote-as 65000
-      neighbor 10.1.0.13 description dut
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-      network 10.0.0.5/32
-    !
-    !
-    !
-      neighbor 10.1.0.13 activate
-      no neighbor 10.1.0.13 send-community all
-      neighbor 10.1.0.13 send-community standard
-      neighbor 10.1.0.13 send-community large
-    !
-    !
-    !
-    do write
 ok: [r3] => 
   msg: |-
     bgp configuration for r3
@@ -792,7 +829,6 @@ ok: [r3] =>
       no bgp default ipv4-unicast
       bgp default show-hostname
       bgp default show-nexthop-hostname
-  
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
@@ -817,72 +853,36 @@ ok: [r3] =>
     !
     !
     do write
-ok: [r1] => 
+ok: [r4] => 
   msg: |-
-    bgp configuration for r1
+    bgp configuration for r4
     =========================================
     !
-    router bgp 65101
+    router bgp 65104
       no bgp ebgp-requires-policy
       no bgp default ipv4-unicast
       bgp default show-hostname
       bgp default show-nexthop-hostname
-  
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
-      bgp router-id 10.0.0.2
+      bgp router-id 10.0.0.5
     !
-      neighbor 10.1.0.1 remote-as 65000
-      neighbor 10.1.0.1 description dut
+      neighbor 10.1.0.13 remote-as 65000
+      neighbor 10.1.0.13 description dut
     !
      address-family ipv4 unicast
     !
   
     !
-      network 10.0.0.2/32
+      network 10.0.0.5/32
     !
     !
     !
-      neighbor 10.1.0.1 activate
-      no neighbor 10.1.0.1 send-community all
-      neighbor 10.1.0.1 send-community standard
-      neighbor 10.1.0.1 send-community large
-    !
-    !
-    !
-    do write
-ok: [r2] => 
-  msg: |-
-    bgp configuration for r2
-    =========================================
-    !
-    router bgp 65102
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.3
-    !
-      neighbor 10.1.0.5 remote-as 65000
-      neighbor 10.1.0.5 description dut
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-      network 10.0.0.3/32
-    !
-    !
-    !
-      neighbor 10.1.0.5 activate
-      no neighbor 10.1.0.5 send-community all
-      neighbor 10.1.0.5 send-community standard
-      neighbor 10.1.0.5 send-community large
+      neighbor 10.1.0.13 activate
+      no neighbor 10.1.0.13 send-community all
+      neighbor 10.1.0.13 send-community standard
+      neighbor 10.1.0.13 send-community large
     !
     !
     !
@@ -911,10 +911,10 @@ TASK [execute config-bgp.sh to deploy bgp config from /home/pipi/net101/tools/ne
 changed: [dut]
 
 TASK [template] ****************************************************************
+changed: [r3]
 changed: [r1]
 changed: [r2]
 changed: [r4]
-changed: [r3]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -984,61 +984,6 @@ ok: [dut] =>
     set protocols bgp system-as 65000
   
     # Enter vrf sublevel
-    edit vrf name blue
-  
-  
-    set protocols bgp system-as 65000
-  
-    set protocols bgp parameters router-id 10.0.0.1
-  
-    set protocols bgp address-family ipv4-unicast rd vpn export 65000:2
-    set protocols bgp address-family ipv4-unicast route-target vpn import "65000:2"
-    set protocols bgp address-family ipv4-unicast route-target vpn export "65000:2"
-    set protocols bgp address-family ipv4-unicast import vpn
-    set protocols bgp address-family ipv4-unicast export vpn
-    set protocols bgp address-family ipv4-unicast label vpn export auto
-  
-  
-  
-    set protocols bgp address-family ipv4-unicast redistribute connected
-  
-    # Define networks for VRF Loopback
-    set protocols bgp address-family ipv4-unicast network 10.0.0.43/32
-  
-  
-  
-    set protocols bgp neighbor 10.1.0.10 remote-as 65103
-    set protocols bgp neighbor 10.1.0.10 description 'r3'
-  
-  
-  
-  
-  
-    set protocols bgp neighbor 10.1.0.10 address-family ipv4-unicast soft-reconfiguration inbound
-  
-    set protocols bgp neighbor 10.1.0.10 address-family ipv4-unicast nexthop-self
-  
-    set protocols bgp neighbor 10.1.0.10 address-family ipv4-unicast disable-send-community extended
-  
-  
-  
-    set protocols bgp neighbor 10.1.0.14 remote-as 65104
-    set protocols bgp neighbor 10.1.0.14 description 'r4'
-  
-  
-  
-  
-  
-    set protocols bgp neighbor 10.1.0.14 address-family ipv4-unicast soft-reconfiguration inbound
-  
-    set protocols bgp neighbor 10.1.0.14 address-family ipv4-unicast nexthop-self
-  
-    set protocols bgp neighbor 10.1.0.14 address-family ipv4-unicast disable-send-community extended
-  
-  
-  
-    # Back to root level
-    top
     edit vrf name red
   
   
@@ -1089,6 +1034,61 @@ ok: [dut] =>
     set protocols bgp neighbor 10.1.0.6 address-family ipv4-unicast nexthop-self
   
     set protocols bgp neighbor 10.1.0.6 address-family ipv4-unicast disable-send-community extended
+  
+  
+  
+    # Back to root level
+    top
+    edit vrf name blue
+  
+  
+    set protocols bgp system-as 65000
+  
+    set protocols bgp parameters router-id 10.0.0.1
+  
+    set protocols bgp address-family ipv4-unicast rd vpn export 65000:2
+    set protocols bgp address-family ipv4-unicast route-target vpn import "65000:2"
+    set protocols bgp address-family ipv4-unicast route-target vpn export "65000:2"
+    set protocols bgp address-family ipv4-unicast import vpn
+    set protocols bgp address-family ipv4-unicast export vpn
+    set protocols bgp address-family ipv4-unicast label vpn export auto
+  
+  
+  
+    set protocols bgp address-family ipv4-unicast redistribute connected
+  
+    # Define networks for VRF Loopback
+    set protocols bgp address-family ipv4-unicast network 10.0.0.43/32
+  
+  
+  
+    set protocols bgp neighbor 10.1.0.10 remote-as 65103
+    set protocols bgp neighbor 10.1.0.10 description 'r3'
+  
+  
+  
+  
+  
+    set protocols bgp neighbor 10.1.0.10 address-family ipv4-unicast soft-reconfiguration inbound
+  
+    set protocols bgp neighbor 10.1.0.10 address-family ipv4-unicast nexthop-self
+  
+    set protocols bgp neighbor 10.1.0.10 address-family ipv4-unicast disable-send-community extended
+  
+  
+  
+    set protocols bgp neighbor 10.1.0.14 remote-as 65104
+    set protocols bgp neighbor 10.1.0.14 description 'r4'
+  
+  
+  
+  
+  
+    set protocols bgp neighbor 10.1.0.14 address-family ipv4-unicast soft-reconfiguration inbound
+  
+    set protocols bgp neighbor 10.1.0.14 address-family ipv4-unicast nexthop-self
+  
+    set protocols bgp neighbor 10.1.0.14 address-family ipv4-unicast disable-send-community extended
   
   
   

@@ -26,6 +26,7 @@ defaults:
       - startup-delay
       - restart-policy
       template: clab.j2
+      version: 0.68.0
       start: sudo -E containerlab deploy --reconfigure -t clab.yml
       stop: sudo -E containerlab destroy --cleanup -t clab.yml
       act_probe: docker ps
@@ -346,6 +347,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -518,6 +520,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -928,6 +931,7 @@ defaults:
           - connected
           - static
           - vrf
+          confederation: true
         evpn:
           asymmetrical_irb: true
           irb: true
@@ -989,7 +993,7 @@ defaults:
           port_type: true
         vlan:
           model: switch
-          svi_interface_name: virtual-network{vlan}
+          svi_interface_name: vlan{vlan}
         vrf:
           ospfv2: true
           bgp: true
@@ -1081,6 +1085,7 @@ defaults:
             - extended
             2octet:
             - standard
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -1220,33 +1225,6 @@ defaults:
           eos:
             serialnumber: str
             systemmacaddr: mac
-    exos:
-      description: Extreme EXOS
-      interface_name: Port{ifindex}
-      loopback_interface_name: lo{ifindex}
-      ifindex_offset: 1
-      mgmt_if: Port0
-      role: router
-      features:
-        group:
-        - unprovisioned
-        initial: {}
-      libvirt:
-        create_template: exos.xml.j2
-        image: netlab/exos
-      group_vars:
-        ansible_network_os: openbsd
-        ansible_connection: paramiko
-        ansible_user: admin
-        ansible_ssh_pass: admin
-        netlab_ssh_args: >-
-          -o KexAlgorithms=+diffie-hellman-group-exchange-sha1
-          -o PubkeyAcceptedKeyTypes=ssh-rsa
-          -o HostKeyAlgorithms=+ssh-rsa
-      external:
-        image: none
-      graphite:
-        icon: switch
     fortios:
       description: Fortinet FortiOS firewall
       interface_name: port{ifindex}
@@ -1383,6 +1361,7 @@ defaults:
             - extended
             2octet:
             - standard
+          confederation: true
         evpn:
           irb: true
           asymmetrical_irb: true
@@ -1520,6 +1499,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -1676,6 +1656,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -1781,6 +1762,17 @@ defaults:
           protocol:
           - vrrp
         sr: {}
+        stp:
+          supported_protocols:
+          - stp
+          - rstp
+          - mstp
+          - pvrst
+          enable_per_port: true
+          port_type: true
+        lag:
+          mlag: false
+          passive: true
       external:
         image: none
       graphite:
@@ -1801,6 +1793,7 @@ defaults:
           kind: cisco_iol
           type: l2
         mtu: 1500
+      lag_interface_name: Port-channel{lag.ifindex}
     iosv:
       description: Cisco IOSv
       loopback_interface_name: Loopback{ifindex}
@@ -1838,6 +1831,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -1849,7 +1843,8 @@ defaults:
         eigrp: {}
         initial:
           ipv4:
-            unnumbered: false
+            unnumbered:
+            - tunnel
           ipv6:
             lla: true
             use_ra: true
@@ -2000,6 +1995,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -2011,7 +2007,8 @@ defaults:
         eigrp: {}
         initial:
           ipv4:
-            unnumbered: false
+            unnumbered:
+            - tunnel
           ipv6:
             lla: true
             use_ra: true
@@ -2104,6 +2101,17 @@ defaults:
         gateway:
           protocol:
           - vrrp
+        stp:
+          supported_protocols:
+          - stp
+          - rstp
+          - mstp
+          - pvrst
+          enable_per_port: true
+          port_type: true
+        lag:
+          mlag: false
+          passive: true
       external:
         image: none
       graphite:
@@ -2120,12 +2128,13 @@ defaults:
           ansible_ssh_pass: admin
           ansible_user: admin
           netlab_check_retries: 50
-        image: vrnetlab/cisco_vios:15.9.3
+        image: vrnetlab/cisco_viosl2:15.2.2020
         node:
           kind: linux
         interface:
           name: eth{ifindex}
-        build: https://github.com/hellt/vrnetlab/tree/master/vios
+        build: https://github.com/hellt/vrnetlab/tree/master/viosl2
+      lag_interface_name: Port-channel{lag.ifindex}
     iosxr:
       description: Cisco IOS XRv
       mgmt_if: MgmtEth0/RP0/CPU0/0
@@ -2301,6 +2310,7 @@ defaults:
           - connected
           - static
           - vrf
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -2494,6 +2504,47 @@ defaults:
         image: none
       graphite:
         icon: nexus5000
+    openbsd:
+      description: OpenBSD
+      interface_name: vio{ifindex}
+      loopback_interface_name: lo{ifindex}
+      ifindex_offset: 1
+      mgmt_if: vio0
+      role: host
+      features:
+        routing:
+          static: true
+        initial:
+          roles:
+          - host
+          - router
+          ipv6:
+            use_ra: true
+            lla: true
+      libvirt:
+        create_template: openbsd.xml.j2
+        image: netlab/openbsd
+        create_iso: openbsd
+      clab:
+        build: https://containerlab.dev/manual/kinds/openbsd/
+        image: vrnetlab/openbsd_openbsd:7.7
+        group_vars:
+          ansible_user: admin
+          ansible_ssh_pass: admin
+          netlab_check_command: who
+        node:
+          kind: openbsd
+      group_vars:
+        ansible_network_os: openbsd
+        ansible_connection: paramiko
+        ansible_user: openbsd
+        ansible_ssh_pass: vagrant
+        docker_shell: sh -il
+        ansible_python_interpreter: auto_silent
+      external:
+        image: none
+      graphite:
+        icon: server
     routeros:
       description: Mikrotik RouterOS version 6
       interface_name: ether{ifindex}
@@ -2650,7 +2701,7 @@ defaults:
         min_tx: 100
         min_rx: 100
       clab:
-        image: ghcr.io/nokia/srlinux:25.3.2
+        image: ghcr.io/nokia/srlinux:25.3.3
         node:
           kind: srl
           type: ixrd2
@@ -3368,6 +3419,7 @@ defaults:
       description: VyOS VM/container
       interface_name: eth{ifindex}
       loopback_interface_name: dum{ifindex}
+      lag_interface_name: bond{lag.ifindex}
       mgmt_if: eth0
       libvirt:
         image: vyos/current
@@ -3402,6 +3454,8 @@ defaults:
           protocol:
           - vrrp
         isis: {}
+        lag:
+          passive: false
         mpls:
           ldp: true
           vpn:
@@ -3899,7 +3953,7 @@ defaults:
         up: docker run -d --rm {sys.docker_net} --mount 
           type=bind,source="$(pwd)/graphite/graphite-default.json",target=/htdocs/default/default.json,readonly
           -p { 8080 + defaults.multilab.id if defaults.multilab.id else 8080 
-          }:80 --name '{name}_graphite' netreplica/graphite:0.4.2
+          }:80 --name "{name}_graphite" netreplica/graphite:0.4.2
         message: Open http://{sys.ipaddr}:{ 8080 + defaults.multilab.id if 
           defaults.multilab.id else 8080 }/graphite/ in your browser
         down: docker kill '{name}_graphite'
@@ -3933,16 +3987,125 @@ defaults:
         down: docker kill {name}-cisco-nso
         cleanup: docker volume rm '{name}-nso-vol' docker volume rm 
           '{name}-nso-log-vol'
+    nuts:
+      runtime: docker
+      docker:
+        up: docker run --rm -itd --name '{name}_nuts' {sys.docker_net} -v 
+          './nuts':/nuts -w /nuts ghcr.io/network-unit-testing-system/nuts
+        message: Use 'netlab connect nuts' to connect to the NUTS container. Run
+          'pytest' in the container to execute tests.
+        connect: docker exec -it '{name}_nuts' bash
+        down: docker kill '{name}_nuts'
+        cleanup: docker volume rm '{name}_nuts'
+      config:
+      - dest: nr-config.yaml
+        template: nr-config.yaml
+      - dest: inventory/groups.yaml
+        template: inventory/groups.yaml
+      - dest: inventory/hosts.yaml
+        template: inventory/hosts.j2
+      - dest: tests/test_interfaces.yaml
+        template: tests/test_interfaces.j2
+      - dest: tests/test_ospf.yaml
+        template: tests/test_ospf.j2
+      - dest: tests/test_bgp.yaml
+        template: tests/test_bgp.j2
+      inventory:
+        napalm:
+          nxos: nxos_ssh
+          asav: ios
+          cat8000c: ios
+          iol: ios
+          ioll2: ios
+          iosv: ios
+          iosvl2: ios
+          iosxr: iosxr
+          vmx: junos
+          vptx: junos
+          vsrx: junos
+          vjunos-switch: junos
+          vjunos-router: junos
+          srlinux: srl
+          routeros: ros
+          routeros7: ros
+          arubacx: aoscx
+        netmiko:
+          nxos: cisco_nxos
+          cat8000c: cisco_xe
+          iol: cisco_xe
+          ioll2: cisco_xe
+          iosv: cisco_xe
+          iosvl2: cisco_xe
+          iosxr: iosxr
+          vmx: juniper_junos
+          vptx: juniper_junos
+          vsrx: juniper_junos
+          vjunos-switch: juniper_junos
+          vjunos-router: juniper_junos
+          asav: cisco_asa
+          srlinux: nokia_srl
+          sros: nokia_sros
+          routeros: mikrotik_routeros
+          routeros7: mikrotik_routeros
+          arubacx: aruba_aoscx
+          fortios: fortinet
+          dellos10: dell_os10
+        napalm_using_netmiko:
+          nxos_ssh: true
+          ios: true
+      test_creation:
+        interface:
+          nxos: nxos_ssh
+          asav: ios
+          cat8000c: ios
+          iol: ios
+          ioll2: ios
+          iosv: ios
+          iosvl2: ios
+          iosxr: iosxr
+          vmx: junos
+          vptx: junos
+          vsrx: junos
+          vjunos-switch: junos
+          vjunos-router: junos
+          srlinux: srl
+          routeros: ros
+          routeros7: ros
+          arubacx: aoscx
+        bgp:
+          nxos: nxos_ssh
+          asav: ios
+          cat8000c: ios
+          iol: ios
+          ioll2: ios
+          iosv: ios
+          iosvl2: ios
+          iosxr: iosxr
+          vmx: junos
+          vptx: junos
+          vsrx: junos
+          vjunos-switch: junos
+          vjunos-router: junos
+          srlinux: srl
+          routeros: ros
+          routeros7: ros
+          arubacx: aoscx
+        ospf:
+          cat8000c: cisco_xe
+          iol: cisco_xe
+          ioll2: cisco_xe
+          iosv: cisco_xe
+          iosvl2: cisco_xe
     suzieq:
       runtime: docker
       docker:
-        up: docker run --rm -itd --name '{name}_suzieq' {sys.docker_net} -v 
-          '{name}_suzieq':/parquet -v './suzieq':/suzieq netenglabs/suzieq-demo 
-          -c 'sq-poller -I /suzieq/suzieq-inventory.yml'
+        up: docker run -itd --name '{name}_suzieq' {sys.docker_net} -v 
+          '{name}_suzieq_data':/parquet -v './suzieq':/suzieq 
+          netenglabs/suzieq-demo -c 'sq-poller -I /suzieq/suzieq-inventory.yml'
         message: Use 'netlab connect suzieq' to start SuzieQ CLI
         connect: docker exec -it '{name}_suzieq' /usr/local/bin/suzieq-cli
-        down: docker kill '{name}_suzieq'
-        cleanup: docker volume rm '{name}_suzieq'
+        down: docker kill '{name}_suzieq'; docker rm '{name}_suzieq'
+        cleanup: docker volume rm '{name}_suzieq_data'
       config:
       - dest: suzieq-inventory.yml
         template: suzieq.inventory.j2
@@ -4321,6 +4484,13 @@ defaults:
           type: id
           _requires:
           - routing
+    bgp_session_type:
+      _description: BGP session types
+      type: str
+      valid_values:
+        ibgp:
+        ebgp:
+        localas_ibgp:
     rp_entry:
       _description: Routing policy entry
       action:
@@ -4624,6 +4794,7 @@ defaults:
       maxlength: 255
     validate:
       ping: 5
+      ping_long: 15
       vxlan_ping: 20
       ra_send: 30
       ospfv2_adj_p2p: 30
@@ -4634,10 +4805,15 @@ defaults:
       ospfv3_spf: 10
       ospf_import: 20
       ebgp_session: 30
+      ibgp_session: 30
       bgp_scan_time: 5
+      bgp_scan_long: 15
+      bgp_ios_redist: 60
       isis_adj_p2p: 20
       isis_spf: 15
+      ldp_adj: 30
       stp_forwarding: 40
+      lacp_setup: 10
   hints:
     evpn:
       irb_group: >
@@ -4907,6 +5083,7 @@ defaults:
       advertise_roles:
       rr_list:
       as_list:
+      confederation:
     transform_after:
     - vlan
     config_after:
@@ -4916,6 +5093,8 @@ defaults:
     - eigrp
     - ripv2
     next_hop_self: true
+    hooks:
+    - normalize
     attributes:
       global:
         as: asn
@@ -4928,22 +5107,18 @@ defaults:
         as_list: dict
         sessions:
           ipv4:
-          - ibgp
-          - ebgp
-          - localas_ibgp
+            type: list
+            _subtype: bgp_session_type
           ipv6:
-          - ibgp
-          - ebgp
-          - localas_ibgp
+            type: list
+            _subtype: bgp_session_type
         activate:
           ipv4:
-          - ibgp
-          - ebgp
-          - localas_ibgp
+            type: list
+            _subtype: bgp_session_type
           ipv6:
-          - ibgp
-          - ebgp
-          - localas_ibgp
+            type: list
+            _subtype: bgp_session_type
         advertise_loopback: bool
         advertise_roles: list
         community:
@@ -4961,6 +5136,15 @@ defaults:
           - str
           - BoxList
         replace_global_as: bool
+        confederation:
+          type: dict
+          _keytype: asn
+          _subtype:
+            members:
+              type: list
+              _subtype: asn
+      _inherit_community:
+        localas_ibgp: ibgp
       node:
         as:
           type: asn
@@ -4979,22 +5163,18 @@ defaults:
         advertise_loopback: bool
         sessions:
           ipv4:
-          - ibgp
-          - ebgp
-          - localas_ibgp
+            type: list
+            _subtype: bgp_session_type
           ipv6:
-          - ibgp
-          - ebgp
-          - localas_ibgp
+            type: list
+            _subtype: bgp_session_type
         activate:
           ipv4:
-          - ibgp
-          - ebgp
-          - localas_ibgp
+            type: list
+            _subtype: bgp_session_type
           ipv6:
-          - ibgp
-          - ebgp
-          - localas_ibgp
+            type: list
+            _subtype: bgp_session_type
         community:
           ibgp:
           - standard
@@ -5049,6 +5229,7 @@ defaults:
       ipv6_lla: Can run EBGP sessions over IPv6 link-local addresses
       rfc8950: Can run IPv4 AF over regular IPv6 EBGP session
       community: Granular BGP community propagation
+      confederation: BGP confederations
       import: Import routes from other routing protocols
     warnings:
       missing_igp: true
@@ -5575,9 +5756,16 @@ defaults:
             _alt_types:
             - bool
           mac: mac
+      interface:
+        lacp_system_id:
+          type: mac
+          _alt_types:
+          - int
+      intf_to_neighbor: false
       lag_l2_linkattr:
         mtu:
         bandwidth:
+        lacp_system_id:
       lag_member_linkattr:
         mtu:
         bandwidth:
@@ -5597,11 +5785,14 @@ defaults:
       dnsmasq: true
       eos: true
       frr: true
+      ioll2: true
+      iosvl2: true
       linux: true
       none: true
       vjunos-switch: true
       vptx: true
       vsrx: true
+      vyos: true
   mpls:
     config_after:
     - vlan
@@ -6198,6 +6389,7 @@ defaults:
       junos: true
       linux: true
       none: true
+      openbsd: true
       srlinux: true
       sros: true
       vjunos-router: true
@@ -6441,6 +6633,8 @@ defaults:
       dellos10: true
       eos: true
       frr: true
+      ioll2: true
+      iosvl2: true
       none: true
   vlan:
     config_after:
@@ -6496,6 +6690,7 @@ defaults:
         stp:
         virtual_interface:
         lag:
+        evpn:
       keep_subif:
         vlan:
         ifindex:
@@ -6669,14 +6864,18 @@ defaults:
     list: []
     user: []
     system: []
-  workdir: /work/netlab_cicd
-  device: sros
   groups:
+    external:
+      device: frr
+      members: []
+      _default_group: true
     all:
       vars:
         netlab_show_config: true
       members: []
       _default_group: true
+  workdir: /work/netlab_cicd
+  device: sros
   plugin:
   - multilab
   _globals:
@@ -6731,6 +6930,10 @@ groups:
     module:
     - vrf
     - ospf
+  external:
+    device: frr
+    members: []
+    _default_group: true
   all:
     vars:
       netlab_show_config: true
@@ -7295,7 +7498,7 @@ validate:
   name: red_v3_adj
 - description: Check OSPFv3 adjacencies in blue VRF
   wait: 30
-  wait_msg: Waiting for OSPFv2 adjacencies
+  wait_msg: Waiting for OSPFv3 adjacencies
   nodes:
   - r3
   - r4
@@ -7309,6 +7512,13 @@ validate:
   - r1
   plugin: ospf_prefix(nodes.r2.loopback.ipv4)
   name: red_v4_route
+- description: Check connected OSPFv2 routes in red VRF
+  wait: 10
+  wait_msg: Waiting for OSPFv2 SPF run
+  nodes:
+  - r1
+  plugin: ospf_prefix(nodes.r2.interfaces[0].ipv4)
+  name: red_v4_conn
 - description: Check OSPFv3 routes in red VRF
   wait: 10
   wait_msg: Waiting for OSPFv3 SPF run
@@ -7316,6 +7526,13 @@ validate:
   - r1
   plugin: ospf6_prefix(nodes.r2.loopback.ipv6)
   name: red_v6_route
+- description: Check connected OSPFv3 routes in red VRF
+  wait: 10
+  wait_msg: Waiting for OSPFv3 SPF run
+  nodes:
+  - r1
+  plugin: ospf6_prefix(nodes.r2.interfaces[0].ipv6)
+  name: red_v6_conn
 - description: Ping-based reachability test in VRF red
   wait: 5
   nodes:
