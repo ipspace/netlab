@@ -9,6 +9,8 @@ message: |
   * r3 and r4 should be able to ping each other and rtr VRF loopback
   * r1 should not be able to reach r3
 
+defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
+
 groups:
   ce:
     members: [ r1, r2, r3, r4 ]
@@ -46,14 +48,14 @@ nodes:
 validate:
   session:
     description: Check EBGP sessions with DUT
-    wait: 20
+    wait: ebgp_session
     wait_msg: Waiting for BGP sessions to start
     nodes: [ r1, r2, r3, r4 ]
     plugin: bgp_neighbor(node.bgp.neighbors,'dut')
     stop_on_error: true
   pfx_red:
     description: Check DUT loopback BGP prefix in red VRF
-    wait: 15
+    wait: bgp_scan_long
     wait_msg: Waiting for BGP convergence
     nodes: [ r1, r2 ]
     plugin: bgp_prefix(nodes.dut.vrfs.red.loopback_address.ipv4)
@@ -64,18 +66,18 @@ validate:
     level: warning
   pfx_blue:
     description: Check DUT loopback BGP prefix in blue VRF
-    wait: 5
+    wait: bgp_scan_time
     wait_msg: Waiting for BGP convergence
     nodes: [ r3, r4 ]
     plugin: bgp_prefix(nodes.dut.vrfs.blue.loopback_address.ipv4)
   red:
     description: Ping-based reachability test in VRF red
-    wait: 5
+    wait: ping
     nodes: [ r1 ]
     plugin: ping('r2')
   ping:
     description: Ping-based reachability test in VRF blue
-    wait: 5
+    wait: ping
     nodes: [ r3 ]
     plugin: ping('r4')
   red_lb:
