@@ -15,6 +15,8 @@ message: |
   The test also checks whether DUT unnecessarily enables IPv4 AF over IPv6
   EBGP sessions
 
+defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
+
 addressing:                         # This creates a dual-stack network to uncover the
   loopback:                         # ... extraneous activations of address families
     ipv6: 2001:db8:1::/48
@@ -59,30 +61,30 @@ validate:
   session:
     description: Check EBGP sessions with DUT
     wait_msg: Waiting for EBGP sessions to start
-    wait: 20
+    wait: ebgp_session
     nodes: [ r1, r2, r3, r4 ]
     plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6')
     stop_on_error: true
   pfx_red:
     description: Check IPv6 BGP prefix on R1
     wait_msg: Waiting for BGP convergence
-    wait: 15
+    wait: bgp_scan_long
     nodes: [ r1 ]
     plugin: bgp_prefix(nodes.r2.loopback.ipv6.replace('::1','::'),af='ipv6')
   pfx_blue:
     description: Check IPv6 BGP prefix on R3
     wait_msg: Waiting for BGP convergence
-    wait: 15
+    wait: bgp_scan_long
     nodes: [ r3 ]
     plugin: bgp_prefix(nodes.r4.loopback.ipv6.replace('::1','::'),af='ipv6')
   lb_red:
     description: Check DUT loopback IPv6 BGP prefix in red VRF
-    wait: 5
+    wait: bgp_scan_time
     nodes: [ r1 ]
     plugin: bgp_prefix(nodes.dut.vrfs.red.loopback_address.ipv6.replace('::1','::'),af='ipv6')
   lb_blue:
     description: Check DUT loopback IPv6 BGP prefix in blue VRF
-    wait: 5
+    wait: bgp_scan_time
     nodes: [ r3 ]
     plugin: bgp_prefix(nodes.dut.vrfs.blue.loopback_address.ipv6.replace('::1','::'),af='ipv6')
   ebgp_4o6:
@@ -95,12 +97,12 @@ validate:
     plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv4',activate='ipv6',state='missing')
   red:
     description: Ping-based reachability test in VRF red
-    wait: 3
+    wait: ping
     nodes: [ r1 ]
     plugin: ping('r2',af='ipv6')
   ping:
     description: Ping-based reachability test in VRF blue
-    wait: 3
+    wait: ping
     nodes: [ r3 ]
     plugin: ping('r4',af='ipv6')
   red_lb:
