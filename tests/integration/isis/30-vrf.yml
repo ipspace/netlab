@@ -11,7 +11,7 @@ message: |
   * r3 and r4 should be able to ping each other
   * r1 should not be able to reach r3
 
-defaults.sources.extra: [ defaults-ds.yml ]
+defaults.sources.extra: [ defaults-ds.yml, ../wait_times.yml, ../warnings.yml ]
 isis.type: level-2
 
 groups:
@@ -63,20 +63,20 @@ validate:
   isis:
     description: Check IS-IS adjacencies with DUT
     wait_msg: Waiting for IS-IS adjacency process to complete
-    wait: 30
+    wait: isis_adj_p2p
     nodes: [ r1, r3 ]
     plugin: isis_neighbor('dut',level='L2')
     stop_on_error: true
   red_c_isis4:
     description: Check connected IPv4 subnet as IS-IS prefix on R1
-    wait: 15
+    wait: isis_spf
     wait_msg: Waiting for IS-IS convergence
     fail: DUT is not redistributing connected subnets into IS-IS
     nodes: [ r1 ]
     plugin: isis_prefix(pfx=nodes.r2.interfaces[0].ipv4,level='2')
   red_c_isis6:
     description: Check connected IPv6 subnet as IS-IS prefix on R1
-    wait: 3
+    wait: isis_spf
     wait_msg: Waiting for IS-IS convergence
     fail: DUT is not redistributing connected subnets into IS-IS
     nodes: [ r1 ]
@@ -85,28 +85,28 @@ validate:
     description: Check for IPv4 BGP prefix in IS-IS
     wait_msg: Waiting for BGP and IS-IS convergence
     fail: BGP is not redistributed into IS-IS
-    wait: 10
+    wait: isis_spf
     nodes: [ r1 ]
     plugin: isis_prefix(pfx=nodes.r2.loopback.ipv4,af='ipv4',level='2')
   red_bgp_isis6:
     description: Check for IPv6 BGP prefix in IS-IS
     wait_msg: Waiting for BGP and IS-IS convergence
     fail: BGP is not redistributed into IS-IS
-    wait: 5
+    wait: isis_spf
     nodes: [ r1 ]
     plugin: isis_prefix(nodes.r2.loopback.ipv6,af='ipv6',level='2')
   red_isis_bgp4:
     description: Check for IS-IS IPv4 prefix in BGP
     wait_msg: Waiting for IS-IS and BGP convergence
     fail: IS-IS IPv4 prefixes are not redistributed into BGP
-    wait: 10
+    wait: bgp_scan_long
     nodes: [ r2 ]
     plugin: bgp_prefix(nodes.r1.loopback.ipv4,af='ipv4')
   red_isis_bgp6:
     description: Check for IS-IS IPv6 prefix in BGP
     wait_msg: Waiting for IS-IS and BGP convergence
     fail: IS-IS IPv6 prefixes are not redistributed into BGP
-    wait: 5
+    wait: bgp_scan_time
     nodes: [ r2 ]
     plugin: bgp_prefix(nodes.r1.loopback.ipv6,af='ipv6')
   red_lb_ping4:
@@ -127,11 +127,11 @@ validate:
     plugin: ping(nodes.r1.interfaces[0].ipv4,af='ipv4')
   blue_lb_ping4:
     description: Loopback-to-loopback IPv4 reachability test in VRF blue
-    wait: 10
+    wait: ping_long
     nodes: [ r3 ]
     plugin: ping('r4',src=nodes.r3.loopback.ipv4,af='ipv4')
-  blue_lb_ping:
+  blue_lb_ping6:
     description: Loopback-to-loopback IPv6 reachability test in VRF blue
-    wait: 10
+    wait: ping_long
     nodes: [ r3 ]
     plugin: ping(nodes.r4.loopback.ipv6,src=nodes.r3.loopback.ipv6,af='ipv6')
