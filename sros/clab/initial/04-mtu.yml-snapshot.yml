@@ -2,407 +2,6 @@
 ---
 message: This scenario tests MTU configuration and path MTU discovery 
   (generation of ICMP unreachables)
-addressing:
-  lan:
-    ipv4: 172.16.0.0/16
-    prefix: 24
-    ipv6: 2001:db8:1::/48
-  loopback:
-    ipv4: 10.0.0.0/24
-    prefix: 32
-    ipv6: 2001:db8::/48
-  p2p:
-    ipv4: 10.1.0.0/16
-    prefix: 30
-  router_id:
-    ipv4: 10.0.0.0/24
-    prefix: 32
-  mgmt:
-    ipv4: 192.168.17.0/24
-    start: 100
-    mac: 08-4F-A9-00-00-00
-    _network: nl_mgmt_17
-    _bridge: nl_mgmt_17
-    prefix: 24
-  l2only: {}
-  vrf_loopback:
-    ipv4: 10.2.0.0/24
-    prefix: 32
-groups:
-  probes:
-    members:
-    - p1
-    device: eos
-    module:
-    - routing
-    node_data:
-      provider: clab
-      routing:
-        static:
-        - ipv4: 0.0.0.0/0
-          ipv6: ::/0
-          nexthop:
-            node: dut
-  targets:
-    members:
-    - t_1300
-    - t_1400
-    device: linux
-  external:
-    device: frr
-    members: []
-    _default_group: true
-  all:
-    vars:
-      netlab_show_config: true
-    members: []
-    _default_group: true
-nodes:
-  dut:
-    mtu: 1300
-    role: router
-    name: dut
-    interfaces:
-    - ipv4: 172.16.0.1/24
-      ipv6: 2001:db8:1::1/64
-      bandwidth: 1000
-      pool: lan
-      mtu: 1500
-      linkindex: 1
-      type: p2p
-      name: dut -> p1
-      ifindex: 1
-      ifname: eth-1/1/c1
-      clab:
-        name: eth1
-      neighbors:
-      - ipv4: 172.16.0.2/24
-        ipv6: 2001:db8:1::2/64
-        ifname: Ethernet1
-        node: p1
-      _port_mode: network
-    - mtu: 1400
-      ipv4: 172.16.1.1/24
-      ipv6: 2001:db8:1:1::1/64
-      linkindex: 2
-      role: stub
-      type: lan
-      bridge: ml_17_2
-      name: dut -> t_1400
-      ifindex: 2
-      ifname: eth-1/1/c2
-      clab:
-        name: eth2
-      neighbors:
-      - ipv4: 172.16.1.4/24
-        ipv6: 2001:db8:1:1::4/64
-        ifname: eth1
-        node: t_1400
-      _use_ip_mtu: true
-      _port_mode: network
-    - ipv4: 172.16.2.1/24
-      ipv6: 2001:db8:1:2::1/64
-      linkindex: 3
-      role: stub
-      type: lan
-      bridge: ml_17_3
-      name: dut -> t_1300
-      ifindex: 3
-      ifname: eth-1/1/c3
-      clab:
-        name: eth3
-      mtu: 1300
-      neighbors:
-      - ipv4: 172.16.2.3/24
-        ipv6: 2001:db8:1:2::3/64
-        ifname: eth1
-        node: t_1300
-      _use_ip_mtu: true
-      _port_mode: network
-    device: sros
-    clab:
-      kind: vr-sros
-      type: sr-1
-      license: ~/.netlab/license_sros25.txt
-    box: vrnetlab/nokia_sros:25.3.R2
-    id: 1
-    provider: clab
-    af:
-      ipv4: true
-      ipv6: true
-    mgmt:
-      ifname: A/1
-      mac: 08:4f:a9:01:00:00
-      ipv4: 192.168.17.101
-    hostname: clab-ml_17-dut
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: system
-      ipv4: 10.0.0.1/32
-      ipv6: 2001:db8:0:1::1/128
-  p1:
-    routing:
-      static:
-      - ipv4: 0.0.0.0/0
-        nexthop:
-          ipv4: 172.16.0.1
-          intf: Ethernet1
-          ipv6: 2001:db8:1::1
-          idx: 0
-      - ipv6: ::/0
-        nexthop:
-          ipv4: 172.16.0.1
-          intf: Ethernet1
-          ipv6: 2001:db8:1::1
-          idx: 0
-    name: p1
-    interfaces:
-    - ipv4: 172.16.0.2/24
-      ipv6: 2001:db8:1::2/64
-      bandwidth: 1000
-      pool: lan
-      mtu: 1500
-      linkindex: 1
-      type: p2p
-      name: p1 -> dut
-      ifindex: 1
-      ifname: Ethernet1
-      clab:
-        name: et1
-      neighbors:
-      - ipv4: 172.16.0.1/24
-        ipv6: 2001:db8:1::1/64
-        ifname: eth-1/1/c1
-        node: dut
-    device: eos
-    module:
-    - routing
-    clab:
-      kind: ceos
-      env:
-        INTFTYPE: et
-        CLAB_MGMT_VRF: management
-    box: ceos:4.33.1F
-    id: 2
-    role: router
-    af:
-      ipv4: true
-      ipv6: true
-    mgmt:
-      ifname: Management0
-      mac: 08:4f:a9:02:00:00
-      ipv4: 192.168.17.102
-    hostname: clab-ml_17-p1
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: Loopback0
-      ipv4: 10.0.0.2/32
-      ipv6: 2001:db8:0:2::1/64
-  t_1300:
-    name: t_1300
-    interfaces:
-    - ipv4: 172.16.2.3/24
-      ipv6: 2001:db8:1:2::3/64
-      linkindex: 3
-      role: stub
-      type: lan
-      bridge: ml_17_3
-      name: t_1300 -> dut
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 172.16.2.1/24
-        ipv6: 2001:db8:1:2::1/64
-        ifname: eth-1/1/c3
-        node: dut
-      gateway:
-        ipv4: 172.16.2.1/24
-        ipv6: 2001:db8:1:2::1/64
-    device: linux
-    clab:
-      kind: linux
-      config_templates:
-      - hosts:/etc/hosts
-      binds:
-      - clab_files/t_1300/hosts:/etc/hosts
-    box: python:3.13-alpine
-    id: 3
-    role: host
-    mtu: 1500
-    af:
-      ipv4: true
-      ipv6: true
-    mgmt:
-      ifname: eth0
-      mac: 08:4f:a9:03:00:00
-      ipv4: 192.168.17.103
-    hostname: clab-ml_17-t_1300
-    routing:
-      static:
-      - ipv4: 172.16.0.0/16
-        nexthop:
-          ipv4: 172.16.2.1
-          intf: eth1
-          ipv6: 2001:db8:1:2::1
-          idx: 0
-      - ipv4: 10.0.0.0/24
-        nexthop:
-          ipv4: 172.16.2.1
-          intf: eth1
-          ipv6: 2001:db8:1:2::1
-          idx: 0
-      - ipv4: 10.1.0.0/16
-        nexthop:
-          ipv4: 172.16.2.1
-          intf: eth1
-          ipv6: 2001:db8:1:2::1
-          idx: 0
-      - ipv4: 10.2.0.0/24
-        nexthop:
-          ipv4: 172.16.2.1
-          intf: eth1
-          ipv6: 2001:db8:1:2::1
-          idx: 0
-    module:
-    - routing
-  t_1400:
-    name: t_1400
-    interfaces:
-    - ipv4: 172.16.1.4/24
-      ipv6: 2001:db8:1:1::4/64
-      linkindex: 2
-      role: stub
-      type: lan
-      bridge: ml_17_2
-      name: t_1400 -> dut
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 172.16.1.1/24
-        ipv6: 2001:db8:1:1::1/64
-        ifname: eth-1/1/c2
-        node: dut
-      gateway:
-        ipv4: 172.16.1.1/24
-        ipv6: 2001:db8:1:1::1/64
-    device: linux
-    clab:
-      kind: linux
-      config_templates:
-      - hosts:/etc/hosts
-      binds:
-      - clab_files/t_1400/hosts:/etc/hosts
-    box: python:3.13-alpine
-    id: 4
-    role: host
-    mtu: 1500
-    af:
-      ipv4: true
-      ipv6: true
-    mgmt:
-      ifname: eth0
-      mac: 08:4f:a9:04:00:00
-      ipv4: 192.168.17.104
-    hostname: clab-ml_17-t_1400
-    routing:
-      static:
-      - ipv4: 172.16.0.0/16
-        nexthop:
-          ipv4: 172.16.1.1
-          intf: eth1
-          ipv6: 2001:db8:1:1::1
-          idx: 0
-      - ipv4: 10.0.0.0/24
-        nexthop:
-          ipv4: 172.16.1.1
-          intf: eth1
-          ipv6: 2001:db8:1:1::1
-          idx: 0
-      - ipv4: 10.1.0.0/16
-        nexthop:
-          ipv4: 172.16.1.1
-          intf: eth1
-          ipv6: 2001:db8:1:1::1
-          idx: 0
-      - ipv4: 10.2.0.0/24
-        nexthop:
-          ipv4: 172.16.1.1
-          intf: eth1
-          ipv6: 2001:db8:1:1::1
-          idx: 0
-    module:
-    - routing
-links:
-- _linkname: links[1]
-  bandwidth: 1000
-  pool: lan
-  mtu: 1500
-  interfaces:
-  - node: dut
-    ipv4: 172.16.0.1/24
-    ipv6: 2001:db8:1::1/64
-    ifindex: 1
-    ifname: eth-1/1/c1
-  - node: p1
-    ipv4: 172.16.0.2/24
-    ipv6: 2001:db8:1::2/64
-    ifindex: 1
-    ifname: Ethernet1
-  linkindex: 1
-  node_count: 2
-  type: p2p
-  prefix:
-    ipv4: 172.16.0.0/24
-    ipv6: 2001:db8:1::/64
-- _linkname: links[2]
-  interfaces:
-  - mtu: 1400
-    node: dut
-    ipv4: 172.16.1.1/24
-    ipv6: 2001:db8:1:1::1/64
-    ifindex: 2
-    ifname: eth-1/1/c2
-  - node: t_1400
-    ipv4: 172.16.1.4/24
-    ipv6: 2001:db8:1:1::4/64
-    ifindex: 1
-    ifname: eth1
-  linkindex: 2
-  node_count: 2
-  role: stub
-  type: lan
-  bridge: ml_17_2
-  prefix:
-    ipv4: 172.16.1.0/24
-    ipv6: 2001:db8:1:1::/64
-- _linkname: links[3]
-  interfaces:
-  - node: dut
-    ipv4: 172.16.2.1/24
-    ipv6: 2001:db8:1:2::1/64
-    ifindex: 3
-    ifname: eth-1/1/c3
-  - node: t_1300
-    ipv4: 172.16.2.3/24
-    ipv6: 2001:db8:1:2::3/64
-    ifindex: 1
-    ifname: eth1
-  linkindex: 3
-  node_count: 2
-  role: stub
-  type: lan
-  bridge: ml_17_3
-  prefix:
-    ipv4: 172.16.2.0/24
-    ipv6: 2001:db8:1:2::/64
 defaults:
   provider: clab
   providers:
@@ -1619,6 +1218,8 @@ defaults:
           eos:
             serialnumber: str
             systemmacaddr: mac
+      warnings:
+        ospf_stub: false
     fortios:
       description: Fortinet FortiOS firewall
       interface_name: port{ifindex}
@@ -3314,6 +2915,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        loopback_ipv6: false
       provider: clab
     unknown:
       description: Generic Unknown Device
@@ -5184,6 +4787,33 @@ defaults:
     ifname:
       neighbors: 5
       maxlength: 255
+    validate:
+      ping: 5
+      ping_long: 15
+      vxlan_ping: 20
+      ping_xx_long: 40
+      ra_send: 30
+      ospfv2_adj_p2p: 30
+      ospfv2_adj_lan: 50
+      ospfv2_spf: 10
+      ospfv3_adj_p2p: 30
+      ospfv3_adj_lan: 50
+      ospfv3_spf: 10
+      ospf_import: 20
+      ebgp_session: 30
+      ibgp_session: 30
+      bgp_scan_time: 5
+      bgp_scan_long: 15
+      bgp_ios_redist: 60
+      isis_adj_p2p: 20
+      isis_adj_lan: 50
+      isis_spf: 15
+      isis_spf_long: 45
+      rip_start: 60
+      rip_update: 20
+      ldp_adj: 30
+      stp_forwarding: 40
+      lacp_setup: 10
   hints:
     evpn:
       irb_group: >
@@ -5368,6 +4998,8 @@ defaults:
     netconf: 830
   warnings:
     duplicate_address: true
+    providers:
+      change: false
   bfd:
     min_echo_rx: 0
     multiplier: 3
@@ -7226,8 +6858,10 @@ defaults:
       vjunos-switch: true
       vyos: true
   sources:
+    extra:
+    - ../wait_times.yml
+    - ../warnings.yml
     list: []
-    extra: []
     user: []
     system: []
   groups:
@@ -7267,9 +6901,410 @@ defaults:
   name: ml_17
   module:
   - routing
+addressing:
+  lan:
+    ipv4: 172.16.0.0/16
+    prefix: 24
+    ipv6: 2001:db8:1::/48
+  loopback:
+    ipv4: 10.0.0.0/24
+    prefix: 32
+    ipv6: 2001:db8::/48
+  p2p:
+    ipv4: 10.1.0.0/16
+    prefix: 30
+  router_id:
+    ipv4: 10.0.0.0/24
+    prefix: 32
+  mgmt:
+    ipv4: 192.168.17.0/24
+    start: 100
+    mac: 08-4F-A9-00-00-00
+    _network: nl_mgmt_17
+    _bridge: nl_mgmt_17
+    prefix: 24
+  l2only: {}
+  vrf_loopback:
+    ipv4: 10.2.0.0/24
+    prefix: 32
+groups:
+  probes:
+    members:
+    - p1
+    device: eos
+    module:
+    - routing
+    node_data:
+      provider: clab
+      routing:
+        static:
+        - ipv4: 0.0.0.0/0
+          ipv6: ::/0
+          nexthop:
+            node: dut
+  targets:
+    members:
+    - t_1300
+    - t_1400
+    device: linux
+  external:
+    device: frr
+    members: []
+    _default_group: true
+  all:
+    vars:
+      netlab_show_config: true
+    members: []
+    _default_group: true
+nodes:
+  dut:
+    mtu: 1300
+    role: router
+    name: dut
+    interfaces:
+    - ipv4: 172.16.0.1/24
+      ipv6: 2001:db8:1::1/64
+      bandwidth: 1000
+      pool: lan
+      mtu: 1500
+      linkindex: 1
+      type: p2p
+      name: dut -> p1
+      ifindex: 1
+      ifname: eth-1/1/c1
+      clab:
+        name: eth1
+      neighbors:
+      - ipv4: 172.16.0.2/24
+        ipv6: 2001:db8:1::2/64
+        ifname: Ethernet1
+        node: p1
+      _port_mode: network
+    - mtu: 1400
+      ipv4: 172.16.1.1/24
+      ipv6: 2001:db8:1:1::1/64
+      linkindex: 2
+      role: stub
+      type: lan
+      bridge: ml_17_2
+      name: dut -> t_1400
+      ifindex: 2
+      ifname: eth-1/1/c2
+      clab:
+        name: eth2
+      neighbors:
+      - ipv4: 172.16.1.4/24
+        ipv6: 2001:db8:1:1::4/64
+        ifname: eth1
+        node: t_1400
+      _use_ip_mtu: true
+      _port_mode: network
+    - ipv4: 172.16.2.1/24
+      ipv6: 2001:db8:1:2::1/64
+      linkindex: 3
+      role: stub
+      type: lan
+      bridge: ml_17_3
+      name: dut -> t_1300
+      ifindex: 3
+      ifname: eth-1/1/c3
+      clab:
+        name: eth3
+      mtu: 1300
+      neighbors:
+      - ipv4: 172.16.2.3/24
+        ipv6: 2001:db8:1:2::3/64
+        ifname: eth1
+        node: t_1300
+      _use_ip_mtu: true
+      _port_mode: network
+    device: sros
+    clab:
+      kind: vr-sros
+      type: sr-1
+      license: ~/.netlab/license_sros25.txt
+    box: vrnetlab/nokia_sros:25.3.R2
+    id: 1
+    provider: clab
+    af:
+      ipv4: true
+      ipv6: true
+    mgmt:
+      ifname: A/1
+      mac: 08:4f:a9:01:00:00
+      ipv4: 192.168.17.101
+    hostname: clab-ml_17-dut
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: system
+      ipv4: 10.0.0.1/32
+      ipv6: 2001:db8:0:1::1/128
+  p1:
+    routing:
+      static:
+      - ipv4: 0.0.0.0/0
+        nexthop:
+          ipv4: 172.16.0.1
+          intf: Ethernet1
+          ipv6: 2001:db8:1::1
+          idx: 0
+      - ipv6: ::/0
+        nexthop:
+          ipv4: 172.16.0.1
+          intf: Ethernet1
+          ipv6: 2001:db8:1::1
+          idx: 0
+    name: p1
+    interfaces:
+    - ipv4: 172.16.0.2/24
+      ipv6: 2001:db8:1::2/64
+      bandwidth: 1000
+      pool: lan
+      mtu: 1500
+      linkindex: 1
+      type: p2p
+      name: p1 -> dut
+      ifindex: 1
+      ifname: Ethernet1
+      clab:
+        name: et1
+      neighbors:
+      - ipv4: 172.16.0.1/24
+        ipv6: 2001:db8:1::1/64
+        ifname: eth-1/1/c1
+        node: dut
+    device: eos
+    module:
+    - routing
+    clab:
+      kind: ceos
+      env:
+        INTFTYPE: et
+        CLAB_MGMT_VRF: management
+    box: ceos:4.33.1F
+    id: 2
+    role: router
+    af:
+      ipv4: true
+      ipv6: true
+    mgmt:
+      ifname: Management0
+      mac: 08:4f:a9:02:00:00
+      ipv4: 192.168.17.102
+    hostname: clab-ml_17-p1
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.2/32
+      ipv6: 2001:db8:0:2::1/64
+  t_1300:
+    name: t_1300
+    interfaces:
+    - ipv4: 172.16.2.3/24
+      ipv6: 2001:db8:1:2::3/64
+      linkindex: 3
+      role: stub
+      type: lan
+      bridge: ml_17_3
+      name: t_1300 -> dut
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.2.1/24
+        ipv6: 2001:db8:1:2::1/64
+        ifname: eth-1/1/c3
+        node: dut
+      gateway:
+        ipv4: 172.16.2.1/24
+        ipv6: 2001:db8:1:2::1/64
+    device: linux
+    clab:
+      kind: linux
+      config_templates:
+      - hosts:/etc/hosts
+      binds:
+      - clab_files/t_1300/hosts:/etc/hosts
+    box: python:3.13-alpine
+    id: 3
+    role: host
+    mtu: 1500
+    af:
+      ipv4: true
+      ipv6: true
+    mgmt:
+      ifname: eth0
+      mac: 08:4f:a9:03:00:00
+      ipv4: 192.168.17.103
+    hostname: clab-ml_17-t_1300
+    routing:
+      static:
+      - ipv4: 172.16.0.0/16
+        nexthop:
+          ipv4: 172.16.2.1
+          intf: eth1
+          ipv6: 2001:db8:1:2::1
+          idx: 0
+      - ipv4: 10.0.0.0/24
+        nexthop:
+          ipv4: 172.16.2.1
+          intf: eth1
+          ipv6: 2001:db8:1:2::1
+          idx: 0
+      - ipv4: 10.1.0.0/16
+        nexthop:
+          ipv4: 172.16.2.1
+          intf: eth1
+          ipv6: 2001:db8:1:2::1
+          idx: 0
+      - ipv4: 10.2.0.0/24
+        nexthop:
+          ipv4: 172.16.2.1
+          intf: eth1
+          ipv6: 2001:db8:1:2::1
+          idx: 0
+    module:
+    - routing
+  t_1400:
+    name: t_1400
+    interfaces:
+    - ipv4: 172.16.1.4/24
+      ipv6: 2001:db8:1:1::4/64
+      linkindex: 2
+      role: stub
+      type: lan
+      bridge: ml_17_2
+      name: t_1400 -> dut
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.1.1/24
+        ipv6: 2001:db8:1:1::1/64
+        ifname: eth-1/1/c2
+        node: dut
+      gateway:
+        ipv4: 172.16.1.1/24
+        ipv6: 2001:db8:1:1::1/64
+    device: linux
+    clab:
+      kind: linux
+      config_templates:
+      - hosts:/etc/hosts
+      binds:
+      - clab_files/t_1400/hosts:/etc/hosts
+    box: python:3.13-alpine
+    id: 4
+    role: host
+    mtu: 1500
+    af:
+      ipv4: true
+      ipv6: true
+    mgmt:
+      ifname: eth0
+      mac: 08:4f:a9:04:00:00
+      ipv4: 192.168.17.104
+    hostname: clab-ml_17-t_1400
+    routing:
+      static:
+      - ipv4: 172.16.0.0/16
+        nexthop:
+          ipv4: 172.16.1.1
+          intf: eth1
+          ipv6: 2001:db8:1:1::1
+          idx: 0
+      - ipv4: 10.0.0.0/24
+        nexthop:
+          ipv4: 172.16.1.1
+          intf: eth1
+          ipv6: 2001:db8:1:1::1
+          idx: 0
+      - ipv4: 10.1.0.0/16
+        nexthop:
+          ipv4: 172.16.1.1
+          intf: eth1
+          ipv6: 2001:db8:1:1::1
+          idx: 0
+      - ipv4: 10.2.0.0/24
+        nexthop:
+          ipv4: 172.16.1.1
+          intf: eth1
+          ipv6: 2001:db8:1:1::1
+          idx: 0
+    module:
+    - routing
+links:
+- _linkname: links[1]
+  bandwidth: 1000
+  pool: lan
+  mtu: 1500
+  interfaces:
+  - node: dut
+    ipv4: 172.16.0.1/24
+    ipv6: 2001:db8:1::1/64
+    ifindex: 1
+    ifname: eth-1/1/c1
+  - node: p1
+    ipv4: 172.16.0.2/24
+    ipv6: 2001:db8:1::2/64
+    ifindex: 1
+    ifname: Ethernet1
+  linkindex: 1
+  node_count: 2
+  type: p2p
+  prefix:
+    ipv4: 172.16.0.0/24
+    ipv6: 2001:db8:1::/64
+- _linkname: links[2]
+  interfaces:
+  - mtu: 1400
+    node: dut
+    ipv4: 172.16.1.1/24
+    ipv6: 2001:db8:1:1::1/64
+    ifindex: 2
+    ifname: eth-1/1/c2
+  - node: t_1400
+    ipv4: 172.16.1.4/24
+    ipv6: 2001:db8:1:1::4/64
+    ifindex: 1
+    ifname: eth1
+  linkindex: 2
+  node_count: 2
+  role: stub
+  type: lan
+  bridge: ml_17_2
+  prefix:
+    ipv4: 172.16.1.0/24
+    ipv6: 2001:db8:1:1::/64
+- _linkname: links[3]
+  interfaces:
+  - node: dut
+    ipv4: 172.16.2.1/24
+    ipv6: 2001:db8:1:2::1/64
+    ifindex: 3
+    ifname: eth-1/1/c3
+  - node: t_1300
+    ipv4: 172.16.2.3/24
+    ipv6: 2001:db8:1:2::3/64
+    ifindex: 1
+    ifname: eth1
+  linkindex: 3
+  node_count: 2
+  role: stub
+  type: lan
+  bridge: ml_17_3
+  prefix:
+    ipv4: 172.16.2.0/24
+    ipv6: 2001:db8:1:2::/64
 validate:
 - description: Initial IPv4 ping => target(1300)
-  wait: 10
+  wait: 15
   nodes:
   - p1
   exec:
@@ -7280,7 +7315,7 @@ validate:
   devices:
   - eos
 - description: Initial IPv6 ping => target(1300)
-  wait: 10
+  wait: 15
   nodes:
   - p1
   exec:
@@ -7291,7 +7326,7 @@ validate:
   devices:
   - eos
 - description: Initial IPv4 ping => target(1400)
-  wait: 10
+  wait: 15
   nodes:
   - p1
   exec:
@@ -7302,7 +7337,7 @@ validate:
   devices:
   - eos
 - description: Initial IPv6 ping => target(1400)
-  wait: 10
+  wait: 15
   nodes:
   - p1
   exec:
@@ -7416,6 +7451,8 @@ validate:
   - eos
 input:
 - /home/pipi/net101/tools/tests/integration/initial/04-mtu.yml
+- /home/pipi/net101/tools/tests/integration/wait_times.yml
+- /home/pipi/net101/tools/tests/integration/warnings.yml
 - /home/pipi/.netlab.yml
 - package:topology-defaults.yml
 plugin:

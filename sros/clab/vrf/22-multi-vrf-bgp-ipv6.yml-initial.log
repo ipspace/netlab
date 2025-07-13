@@ -888,10 +888,10 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, r3, r4
 
 TASK [template] ****************************************************************
-changed: [r1]
 changed: [r2]
-changed: [r3]
 changed: [r4]
+changed: [r1]
+changed: [r3]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -900,10 +900,10 @@ ok: [r3]
 ok: [r4]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r1]
 changed: [r2]
-changed: [r3]
+changed: [r1]
 changed: [r4]
+changed: [r3]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r1]
@@ -953,85 +953,6 @@ ok: [r3]
 ok: [r4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [dut] => 
-  msg: |-
-    bgp configuration for dut
-    =========================================
-  
-    updates:
-  
-    - path: configure/policy-options/policy-statement[name=accept_all]
-      val:
-        default-action:
-          action-type: accept
-  
-    - path: configure/policy-options/policy-statement[name=next-hop-self-ebgp-routes-only]
-      val:
-        entry:
-        - entry-id: 10
-          from:
-            path-type: ebgp
-          action:
-            action-type: accept
-            next-hop: self
-        default-action:
-          action-type: next-policy
-  
-  
-    - path: configure/policy-options/prefix-list[name=bgp_default_advertise]
-      val:
-        prefix: [] # Make sure it exists
-  
-    - path: configure/policy-options/policy-statement[name=bgp_default_export]
-      val:
-        default-action:
-          action-type: reject
-        entry:
-        - entry-id: 10
-          from:
-            prefix-list: [ "bgp_default_advertise" ]
-          action:
-            action-type: accept
-        - entry-id: 20
-          from:
-            protocol:
-              name: [ bgp ]
-          action:
-            action-type: accept
-  
-  
-    - path: configure/policy-options/prefix-list[name=bgp_default_advertise]
-      val:
-        prefix:
-        - ip-prefix: 10.0.0.1/32
-          type: exact
-  
-  
-  
-    - path: configure/policy-options/prefix-list[name=bgp_default_advertise]
-      val:
-        prefix:
-        - ip-prefix: 2001:db8:1:1::1/128
-          type: exact
-  
-  
-  
-  
-    - path: configure/router[router-name=Base]
-      val:
-        router-id: "10.0.0.1"
-        autonomous-system: 65000
-        bgp:
-          ebgp-default-reject-policy:
-            import: False
-            export: False
-          multipath:
-            ibgp: 64
-            ebgp: 64
-          min-route-advertisement: 1 # Be aggressive about sending updates
-          connect-retry: 5           # Retry frequently, suitable in DC context
-        # family: cannot disable this
-        # ipv4: False # Enabled by default, disable globally and set per group
 ok: [r1] => 
   msg: |-
     bgp configuration for r1
@@ -1132,56 +1053,85 @@ ok: [r2] =>
     !
     !
     do write
-ok: [r4] => 
+ok: [dut] => 
   msg: |-
-    bgp configuration for r4
+    bgp configuration for dut
     =========================================
-    !
-    router bgp 65104
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
   
-      bgp router-id 10.0.0.5
-    !
-      neighbor 10.1.0.13 remote-as 65000
-      neighbor 10.1.0.13 description dut
-    !
-      neighbor 2001:db8:3:3::1 remote-as 65000
-      neighbor 2001:db8:3:3::1 description dut
-    !
-     address-family ipv4 unicast
-    !
+    updates:
   
-    !
-      network 10.0.0.5/32
-    !
-    !
-    !
-      neighbor 10.1.0.13 activate
-      no neighbor 10.1.0.13 send-community all
-      neighbor 10.1.0.13 send-community standard
-      neighbor 10.1.0.13 send-community large
-    !
-     address-family ipv6 unicast
-    !
+    - path: configure/policy-options/policy-statement[name=accept_all]
+      val:
+        default-action:
+          action-type: accept
   
-    !
-      network 2001:db8:1:5::/64
-    !
-    !
-    !
-      neighbor 2001:db8:3:3::1 activate
-      no neighbor 2001:db8:3:3::1 send-community all
-      neighbor 2001:db8:3:3::1 send-community standard
-      neighbor 2001:db8:3:3::1 send-community large
-    !
-    !
-    !
-    do write
+    - path: configure/policy-options/policy-statement[name=next-hop-self-ebgp-routes-only]
+      val:
+        entry:
+        - entry-id: 10
+          from:
+            path-type: ebgp
+          action:
+            action-type: accept
+            next-hop: self
+        default-action:
+          action-type: next-policy
+  
+  
+    - path: configure/policy-options/prefix-list[name=bgp_default_advertise]
+      val:
+        prefix: [] # Make sure it exists
+  
+    - path: configure/policy-options/policy-statement[name=bgp_default_export]
+      val:
+        default-action:
+          action-type: reject
+        entry:
+        - entry-id: 10
+          from:
+            prefix-list: [ "bgp_default_advertise" ]
+          action:
+            action-type: accept
+        - entry-id: 20
+          from:
+            protocol:
+              name: [ bgp ]
+          action:
+            action-type: accept
+  
+  
+    - path: configure/policy-options/prefix-list[name=bgp_default_advertise]
+      val:
+        prefix:
+        - ip-prefix: 10.0.0.1/32
+          type: exact
+  
+  
+  
+    - path: configure/policy-options/prefix-list[name=bgp_default_advertise]
+      val:
+        prefix:
+        - ip-prefix: 2001:db8:1:1::1/128
+          type: exact
+  
+  
+  
+  
+    - path: configure/router[router-name=Base]
+      val:
+        router-id: "10.0.0.1"
+        autonomous-system: 65000
+        bgp:
+          ebgp-default-reject-policy:
+            import: False
+            export: False
+          multipath:
+            ibgp: 64
+            ebgp: 64
+          min-route-advertisement: 1 # Be aggressive about sending updates
+          connect-retry: 5           # Retry frequently, suitable in DC context
+        # family: cannot disable this
+        # ipv4: False # Enabled by default, disable globally and set per group
 ok: [r3] => 
   msg: |-
     bgp configuration for r3
@@ -1232,6 +1182,56 @@ ok: [r3] =>
     !
     !
     do write
+ok: [r4] => 
+  msg: |-
+    bgp configuration for r4
+    =========================================
+    !
+    router bgp 65104
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.5
+    !
+      neighbor 10.1.0.13 remote-as 65000
+      neighbor 10.1.0.13 description dut
+    !
+      neighbor 2001:db8:3:3::1 remote-as 65000
+      neighbor 2001:db8:3:3::1 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.5/32
+    !
+    !
+    !
+      neighbor 10.1.0.13 activate
+      no neighbor 10.1.0.13 send-community all
+      neighbor 10.1.0.13 send-community standard
+      neighbor 10.1.0.13 send-community large
+    !
+     address-family ipv6 unicast
+    !
+  
+    !
+      network 2001:db8:1:5::/64
+    !
+    !
+    !
+      neighbor 2001:db8:3:3::1 activate
+      no neighbor 2001:db8:3:3::1 send-community all
+      neighbor 2001:db8:3:3::1 send-community standard
+      neighbor 2001:db8:3:3::1 send-community large
+    !
+    !
+    !
+    do write
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for dut
@@ -1247,9 +1247,9 @@ TASK [debug] *******************************************************************
 skipping: [dut]
 
 TASK [template] ****************************************************************
-changed: [r3]
 changed: [r2]
 changed: [r1]
+changed: [r3]
 changed: [r4]
 
 TASK [set_fact] ****************************************************************
@@ -1266,9 +1266,9 @@ skipping: [r4]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [r3]
-changed: [r4]
 changed: [r2]
 changed: [r1]
+changed: [r4]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [dut]
@@ -1712,9 +1712,9 @@ skipping: [r4]
 
 TASK [Check is the configuration template is a file] ***************************
 ok: [r1 -> localhost]
-ok: [r3 -> localhost]
-ok: [r4 -> localhost]
 ok: [r2 -> localhost]
+ok: [r4 -> localhost]
+ok: [r3 -> localhost]
 
 TASK [fail] ********************************************************************
 skipping: [r1]
@@ -1738,9 +1738,9 @@ TASK [Run the configuration deployment script] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2, r3, r4
 
 TASK [template] ****************************************************************
-changed: [r1]
 changed: [r2]
 changed: [r3]
+changed: [r1]
 changed: [r4]
 
 TASK [set_fact] ****************************************************************
@@ -1756,10 +1756,10 @@ skipping: [r3]
 skipping: [r4]
 
 TASK [run vtysh to import bgp-xact config from /home/pipi/net101/tools/tests/integration/vrf/bgp-xact.j2] ***
-changed: [r1]
-changed: [r3]
 changed: [r2]
+changed: [r1]
 changed: [r4]
+changed: [r3]
 
 PLAY RECAP *********************************************************************
 dut                        : ok=34   changed=3    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
