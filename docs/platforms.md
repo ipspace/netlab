@@ -61,6 +61,10 @@ The support level of a platform is defined as:
 
 [^WTLTB]: Particularly on platforms that take way too long to boot, like Cisco IOS XR. We're all forced to deal with a limited lifespan.
 
+```{tip}
+Use **netlab show devices** to display the up-to-date device list and device support levels.
+```
+
 (platform-host)=
 Most devices behave as routers (or layer-3 switches); the following devices can take multiple roles or behave as [IP hosts](node-router-host):
 
