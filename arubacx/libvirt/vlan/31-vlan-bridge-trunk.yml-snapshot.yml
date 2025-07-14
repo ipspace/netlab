@@ -417,7 +417,6 @@ defaults:
       act_title: KVM/libvirt domains (virtual machines)
       cleanup:
       - Vagrantfile
-      - .vagrant
       tunnel_id: '17'
       vifprefix: vgif_17
       clab:
@@ -586,6 +585,8 @@ defaults:
       provider: libvirt
     asav:
       description: Cisco ASAv
+      support:
+        level: minimal
       interface_name: GigabitEthernet0/{ifindex}
       ifindex_offset: 0
       mgmt_if: Management0/0
@@ -610,6 +611,7 @@ defaults:
         create_iso: asav
     cat8000v:
       description: Cisco CSR 1000v
+      _meta_device: true
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
       group_vars:
@@ -783,6 +785,7 @@ defaults:
         create_iso: cat8000v
     csr:
       description: Cisco CSR 1000v
+      _meta_device: true
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
       group_vars:
@@ -956,6 +959,10 @@ defaults:
           --import
     cumulus:
       description: Cumulus VX 4.x or 5.x configured without NVUE
+      support:
+        level: obsolete
+        caveats:
+        - The last Cumulus 4.x image was released in September 2022
       interface_name: swp{ifindex}
       loopback_interface_name: lo{ifindex if ifindex else ""}
       tunnel_interface_name: tun{ifindex}
@@ -975,6 +982,8 @@ defaults:
             interfaces: /etc/network/interfaces
             hosts: /etc/hosts
         image: networkop/cx:4.4.0
+        caveats:
+        - Cumulus 4.x containers are out-of-date and not supported
         group_vars:
           ansible_connection: docker
           ansible_user: root
@@ -1106,6 +1115,11 @@ defaults:
         icon: switch
     cumulus_nvue:
       description: Cumulus VX 5.x configured with NVUE
+      support:
+        level: minimal
+        caveats:
+        - The new Cumulus 5.x releases run only on NVIDIA air. The last public 
+          release was 5.10.0 from September 2024
       interface_name: swp{ifindex}
       lag_interface_name: bond{lag.ifindex}
       loopback_interface_name: lo{ifindex if ifindex else ""}
@@ -1113,6 +1127,11 @@ defaults:
       mtu: 1500
       libvirt:
         image: CumulusCommunity/cumulus-vx:5.10.0
+        caveats:
+        - >-
+          The Vagrant account on public Cumulus 5.x Vagrant boxes has expired password
+          (details in https://netlab.tools/labs/cumulus_nvue/#changing-the-password-expiration-policy)
+        - Newer Cumulus 5.x releases run only on NVIDIA Air
       virtualbox:
         image: CumulusCommunity/cumulus-vx:5.10.0
       group_vars:
@@ -1196,6 +1215,8 @@ defaults:
           kind: cvx
           runtime: docker
         image: networkop/cx:5.3.0
+        caveats:
+        - Cumulus 5.x containers are out-of-date and not supported
         group_vars:
           ansible_connection: docker
           ansible_user: root
@@ -1525,6 +1546,11 @@ defaults:
             systemmacaddr: mac
     fortios:
       description: Fortinet FortiOS firewall
+      support:
+        level: minimal
+        caveats:
+        - We don't test Fortinet configurations due to their ridiculous 
+          temporary licensing policy
       interface_name: port{ifindex}
       loopback_interface_name: loopback{ifindex}
       loopback: false
@@ -1766,6 +1792,7 @@ defaults:
         icon: router
     iol:
       description: Cisco IOL
+      _meta_device: true
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
       group_vars:
@@ -1923,6 +1950,7 @@ defaults:
           kind: cisco_iol
     ioll2:
       description: IOSv L2 image
+      _meta_device: true
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
       group_vars:
@@ -2068,6 +2096,9 @@ defaults:
           - pvrst
           enable_per_port: true
           port_type: true
+        lag:
+          mlag: false
+          passive: true
       external:
         image: none
       graphite:
@@ -2088,8 +2119,10 @@ defaults:
           kind: cisco_iol
           type: l2
         mtu: 1500
+      lag_interface_name: Port-channel{lag.ifindex}
     iosv:
       description: Cisco IOSv
+      _meta_device: true
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
       group_vars:
@@ -2254,6 +2287,7 @@ defaults:
         build: https://github.com/hellt/vrnetlab/tree/master/vios
     iosvl2:
       description: IOSv L2 image
+      _meta_device: true
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
       group_vars:
@@ -2403,6 +2437,9 @@ defaults:
           - pvrst
           enable_per_port: true
           port_type: true
+        lag:
+          mlag: false
+          passive: true
       external:
         image: none
       graphite:
@@ -2425,8 +2462,11 @@ defaults:
         interface:
           name: eth{ifindex}
         build: https://github.com/hellt/vrnetlab/tree/master/viosl2
+      lag_interface_name: Port-channel{lag.ifindex}
     iosxr:
       description: Cisco IOS XRv
+      support:
+        level: minimal
       mgmt_if: MgmtEth0/RP0/CPU0/0
       interface_name: GigabitEthernet0/0/0/{ifindex}
       loopback_interface_name: Loopback{ifindex}
@@ -2551,6 +2591,7 @@ defaults:
         icon: server
     none:
       description: Dummy device used to test topology transformation
+      _meta_device: true
       interface_name: eth{ifindex}
       lag_interface_name: bond{lag.ifindex}
       loopback_interface_name: Loopback{ifindex}
@@ -2726,6 +2767,8 @@ defaults:
           vtep6: true
     nxos:
       description: Cisco Nexus 9300v
+      support:
+        level: best-effort
       interface_name: Ethernet1/{ifindex}
       mgmt_if: mgmt0
       loopback_interface_name: loopback{ifindex}
@@ -2796,6 +2839,8 @@ defaults:
         icon: nexus5000
     openbsd:
       description: OpenBSD
+      support:
+        level: best-effort
       interface_name: vio{ifindex}
       loopback_interface_name: lo{ifindex}
       ifindex_offset: 1
@@ -2837,6 +2882,8 @@ defaults:
         icon: server
     routeros:
       description: Mikrotik RouterOS version 6
+      support:
+        level: obsolete
       interface_name: ether{ifindex}
       mgmt_if: ether1
       ifindex_offset: 2
@@ -2870,6 +2917,8 @@ defaults:
         icon: router
     routeros7:
       description: Mikrotik RouterOS version 7
+      support:
+        level: minimal
       interface_name: ether{ifindex}
       mgmt_if: ether1
       loopback_interface_name: loopback{ifindex}
@@ -2914,6 +2963,8 @@ defaults:
         icon: router
     sonic:
       description: Sonic VM
+      support:
+        level: minimal
       interface_name: Ethernet{ifindex * 4}
       ifindex_offset: 0
       mgmt_if: eth0
@@ -3212,6 +3263,7 @@ defaults:
         icon: router
     unknown:
       description: Generic Unknown Device
+      _meta_device: true
       interface_name: eth{ifindex}
       mgmt_if: eth0
       graphite:
@@ -3234,6 +3286,7 @@ defaults:
         vxlan: {}
     vjunos-router:
       description: vJunos Router (similar to vMX)
+      _meta_device: true
       loopback_interface_name: lo0.{ifindex}
       ifindex_offset: 0
       interface_name: ge-0/0/{ifindex}
@@ -3327,6 +3380,7 @@ defaults:
         icon: router
     vjunos-switch:
       description: vJunos Switch
+      _meta_device: true
       loopback_interface_name: lo0.{ifindex}
       ifindex_offset: 0
       interface_name: ge-0/0/{ifindex}
@@ -3423,6 +3477,7 @@ defaults:
         icon: switch
     vmx:
       description: Juniper vMX container
+      _meta_device: true
       loopback_interface_name: lo0.{ifindex}
       ifindex_offset: 0
       interface_name: ge-0/0/{ifindex}
@@ -3499,6 +3554,10 @@ defaults:
           native_routed: true
       external:
         image: none
+      support:
+        level: best-effort
+        caveats:
+        - vMX gets all new Junos features, but we don't test them on vMX
       clab:
         image: vrnetlab/vr-vmx:18.2R1.9
         build: https://containerlab.dev/manual/kinds/vr-vmx/
@@ -3510,6 +3569,7 @@ defaults:
         icon: router
     vptx:
       description: Juniper vPTX
+      _meta_device: true
       loopback_interface_name: lo0.{ifindex}
       ifindex_offset: 0
       interface_name: et-0/0/{ifindex}
@@ -3605,6 +3665,7 @@ defaults:
         icon: switch
     vsrx:
       description: Juniper vSRX 3.0
+      _meta_device: true
       loopback_interface_name: lo0.{ifindex}
       ifindex_offset: 0
       interface_name: ge-0/0/{ifindex}
@@ -3678,6 +3739,10 @@ defaults:
           native_routed: true
       external:
         image: none
+      support:
+        level: best-effort
+        caveats:
+        - vSRX gets all new Junos features, but we don't test them on vSRX
       virtualbox:
         image: juniper/vsrx3
       libvirt:
@@ -3708,6 +3773,7 @@ defaults:
       description: VyOS VM/container
       interface_name: eth{ifindex}
       loopback_interface_name: dum{ifindex}
+      lag_interface_name: bond{lag.ifindex}
       mgmt_if: eth0
       libvirt:
         image: vyos/current
@@ -3742,6 +3808,8 @@ defaults:
           protocol:
           - vrrp
         isis: {}
+        lag:
+          passive: false
         mpls:
           ldp: true
           vpn:
@@ -4385,13 +4453,13 @@ defaults:
     suzieq:
       runtime: docker
       docker:
-        up: docker run --rm -itd --name '{name}_suzieq' {sys.docker_net} -v 
-          '{name}_suzieq':/parquet -v './suzieq':/suzieq netenglabs/suzieq-demo 
-          -c 'sq-poller -I /suzieq/suzieq-inventory.yml'
+        up: docker run -itd --name '{name}_suzieq' {sys.docker_net} -v 
+          '{name}_suzieq_data':/parquet -v './suzieq':/suzieq 
+          netenglabs/suzieq-demo -c 'sq-poller -I /suzieq/suzieq-inventory.yml'
         message: Use 'netlab connect suzieq' to start SuzieQ CLI
         connect: docker exec -it '{name}_suzieq' /usr/local/bin/suzieq-cli
-        down: docker kill '{name}_suzieq'
-        cleanup: docker volume rm '{name}_suzieq'
+        down: docker kill '{name}_suzieq'; docker rm '{name}_suzieq'
+        cleanup: docker volume rm '{name}_suzieq_data'
       config:
       - dest: suzieq-inventory.yml
         template: suzieq.inventory.j2
@@ -5141,6 +5209,12 @@ defaults:
       unmanaged_device: Netlab uses the node device type for unmanaged nodes to 
         figure out what features the node supports. If you're using a device 
         that is not supported by netlab, set the device type to 'none'.
+    support:
+      best-effort: While a core contributor might still work on the platform, we
+        don't run integration tests
+      minimal: Don't expect too much (particularly new functionality)
+      obsolete: These platforms are still part of the netlab package because the
+        storage prices keep falling
   multilab:
     change:
       name: ml_17
@@ -6041,11 +6115,14 @@ defaults:
       dnsmasq: true
       eos: true
       frr: true
+      ioll2: true
+      iosvl2: true
       linux: true
       none: true
       vjunos-switch: true
       vptx: true
       vsrx: true
+      vyos: true
   mpls:
     config_after:
     - vlan
