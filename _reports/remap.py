@@ -86,11 +86,12 @@ def remap_results(results: Box, remap: typing.Optional[Box] = None, path: str = 
     remap = Box.from_yaml(filename=f'map-tests.yml',default_box=True,box_dots=True)
 
   for k in list(remap.keys()):
-    remap_path = f'{path}.{k}' if path else k
+    f_path = f'{path}.{k}' if path else k
+    remap_path = remap[k].get('from',f_path)
     if 'title' in remap[k]:
       remap_summary(results,remap[k],remap_path)
       remap_batches(remap[k])
-      remap[k]._path = f'coverage.{remap_path}'
+      remap[k]._path = f'coverage.{f_path}'
     elif isinstance(remap[k],Box):
       remap[k] = remap_results(results,remap[k],remap_path)
       for kw in remap[k].keys():
