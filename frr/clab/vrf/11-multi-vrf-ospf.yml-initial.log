@@ -1,106 +1,261 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
+ok: [dut]
 ok: [r1]
 ok: [r2]
 ok: [r3]
 ok: [r4]
-ok: [dut]
 
 TASK [Find device readiness script] ********************************************
+ok: [dut]
 ok: [r1]
 ok: [r2]
 ok: [r3]
 ok: [r4]
-ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
+skipping: [dut]
 skipping: [r1]
 skipping: [r2]
 skipping: [r3]
 skipping: [r4]
-skipping: [dut]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for r1, r2, r3, r4, dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [dut]
 ok: [r1]
 ok: [r2]
 ok: [r3]
 ok: [r4]
-ok: [dut]
 
 TASK [Find configuration template for normalize] *******************************
+ok: [dut]
 ok: [r1]
 ok: [r2]
 ok: [r3]
 ok: [r4]
-ok: [dut]
 
 TASK [fail] ********************************************************************
+skipping: [dut]
 skipping: [r1]
 skipping: [r2]
 skipping: [r3]
 skipping: [r4]
-skipping: [dut]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [dut]
 ok: [r1]
 ok: [r2]
 ok: [r3]
-ok: [dut]
 ok: [r4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
 skipping: [r1]
 skipping: [r2]
 skipping: [r3]
 skipping: [r4]
-skipping: [dut]
 
 TASK [Deploy normalize configuration] ******************************************
+skipping: [dut]
 skipping: [r1]
 skipping: [r2]
 skipping: [r3]
 skipping: [r4]
-skipping: [dut]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for r1, r2, r3, r4, dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4
 
 TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [dut]
 ok: [r1]
 ok: [r2]
 ok: [r3]
 ok: [r4]
-ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
-ok: [r1]
-ok: [r2]
-ok: [r3]
-ok: [r4]
 ok: [dut]
+ok: [r1]
+ok: [r3]
+ok: [r2]
+ok: [r4]
 
 TASK [fail] ********************************************************************
+skipping: [dut]
 skipping: [r1]
 skipping: [r2]
 skipping: [r3]
 skipping: [r4]
-skipping: [dut]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [dut]
 ok: [r1]
 ok: [r2]
 ok: [r3]
 ok: [r4]
-ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+    if [ ! -e /sys/class/net/lo1 ]; then
+      if [ ! -e /sys/devices/virtual/net/lo1 ]; then
+        ip link add lo1 type dummy
+        ip link set dev lo1 up
+      fi
+    fi
+    if [ ! -e /sys/class/net/lo2 ]; then
+      if [ ! -e /sys/devices/virtual/net/lo2 ]; then
+        ip link add lo2 type dummy
+        ip link set dev lo2 up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+    ip link set eth2 down
+    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+    ip link set dev eth2 mtu 1500
+    ip link set eth2 up
+    ip link set eth3 down
+    sysctl -qw net.ipv6.conf.eth3.disable_ipv6=1
+    ip link set dev eth3 mtu 1500
+    ip link set eth3 up
+    ip link set eth4 down
+    sysctl -qw net.ipv6.conf.eth4.disable_ipv6=1
+    ip link set dev eth4 mtu 1500
+    ip link set eth4 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname dut
+    !
+    ip forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.1/32
+    !
+    interface eth1
+     no shutdown
+     description dut -> r1
+     ip address 10.1.0.1/30
+    !
+    interface eth2
+     no shutdown
+     description dut -> r2
+     ip address 10.1.0.5/30
+    !
+    interface eth3
+     no shutdown
+     description dut -> r3
+     ip address 10.1.0.9/30
+    !
+    interface eth4
+     no shutdown
+     description dut -> r4
+     ip address 10.1.0.13/30
+    !
+    interface lo1
+     no shutdown
+     description VRF Loopback red
+     ip address 10.2.0.1/32
+    !
+    interface lo2
+     no shutdown
+     description VRF Loopback blue
+     ip address 10.2.0.2/32
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
 ok: [r1] => 
   msg: |-
     initial configuration for r1
@@ -305,259 +460,6 @@ ok: [r2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [r3] => 
-  msg: |-
-    initial configuration for r3
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)# "
-    echo
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
-    #
-    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
-    #
-    sysctl -w net.ipv4.ip_forward=1
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    # Set system defaults
-    #
-    # Send ARP requests from a sane source IP address
-    #
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Create loopbacks, stub and lag/bond devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    ip link set eth1 down
-    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
-    ip link set eth1 up
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-  
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname r3
-    !
-    ip forwarding
-    vrf mgmt
-     exit-vrf
-    !
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ip address 10.0.0.4/32
-    !
-    interface eth1
-     no shutdown
-     description r3 -> dut
-     ip address 10.1.0.10/30
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)# "
-    echo
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
-    #
-    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
-    #
-    sysctl -w net.ipv4.ip_forward=1
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    # Set system defaults
-    #
-    # Send ARP requests from a sane source IP address
-    #
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Create loopbacks, stub and lag/bond devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-    if [ ! -e /sys/class/net/lo1 ]; then
-      if [ ! -e /sys/devices/virtual/net/lo1 ]; then
-        ip link add lo1 type dummy
-        ip link set dev lo1 up
-      fi
-    fi
-    if [ ! -e /sys/class/net/lo2 ]; then
-      if [ ! -e /sys/devices/virtual/net/lo2 ]; then
-        ip link add lo2 type dummy
-        ip link set dev lo2 up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    ip link set eth1 down
-    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
-    ip link set eth1 up
-    ip link set eth2 down
-    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
-    ip link set dev eth2 mtu 1500
-    ip link set eth2 up
-    ip link set eth3 down
-    sysctl -qw net.ipv6.conf.eth3.disable_ipv6=1
-    ip link set dev eth3 mtu 1500
-    ip link set eth3 up
-    ip link set eth4 down
-    sysctl -qw net.ipv6.conf.eth4.disable_ipv6=1
-    ip link set dev eth4 mtu 1500
-    ip link set eth4 up
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-  
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname dut
-    !
-    ip forwarding
-    vrf mgmt
-     exit-vrf
-    !
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ip address 10.0.0.1/32
-    !
-    interface eth1
-     no shutdown
-     description dut -> r1
-     ip address 10.1.0.1/30
-    !
-    interface eth2
-     no shutdown
-     description dut -> r2
-     ip address 10.1.0.5/30
-    !
-    interface eth3
-     no shutdown
-     description dut -> r3
-     ip address 10.1.0.9/30
-    !
-    interface eth4
-     no shutdown
-     description dut -> r4
-     ip address 10.1.0.13/30
-    !
-    interface lo1
-     no shutdown
-     description VRF Loopback red
-     ip address 10.2.0.1/32
-    !
-    interface lo2
-     no shutdown
-     description VRF Loopback blue
-     ip address 10.2.0.2/32
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
 ok: [r4] => 
   msg: |-
     initial configuration for r4
@@ -660,50 +562,152 @@ ok: [r4] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [r3] => 
+  msg: |-
+    initial configuration for r3
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname r3
+    !
+    ip forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.4/32
+    !
+    interface eth1
+     no shutdown
+     description r3 -> dut
+     ip address 10.1.0.10/30
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for r1, r2, r3, r4, dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for dut, r1, r2, r3, r4
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [r1 -> localhost]
+changed: [dut -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
+skipping: [dut]
 skipping: [r1]
 skipping: [r2]
 skipping: [r3]
 skipping: [r4]
-skipping: [dut]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, r3, r4, dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for dut, r1, r2, r3, r4
 
 TASK [template] ****************************************************************
+changed: [r2]
 changed: [r3]
 changed: [dut]
 changed: [r4]
-changed: [r2]
 changed: [r1]
 
 TASK [set_fact] ****************************************************************
+ok: [dut]
 ok: [r1]
 ok: [r2]
-ok: [r3]
-ok: [dut]
 ok: [r4]
+ok: [r3]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [r1]
+changed: [dut]
 changed: [r4]
 changed: [r3]
 changed: [r2]
-changed: [dut]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+skipping: [dut]
 skipping: [r1]
 skipping: [r2]
 skipping: [r3]
 skipping: [r4]
-skipping: [dut]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -809,34 +813,6 @@ ok: [r2] =>
   
     !
     do write
-ok: [r3] => 
-  msg: |-
-    ospf configuration for r3
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.4
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.3
-    !
-    interface eth1
-    ! r3 -> dut
-     ip ospf area 0.0.0.3
-     ip ospf network point-to-point
-    !
-  
-    !
-    do write
 ok: [r4] => 
   msg: |-
     ospf configuration for r4
@@ -865,6 +841,34 @@ ok: [r4] =>
   
     !
     do write
+ok: [r3] => 
+  msg: |-
+    ospf configuration for r3
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.4
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.3
+    !
+    interface eth1
+    ! r3 -> dut
+     ip ospf area 0.0.0.3
+     ip ospf network point-to-point
+    !
+  
+    !
+    do write
 
 TASK [Deploy ospf configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for dut, r1, r2, r3, r4
@@ -872,9 +876,9 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for
 TASK [template] ****************************************************************
 changed: [r3]
 changed: [r2]
+changed: [r4]
 changed: [r1]
 changed: [dut]
-changed: [r4]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
@@ -892,10 +896,10 @@ skipping: [r4]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [dut]
-changed: [r3]
-changed: [r4]
 changed: [r1]
+changed: [r4]
 changed: [r2]
+changed: [r3]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [dut]
@@ -940,14 +944,14 @@ ok: [dut] =>
     #
   
     # Create VRF tables
-    if [ ! -e /sys/devices/virtual/net/blue ]; then
-    ip link add blue type vrf table 101
-    fi
-    ip link set blue up
     if [ ! -e /sys/devices/virtual/net/red ]; then
     ip link add red type vrf table 100
     fi
     ip link set red up
+    if [ ! -e /sys/devices/virtual/net/blue ]; then
+    ip link add blue type vrf table 101
+    fi
+    ip link set blue up
   
     # Move interfaces and loopbacks to vrfs
     sysctl -qw net.ipv6.conf.eth1.keep_addr_on_down=1
@@ -964,42 +968,13 @@ ok: [dut] =>
     ip link set lo2 master blue
   
     cat >/tmp/vrf_config <<CONFIG
-    vrf blue
-     exit-vrf
     vrf red
+     exit-vrf
+    vrf blue
      exit-vrf
     !
     router bgp 65000
     !
-    !
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf vrf blue
-     ospf router-id 10.0.0.1
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-     redistribute connected
-  
-    exit
-    !
-    interface eth3
-    ! dut -> r3
-     ip ospf area 0.0.0.3
-     ip ospf network point-to-point
-    !
-    interface eth4
-    ! dut -> r4
-     ip ospf area 0.0.0.4
-     ip ospf network point-to-point
-    !
-    interface lo2
-    ! VRF Loopback blue
-     ip ospf area 0.0.0.0
-    !
-  
     !
     !
     ! OSPFv2 FRR configuration
@@ -1027,6 +1002,35 @@ ok: [dut] =>
     interface lo1
     ! VRF Loopback red
      ip ospf area 0.0.0.2
+    !
+  
+    !
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf vrf blue
+     ospf router-id 10.0.0.1
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+     redistribute connected
+  
+    exit
+    !
+    interface eth3
+    ! dut -> r3
+     ip ospf area 0.0.0.3
+     ip ospf network point-to-point
+    !
+    interface eth4
+    ! dut -> r4
+     ip ospf area 0.0.0.4
+     ip ospf network point-to-point
+    !
+    interface lo2
+    ! VRF Loopback blue
+     ip ospf area 0.0.0.0
     !
   
     !
@@ -1059,8 +1063,8 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=35   changed=6    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
-r1                         : ok=29   changed=5    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
+dut                        : ok=36   changed=7    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
+r1                         : ok=28   changed=4    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
 r2                         : ok=28   changed=4    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
 r3                         : ok=28   changed=4    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
 r4                         : ok=28   changed=4    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   

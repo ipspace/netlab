@@ -1,3 +1,7 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -5,17 +9,17 @@ PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [l2]
-ok: [h2]
 ok: [h1]
 ok: [spine]
+ok: [h2]
 ok: [l1]
 
 TASK [Find device readiness script] ********************************************
 ok: [l2]
 ok: [h1]
 ok: [h2]
-ok: [l1]
 ok: [spine]
+ok: [l1]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [l2]
@@ -24,8 +28,8 @@ skipping: [h2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/eos-clab.yml for spine, l1
 
 TASK [Wait for cEOS SSH daemon to start] ***************************************
-ok: [spine]
 ok: [l1]
+ok: [spine]
 
 TASK [Normalize config on bridge-like devices] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for spine, l1, l2, h1, h2
@@ -53,8 +57,8 @@ skipping: [h2]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [l2]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 ok: [spine]
 ok: [l1]
 
@@ -97,8 +101,8 @@ TASK [eos_config: deploying normalize from /home/pipi/net101/tools/netsim/ansibl
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
 should be similar to how they appear if present in the running configuration on
 device including the indentation
-changed: [l1]
 changed: [spine]
+changed: [l1]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for spine, l1, l2, h1, h2
@@ -132,41 +136,6 @@ ok: [spine]
 ok: [l1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [h1] => 
-  msg: |-
-    initial configuration for h1
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Send ARP requests from a sane source IP address
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-  
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.31.1.4/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.31.1.4/24 dev eth1
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
 ok: [h2] => 
   msg: |-
     initial configuration for h2
@@ -200,6 +169,41 @@ ok: [h2] =>
     ip addr del 172.31.1.5/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.31.1.5/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+  
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.31.1.4/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.31.1.4/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
 ok: [l2] => 
@@ -335,10 +339,10 @@ ok: [spine] =>
     no ipv6 unicast-routing
     !
     !
-    ip host h1 172.31.1.4
-    ip host h2 172.31.1.5
     ip host l1 10.0.0.2
     ip host l2 10.0.0.3
+    ip host h1 172.31.1.4
+    ip host h2 172.31.1.5
     !
     interface Management0
      no lldp transmit
@@ -383,10 +387,10 @@ ok: [l1] =>
     no ipv6 unicast-routing
     !
     !
+    ip host spine 10.0.0.1
+    ip host l2 10.0.0.3
     ip host h1 172.31.1.4
     ip host h2 172.31.1.5
-    ip host l2 10.0.0.3
-    ip host spine 10.0.0.1
     !
     interface Management0
      no lldp transmit
@@ -468,61 +472,61 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-l4ywdu36.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-zwj7722h.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
+ok: [l2]
 ok: [h1]
 ok: [h2]
-ok: [l2]
 ok: [l1]
 ok: [spine]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, l1, l2, spine => (item=vlan)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, l1, l2, spine => (item=routing)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, l1, l2, spine => (item=bgp)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, l1, l2, spine => (item=vxlan)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, l1, l2, spine => (item=evpn)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for spine, l1, l2, h1, h2 => (item=vlan)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for spine, l1, l2, h1, h2 => (item=routing)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for spine, l1, l2, h1, h2 => (item=bgp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for spine, l1, l2, h1, h2 => (item=vxlan)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for spine, l1, l2, h1, h2 => (item=evpn)
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
+ok: [l2]
 ok: [h1]
 ok: [h2]
-ok: [l2]
-ok: [l1]
 ok: [spine]
+ok: [l1]
 
 TASK [Find configuration template for vlan] ************************************
+skipping: [spine]
 skipping: [h1]
 skipping: [h2]
-skipping: [spine]
 ok: [l2]
 ok: [l1]
 
 TASK [fail] ********************************************************************
-skipping: [h1]
-skipping: [h2]
+skipping: [spine]
 skipping: [l1]
 skipping: [l2]
-skipping: [spine]
-
-TASK [Find configuration deployment deploy_script for vlan] ********************
 skipping: [h1]
 skipping: [h2]
+
+TASK [Find configuration deployment deploy_script for vlan] ********************
 skipping: [spine]
+skipping: [h1]
+skipping: [h2]
 ok: [l2]
 ok: [l1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [spine]
 skipping: [h1]
 skipping: [h2]
-skipping: [spine]
 ok: [l2] => 
   msg: |-
     vlan configuration for l2
@@ -557,9 +561,9 @@ ok: [l1] =>
     interface Vlan1000
 
 TASK [Deploy vlan configuration] ***********************************************
+skipping: [spine]
 skipping: [h1]
 skipping: [h2]
-skipping: [spine]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for l1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
@@ -579,37 +583,37 @@ TASK [run vtysh to import vlan config from /home/pipi/net101/tools/netsim/ansibl
 skipping: [l2]
 
 TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [l2]
 ok: [h1]
 ok: [h2]
-ok: [l2]
-ok: [l1]
 ok: [spine]
+ok: [l1]
 
 TASK [Find configuration template for routing] *********************************
+skipping: [spine]
 skipping: [l1]
 skipping: [l2]
 ok: [h1]
-skipping: [spine]
 ok: [h2]
 
 TASK [fail] ********************************************************************
+skipping: [spine]
+skipping: [l1]
+skipping: [l2]
 skipping: [h1]
 skipping: [h2]
-skipping: [l1]
-skipping: [l2]
-skipping: [spine]
 
 TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [spine]
 skipping: [l1]
 skipping: [l2]
-skipping: [spine]
 ok: [h1]
 ok: [h2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [spine]
 skipping: [l1]
 skipping: [l2]
-skipping: [spine]
 ok: [h1] => 
   msg: |-
     routing configuration for h1
@@ -642,9 +646,9 @@ ok: [h2] =>
     ip route
 
 TASK [Deploy routing configuration] ********************************************
+skipping: [spine]
 skipping: [l1]
 skipping: [l2]
-skipping: [spine]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
 
 TASK [Define script filename and determine whether to execute in netns] ********
@@ -668,40 +672,40 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Container configuration for routing based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-w8raci2s.sh] ***********************
-changed: [h1 -> localhost]
+TASK [Remove temporary file /tmp/h1_routing-r__acn03.sh] ***********************
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
+ok: [l2]
 ok: [h1]
 ok: [h2]
-ok: [l2]
-ok: [l1]
 ok: [spine]
+ok: [l1]
 
 TASK [Find configuration template for bgp] *************************************
 skipping: [h1]
 skipping: [h2]
 ok: [l2]
-ok: [l1]
 ok: [spine]
+ok: [l1]
 
 TASK [fail] ********************************************************************
-skipping: [h1]
-skipping: [h2]
+skipping: [spine]
 skipping: [l1]
 skipping: [l2]
-skipping: [spine]
+skipping: [h1]
+skipping: [h2]
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 skipping: [h1]
 skipping: [h2]
 ok: [l2]
-ok: [l1]
 ok: [spine]
+ok: [l1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
@@ -716,7 +720,6 @@ ok: [l2] =>
       no bgp default ipv4-unicast
       bgp default show-hostname
       bgp default show-nexthop-hostname
-  
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
@@ -742,41 +745,6 @@ ok: [l2] =>
     !
     !
     do write
-ok: [l1] => 
-  msg: |-
-    bgp configuration for l1
-    =========================================
-    !
-    ipv6 unicast-routing
-    ip routing ipv6 interfaces
-    !
-    interface Ethernet1
-      ipv6 enable
-    !
-    !
-    router bgp 65201
-      bgp advertise-inactive
-      bgp log-neighbor-changes
-      no bgp default ipv4-unicast
-      no bgp default ipv6-unicast
-      router-id 10.0.0.2
-    !
-      neighbor ebgp_intf_Ethernet1 peer group
-      neighbor interface Ethernet1 peer-group ebgp_intf_Ethernet1
-      neighbor ebgp_intf_Ethernet1 remote-as 65100
-      neighbor ebgp_intf_Ethernet1 description spine
-      neighbor ebgp_intf_Ethernet1 send-community standard extended large
-    !
-    !
-     address-family ipv4
-  
-      network 10.0.0.2/32
-    !
-    !
-    !
-      neighbor ebgp_intf_Ethernet1 activate
-      neighbor ebgp_intf_Ethernet1 next-hop address-family ipv6 originate
-    !
 ok: [spine] => 
   msg: |-
     bgp configuration for spine
@@ -823,11 +791,46 @@ ok: [spine] =>
       neighbor ebgp_intf_Ethernet2 activate
       neighbor ebgp_intf_Ethernet2 next-hop address-family ipv6 originate
     !
+ok: [l1] => 
+  msg: |-
+    bgp configuration for l1
+    =========================================
+    !
+    ipv6 unicast-routing
+    ip routing ipv6 interfaces
+    !
+    interface Ethernet1
+      ipv6 enable
+    !
+    !
+    router bgp 65201
+      bgp advertise-inactive
+      bgp log-neighbor-changes
+      no bgp default ipv4-unicast
+      no bgp default ipv6-unicast
+      router-id 10.0.0.2
+    !
+      neighbor ebgp_intf_Ethernet1 peer group
+      neighbor interface Ethernet1 peer-group ebgp_intf_Ethernet1
+      neighbor ebgp_intf_Ethernet1 remote-as 65100
+      neighbor ebgp_intf_Ethernet1 description spine
+      neighbor ebgp_intf_Ethernet1 send-community standard extended large
+    !
+    !
+     address-family ipv4
+  
+      network 10.0.0.2/32
+    !
+    !
+    !
+      neighbor ebgp_intf_Ethernet1 activate
+      neighbor ebgp_intf_Ethernet1 next-hop address-family ipv6 originate
+    !
 
 TASK [Deploy bgp configuration] ************************************************
 skipping: [h1]
 skipping: [h2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for l1, spine
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for spine, l1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
 TASK [eos_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/eos.j2] ***
@@ -847,37 +850,37 @@ TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible
 changed: [l2]
 
 TASK [Figure out whether to deploy the module vxlan on current device] *********
+ok: [l2]
 ok: [h1]
 ok: [h2]
-ok: [l2]
-ok: [l1]
 ok: [spine]
+ok: [l1]
 
 TASK [Find configuration template for vxlan] ***********************************
+skipping: [spine]
 skipping: [h1]
 skipping: [h2]
-skipping: [spine]
 ok: [l2]
 ok: [l1]
 
 TASK [fail] ********************************************************************
-skipping: [h1]
-skipping: [h2]
+skipping: [spine]
 skipping: [l1]
 skipping: [l2]
-skipping: [spine]
-
-TASK [Find configuration deployment deploy_script for vxlan] *******************
 skipping: [h1]
 skipping: [h2]
+
+TASK [Find configuration deployment deploy_script for vxlan] *******************
 skipping: [spine]
+skipping: [h1]
+skipping: [h2]
 ok: [l2]
 ok: [l1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [spine]
 skipping: [h1]
 skipping: [h2]
-skipping: [spine]
 ok: [l2] => 
   msg: |-
     vxlan configuration for l2
@@ -922,9 +925,9 @@ ok: [l1] =>
       vxlan vlan 1000 vni 1000
 
 TASK [Deploy vxlan configuration] **********************************************
+skipping: [spine]
 skipping: [h1]
 skipping: [h2]
-skipping: [spine]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for l1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
@@ -944,32 +947,32 @@ TASK [run vtysh to import vxlan config from /home/pipi/net101/tools/netsim/ansib
 skipping: [l2]
 
 TASK [Figure out whether to deploy the module evpn on current device] **********
+ok: [l2]
 ok: [h1]
 ok: [h2]
-ok: [l2]
-ok: [l1]
 ok: [spine]
+ok: [l1]
 
 TASK [Find configuration template for evpn] ************************************
 skipping: [h1]
 skipping: [h2]
 ok: [l2]
-ok: [l1]
 ok: [spine]
+ok: [l1]
 
 TASK [fail] ********************************************************************
-skipping: [h1]
-skipping: [h2]
+skipping: [spine]
 skipping: [l1]
 skipping: [l2]
-skipping: [spine]
+skipping: [h1]
+skipping: [h2]
 
 TASK [Find configuration deployment deploy_script for evpn] ********************
 skipping: [h1]
 skipping: [h2]
 ok: [l2]
-ok: [l1]
 ok: [spine]
+ok: [l1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
@@ -1009,6 +1012,16 @@ ok: [l2] =>
     CONFIG
     vtysh -f /tmp/evpn_config
     vtysh -c 'clear bgp *'
+ok: [spine] => 
+  msg: |-
+    evpn configuration for spine
+    =========================================
+    !
+    router bgp 65100
+     address-family evpn
+    !
+      neighbor ebgp_intf_Ethernet1 activate
+      neighbor ebgp_intf_Ethernet2 activate
 ok: [l1] => 
   msg: |-
     evpn configuration for l1
@@ -1024,21 +1037,11 @@ ok: [l1] =>
       route-target import 65000:1000
       route-target export 65000:1000
       redistribute learned
-ok: [spine] => 
-  msg: |-
-    evpn configuration for spine
-    =========================================
-    !
-    router bgp 65100
-     address-family evpn
-    !
-      neighbor ebgp_intf_Ethernet1 activate
-      neighbor ebgp_intf_Ethernet2 activate
 
 TASK [Deploy evpn configuration] ***********************************************
 skipping: [h1]
 skipping: [h2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for l1, spine
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for spine, l1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
 TASK [eos_config: deploying evpn from /home/pipi/net101/tools/netsim/ansible/templates/evpn/eos.j2] ***

@@ -22,7 +22,8 @@
 {#
    Display summary test result with pointer to the next HTML file
 #}
-{% macro suite_result(t_data,cnt,txt,show_final = False) %}
+{% macro suite_result(t_data,cnt,txt,wcnt_name = '',show_final = False) %}
+{%   set warning = ('warning_' + (wcnt_name or cnt)) in t_data._count %}
 {%   set pass_mark = 
        cnt not in t_data.count and not show_final or
        show_final and 'pass' in t_data._count and cnt not in t_data._count and 'caveat' not in t_data._count %}
@@ -34,10 +35,10 @@
     if show_final and 'caveat' in t_data._count 
   %}{% if has_data %}, {% endif %}{{ t_data._count.caveat }} caveat(s){% endif %}{%
     if show_final and 'pass' in t_data._count %}, {{ t_data._count.pass }} passed{% endif %}
+{%   elif warning %}
+  <span style='color: orange;'>&#x2714;</span>
 {%   elif not show_final %}
   &#x2705;
-{%   elif show_final and 'warning' in t_data._count %}
-  <span style='color: orange;'>&#x2714;</span>
 {%   elif show_final and 'pass' in t_data._count %}
   &#x2705;
 {%   endif %}
@@ -52,7 +53,7 @@
   <a href="../{{ results._path }}/{{ t_name }}.yml-{{ fname }}.log">
 {% if not(t_data[cnt]) %}
     &#x274C;{{ ' (more)' if cnt == 'validate' }}
-{% elif cnt == 'validate' and t_data[cnt] == 'warning' %}
+{% elif t_data[cnt] is not true and 'warning' in t_data[cnt] %}
     <span style='color: orange;'>&#x2714;</span>
 {% else %}
     &#x2705;
@@ -85,15 +86,15 @@
 {%   if '_path' in t_data %}
   <tr>
     <td><a href="{{ t_data._path.replace('/','-') }}.html">{{ test.replace('#','.') }}</a></td>
-    {{ suite_result(t_data,'unsupported','not supported') }}
+    {{ suite_result(t_data,'unsupported','not supported',wcnt_name='create') }}
     {{ suite_result(t_data,'up','crashed') }}
     {{ suite_result(t_data,'config','configuration failed') }}
-    {{ suite_result(t_data,'validate','validation failed',True) }}
+    {{ suite_result(t_data,'validate','validation failed',show_final=True) }}
   </tr>
 {%   else %}
 {%     set testurl = (github_url + data_path[2] + "/" + test + ".yml") if data_path|length > 2 else "" %}
 {%     set tname = coverage.get(data_path[-1],{}).get('tests',{}).get(test,'').replace('<br>',' ') %}
-{%     if data_path[0] == 'platform' %}
+{%     if data_path[0] == 'platform' and data_path|length > 1 %}
 {%       set github_url = "https://github.com/ipspace/netlab/blob/dev/tests/platform-integration/" %}
 {%       set testurl = github_url + data_path[1] + "/" + test + ".yml" %}
 {%     endif %}

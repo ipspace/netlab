@@ -1,3 +1,7 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -28,8 +32,8 @@ ok: [l1]
 ok: [spine]
 
 TASK [Wait up to 180s for gNMI(TCP 57400) to be ready on clab-ml_17-spine] *****
-ok: [spine -> localhost]
 ok: [l1 -> localhost]
+ok: [spine -> localhost]
 
 TASK [Normalize config on bridge-like devices] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for spine, l1, l2, h1, h2
@@ -59,8 +63,8 @@ TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [spine]
@@ -90,8 +94,8 @@ TASK [Find configuration template for initial] *********************************
 ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 
 TASK [fail] ********************************************************************
 skipping: [spine]
@@ -104,45 +108,10 @@ TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [h2] => 
-  msg: |-
-    initial configuration for h2
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Send ARP requests from a sane source IP address
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-  
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.31.1.5/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.31.1.5/24 dev eth1
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
 ok: [h1] => 
   msg: |-
     initial configuration for h1
@@ -176,6 +145,41 @@ ok: [h1] =>
     ip addr del 172.31.1.4/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.31.1.4/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+  
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.31.1.5/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.31.1.5/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
 ok: [l2] => 
@@ -294,68 +298,11 @@ ok: [l2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [l1] => 
-  msg: |-
-    initial configuration for l1
-    =========================================
-  
-  
-  
-  
-    updates:
-  
-    - path: configure/router[router-name=Base]
-      val:
-       ecmp: 64
-  
-  
-  
-  
-  
-  
-    - path: configure/router[router-name=Base]/interface[interface-name=system]
-  
-      val:
-       admin-state: enable
-       description: "System interface"
-       ipv4:
-        primary:
-         address: "10.0.0.2"
-         prefix-length: 32
-  
-  
-  
-  
-  
-    - path: configure/port[port-id=1/1/c1]
-      val:
-       admin-state: enable
-       connector:
-        breakout: "c1-100g"
-    - path: configure/port[port-id=1/1/c1/1]
-      val:
-       admin-state: enable
-       ethernet:
-        mtu: 1614 # max 9800
-        mode: network
-  
-  
-  
-    - path: configure/router[router-name=Base]/interface[interface-name=eth-1/1/c1]
-  
-      val:
-       admin-state: enable
-       description: "l1 ~ spine (external)"
-       ip-mtu: 1600
-       port: "1/1/c1/1"
-       ipv4:
-        primary:
-         address: "10.1.0.1"
-         prefix-length: 30
 ok: [spine] => 
   msg: |-
     initial configuration for spine
     =========================================
+  
   
   
   
@@ -440,6 +387,65 @@ ok: [spine] =>
         primary:
          address: "10.1.0.6"
          prefix-length: 30
+ok: [l1] => 
+  msg: |-
+    initial configuration for l1
+    =========================================
+  
+  
+  
+  
+  
+    updates:
+  
+    - path: configure/router[router-name=Base]
+      val:
+       ecmp: 64
+  
+  
+  
+  
+  
+  
+    - path: configure/router[router-name=Base]/interface[interface-name=system]
+  
+      val:
+       admin-state: enable
+       description: "System interface"
+       ipv4:
+        primary:
+         address: "10.0.0.2"
+         prefix-length: 32
+  
+  
+  
+  
+  
+    - path: configure/port[port-id=1/1/c1]
+      val:
+       admin-state: enable
+       connector:
+        breakout: "c1-100g"
+    - path: configure/port[port-id=1/1/c1/1]
+      val:
+       admin-state: enable
+       ethernet:
+        mtu: 1614 # max 9800
+        mode: network
+  
+  
+  
+    - path: configure/router[router-name=Base]/interface[interface-name=eth-1/1/c1]
+  
+      val:
+       admin-state: enable
+       description: "l1 ~ spine (external)"
+       ip-mtu: 1600
+       port: "1/1/c1/1"
+       ipv4:
+        primary:
+         address: "10.1.0.1"
+         prefix-length: 30
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for spine, l1
@@ -451,8 +457,8 @@ ok: [spine]
 ok: [l1]
 
 TASK [Update initial node configuration from gNMI template /home/pipi/net101/tools/netsim/ansible/templates/initial/sros.j2] ***
-changed: [spine]
 changed: [l1]
+changed: [spine]
 
 TASK [debug] *******************************************************************
 skipping: [spine]
@@ -484,8 +490,8 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
@@ -503,58 +509,58 @@ TASK [Container configuration for initial based on /home/pipi/net101/tools/netsi
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-hmkx4wb6.sh] ***********************
-changed: [h2 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-h4gbp_3e.sh] ***********************
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [l1]
 ok: [spine]
+ok: [l1]
+ok: [l2]
 ok: [h1]
 ok: [h2]
-ok: [l2]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, l1, l2, spine => (item=vlan)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, l1, l2, spine => (item=routing)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, l1, l2, spine => (item=bgp)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, l1, l2, spine => (item=vxlan)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, l1, l2, spine => (item=evpn)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for spine, l1, l2, h1, h2 => (item=vlan)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for spine, l1, l2, h1, h2 => (item=routing)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for spine, l1, l2, h1, h2 => (item=bgp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for spine, l1, l2, h1, h2 => (item=vxlan)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for spine, l1, l2, h1, h2 => (item=evpn)
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
-ok: [h1]
-ok: [h2]
+ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [spine]
+ok: [h1]
+ok: [h2]
 
 TASK [Find configuration template for vlan] ************************************
-skipping: [h1]
-skipping: [h2]
 skipping: [spine]
+skipping: [h1]
 ok: [l1]
+skipping: [h2]
 ok: [l2]
 
 TASK [fail] ********************************************************************
-skipping: [h1]
-skipping: [h2]
+skipping: [spine]
 skipping: [l1]
 skipping: [l2]
-skipping: [spine]
-
-TASK [Find configuration deployment deploy_script for vlan] ********************
 skipping: [h1]
 skipping: [h2]
+
+TASK [Find configuration deployment deploy_script for vlan] ********************
 skipping: [spine]
+skipping: [h1]
+skipping: [h2]
 ok: [l1]
 ok: [l2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [spine]
 skipping: [h1]
 skipping: [h2]
-skipping: [spine]
 ok: [l2] => 
   msg: |-
     vlan configuration for l2
@@ -615,9 +621,9 @@ ok: [l1] =>
        admin-state: enable
 
 TASK [Deploy vlan configuration] ***********************************************
+skipping: [spine]
 skipping: [h1]
 skipping: [h2]
-skipping: [spine]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for l1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
@@ -643,37 +649,37 @@ TASK [run vtysh to import vlan config from /home/pipi/net101/tools/netsim/ansibl
 skipping: [l2]
 
 TASK [Figure out whether to deploy the module routing on current device] *******
-ok: [h1]
-ok: [h2]
+ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [spine]
+ok: [h1]
+ok: [h2]
 
 TASK [Find configuration template for routing] *********************************
+skipping: [spine]
 skipping: [l1]
 skipping: [l2]
 ok: [h1]
-skipping: [spine]
 ok: [h2]
 
 TASK [fail] ********************************************************************
+skipping: [spine]
+skipping: [l1]
+skipping: [l2]
 skipping: [h1]
 skipping: [h2]
-skipping: [l1]
-skipping: [l2]
-skipping: [spine]
 
 TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [spine]
 skipping: [l1]
 skipping: [l2]
-skipping: [spine]
 ok: [h1]
 ok: [h2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [spine]
 skipping: [l1]
 skipping: [l2]
-skipping: [spine]
 ok: [h1] => 
   msg: |-
     routing configuration for h1
@@ -706,9 +712,9 @@ ok: [h2] =>
     ip route
 
 TASK [Deploy routing configuration] ********************************************
+skipping: [spine]
 skipping: [l1]
 skipping: [l2]
-skipping: [spine]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
 
 TASK [Define script filename and determine whether to execute in netns] ********
@@ -735,216 +741,41 @@ TASK [Container configuration for routing based on /home/pipi/net101/tools/netsi
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-s23d5n7k.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-az8_vsk1.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
+ok: [spine]
+ok: [l1]
+ok: [l2]
 ok: [h1]
 ok: [h2]
-ok: [l1]
-ok: [spine]
-ok: [l2]
 
 TASK [Find configuration template for bgp] *************************************
-skipping: [h1]
-skipping: [h2]
-ok: [l1]
-ok: [l2]
 ok: [spine]
+skipping: [h1]
+ok: [l1]
+skipping: [h2]
+ok: [l2]
 
 TASK [fail] ********************************************************************
-skipping: [h1]
-skipping: [h2]
+skipping: [spine]
 skipping: [l1]
 skipping: [l2]
-skipping: [spine]
+skipping: [h1]
+skipping: [h2]
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 skipping: [h1]
 skipping: [h2]
+ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [spine]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
 skipping: [h2]
-ok: [l1] => 
-  msg: |-
-    bgp configuration for l1
-    =========================================
-  
-    updates:
-  
-    - path: configure/policy-options/policy-statement[name=accept_all]
-      val:
-        default-action:
-          action-type: accept
-  
-    - path: configure/policy-options/policy-statement[name=next-hop-self-ebgp-routes-only]
-      val:
-        entry:
-        - entry-id: 10
-          from:
-            path-type: ebgp
-          action:
-            action-type: accept
-            next-hop: self
-        default-action:
-          action-type: next-policy
-  
-  
-    - path: configure/policy-options/prefix-list[name=bgp_default_advertise]
-      val:
-        prefix: [] # Make sure it exists
-  
-    - path: configure/policy-options/policy-statement[name=bgp_default_export]
-      val:
-        default-action:
-          action-type: reject
-        entry:
-        - entry-id: 10
-          from:
-            prefix-list: [ "bgp_default_advertise" ]
-          action:
-            action-type: accept
-        - entry-id: 20
-          from:
-            protocol:
-              name: [ bgp ]
-          action:
-            action-type: accept
-  
-  
-    - path: configure/policy-options/prefix-list[name=bgp_default_advertise]
-      val:
-        prefix:
-        - ip-prefix: 10.0.0.2/32
-          type: exact
-  
-  
-  
-  
-    - path: configure/router[router-name=Base]
-      val:
-        router-id: "10.0.0.2"
-        autonomous-system: 65200
-        bgp:
-          ebgp-default-reject-policy:
-            import: False
-            export: False
-          multipath:
-            ibgp: 64
-            ebgp: 64
-          min-route-advertisement: 1 # Be aggressive about sending updates
-          connect-retry: 5           # Retry frequently, suitable in DC context
-        # family: cannot disable this
-        # ipv4: False # Enabled by default, disable globally and set per group
-  
-  
-  
-  
-    - path: configure/router[router-name=Base]/bgp/group[group-name=ebgp]
-      val:
-        admin-state: enable
-        family:
-          ipv4: True
-          ipv6: False
-  
-        import:
-          policy: ["accept_all"]
-        export:
-          policy:
-          - bgp_default_export
-  
-  
-    - path: configure/router[router-name=Base]/bgp
-      val:
-        neighbor:
-        - ip-address: "10.1.0.2"
-          description: "spine"
-          peer-as: 65100
-          group: "ebgp"
-          admin-state: enable
-          family:
-            ipv4: True
-            ipv6: False
-  
-  
-    - path: configure/router[router-name=Base]/bgp/group[group-name=ebgp]
-      val:
-        admin-state: enable
-        family:
-          ipv4: False
-          ipv6: False
-          evpn: True # Must have at least 1 address family enabled
-  
-        import:
-          policy: ["accept_all"]
-        export:
-          policy:
-          - bgp_default_export
-  
-  
-    - path: configure/router[router-name=Base]/bgp
-      val:
-        neighbor:
-        - ip-address: "10.0.0.1"
-          description: "spine"
-          peer-as: 65100
-          group: "ebgp"
-          admin-state: enable
-          family:
-            ipv4: False
-            ipv6: False
-            evpn: True # Must have at least 1 address family enabled
-ok: [l2] => 
-  msg: |-
-    bgp configuration for l2
-    =========================================
-    !
-    router bgp 65201
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.3
-    !
-      neighbor 10.1.0.6 remote-as 65100
-      neighbor 10.1.0.6 description spine
-    !
-      neighbor 10.0.0.1 remote-as 65100
-      neighbor 10.0.0.1 description spine
-      neighbor 10.0.0.1 update-source lo
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-      network 10.0.0.3/32
-    !
-    !
-    !
-      neighbor 10.1.0.6 activate
-      no neighbor 10.1.0.6 send-community all
-      neighbor 10.1.0.6 send-community standard
-      neighbor 10.1.0.6 send-community large
-      neighbor 10.1.0.6 send-community extended
-    !
-      neighbor 10.0.0.1 activate
-      no neighbor 10.0.0.1 send-community all
-      neighbor 10.0.0.1 send-community standard
-      neighbor 10.0.0.1 send-community large
-      neighbor 10.0.0.1 send-community extended
-    !
-    !
-    !
-    do write
 ok: [spine] => 
   msg: |-
     bgp configuration for spine
@@ -1130,24 +961,198 @@ ok: [spine] =>
             ipv4: False
             ipv6: False
             evpn: True # Must have at least 1 address family enabled
+ok: [l1] => 
+  msg: |-
+    bgp configuration for l1
+    =========================================
+  
+    updates:
+  
+    - path: configure/policy-options/policy-statement[name=accept_all]
+      val:
+        default-action:
+          action-type: accept
+  
+    - path: configure/policy-options/policy-statement[name=next-hop-self-ebgp-routes-only]
+      val:
+        entry:
+        - entry-id: 10
+          from:
+            path-type: ebgp
+          action:
+            action-type: accept
+            next-hop: self
+        default-action:
+          action-type: next-policy
+  
+  
+    - path: configure/policy-options/prefix-list[name=bgp_default_advertise]
+      val:
+        prefix: [] # Make sure it exists
+  
+    - path: configure/policy-options/policy-statement[name=bgp_default_export]
+      val:
+        default-action:
+          action-type: reject
+        entry:
+        - entry-id: 10
+          from:
+            prefix-list: [ "bgp_default_advertise" ]
+          action:
+            action-type: accept
+        - entry-id: 20
+          from:
+            protocol:
+              name: [ bgp ]
+          action:
+            action-type: accept
+  
+  
+    - path: configure/policy-options/prefix-list[name=bgp_default_advertise]
+      val:
+        prefix:
+        - ip-prefix: 10.0.0.2/32
+          type: exact
+  
+  
+  
+  
+    - path: configure/router[router-name=Base]
+      val:
+        router-id: "10.0.0.2"
+        autonomous-system: 65200
+        bgp:
+          ebgp-default-reject-policy:
+            import: False
+            export: False
+          multipath:
+            ibgp: 64
+            ebgp: 64
+          min-route-advertisement: 1 # Be aggressive about sending updates
+          connect-retry: 5           # Retry frequently, suitable in DC context
+        # family: cannot disable this
+        # ipv4: False # Enabled by default, disable globally and set per group
+  
+  
+  
+  
+    - path: configure/router[router-name=Base]/bgp/group[group-name=ebgp]
+      val:
+        admin-state: enable
+        family:
+          ipv4: True
+          ipv6: False
+  
+        import:
+          policy: ["accept_all"]
+        export:
+          policy:
+          - bgp_default_export
+  
+  
+    - path: configure/router[router-name=Base]/bgp
+      val:
+        neighbor:
+        - ip-address: "10.1.0.2"
+          description: "spine"
+          peer-as: 65100
+          group: "ebgp"
+          admin-state: enable
+          family:
+            ipv4: True
+            ipv6: False
+  
+  
+    - path: configure/router[router-name=Base]/bgp/group[group-name=ebgp]
+      val:
+        admin-state: enable
+        family:
+          ipv4: False
+          ipv6: False
+          evpn: True # Must have at least 1 address family enabled
+  
+        import:
+          policy: ["accept_all"]
+        export:
+          policy:
+          - bgp_default_export
+  
+  
+    - path: configure/router[router-name=Base]/bgp
+      val:
+        neighbor:
+        - ip-address: "10.0.0.1"
+          description: "spine"
+          peer-as: 65100
+          group: "ebgp"
+          admin-state: enable
+          family:
+            ipv4: False
+            ipv6: False
+            evpn: True # Must have at least 1 address family enabled
+ok: [l2] => 
+  msg: |-
+    bgp configuration for l2
+    =========================================
+    !
+    router bgp 65201
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.3
+    !
+      neighbor 10.1.0.6 remote-as 65100
+      neighbor 10.1.0.6 description spine
+    !
+      neighbor 10.0.0.1 remote-as 65100
+      neighbor 10.0.0.1 description spine
+      neighbor 10.0.0.1 update-source lo
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.3/32
+    !
+    !
+    !
+      neighbor 10.1.0.6 activate
+      no neighbor 10.1.0.6 send-community all
+      neighbor 10.1.0.6 send-community standard
+      neighbor 10.1.0.6 send-community large
+      neighbor 10.1.0.6 send-community extended
+    !
+      neighbor 10.0.0.1 activate
+      no neighbor 10.0.0.1 send-community all
+      neighbor 10.0.0.1 send-community standard
+      neighbor 10.0.0.1 send-community large
+      neighbor 10.0.0.1 send-community extended
+    !
+    !
+    !
+    do write
 
 TASK [Deploy bgp configuration] ************************************************
 skipping: [h1]
 skipping: [h2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for l1, spine
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for spine, l1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
 TASK [Generate gNMI YAML configuration] ****************************************
-ok: [l1]
 ok: [spine]
+ok: [l1]
 
 TASK [Update bgp node configuration from gNMI template /home/pipi/net101/tools/netsim/ansible/templates/bgp/sros.j2] ***
 changed: [l1]
 changed: [spine]
 
 TASK [debug] *******************************************************************
-skipping: [l1]
 skipping: [spine]
+skipping: [l1]
 
 TASK [template] ****************************************************************
 changed: [l2]
@@ -1162,37 +1167,37 @@ TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible
 changed: [l2]
 
 TASK [Figure out whether to deploy the module vxlan on current device] *********
+ok: [spine]
+ok: [l1]
+ok: [l2]
 ok: [h1]
 ok: [h2]
-ok: [l1]
-ok: [spine]
-ok: [l2]
 
 TASK [Find configuration template for vxlan] ***********************************
-skipping: [h1]
-skipping: [h2]
 skipping: [spine]
+skipping: [h1]
 ok: [l1]
+skipping: [h2]
 ok: [l2]
 
 TASK [fail] ********************************************************************
-skipping: [h1]
-skipping: [h2]
+skipping: [spine]
 skipping: [l1]
 skipping: [l2]
-skipping: [spine]
-
-TASK [Find configuration deployment deploy_script for vxlan] *******************
 skipping: [h1]
 skipping: [h2]
+
+TASK [Find configuration deployment deploy_script for vxlan] *******************
 skipping: [spine]
+skipping: [h1]
+skipping: [h2]
 ok: [l1]
 ok: [l2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [spine]
 skipping: [h1]
 skipping: [h2]
-skipping: [spine]
 ok: [l1] => 
   msg: |-
     vxlan configuration for l1
@@ -1245,9 +1250,9 @@ ok: [l2] =>
     exit $?
 
 TASK [Deploy vxlan configuration] **********************************************
+skipping: [spine]
 skipping: [h1]
 skipping: [h2]
-skipping: [spine]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for l1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
@@ -1273,36 +1278,55 @@ TASK [run vtysh to import vxlan config from /home/pipi/net101/tools/netsim/ansib
 skipping: [l2]
 
 TASK [Figure out whether to deploy the module evpn on current device] **********
-ok: [h1]
-ok: [l1]
-ok: [h2]
-ok: [l2]
 ok: [spine]
+ok: [l1]
+ok: [l2]
+ok: [h1]
+ok: [h2]
 
 TASK [Find configuration template for evpn] ************************************
-skipping: [h1]
-skipping: [h2]
-ok: [l1]
-ok: [l2]
 ok: [spine]
+skipping: [h1]
+ok: [l1]
+skipping: [h2]
+ok: [l2]
 
 TASK [fail] ********************************************************************
-skipping: [h1]
-skipping: [h2]
+skipping: [spine]
 skipping: [l1]
 skipping: [l2]
-skipping: [spine]
+skipping: [h1]
+skipping: [h2]
 
 TASK [Find configuration deployment deploy_script for evpn] ********************
 skipping: [h1]
 skipping: [h2]
+ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [spine]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
 skipping: [h2]
+ok: [spine] => 
+  msg: |-
+    evpn configuration for spine
+    =========================================
+    updates:
+    - path: configure/router[router-name=Base]
+      val:
+        bgp:
+          rapid-withdrawal: True
+          rapid-update:
+            evpn: True
+          inter-as-vpn: true
+          group:
+          - group-name: ebgp
+            def-recv-evpn-encap: vxlan
+            family:
+              evpn: True
+            next-hop-unchanged:
+              evpn: True
 ok: [l1] => 
   msg: |-
     evpn configuration for l1
@@ -1317,6 +1341,7 @@ ok: [l1] =>
           inter-as-vpn: true
           group:
           - group-name: ebgp
+            def-recv-evpn-encap: vxlan
             family:
               evpn: True
             next-hop-unchanged:
@@ -1377,42 +1402,24 @@ ok: [l2] =>
     CONFIG
     vtysh -f /tmp/evpn_config
     vtysh -c 'clear bgp *'
-ok: [spine] => 
-  msg: |-
-    evpn configuration for spine
-    =========================================
-    updates:
-    - path: configure/router[router-name=Base]
-      val:
-        bgp:
-          rapid-withdrawal: True
-          rapid-update:
-            evpn: True
-          inter-as-vpn: true
-          group:
-          - group-name: ebgp
-            family:
-              evpn: True
-            next-hop-unchanged:
-              evpn: True
 
 TASK [Deploy evpn configuration] ***********************************************
 skipping: [h1]
 skipping: [h2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for l1, spine
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for spine, l1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
 TASK [Generate gNMI YAML configuration] ****************************************
-ok: [l1]
 ok: [spine]
+ok: [l1]
 
 TASK [Update evpn node configuration from gNMI template /home/pipi/net101/tools/netsim/ansible/templates/evpn/sros.j2] ***
 changed: [l1]
 changed: [spine]
 
 TASK [debug] *******************************************************************
-skipping: [l1]
 skipping: [spine]
+skipping: [l1]
 
 TASK [template] ****************************************************************
 changed: [l2]
@@ -1429,53 +1436,53 @@ skipping: [l2]
 PLAY [Deploy custom deployment templates] **************************************
 
 TASK [Run custom configuration deployment scripts] *****************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-custom-config.yml for l1, l2, spine => (item=ebgp.multihop)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-custom-config.yml for spine, l1, l2 => (item=ebgp.multihop)
 
 TASK [Find configuration template] *********************************************
-ok: [l1]
 ok: [spine]
+ok: [l1]
 ok: [l2]
 
 TASK [fail] ********************************************************************
+skipping: [spine]
 skipping: [l1]
 skipping: [l2]
-skipping: [spine]
 
 TASK [Check is the configuration template is a file] ***************************
-ok: [l2 -> localhost]
 ok: [spine -> localhost]
 ok: [l1 -> localhost]
+ok: [l2 -> localhost]
 
 TASK [fail] ********************************************************************
+skipping: [spine]
 skipping: [l1]
 skipping: [l2]
-skipping: [spine]
 
-TASK [Process template /home/pipi/net101/tools/netsim/extra/ebgp.multihop/sros.j2 for l1] ***
+TASK [Process template /home/pipi/net101/tools/netsim/extra/ebgp.multihop/sros.j2 for spine] ***
 skipping: [l2]
-skipping: [l1]
 skipping: [spine]
+skipping: [l1]
 
 TASK [Find custom configuration deployment script] *****************************
+ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [spine]
 
 TASK [Run the configuration deployment script] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for l1, spine
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for spine, l1
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
 TASK [Generate gNMI YAML configuration] ****************************************
-ok: [l1]
 ok: [spine]
+ok: [l1]
 
 TASK [Update ebgp.multihop node configuration from gNMI template /home/pipi/net101/tools/netsim/extra/ebgp.multihop/sros.j2] ***
 changed: [spine]
 changed: [l1]
 
 TASK [debug] *******************************************************************
-skipping: [l1]
 skipping: [spine]
+skipping: [l1]
 
 TASK [template] ****************************************************************
 changed: [l2]

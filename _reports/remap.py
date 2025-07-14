@@ -23,15 +23,14 @@ LOG_MAP: dict = {
 
 def summary_results(test_data: Box, log_path: str) -> Box:
   summary = Box(default_box=True,box_dots=True)
-  summary.result = '✅'
   for kw in SUMMARY_MAP.keys():
     if kw not in test_data:
       continue
 
-    if test_data[kw] == 'warning':
+    if isinstance(test_data[kw],Box) and 'warning' in test_data[kw] and summary.status != 'warning':
       summary.result = "<span style='color: orange;'>&#x2714;</span>"
+      summary.status = 'warning'
       summary.url = f'{log_path}-{LOG_MAP[kw]}.log'
-      return summary
 
     if test_data[kw] is False:
       summary.result = SUMMARY_MAP[kw]
@@ -40,7 +39,10 @@ def summary_results(test_data: Box, log_path: str) -> Box:
         summary.result = 'caveat'
       return summary
   
-  summary.passed = True
+  if 'result' not in summary:
+    summary.result = '✅'
+    summary.passed = True
+
   return summary
 
 def remap_summary(results: Box, remap: Box, path: str) -> None:
@@ -84,11 +86,12 @@ def remap_results(results: Box, remap: typing.Optional[Box] = None, path: str = 
     remap = Box.from_yaml(filename=f'map-tests.yml',default_box=True,box_dots=True)
 
   for k in list(remap.keys()):
-    remap_path = f'{path}.{k}' if path else k
+    f_path = f'{path}.{k}' if path else k
+    remap_path = remap[k].get('from',f_path)
     if 'title' in remap[k]:
       remap_summary(results,remap[k],remap_path)
       remap_batches(remap[k])
-      remap[k]._path = f'coverage.{remap_path}'
+      remap[k]._path = f'coverage.{f_path}'
     elif isinstance(remap[k],Box):
       remap[k] = remap_results(results,remap[k],remap_path)
       for kw in remap[k].keys():

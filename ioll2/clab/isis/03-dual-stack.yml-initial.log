@@ -1,3 +1,7 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -16,7 +20,7 @@ ok: [dut]
 TASK [Wait for device to become ready] *****************************************
 skipping: [x1]
 skipping: [x2]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/ioll2-clab.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/ioll2-clab.yml for dut
 
 TASK [Check if 'sshpass' is installed] *****************************************
 ok: [dut -> localhost]
@@ -25,7 +29,6 @@ TASK [Check for 'timeout' command] *********************************************
 ok: [dut -> localhost]
 
 TASK [Execute local ssh command to check ioll2 readiness] **********************
-FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check ioll2 readiness (20 retries left).
 ok: [dut -> localhost]
 
 TASK [Confirm dut SSH server works] ********************************************
@@ -33,7 +36,7 @@ ok: [dut] =>
   msg: Node dut is ready.
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x1, x2, dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [x1]
@@ -46,9 +49,9 @@ ok: [x2]
 ok: [dut]
 
 TASK [fail] ********************************************************************
+skipping: [dut]
 skipping: [x1]
 skipping: [x2]
-skipping: [dut]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [x1]
@@ -74,16 +77,16 @@ ok: [dut] =>
 TASK [Deploy normalize configuration] ******************************************
 skipping: [x1]
 skipping: [x2]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
 
-TASK [ios_config: deploying normalize from /home/pipi/netlab_gh/netsim/ansible/templates/normalize/ioll2.j2] ***
+TASK [ios_config: deploying normalize from /home/pipi/net101/tools/netsim/ansible/templates/normalize/ioll2.j2] ***
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
 should be similar to how they appear if present in the running configuration on
 device including the indentation
 changed: [dut]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for x1, x2, dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [x1]
@@ -96,9 +99,9 @@ ok: [x2]
 ok: [dut]
 
 TASK [fail] ********************************************************************
+skipping: [dut]
 skipping: [x1]
 skipping: [x2]
-skipping: [dut]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [x1]
@@ -126,6 +129,14 @@ ok: [x1] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -148,6 +159,12 @@ ok: [x1] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -160,11 +177,11 @@ ok: [x1] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -176,10 +193,11 @@ ok: [x1] =>
     cat >/tmp/config <<CONFIG
     hostname x1
     !
+    ip forwarding
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
@@ -219,6 +237,14 @@ ok: [x2] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -241,6 +267,12 @@ ok: [x2] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -253,11 +285,11 @@ ok: [x2] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
-    ip link set eth1 up
     ip link set dev eth1 mtu 1500
+    ip link set eth1 up
   
     #
     # Add vtysh.conf file
@@ -269,10 +301,11 @@ ok: [x2] =>
     cat >/tmp/config <<CONFIG
     hostname x2
     !
+    ip forwarding
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
@@ -345,8 +378,11 @@ ok: [dut] =>
     no banner incoming
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for x1, x2
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for x1, x2
+
+TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
+changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [x1 -> localhost]
@@ -356,7 +392,7 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
 
 TASK [template] ****************************************************************
 changed: [x2]
@@ -366,16 +402,13 @@ TASK [set_fact] ****************************************************************
 ok: [x1]
 ok: [x2]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x1]
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [x2]
+changed: [x1]
 
-TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
 skipping: [x2]
-
-TASK [ios_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/ios.j2] ***
-changed: [dut]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -385,7 +418,7 @@ ok: [x2]
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=isis)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=isis)
 
 TASK [Figure out whether to deploy the module isis on current device] **********
 ok: [x1]
@@ -495,12 +528,14 @@ ok: [dut] =>
       ip router isis Gandalf
       ipv6 router isis Gandalf
       isis network point-to-point
+      isis three-way-handshake ietf
     !
     interface Ethernet0/2
     ! dut -> x2
       ip router isis Gandalf
       ipv6 router isis Gandalf
       isis network point-to-point
+      isis three-way-handshake ietf
     !
     !
     router isis Gandalf
@@ -514,10 +549,10 @@ ok: [dut] =>
         multi-topology
 
 TASK [Deploy isis configuration] ***********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2
 
-TASK [ios_config: deploying isis from /home/pipi/netlab_gh/netsim/ansible/templates/isis/ios.j2] ***
+TASK [ios_config: deploying isis from /home/pipi/net101/tools/netsim/ansible/templates/isis/ios.j2] ***
 changed: [dut]
 
 TASK [template] ****************************************************************
@@ -528,11 +563,11 @@ TASK [set_fact] ****************************************************************
 ok: [x1]
 ok: [x2]
 
-TASK [run /tmp/config.sh to deploy isis config from /home/pipi/netlab_gh/netsim/ansible/templates/isis/frr.j2] ***
+TASK [run /tmp/config.sh to deploy isis config from /home/pipi/net101/tools/netsim/ansible/templates/isis/frr.j2] ***
 skipping: [x1]
 skipping: [x2]
 
-TASK [run vtysh to import isis config from /home/pipi/netlab_gh/netsim/ansible/templates/isis/frr.j2] ***
+TASK [run vtysh to import isis config from /home/pipi/net101/tools/netsim/ansible/templates/isis/frr.j2] ***
 changed: [x2]
 changed: [x1]
 

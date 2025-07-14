@@ -19,6 +19,10 @@ groups:
     - s1
     module:
     - vlan
+  external:
+    device: frr
+    members: []
+    _default_group: true
   all:
     vars:
       netlab_show_config: true
@@ -131,6 +135,7 @@ defaults:
       - startup-delay
       - restart-policy
       template: clab.j2
+      version: 0.68.0
       start: sudo -E containerlab deploy --reconfigure -t clab.yml
       stop: sudo -E containerlab destroy --cleanup -t clab.yml
       act_probe: docker ps
@@ -451,6 +456,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -525,6 +531,8 @@ defaults:
               community:
                 standard: true
                 append: true
+                delete: clist
+                delete_list: true
             match:
             - prefix
             - nexthop
@@ -621,6 +629,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -695,6 +704,8 @@ defaults:
               community:
                 standard: true
                 append: true
+                delete: clist
+                delete_list: true
             match:
             - prefix
             - nexthop
@@ -933,6 +944,7 @@ defaults:
           import:
           - connected
           - ospf
+          - static
           - vrf
           ipv6_lla: true
           rfc8950: true
@@ -956,13 +968,20 @@ defaults:
               ip: linklocal
               backup_ip: loopback.ipv4
         ospf:
+          default: true
           import:
           - bgp
           - connected
+          - static
           - vrf
           unnumbered: true
           timers: true
           priority: true
+        routing:
+          static:
+            vrf: true
+            inter_vrf: true
+            discard: true
         stp:
           supported_protocols:
           - stp
@@ -1016,6 +1035,12 @@ defaults:
           local_as: true
           local_as_ibgp: false
           vrf_local_as: true
+          import:
+          - ospf
+          - connected
+          - static
+          - vrf
+          confederation: true
         evpn:
           asymmetrical_irb: true
           irb: true
@@ -1033,6 +1058,11 @@ defaults:
           passive: true
         ospf:
           default: true
+          import:
+          - bgp
+          - connected
+          - static
+          - vrf
           timers: true
           password: true
           priority: true
@@ -1061,6 +1091,7 @@ defaults:
           static:
             vrf: true
             inter_vrf: true
+            discard: true
         stp:
           supported_protocols:
           - stp
@@ -1071,7 +1102,7 @@ defaults:
           port_type: true
         vlan:
           model: switch
-          svi_interface_name: virtual-network{vlan}
+          svi_interface_name: vlan{vlan}
         vrf:
           ospfv2: true
           bgp: true
@@ -1163,6 +1194,7 @@ defaults:
             - extended
             2octet:
             - standard
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -1306,12 +1338,19 @@ defaults:
       description: Fortinet FortiOS firewall
       interface_name: port{ifindex}
       loopback_interface_name: loopback{ifindex}
-      mgmt_if: port1
+      loopback: false
+      mtu: 1500
       ifindex_offset: 2
       libvirt:
         image: fortinet/fortios
         build: https://netlab.tools/labs/fortios/
         create_template: fortios.xml.j2
+      clab:
+        node:
+          kind: fortinet_fortigate
+        interface:
+          name: eth{ifindex}
+        image: vrnetlab/vr-fortios:7.4.8
       group_vars:
         ansible_user: admin
         ansible_password: admin
@@ -1321,6 +1360,8 @@ defaults:
         collections:
         - fortinet.fortios
         vdom: root
+        netlab_vdom: root
+        mgmt_if: port1
         ansible_httpapi_use_ssl: 'no'
         ansible_httpapi_validate_certs: 'no'
         ansible_httpapi_port: 80
@@ -1429,6 +1470,7 @@ defaults:
             - extended
             2octet:
             - standard
+          confederation: true
         evpn:
           irb: true
           asymmetrical_irb: true
@@ -1566,6 +1608,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -1640,6 +1683,8 @@ defaults:
               community:
                 standard: true
                 append: true
+                delete: clist
+                delete_list: true
             match:
             - prefix
             - nexthop
@@ -1684,7 +1729,7 @@ defaults:
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         build: https://containerlab.dev/manual/kinds/cisco_iol/
-        image: vrnetlab/cisco_iol:17.12.01
+        image: vrnetlab/cisco_iol:17.15.01
         node:
           kind: cisco_iol
     ioll2:
@@ -1720,6 +1765,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -1794,6 +1840,8 @@ defaults:
               community:
                 standard: true
                 append: true
+                delete: clist
+                delete_list: true
             match:
             - prefix
             - nexthop
@@ -1823,6 +1871,14 @@ defaults:
           protocol:
           - vrrp
         sr: {}
+        stp:
+          supported_protocols:
+          - stp
+          - rstp
+          - mstp
+          - pvrst
+          enable_per_port: true
+          port_type: true
       external:
         image: none
       graphite:
@@ -1838,7 +1894,7 @@ defaults:
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         build: https://containerlab.dev/manual/kinds/cisco_iol/
-        image: vrnetlab/cisco_iol:L2-17.12.01
+        image: vrnetlab/cisco_iol:L2-17.15.01
         node:
           kind: cisco_iol
           type: l2
@@ -1880,6 +1936,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -1891,7 +1948,8 @@ defaults:
         eigrp: {}
         initial:
           ipv4:
-            unnumbered: false
+            unnumbered:
+            - tunnel
           ipv6:
             lla: true
             use_ra: true
@@ -1953,6 +2011,8 @@ defaults:
               community:
                 standard: true
                 append: true
+                delete: clist
+                delete_list: true
             match:
             - prefix
             - nexthop
@@ -1994,8 +2054,8 @@ defaults:
         image: cisco/iosv
       clab:
         group_vars:
-          ansible_ssh_pass: VR-netlab9
-          ansible_user: vrnetlab
+          ansible_ssh_pass: admin
+          ansible_user: admin
           netlab_check_retries: 50
         image: vrnetlab/cisco_vios:15.9.3
         node:
@@ -2040,6 +2100,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -2051,7 +2112,8 @@ defaults:
         eigrp: {}
         initial:
           ipv4:
-            unnumbered: false
+            unnumbered:
+            - tunnel
           ipv6:
             lla: true
             use_ra: true
@@ -2114,6 +2176,8 @@ defaults:
               community:
                 standard: true
                 append: true
+                delete: clist
+                delete_list: true
             match:
             - prefix
             - nexthop
@@ -2142,6 +2206,14 @@ defaults:
         gateway:
           protocol:
           - vrrp
+        stp:
+          supported_protocols:
+          - stp
+          - rstp
+          - mstp
+          - pvrst
+          enable_per_port: true
+          port_type: true
       external:
         image: none
       graphite:
@@ -2155,15 +2227,15 @@ defaults:
         image: cisco/iosv
       clab:
         group_vars:
-          ansible_ssh_pass: VR-netlab9
-          ansible_user: vrnetlab
+          ansible_ssh_pass: admin
+          ansible_user: admin
           netlab_check_retries: 50
-        image: vrnetlab/cisco_vios:15.9.3
+        image: vrnetlab/cisco_viosl2:15.2.2020
         node:
           kind: linux
         interface:
           name: eth{ifindex}
-        build: https://github.com/hellt/vrnetlab/tree/master/vios
+        build: https://github.com/hellt/vrnetlab/tree/master/viosl2
     iosxr:
       description: Cisco IOS XRv
       mgmt_if: MgmtEth0/RP0/CPU0/0
@@ -2339,6 +2411,7 @@ defaults:
           - connected
           - static
           - vrf
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -2532,6 +2605,47 @@ defaults:
         image: none
       graphite:
         icon: nexus5000
+    openbsd:
+      description: OpenBSD
+      interface_name: vio{ifindex}
+      loopback_interface_name: lo{ifindex}
+      ifindex_offset: 1
+      mgmt_if: vio0
+      role: host
+      features:
+        routing:
+          static: true
+        initial:
+          roles:
+          - host
+          - router
+          ipv6:
+            use_ra: true
+            lla: true
+      libvirt:
+        create_template: openbsd.xml.j2
+        image: netlab/openbsd
+        create_iso: openbsd
+      clab:
+        build: https://containerlab.dev/manual/kinds/openbsd/
+        image: vrnetlab/openbsd_openbsd:7.7
+        group_vars:
+          ansible_user: admin
+          ansible_ssh_pass: admin
+          netlab_check_command: who
+        node:
+          kind: openbsd
+      group_vars:
+        ansible_network_os: openbsd
+        ansible_connection: paramiko
+        ansible_user: openbsd
+        ansible_ssh_pass: vagrant
+        docker_shell: sh -il
+        ansible_python_interpreter: auto_silent
+      external:
+        image: none
+      graphite:
+        icon: server
     routeros:
       description: Mikrotik RouterOS version 6
       interface_name: ether{ifindex}
@@ -2688,7 +2802,7 @@ defaults:
         min_tx: 100
         min_rx: 100
       clab:
-        image: ghcr.io/nokia/srlinux:25.3.2
+        image: ghcr.io/nokia/srlinux:25.3.3
         node:
           kind: srl
           type: ixrd2
@@ -2891,9 +3005,7 @@ defaults:
           ospfv3: true
           isis: true
           bgp: true
-        vxlan:
-          requires:
-          - evpn
+        vxlan: {}
       clab:
         image: vrnetlab/nokia_sros:25.3.R2
         build: https://containerlab.dev/manual/kinds/vr-sros/
@@ -3939,7 +4051,7 @@ defaults:
         up: docker run -d --rm {sys.docker_net} --mount 
           type=bind,source="$(pwd)/graphite/graphite-default.json",target=/htdocs/default/default.json,readonly
           -p { 8080 + defaults.multilab.id if defaults.multilab.id else 8080 
-          }:80 --name '{name}_graphite' netreplica/graphite:0.4.2
+          }:80 --name "{name}_graphite" netreplica/graphite:0.4.2
         message: Open http://{sys.ipaddr}:{ 8080 + defaults.multilab.id if 
           defaults.multilab.id else 8080 }/graphite/ in your browser
         down: docker kill '{name}_graphite'
@@ -3973,6 +4085,115 @@ defaults:
         down: docker kill {name}-cisco-nso
         cleanup: docker volume rm '{name}-nso-vol' docker volume rm 
           '{name}-nso-log-vol'
+    nuts:
+      runtime: docker
+      docker:
+        up: docker run --rm -itd --name '{name}_nuts' {sys.docker_net} -v 
+          './nuts':/nuts -w /nuts ghcr.io/network-unit-testing-system/nuts
+        message: Use 'netlab connect nuts' to connect to the NUTS container. Run
+          'pytest' in the container to execute tests.
+        connect: docker exec -it '{name}_nuts' bash
+        down: docker kill '{name}_nuts'
+        cleanup: docker volume rm '{name}_nuts'
+      config:
+      - dest: nr-config.yaml
+        template: nr-config.yaml
+      - dest: inventory/groups.yaml
+        template: inventory/groups.yaml
+      - dest: inventory/hosts.yaml
+        template: inventory/hosts.j2
+      - dest: tests/test_interfaces.yaml
+        template: tests/test_interfaces.j2
+      - dest: tests/test_ospf.yaml
+        template: tests/test_ospf.j2
+      - dest: tests/test_bgp.yaml
+        template: tests/test_bgp.j2
+      inventory:
+        napalm:
+          nxos: nxos_ssh
+          asav: ios
+          cat8000c: ios
+          iol: ios
+          ioll2: ios
+          iosv: ios
+          iosvl2: ios
+          iosxr: iosxr
+          vmx: junos
+          vptx: junos
+          vsrx: junos
+          vjunos-switch: junos
+          vjunos-router: junos
+          srlinux: srl
+          routeros: ros
+          routeros7: ros
+          arubacx: aoscx
+        netmiko:
+          nxos: cisco_nxos
+          cat8000c: cisco_xe
+          iol: cisco_xe
+          ioll2: cisco_xe
+          iosv: cisco_xe
+          iosvl2: cisco_xe
+          iosxr: iosxr
+          vmx: juniper_junos
+          vptx: juniper_junos
+          vsrx: juniper_junos
+          vjunos-switch: juniper_junos
+          vjunos-router: juniper_junos
+          asav: cisco_asa
+          srlinux: nokia_srl
+          sros: nokia_sros
+          routeros: mikrotik_routeros
+          routeros7: mikrotik_routeros
+          arubacx: aruba_aoscx
+          fortios: fortinet
+          dellos10: dell_os10
+        napalm_using_netmiko:
+          nxos_ssh: true
+          ios: true
+      test_creation:
+        interface:
+          nxos: nxos_ssh
+          asav: ios
+          cat8000c: ios
+          iol: ios
+          ioll2: ios
+          iosv: ios
+          iosvl2: ios
+          iosxr: iosxr
+          vmx: junos
+          vptx: junos
+          vsrx: junos
+          vjunos-switch: junos
+          vjunos-router: junos
+          srlinux: srl
+          routeros: ros
+          routeros7: ros
+          arubacx: aoscx
+        bgp:
+          nxos: nxos_ssh
+          asav: ios
+          cat8000c: ios
+          iol: ios
+          ioll2: ios
+          iosv: ios
+          iosvl2: ios
+          iosxr: iosxr
+          vmx: junos
+          vptx: junos
+          vsrx: junos
+          vjunos-switch: junos
+          vjunos-router: junos
+          srlinux: srl
+          routeros: ros
+          routeros7: ros
+          arubacx: aoscx
+        ospf:
+          cat8000c: cisco_xe
+          iol: cisco_xe
+          ioll2: cisco_xe
+          iosv: cisco_xe
+          iosvl2: cisco_xe
     suzieq:
       runtime: docker
       docker:
@@ -4350,6 +4571,13 @@ defaults:
           type: id
           _requires:
           - routing
+    bgp_session_type:
+      _description: BGP session types
+      type: str
+      valid_values:
+        ibgp:
+        ebgp:
+        localas_ibgp:
     rp_entry:
       _description: Routing policy entry
       action:
@@ -4610,6 +4838,17 @@ defaults:
         min_value: 1
       links: list
       loopback:
+        ipv4:
+          type: ipv4
+          use: host_prefix
+        ipv6:
+          type: ipv6
+          use: host_prefix
+        pool: addr_pool
+        _alt_types:
+        - bool
+        - prefix_str
+        - NoneType
       _namespace:
       - link
   automation:
@@ -4732,18 +4971,18 @@ defaults:
       command_args: --immediate-mode -l -vv
   paths:
     validate:
-    - /home/pipi/netlab_gh/netsim/validate
+    - /home/pipi/net101/tools/netsim/validate
     plugin:
     - /work/netlab_cicd
     - /home/pipi/net101/tools/tests/integration/vlan
     - /home/pipi/.netlab
-    - /home/pipi/netlab_gh/netsim/extra
+    - /home/pipi/net101/tools/netsim/extra
     custom:
       dirs:
       - /home/pipi/net101/tools/tests/integration/vlan
       - /work/netlab_cicd
       - /home/pipi/.netlab
-      - /home/pipi/netlab_gh/netsim/extra
+      - /home/pipi/net101/tools/netsim/extra
       files:
       - "{{ custom_config + '/' + inventory_hostname + '.' + netlab_device_type +
         '-' + node_provider + '.j2' }}"
@@ -4774,7 +5013,7 @@ defaults:
       - '{{ custom_config }}/deploy.yml'
     deploy:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks
+      - /home/pipi/net101/tools/netsim/ansible/tasks
       tasks_generic:
       - deploy-config/{{ netlab_device_type }}-{{ node_provider }}.yml
       - deploy-config/{{ netlab_device_type }}.yml
@@ -4795,8 +5034,8 @@ defaults:
       - deploy-config/{{ ansible_network_os }}.yml
     templates:
       dirs:
-      - /home/pipi/netlab_gh/netsim/daemons
-      - /home/pipi/netlab_gh/netsim/ansible/templates
+      - /home/pipi/net101/tools/netsim/daemons
+      - /home/pipi/net101/tools/netsim/ansible/templates
     t_files:
       files:
       - '{{config_module}}/{{netlab_device_type}}-{{provider|default(netlab_provider)}}.j2'
@@ -4808,7 +5047,7 @@ defaults:
       - '{{netlab_device_type}}/{{config_module}}.j2'
     ready:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check
+      - /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check
       files:
       - '{{netlab_device_type}}-{{provider|default(netlab_provider)}}.yml'
       - '{{netlab_device_type}}.yml'
@@ -4816,7 +5055,7 @@ defaults:
       - '{{ansible_network_os}}.yml'
     collect:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks/fetch-config
+      - /home/pipi/net101/tools/netsim/ansible/tasks/fetch-config
   ports:
     ssh: 22
     http: 80
@@ -4909,6 +5148,7 @@ defaults:
       advertise_roles:
       rr_list:
       as_list:
+      confederation:
     transform_after:
     - vlan
     config_after:
@@ -4918,6 +5158,8 @@ defaults:
     - eigrp
     - ripv2
     next_hop_self: true
+    hooks:
+    - normalize
     attributes:
       global:
         as: asn
@@ -4930,22 +5172,18 @@ defaults:
         as_list: dict
         sessions:
           ipv4:
-          - ibgp
-          - ebgp
-          - localas_ibgp
+            type: list
+            _subtype: bgp_session_type
           ipv6:
-          - ibgp
-          - ebgp
-          - localas_ibgp
+            type: list
+            _subtype: bgp_session_type
         activate:
           ipv4:
-          - ibgp
-          - ebgp
-          - localas_ibgp
+            type: list
+            _subtype: bgp_session_type
           ipv6:
-          - ibgp
-          - ebgp
-          - localas_ibgp
+            type: list
+            _subtype: bgp_session_type
         advertise_loopback: bool
         advertise_roles: list
         community:
@@ -4963,6 +5201,15 @@ defaults:
           - str
           - BoxList
         replace_global_as: bool
+        confederation:
+          type: dict
+          _keytype: asn
+          _subtype:
+            members:
+              type: list
+              _subtype: asn
+      _inherit_community:
+        localas_ibgp: ibgp
       node:
         as:
           type: asn
@@ -4981,22 +5228,18 @@ defaults:
         advertise_loopback: bool
         sessions:
           ipv4:
-          - ibgp
-          - ebgp
-          - localas_ibgp
+            type: list
+            _subtype: bgp_session_type
           ipv6:
-          - ibgp
-          - ebgp
-          - localas_ibgp
+            type: list
+            _subtype: bgp_session_type
         activate:
           ipv4:
-          - ibgp
-          - ebgp
-          - localas_ibgp
+            type: list
+            _subtype: bgp_session_type
           ipv6:
-          - ibgp
-          - ebgp
-          - localas_ibgp
+            type: list
+            _subtype: bgp_session_type
         community:
           ibgp:
           - standard
@@ -5051,6 +5294,7 @@ defaults:
       ipv6_lla: Can run EBGP sessions over IPv6 link-local addresses
       rfc8950: Can run IPv4 AF over regular IPv6 EBGP session
       community: Granular BGP community propagation
+      confederation: BGP confederations
       import: Import routes from other routing protocols
     warnings:
       missing_igp: true
@@ -5577,9 +5821,16 @@ defaults:
             _alt_types:
             - bool
           mac: mac
+      interface:
+        lacp_system_id:
+          type: mac
+          _alt_types:
+          - int
+      intf_to_neighbor: false
       lag_l2_linkattr:
         mtu:
         bandwidth:
+        lacp_system_id:
       lag_member_linkattr:
         mtu:
         bandwidth:
@@ -6188,6 +6439,7 @@ defaults:
       cat8000v: true
       csr: true
       cumulus: true
+      cumulus_nvue: true
       dellos10: true
       dnsmasq: true
       eos: true
@@ -6200,6 +6452,7 @@ defaults:
       junos: true
       linux: true
       none: true
+      openbsd: true
       srlinux: true
       sros: true
       vjunos-router: true
@@ -6443,6 +6696,8 @@ defaults:
       dellos10: true
       eos: true
       frr: true
+      ioll2: true
+      iosvl2: true
       none: true
   vlan:
     config_after:
@@ -6498,6 +6753,7 @@ defaults:
         stp:
         virtual_interface:
         lag:
+        evpn:
       keep_subif:
         vlan:
         ifindex:
@@ -6668,14 +6924,18 @@ defaults:
     extra: []
     user: []
     system: []
-  workdir: /work/netlab_cicd
-  device: srlinux
   groups:
+    external:
+      device: frr
+      members: []
+      _default_group: true
     all:
       vars:
         netlab_show_config: true
       members: []
       _default_group: true
+  workdir: /work/netlab_cicd
+  device: srlinux
   plugin:
   - multilab
   _globals:
@@ -6702,6 +6962,8 @@ defaults:
   module:
   - vlan
   - routing
+plugin:
+- multilab
 name: ml_17
 nodes:
   h1:
@@ -6914,7 +7176,7 @@ nodes:
     clab:
       kind: srl
       type: ixrd2
-    box: ghcr.io/nokia/srlinux:25.3.2
+    box: ghcr.io/nokia/srlinux:25.3.3
     id: 4
     provider: clab
     af:
@@ -6942,8 +7204,6 @@ nodes:
     vlan:
       max_bridge_group: 1
     _srl_version: 25.3
-plugin:
-- multilab
 addressing:
   lan:
     ipv4: 172.16.0.0/16

@@ -1,3 +1,7 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Invalid characters were found in group names but not replaced, use
 -vvvv to see details
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
@@ -6,21 +10,21 @@
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
+ok: [ce1]
+ok: [ce2]
 ok: [s2]
 ok: [s1]
-ok: [ce1]
-ok: [ce2]
 
 TASK [Find device readiness script] ********************************************
-ok: [s2]
 ok: [ce1]
 ok: [ce2]
+ok: [s2]
 ok: [s1]
 
 TASK [Wait for device to become ready] *****************************************
-skipping: [s2]
 skipping: [ce1]
 skipping: [ce2]
+skipping: [s2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/vjunos-switch-clab.yml for s1
 
 TASK [Wait for SSH server] *****************************************************
@@ -37,6 +41,7 @@ FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-
 FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (39 retries left).
 FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (38 retries left).
 FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (37 retries left).
+FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (36 retries left).
 ok: [s1 -> localhost]
 
 TASK [Confirm s1 SSH server works] *********************************************
@@ -50,72 +55,276 @@ TASK [Wait for ge-0/0/0 to appear] *********************************************
 ok: [s1]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, ce1, ce2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, s1, s2
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
-ok: [s2]
 ok: [ce1]
-ok: [s1]
 ok: [ce2]
+ok: [s2]
+ok: [s1]
 
 TASK [Find configuration template for normalize] *******************************
-ok: [s2]
-ok: [ce2]
 ok: [ce1]
+ok: [ce2]
+ok: [s2]
 ok: [s1]
 
 TASK [fail] ********************************************************************
-skipping: [s1]
-skipping: [s2]
 skipping: [ce1]
 skipping: [ce2]
+skipping: [s1]
+skipping: [s2]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [ce1]
 ok: [ce2]
 ok: [s2]
 ok: [s1]
-ok: [ce1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [s1]
-skipping: [s2]
 skipping: [ce1]
 skipping: [ce2]
+skipping: [s1]
+skipping: [s2]
 
 TASK [Deploy normalize configuration] ******************************************
-skipping: [s1]
-skipping: [s2]
 skipping: [ce1]
 skipping: [ce2]
+skipping: [s1]
+skipping: [s2]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s1, s2, ce1, ce2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, s1, s2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
-ok: [s2]
 ok: [ce1]
 ok: [ce2]
+ok: [s2]
 ok: [s1]
 
 TASK [Find configuration template for initial] *********************************
-ok: [s2]
 ok: [ce1]
-ok: [s1]
 ok: [ce2]
+ok: [s2]
+ok: [s1]
 
 TASK [fail] ********************************************************************
-skipping: [s1]
-skipping: [s2]
 skipping: [ce1]
 skipping: [ce2]
+skipping: [s1]
+skipping: [s2]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [ce1]
 ok: [ce2]
 ok: [s2]
 ok: [s1]
-ok: [ce1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [ce1] => 
+  msg: |-
+    initial configuration for ce1
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname ce1
+    !
+    ip forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.1/32
+    !
+    interface eth1
+     no shutdown
+     description ce1 -> s1 [external]
+     ip address 10.1.0.5/30
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
+ok: [ce2] => 
+  msg: |-
+    initial configuration for ce2
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname ce2
+    !
+    ip forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.2/32
+    !
+    interface eth1
+     no shutdown
+     description ce2 -> s2 [external]
+     ip address 10.1.0.9/30
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
 ok: [s2] => 
   msg: |-
     initial configuration for s2
@@ -227,210 +436,6 @@ ok: [s2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [ce2] => 
-  msg: |-
-    initial configuration for ce2
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)# "
-    echo
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
-    #
-    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
-    #
-    sysctl -w net.ipv4.ip_forward=1
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    # Set system defaults
-    #
-    # Send ARP requests from a sane source IP address
-    #
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Create loopbacks, stub and lag/bond devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    ip link set eth1 down
-    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
-    ip link set eth1 up
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-  
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname ce2
-    !
-    ip forwarding
-    vrf mgmt
-     exit-vrf
-    !
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ip address 10.0.0.2/32
-    !
-    interface eth1
-     no shutdown
-     description ce2 -> s2 [external]
-     ip address 10.1.0.9/30
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
-ok: [ce1] => 
-  msg: |-
-    initial configuration for ce1
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)# "
-    echo
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
-    #
-    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
-    #
-    sysctl -w net.ipv4.ip_forward=1
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    # Set system defaults
-    #
-    # Send ARP requests from a sane source IP address
-    #
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Create loopbacks, stub and lag/bond devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    ip link set eth1 down
-    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
-    ip link set eth1 up
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-  
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname ce1
-    !
-    ip forwarding
-    vrf mgmt
-     exit-vrf
-    !
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ip address 10.0.0.1/32
-    !
-    interface eth1
-     no shutdown
-     description ce1 -> s1 [external]
-     ip address 10.1.0.5/30
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
 ok: [s1] => 
   msg: |-
     initial configuration for s1
@@ -438,9 +443,9 @@ ok: [s1] =>
     system {
       host-name s1;
       static-host-mapping {
-        s2 inet 10.0.0.4;
         ce1 inet 10.0.0.1;
         ce2 inet 10.0.0.2;
+        s2 inet 10.0.0.4;
       }
     }
   
@@ -538,27 +543,24 @@ ok: [s1] =>
     }
 
 TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for ce1, ce2, s2
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for s1
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for s2, ce1, ce2
-
-TASK [junos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/junos.j2] ***
-changed: [s1]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [s2 -> localhost]
+changed: [ce1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
-skipping: [s2]
 skipping: [ce1]
 skipping: [ce2]
+skipping: [s2]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for s2, ce1, ce2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for ce1, ce2, s2
 
 TASK [template] ****************************************************************
-changed: [ce2]
-changed: [s2]
 changed: [ce1]
+changed: [s2]
+changed: [ce2]
 
 TASK [set_fact] ****************************************************************
 ok: [ce1]
@@ -571,9 +573,12 @@ changed: [s2]
 changed: [ce2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-skipping: [s2]
 skipping: [ce1]
 skipping: [ce2]
+skipping: [s2]
+
+TASK [junos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/junos.j2] ***
+changed: [s1]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -585,8 +590,8 @@ ok: [s1]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, s1, s2 => (item=vlan)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, s1, s2 => (item=bgp)
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, s1, s2 => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, s1, s2 => (item=bgp)
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, s1, s2 => (item=vrf)
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, s1, s2 => (item=vxlan)
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, s1, s2 => (item=evpn)
@@ -660,6 +665,108 @@ changed: [s2]
 TASK [run vtysh to import vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
 skipping: [s2]
 
+TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [ce1]
+ok: [ce2]
+ok: [s2]
+ok: [s1]
+
+TASK [Find configuration template for ospf] ************************************
+skipping: [ce1]
+skipping: [ce2]
+ok: [s2]
+ok: [s1]
+
+TASK [fail] ********************************************************************
+skipping: [ce1]
+skipping: [ce2]
+skipping: [s1]
+skipping: [s2]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+skipping: [ce1]
+skipping: [ce2]
+ok: [s2]
+ok: [s1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [ce1]
+skipping: [ce2]
+ok: [s1] => 
+  msg: |-
+    ospf configuration for s1
+    =========================================
+    routing-options {
+      router-id 10.0.0.3
+    }
+    protocols {
+      delete: ospf;
+    }
+  
+    protocols {
+      ospf {
+        area 0.0.0.0 {
+          interface lo0.0 {
+          }
+        }
+        area 0.0.0.0 {
+          interface ge-0/0/0.0 {
+            interface-type p2p;
+          }
+        }
+      }
+    }
+ok: [s2] => 
+  msg: |-
+    ospf configuration for s2
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.4
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! s2 -> s1
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    do write
+
+TASK [Deploy ospf configuration] ***********************************************
+skipping: [ce1]
+skipping: [ce2]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for s1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s2
+
+TASK [junos_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/junos.j2] ***
+[WARNING]:  statement not found
+changed: [s1]
+
+TASK [template] ****************************************************************
+changed: [s2]
+
+TASK [set_fact] ****************************************************************
+ok: [s2]
+
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+skipping: [s2]
+
+TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+changed: [s2]
+
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [ce1]
 ok: [ce2]
@@ -680,8 +787,8 @@ skipping: [s2]
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 ok: [ce1]
-ok: [s2]
 ok: [ce2]
+ok: [s2]
 ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -695,7 +802,6 @@ ok: [ce1] =>
       no bgp default ipv4-unicast
       bgp default show-hostname
       bgp default show-nexthop-hostname
-  
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
@@ -720,41 +826,6 @@ ok: [ce1] =>
     !
     !
     do write
-ok: [ce2] => 
-  msg: |-
-    bgp configuration for ce2
-    =========================================
-    !
-    router bgp 65101
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.2
-    !
-      neighbor 10.1.0.10 remote-as 65000
-      neighbor 10.1.0.10 description s2
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-      network 10.0.0.2/32
-    !
-    !
-    !
-      neighbor 10.1.0.10 activate
-      no neighbor 10.1.0.10 send-community all
-      neighbor 10.1.0.10 send-community standard
-      neighbor 10.1.0.10 send-community large
-    !
-    !
-    !
-    do write
 ok: [s2] => 
   msg: |-
     bgp configuration for s2
@@ -765,7 +836,6 @@ ok: [s2] =>
       no bgp default ipv4-unicast
       bgp default show-hostname
       bgp default show-nexthop-hostname
-  
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
@@ -789,6 +859,40 @@ ok: [s2] =>
       neighbor 10.0.0.3 send-community standard
       neighbor 10.0.0.3 send-community large
       neighbor 10.0.0.3 send-community extended
+    !
+    !
+    !
+    do write
+ok: [ce2] => 
+  msg: |-
+    bgp configuration for ce2
+    =========================================
+    !
+    router bgp 65101
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.2
+    !
+      neighbor 10.1.0.10 remote-as 65000
+      neighbor 10.1.0.10 description s2
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.2/32
+    !
+    !
+    !
+      neighbor 10.1.0.10 activate
+      no neighbor 10.1.0.10 send-community all
+      neighbor 10.1.0.10 send-community standard
+      neighbor 10.1.0.10 send-community large
     !
     !
     !
@@ -938,114 +1042,12 @@ skipping: [ce2]
 skipping: [s2]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [ce2]
 changed: [ce1]
 changed: [s2]
+changed: [ce2]
 
 TASK [junos_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/junos.j2] ***
-[WARNING]:  statement not found
 changed: [s1]
-
-TASK [Figure out whether to deploy the module ospf on current device] **********
-ok: [ce1]
-ok: [ce2]
-ok: [s2]
-ok: [s1]
-
-TASK [Find configuration template for ospf] ************************************
-skipping: [ce1]
-skipping: [ce2]
-ok: [s2]
-ok: [s1]
-
-TASK [fail] ********************************************************************
-skipping: [ce1]
-skipping: [ce2]
-skipping: [s1]
-skipping: [s2]
-
-TASK [Find configuration deployment deploy_script for ospf] ********************
-skipping: [ce1]
-skipping: [ce2]
-ok: [s2]
-ok: [s1]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [ce1]
-skipping: [ce2]
-ok: [s1] => 
-  msg: |-
-    ospf configuration for s1
-    =========================================
-    routing-options {
-      router-id 10.0.0.3
-    }
-    protocols {
-      delete: ospf;
-    }
-  
-    protocols {
-      ospf {
-        area 0.0.0.0 {
-          interface lo0.0 {
-          }
-        }
-        area 0.0.0.0 {
-          interface ge-0/0/0.0 {
-            interface-type p2p;
-          }
-        }
-      }
-    }
-ok: [s2] => 
-  msg: |-
-    ospf configuration for s2
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.4
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! s2 -> s1
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    do write
-
-TASK [Deploy ospf configuration] ***********************************************
-skipping: [ce1]
-skipping: [ce2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for s1
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s2
-
-TASK [junos_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/junos.j2] ***
-changed: [s1]
-
-TASK [template] ****************************************************************
-changed: [s2]
-
-TASK [set_fact] ****************************************************************
-ok: [s2]
-
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-skipping: [s2]
-
-TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [s2]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [ce1]
@@ -1503,10 +1505,10 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-ce1                        : ok=36   changed=4    unreachable=0    failed=0    skipped=34   rescued=0    ignored=0   
+ce1                        : ok=37   changed=5    unreachable=0    failed=0    skipped=34   rescued=0    ignored=0   
 ce2                        : ok=36   changed=4    unreachable=0    failed=0    skipped=34   rescued=0    ignored=0   
 s1                         : ok=64   changed=6    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
-s2                         : ok=72   changed=15   unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+s2                         : ok=71   changed=14   unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
 
 
 

@@ -1,3 +1,7 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -44,8 +48,8 @@ skipping: [x2]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [x1]
-ok: [dut]
 ok: [x2]
+ok: [dut]
 ok: [dut2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -302,6 +306,37 @@ ok: [x2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [dut2] => 
+  msg: |-
+    initial configuration for dut2
+    =========================================
+    hostname dut2
+    !
+    lldp enable
+    !
+    !
+    !
+    !
+    default mtu 1532
+    !
+    interface mgmt1/1/1
+     no lldp transmit
+     no lldp receive
+    !
+    interface loopback0
+     no shutdown
+     ipv6 address 2001:db8:1::2/128
+    !
+    interface ethernet1/1/1
+     no shutdown
+     no switchport
+     description "dut2 -> dut [external]"
+     ipv6 nd max-ra-interval 4
+     ipv6 nd min-ra-interval 3
+     ipv6 nd send-ra
+     ipv6 address 2001:db8:cafe:e01::2/64
+     ipv6 unreachables
+    !
 ok: [dut] => 
   msg: |-
     initial configuration for dut
@@ -363,37 +398,6 @@ ok: [dut] =>
      ipv6 address 2001:db8:cafe:e42::1/64
      ipv6 unreachables
     !
-ok: [dut2] => 
-  msg: |-
-    initial configuration for dut2
-    =========================================
-    hostname dut2
-    !
-    lldp enable
-    !
-    !
-    !
-    !
-    default mtu 1532
-    !
-    interface mgmt1/1/1
-     no lldp transmit
-     no lldp receive
-    !
-    interface loopback0
-     no shutdown
-     ipv6 address 2001:db8:1::2/128
-    !
-    interface ethernet1/1/1
-     no shutdown
-     no switchport
-     description "dut2 -> dut [external]"
-     ipv6 nd max-ra-interval 4
-     ipv6 nd min-ra-interval 3
-     ipv6 nd send-ra
-     ipv6 address 2001:db8:cafe:e01::2/64
-     ipv6 unreachables
-    !
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/dellos10.yml for dut, dut2
@@ -426,8 +430,8 @@ ok: [x1]
 ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
@@ -446,13 +450,13 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [x1]
-ok: [x2]
 ok: [dut]
+ok: [x2]
 ok: [dut2]
 
 TASK [Find configuration template for bgp] *************************************
-ok: [x2]
 ok: [x1]
+ok: [x2]
 ok: [dut]
 ok: [dut2]
 
@@ -479,7 +483,6 @@ ok: [x1] =>
       no bgp default ipv4-unicast
       bgp default show-hostname
       bgp default show-nexthop-hostname
-  
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
@@ -500,6 +503,40 @@ ok: [x1] =>
       no neighbor 2001:db8:3::1 send-community all
       neighbor 2001:db8:3::1 send-community standard
       neighbor 2001:db8:3::1 send-community large
+    !
+    !
+    !
+    do write
+ok: [x2] => 
+  msg: |-
+    bgp configuration for x2
+    =========================================
+    !
+    router bgp 65101
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.4
+    !
+      neighbor 2001:db8:3:1::1 remote-as 65000
+      neighbor 2001:db8:3:1::1 description dut
+    !
+     address-family ipv6 unicast
+    !
+  
+    !
+      network 2001:db8:1::4/128
+    !
+    !
+    !
+      neighbor 2001:db8:3:1::1 activate
+      no neighbor 2001:db8:3:1::1 send-community all
+      neighbor 2001:db8:3:1::1 send-community standard
+      neighbor 2001:db8:3:1::1 send-community large
     !
     !
     !
@@ -584,6 +621,7 @@ ok: [dut] =>
     !
      address-family ipv6 unicast
     !
+  
     !
       network 2001:db8:cafe:e42::/64
     !
@@ -629,46 +667,12 @@ ok: [dut2] =>
     !
      address-family ipv6 unicast
     !
+  
       network 2001:db8:1::2/128
     !
     !
     !
     !
-ok: [x2] => 
-  msg: |-
-    bgp configuration for x2
-    =========================================
-    !
-    router bgp 65101
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.4
-    !
-      neighbor 2001:db8:3:1::1 remote-as 65000
-      neighbor 2001:db8:3:1::1 description dut
-    !
-     address-family ipv6 unicast
-    !
-  
-    !
-      network 2001:db8:1::4/128
-    !
-    !
-    !
-      neighbor 2001:db8:3:1::1 activate
-      no neighbor 2001:db8:3:1::1 send-community all
-      neighbor 2001:db8:3:1::1 send-community standard
-      neighbor 2001:db8:3:1::1 send-community large
-    !
-    !
-    !
-    do write
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/dellos10.yml for dut, dut2

@@ -1,3 +1,7 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -5,22 +9,22 @@ PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
+ok: [rr2]
 ok: [r1]
 ok: [r2]
-ok: [rr2]
 ok: [x1]
 
 TASK [Find device readiness script] ********************************************
 ok: [dut]
+ok: [rr2]
 ok: [r1]
 ok: [r2]
-ok: [rr2]
 ok: [x1]
 
 TASK [Wait for device to become ready] *****************************************
+skipping: [rr2]
 skipping: [r1]
 skipping: [r2]
-skipping: [rr2]
 skipping: [x1]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/sros.yml for dut
 
@@ -31,82 +35,184 @@ TASK [Wait up to 180s for gNMI(TCP 57400) to be ready on clab-ml_17-dut] *******
 ok: [dut -> localhost]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, rr2, x1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, rr2, r1, r2, x1
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [dut]
+ok: [rr2]
 ok: [r1]
 ok: [r2]
-ok: [rr2]
 ok: [x1]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [dut]
+ok: [rr2]
 ok: [r1]
 ok: [r2]
 ok: [x1]
-ok: [rr2]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
+skipping: [rr2]
 skipping: [r1]
 skipping: [r2]
-skipping: [rr2]
 skipping: [x1]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [dut]
+ok: [rr2]
 ok: [r1]
 ok: [r2]
-ok: [rr2]
 ok: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
+skipping: [rr2]
 skipping: [r1]
 skipping: [r2]
-skipping: [rr2]
 skipping: [x1]
 
 TASK [Deploy normalize configuration] ******************************************
 skipping: [dut]
+skipping: [rr2]
 skipping: [r1]
 skipping: [r2]
-skipping: [rr2]
 skipping: [x1]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, rr2, x1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, rr2, r1, r2, x1
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
+ok: [rr2]
 ok: [r1]
 ok: [r2]
-ok: [rr2]
 ok: [x1]
 
 TASK [Find configuration template for initial] *********************************
 ok: [dut]
+ok: [rr2]
 ok: [r1]
 ok: [r2]
-ok: [rr2]
 ok: [x1]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
+skipping: [rr2]
 skipping: [r1]
 skipping: [r2]
-skipping: [rr2]
 skipping: [x1]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [dut]
+ok: [rr2]
 ok: [r1]
 ok: [r2]
-ok: [rr2]
 ok: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [rr2] => 
+  msg: |-
+    initial configuration for rr2
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname rr2
+    !
+    ip forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.2/32
+    !
+    interface eth1
+     no shutdown
+     description rr2 -> r1
+     ip address 10.1.0.6/30
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
 ok: [r1] => 
   msg: |-
     initial configuration for r1
@@ -227,6 +333,95 @@ ok: [r1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+  
+  
+  
+  
+  
+    updates:
+  
+    - path: configure/router[router-name=Base]
+      val:
+       ecmp: 64
+  
+  
+  
+  
+  
+  
+    - path: configure/router[router-name=Base]/interface[interface-name=system]
+  
+      val:
+       admin-state: enable
+       description: "System interface"
+       ipv4:
+        primary:
+         address: "10.0.0.1"
+         prefix-length: 32
+  
+  
+  
+  
+  
+    - path: configure/port[port-id=1/1/c1]
+      val:
+       admin-state: enable
+       connector:
+        breakout: "c1-100g"
+    - path: configure/port[port-id=1/1/c1/1]
+      val:
+       admin-state: enable
+       ethernet:
+        mtu: 1514 # max 9800
+        mode: network
+  
+  
+  
+    - path: configure/router[router-name=Base]/interface[interface-name=eth-1/1/c1]
+  
+      val:
+       admin-state: enable
+       description: "dut ~ r1 ()"
+       ip-mtu: 1500
+       port: "1/1/c1/1"
+       ipv4:
+        primary:
+         address: "10.1.0.1"
+         prefix-length: 30
+  
+  
+  
+  
+  
+    - path: configure/port[port-id=1/1/c2]
+      val:
+       admin-state: enable
+       connector:
+        breakout: "c1-100g"
+    - path: configure/port[port-id=1/1/c2/1]
+      val:
+       admin-state: enable
+       ethernet:
+        mtu: 1514 # max 9800
+        mode: network
+  
+  
+  
+    - path: configure/router[router-name=Base]/interface[interface-name=eth-1/1/c2]
+  
+      val:
+       admin-state: enable
+       description: "dut ~ x1 (external)"
+       ip-mtu: 1500
+       port: "1/1/c2/1"
+       ipv4:
+        primary:
+         address: "10.1.0.13"
+         prefix-length: 30
 ok: [r2] => 
   msg: |-
     initial configuration for r2
@@ -329,196 +524,6 @@ ok: [r2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [rr2] => 
-  msg: |-
-    initial configuration for rr2
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)# "
-    echo
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
-    #
-    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
-    #
-    sysctl -w net.ipv4.ip_forward=1
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    # Set system defaults
-    #
-    # Send ARP requests from a sane source IP address
-    #
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Create loopbacks, stub and lag/bond devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    ip link set eth1 down
-    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
-    ip link set eth1 up
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-  
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname rr2
-    !
-    ip forwarding
-    vrf mgmt
-     exit-vrf
-    !
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ip address 10.0.0.2/32
-    !
-    interface eth1
-     no shutdown
-     description rr2 -> r1
-     ip address 10.1.0.6/30
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-  
-  
-  
-  
-    updates:
-  
-    - path: configure/router[router-name=Base]
-      val:
-       ecmp: 64
-  
-  
-  
-  
-  
-  
-    - path: configure/router[router-name=Base]/interface[interface-name=system]
-  
-      val:
-       admin-state: enable
-       description: "System interface"
-       ipv4:
-        primary:
-         address: "10.0.0.1"
-         prefix-length: 32
-  
-  
-  
-  
-  
-    - path: configure/port[port-id=1/1/c1]
-      val:
-       admin-state: enable
-       connector:
-        breakout: "c1-100g"
-    - path: configure/port[port-id=1/1/c1/1]
-      val:
-       admin-state: enable
-       ethernet:
-        mtu: 1514 # max 9800
-        mode: network
-  
-  
-  
-    - path: configure/router[router-name=Base]/interface[interface-name=eth-1/1/c1]
-  
-      val:
-       admin-state: enable
-       description: "dut ~ r1 ()"
-       ip-mtu: 1500
-       port: "1/1/c1/1"
-       ipv4:
-        primary:
-         address: "10.1.0.1"
-         prefix-length: 30
-  
-  
-  
-  
-  
-    - path: configure/port[port-id=1/1/c2]
-      val:
-       admin-state: enable
-       connector:
-        breakout: "c1-100g"
-    - path: configure/port[port-id=1/1/c2/1]
-      val:
-       admin-state: enable
-       ethernet:
-        mtu: 1514 # max 9800
-        mode: network
-  
-  
-  
-    - path: configure/router[router-name=Base]/interface[interface-name=eth-1/1/c2]
-  
-      val:
-       admin-state: enable
-       description: "dut ~ x1 (external)"
-       ip-mtu: 1500
-       port: "1/1/c2/1"
-       ipv4:
-        primary:
-         address: "10.1.0.13"
-         prefix-length: 30
 ok: [x1] => 
   msg: |-
     initial configuration for x1
@@ -624,7 +629,7 @@ ok: [x1] =>
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for r1, r2, rr2, x1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for rr2, r1, r2, x1
 
 TASK [Generate gNMI YAML configuration] ****************************************
 ok: [dut]
@@ -636,27 +641,27 @@ TASK [debug] *******************************************************************
 skipping: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [r1 -> localhost]
+changed: [rr2 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
+skipping: [rr2]
 skipping: [r1]
 skipping: [r2]
-skipping: [rr2]
 skipping: [x1]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, rr2, x1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for rr2, r1, r2, x1
 
 TASK [template] ****************************************************************
-changed: [r2]
-changed: [rr2]
 changed: [x1]
 changed: [r1]
+changed: [r2]
+changed: [rr2]
 
 TASK [set_fact] ****************************************************************
+ok: [rr2]
 ok: [r1]
 ok: [r2]
-ok: [rr2]
 ok: [x1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -666,251 +671,234 @@ changed: [r1]
 changed: [x1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+skipping: [rr2]
 skipping: [r1]
 skipping: [r2]
-skipping: [rr2]
 skipping: [x1]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
+ok: [rr2]
 ok: [r1]
 ok: [r2]
-ok: [rr2]
 ok: [x1]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, rr2, x1 => (item=bgp)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, rr2, x1 => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, rr2, r1, r2, x1 => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, rr2, r1, r2, x1 => (item=bgp)
 
-TASK [Figure out whether to deploy the module bgp on current device] ***********
+TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [dut]
+ok: [rr2]
 ok: [r1]
 ok: [r2]
-ok: [rr2]
 ok: [x1]
 
-TASK [Find configuration template for bgp] *************************************
+TASK [Find configuration template for ospf] ************************************
 ok: [dut]
+skipping: [x1]
+ok: [rr2]
 ok: [r1]
 ok: [r2]
-ok: [rr2]
-ok: [x1]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
+skipping: [rr2]
 skipping: [r1]
 skipping: [r2]
-skipping: [rr2]
 skipping: [x1]
 
-TASK [Find configuration deployment deploy_script for bgp] *********************
+TASK [Find configuration deployment deploy_script for ospf] ********************
+skipping: [x1]
 ok: [dut]
-ok: [r1]
 ok: [rr2]
-ok: [x1]
+ok: [r1]
 ok: [r2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [r1] => 
+skipping: [x1]
+ok: [rr2] => 
   msg: |-
-    bgp configuration for r1
+    ospf configuration for rr2
     =========================================
     !
-    router bgp 65000
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.2
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
   
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
   
-      bgp router-id 10.0.0.10
+    exit
     !
-      neighbor 10.0.0.1 remote-as 65000
-      neighbor 10.0.0.1 description dut
-      neighbor 10.0.0.1 update-source lo
+    interface lo
     !
-      neighbor 10.0.0.2 remote-as 65000
-      neighbor 10.0.0.2 description rr2
-      neighbor 10.0.0.2 update-source lo
+     ip ospf area 0.0.0.0
     !
-     address-family ipv4 unicast
+    interface eth1
+    ! rr2 -> r1
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
     !
   
     !
-      network 10.0.0.10/32
+    do write
+ok: [r1] => 
+  msg: |-
+    ospf configuration for r1
+    =========================================
     !
+    ! OSPFv2 FRR configuration
     !
-      network 172.0.42.0/24
+    router ospf
+     ospf router-id 10.0.0.10
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
     !
-      neighbor 10.0.0.1 activate
-      neighbor 10.0.0.1 next-hop-self
-      no neighbor 10.0.0.1 send-community all
-      neighbor 10.0.0.1 send-community standard
-      neighbor 10.0.0.1 send-community large
-      neighbor 10.0.0.1 send-community extended
+    interface lo
     !
-      neighbor 10.0.0.2 activate
-      neighbor 10.0.0.2 next-hop-self
-      no neighbor 10.0.0.2 send-community all
-      neighbor 10.0.0.2 send-community standard
-      neighbor 10.0.0.2 send-community large
-      neighbor 10.0.0.2 send-community extended
+     ip ospf area 0.0.0.0
     !
+    interface eth1
+    ! r1 -> dut
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
     !
-    ip route 172.0.42.0/24 Null0
+    interface eth2
+    ! r1 -> rr2
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    interface eth3
+    ! r1 -> r2
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
     !
     do write
 ok: [r2] => 
   msg: |-
-    bgp configuration for r2
+    ospf configuration for r2
     =========================================
     !
-    router bgp 65000
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.3
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
   
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
   
-      bgp router-id 10.0.0.3
+    exit
     !
-      neighbor 10.0.0.1 remote-as 65000
-      neighbor 10.0.0.1 description dut
-      neighbor 10.0.0.1 update-source lo
+    interface lo
     !
-      neighbor 10.0.0.2 remote-as 65000
-      neighbor 10.0.0.2 description rr2
-      neighbor 10.0.0.2 update-source lo
+     ip ospf area 0.0.0.0
     !
-     address-family ipv4 unicast
+    interface eth1
+    ! r2 -> r1
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
     !
   
-    !
-      network 10.0.0.3/32
-    !
-    !
-    !
-      neighbor 10.0.0.1 activate
-      neighbor 10.0.0.1 next-hop-self
-      no neighbor 10.0.0.1 send-community all
-      neighbor 10.0.0.1 send-community standard
-      neighbor 10.0.0.1 send-community large
-      neighbor 10.0.0.1 send-community extended
-    !
-      neighbor 10.0.0.2 activate
-      neighbor 10.0.0.2 next-hop-self
-      no neighbor 10.0.0.2 send-community all
-      neighbor 10.0.0.2 send-community standard
-      neighbor 10.0.0.2 send-community large
-      neighbor 10.0.0.2 send-community extended
-    !
-    !
     !
     do write
-ok: [rr2] => 
+ok: [dut] => 
   msg: |-
-    bgp configuration for rr2
+    ospf configuration for dut
     =========================================
-    !
-    router bgp 65000
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
   
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
   
-      bgp router-id 10.0.0.2
-      bgp cluster-id 10.0.0.43
-    !
-      neighbor 10.0.0.1 remote-as 65000
-      neighbor 10.0.0.1 description dut
-      neighbor 10.0.0.1 update-source lo
-    !
-      neighbor 10.0.0.10 remote-as 65000
-      neighbor 10.0.0.10 description r1
-      neighbor 10.0.0.10 update-source lo
-    !
-      neighbor 10.0.0.3 remote-as 65000
-      neighbor 10.0.0.3 description r2
-      neighbor 10.0.0.3 update-source lo
-    !
-     address-family ipv4 unicast
-    !
   
-    !
-      network 10.0.0.2/32
-    !
-    !
-    !
-      neighbor 10.0.0.1 activate
-      neighbor 10.0.0.1 next-hop-self
-      no neighbor 10.0.0.1 send-community all
-      neighbor 10.0.0.1 send-community standard
-      neighbor 10.0.0.1 send-community large
-      neighbor 10.0.0.1 send-community extended
-    !
-      neighbor 10.0.0.10 activate
-      neighbor 10.0.0.10 next-hop-self
-      neighbor 10.0.0.10 route-reflector-client
-      no neighbor 10.0.0.10 send-community all
-      neighbor 10.0.0.10 send-community standard
-      neighbor 10.0.0.10 send-community large
-      neighbor 10.0.0.10 send-community extended
-    !
-      neighbor 10.0.0.3 activate
-      neighbor 10.0.0.3 next-hop-self
-      neighbor 10.0.0.3 route-reflector-client
-      no neighbor 10.0.0.3 send-community all
-      neighbor 10.0.0.3 send-community standard
-      neighbor 10.0.0.3 send-community large
-      neighbor 10.0.0.3 send-community extended
-    !
-    !
-    !
-    do write
-ok: [x1] => 
-  msg: |-
-    bgp configuration for x1
-    =========================================
-    !
-    router bgp 65101
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
   
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
+    updates:
   
-      bgp router-id 172.42.42.1
-    !
-      neighbor 10.1.0.13 remote-as 65000
-      neighbor 10.1.0.13 description dut
-    !
-     address-family ipv4 unicast
-    !
   
-    !
-      network 172.42.42.0/24
-    !
-    !
-    !
-      neighbor 10.1.0.13 activate
-      no neighbor 10.1.0.13 send-community all
-      neighbor 10.1.0.13 send-community standard
-      neighbor 10.1.0.13 send-community large
-    !
-    !
-    !
-    do write
+    - path: configure/router[router-name=Base]/ospf[ospf-instance=0]
+  
+      val:
+        admin-state: enable
+        router-id: 10.0.0.1
+        area:
+        - area-id: "0.0.0.0"
+          interface:
+          - interface-name: "system"
+          - interface-name: "eth-1/1/c1"
+            interface-type: "point-to-point"
+
+TASK [Deploy ospf configuration] ***********************************************
+skipping: [x1]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for rr2, r1, r2
+
+TASK [Generate gNMI YAML configuration] ****************************************
+ok: [dut]
+
+TASK [Update ospf node configuration from gNMI template /home/pipi/net101/tools/netsim/ansible/templates/ospf/sros.j2] ***
+changed: [dut]
+
+TASK [debug] *******************************************************************
+skipping: [dut]
+
+TASK [template] ****************************************************************
+changed: [rr2]
+changed: [r1]
+changed: [r2]
+
+TASK [set_fact] ****************************************************************
+ok: [rr2]
+ok: [r1]
+ok: [r2]
+
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+skipping: [rr2]
+skipping: [r1]
+skipping: [r2]
+
+TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+changed: [r1]
+changed: [r2]
+changed: [rr2]
+
+TASK [Figure out whether to deploy the module bgp on current device] ***********
+ok: [dut]
+ok: [rr2]
+ok: [r1]
+ok: [r2]
+ok: [x1]
+
+TASK [Find configuration template for bgp] *************************************
+ok: [dut]
+ok: [rr2]
+ok: [r1]
+ok: [r2]
+ok: [x1]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [rr2]
+skipping: [r1]
+skipping: [r2]
+skipping: [x1]
+
+TASK [Find configuration deployment deploy_script for bgp] *********************
+ok: [dut]
+ok: [rr2]
+ok: [r1]
+ok: [r2]
+ok: [x1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
   msg: |-
     bgp configuration for dut
@@ -1108,10 +1096,204 @@ ok: [dut] =>
           family:
             ipv4: True
             ipv6: False
+ok: [rr2] => 
+  msg: |-
+    bgp configuration for rr2
+    =========================================
+    !
+    router bgp 65000
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.2
+      bgp cluster-id 10.0.0.43
+    !
+      neighbor 10.0.0.1 remote-as 65000
+      neighbor 10.0.0.1 description dut
+      neighbor 10.0.0.1 update-source lo
+    !
+      neighbor 10.0.0.10 remote-as 65000
+      neighbor 10.0.0.10 description r1
+      neighbor 10.0.0.10 update-source lo
+    !
+      neighbor 10.0.0.3 remote-as 65000
+      neighbor 10.0.0.3 description r2
+      neighbor 10.0.0.3 update-source lo
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.2/32
+    !
+    !
+    !
+      neighbor 10.0.0.1 activate
+      neighbor 10.0.0.1 next-hop-self
+      no neighbor 10.0.0.1 send-community all
+      neighbor 10.0.0.1 send-community standard
+      neighbor 10.0.0.1 send-community large
+      neighbor 10.0.0.1 send-community extended
+    !
+      neighbor 10.0.0.10 activate
+      neighbor 10.0.0.10 next-hop-self
+      neighbor 10.0.0.10 route-reflector-client
+      no neighbor 10.0.0.10 send-community all
+      neighbor 10.0.0.10 send-community standard
+      neighbor 10.0.0.10 send-community large
+      neighbor 10.0.0.10 send-community extended
+    !
+      neighbor 10.0.0.3 activate
+      neighbor 10.0.0.3 next-hop-self
+      neighbor 10.0.0.3 route-reflector-client
+      no neighbor 10.0.0.3 send-community all
+      neighbor 10.0.0.3 send-community standard
+      neighbor 10.0.0.3 send-community large
+      neighbor 10.0.0.3 send-community extended
+    !
+    !
+    !
+    do write
+ok: [r1] => 
+  msg: |-
+    bgp configuration for r1
+    =========================================
+    !
+    router bgp 65000
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.10
+    !
+      neighbor 10.0.0.1 remote-as 65000
+      neighbor 10.0.0.1 description dut
+      neighbor 10.0.0.1 update-source lo
+    !
+      neighbor 10.0.0.2 remote-as 65000
+      neighbor 10.0.0.2 description rr2
+      neighbor 10.0.0.2 update-source lo
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.10/32
+    !
+    !
+      network 172.0.42.0/24
+    !
+      neighbor 10.0.0.1 activate
+      neighbor 10.0.0.1 next-hop-self
+      no neighbor 10.0.0.1 send-community all
+      neighbor 10.0.0.1 send-community standard
+      neighbor 10.0.0.1 send-community large
+      neighbor 10.0.0.1 send-community extended
+    !
+      neighbor 10.0.0.2 activate
+      neighbor 10.0.0.2 next-hop-self
+      no neighbor 10.0.0.2 send-community all
+      neighbor 10.0.0.2 send-community standard
+      neighbor 10.0.0.2 send-community large
+      neighbor 10.0.0.2 send-community extended
+    !
+    !
+    ip route 172.0.42.0/24 Null0
+    !
+    do write
+ok: [x1] => 
+  msg: |-
+    bgp configuration for x1
+    =========================================
+    !
+    router bgp 65101
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 172.42.42.1
+    !
+      neighbor 10.1.0.13 remote-as 65000
+      neighbor 10.1.0.13 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 172.42.42.0/24
+    !
+    !
+    !
+      neighbor 10.1.0.13 activate
+      no neighbor 10.1.0.13 send-community all
+      neighbor 10.1.0.13 send-community standard
+      neighbor 10.1.0.13 send-community large
+    !
+    !
+    !
+    do write
+ok: [r2] => 
+  msg: |-
+    bgp configuration for r2
+    =========================================
+    !
+    router bgp 65000
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.3
+    !
+      neighbor 10.0.0.1 remote-as 65000
+      neighbor 10.0.0.1 description dut
+      neighbor 10.0.0.1 update-source lo
+    !
+      neighbor 10.0.0.2 remote-as 65000
+      neighbor 10.0.0.2 description rr2
+      neighbor 10.0.0.2 update-source lo
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.3/32
+    !
+    !
+    !
+      neighbor 10.0.0.1 activate
+      neighbor 10.0.0.1 next-hop-self
+      no neighbor 10.0.0.1 send-community all
+      neighbor 10.0.0.1 send-community standard
+      neighbor 10.0.0.1 send-community large
+      neighbor 10.0.0.1 send-community extended
+    !
+      neighbor 10.0.0.2 activate
+      neighbor 10.0.0.2 next-hop-self
+      no neighbor 10.0.0.2 send-community all
+      neighbor 10.0.0.2 send-community standard
+      neighbor 10.0.0.2 send-community large
+      neighbor 10.0.0.2 send-community extended
+    !
+    !
+    !
+    do write
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2, rr2, x1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for rr2, r1, r2, x1
 
 TASK [Generate gNMI YAML configuration] ****************************************
 ok: [dut]
@@ -1123,220 +1305,28 @@ TASK [debug] *******************************************************************
 skipping: [dut]
 
 TASK [template] ****************************************************************
-changed: [x1]
-changed: [rr2]
-changed: [r2]
 changed: [r1]
+changed: [rr2]
+changed: [x1]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
+ok: [rr2]
 ok: [r1]
 ok: [r2]
-ok: [rr2]
 ok: [x1]
 
 TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+skipping: [rr2]
 skipping: [r1]
 skipping: [r2]
-skipping: [rr2]
 skipping: [x1]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [r2]
-changed: [r1]
 changed: [rr2]
+changed: [r1]
 changed: [x1]
-
-TASK [Figure out whether to deploy the module ospf on current device] **********
-ok: [dut]
-ok: [r1]
-ok: [r2]
-ok: [rr2]
-ok: [x1]
-
-TASK [Find configuration template for ospf] ************************************
-ok: [dut]
-ok: [r1]
-skipping: [x1]
-ok: [r2]
-ok: [rr2]
-
-TASK [fail] ********************************************************************
-skipping: [dut]
-skipping: [r1]
-skipping: [r2]
-skipping: [rr2]
-skipping: [x1]
-
-TASK [Find configuration deployment deploy_script for ospf] ********************
-skipping: [x1]
-ok: [dut]
-ok: [r1]
-ok: [r2]
-ok: [rr2]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [x1]
-ok: [r1] => 
-  msg: |-
-    ospf configuration for r1
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.10
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! r1 -> dut
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-    interface eth2
-    ! r1 -> rr2
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-    interface eth3
-    ! r1 -> r2
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    do write
-ok: [r2] => 
-  msg: |-
-    ospf configuration for r2
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.3
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! r2 -> r1
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    do write
-ok: [rr2] => 
-  msg: |-
-    ospf configuration for rr2
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.2
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! rr2 -> r1
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    do write
-ok: [dut] => 
-  msg: |-
-    ospf configuration for dut
-    =========================================
-  
-  
-  
-    updates:
-  
-  
-  
-  
-  
-    - path: configure/router[router-name=Base]/ospf[ospf-instance=0]
-      val:
-        admin-state: enable
-        router-id: 10.0.0.1
-        area:
-        - area-id: "0.0.0.0"
-          interface:
-          - interface-name: "system"
-  
-  
-  
-    - path: configure/router[router-name=Base]/ospf[ospf-instance=0]
-      val:
-        admin-state: enable
-        router-id: 10.0.0.1
-        area:
-        - area-id: "0.0.0.0"
-          interface:
-          - interface-name: "eth-1/1/c1"
-            interface-type: "point-to-point"
-
-TASK [Deploy ospf configuration] ***********************************************
-skipping: [x1]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2, rr2
-
-TASK [Generate gNMI YAML configuration] ****************************************
-ok: [dut]
-
-TASK [Update ospf node configuration from gNMI template /home/pipi/net101/tools/netsim/ansible/templates/ospf/sros.j2] ***
-changed: [dut]
-
-TASK [debug] *******************************************************************
-skipping: [dut]
-
-TASK [template] ****************************************************************
 changed: [r2]
-changed: [rr2]
-changed: [r1]
-
-TASK [set_fact] ****************************************************************
-ok: [r1]
-ok: [r2]
-ok: [rr2]
-
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-skipping: [r1]
-skipping: [r2]
-skipping: [rr2]
-
-TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [r2]
-changed: [rr2]
-changed: [r1]
 
 PLAY [Deploy custom deployment templates] **************************************
 
@@ -1378,9 +1368,9 @@ skipping: [r1]
 
 PLAY RECAP *********************************************************************
 dut                        : ok=34   changed=3    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
-r1                         : ok=44   changed=9    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+r1                         : ok=43   changed=8    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 r2                         : ok=35   changed=6    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
-rr2                        : ok=35   changed=6    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
+rr2                        : ok=36   changed=7    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
 x1                         : ok=28   changed=4    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
 
 

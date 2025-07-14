@@ -1,4 +1,9 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+[WARNING]: Found variable using reserved name: hosts
 
 PLAY [Deploy initial device configuration] *************************************
 
@@ -24,7 +29,6 @@ TASK [Check for 'timeout' command] *********************************************
 ok: [dut -> localhost]
 
 TASK [Execute local ssh command to check ioll2 readiness] **********************
-FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check ioll2 readiness (20 retries left).
 ok: [dut -> localhost]
 
 TASK [Confirm dut SSH server works] ********************************************
@@ -32,7 +36,7 @@ ok: [dut] =>
   msg: Node dut is ready.
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for x1, x2, dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [x1]
@@ -45,9 +49,14 @@ ok: [x2]
 ok: [dut]
 
 TASK [fail] ********************************************************************
+skipping: [dut]
 skipping: [x1]
 skipping: [x2]
-skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [x1]
+ok: [x2]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [x1]
@@ -58,17 +67,12 @@ ok: [dut] =>
     =========================================
     !
     interface Ethernet0/1
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0101
     !
     interface Ethernet0/2
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0102
-
-TASK [Find configuration deployment deploy_script for normalize] ***************
-skipping: [x1]
-skipping: [x2]
-ok: [dut]
 
 TASK [Deploy normalize configuration] ******************************************
 skipping: [x1]
@@ -82,7 +86,7 @@ device including the indentation
 changed: [dut]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for x1, x2, dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [x1]
@@ -95,9 +99,14 @@ ok: [x2]
 ok: [dut]
 
 TASK [fail] ********************************************************************
+skipping: [dut]
 skipping: [x1]
 skipping: [x2]
-skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [x1]
+ok: [x2]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [x1] => 
@@ -119,6 +128,14 @@ ok: [x1] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
     #
     # Get the current next hop for the default route
     #
@@ -142,6 +159,12 @@ ok: [x1] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -154,17 +177,15 @@ ok: [x1] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
+    ip link set dev eth1 mtu 1500
     ip link set eth1 up
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -172,10 +193,10 @@ ok: [x1] =>
     cat >/tmp/config <<CONFIG
     hostname x1
     !
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
@@ -215,6 +236,14 @@ ok: [x2] =>
     echo
     SCRIPT
     #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
     # Get the current next hop for the default route
     #
     def_nh=$(ip route list default|awk '{ print $3 }')
@@ -237,6 +266,12 @@ ok: [x2] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -249,17 +284,15 @@ ok: [x2] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
+    ip link set dev eth1 mtu 1500
     ip link set eth1 up
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -267,10 +300,10 @@ ok: [x2] =>
     cat >/tmp/config <<CONFIG
     hostname x2
     !
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
@@ -301,6 +334,8 @@ ok: [dut] =>
     lldp run
     !
     !
+    ip routing
+    !
     ipv6 unicast-routing
     !
     !
@@ -314,14 +349,14 @@ ok: [dut] =>
     interface Ethernet0/1
      no switchport
      description dut -> x1
-     mtu 1500
+     ipv6 mtu 1500
      ipv6 address 2001:DB8:3::1/64
      no shutdown
     !
     interface Ethernet0/2
      no switchport
      description dut -> x2
-     mtu 1500
+     ipv6 mtu 1500
      ipv6 address 2001:DB8:3:1::1/64
      no shutdown
     !
@@ -333,14 +368,12 @@ ok: [dut] =>
     no banner login
     no banner incoming
 
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [x1]
-ok: [x2]
-ok: [dut]
-
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for x1, x2
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for x1, x2
+
+TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
+changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [x1 -> localhost]
@@ -353,23 +386,20 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
 ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
 skipping: [x2]
-
-TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
-changed: [dut]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -395,6 +425,11 @@ TASK [fail] ********************************************************************
 skipping: [dut]
 skipping: [x1]
 skipping: [x2]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+ok: [x1]
+ok: [x2]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [x1] => 
@@ -480,11 +515,6 @@ ok: [dut] =>
      ospfv3 cost 10
     !
 
-TASK [Find configuration deployment deploy_script for ospf] ********************
-ok: [x1]
-ok: [x2]
-ok: [dut]
-
 TASK [Deploy ospf configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2
@@ -505,16 +535,16 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
 dut                        : ok=29   changed=3    unreachable=0    failed=0    skipped=3    rescued=0    ignored=0   
-x1                         : ok=26   changed=5    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
-x2                         : ok=25   changed=4    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+x1                         : ok=27   changed=5    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+x2                         : ok=26   changed=4    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
 
 
 

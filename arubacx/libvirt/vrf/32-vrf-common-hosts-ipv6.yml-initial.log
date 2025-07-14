@@ -1,3 +1,7 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -16,13 +20,13 @@ ok: [srv]
 ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
-skipping: [dut]
 skipping: [h1]
 skipping: [h2]
 skipping: [srv]
+skipping: [dut]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, h1, h2, srv
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, srv, dut
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [h1]
@@ -37,10 +41,10 @@ ok: [srv]
 ok: [dut]
 
 TASK [fail] ********************************************************************
-skipping: [dut]
 skipping: [h1]
 skipping: [h2]
 skipping: [srv]
+skipping: [dut]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [h1]
@@ -49,19 +53,19 @@ ok: [srv]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [dut]
 skipping: [h1]
 skipping: [h2]
 skipping: [srv]
+skipping: [dut]
 
 TASK [Deploy normalize configuration] ******************************************
-skipping: [dut]
 skipping: [h1]
 skipping: [h2]
 skipping: [srv]
+skipping: [dut]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, h1, h2, srv
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, srv, dut
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [h1]
@@ -76,16 +80,16 @@ ok: [srv]
 ok: [dut]
 
 TASK [fail] ********************************************************************
-skipping: [dut]
 skipping: [h1]
 skipping: [h2]
 skipping: [srv]
+skipping: [dut]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [h1]
 ok: [h2]
-ok: [dut]
 ok: [srv]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [h1] => 
@@ -117,6 +121,10 @@ ok: [h1] =>
     # Interface addressing, create any bond devices
     #
     ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.1/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.1/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
     set +e
     ip -6 addr del 2001:db8:2::1/64 dev eth1 2>/dev/null
@@ -152,6 +160,10 @@ ok: [h2] =>
     # Interface addressing, create any bond devices
     #
     ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.1.2/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.1.2/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
     set +e
     ip -6 addr del 2001:db8:2:1::2/64 dev eth1 2>/dev/null
@@ -187,6 +199,10 @@ ok: [srv] =>
     # Interface addressing, create any bond devices
     #
     ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.2.3/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.2.3/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
     set +e
     ip -6 addr del 2001:db8:2:2::3/64 dev eth1 2>/dev/null
@@ -202,10 +218,30 @@ ok: [dut] =>
     lldp
     !
   
+    vrf red
+        rd 65000:1
+    !
+  
+        address-family ipv4 unicast
+            route-target import 65000:1
+            route-target import 65000:3
+            route-target export 65000:1
+        exit-address-family
+        address-family ipv6 unicast
+            route-target import 65000:1
+            route-target import 65000:3
+            route-target export 65000:1
+        exit-address-family
+  
     vrf blue
         rd 65000:2
     !
   
+        address-family ipv4 unicast
+            route-target import 65000:2
+            route-target import 65000:3
+            route-target export 65000:2
+        exit-address-family
         address-family ipv6 unicast
             route-target import 65000:2
             route-target import 65000:3
@@ -216,21 +252,17 @@ ok: [dut] =>
         rd 65000:3
     !
   
-        address-family ipv6 unicast
+        address-family ipv4 unicast
             route-target import 65000:1
             route-target import 65000:2
             route-target import 65000:3
             route-target export 65000:3
         exit-address-family
-  
-    vrf red
-        rd 65000:1
-    !
-  
         address-family ipv6 unicast
             route-target import 65000:1
+            route-target import 65000:2
             route-target import 65000:3
-            route-target export 65000:1
+            route-target export 65000:3
         exit-address-family
   
   
@@ -254,6 +286,7 @@ ok: [dut] =>
         mtu 9198
         vrf attach red
         description dut -> h1 [stub]
+        ip address 172.16.0.4/24
         ipv6 address 2001:db8:2::4/64
         no ipv6 nd suppress-ra
         ipv6 nd ra min-interval 3
@@ -266,6 +299,7 @@ ok: [dut] =>
         mtu 9198
         vrf attach blue
         description dut -> h2 [stub]
+        ip address 172.16.1.4/24
         ipv6 address 2001:db8:2:1::4/64
         no ipv6 nd suppress-ra
         ipv6 nd ra min-interval 3
@@ -278,6 +312,7 @@ ok: [dut] =>
         mtu 9198
         vrf attach common
         description dut -> srv [stub]
+        ip address 172.16.2.4/24
         ipv6 address 2001:db8:2:2::4/64
         no ipv6 nd suppress-ra
         ipv6 nd ra min-interval 3
@@ -287,20 +322,8 @@ ok: [dut] =>
     !
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2, srv
-
-TASK [tempfile] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [template] ****************************************************************
-changed: [dut -> localhost]
-
-TASK [aoscx_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/arubacx.j2] ***
-changed: [dut]
-
-TASK [file] ********************************************************************
-changed: [dut -> localhost]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for dut
 
 TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
@@ -308,9 +331,9 @@ ok: [h2]
 ok: [srv]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [srv -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
@@ -328,36 +351,67 @@ skipping: [h2]
 skipping: [srv]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 changed: [srv -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-i164icrs.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-4t2bs35p.sh] ***********************
 changed: [h1 -> localhost]
-changed: [h2 -> localhost]
 changed: [srv -> localhost]
+changed: [h2 -> localhost]
+
+TASK [tempfile] ****************************************************************
+changed: [dut -> localhost]
+
+TASK [template] ****************************************************************
+changed: [dut -> localhost]
+
+TASK [aoscx_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/arubacx.j2] ***
+changed: [dut]
+
+TASK [file] ********************************************************************
+changed: [dut -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
+ok: [h1]
+ok: [h2]
+ok: [srv]
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut => (item=vrf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, srv, dut => (item=vrf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, srv, dut => (item=routing)
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
+ok: [h1]
+ok: [h2]
+ok: [srv]
 ok: [dut]
 
 TASK [Find configuration template for vrf] *************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [srv]
 ok: [dut]
 
 TASK [fail] ********************************************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [srv]
 skipping: [dut]
 
 TASK [Find configuration deployment deploy_script for vrf] *********************
+skipping: [h1]
+skipping: [h2]
+skipping: [srv]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [h1]
+skipping: [h2]
+skipping: [srv]
 ok: [dut] => 
   msg: |-
     vrf configuration for dut
@@ -365,10 +419,29 @@ ok: [dut] =>
   
     !
     router bgp 65000
+      vrf red
+      bgp router-id 10.0.0.4
+  
+  
+     address-family ipv4 unicast
+      redistribute local loopback
+      redistribute connected
+    !
+    !
+     address-family ipv6 unicast
+      redistribute local loopback
+      redistribute connected
+    !
+    !
       vrf blue
       bgp router-id 10.0.0.4
   
   
+     address-family ipv4 unicast
+      redistribute local loopback
+      redistribute connected
+    !
+    !
      address-family ipv6 unicast
       redistribute local loopback
       redistribute connected
@@ -378,15 +451,11 @@ ok: [dut] =>
       bgp router-id 10.0.0.4
   
   
-     address-family ipv6 unicast
+     address-family ipv4 unicast
       redistribute local loopback
       redistribute connected
     !
     !
-      vrf red
-      bgp router-id 10.0.0.4
-  
-  
      address-family ipv6 unicast
       redistribute local loopback
       redistribute connected
@@ -394,6 +463,9 @@ ok: [dut] =>
     !
 
 TASK [Deploy vrf configuration] ************************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [srv]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for dut
 
 TASK [tempfile] ****************************************************************
@@ -408,14 +480,167 @@ changed: [dut]
 TASK [file] ********************************************************************
 changed: [dut -> localhost]
 
+TASK [Figure out whether to deploy the module routing on current device] *******
+ok: [h1]
+ok: [h2]
+ok: [srv]
+ok: [dut]
+
+TASK [Find configuration template for routing] *********************************
+skipping: [dut]
+ok: [h1]
+ok: [h2]
+ok: [srv]
+
+TASK [fail] ********************************************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [srv]
+skipping: [dut]
+
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [dut]
+ok: [h1]
+ok: [h2]
+ok: [srv]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+ok: [h1] => 
+  msg: |-
+    routing configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.0.4 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.0.4 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.0.4 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.0.4 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
+ok: [h2] => 
+  msg: |-
+    routing configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.1.4 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.1.4 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.1.4 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.1.4 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
+ok: [srv] => 
+  msg: |-
+    routing configuration for srv
+    =========================================
+    #!/bin/bash
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.2.4 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.2.4 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.2.4 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.2.4 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
+
+TASK [Deploy routing configuration] ********************************************
+skipping: [dut]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2, srv
+
+TASK [Define script filename and determine whether to execute in netns] ********
+ok: [h1]
+ok: [h2]
+ok: [srv]
+
+TASK [Create a temporary file for the rendered script] *************************
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+changed: [srv -> localhost]
+
+TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+changed: [srv -> localhost]
+
+TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
+skipping: [h1]
+skipping: [h2]
+skipping: [srv]
+
+TASK [Execute /tmp/config-h1_routing.sh to deploy routing config based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
+skipping: [h1]
+skipping: [h2]
+skipping: [srv]
+
+TASK [Container configuration for routing based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+changed: [srv -> localhost]
+
+TASK [Remove temporary file /tmp/h1_routing-td7la_m9.sh] ***********************
+changed: [h2 -> localhost]
+changed: [h1 -> localhost]
+changed: [srv -> localhost]
+
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=27   changed=8    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
-h1                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-h2                         : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-srv                        : ok=17   changed=4    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+dut                        : ok=29   changed=8    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
+h1                         : ok=31   changed=8    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+h2                         : ok=31   changed=8    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+srv                        : ok=31   changed=8    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 
 
 

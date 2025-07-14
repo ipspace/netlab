@@ -17,6 +17,16 @@ def parse(args: typing.List[str]) -> argparse.Namespace:
     dest='release',
     action='store_true',
     help='Create release reports')
+  parser.add_argument(
+    '--device',
+    dest='device',
+    action='store',
+    help='Create the reports only for the specified device')
+  parser.add_argument(
+    '--coverage',
+    dest='coverage',
+    action='store',
+    help='Create only the specified coverage report')
 
   return parser.parse_args(args)
 
@@ -48,11 +58,14 @@ def create_recursive_html(
       results: Box,
       topology: Box,
       template: str = 'results',
-      recursive: bool = True) -> None:
+      recursive: bool = True,
+      limit: typing.Optional[str] = None) -> None:
   for item,i_data in results.items():
     if item.startswith('_'):
       continue
     if not '_path' in i_data:
+      continue
+    if limit and item not in limit and limit != '*':
       continue
     path = i_data._path.replace('/','-').replace('#','.')
     create_html_page(args,f'{template}.html.j2',topology + { 'results': i_data },path+".html")
@@ -70,11 +83,25 @@ def create(
     topology._version = __version__
 
   topology.coverage = coverage
+  devices = topology.defaults.devices + topology.defaults.daemons
+  for d_name in sorted(list(devices)):
+    d_data = devices[d_name]
+    if d_name in results:
+      if 'support.level' in d_data:
+        topology.partial_results[d_name] = results[d_name]
+      else:
+        topology.full_results[d_name] = results[d_name]
+    elif not '_meta_device' in d_data:
+      topology.no_tests[d_name].description = d_data.description
+
   create_html_page(
     args,
     'index.html.j2',
     topology + { 'results': results },
     'index.html',
     output_dir='.')
-  create_recursive_html(args,results,topology)
-  create_recursive_html(args,coverage,topology,template='coverage',recursive=False)
+  if not args.coverage:
+    create_recursive_html(args,results,topology,limit=args.device)
+  
+  if not args.device:
+    create_recursive_html(args,coverage,topology,template='coverage',recursive=False,limit=args.coverage)
