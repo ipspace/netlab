@@ -1,3 +1,7 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -31,15 +35,15 @@ TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [dut]
 ok: [rr2]
 ok: [r1]
-ok: [r2]
 ok: [x1]
+ok: [r2]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [dut]
 ok: [rr2]
 ok: [r1]
-ok: [r2]
 ok: [x1]
+ok: [r2]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -52,8 +56,8 @@ TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [dut]
 ok: [rr2]
 ok: [r1]
-ok: [r2]
 ok: [x1]
+ok: [r2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
@@ -81,8 +85,8 @@ ok: [x1]
 
 TASK [Find configuration template for initial] *********************************
 ok: [dut]
-ok: [rr2]
 ok: [r1]
+ok: [rr2]
 ok: [r2]
 ok: [x1]
 
@@ -377,108 +381,6 @@ ok: [r1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [r2] => 
-  msg: |-
-    initial configuration for r2
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)# "
-    echo
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
-    #
-    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
-    #
-    sysctl -w net.ipv4.ip_forward=1
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    # Set system defaults
-    #
-    # Send ARP requests from a sane source IP address
-    #
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Create loopbacks, stub and lag/bond devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    ip link set eth1 down
-    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
-    ip link set eth1 up
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-  
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname r2
-    !
-    ip forwarding
-    vrf mgmt
-     exit-vrf
-    !
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ip address 10.0.0.3/32
-    !
-    interface eth1
-     no shutdown
-     description r2 -> r1
-     ip address 10.1.0.10/30
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
 ok: [x1] => 
   msg: |-
     initial configuration for x1
@@ -581,6 +483,108 @@ ok: [x1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [r2] => 
+  msg: |-
+    initial configuration for r2
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname r2
+    !
+    ip forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.3/32
+    !
+    interface eth1
+     no shutdown
+     description r2 -> r1
+     ip address 10.1.0.10/30
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    exit 0
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for dut
@@ -604,7 +608,7 @@ skipping: [dut]
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/bird-clab.j2 executed in netns] ***
 changed: [dut -> localhost]
 
-TASK [Remove temporary file /tmp/dut_initial-c7nnh5ng.sh] **********************
+TASK [Remove temporary file /tmp/dut_initial-7s_ba1ah.sh] **********************
 changed: [dut -> localhost]
 
 TASK [Attempt to load VRF kernel module] ***************************************
@@ -620,21 +624,21 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for rr2, r1, r2, x1
 
 TASK [template] ****************************************************************
-changed: [x1]
-changed: [r2]
 changed: [r1]
 changed: [rr2]
+changed: [r2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [rr2]
-ok: [r1]
 ok: [r2]
+ok: [r1]
 ok: [x1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [rr2]
-changed: [r1]
 changed: [r2]
+changed: [r1]
 changed: [x1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -653,265 +657,8 @@ ok: [r2]
 ok: [x1]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, rr2, r1, r2, x1 => (item=bgp)
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, rr2, r1, r2, x1 => (item=ospf)
-
-TASK [Figure out whether to deploy the module bgp on current device] ***********
-ok: [dut]
-ok: [rr2]
-ok: [r1]
-ok: [r2]
-ok: [x1]
-
-TASK [Find configuration template for bgp] *************************************
-skipping: [dut]
-ok: [rr2]
-ok: [r1]
-ok: [r2]
-ok: [x1]
-
-TASK [fail] ********************************************************************
-skipping: [dut]
-skipping: [rr2]
-skipping: [r1]
-skipping: [r2]
-skipping: [x1]
-
-TASK [Find configuration deployment deploy_script for bgp] *********************
-skipping: [dut]
-ok: [rr2]
-ok: [r1]
-ok: [r2]
-ok: [x1]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [dut]
-ok: [rr2] => 
-  msg: |-
-    bgp configuration for rr2
-    =========================================
-    !
-    router bgp 65000
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.2
-      bgp cluster-id 10.0.0.43
-    !
-      neighbor 10.0.0.1 remote-as 65000
-      neighbor 10.0.0.1 description dut
-      neighbor 10.0.0.1 update-source lo
-    !
-      neighbor 10.0.0.10 remote-as 65000
-      neighbor 10.0.0.10 description r1
-      neighbor 10.0.0.10 update-source lo
-    !
-      neighbor 10.0.0.3 remote-as 65000
-      neighbor 10.0.0.3 description r2
-      neighbor 10.0.0.3 update-source lo
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-      network 10.0.0.2/32
-    !
-    !
-    !
-      neighbor 10.0.0.1 activate
-      neighbor 10.0.0.1 next-hop-self
-      no neighbor 10.0.0.1 send-community all
-      neighbor 10.0.0.1 send-community standard
-      neighbor 10.0.0.1 send-community large
-      neighbor 10.0.0.1 send-community extended
-    !
-      neighbor 10.0.0.10 activate
-      neighbor 10.0.0.10 next-hop-self
-      neighbor 10.0.0.10 route-reflector-client
-      no neighbor 10.0.0.10 send-community all
-      neighbor 10.0.0.10 send-community standard
-      neighbor 10.0.0.10 send-community large
-      neighbor 10.0.0.10 send-community extended
-    !
-      neighbor 10.0.0.3 activate
-      neighbor 10.0.0.3 next-hop-self
-      neighbor 10.0.0.3 route-reflector-client
-      no neighbor 10.0.0.3 send-community all
-      neighbor 10.0.0.3 send-community standard
-      neighbor 10.0.0.3 send-community large
-      neighbor 10.0.0.3 send-community extended
-    !
-    !
-    !
-    do write
-ok: [r1] => 
-  msg: |-
-    bgp configuration for r1
-    =========================================
-    !
-    router bgp 65000
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.10
-    !
-      neighbor 10.0.0.1 remote-as 65000
-      neighbor 10.0.0.1 description dut
-      neighbor 10.0.0.1 update-source lo
-    !
-      neighbor 10.0.0.2 remote-as 65000
-      neighbor 10.0.0.2 description rr2
-      neighbor 10.0.0.2 update-source lo
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-      network 10.0.0.10/32
-    !
-    !
-      network 172.0.42.0/24
-    !
-      neighbor 10.0.0.1 activate
-      neighbor 10.0.0.1 next-hop-self
-      no neighbor 10.0.0.1 send-community all
-      neighbor 10.0.0.1 send-community standard
-      neighbor 10.0.0.1 send-community large
-      neighbor 10.0.0.1 send-community extended
-    !
-      neighbor 10.0.0.2 activate
-      neighbor 10.0.0.2 next-hop-self
-      no neighbor 10.0.0.2 send-community all
-      neighbor 10.0.0.2 send-community standard
-      neighbor 10.0.0.2 send-community large
-      neighbor 10.0.0.2 send-community extended
-    !
-    !
-    ip route 172.0.42.0/24 Null0
-    !
-    do write
-ok: [r2] => 
-  msg: |-
-    bgp configuration for r2
-    =========================================
-    !
-    router bgp 65000
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.3
-    !
-      neighbor 10.0.0.1 remote-as 65000
-      neighbor 10.0.0.1 description dut
-      neighbor 10.0.0.1 update-source lo
-    !
-      neighbor 10.0.0.2 remote-as 65000
-      neighbor 10.0.0.2 description rr2
-      neighbor 10.0.0.2 update-source lo
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-      network 10.0.0.3/32
-    !
-    !
-    !
-      neighbor 10.0.0.1 activate
-      neighbor 10.0.0.1 next-hop-self
-      no neighbor 10.0.0.1 send-community all
-      neighbor 10.0.0.1 send-community standard
-      neighbor 10.0.0.1 send-community large
-      neighbor 10.0.0.1 send-community extended
-    !
-      neighbor 10.0.0.2 activate
-      neighbor 10.0.0.2 next-hop-self
-      no neighbor 10.0.0.2 send-community all
-      neighbor 10.0.0.2 send-community standard
-      neighbor 10.0.0.2 send-community large
-      neighbor 10.0.0.2 send-community extended
-    !
-    !
-    !
-    do write
-ok: [x1] => 
-  msg: |-
-    bgp configuration for x1
-    =========================================
-    !
-    router bgp 65101
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 172.42.42.1
-    !
-      neighbor 10.1.0.13 remote-as 65000
-      neighbor 10.1.0.13 description dut
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-      network 172.42.42.0/24
-    !
-    !
-    !
-      neighbor 10.1.0.13 activate
-      no neighbor 10.1.0.13 send-community all
-      neighbor 10.1.0.13 send-community standard
-      neighbor 10.1.0.13 send-community large
-    !
-    !
-    !
-    do write
-
-TASK [Deploy bgp configuration] ************************************************
-skipping: [dut]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for rr2, r1, r2, x1
-
-TASK [template] ****************************************************************
-changed: [r1]
-changed: [rr2]
-changed: [x1]
-changed: [r2]
-
-TASK [set_fact] ****************************************************************
-ok: [rr2]
-ok: [r1]
-ok: [r2]
-ok: [x1]
-
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-skipping: [rr2]
-skipping: [r1]
-skipping: [r2]
-skipping: [x1]
-
-TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [rr2]
-changed: [r1]
-changed: [r2]
-changed: [x1]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, rr2, r1, r2, x1 => (item=bgp)
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [dut]
@@ -922,8 +669,8 @@ ok: [x1]
 
 TASK [Find configuration template for ospf] ************************************
 skipping: [dut]
-ok: [rr2]
 skipping: [x1]
+ok: [rr2]
 ok: [r1]
 ok: [r2]
 
@@ -1045,9 +792,9 @@ skipping: [x1]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for rr2, r1, r2
 
 TASK [template] ****************************************************************
+changed: [rr2]
 changed: [r1]
 changed: [r2]
-changed: [rr2]
 
 TASK [set_fact] ****************************************************************
 ok: [rr2]
@@ -1060,9 +807,262 @@ skipping: [r1]
 skipping: [r2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [r1]
-changed: [r2]
 changed: [rr2]
+changed: [r2]
+changed: [r1]
+
+TASK [Figure out whether to deploy the module bgp on current device] ***********
+ok: [dut]
+ok: [rr2]
+ok: [r1]
+ok: [r2]
+ok: [x1]
+
+TASK [Find configuration template for bgp] *************************************
+skipping: [dut]
+ok: [rr2]
+ok: [r1]
+ok: [r2]
+ok: [x1]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [rr2]
+skipping: [r1]
+skipping: [r2]
+skipping: [x1]
+
+TASK [Find configuration deployment deploy_script for bgp] *********************
+skipping: [dut]
+ok: [rr2]
+ok: [r1]
+ok: [r2]
+ok: [x1]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
+ok: [rr2] => 
+  msg: |-
+    bgp configuration for rr2
+    =========================================
+    !
+    router bgp 65000
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.2
+      bgp cluster-id 10.0.0.43
+    !
+      neighbor 10.0.0.1 remote-as 65000
+      neighbor 10.0.0.1 description dut
+      neighbor 10.0.0.1 update-source lo
+    !
+      neighbor 10.0.0.10 remote-as 65000
+      neighbor 10.0.0.10 description r1
+      neighbor 10.0.0.10 update-source lo
+    !
+      neighbor 10.0.0.3 remote-as 65000
+      neighbor 10.0.0.3 description r2
+      neighbor 10.0.0.3 update-source lo
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.2/32
+    !
+    !
+    !
+      neighbor 10.0.0.1 activate
+      neighbor 10.0.0.1 next-hop-self
+      no neighbor 10.0.0.1 send-community all
+      neighbor 10.0.0.1 send-community standard
+      neighbor 10.0.0.1 send-community large
+      neighbor 10.0.0.1 send-community extended
+    !
+      neighbor 10.0.0.10 activate
+      neighbor 10.0.0.10 next-hop-self
+      neighbor 10.0.0.10 route-reflector-client
+      no neighbor 10.0.0.10 send-community all
+      neighbor 10.0.0.10 send-community standard
+      neighbor 10.0.0.10 send-community large
+      neighbor 10.0.0.10 send-community extended
+    !
+      neighbor 10.0.0.3 activate
+      neighbor 10.0.0.3 next-hop-self
+      neighbor 10.0.0.3 route-reflector-client
+      no neighbor 10.0.0.3 send-community all
+      neighbor 10.0.0.3 send-community standard
+      neighbor 10.0.0.3 send-community large
+      neighbor 10.0.0.3 send-community extended
+    !
+    !
+    !
+    do write
+ok: [r1] => 
+  msg: |-
+    bgp configuration for r1
+    =========================================
+    !
+    router bgp 65000
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.10
+    !
+      neighbor 10.0.0.1 remote-as 65000
+      neighbor 10.0.0.1 description dut
+      neighbor 10.0.0.1 update-source lo
+    !
+      neighbor 10.0.0.2 remote-as 65000
+      neighbor 10.0.0.2 description rr2
+      neighbor 10.0.0.2 update-source lo
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.10/32
+    !
+    !
+      network 172.0.42.0/24
+    !
+      neighbor 10.0.0.1 activate
+      neighbor 10.0.0.1 next-hop-self
+      no neighbor 10.0.0.1 send-community all
+      neighbor 10.0.0.1 send-community standard
+      neighbor 10.0.0.1 send-community large
+      neighbor 10.0.0.1 send-community extended
+    !
+      neighbor 10.0.0.2 activate
+      neighbor 10.0.0.2 next-hop-self
+      no neighbor 10.0.0.2 send-community all
+      neighbor 10.0.0.2 send-community standard
+      neighbor 10.0.0.2 send-community large
+      neighbor 10.0.0.2 send-community extended
+    !
+    !
+    ip route 172.0.42.0/24 Null0
+    !
+    do write
+ok: [r2] => 
+  msg: |-
+    bgp configuration for r2
+    =========================================
+    !
+    router bgp 65000
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.3
+    !
+      neighbor 10.0.0.1 remote-as 65000
+      neighbor 10.0.0.1 description dut
+      neighbor 10.0.0.1 update-source lo
+    !
+      neighbor 10.0.0.2 remote-as 65000
+      neighbor 10.0.0.2 description rr2
+      neighbor 10.0.0.2 update-source lo
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.3/32
+    !
+    !
+    !
+      neighbor 10.0.0.1 activate
+      neighbor 10.0.0.1 next-hop-self
+      no neighbor 10.0.0.1 send-community all
+      neighbor 10.0.0.1 send-community standard
+      neighbor 10.0.0.1 send-community large
+      neighbor 10.0.0.1 send-community extended
+    !
+      neighbor 10.0.0.2 activate
+      neighbor 10.0.0.2 next-hop-self
+      no neighbor 10.0.0.2 send-community all
+      neighbor 10.0.0.2 send-community standard
+      neighbor 10.0.0.2 send-community large
+      neighbor 10.0.0.2 send-community extended
+    !
+    !
+    !
+    do write
+ok: [x1] => 
+  msg: |-
+    bgp configuration for x1
+    =========================================
+    !
+    router bgp 65101
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 172.42.42.1
+    !
+      neighbor 10.1.0.13 remote-as 65000
+      neighbor 10.1.0.13 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 172.42.42.0/24
+    !
+    !
+    !
+      neighbor 10.1.0.13 activate
+      no neighbor 10.1.0.13 send-community all
+      neighbor 10.1.0.13 send-community standard
+      neighbor 10.1.0.13 send-community large
+    !
+    !
+    !
+    do write
+
+TASK [Deploy bgp configuration] ************************************************
+skipping: [dut]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for rr2, r1, r2, x1
+
+TASK [template] ****************************************************************
+changed: [r1]
+changed: [rr2]
+changed: [x1]
+changed: [r2]
+
+TASK [set_fact] ****************************************************************
+ok: [rr2]
+ok: [r1]
+ok: [r2]
+ok: [x1]
+
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+skipping: [rr2]
+skipping: [r1]
+skipping: [r2]
+skipping: [x1]
+
+TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+changed: [r2]
+changed: [r1]
+changed: [rr2]
+changed: [x1]
 
 PLAY [Deploy custom deployment templates] **************************************
 

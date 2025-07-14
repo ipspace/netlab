@@ -19,6 +19,7 @@ defaults:
       - startup-delay
       - restart-policy
       template: clab.j2
+      version: 0.68.0
       start: sudo -E containerlab deploy --reconfigure -t clab.yml
       stop: sudo -E containerlab destroy --cleanup -t clab.yml
       act_probe: docker ps
@@ -112,7 +113,6 @@ defaults:
       act_title: KVM/libvirt domains (virtual machines)
       cleanup:
       - Vagrantfile
-      - .vagrant
       tunnel_id: '17'
       vifprefix: vgif_17
       clab:
@@ -280,6 +280,8 @@ defaults:
         icon: switch
     asav:
       description: Cisco ASAv
+      support:
+        level: minimal
       interface_name: GigabitEthernet0/{ifindex}
       ifindex_offset: 0
       mgmt_if: Management0/0
@@ -304,6 +306,7 @@ defaults:
         create_iso: asav
     cat8000v:
       description: Cisco CSR 1000v
+      _meta_device: true
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
       group_vars:
@@ -339,6 +342,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -476,6 +480,7 @@ defaults:
         create_iso: cat8000v
     csr:
       description: Cisco CSR 1000v
+      _meta_device: true
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
       group_vars:
@@ -511,6 +516,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -648,6 +654,10 @@ defaults:
           --import
     cumulus:
       description: Cumulus VX 4.x or 5.x configured without NVUE
+      support:
+        level: obsolete
+        caveats:
+        - The last Cumulus 4.x image was released in September 2022
       interface_name: swp{ifindex}
       loopback_interface_name: lo{ifindex if ifindex else ""}
       tunnel_interface_name: tun{ifindex}
@@ -667,6 +677,8 @@ defaults:
             interfaces: /etc/network/interfaces
             hosts: /etc/hosts
         image: networkop/cx:4.4.0
+        caveats:
+        - Cumulus 4.x containers are out-of-date and not supported
         group_vars:
           ansible_connection: docker
           ansible_user: root
@@ -798,6 +810,11 @@ defaults:
         icon: switch
     cumulus_nvue:
       description: Cumulus VX 5.x configured with NVUE
+      support:
+        level: minimal
+        caveats:
+        - The new Cumulus 5.x releases run only on NVIDIA air. The last public 
+          release was 5.10.0 from September 2024
       interface_name: swp{ifindex}
       lag_interface_name: bond{lag.ifindex}
       loopback_interface_name: lo{ifindex if ifindex else ""}
@@ -805,6 +822,11 @@ defaults:
       mtu: 1500
       libvirt:
         image: CumulusCommunity/cumulus-vx:5.10.0
+        caveats:
+        - >-
+          The public Cumulus 5.x Vagrant box has a blocked SSH account
+          (details in https://netlab.tools/labs/cumulus_nvue/#changing-the-password-expiration-policy)
+        - Newer Cumulus 5.x releases run only on NVIDIA Air
       virtualbox:
         image: CumulusCommunity/cumulus-vx:5.10.0
       group_vars:
@@ -888,6 +910,8 @@ defaults:
           kind: cvx
           runtime: docker
         image: networkop/cx:5.3.0
+        caveats:
+        - Cumulus 5.x containers are out-of-date and not supported
         group_vars:
           ansible_connection: docker
           ansible_user: root
@@ -921,6 +945,7 @@ defaults:
           - connected
           - static
           - vrf
+          confederation: true
         evpn:
           asymmetrical_irb: true
           irb: true
@@ -982,7 +1007,7 @@ defaults:
           port_type: true
         vlan:
           model: switch
-          svi_interface_name: virtual-network{vlan}
+          svi_interface_name: vlan{vlan}
         vrf:
           ospfv2: true
           bgp: true
@@ -1074,6 +1099,7 @@ defaults:
             - extended
             2octet:
             - standard
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -1213,8 +1239,15 @@ defaults:
           eos:
             serialnumber: str
             systemmacaddr: mac
+      warnings:
+        ospf_stub: false
     fortios:
       description: Fortinet FortiOS firewall
+      support:
+        level: minimal
+        caveats:
+        - We don't test Fortinet configurations due to their ridiculous 
+          temporary licensing policy
       interface_name: port{ifindex}
       loopback_interface_name: loopback{ifindex}
       loopback: false
@@ -1349,6 +1382,7 @@ defaults:
             - extended
             2octet:
             - standard
+          confederation: true
         evpn:
           irb: true
           asymmetrical_irb: true
@@ -1455,6 +1489,7 @@ defaults:
         icon: router
     iol:
       description: Cisco IOL
+      _meta_device: true
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
       group_vars:
@@ -1486,6 +1521,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -1611,6 +1647,7 @@ defaults:
           kind: cisco_iol
     ioll2:
       description: IOSv L2 image
+      _meta_device: true
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
       group_vars:
@@ -1642,6 +1679,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -1747,6 +1785,17 @@ defaults:
           protocol:
           - vrrp
         sr: {}
+        stp:
+          supported_protocols:
+          - stp
+          - rstp
+          - mstp
+          - pvrst
+          enable_per_port: true
+          port_type: true
+        lag:
+          mlag: false
+          passive: true
       external:
         image: none
       graphite:
@@ -1767,8 +1816,10 @@ defaults:
           kind: cisco_iol
           type: l2
         mtu: 1500
+      lag_interface_name: Port-channel{lag.ifindex}
     iosv:
       description: Cisco IOSv
+      _meta_device: true
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
       group_vars:
@@ -1804,6 +1855,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -1932,6 +1984,7 @@ defaults:
         build: https://github.com/hellt/vrnetlab/tree/master/vios
     iosvl2:
       description: IOSv L2 image
+      _meta_device: true
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
       group_vars:
@@ -1967,6 +2020,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -2072,6 +2126,17 @@ defaults:
         gateway:
           protocol:
           - vrrp
+        stp:
+          supported_protocols:
+          - stp
+          - rstp
+          - mstp
+          - pvrst
+          enable_per_port: true
+          port_type: true
+        lag:
+          mlag: false
+          passive: true
       external:
         image: none
       graphite:
@@ -2094,8 +2159,11 @@ defaults:
         interface:
           name: eth{ifindex}
         build: https://github.com/hellt/vrnetlab/tree/master/viosl2
+      lag_interface_name: Port-channel{lag.ifindex}
     iosxr:
       description: Cisco IOS XRv
+      support:
+        level: minimal
       mgmt_if: MgmtEth0/RP0/CPU0/0
       interface_name: GigabitEthernet0/0/0/{ifindex}
       loopback_interface_name: Loopback{ifindex}
@@ -2220,6 +2288,7 @@ defaults:
         icon: server
     none:
       description: Dummy device used to test topology transformation
+      _meta_device: true
       interface_name: eth{ifindex}
       lag_interface_name: bond{lag.ifindex}
       loopback_interface_name: Loopback{ifindex}
@@ -2269,6 +2338,7 @@ defaults:
           - connected
           - static
           - vrf
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -2394,6 +2464,8 @@ defaults:
           vtep6: true
     nxos:
       description: Cisco Nexus 9300v
+      support:
+        level: best-effort
       interface_name: Ethernet1/{ifindex}
       mgmt_if: mgmt0
       loopback_interface_name: loopback{ifindex}
@@ -2464,6 +2536,8 @@ defaults:
         icon: nexus5000
     openbsd:
       description: OpenBSD
+      support:
+        level: best-effort
       interface_name: vio{ifindex}
       loopback_interface_name: lo{ifindex}
       ifindex_offset: 1
@@ -2506,6 +2580,8 @@ defaults:
       provider: libvirt
     routeros:
       description: Mikrotik RouterOS version 6
+      support:
+        level: obsolete
       interface_name: ether{ifindex}
       mgmt_if: ether1
       ifindex_offset: 2
@@ -2539,6 +2615,8 @@ defaults:
         icon: router
     routeros7:
       description: Mikrotik RouterOS version 7
+      support:
+        level: minimal
       interface_name: ether{ifindex}
       mgmt_if: ether1
       loopback_interface_name: loopback{ifindex}
@@ -2583,6 +2661,8 @@ defaults:
         icon: router
     sonic:
       description: Sonic VM
+      support:
+        level: minimal
       interface_name: Ethernet{ifindex * 4}
       ifindex_offset: 0
       mgmt_if: eth0
@@ -2879,8 +2959,11 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        loopback_ipv6: false
     unknown:
       description: Generic Unknown Device
+      _meta_device: true
       interface_name: eth{ifindex}
       mgmt_if: eth0
       graphite:
@@ -2903,6 +2986,7 @@ defaults:
         vxlan: {}
     vjunos-router:
       description: vJunos Router (similar to vMX)
+      _meta_device: true
       loopback_interface_name: lo0.{ifindex}
       ifindex_offset: 0
       interface_name: ge-0/0/{ifindex}
@@ -2996,6 +3080,7 @@ defaults:
         icon: router
     vjunos-switch:
       description: vJunos Switch
+      _meta_device: true
       loopback_interface_name: lo0.{ifindex}
       ifindex_offset: 0
       interface_name: ge-0/0/{ifindex}
@@ -3092,6 +3177,7 @@ defaults:
         icon: switch
     vmx:
       description: Juniper vMX container
+      _meta_device: true
       loopback_interface_name: lo0.{ifindex}
       ifindex_offset: 0
       interface_name: ge-0/0/{ifindex}
@@ -3168,6 +3254,10 @@ defaults:
           native_routed: true
       external:
         image: none
+      support:
+        level: best-effort
+        caveats:
+        - vMX gets all new Junos features, but we don't test them on vMX
       clab:
         image: vrnetlab/vr-vmx:18.2R1.9
         build: https://containerlab.dev/manual/kinds/vr-vmx/
@@ -3179,6 +3269,7 @@ defaults:
         icon: router
     vptx:
       description: Juniper vPTX
+      _meta_device: true
       loopback_interface_name: lo0.{ifindex}
       ifindex_offset: 0
       interface_name: et-0/0/{ifindex}
@@ -3274,6 +3365,7 @@ defaults:
         icon: switch
     vsrx:
       description: Juniper vSRX 3.0
+      _meta_device: true
       loopback_interface_name: lo0.{ifindex}
       ifindex_offset: 0
       interface_name: ge-0/0/{ifindex}
@@ -3347,6 +3439,10 @@ defaults:
           native_routed: true
       external:
         image: none
+      support:
+        level: best-effort
+        caveats:
+        - vSRX gets all new Junos features, but we don't test them on vSRX
       virtualbox:
         image: juniper/vsrx3
       libvirt:
@@ -3377,6 +3473,7 @@ defaults:
       description: VyOS VM/container
       interface_name: eth{ifindex}
       loopback_interface_name: dum{ifindex}
+      lag_interface_name: bond{lag.ifindex}
       mgmt_if: eth0
       libvirt:
         image: vyos/current
@@ -3411,6 +3508,8 @@ defaults:
           protocol:
           - vrrp
         isis: {}
+        lag:
+          passive: false
         mpls:
           ldp: true
           vpn:
@@ -3908,7 +4007,7 @@ defaults:
         up: docker run -d --rm {sys.docker_net} --mount 
           type=bind,source="$(pwd)/graphite/graphite-default.json",target=/htdocs/default/default.json,readonly
           -p { 8080 + defaults.multilab.id if defaults.multilab.id else 8080 
-          }:80 --name '{name}_graphite' netreplica/graphite:0.4.2
+          }:80 --name "{name}_graphite" netreplica/graphite:0.4.2
         message: Open http://{sys.ipaddr}:{ 8080 + defaults.multilab.id if 
           defaults.multilab.id else 8080 }/graphite/ in your browser
         down: docker kill '{name}_graphite'
@@ -4009,6 +4108,24 @@ defaults:
           nxos_ssh: true
           ios: true
       test_creation:
+        interface:
+          nxos: nxos_ssh
+          asav: ios
+          cat8000c: ios
+          iol: ios
+          ioll2: ios
+          iosv: ios
+          iosvl2: ios
+          iosxr: iosxr
+          vmx: junos
+          vptx: junos
+          vsrx: junos
+          vjunos-switch: junos
+          vjunos-router: junos
+          srlinux: srl
+          routeros: ros
+          routeros7: ros
+          arubacx: aoscx
         bgp:
           nxos: nxos_ssh
           asav: ios
@@ -4036,13 +4153,13 @@ defaults:
     suzieq:
       runtime: docker
       docker:
-        up: docker run --rm -itd --name '{name}_suzieq' {sys.docker_net} -v 
-          '{name}_suzieq':/parquet -v './suzieq':/suzieq netenglabs/suzieq-demo 
-          -c 'sq-poller -I /suzieq/suzieq-inventory.yml'
+        up: docker run -itd --name '{name}_suzieq' {sys.docker_net} -v 
+          '{name}_suzieq_data':/parquet -v './suzieq':/suzieq 
+          netenglabs/suzieq-demo -c 'sq-poller -I /suzieq/suzieq-inventory.yml'
         message: Use 'netlab connect suzieq' to start SuzieQ CLI
         connect: docker exec -it '{name}_suzieq' /usr/local/bin/suzieq-cli
-        down: docker kill '{name}_suzieq'
-        cleanup: docker volume rm '{name}_suzieq'
+        down: docker kill '{name}_suzieq'; docker rm '{name}_suzieq'
+        cleanup: docker volume rm '{name}_suzieq_data'
       config:
       - dest: suzieq-inventory.yml
         template: suzieq.inventory.j2
@@ -4720,7 +4837,9 @@ defaults:
       maxlength: 255
     validate:
       ping: 5
+      ping_long: 15
       vxlan_ping: 20
+      ping_xx_long: 40
       ra_send: 30
       ospfv2_adj_p2p: 30
       ospfv2_adj_lan: 50
@@ -4730,11 +4849,19 @@ defaults:
       ospfv3_spf: 10
       ospf_import: 20
       ebgp_session: 30
+      ibgp_session: 30
       bgp_scan_time: 5
       bgp_scan_long: 15
+      bgp_ios_redist: 60
       isis_adj_p2p: 20
+      isis_adj_lan: 50
       isis_spf: 15
+      isis_spf_long: 45
+      rip_start: 60
+      rip_update: 20
+      ldp_adj: 30
       stp_forwarding: 40
+      lacp_setup: 10
   hints:
     evpn:
       irb_group: >
@@ -4806,6 +4933,12 @@ defaults:
       unmanaged_device: Netlab uses the node device type for unmanaged nodes to 
         figure out what features the node supports. If you're using a device 
         that is not supported by netlab, set the device type to 'none'.
+    support:
+      best-effort: While a core contributor might still work on the platform, we
+        don't run integration tests
+      minimal: Don't expect too much (particularly new functionality)
+      obsolete: These platforms are still part of the netlab package because the
+        storage prices keep falling
   multilab:
     change:
       name: ml_17
@@ -4919,6 +5052,8 @@ defaults:
     netconf: 830
   warnings:
     duplicate_address: true
+    providers:
+      change: false
   bfd:
     min_echo_rx: 0
     multiplier: 3
@@ -5004,6 +5139,7 @@ defaults:
       advertise_roles:
       rr_list:
       as_list:
+      confederation:
     transform_after:
     - vlan
     config_after:
@@ -5013,6 +5149,8 @@ defaults:
     - eigrp
     - ripv2
     next_hop_self: true
+    hooks:
+    - normalize
     attributes:
       global:
         as: asn
@@ -5054,6 +5192,13 @@ defaults:
           - str
           - BoxList
         replace_global_as: bool
+        confederation:
+          type: dict
+          _keytype: asn
+          _subtype:
+            members:
+              type: list
+              _subtype: asn
       _inherit_community:
         localas_ibgp: ibgp
       node:
@@ -5140,6 +5285,7 @@ defaults:
       ipv6_lla: Can run EBGP sessions over IPv6 link-local addresses
       rfc8950: Can run IPv4 AF over regular IPv6 EBGP session
       community: Granular BGP community propagation
+      confederation: BGP confederations
       import: Import routes from other routing protocols
     warnings:
       missing_igp: true
@@ -5666,9 +5812,16 @@ defaults:
             _alt_types:
             - bool
           mac: mac
+      interface:
+        lacp_system_id:
+          type: mac
+          _alt_types:
+          - int
+      intf_to_neighbor: false
       lag_l2_linkattr:
         mtu:
         bandwidth:
+        lacp_system_id:
       lag_member_linkattr:
         mtu:
         bandwidth:
@@ -5688,11 +5841,14 @@ defaults:
       dnsmasq: true
       eos: true
       frr: true
+      ioll2: true
+      iosvl2: true
       linux: true
       none: true
       vjunos-switch: true
       vptx: true
       vsrx: true
+      vyos: true
   mpls:
     config_after:
     - vlan
@@ -6534,6 +6690,8 @@ defaults:
       dellos10: true
       eos: true
       frr: true
+      ioll2: true
+      iosvl2: true
       none: true
   vlan:
     config_after:
@@ -6589,6 +6747,7 @@ defaults:
         stp:
         virtual_interface:
         lag:
+        evpn:
       keep_subif:
         vlan:
         ifindex:
@@ -6755,17 +6914,22 @@ defaults:
   sources:
     extra:
     - ../wait_times.yml
+    - ../warnings.yml
     list: []
     user: []
     system: []
-  workdir: /work/netlab_cicd
-  device: openbsd
   groups:
+    external:
+      device: frr
+      members: []
+      _default_group: true
     all:
       vars:
         netlab_show_config: true
       members: []
       _default_group: true
+  workdir: /work/netlab_cicd
+  device: openbsd
   plugin:
   - multilab
   _globals:
@@ -6832,6 +6996,10 @@ groups:
         - pool: loopback
           nexthop:
             node: r
+  external:
+    device: frr
+    members: []
+    _default_group: true
   all:
     vars:
       netlab_show_config: true
@@ -6865,9 +7033,6 @@ nodes:
         ipv6: 2001:db8:1::1/64
         ifname: eth1
         node: h1
-      libvirt:
-        provider:
-          clab: true
     - ipv4: 172.16.1.132/24
       ipv6: 2001:db8:1:1::84/64
       bandwidth: 2000
@@ -6883,9 +7048,6 @@ nodes:
         ipv6: 2001:db8:1:1::2/64
         ifname: eth1
         node: h2
-      libvirt:
-        provider:
-          clab: true
     device: openbsd
     box: netlab/openbsd
     role: router
@@ -6935,9 +7097,6 @@ nodes:
         ipv6: 2001:db8:1::84/64
         ifname: vio1
         node: r
-      libvirt:
-        provider:
-          clab: true
     device: linux
     module:
     - routing
@@ -6993,9 +7152,6 @@ nodes:
         ipv6: 2001:db8:1:1::84/64
         ifname: vio2
         node: r
-      libvirt:
-        provider:
-          clab: true
     device: linux
     module:
     - routing
@@ -7086,6 +7242,7 @@ validate:
 input:
 - /home/pipi/net101/tools/tests/integration/initial/01-interfaces.yml
 - /home/pipi/net101/tools/tests/integration/wait_times.yml
+- /home/pipi/net101/tools/tests/integration/warnings.yml
 - /home/pipi/.netlab.yml
 - package:topology-defaults.yml
 plugin:
