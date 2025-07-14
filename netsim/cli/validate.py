@@ -246,7 +246,10 @@ def extend_device_wait_time(v_entry: Box, topology: Box) -> None:
       log.warning(
         text=f'{d_path} is not a dictionary, ignoring')
       continue
-    if 'wait' in v_params and v_params.wait > v_entry.get('wait',0):
+    v_wait = v_entry.get('wait',0)                # Get the test wait time
+    if not isinstance(v_wait,int):                # Always override symbolic wait times with device-specific times
+      v_wait = 0
+    if 'wait' in v_params and v_params.wait > v_wait:
       if log.VERBOSE:
         print(f'Extending wait time for test {v_entry.name} to {v_params.wait} (device {ndata.device})')
       v_entry.wait = v_params.wait
