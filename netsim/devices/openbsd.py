@@ -4,6 +4,7 @@
 from box import Box
 
 from . import _Quirks,report_quirk
+from ._common import check_indirect_static_routes
 from ..utils import log
 
 """
@@ -27,3 +28,4 @@ class OpenBSD(_Quirks):
   @classmethod
   def device_quirks(self, node: Box, topology: Box) -> None:
     check_loopback(node,topology)
+    check_indirect_static_routes(node)
