@@ -1,3 +1,7 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -7,15 +11,15 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [s1]
 ok: [s2]
 ok: [r1]
-ok: [r2]
 ok: [ros]
+ok: [r2]
 
 TASK [Find device readiness script] ********************************************
 ok: [s1]
-ok: [s2]
 ok: [r1]
-ok: [r2]
+ok: [s2]
 ok: [ros]
+ok: [r2]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [ros]
@@ -30,14 +34,14 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ros
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [s1]
 ok: [s2]
-ok: [r1]
 ok: [r2]
+ok: [r1]
 ok: [ros]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [s1]
-ok: [s2]
 ok: [r1]
+ok: [s2]
 ok: [r2]
 ok: [ros]
 
@@ -50,10 +54,10 @@ skipping: [r2]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [s1]
-ok: [s2]
 ok: [r1]
-ok: [r2]
+ok: [s2]
 ok: [ros]
+ok: [r2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ros]
@@ -83,8 +87,8 @@ TASK [Find configuration template for initial] *********************************
 ok: [s1]
 ok: [s2]
 ok: [r1]
-ok: [r2]
 ok: [ros]
+ok: [r2]
 
 TASK [fail] ********************************************************************
 skipping: [ros]
@@ -95,8 +99,8 @@ skipping: [r2]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [s1]
-ok: [s2]
 ok: [r1]
+ok: [s2]
 ok: [r2]
 ok: [ros]
 
@@ -484,6 +488,58 @@ ok: [r1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [ros] => 
+  msg: |-
+    initial configuration for ros
+    =========================================
+    hostname ros
+    !
+    no ip domain lookup
+    !
+    lldp run
+    !
+    ip host s1 10.0.0.2 172.16.0.2 172.16.1.2
+    ip host s2 10.0.0.3 172.16.1.3 172.16.0.3
+    ip host r1 10.0.0.4 172.16.0.4
+    ip host r2 10.0.0.5 172.16.1.5
+    !
+    ip routing
+    !
+    no ipv6 unicast-routing
+    !
+  
+    !
+    !
+    interface Loopback0
+     ip address 10.0.0.1 255.255.255.255
+    !
+    interface GigabitEthernet1
+     no lldp transmit
+     no lldp receive
+    !
+    interface GigabitEthernet2
+     description ros -> s2
+     no shutdown
+    !
+    interface GigabitEthernet2.1
+     encapsulation dot1Q 701
+     description ros -> [r2,s1,s2]
+     ip address 172.16.1.1 255.255.255.0
+     no shutdown
+    !
+    interface GigabitEthernet2.2
+     encapsulation dot1Q 700
+     description ros -> [r1,s1,s2]
+     ip address 172.16.0.1 255.255.255.0
+     no shutdown
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
+    !
+    no banner exec
+    no banner login
+    no banner incoming
 ok: [r2] => 
   msg: |-
     initial configuration for r2
@@ -586,58 +642,6 @@ ok: [r2] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [ros] => 
-  msg: |-
-    initial configuration for ros
-    =========================================
-    hostname ros
-    !
-    no ip domain lookup
-    !
-    lldp run
-    !
-    ip host s1 10.0.0.2 172.16.0.2 172.16.1.2
-    ip host s2 10.0.0.3 172.16.1.3 172.16.0.3
-    ip host r1 10.0.0.4 172.16.0.4
-    ip host r2 10.0.0.5 172.16.1.5
-    !
-    ip routing
-    !
-    no ipv6 unicast-routing
-    !
-  
-    !
-    !
-    interface Loopback0
-     ip address 10.0.0.1 255.255.255.255
-    !
-    interface GigabitEthernet1
-     no lldp transmit
-     no lldp receive
-    !
-    interface GigabitEthernet2
-     description ros -> s2
-     no shutdown
-    !
-    interface GigabitEthernet2.1
-     encapsulation dot1Q 701
-     description ros -> [r2,s1,s2]
-     ip address 172.16.1.1 255.255.255.0
-     no shutdown
-    !
-    interface GigabitEthernet2.2
-     encapsulation dot1Q 700
-     description ros -> [r1,s1,s2]
-     ip address 172.16.0.1 255.255.255.0
-     no shutdown
-    !
-    !
-    line vty 0 4
-     exec-timeout 0 0
-    !
-    no banner exec
-    no banner login
-    no banner incoming
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for ros
@@ -662,22 +666,22 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for s1, s2, r1, r2
 
 TASK [template] ****************************************************************
-changed: [s2]
 changed: [s1]
-changed: [r2]
 changed: [r1]
+changed: [s2]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [s1]
 ok: [s2]
-ok: [r1]
 ok: [r2]
+ok: [r1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r1]
-changed: [r2]
-changed: [s2]
 changed: [s1]
+changed: [r2]
+changed: [r1]
+changed: [s2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [s1]
@@ -701,14 +705,14 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ros
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [s1]
 ok: [s2]
-ok: [r1]
 ok: [r2]
+ok: [r1]
 ok: [ros]
 
 TASK [Find configuration template for vlan] ************************************
 skipping: [r1]
-ok: [s1]
 skipping: [r2]
+ok: [s1]
 ok: [s2]
 ok: [ros]
 
@@ -842,16 +846,16 @@ TASK [ios_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/tem
 changed: [ros]
 
 TASK [template] ****************************************************************
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [set_fact] ****************************************************************
 ok: [s1]
 ok: [s2]
 
 TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [run vtysh to import vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
 skipping: [s1]
@@ -915,6 +919,27 @@ ok: [r1] =>
   
     !
     do write
+ok: [ros] => 
+  msg: |-
+    ospf configuration for ros
+    =========================================
+    router ospf 1
+     router-id 10.0.0.1
+  
+  
+    !
+    interface Loopback0
+    !
+     ip ospf 1 area 0.0.0.0
+    !
+    interface GigabitEthernet2.1
+    ! ros -> [r2,s1,s2]
+     ip ospf 1 area 0.0.0.0
+    !
+    interface GigabitEthernet2.2
+    ! ros -> [r1,s1,s2]
+     ip ospf 1 area 0.0.0.0
+    !
 ok: [r2] => 
   msg: |-
     ospf configuration for r2
@@ -942,27 +967,6 @@ ok: [r2] =>
   
     !
     do write
-ok: [ros] => 
-  msg: |-
-    ospf configuration for ros
-    =========================================
-    router ospf 1
-     router-id 10.0.0.1
-  
-  
-    !
-    interface Loopback0
-    !
-     ip ospf 1 area 0.0.0.0
-    !
-    interface GigabitEthernet2.1
-    ! ros -> [r2,s1,s2]
-     ip ospf 1 area 0.0.0.0
-    !
-    interface GigabitEthernet2.2
-    ! ros -> [r1,s1,s2]
-     ip ospf 1 area 0.0.0.0
-    !
 
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [s1]
@@ -986,8 +990,8 @@ skipping: [r1]
 skipping: [r2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [r2]
 changed: [r1]
+changed: [r2]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched

@@ -3,40 +3,6 @@
 message: |
   Use this topology to test the origination and propagation
   of IPv4 prefixes.
-module:
-- ospf
-- bgp
-groups:
-  probes:
-    device: frr
-    members:
-    - x1
-    - x2
-    - r1
-    node_data:
-      provider: clab
-  external:
-    device: frr
-    members: []
-    _default_group: true
-  all:
-    vars:
-      netlab_show_config: true
-    members: []
-    _default_group: true
-  as65000:
-    members:
-    - dut
-    - r1
-  as65001:
-    members:
-    - dut2
-  as65100:
-    members:
-    - x1
-  as65101:
-    members:
-    - x2
 defaults:
   provider: clab
   providers:
@@ -149,8 +115,8 @@ defaults:
       cleanup:
       - Vagrantfile
       - .vagrant
-      tunnel_id: '17'
-      vifprefix: vgif_17
+      tunnel_id: '30'
+      vifprefix: vgif_30
       clab:
         start: sudo -E containerlab deploy --reconfigure -t clab-augment.yml
         stop: sudo -E containerlab destroy --cleanup -t clab-augment.yml
@@ -316,6 +282,8 @@ defaults:
         icon: switch
     asav:
       description: Cisco ASAv
+      support:
+        level: minimal
       interface_name: GigabitEthernet0/{ifindex}
       ifindex_offset: 0
       mgmt_if: Management0/0
@@ -686,6 +654,10 @@ defaults:
           --import
     cumulus:
       description: Cumulus VX 4.x or 5.x configured without NVUE
+      support:
+        level: obsolete
+        caveats:
+        - The last Cumulus 4.x image was released in September 2022
       interface_name: swp{ifindex}
       loopback_interface_name: lo{ifindex if ifindex else ""}
       tunnel_interface_name: tun{ifindex}
@@ -836,6 +808,11 @@ defaults:
         icon: switch
     cumulus_nvue:
       description: Cumulus VX 5.x configured with NVUE
+      support:
+        level: minimal
+        caveats:
+        - The new Cumulus 5.x releases run only on NVIDIA air. The last public 
+          release was 5.10.0 from September 2024
       interface_name: swp{ifindex}
       lag_interface_name: bond{lag.ifindex}
       loopback_interface_name: lo{ifindex if ifindex else ""}
@@ -1253,8 +1230,15 @@ defaults:
           eos:
             serialnumber: str
             systemmacaddr: mac
+      warnings:
+        ospf_stub: false
     fortios:
       description: Fortinet FortiOS firewall
+      support:
+        level: minimal
+        caveats:
+        - We don't test Fortinet configurations due to their ridiculous 
+          temporary licensing policy
       interface_name: port{ifindex}
       loopback_interface_name: loopback{ifindex}
       loopback: false
@@ -1799,6 +1783,9 @@ defaults:
           - pvrst
           enable_per_port: true
           port_type: true
+        lag:
+          mlag: false
+          passive: true
       external:
         image: none
       graphite:
@@ -1820,6 +1807,7 @@ defaults:
           type: l2
         mtu: 1500
       provider: clab
+      lag_interface_name: Port-channel{lag.ifindex}
     iosv:
       description: Cisco IOSv
       loopback_interface_name: Loopback{ifindex}
@@ -2135,6 +2123,9 @@ defaults:
           - pvrst
           enable_per_port: true
           port_type: true
+        lag:
+          mlag: false
+          passive: true
       external:
         image: none
       graphite:
@@ -2157,8 +2148,11 @@ defaults:
         interface:
           name: eth{ifindex}
         build: https://github.com/hellt/vrnetlab/tree/master/viosl2
+      lag_interface_name: Port-channel{lag.ifindex}
     iosxr:
       description: Cisco IOS XRv
+      support:
+        level: minimal
       mgmt_if: MgmtEth0/RP0/CPU0/0
       interface_name: GigabitEthernet0/0/0/{ifindex}
       loopback_interface_name: Loopback{ifindex}
@@ -2332,6 +2326,7 @@ defaults:
           - connected
           - static
           - vrf
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -2457,6 +2452,8 @@ defaults:
           vtep6: true
     nxos:
       description: Cisco Nexus 9300v
+      support:
+        level: best-effort
       interface_name: Ethernet1/{ifindex}
       mgmt_if: mgmt0
       loopback_interface_name: loopback{ifindex}
@@ -2527,6 +2524,8 @@ defaults:
         icon: nexus5000
     openbsd:
       description: OpenBSD
+      support:
+        level: best-effort
       interface_name: vio{ifindex}
       loopback_interface_name: lo{ifindex}
       ifindex_offset: 1
@@ -2568,6 +2567,8 @@ defaults:
         icon: server
     routeros:
       description: Mikrotik RouterOS version 6
+      support:
+        level: obsolete
       interface_name: ether{ifindex}
       mgmt_if: ether1
       ifindex_offset: 2
@@ -2601,6 +2602,8 @@ defaults:
         icon: router
     routeros7:
       description: Mikrotik RouterOS version 7
+      support:
+        level: minimal
       interface_name: ether{ifindex}
       mgmt_if: ether1
       loopback_interface_name: loopback{ifindex}
@@ -2645,6 +2648,8 @@ defaults:
         icon: router
     sonic:
       description: Sonic VM
+      support:
+        level: minimal
       interface_name: Ethernet{ifindex * 4}
       ifindex_offset: 0
       mgmt_if: eth0
@@ -2941,6 +2946,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        loopback_ipv6: false
     unknown:
       description: Generic Unknown Device
       interface_name: eth{ifindex}
@@ -3230,6 +3237,10 @@ defaults:
           native_routed: true
       external:
         image: none
+      support:
+        level: best-effort
+        caveats:
+        - vMX gets all new Junos features, but we don't test them on vMX
       clab:
         image: vrnetlab/vr-vmx:18.2R1.9
         build: https://containerlab.dev/manual/kinds/vr-vmx/
@@ -3409,6 +3420,10 @@ defaults:
           native_routed: true
       external:
         image: none
+      support:
+        level: best-effort
+        caveats:
+        - vSRX gets all new Junos features, but we don't test them on vSRX
       virtualbox:
         image: juniper/vsrx3
       libvirt:
@@ -3439,6 +3454,7 @@ defaults:
       description: VyOS VM/container
       interface_name: eth{ifindex}
       loopback_interface_name: dum{ifindex}
+      lag_interface_name: bond{lag.ifindex}
       mgmt_if: eth0
       libvirt:
         image: vyos/current
@@ -3473,6 +3489,8 @@ defaults:
           protocol:
           - vrrp
         isis: {}
+        lag:
+          passive: false
         mpls:
           ldp: true
           vpn:
@@ -4116,13 +4134,13 @@ defaults:
     suzieq:
       runtime: docker
       docker:
-        up: docker run --rm -itd --name '{name}_suzieq' {sys.docker_net} -v 
-          '{name}_suzieq':/parquet -v './suzieq':/suzieq netenglabs/suzieq-demo 
-          -c 'sq-poller -I /suzieq/suzieq-inventory.yml'
+        up: docker run -itd --name '{name}_suzieq' {sys.docker_net} -v 
+          '{name}_suzieq_data':/parquet -v './suzieq':/suzieq 
+          netenglabs/suzieq-demo -c 'sq-poller -I /suzieq/suzieq-inventory.yml'
         message: Use 'netlab connect suzieq' to start SuzieQ CLI
         connect: docker exec -it '{name}_suzieq' /usr/local/bin/suzieq-cli
-        down: docker kill '{name}_suzieq'
-        cleanup: docker volume rm '{name}_suzieq'
+        down: docker kill '{name}_suzieq'; docker rm '{name}_suzieq'
+        cleanup: docker volume rm '{name}_suzieq_data'
       config:
       - dest: suzieq-inventory.yml
         template: suzieq.inventory.j2
@@ -4497,7 +4515,6 @@ defaults:
         ibgp:
         ebgp:
         localas_ibgp:
-        confed_ebgp:
     rp_entry:
       _description: Routing policy entry
       action:
@@ -4799,6 +4816,33 @@ defaults:
     ifname:
       neighbors: 5
       maxlength: 255
+    validate:
+      ping: 5
+      ping_long: 15
+      vxlan_ping: 20
+      ping_xx_long: 40
+      ra_send: 30
+      ospfv2_adj_p2p: 30
+      ospfv2_adj_lan: 50
+      ospfv2_spf: 10
+      ospfv3_adj_p2p: 30
+      ospfv3_adj_lan: 50
+      ospfv3_spf: 10
+      ospf_import: 20
+      ebgp_session: 30
+      ibgp_session: 30
+      bgp_scan_time: 5
+      bgp_scan_long: 15
+      bgp_ios_redist: 60
+      isis_adj_p2p: 20
+      isis_adj_lan: 50
+      isis_spf: 15
+      isis_spf_long: 45
+      rip_start: 60
+      rip_update: 20
+      ldp_adj: 30
+      stp_forwarding: 40
+      lacp_setup: 10
   hints:
     evpn:
       irb_group: >
@@ -4870,21 +4914,27 @@ defaults:
       unmanaged_device: Netlab uses the node device type for unmanaged nodes to 
         figure out what features the node supports. If you're using a device 
         that is not supported by netlab, set the device type to 'none'.
+    support:
+      best-effort: While a core contributor might still work on the platform, we
+        don't run integration tests
+      minimal: Don't expect too much (particularly new functionality)
+      obsolete: These platforms are still part of the netlab package because the
+        storage prices keep falling
   multilab:
     change:
-      name: ml_17
+      name: ml_30
       defaults:
-        name: ml_17
+        name: ml_30
         providers:
           libvirt:
-            tunnel_id: '17'
-            vifprefix: vgif_17
+            tunnel_id: '30'
+            vifprefix: vgif_30
       addressing:
         mgmt:
-          ipv4: 192.168.17.0/24
-          _network: nl_mgmt_17
-          _bridge: nl_mgmt_17
-    id: 17
+          ipv4: 192.168.30.0/24
+          _network: nl_mgmt_30
+          _bridge: nl_mgmt_30
+    id: 30
   netlab:
     capture:
       command: tcpdump -i {intf}
@@ -4893,14 +4943,14 @@ defaults:
     validate:
     - /home/pipi/net101/tools/netsim/validate
     plugin:
-    - /work/netlab_cicd
+    - /work/netlab_cicd/cisco
     - /home/pipi/net101/tools/tests/integration/bgp
     - /home/pipi/.netlab
     - /home/pipi/net101/tools/netsim/extra
     custom:
       dirs:
       - /home/pipi/net101/tools/tests/integration/bgp
-      - /work/netlab_cicd
+      - /work/netlab_cicd/cisco
       - /home/pipi/.netlab
       - /home/pipi/net101/tools/netsim/extra
       files:
@@ -4983,6 +5033,8 @@ defaults:
     netconf: 830
   warnings:
     duplicate_address: true
+    providers:
+      change: false
   bfd:
     min_echo_rx: 0
     multiplier: 3
@@ -5078,6 +5130,8 @@ defaults:
     - eigrp
     - ripv2
     next_hop_self: true
+    hooks:
+    - normalize
     attributes:
       global:
         as: asn
@@ -5128,7 +5182,6 @@ defaults:
               _subtype: asn
       _inherit_community:
         localas_ibgp: ibgp
-        confed_ebgp: ibgp
       node:
         as:
           type: asn
@@ -5770,11 +5823,14 @@ defaults:
       dnsmasq: true
       eos: true
       frr: true
+      ioll2: true
+      iosvl2: true
       linux: true
       none: true
       vjunos-switch: true
       vptx: true
       vsrx: true
+      vyos: true
   mpls:
     config_after:
     - vlan
@@ -6836,13 +6892,15 @@ defaults:
       unknown: true
       vjunos-switch: true
       vyos: true
-  interfaces:
-    mtu: 1500
   sources:
+    extra:
+    - ../wait_times.yml
+    - ../warnings.yml
     list: []
-    extra: []
     user: []
     system: []
+  interfaces:
+    mtu: 1500
   groups:
     external:
       device: frr
@@ -6880,7 +6938,41 @@ defaults:
   module:
   - ospf
   - bgp
-  name: ml_17
+  name: ml_30
+module:
+- ospf
+- bgp
+groups:
+  probes:
+    device: frr
+    members:
+    - x1
+    - x2
+    - r1
+    node_data:
+      provider: clab
+  external:
+    device: frr
+    members: []
+    _default_group: true
+  all:
+    vars:
+      netlab_show_config: true
+    members: []
+    _default_group: true
+  as65000:
+    members:
+    - dut
+    - r1
+  as65001:
+    members:
+    - dut2
+  as65100:
+    members:
+    - x1
+  as65101:
+    members:
+    - x2
 nodes:
   dut:
     bgp:
@@ -6892,9 +6984,6 @@ nodes:
         ebgp:
         - standard
         localas_ibgp:
-        - standard
-        - extended
-        confed_ebgp:
         - standard
         - extended
       next_hop_self: true
@@ -7022,7 +7111,7 @@ nodes:
       linkindex: 5
       role: stub
       type: stub
-      bridge: ml_17_5
+      bridge: ml_30_5
       name: dut -> stub
       ifindex: 5
       ifname: Ethernet1/1
@@ -7052,8 +7141,8 @@ nodes:
     mgmt:
       ifname: Ethernet0/0
       mac: 08:4f:a9:01:00:00
-      ipv4: 192.168.17.101
-    hostname: clab-ml_17-dut
+      ipv4: 192.168.30.101
+    hostname: clab-ml_30-dut
   dut2:
     bgp:
       advertise_loopback: true
@@ -7064,9 +7153,6 @@ nodes:
         ebgp:
         - standard
         localas_ibgp:
-        - standard
-        - extended
-        confed_ebgp:
         - standard
         - extended
       next_hop_self: true
@@ -7120,8 +7206,8 @@ nodes:
     mgmt:
       ifname: Ethernet0/0
       mac: 08:4f:a9:02:00:00
-      ipv4: 192.168.17.102
-    hostname: clab-ml_17-dut2
+      ipv4: 192.168.30.102
+    hostname: clab-ml_30-dut2
   x1:
     bgp:
       advertise_loopback: true
@@ -7134,10 +7220,6 @@ nodes:
         - standard
         - large
         localas_ibgp:
-        - standard
-        - large
-        - extended
-        confed_ebgp:
         - standard
         - large
         - extended
@@ -7187,8 +7269,8 @@ nodes:
     mgmt:
       ifname: eth0
       mac: 08:4f:a9:03:00:00
-      ipv4: 192.168.17.103
-    hostname: clab-ml_17-x1
+      ipv4: 192.168.30.103
+    hostname: clab-ml_30-x1
     loopback:
       type: loopback
       neighbors: []
@@ -7208,10 +7290,6 @@ nodes:
         - standard
         - large
         localas_ibgp:
-        - standard
-        - large
-        - extended
-        confed_ebgp:
         - standard
         - large
         - extended
@@ -7261,8 +7339,8 @@ nodes:
     mgmt:
       ifname: eth0
       mac: 08:4f:a9:04:00:00
-      ipv4: 192.168.17.104
-    hostname: clab-ml_17-x2
+      ipv4: 192.168.30.104
+    hostname: clab-ml_30-x2
     loopback:
       type: loopback
       neighbors: []
@@ -7316,10 +7394,6 @@ nodes:
         - standard
         - large
         - extended
-        confed_ebgp:
-        - standard
-        - large
-        - extended
       next_hop_self: true
       as: 65000
       router_id: 10.0.0.5
@@ -7350,8 +7424,8 @@ nodes:
     mgmt:
       ifname: eth0
       mac: 08:4f:a9:05:00:00
-      ipv4: 192.168.17.105
-    hostname: clab-ml_17-r1
+      ipv4: 192.168.30.105
+    hostname: clab-ml_30-r1
     loopback:
       type: loopback
       neighbors: []
@@ -7440,7 +7514,7 @@ links:
   node_count: 1
   role: stub
   type: stub
-  bridge: ml_17_5
+  bridge: ml_30_5
 validate:
 - description: Check OSPF session with DUT
   wait: 30
@@ -7460,7 +7534,7 @@ validate:
   name: bgp_adj
 - description: Check whether DUT originates the beacon prefix
   wait_msg: Wait for prefix origination and BGP convergence
-  wait: 30
+  wait: 15
   nodes:
   - x1
   - x2
@@ -7499,11 +7573,13 @@ validate:
   name: suppress_p2p
 input:
 - /home/pipi/net101/tools/tests/integration/bgp/04-originate.yml
+- /home/pipi/net101/tools/tests/integration/wait_times.yml
+- /home/pipi/net101/tools/tests/integration/warnings.yml
 - /home/pipi/.netlab.yml
 - package:topology-defaults.yml
 plugin:
 - multilab
-name: ml_17
+name: ml_30
 addressing:
   lan:
     ipv4: 172.16.0.0/16
@@ -7518,11 +7594,11 @@ addressing:
     ipv4: 10.0.0.0/24
     prefix: 32
   mgmt:
-    ipv4: 192.168.17.0/24
+    ipv4: 192.168.30.0/24
     start: 100
     mac: 08-4F-A9-00-00-00
-    _network: nl_mgmt_17
-    _bridge: nl_mgmt_17
+    _network: nl_mgmt_30
+    _bridge: nl_mgmt_30
     prefix: 24
   l2only: {}
   vrf_loopback:

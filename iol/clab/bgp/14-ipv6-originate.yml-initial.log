@@ -10,8 +10,8 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [x1]
 ok: [x2]
-ok: [dut]
 ok: [dut2]
+ok: [dut]
 
 TASK [Find device readiness script] ********************************************
 ok: [x1]
@@ -32,12 +32,12 @@ ok: [dut -> localhost]
 ok: [dut2 -> localhost]
 
 TASK [Execute local ssh command to check iol readiness] ************************
-FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check iol readiness (20 retries left).
 FAILED - RETRYING: [dut2 -> localhost]: Execute local ssh command to check iol readiness (20 retries left).
-FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check iol readiness (19 retries left).
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check iol readiness (20 retries left).
 FAILED - RETRYING: [dut2 -> localhost]: Execute local ssh command to check iol readiness (19 retries left).
-ok: [dut -> localhost]
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check iol readiness (19 retries left).
 ok: [dut2 -> localhost]
+ok: [dut -> localhost]
 
 TASK [Confirm dut SSH server works] ********************************************
 ok: [dut] => 
@@ -445,8 +445,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -478,8 +478,8 @@ ok: [dut]
 ok: [dut2]
 
 TASK [Find configuration template for bgp] *************************************
-ok: [x1]
 ok: [x2]
+ok: [x1]
 ok: [dut]
 ok: [dut2]
 
@@ -564,6 +564,36 @@ ok: [x2] =>
     !
     !
     do write
+ok: [dut2] => 
+  msg: |-
+    bgp configuration for dut2
+    =========================================
+    !
+    ip bgp-community new-format
+    !
+    router bgp 65001
+     no bgp default ipv4-unicast
+     bgp update-delay 5
+     bgp nopeerup-delay cold-boot 1
+     bgp nopeerup-delay user-initiated 1
+     bgp router-id 10.0.0.2
+      neighbor 2001:db8:cafe:e01::1 remote-as 65000
+      neighbor 2001:db8:cafe:e01::1 description dut
+  
+    !
+     address-family ipv6
+      bgp scan-time 5
+  
+    !
+      network 2001:db8:1::2/128
+  
+    !
+    !
+      neighbor 2001:db8:cafe:e01::1 activate
+      neighbor 2001:db8:cafe:e01::1 advertisement-interval 0
+      neighbor 2001:db8:cafe:e01::1 send-community standard
+  
+    !
 ok: [dut] => 
   msg: |-
     bgp configuration for dut
@@ -606,36 +636,6 @@ ok: [dut] =>
       neighbor 2001:db8:cafe:e01::2 activate
       neighbor 2001:db8:cafe:e01::2 advertisement-interval 0
       neighbor 2001:db8:cafe:e01::2 send-community standard
-  
-    !
-ok: [dut2] => 
-  msg: |-
-    bgp configuration for dut2
-    =========================================
-    !
-    ip bgp-community new-format
-    !
-    router bgp 65001
-     no bgp default ipv4-unicast
-     bgp update-delay 5
-     bgp nopeerup-delay cold-boot 1
-     bgp nopeerup-delay user-initiated 1
-     bgp router-id 10.0.0.2
-      neighbor 2001:db8:cafe:e01::1 remote-as 65000
-      neighbor 2001:db8:cafe:e01::1 description dut
-  
-    !
-     address-family ipv6
-      bgp scan-time 5
-  
-    !
-      network 2001:db8:1::2/128
-  
-    !
-    !
-      neighbor 2001:db8:cafe:e01::1 activate
-      neighbor 2001:db8:cafe:e01::1 advertisement-interval 0
-      neighbor 2001:db8:cafe:e01::1 send-community standard
   
     !
 

@@ -1,3 +1,7 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -6,17 +10,17 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [ce1]
 ok: [ce2]
-ok: [dut]
 ok: [p1]
 ok: [p2]
+ok: [dut]
 ok: [pe2]
 
 TASK [Find device readiness script] ********************************************
 ok: [ce1]
 ok: [ce2]
 ok: [p1]
-ok: [dut]
 ok: [p2]
+ok: [dut]
 ok: [pe2]
 
 TASK [Wait for device to become ready] *****************************************
@@ -44,7 +48,7 @@ TASK [Wait for cEOS SSH daemon to start] ***************************************
 ok: [pe2]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, pe2, ce1, ce2, p1, p2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, dut, pe2, p1, p2
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [ce1]
@@ -58,24 +62,24 @@ TASK [Find configuration template for normalize] *******************************
 ok: [ce1]
 ok: [ce2]
 ok: [p1]
-ok: [dut]
 ok: [p2]
+ok: [dut]
 ok: [pe2]
 
 TASK [fail] ********************************************************************
-skipping: [dut]
-skipping: [pe2]
 skipping: [ce1]
 skipping: [ce2]
+skipping: [dut]
+skipping: [pe2]
 skipping: [p1]
 skipping: [p2]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [ce1]
 ok: [ce2]
-ok: [dut]
 ok: [p1]
 ok: [p2]
+ok: [dut]
 ok: [pe2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -126,7 +130,7 @@ TASK [eos_config: deploying normalize from /home/pipi/net101/tools/netsim/ansibl
 changed: [pe2]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, pe2, ce1, ce2, p1, p2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, dut, pe2, p1, p2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [ce1]
@@ -139,24 +143,24 @@ ok: [pe2]
 TASK [Find configuration template for initial] *********************************
 ok: [ce1]
 ok: [ce2]
-ok: [p2]
 ok: [p1]
+ok: [p2]
 ok: [dut]
 ok: [pe2]
 
 TASK [fail] ********************************************************************
-skipping: [dut]
-skipping: [pe2]
 skipping: [ce1]
 skipping: [ce2]
+skipping: [dut]
+skipping: [pe2]
 skipping: [p1]
 skipping: [p2]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [ce1]
 ok: [ce2]
-ok: [p2]
 ok: [p1]
+ok: [p2]
 ok: [dut]
 ok: [pe2]
 
@@ -263,9 +267,9 @@ ok: [ce1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [p2] => 
+ok: [ce2] => 
   msg: |-
-    initial configuration for p2
+    initial configuration for ce2
     =========================================
     #!/bin/bash
     #
@@ -335,10 +339,6 @@ ok: [p2] =>
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
     ip link set eth1 up
-    ip link set eth2 down
-    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
-    ip link set dev eth2 mtu 1500
-    ip link set eth2 up
   
     #
     # Add vtysh.conf file
@@ -348,7 +348,7 @@ ok: [p2] =>
     # Rest of initial configuration done through VTYSH
     #
     cat >/tmp/config <<CONFIG
-    hostname p2
+    hostname ce2
     !
     ip forwarding
     vrf mgmt
@@ -358,135 +358,17 @@ ok: [p2] =>
     !
     interface lo
      no shutdown
-     ip address 10.0.0.6/32
+     ip address 10.0.0.2/32
     !
     interface eth1
      no shutdown
-     description p2 -> p1
-     ip address 10.1.0.6/30
-    !
-    interface eth2
-     no shutdown
-     description p2 -> pe2
-     ip address 10.1.0.9/30
+     description ce2 -> pe2 [external]
+     ip address 10.1.0.17/30
     !
     do write
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    hostname dut
-    !
-    no ip domain lookup
-    !
-    lldp run
-    !
-    ip host ce1 10.0.0.1 10.1.0.13
-    ip host ce2 10.0.0.2 10.1.0.17
-    ip host dut-tenant 10.1.0.14
-    ip host p1 10.0.0.5 10.1.0.2 10.1.0.5
-    ip host p2 10.0.0.6 10.1.0.6 10.1.0.9
-    ip host pe2 10.0.0.4 10.1.0.10
-    ip host pe2-tenant 10.1.0.18
-    !
-    ip routing
-    !
-    no ipv6 unicast-routing
-    !
-    vrf definition tenant
-     rd 65000:1
-     route-target import 65000:1
-     route-target export 65000:1
-    !
-     address-family ipv4
-     exit-address-family
-    !
-  
-    !
-    !
-    interface Loopback0
-     ip address 10.0.0.3 255.255.255.255
-    !
-    interface Ethernet0/0
-     no lldp transmit
-     no lldp receive
-    !
-    interface Ethernet0/1
-     no switchport
-     description dut -> p1
-     ip mtu 1500
-     ip address 10.1.0.1 255.255.255.252
-     no shutdown
-    !
-    interface Ethernet0/2
-     no switchport
-     vrf forwarding tenant
-     description dut -> ce1 [external]
-     ip mtu 1500
-     ip address 10.1.0.14 255.255.255.252
-     no shutdown
-    !
-    !
-    line vty 0 4
-     exec-timeout 0 0
-    !
-    no banner exec
-    no banner login
-    no banner incoming
-ok: [pe2] => 
-  msg: |-
-    initial configuration for pe2
-    =========================================
-    hostname pe2
-    !
-    logging monitor debugging
-    aaa authorization exec default local
-    !
-    lldp run
-    ip routing
-    no ipv6 unicast-routing
-    !
-    vrf instance tenant
-     rd 65000:1
-    !
-    ip routing vrf tenant
-    !
-    !
-    ip host ce1 10.0.0.1 10.1.0.13
-    ip host ce2 10.0.0.2 10.1.0.17
-    ip host dut 10.0.0.3 10.1.0.1
-    ip host dut-tenant 10.1.0.14
-    ip host p1 10.0.0.5 10.1.0.2 10.1.0.5
-    ip host p2 10.0.0.6 10.1.0.6 10.1.0.9
-    ip host pe2-tenant 10.1.0.18
-    !
-    interface Management0
-     no lldp transmit
-     no lldp receive
-    !
-    interface Loopback0
-     ip address 10.0.0.4/32
-    !
-    interface Ethernet1
-     no switchport
-     description pe2 -> p2
-     ip address 10.1.0.10/30
-    !
-     mac-address 52dc.cafe.0401
-     no shutdown
-    !
-    interface Ethernet2
-     no switchport
-     vrf tenant
-     description pe2 -> ce2 [external]
-     ip address 10.1.0.18/30
-    !
-     mac-address 52dc.cafe.0402
-     no shutdown
-    !
 ok: [p1] => 
   msg: |-
     initial configuration for p1
@@ -598,9 +480,71 @@ ok: [p1] =>
     CONFIG
     vtysh -f /tmp/config
     exit 0
-ok: [ce2] => 
+ok: [dut] => 
   msg: |-
-    initial configuration for ce2
+    initial configuration for dut
+    =========================================
+    hostname dut
+    !
+    no ip domain lookup
+    !
+    lldp run
+    !
+    ip host ce1 10.0.0.1 10.1.0.13
+    ip host ce2 10.0.0.2 10.1.0.17
+    ip host dut-tenant 10.1.0.14
+    ip host pe2 10.0.0.4 10.1.0.10
+    ip host pe2-tenant 10.1.0.18
+    ip host p1 10.0.0.5 10.1.0.2 10.1.0.5
+    ip host p2 10.0.0.6 10.1.0.6 10.1.0.9
+    !
+    ip routing
+    !
+    no ipv6 unicast-routing
+    !
+    vrf definition tenant
+     rd 65000:1
+     route-target import 65000:1
+     route-target export 65000:1
+    !
+     address-family ipv4
+     exit-address-family
+    !
+  
+    !
+    !
+    interface Loopback0
+     ip address 10.0.0.3 255.255.255.255
+    !
+    interface Ethernet0/0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Ethernet0/1
+     no switchport
+     description dut -> p1
+     ip mtu 1500
+     ip address 10.1.0.1 255.255.255.252
+     no shutdown
+    !
+    interface Ethernet0/2
+     no switchport
+     vrf forwarding tenant
+     description dut -> ce1 [external]
+     ip mtu 1500
+     ip address 10.1.0.14 255.255.255.252
+     no shutdown
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
+    !
+    no banner exec
+    no banner login
+    no banner incoming
+ok: [p2] => 
+  msg: |-
+    initial configuration for p2
     =========================================
     #!/bin/bash
     #
@@ -670,6 +614,10 @@ ok: [ce2] =>
     sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
     ip link set eth1 up
+    ip link set eth2 down
+    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+    ip link set dev eth2 mtu 1500
+    ip link set eth2 up
   
     #
     # Add vtysh.conf file
@@ -679,7 +627,7 @@ ok: [ce2] =>
     # Rest of initial configuration done through VTYSH
     #
     cat >/tmp/config <<CONFIG
-    hostname ce2
+    hostname p2
     !
     ip forwarding
     vrf mgmt
@@ -689,28 +637,78 @@ ok: [ce2] =>
     !
     interface lo
      no shutdown
-     ip address 10.0.0.2/32
+     ip address 10.0.0.6/32
     !
     interface eth1
      no shutdown
-     description ce2 -> pe2 [external]
-     ip address 10.1.0.17/30
+     description p2 -> p1
+     ip address 10.1.0.6/30
+    !
+    interface eth2
+     no shutdown
+     description p2 -> pe2
+     ip address 10.1.0.9/30
     !
     do write
     CONFIG
     vtysh -f /tmp/config
     exit 0
+ok: [pe2] => 
+  msg: |-
+    initial configuration for pe2
+    =========================================
+    hostname pe2
+    !
+    logging monitor debugging
+    aaa authorization exec default local
+    !
+    lldp run
+    ip routing
+    no ipv6 unicast-routing
+    !
+    vrf instance tenant
+     rd 65000:1
+    !
+    ip routing vrf tenant
+    !
+    !
+    ip host ce1 10.0.0.1 10.1.0.13
+    ip host ce2 10.0.0.2 10.1.0.17
+    ip host dut 10.0.0.3 10.1.0.1
+    ip host dut-tenant 10.1.0.14
+    ip host pe2-tenant 10.1.0.18
+    ip host p1 10.0.0.5 10.1.0.2 10.1.0.5
+    ip host p2 10.0.0.6 10.1.0.6 10.1.0.9
+    !
+    interface Management0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     ip address 10.0.0.4/32
+    !
+    interface Ethernet1
+     no switchport
+     description pe2 -> p2
+     ip address 10.1.0.10/30
+    !
+     mac-address 52dc.cafe.0401
+     no shutdown
+    !
+    interface Ethernet2
+     no switchport
+     vrf tenant
+     description pe2 -> ce2 [external]
+     ip address 10.1.0.18/30
+    !
+     mac-address 52dc.cafe.0402
+     no shutdown
+    !
 
 TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for ce1, ce2, p1, p2
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for pe2
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for ce1, ce2, p1, p2
-
-TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
-changed: [dut]
-
-TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
-changed: [pe2]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [ce1 -> localhost]
@@ -725,10 +723,10 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for ce1, ce2, p1, p2
 
 TASK [template] ****************************************************************
-changed: [p2]
-changed: [ce1]
-changed: [ce2]
 changed: [p1]
+changed: [ce2]
+changed: [ce1]
+changed: [p2]
 
 TASK [set_fact] ****************************************************************
 ok: [ce1]
@@ -737,9 +735,9 @@ ok: [p1]
 ok: [p2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+changed: [ce1]
 changed: [ce2]
 changed: [p1]
-changed: [ce1]
 changed: [p2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -747,6 +745,12 @@ skipping: [ce1]
 skipping: [ce2]
 skipping: [p1]
 skipping: [p2]
+
+TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
+changed: [dut]
+
+TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
+changed: [pe2]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -759,10 +763,10 @@ ok: [dut]
 ok: [pe2]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, dut, p1, p2, pe2 => (item=ospf)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, dut, p1, p2, pe2 => (item=bgp)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, dut, p1, p2, pe2 => (item=mpls)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, dut, p1, p2, pe2 => (item=vrf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, dut, pe2, p1, p2 => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, dut, pe2, p1, p2 => (item=bgp)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, dut, pe2, p1, p2 => (item=mpls)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ce1, ce2, dut, pe2, p1, p2 => (item=vrf)
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [ce1]
@@ -775,8 +779,8 @@ ok: [pe2]
 TASK [Find configuration template for ospf] ************************************
 skipping: [ce1]
 skipping: [ce2]
-ok: [p1]
 ok: [p2]
+ok: [p1]
 ok: [dut]
 ok: [pe2]
 
@@ -784,54 +788,21 @@ TASK [fail] ********************************************************************
 skipping: [ce1]
 skipping: [ce2]
 skipping: [dut]
+skipping: [pe2]
 skipping: [p1]
 skipping: [p2]
-skipping: [pe2]
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 skipping: [ce1]
 skipping: [ce2]
-ok: [p1]
 ok: [p2]
+ok: [p1]
 ok: [dut]
 ok: [pe2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ce1]
 skipping: [ce2]
-ok: [p1] => 
-  msg: |-
-    ospf configuration for p1
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.5
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! p1 -> dut
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-    interface eth2
-    ! p1 -> p2
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    do write
 ok: [p2] => 
   msg: |-
     ospf configuration for p2
@@ -908,20 +879,56 @@ ok: [pe2] =>
      ip ospf area 0.0.0.0
      ip ospf network point-to-point
     !
+ok: [p1] => 
+  msg: |-
+    ospf configuration for p1
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.5
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! p1 -> dut
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+    interface eth2
+    ! p1 -> p2
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    do write
 
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [ce1]
 skipping: [ce2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for p1, p2
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for pe2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for p1, p2
 
 TASK [ios_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/ios.j2] ***
 changed: [dut]
 
+TASK [eos_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/eos.j2] ***
+changed: [pe2]
+
 TASK [template] ****************************************************************
-changed: [p1]
 changed: [p2]
+changed: [p1]
 
 TASK [set_fact] ****************************************************************
 ok: [p1]
@@ -932,11 +939,8 @@ skipping: [p1]
 skipping: [p2]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [p1]
 changed: [p2]
-
-TASK [eos_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/eos.j2] ***
-changed: [pe2]
+changed: [p1]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [ce1]
@@ -948,8 +952,8 @@ ok: [pe2]
 
 TASK [Find configuration template for bgp] *************************************
 ok: [ce1]
-skipping: [p1]
 ok: [ce2]
+skipping: [p1]
 skipping: [p2]
 ok: [dut]
 ok: [pe2]
@@ -957,15 +961,15 @@ ok: [pe2]
 TASK [fail] ********************************************************************
 skipping: [ce1]
 skipping: [ce2]
-skipping: [p1]
 skipping: [dut]
-skipping: [p2]
 skipping: [pe2]
+skipping: [p1]
+skipping: [p2]
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 skipping: [p1]
-skipping: [p2]
 ok: [ce1]
+skipping: [p2]
 ok: [ce2]
 ok: [dut]
 ok: [pe2]
@@ -983,7 +987,6 @@ ok: [ce1] =>
       no bgp default ipv4-unicast
       bgp default show-hostname
       bgp default show-nexthop-hostname
-  
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
@@ -1018,7 +1021,6 @@ ok: [ce2] =>
       no bgp default ipv4-unicast
       bgp default show-hostname
       bgp default show-nexthop-hostname
-  
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
@@ -1153,23 +1155,23 @@ skipping: [ce1]
 skipping: [ce2]
 ok: [p1]
 ok: [p2]
-ok: [dut]
 ok: [pe2]
+ok: [dut]
 
 TASK [fail] ********************************************************************
 skipping: [ce1]
 skipping: [ce2]
 skipping: [dut]
+skipping: [pe2]
 skipping: [p1]
 skipping: [p2]
-skipping: [pe2]
 
 TASK [Find configuration deployment deploy_script for mpls] ********************
 skipping: [ce1]
 skipping: [ce2]
 ok: [p1]
-ok: [p2]
 ok: [dut]
+ok: [p2]
 ok: [pe2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -1193,6 +1195,37 @@ ok: [dut] =>
     !
       neighbor 10.0.0.4 activate
       neighbor 10.0.0.4 send-community both
+ok: [p1] => 
+  msg: |-
+    mpls configuration for p1
+    =========================================
+    #!/bin/bash
+  
+    set -e
+  
+    sysctl -w net.mpls.platform_labels=1048575
+    sysctl -w net.mpls.conf.eth1.input=1
+    sysctl -w net.mpls.conf.eth2.input=1
+  
+    cat >/tmp/config <<CONFIG
+    !
+    mpls ldp
+      router-id 10.0.0.5
+      dual-stack transport-connection prefer ipv4
+      address-family ipv4
+        discovery transport-address 10.0.0.5
+        interface eth1
+        exit
+        interface eth2
+        exit
+      exit
+    !
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+  
+    exit 0
 ok: [pe2] => 
   msg: |-
     mpls configuration for pe2
@@ -1254,66 +1287,35 @@ ok: [p2] =>
     vtysh -f /tmp/config
   
     exit 0
-ok: [p1] => 
-  msg: |-
-    mpls configuration for p1
-    =========================================
-    #!/bin/bash
-  
-    set -e
-  
-    sysctl -w net.mpls.platform_labels=1048575
-    sysctl -w net.mpls.conf.eth1.input=1
-    sysctl -w net.mpls.conf.eth2.input=1
-  
-    cat >/tmp/config <<CONFIG
-    !
-    mpls ldp
-      router-id 10.0.0.5
-      dual-stack transport-connection prefer ipv4
-      address-family ipv4
-        discovery transport-address 10.0.0.5
-        interface eth1
-        exit
-        interface eth2
-        exit
-      exit
-    !
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-  
-    exit 0
 
 TASK [Deploy mpls configuration] ***********************************************
 skipping: [ce1]
 skipping: [ce2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for p1, p2
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for pe2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for p1, p2
 
 TASK [ios_config: deploying mpls from /home/pipi/net101/tools/netsim/ansible/templates/mpls/ios.j2] ***
 changed: [dut]
 
+TASK [eos_config: deploying mpls from /home/pipi/net101/tools/netsim/ansible/templates/mpls/eos.j2] ***
+changed: [pe2]
+
 TASK [template] ****************************************************************
-changed: [p2]
 changed: [p1]
+changed: [p2]
 
 TASK [set_fact] ****************************************************************
 ok: [p1]
 ok: [p2]
 
 TASK [run /tmp/config.sh to deploy mpls config from /home/pipi/net101/tools/netsim/ansible/templates/mpls/frr.j2] ***
-changed: [p1]
 changed: [p2]
+changed: [p1]
 
 TASK [run vtysh to import mpls config from /home/pipi/net101/tools/netsim/ansible/templates/mpls/frr.j2] ***
 skipping: [p1]
 skipping: [p2]
-
-TASK [eos_config: deploying mpls from /home/pipi/net101/tools/netsim/ansible/templates/mpls/eos.j2] ***
-changed: [pe2]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [ce1]
@@ -1335,9 +1337,9 @@ TASK [fail] ********************************************************************
 skipping: [ce1]
 skipping: [ce2]
 skipping: [dut]
+skipping: [pe2]
 skipping: [p1]
 skipping: [p2]
-skipping: [pe2]
 
 TASK [Find configuration deployment deploy_script for vrf] *********************
 skipping: [ce1]

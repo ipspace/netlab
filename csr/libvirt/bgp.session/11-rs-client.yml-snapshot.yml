@@ -80,7 +80,7 @@ nodes:
     - ipv4: 172.16.0.1/24
       linkindex: 1
       type: lan
-      bridge: ml_17_1
+      bridge: ml_30_1
       role: external
       name: dut -> [r2,rs]
       ifindex: 2
@@ -92,13 +92,10 @@ nodes:
       - ipv4: 172.16.0.3/24
         ifname: eth1
         node: rs
-      libvirt:
-        provider:
-          clab: true
     - ipv4: 10.1.0.1/30
       linkindex: 2
       type: lan
-      bridge: ml_17_2
+      bridge: ml_30_2
       role: external
       name: dut -> r3
       ifindex: 3
@@ -107,9 +104,6 @@ nodes:
       - ipv4: 10.1.0.2/30
         ifname: eth1
         node: r3
-      libvirt:
-        provider:
-          clab: true
     device: csr
     box: cisco/csr1000v
     module:
@@ -123,7 +117,7 @@ nodes:
     mgmt:
       ifname: GigabitEthernet1
       mac: 08:4f:a9:01:00:00
-      ipv4: 192.168.17.101
+      ipv4: 192.168.30.101
     loopback:
       type: loopback
       neighbors: []
@@ -171,7 +165,7 @@ nodes:
     - ipv4: 172.16.0.10/24
       linkindex: 1
       type: lan
-      bridge: ml_17_1
+      bridge: ml_30_1
       role: external
       name: r2 -> [dut,rs]
       ifindex: 1
@@ -184,9 +178,6 @@ nodes:
       - ipv4: 172.16.0.3/24
         ifname: eth1
         node: rs
-      libvirt:
-        provider:
-          clab: true
     device: frr
     clab:
       kind: linux
@@ -206,8 +197,8 @@ nodes:
     mgmt:
       ifname: eth0
       mac: 08:4f:a9:0a:00:00
-      ipv4: 192.168.17.110
-    hostname: clab-ml_17-r2
+      ipv4: 192.168.30.110
+    hostname: clab-ml_30-r2
     loopback:
       type: loopback
       neighbors: []
@@ -250,7 +241,7 @@ nodes:
     - ipv4: 10.1.0.2/30
       linkindex: 2
       type: lan
-      bridge: ml_17_2
+      bridge: ml_30_2
       role: external
       name: r3 -> dut
       ifindex: 1
@@ -260,9 +251,6 @@ nodes:
       - ipv4: 10.1.0.1/30
         ifname: GigabitEthernet3
         node: dut
-      libvirt:
-        provider:
-          clab: true
     device: frr
     clab:
       kind: linux
@@ -283,8 +271,8 @@ nodes:
     mgmt:
       ifname: eth0
       mac: 08:4f:a9:02:00:00
-      ipv4: 192.168.17.102
-    hostname: clab-ml_17-r3
+      ipv4: 192.168.30.102
+    hostname: clab-ml_30-r3
     loopback:
       type: loopback
       neighbors: []
@@ -338,7 +326,7 @@ nodes:
     - ipv4: 172.16.0.3/24
       linkindex: 1
       type: lan
-      bridge: ml_17_1
+      bridge: ml_30_1
       role: external
       name: rs -> [dut,r2]
       ifindex: 1
@@ -351,9 +339,6 @@ nodes:
       - ipv4: 172.16.0.10/24
         ifname: eth1
         node: r2
-      libvirt:
-        provider:
-          clab: true
     device: frr
     clab:
       kind: linux
@@ -374,8 +359,8 @@ nodes:
     mgmt:
       ifname: eth0
       mac: 08:4f:a9:03:00:00
-      ipv4: 192.168.17.103
-    hostname: clab-ml_17-rs
+      ipv4: 192.168.30.103
+    hostname: clab-ml_30-rs
     loopback:
       type: loopback
       neighbors: []
@@ -405,7 +390,7 @@ links:
     provider:
       clab: true
   type: lan
-  bridge: ml_17_1
+  bridge: ml_30_1
   role: external
   node_count: 3
   prefix:
@@ -425,7 +410,7 @@ links:
     provider:
       clab: true
   type: lan
-  bridge: ml_17_2
+  bridge: ml_30_2
   role: external
   node_count: 2
   prefix:
@@ -451,7 +436,7 @@ input:
 - /home/pipi/.netlab.yml
 - package:topology-defaults.yml
 defaults:
-  devices:
+  daemons:
     bird:
       daemon_config:
         bgp@session: /etc/bird/bgp.session.conf
@@ -489,21 +474,7 @@ defaults:
           - ospf
           - connected
           - static
-        lag:
-          passive: false
-        routing:
-          static:
-            discard: true
-        initial:
-          ipv4:
-            unnumbered: peer
-          ipv6:
-            use_ra: true
-            lla: true
-          roles:
-          - host
-          - router
-        bfd: {}
+        bfd: true
         ospf:
           import:
           - bgp
@@ -513,78 +484,78 @@ defaults:
           priority: true
           timers: true
           unnumbered: true
+        routing:
+          static:
+            discard: true
+        dhcp: false
+        initial:
+          ipv4:
+            unnumbered: peer
+          ipv6:
+            lla: true
+          roles:
+          - host
+          - router
       description: BIRD Internet Routing Daemon
-      interface_name: eth{ifindex}
-      lag_interface_name: bond{lag.ifindex}
-      loopback_interface_name: lo{ifindex if ifindex else ""}
-      mgmt_if: eth0
-      role: host
-      libvirt:
-        group_vars:
-          netlab_linux_distro: ubuntu
-        features:
-          dhcp:
-            client:
-              ipv4: true
-              ipv6: true
-            server: true
-            relay:
-              ipv4: true
-            _provider: libvirt
-      virtualbox:
-        group_vars:
-          netlab_linux_distro: ubuntu
       group_vars:
-        ansible_network_os: linux
-        ansible_connection: paramiko
-        ansible_user: vagrant
-        ansible_ssh_pass: vagrant
-        docker_shell: sh -il
-        ansible_python_interpreter: auto_silent
-        netlab_lldp_enable: false
-        netlab_net_tools: false
         netlab_import_map:
           bgp: RTS_BGP
           ospf: RTS_OSPF
           connected: RTS_DEVICE
           static: RTS_STATIC_DEVICE,RTS_STATIC
-        netlab_device_type: bird
+      packages:
+        bird: bird
       clab:
+        group_vars:
+          netlab_show_command:
+          - birdc
+          - show $@
+          docker_shell: bash -il
+        image: netlab/bird:latest
+        build: https://netlab.tools/netlab/clab/#netlab-clab-build
         features:
           initial:
             roles:
             - host
             - router
-          vlan:
-            mixed_trunk: true
-            model: router
-            native_routed: true
-            subif_name: '{ifname}.{vlan.access_id}'
-            svi_interface_name: vlan{vlan}
-            _provider: clab
-        image: netlab/bird:latest
-        mtu: 1500
-        node:
-          kind: linux
-          config_templates:
-            hosts: /etc/hosts
-        group_vars:
-          ansible_connection: docker
-          ansible_user: root
-          netlab_linux_distro: vanilla
-          netlab_show_command:
-          - birdc
-          - show $@
-          docker_shell: bash -il
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
-      external:
-        image: none
-      graphite:
-        icon: server
+      libvirt:
+        image:
+      virtualbox:
+        image:
+    dnsmasq:
+      description: DNSmasq - DNS and DHCP server
       packages:
-        bird: bird
-      daemon: true
-      daemon_parent: linux
+        dnsmasq: dnsmasq
+      daemon_config:
+        dnsmasq: /etc/dnsmasq.conf
+        dhcp: /etc/dhcp.ignore
+      node:
+        module:
+        - dhcp
+      clab:
+        group_vars:
+          docker_shell: bash -il
+        image: netlab/dnsmasq:latest
+        build: https://netlab.tools/netlab/clab/#netlab-clab-build
+        features:
+          initial:
+            roles:
+            - host
+      libvirt:
+        image:
+      virtualbox:
+        image:
+      features:
+        dhcp:
+          server: true
+        initial:
+          roles:
+          - host
+      dhcp:
+        server: true
+      module:
+      - dhcp
+  devices:
     dellos10:
       features:
         bgp:
@@ -600,6 +571,12 @@ defaults:
           local_as: true
           local_as_ibgp: false
           vrf_local_as: true
+          import:
+          - ospf
+          - connected
+          - static
+          - vrf
+          confederation: true
         initial:
           system_mtu: true
           ipv4:
@@ -625,6 +602,11 @@ defaults:
           passive: true
         ospf:
           default: true
+          import:
+          - bgp
+          - connected
+          - static
+          - vrf
           timers: true
           password: true
           priority: true
@@ -664,7 +646,7 @@ defaults:
           port_type: true
         vlan:
           model: switch
-          svi_interface_name: virtual-network{vlan}
+          svi_interface_name: vlan{vlan}
         vrf:
           ospfv2: true
           bgp: true
@@ -746,6 +728,7 @@ defaults:
             - extended
             2octet:
             - standard
+          confederation: true
         initial:
           system_mtu: true
           ipv4:
@@ -952,6 +935,7 @@ defaults:
             - extended
             2octet:
             - standard
+          confederation: true
         initial:
           ipv4:
             unnumbered: true
@@ -1249,6 +1233,10 @@ defaults:
           ripng: true
         vxlan: {}
       description: Cumulus VX 4.x or 5.x configured without NVUE
+      support:
+        level: obsolete
+        caveats:
+        - The last Cumulus 4.x image was released in September 2022
       interface_name: swp{ifindex}
       loopback_interface_name: lo{ifindex if ifindex else ""}
       tunnel_interface_name: tun{ifindex}
@@ -1296,6 +1284,7 @@ defaults:
           import:
           - connected
           - ospf
+          - static
           - vrf
           ipv6_lla: true
           rfc8950: true
@@ -1325,13 +1314,20 @@ defaults:
               ip: linklocal
               backup_ip: loopback.ipv4
         ospf:
+          default: true
           import:
           - bgp
           - connected
+          - static
           - vrf
           unnumbered: true
           timers: true
           priority: true
+        routing:
+          static:
+            vrf: true
+            inter_vrf: true
+            discard: true
         stp:
           supported_protocols:
           - stp
@@ -1350,6 +1346,11 @@ defaults:
           bgp: true
         vxlan: {}
       description: Cumulus VX 5.x configured with NVUE
+      support:
+        level: minimal
+        caveats:
+        - The new Cumulus 5.x releases run only on NVIDIA air. The last public 
+          release was 5.10.0 from September 2024
       interface_name: swp{ifindex}
       lag_interface_name: bond{lag.ifindex}
       loopback_interface_name: lo{ifindex if ifindex else ""}
@@ -1380,884 +1381,9 @@ defaults:
         image: none
       graphite:
         icon: switch
-    iosv:
-      features:
-        bgp:
-          allowas_in: true
-          as_override: true
-          bfd: true
-          default_originate: true
-          gtsm: true
-          passive: true
-          password: true
-          remove_private_as: true
-          rs: true
-          rs_client: true
-          timers: true
-          local_as: true
-          vrf_local_as: true
-          local_as_ibgp: true
-          activate_af: true
-          import:
-          - ospf
-          - isis
-          - ripv2
-          - connected
-          - static
-          - vrf
-          community:
-            standard:
-            - standard
-            extended:
-            - extended
-        bfd: {}
-        dhcp:
-          client:
-            ipv4: true
-            ipv6: true
-            routing: true
-          relay: true
-          vrf: true
-          server: true
-        eigrp: {}
-        initial:
-          ipv4:
-            unnumbered: false
-          ipv6:
-            lla: true
-            use_ra: true
-          roles:
-          - host
-          - router
-          - bridge
-          mgmt_vrf: true
-          min_mtu: 64
-          max_mtu: 9600
-        isis:
-          import:
-          - bgp
-          - ospf
-          - ripv2
-          - connected
-          - static
-          unnumbered:
-            ipv4: true
-            ipv6: true
-            network: true
-        mpls:
-          ldp: true
-          bgp: true
-          vpn: true
-          6pe: true
-        ospf:
-          unnumbered: true
-          import:
-          - bgp
-          - isis
-          - ripv2
-          - connected
-          - static
-          - vrf
-          default:
-            policy: true
-          password: true
-          priority: true
-          timers: true
-        ripv2:
-          ipv4: true
-          ipv6: true
-          passive: true
-          import:
-          - bgp
-          - isis
-          - ospf
-          - connected
-          - static
-          - vrf
-        routing:
-          policy:
-            set:
-              locpref: true
-              med: true
-              weight: true
-              prepend: true
-              community:
-                standard: true
-                append: true
-            match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
-          prefix: true
-          aspath: true
-          community:
-            expanded: true
-          static:
-            vrf: true
-            inter_vrf: true
-            discard: true
-        vlan:
-          model: router
-          svi_interface_name: BVI{bvi}
-          subif_name: '{ifname}.{subif_index}'
-          mixed_trunk: true
-          native_routed: true
-        vrf:
-          ospfv2: true
-          ospfv3: true
-          bgp: true
-          ripv2: true
-          ripng: true
-        gateway:
-          protocol:
-          - vrrp
-      description: Cisco IOSv
-      loopback_interface_name: Loopback{ifindex}
-      tunnel_interface_name: Tunnel{ifindex}
-      group_vars:
-        ansible_become_method: enable
-        ansible_network_os: ios
-        ansible_connection: network_cli
-        netlab_initial: always
-        netlab_ssh_args: -o KexAlgorithms=+diffie-hellman-group-exchange-sha1 -o
-          PubkeyAcceptedKeyTypes=ssh-rsa -o HostKeyAlgorithms=+ssh-rsa
-        netlab_device_type: ios
-        ansible_user: vagrant
-        ansible_ssh_pass: vagrant
-        ansible_become_password: vagrant
-      role: router
-      routing:
-        _rm_per_af: true
-      external:
-        image: none
-      graphite:
-        icon: router
-      interface_name: GigabitEthernet0/{ifindex}
-      libvirt:
-        image: cisco/iosv
-        build: https://netlab.tools/labs/iosv/
-        create_template: iosv.xml.j2
-      virtualbox:
-        image: cisco/iosv
-      clab:
-        group_vars:
-          ansible_ssh_pass: VR-netlab9
-          ansible_user: vrnetlab
-          netlab_check_retries: 50
-        image: vrnetlab/cisco_vios:15.9.3
-        node:
-          kind: linux
-        interface:
-          name: eth{ifindex}
-        build: https://github.com/hellt/vrnetlab/tree/master/vios
-    cat8000v:
-      features:
-        bgp:
-          allowas_in: true
-          as_override: true
-          bfd: true
-          default_originate: true
-          gtsm: true
-          passive: true
-          password: true
-          remove_private_as: true
-          rs: true
-          rs_client: true
-          timers: true
-          local_as: true
-          vrf_local_as: true
-          local_as_ibgp: true
-          activate_af: true
-          import:
-          - ospf
-          - isis
-          - ripv2
-          - connected
-          - static
-          - vrf
-          community:
-            standard:
-            - standard
-            extended:
-            - extended
-        bfd: {}
-        dhcp:
-          client:
-            ipv4: true
-            ipv6: true
-            routing: true
-          relay: true
-          vrf: true
-          server: true
-        eigrp: {}
-        initial:
-          ipv4:
-            unnumbered: true
-          ipv6:
-            lla: true
-            use_ra: true
-          roles:
-          - host
-          - router
-          - bridge
-          mgmt_vrf: true
-          min_mtu: 68
-          min_phy_mtu: 1500
-          max_mtu: 9216
-        isis:
-          import:
-          - bgp
-          - ospf
-          - ripv2
-          - connected
-          - static
-          unnumbered:
-            ipv4: true
-            ipv6: true
-            network: true
-        mpls:
-          ldp: true
-          bgp: true
-          vpn: true
-          6pe: true
-        ospf:
-          unnumbered: true
-          import:
-          - bgp
-          - isis
-          - ripv2
-          - connected
-          - static
-          - vrf
-          default:
-            policy: true
-          password: true
-          priority: true
-          timers: true
-        ripv2:
-          ipv4: true
-          ipv6: true
-          passive: true
-          import:
-          - bgp
-          - isis
-          - ospf
-          - connected
-          - static
-          - vrf
-        routing:
-          policy:
-            set:
-              locpref: true
-              med: true
-              weight: true
-              prepend: true
-              community:
-                standard: true
-                append: true
-            match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
-          prefix: true
-          aspath: true
-          community:
-            expanded: true
-          static:
-            vrf: true
-            inter_vrf: true
-            discard: true
-        vlan:
-          model: l3-switch
-          svi_interface_name: BDI{vlan}
-          subif_name: '{ifname}.{subif_index}'
-          mixed_trunk: true
-          native_routed: true
-        vrf:
-          ospfv2: true
-          ospfv3: true
-          bgp: true
-          ripv2: true
-          ripng: true
-        gateway:
-          protocol:
-          - vrrp
-        sr: {}
-      description: Cisco CSR 1000v
-      loopback_interface_name: Loopback{ifindex}
-      tunnel_interface_name: Tunnel{ifindex}
-      group_vars:
-        ansible_become_method: enable
-        ansible_network_os: ios
-        ansible_connection: network_cli
-        netlab_initial: always
-        netlab_ssh_args: -o KexAlgorithms=+diffie-hellman-group-exchange-sha1 -o
-          PubkeyAcceptedKeyTypes=ssh-rsa -o HostKeyAlgorithms=+ssh-rsa
-        netlab_device_type: cat8000v
-        ansible_user: vagrant
-        ansible_ssh_pass: vagrant
-        ansible_become_password: vagrant
-      role: router
-      routing:
-        _rm_per_af: true
-      external:
-        image: none
-      graphite:
-        icon: router
-      interface_name: GigabitEthernet{ifindex}
-      ifindex_offset: 2
-      virtualbox: {}
-      clab:
-        group_vars:
-          ansible_ssh_pass: admin
-          ansible_user: admin
-          netlab_check_retries: 50
-        image: vrnetlab/vr-c8000v:17.13.01a
-        node:
-          kind: cisco_c8000v
-        interface:
-          name: eth{ifindex-1}
-        build: https://containerlab.dev/manual/kinds/vr-c8000v/
-      node:
-        min_mtu: 1500
-      libvirt:
-        image: cisco/cat8000v
-        build: https://netlab.tools/labs/cat8000v/
-        create: virt-install --connect=qemu:///system --name=vm_box 
-          --os-variant=rhel4.0 --arch=x86_64 --cpu host --vcpus=1 --hvm 
-          --ram=4096 --disk path=vm.qcow2,bus=ide,format=qcow2 
-          --network=network:vagrant-libvirt,model=virtio --graphics none 
-          --import
-        create_template: cat8000v.xml.j2
-        create_iso: cat8000v
-      provider: libvirt
-    csr:
-      features:
-        bgp:
-          allowas_in: true
-          as_override: true
-          bfd: true
-          default_originate: true
-          gtsm: true
-          passive: true
-          password: true
-          remove_private_as: true
-          rs: true
-          rs_client: true
-          timers: true
-          local_as: true
-          vrf_local_as: true
-          local_as_ibgp: true
-          activate_af: true
-          import:
-          - ospf
-          - isis
-          - ripv2
-          - connected
-          - static
-          - vrf
-          community:
-            standard:
-            - standard
-            extended:
-            - extended
-        bfd: {}
-        dhcp:
-          client:
-            ipv4: true
-            ipv6: true
-            routing: true
-          relay: true
-          vrf: true
-          server: true
-        eigrp: {}
-        initial:
-          ipv4:
-            unnumbered: true
-          ipv6:
-            lla: true
-            use_ra: true
-          roles:
-          - host
-          - router
-          - bridge
-          mgmt_vrf: true
-          min_mtu: 68
-          min_phy_mtu: 1500
-          max_mtu: 9216
-        isis:
-          import:
-          - bgp
-          - ospf
-          - ripv2
-          - connected
-          - static
-          unnumbered:
-            ipv4: true
-            ipv6: true
-            network: true
-        mpls:
-          ldp: true
-          bgp: true
-          vpn: true
-          6pe: true
-        ospf:
-          unnumbered: true
-          import:
-          - bgp
-          - isis
-          - ripv2
-          - connected
-          - static
-          - vrf
-          default:
-            policy: true
-          password: true
-          priority: true
-          timers: true
-        ripv2:
-          ipv4: true
-          ipv6: true
-          passive: true
-          import:
-          - bgp
-          - isis
-          - ospf
-          - connected
-          - static
-          - vrf
-        routing:
-          policy:
-            set:
-              locpref: true
-              med: true
-              weight: true
-              prepend: true
-              community:
-                standard: true
-                append: true
-            match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
-          prefix: true
-          aspath: true
-          community:
-            expanded: true
-          static:
-            vrf: true
-            inter_vrf: true
-            discard: true
-        vlan:
-          model: l3-switch
-          svi_interface_name: BDI{vlan}
-          subif_name: '{ifname}.{subif_index}'
-          mixed_trunk: true
-          native_routed: true
-        vrf:
-          ospfv2: true
-          ospfv3: true
-          bgp: true
-          ripv2: true
-          ripng: true
-        gateway:
-          protocol:
-          - vrrp
-        sr: {}
-        vxlan: {}
-      description: Cisco CSR 1000v
-      loopback_interface_name: Loopback{ifindex}
-      tunnel_interface_name: Tunnel{ifindex}
-      group_vars:
-        ansible_become_method: enable
-        ansible_network_os: ios
-        ansible_connection: network_cli
-        netlab_initial: always
-        netlab_ssh_args: -o KexAlgorithms=+diffie-hellman-group-exchange-sha1 -o
-          PubkeyAcceptedKeyTypes=ssh-rsa -o HostKeyAlgorithms=+ssh-rsa
-        netlab_device_type: csr
-        ansible_user: vagrant
-        ansible_ssh_pass: vagrant
-        ansible_become_password: vagrant
-      role: router
-      routing:
-        _rm_per_af: true
-      external:
-        image: none
-      graphite:
-        icon: router
-      interface_name: GigabitEthernet{ifindex}
-      ifindex_offset: 2
-      virtualbox:
-        image: cisco/csr1000v
-      clab:
-        group_vars:
-          ansible_ssh_pass: admin
-          ansible_user: admin
-          netlab_check_retries: 50
-        image: vrnetlab/cisco_csr1000v:17.03.08
-        node:
-          kind: cisco_csr1000v
-        interface:
-          name: eth{ifindex-1}
-        build: https://containerlab.dev/manual/kinds/vr-csr/
-      node:
-        min_mtu: 1500
-      libvirt:
-        image: cisco/csr1000v
-        build: https://netlab.tools/labs/csr/
-        create: virt-install --connect=qemu:///system --name=vm_box 
-          --os-variant=rhel4.0 --arch=x86_64 --cpu host --vcpus=1 --hvm 
-          --ram=4096 --disk path=vm.qcow2,bus=ide,format=qcow2 
-          --network=network:vagrant-libvirt,model=virtio --graphics none 
-          --import
-      provider: libvirt
-    iol:
-      features:
-        bgp:
-          allowas_in: true
-          as_override: true
-          bfd: true
-          default_originate: true
-          gtsm: true
-          passive: true
-          password: true
-          remove_private_as: true
-          rs: true
-          rs_client: true
-          timers: true
-          local_as: true
-          vrf_local_as: true
-          local_as_ibgp: true
-          activate_af: true
-          import:
-          - ospf
-          - isis
-          - ripv2
-          - connected
-          - static
-          - vrf
-          community:
-            standard:
-            - standard
-            extended:
-            - extended
-        bfd: {}
-        dhcp:
-          client:
-            ipv4: true
-            ipv6: true
-            routing: true
-          relay: true
-          vrf: true
-          server: true
-        eigrp: {}
-        initial:
-          ipv4:
-            unnumbered: true
-          ipv6:
-            lla: true
-            use_ra: true
-          roles:
-          - host
-          - router
-          - bridge
-          mgmt_vrf: true
-          min_mtu: 68
-          min_phy_mtu: 1501
-          max_mtu: 1500
-        isis:
-          import:
-          - bgp
-          - ospf
-          - ripv2
-          - connected
-          - static
-          unnumbered:
-            ipv4: true
-            ipv6: true
-            network: true
-        mpls:
-          ldp: true
-          bgp: true
-          vpn: true
-          6pe: true
-        ospf:
-          unnumbered: true
-          import:
-          - bgp
-          - isis
-          - ripv2
-          - connected
-          - static
-          - vrf
-          default:
-            policy: true
-          password: true
-          priority: true
-          timers: true
-        ripv2:
-          ipv4: true
-          ipv6: true
-          passive: true
-          import:
-          - bgp
-          - isis
-          - ospf
-          - connected
-          - static
-          - vrf
-        routing:
-          policy:
-            set:
-              locpref: true
-              med: true
-              weight: true
-              prepend: true
-              community:
-                standard: true
-                append: true
-            match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
-          prefix: true
-          aspath: true
-          community:
-            expanded: true
-          static:
-            vrf: true
-            inter_vrf: true
-            discard: true
-        vlan:
-          model: l3-switch
-          svi_interface_name: BDI{vlan}
-          subif_name: '{ifname}.{subif_index}'
-          mixed_trunk: true
-          native_routed: true
-        vrf:
-          ospfv2: true
-          ospfv3: true
-          bgp: true
-          ripv2: true
-          ripng: true
-        gateway:
-          protocol:
-          - vrrp
-        sr: {}
-      description: Cisco IOL
-      loopback_interface_name: Loopback{ifindex}
-      tunnel_interface_name: Tunnel{ifindex}
-      group_vars:
-        ansible_become_method: enable
-        ansible_network_os: ios
-        ansible_connection: network_cli
-        netlab_initial: always
-        netlab_ssh_args: -o KexAlgorithms=+diffie-hellman-group-exchange-sha1 -o
-          PubkeyAcceptedKeyTypes=ssh-rsa -o HostKeyAlgorithms=+ssh-rsa
-      role: router
-      routing:
-        _rm_per_af: true
-      external:
-        image: none
-      graphite:
-        icon: router
-      interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
-      clab:
-        group_vars:
-          ansible_user: admin
-          ansible_ssh_pass: admin
-          ansible_become_password: admin
-          netlab_device_type: iol
-          netlab_check_retries: 20
-        interface:
-          name: Ethernet{ifindex // 4}/{ifindex % 4}
-        build: https://containerlab.dev/manual/kinds/cisco_iol/
-        image: vrnetlab/cisco_iol:17.12.01
-        node:
-          kind: cisco_iol
-    ioll2:
-      features:
-        bgp:
-          allowas_in: true
-          as_override: true
-          bfd: true
-          default_originate: true
-          gtsm: true
-          passive: true
-          password: true
-          remove_private_as: true
-          rs: true
-          rs_client: true
-          timers: true
-          local_as: true
-          vrf_local_as: true
-          local_as_ibgp: true
-          activate_af: true
-          import:
-          - ospf
-          - isis
-          - ripv2
-          - connected
-          - static
-          - vrf
-          community:
-            standard:
-            - standard
-            extended:
-            - extended
-        bfd: {}
-        dhcp:
-          client:
-            ipv4: true
-            ipv6: true
-            routing: true
-          relay: true
-          vrf: true
-          server: true
-        eigrp: {}
-        initial:
-          ipv4:
-            unnumbered: true
-          ipv6:
-            lla: true
-            use_ra: true
-          roles:
-          - host
-          - router
-          - bridge
-          mgmt_vrf: true
-          min_mtu: 68
-          min_phy_mtu: 1501
-          max_mtu: 1500
-        isis:
-          import:
-          - bgp
-          - ospf
-          - ripv2
-          - connected
-          - static
-          unnumbered:
-            ipv4: true
-            ipv6: true
-            network: true
-        mpls:
-          ldp: true
-          bgp: true
-          vpn: true
-          6pe: true
-        ospf:
-          unnumbered: true
-          import:
-          - bgp
-          - isis
-          - ripv2
-          - connected
-          - static
-          - vrf
-          default:
-            policy: true
-          password: true
-          priority: true
-          timers: true
-        ripv2:
-          ipv4: true
-          ipv6: true
-          passive: true
-          import:
-          - bgp
-          - isis
-          - ospf
-          - connected
-          - static
-          - vrf
-        routing:
-          policy:
-            set:
-              locpref: true
-              med: true
-              weight: true
-              prepend: true
-              community:
-                standard: true
-                append: true
-            match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
-          prefix: true
-          aspath: true
-          community:
-            expanded: true
-          static:
-            vrf: true
-            inter_vrf: true
-            discard: true
-        vlan:
-          model: l3-switch
-          svi_interface_name: Vlan{vlan}
-          subif_name: '{ifname}.{subif_index}'
-          mixed_trunk: false
-          native_routed: true
-        vrf:
-          ospfv2: true
-          ospfv3: true
-          bgp: true
-          ripv2: true
-          ripng: true
-        gateway:
-          protocol:
-          - vrrp
-        sr: {}
-      description: IOSv L2 image
-      loopback_interface_name: Loopback{ifindex}
-      tunnel_interface_name: Tunnel{ifindex}
-      group_vars:
-        ansible_become_method: enable
-        ansible_network_os: ios
-        ansible_connection: network_cli
-        netlab_initial: always
-        netlab_ssh_args: -o KexAlgorithms=+diffie-hellman-group-exchange-sha1 -o
-          PubkeyAcceptedKeyTypes=ssh-rsa -o HostKeyAlgorithms=+ssh-rsa
-      role: router
-      routing:
-        _rm_per_af: true
-      external:
-        image: none
-      graphite:
-        icon: router
-      interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
-      clab:
-        group_vars:
-          ansible_user: admin
-          ansible_ssh_pass: admin
-          ansible_become_password: admin
-          netlab_device_type: ioll2
-          netlab_check_retries: 20
-        interface:
-          name: Ethernet{ifindex // 4}/{ifindex % 4}
-        build: https://containerlab.dev/manual/kinds/cisco_iol/
-        image: vrnetlab/cisco_iol:L2-17.12.01
-        node:
-          kind: cisco_iol
-          type: l2
-        mtu: 1500
     nxos:
       features:
-        bgp:
-          allowas_in: true
-          as_override: true
-          default_originate: true
-          gtsm: true
-          passive: true
-          password: true
-          remove_private_as: true
-          timers: true
+        bgp: {}
         initial:
           ipv4:
             unnumbered: true
@@ -2289,6 +1415,8 @@ defaults:
           bgp: true
         vxlan: {}
       description: Cisco Nexus 9300v
+      support:
+        level: best-effort
       interface_name: Ethernet1/{ifindex}
       mgmt_if: mgmt0
       loopback_interface_name: loopback{ifindex}
@@ -2360,6 +1488,7 @@ defaults:
           - connected
           - static
           - vrf
+          confederation: true
         bfd: {}
         dhcp:
           client:
@@ -2500,7 +1629,1989 @@ defaults:
       group_vars:
         ansible_connection: paramiko_ssh
         ansible_network_os: none
-    junos:
+    routeros7:
+      features:
+        bgp: {}
+        mpls:
+          ldp: true
+          vpn: true
+        ospf: {}
+        vlan:
+          model: l3-switch
+          svi_interface_name: vlan{vlan}
+          subif_name: '{ifname}-{vlan.access_id}'
+          native_routed: true
+        vrf:
+          ospfv2: true
+          bgp: true
+      description: Mikrotik RouterOS version 7
+      support:
+        level: minimal
+      interface_name: ether{ifindex}
+      mgmt_if: ether1
+      loopback_interface_name: loopback{ifindex}
+      ifindex_offset: 2
+      libvirt:
+        image: mikrotik/chr7
+        build: https://netlab.tools/labs/routeros7/
+        create: virt-install --connect=qemu:///system --name=vm_box 
+          --arch=x86_64 --cpu host --vcpus=2 --hvm --ram=256 
+          --network=network:vagrant-libvirt,model=virtio --graphics none 
+          --import --disk path=vm.qcow2,format=qcow2,bus=ide
+      group_vars:
+        ansible_network_os: routeros
+        ansible_connection: network_cli
+        ansible_user: admin
+        ansible_ssh_pass: admin
+        netlab_device_type: routeros7
+      clab:
+        image: vrnetlab/vr-routeros:7.6
+        build: https://containerlab.dev/manual/kinds/vr-ros/
+        node:
+          kind: vr-ros
+        interface:
+          name: eth{ifindex-1}
+      external:
+        image: none
+      graphite:
+        icon: router
+    srlinux:
+      features:
+        bgp:
+          default_originate: true
+          allowas_in: true
+          as_override: true
+          password: true
+          tcp_ao: false
+          timers: true
+          remove_private_as: true
+          rs_client: true
+          bfd: true
+          passive: true
+          local_as: true
+          vrf_local_as: true
+          local_as_ibgp: true
+          activate_af: true
+          ipv6_lla: true
+          import:
+          - ospf
+          - isis
+          - connected
+          - vrf
+          - no_policy
+          community:
+            standard:
+            - standard
+            - large
+            large:
+            - large
+            extended:
+            - extended
+            2octet:
+            - standard
+        initial:
+          system_mtu: true
+          min_mtu: 1436
+          max_mtu: 9500
+          ipv4:
+            unnumbered: true
+          ipv6:
+            lla: true
+        bfd: {}
+        evpn:
+          irb: true
+          asymmetrical_irb: true
+        gateway:
+          protocol:
+          - anycast
+        isis:
+          unnumbered:
+            ipv4: true
+            ipv6: true
+            network: true
+          import:
+          - ospf
+          - bgp
+          - connected
+          - vrf
+          - no_policy
+        mpls:
+          ldp: true
+        ospf:
+          unnumbered: true
+          import:
+          - bgp
+          - isis
+          - connected
+          - vrf
+          - no_policy
+          default: true
+        routing:
+          policy:
+            match:
+              prefix: true
+            set:
+            - locpref
+            - med
+          prefix: true
+        sr: {}
+        vlan:
+          model: router
+          svi_interface_name: irb0.{vlan}
+          subif_name: '{ifname}.{vlan.access_id}'
+          mixed_trunk: true
+        vrf:
+          keep_module: true
+          ospfv2: true
+          ospfv3: true
+          bgp: true
+          isis: true
+        vxlan:
+          requires:
+          - evpn
+      description: Nokia SR Linux container
+      mgmt_if: mgmt0
+      interface_name: ethernet-1/{ifindex}
+      loopback_interface_name: lo0.{ifindex}
+      group_vars:
+        ansible_user: admin
+        ansible_ssh_pass: NokiaSrl1!
+        ansible_network_os: srlinux
+        ansible_connection: paramiko
+        netlab_console_connection: ssh
+        netlab_match_protomap:
+          ospf:
+          - ospfv2
+          - ospfv3
+          bgp:
+          - bgp
+          - bgp-evpn
+          connected:
+          - local
+          isis:
+          - isis
+      sr:
+        srgb_range_start: 500000
+        srgb_range_size: 1000
+        ipv6_sid_offset: 100
+      bfd:
+        min_tx: 100
+        min_rx: 100
+      clab:
+        image: ghcr.io/nokia/srlinux:25.3.3
+        node:
+          kind: srl
+          type: ixrd2
+        interface:
+          name: e1-{ifindex}
+        group_vars:
+          srlinux_grpc_port: 57400
+      external:
+        image: none
+      graphite:
+        icon: router
+    sros:
+      features:
+        bgp:
+          default_originate: true
+          allowas_in: true
+          as_override: true
+          password: true
+          tcp_ao: true
+          local_as: true
+          vrf_local_as: true
+          local_as_ibgp: true
+          activate_af: true
+          ipv6_lla: false
+          import:
+          - ospf
+          - isis
+          - connected
+          - vrf
+          - no_policy
+        initial:
+          ipv4:
+            unnumbered: true
+          ipv6:
+            lla: true
+          min_phy_mtu: 1500
+          max_mtu: 9782
+        bfd: {}
+        evpn:
+          irb: true
+          asymmetrical_irb: true
+        isis:
+          unnumbered:
+            ipv4: true
+            ipv6: true
+            network: false
+          import:
+          - ospf
+          - bgp
+          - connected
+          - vrf
+          - no_policy
+        mpls:
+          ldp: true
+          bgp: true
+          vpn: true
+          6pe: true
+        ospf:
+          unnumbered: true
+          import:
+          - bgp
+          - isis
+          - connected
+          - vrf
+          - no_policy
+          strict_bfd: true
+        ripv2:
+          ipv4: true
+          ipv6: true
+          passive: true
+        routing:
+          policy:
+            set:
+            - locpref
+            - med
+        gateway:
+          protocol:
+          - anycast
+          - vrrp
+        sr: {}
+        srv6:
+          bgp: true
+          isis: true
+        vlan:
+          model: router
+          svi_interface_name: svi.{vlan}
+          subif_name: '{ifname}/1_{vlan.access_id}'
+          mixed_trunk: true
+          native_routed: true
+        vrf:
+          ospfv2: true
+          ospfv3: true
+          isis: true
+          bgp: true
+        vxlan: {}
+      description: Nokia SR OS container
+      mgmt_if: A/1
+      interface_name: eth-1/1/c{ifindex}
+      loopback_interface_name: >-
+        {"loopback."+str(ifindex) if ifindex else "system"}
+      group_vars:
+        ansible_user: admin
+        ansible_ssh_pass: admin
+        ansible_network_os: sros
+        ansible_connection: paramiko_ssh
+        netlab_console_connection: ssh
+        sros_use_openconfig: false
+        netlab_match_protomap:
+          ospf:
+          - ospf
+          - ospf3
+          bgp:
+          - bgp
+          connected:
+          - direct
+          isis:
+          - isis
+      sr:
+        srgb_range_start: 500000
+        srgb_range_size: 1000
+        ipv6_sid_offset: 100
+      bfd:
+        min_tx: 100
+        min_rx: 100
+      clab:
+        image: vrnetlab/nokia_sros:25.3.R2
+        build: https://containerlab.dev/manual/kinds/vr-sros/
+        mtu: 1500
+        node:
+          kind: vr-sros
+          type: sr-1
+          license: ~/.netlab/license_sros25.txt
+        interface:
+          name: eth{ifindex}
+        group_vars:
+          sros_grpc_port: 57400
+      external:
+        image: none
+      graphite:
+        icon: router
+    vyos:
+      features:
+        bgp:
+          default_originate: true
+          allowas_in: true
+          as_override: true
+          password: true
+          remove_private_as: true
+          activate_af: true
+          ipv6_lla: true
+          local_as: true
+          vrf_local_as: true
+          import:
+          - ospf
+          - ripv2
+          - connected
+          - static
+          - vrf
+        initial:
+          ipv4:
+            unnumbered: true
+          ipv6:
+            lla: true
+        bfd: {}
+        evpn:
+          asymmetrical_irb: true
+          irb: true
+        gateway:
+          protocol:
+          - vrrp
+        isis: {}
+        lag:
+          passive: false
+        mpls:
+          ldp: true
+          vpn:
+            ipv4: true
+        ospf:
+          unnumbered: true
+          import:
+          - bgp
+          - ripv2
+          - connected
+          - static
+          - vrf
+          default: true
+        ripv2:
+          ipv4: true
+          ipv6: true
+          passive: true
+        routing:
+          policy:
+            set:
+              locpref: true
+              med: true
+              prepend: true
+              community:
+                standard: true
+                large: true
+                extended: true
+                append: true
+                delete: false
+            match:
+            - prefix
+            - nexthop
+            - aspath
+            - community
+          prefix: true
+          aspath: true
+          community:
+            expanded: true
+          static:
+            vrf: true
+            inter_vrf: true
+            discard: true
+        vlan:
+          model: l3-switch
+          svi_interface_name: br0.{vlan}
+          subif_name: '{ifname}.{vlan.access_id}'
+          native_routed: true
+        vrf:
+          ospfv2: true
+          ospfv3: true
+          bgp: true
+        vxlan:
+          vtep6: true
+      description: VyOS VM/container
+      interface_name: eth{ifindex}
+      loopback_interface_name: dum{ifindex}
+      lag_interface_name: bond{lag.ifindex}
+      mgmt_if: eth0
+      libvirt:
+        image: vyos/current
+      group_vars:
+        ansible_network_os: vyos
+        ansible_connection: paramiko
+        ansible_user: vyos
+        ansible_ssh_pass: vyos
+        docker_shell: su - vyos
+      clab:
+        image: ghcr.io/sysoleg/vyos-container
+        mtu: 1500
+        kmods:
+        node:
+          kind: linux
+          binds:
+            /lib/modules: /lib/modules
+        group_vars:
+          ansible_connection: docker
+          ansible_user: vyos
+        features:
+          stub_loopback: {}
+      external:
+        image: none
+      graphite:
+        icon: router
+    arubacx:
+      features:
+        bgp:
+          allowas_in: true
+          bfd: true
+          default_originate: true
+          gtsm: true
+          password: true
+          remove_private_as: true
+          timers: true
+          activate_af: true
+          local_as: true
+          local_as_ibgp: false
+          vrf_local_as: true
+          import:
+          - ospf
+          - connected
+          - static
+          - vrf
+        initial:
+          ipv4:
+            unnumbered: true
+          ipv6:
+            lla: true
+        bfd: {}
+        evpn:
+          asymmetrical_irb: true
+          irb: true
+        gateway:
+          protocol:
+          - anycast
+          - vrrp
+        lag:
+          mlag:
+            peer:
+              ifindex: 255
+              mac: 0600.0000.0000
+          passive: true
+        mpls:
+          ldp: true
+          vpn: true
+        ospf:
+          import:
+          - bgp
+          - connected
+          - vrf
+          - static
+          default: true
+          password: true
+          priority: true
+          timers: true
+          unnumbered: true
+        routing:
+          policy:
+            set:
+              locpref: true
+              med: true
+              weight: true
+              prepend: true
+              community:
+                standard: true
+                delete: true
+                append: true
+            match:
+            - prefix
+            - nexthop
+            - aspath
+            - community
+          prefix: true
+          aspath: true
+          community:
+            expanded: true
+          static:
+            vrf: true
+            inter_vrf: true
+            discard: true
+        stp:
+          supported_protocols:
+          - mstp
+          - pvrst
+          - stp
+          enable_per_port: true
+        vlan:
+          model: switch
+          svi_interface_name: vlan{vlan}
+        vrf:
+          ospfv2: true
+          ospfv3: true
+          bgp: true
+        vxlan: {}
+      description: ArubaOS-CX
+      interface_name: 1/1/{ifindex}
+      mgmt_if: mgmt
+      loopback_interface_name: loopback {ifindex}
+      tunnel_interface_name: tunnel {ifindex}
+      lag_interface_name: lag {lag.ifindex}
+      ifindex_offset: 1
+      libvirt:
+        image: aruba/cx
+        build: https://netlab.tools/labs/arubacx/
+        create: virt-install --connect=qemu:///system --name=vm_box 
+          --arch=x86_64 --cpu host --vcpus=2 --hvm --ram=4096 
+          --network=network:vagrant-libvirt,model=virtio --graphics none 
+          --import --disk path=vm.qcow2,format=qcow2,bus=ide
+      clab:
+        image: vrnetlab/vr-aoscx:20240129204649
+        build: https://containerlab.dev/manual/kinds/vr-aoscx/
+        mtu: 1500
+        node:
+          kind: vr-aoscx
+        interface:
+          name: eth{ifindex}
+        group_vars:
+          netlab_check_retries: 40
+          netlab_check_delay: 15
+      group_vars:
+        ansible_network_os: arubanetworks.aoscx.aoscx
+        ansible_connection: network_cli
+        ansible_user: admin
+        ansible_ssh_pass: admin
+        netlab_device_type: arubacx
+      external:
+        image: none
+      graphite:
+        icon: switch
+    asav:
+      description: Cisco ASAv
+      support:
+        level: minimal
+      interface_name: GigabitEthernet0/{ifindex}
+      ifindex_offset: 0
+      mgmt_if: Management0/0
+      group_vars:
+        ansible_user: vagrant
+        ansible_ssh_pass: vagrant1
+        ansible_become_method: enable
+        ansible_become_password: vagrant1
+        ansible_network_os: asa
+        ansible_connection: network_cli
+        netlab_ssh_args: -o KexAlgorithms=+diffie-hellman-group14-sha1 -o 
+          PubkeyAcceptedKeyTypes=+ssh-rsa -o HostKeyAlgorithms=+ssh-rsa
+      external:
+        image: none
+      features:
+        bgp: {}
+        isis: {}
+      libvirt:
+        image: cisco/asav
+        create_template: asav.xml.j2
+        build: https://netlab.tools/labs/asav/
+        create_iso: asav
+    cat8000v:
+      features:
+        bgp:
+          allowas_in: true
+          as_override: true
+          bfd: true
+          default_originate: true
+          gtsm: true
+          passive: true
+          password: true
+          remove_private_as: true
+          rs: true
+          rs_client: true
+          timers: true
+          local_as: true
+          vrf_local_as: true
+          local_as_ibgp: true
+          activate_af: true
+          import:
+          - ospf
+          - isis
+          - ripv2
+          - connected
+          - static
+          - vrf
+          community:
+            standard:
+            - standard
+            extended:
+            - extended
+          confederation: true
+        bfd: {}
+        dhcp:
+          client:
+            ipv4: true
+            ipv6: true
+            routing: true
+          relay: true
+          vrf: true
+          server: true
+        eigrp: {}
+        initial:
+          ipv4:
+            unnumbered: true
+          ipv6:
+            lla: true
+            use_ra: true
+          roles:
+          - host
+          - router
+          - bridge
+          mgmt_vrf: true
+          min_mtu: 68
+          min_phy_mtu: 1500
+          max_mtu: 9216
+        isis:
+          import:
+          - bgp
+          - ospf
+          - ripv2
+          - connected
+          - static
+          unnumbered:
+            ipv4: true
+            ipv6: true
+            network: true
+        mpls:
+          ldp: true
+          bgp: true
+          vpn: true
+          6pe: true
+        ospf:
+          unnumbered: true
+          import:
+          - bgp
+          - isis
+          - ripv2
+          - connected
+          - static
+          - vrf
+          default:
+            policy: true
+          password: true
+          priority: true
+          timers: true
+        ripv2:
+          ipv4: true
+          ipv6: true
+          passive: true
+          import:
+          - bgp
+          - isis
+          - ospf
+          - connected
+          - static
+          - vrf
+        routing:
+          policy:
+            set:
+              locpref: true
+              med: true
+              weight: true
+              prepend: true
+              community:
+                standard: true
+                append: true
+                delete: clist
+                delete_list: true
+            match:
+            - prefix
+            - nexthop
+            - aspath
+            - community
+          prefix: true
+          aspath: true
+          community:
+            expanded: true
+          static:
+            vrf: true
+            inter_vrf: true
+            discard: true
+        vlan:
+          model: l3-switch
+          svi_interface_name: BDI{vlan}
+          subif_name: '{ifname}.{subif_index}'
+          mixed_trunk: true
+          native_routed: true
+        vrf:
+          ospfv2: true
+          ospfv3: true
+          bgp: true
+          ripv2: true
+          ripng: true
+        gateway:
+          protocol:
+          - vrrp
+        sr: {}
+      description: Cisco CSR 1000v
+      loopback_interface_name: Loopback{ifindex}
+      tunnel_interface_name: Tunnel{ifindex}
+      group_vars:
+        ansible_become_method: enable
+        ansible_network_os: ios
+        ansible_connection: network_cli
+        netlab_initial: always
+        netlab_ssh_args: -o KexAlgorithms=+diffie-hellman-group-exchange-sha1 -o
+          PubkeyAcceptedKeyTypes=ssh-rsa -o HostKeyAlgorithms=+ssh-rsa
+        netlab_device_type: cat8000v
+        ansible_user: vagrant
+        ansible_ssh_pass: vagrant
+        ansible_become_password: vagrant
+      role: router
+      routing:
+        _rm_per_af: true
+      external:
+        image: none
+      graphite:
+        icon: router
+      interface_name: GigabitEthernet{ifindex}
+      ifindex_offset: 2
+      virtualbox: {}
+      clab:
+        group_vars:
+          ansible_ssh_pass: admin
+          ansible_user: admin
+          netlab_check_retries: 50
+        image: vrnetlab/vr-c8000v:17.13.01a
+        node:
+          kind: cisco_c8000v
+        interface:
+          name: eth{ifindex-1}
+        build: https://containerlab.dev/manual/kinds/vr-c8000v/
+      node:
+        min_mtu: 1500
+      libvirt:
+        image: cisco/cat8000v
+        build: https://netlab.tools/labs/cat8000v/
+        create: virt-install --connect=qemu:///system --name=vm_box 
+          --os-variant=rhel4.0 --arch=x86_64 --cpu host --vcpus=1 --hvm 
+          --ram=4096 --disk path=vm.qcow2,bus=ide,format=qcow2 
+          --network=network:vagrant-libvirt,model=virtio --graphics none 
+          --import
+        create_template: cat8000v.xml.j2
+        create_iso: cat8000v
+      provider: libvirt
+    csr:
+      features:
+        bgp:
+          allowas_in: true
+          as_override: true
+          bfd: true
+          default_originate: true
+          gtsm: true
+          passive: true
+          password: true
+          remove_private_as: true
+          rs: true
+          rs_client: true
+          timers: true
+          local_as: true
+          vrf_local_as: true
+          local_as_ibgp: true
+          activate_af: true
+          import:
+          - ospf
+          - isis
+          - ripv2
+          - connected
+          - static
+          - vrf
+          community:
+            standard:
+            - standard
+            extended:
+            - extended
+          confederation: true
+        bfd: {}
+        dhcp:
+          client:
+            ipv4: true
+            ipv6: true
+            routing: true
+          relay: true
+          vrf: true
+          server: true
+        eigrp: {}
+        initial:
+          ipv4:
+            unnumbered: true
+          ipv6:
+            lla: true
+            use_ra: true
+          roles:
+          - host
+          - router
+          - bridge
+          mgmt_vrf: true
+          min_mtu: 68
+          min_phy_mtu: 1500
+          max_mtu: 9216
+        isis:
+          import:
+          - bgp
+          - ospf
+          - ripv2
+          - connected
+          - static
+          unnumbered:
+            ipv4: true
+            ipv6: true
+            network: true
+        mpls:
+          ldp: true
+          bgp: true
+          vpn: true
+          6pe: true
+        ospf:
+          unnumbered: true
+          import:
+          - bgp
+          - isis
+          - ripv2
+          - connected
+          - static
+          - vrf
+          default:
+            policy: true
+          password: true
+          priority: true
+          timers: true
+        ripv2:
+          ipv4: true
+          ipv6: true
+          passive: true
+          import:
+          - bgp
+          - isis
+          - ospf
+          - connected
+          - static
+          - vrf
+        routing:
+          policy:
+            set:
+              locpref: true
+              med: true
+              weight: true
+              prepend: true
+              community:
+                standard: true
+                append: true
+                delete: clist
+                delete_list: true
+            match:
+            - prefix
+            - nexthop
+            - aspath
+            - community
+          prefix: true
+          aspath: true
+          community:
+            expanded: true
+          static:
+            vrf: true
+            inter_vrf: true
+            discard: true
+        vlan:
+          model: l3-switch
+          svi_interface_name: BDI{vlan}
+          subif_name: '{ifname}.{subif_index}'
+          mixed_trunk: true
+          native_routed: true
+        vrf:
+          ospfv2: true
+          ospfv3: true
+          bgp: true
+          ripv2: true
+          ripng: true
+        gateway:
+          protocol:
+          - vrrp
+        sr: {}
+        vxlan: {}
+      description: Cisco CSR 1000v
+      loopback_interface_name: Loopback{ifindex}
+      tunnel_interface_name: Tunnel{ifindex}
+      group_vars:
+        ansible_become_method: enable
+        ansible_network_os: ios
+        ansible_connection: network_cli
+        netlab_initial: always
+        netlab_ssh_args: -o KexAlgorithms=+diffie-hellman-group-exchange-sha1 -o
+          PubkeyAcceptedKeyTypes=ssh-rsa -o HostKeyAlgorithms=+ssh-rsa
+        netlab_device_type: csr
+        ansible_user: vagrant
+        ansible_ssh_pass: vagrant
+        ansible_become_password: vagrant
+      role: router
+      routing:
+        _rm_per_af: true
+      external:
+        image: none
+      graphite:
+        icon: router
+      interface_name: GigabitEthernet{ifindex}
+      ifindex_offset: 2
+      virtualbox:
+        image: cisco/csr1000v
+      clab:
+        group_vars:
+          ansible_ssh_pass: admin
+          ansible_user: admin
+          netlab_check_retries: 50
+        image: vrnetlab/cisco_csr1000v:17.03.08
+        node:
+          kind: cisco_csr1000v
+        interface:
+          name: eth{ifindex-1}
+        build: https://containerlab.dev/manual/kinds/vr-csr/
+      node:
+        min_mtu: 1500
+      libvirt:
+        image: cisco/csr1000v
+        build: https://netlab.tools/labs/csr/
+        create: virt-install --connect=qemu:///system --name=vm_box 
+          --os-variant=rhel4.0 --arch=x86_64 --cpu host --vcpus=1 --hvm 
+          --ram=4096 --disk path=vm.qcow2,bus=ide,format=qcow2 
+          --network=network:vagrant-libvirt,model=virtio --graphics none 
+          --import
+      provider: libvirt
+    fortios:
+      description: Fortinet FortiOS firewall
+      support:
+        level: minimal
+        caveats:
+        - We don't test Fortinet configurations due to their ridiculous 
+          temporary licensing policy
+      interface_name: port{ifindex}
+      loopback_interface_name: loopback{ifindex}
+      loopback: false
+      mtu: 1500
+      ifindex_offset: 2
+      libvirt:
+        image: fortinet/fortios
+        build: https://netlab.tools/labs/fortios/
+        create_template: fortios.xml.j2
+      clab:
+        node:
+          kind: fortinet_fortigate
+        interface:
+          name: eth{ifindex}
+        image: vrnetlab/vr-fortios:7.4.8
+      group_vars:
+        ansible_user: admin
+        ansible_password: admin
+        ansible_ssh_pass: admin
+        ansible_network_os: fortinet.fortios.fortios
+        ansible_connection: httpapi
+        collections:
+        - fortinet.fortios
+        vdom: root
+        netlab_vdom: root
+        mgmt_if: port1
+        ansible_httpapi_use_ssl: 'no'
+        ansible_httpapi_validate_certs: 'no'
+        ansible_httpapi_port: 80
+        netlab_console_connection: ssh
+        netlab_skip_missing_template: true
+        netlab_config_tasks: true
+      external:
+        image: none
+      features:
+        ospf: {}
+      graphite:
+        icon: firewall
+    iol:
+      features:
+        bgp:
+          allowas_in: true
+          as_override: true
+          bfd: true
+          default_originate: true
+          gtsm: true
+          passive: true
+          password: true
+          remove_private_as: true
+          rs: true
+          rs_client: true
+          timers: true
+          local_as: true
+          vrf_local_as: true
+          local_as_ibgp: true
+          activate_af: true
+          import:
+          - ospf
+          - isis
+          - ripv2
+          - connected
+          - static
+          - vrf
+          community:
+            standard:
+            - standard
+            extended:
+            - extended
+          confederation: true
+        bfd: {}
+        dhcp:
+          client:
+            ipv4: true
+            ipv6: true
+            routing: true
+          relay: true
+          vrf: true
+          server: true
+        eigrp: {}
+        initial:
+          ipv4:
+            unnumbered: true
+          ipv6:
+            lla: true
+            use_ra: true
+          roles:
+          - host
+          - router
+          - bridge
+          mgmt_vrf: true
+          min_mtu: 68
+          min_phy_mtu: 1501
+          max_mtu: 1500
+        isis:
+          import:
+          - bgp
+          - ospf
+          - ripv2
+          - connected
+          - static
+          unnumbered:
+            ipv4: true
+            ipv6: true
+            network: true
+        mpls:
+          ldp: true
+          bgp: true
+          vpn: true
+          6pe: true
+        ospf:
+          unnumbered: true
+          import:
+          - bgp
+          - isis
+          - ripv2
+          - connected
+          - static
+          - vrf
+          default:
+            policy: true
+          password: true
+          priority: true
+          timers: true
+        ripv2:
+          ipv4: true
+          ipv6: true
+          passive: true
+          import:
+          - bgp
+          - isis
+          - ospf
+          - connected
+          - static
+          - vrf
+        routing:
+          policy:
+            set:
+              locpref: true
+              med: true
+              weight: true
+              prepend: true
+              community:
+                standard: true
+                append: true
+                delete: clist
+                delete_list: true
+            match:
+            - prefix
+            - nexthop
+            - aspath
+            - community
+          prefix: true
+          aspath: true
+          community:
+            expanded: true
+          static:
+            vrf: true
+            inter_vrf: true
+            discard: true
+        vlan:
+          model: l3-switch
+          svi_interface_name: BDI{vlan}
+          subif_name: '{ifname}.{subif_index}'
+          mixed_trunk: true
+          native_routed: true
+        vrf:
+          ospfv2: true
+          ospfv3: true
+          bgp: true
+          ripv2: true
+          ripng: true
+        gateway:
+          protocol:
+          - vrrp
+        sr: {}
+      description: Cisco IOL
+      loopback_interface_name: Loopback{ifindex}
+      tunnel_interface_name: Tunnel{ifindex}
+      group_vars:
+        ansible_become_method: enable
+        ansible_network_os: ios
+        ansible_connection: network_cli
+        netlab_initial: always
+        netlab_ssh_args: -o KexAlgorithms=+diffie-hellman-group-exchange-sha1 -o
+          PubkeyAcceptedKeyTypes=ssh-rsa -o HostKeyAlgorithms=+ssh-rsa
+      role: router
+      routing:
+        _rm_per_af: true
+      external:
+        image: none
+      graphite:
+        icon: router
+      interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
+      clab:
+        group_vars:
+          ansible_user: admin
+          ansible_ssh_pass: admin
+          ansible_become_password: admin
+          netlab_device_type: iol
+          netlab_check_retries: 20
+        interface:
+          name: Ethernet{ifindex // 4}/{ifindex % 4}
+        build: https://containerlab.dev/manual/kinds/cisco_iol/
+        image: vrnetlab/cisco_iol:17.15.01
+        node:
+          kind: cisco_iol
+    ioll2:
+      features:
+        bgp:
+          allowas_in: true
+          as_override: true
+          bfd: true
+          default_originate: true
+          gtsm: true
+          passive: true
+          password: true
+          remove_private_as: true
+          rs: true
+          rs_client: true
+          timers: true
+          local_as: true
+          vrf_local_as: true
+          local_as_ibgp: true
+          activate_af: true
+          import:
+          - ospf
+          - isis
+          - ripv2
+          - connected
+          - static
+          - vrf
+          community:
+            standard:
+            - standard
+            extended:
+            - extended
+          confederation: true
+        bfd: {}
+        dhcp:
+          client:
+            ipv4: true
+            ipv6: true
+            routing: true
+          relay: true
+          vrf: true
+          server: true
+        eigrp: {}
+        initial:
+          ipv4:
+            unnumbered: true
+          ipv6:
+            lla: true
+            use_ra: true
+          roles:
+          - host
+          - router
+          - bridge
+          mgmt_vrf: true
+          min_mtu: 68
+          min_phy_mtu: 1501
+          max_mtu: 1500
+        isis:
+          import:
+          - bgp
+          - ospf
+          - ripv2
+          - connected
+          - static
+          unnumbered:
+            ipv4: true
+            ipv6: true
+            network: true
+        mpls:
+          ldp: true
+          bgp: true
+          vpn: true
+          6pe: true
+        ospf:
+          unnumbered: true
+          import:
+          - bgp
+          - isis
+          - ripv2
+          - connected
+          - static
+          - vrf
+          default:
+            policy: true
+          password: true
+          priority: true
+          timers: true
+        ripv2:
+          ipv4: true
+          ipv6: true
+          passive: true
+          import:
+          - bgp
+          - isis
+          - ospf
+          - connected
+          - static
+          - vrf
+        routing:
+          policy:
+            set:
+              locpref: true
+              med: true
+              weight: true
+              prepend: true
+              community:
+                standard: true
+                append: true
+                delete: clist
+                delete_list: true
+            match:
+            - prefix
+            - nexthop
+            - aspath
+            - community
+          prefix: true
+          aspath: true
+          community:
+            expanded: true
+          static:
+            vrf: true
+            inter_vrf: true
+            discard: true
+        vlan:
+          model: l3-switch
+          svi_interface_name: Vlan{vlan}
+          subif_name: '{ifname}.{subif_index}'
+          mixed_trunk: false
+          native_routed: true
+        vrf:
+          ospfv2: true
+          ospfv3: true
+          bgp: true
+          ripv2: true
+          ripng: true
+        gateway:
+          protocol:
+          - vrrp
+        sr: {}
+        stp:
+          supported_protocols:
+          - stp
+          - rstp
+          - mstp
+          - pvrst
+          enable_per_port: true
+          port_type: true
+        lag:
+          mlag: false
+          passive: true
+      description: IOSv L2 image
+      loopback_interface_name: Loopback{ifindex}
+      tunnel_interface_name: Tunnel{ifindex}
+      group_vars:
+        ansible_become_method: enable
+        ansible_network_os: ios
+        ansible_connection: network_cli
+        netlab_initial: always
+        netlab_ssh_args: -o KexAlgorithms=+diffie-hellman-group-exchange-sha1 -o
+          PubkeyAcceptedKeyTypes=ssh-rsa -o HostKeyAlgorithms=+ssh-rsa
+      role: router
+      routing:
+        _rm_per_af: true
+      external:
+        image: none
+      graphite:
+        icon: router
+      interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
+      clab:
+        group_vars:
+          ansible_user: admin
+          ansible_ssh_pass: admin
+          ansible_become_password: admin
+          netlab_device_type: ioll2
+          netlab_check_retries: 20
+        interface:
+          name: Ethernet{ifindex // 4}/{ifindex % 4}
+        build: https://containerlab.dev/manual/kinds/cisco_iol/
+        image: vrnetlab/cisco_iol:L2-17.15.01
+        node:
+          kind: cisco_iol
+          type: l2
+        mtu: 1500
+      lag_interface_name: Port-channel{lag.ifindex}
+    iosv:
+      features:
+        bgp:
+          allowas_in: true
+          as_override: true
+          bfd: true
+          default_originate: true
+          gtsm: true
+          passive: true
+          password: true
+          remove_private_as: true
+          rs: true
+          rs_client: true
+          timers: true
+          local_as: true
+          vrf_local_as: true
+          local_as_ibgp: true
+          activate_af: true
+          import:
+          - ospf
+          - isis
+          - ripv2
+          - connected
+          - static
+          - vrf
+          community:
+            standard:
+            - standard
+            extended:
+            - extended
+          confederation: true
+        bfd: {}
+        dhcp:
+          client:
+            ipv4: true
+            ipv6: true
+            routing: true
+          relay: true
+          vrf: true
+          server: true
+        eigrp: {}
+        initial:
+          ipv4:
+            unnumbered:
+            - tunnel
+          ipv6:
+            lla: true
+            use_ra: true
+          roles:
+          - host
+          - router
+          - bridge
+          mgmt_vrf: true
+          min_mtu: 64
+          max_mtu: 9600
+        isis:
+          import:
+          - bgp
+          - ospf
+          - ripv2
+          - connected
+          - static
+          unnumbered:
+            ipv4: true
+            ipv6: true
+            network: true
+        mpls:
+          ldp: true
+          bgp: true
+          vpn: true
+          6pe: true
+        ospf:
+          unnumbered: true
+          import:
+          - bgp
+          - isis
+          - ripv2
+          - connected
+          - static
+          - vrf
+          default:
+            policy: true
+          password: true
+          priority: true
+          timers: true
+        ripv2:
+          ipv4: true
+          ipv6: true
+          passive: true
+          import:
+          - bgp
+          - isis
+          - ospf
+          - connected
+          - static
+          - vrf
+        routing:
+          policy:
+            set:
+              locpref: true
+              med: true
+              weight: true
+              prepend: true
+              community:
+                standard: true
+                append: true
+                delete: clist
+                delete_list: true
+            match:
+            - prefix
+            - nexthop
+            - aspath
+            - community
+          prefix: true
+          aspath: true
+          community:
+            expanded: true
+          static:
+            vrf: true
+            inter_vrf: true
+            discard: true
+        vlan:
+          model: router
+          svi_interface_name: BVI{bvi}
+          subif_name: '{ifname}.{subif_index}'
+          mixed_trunk: true
+          native_routed: true
+        vrf:
+          ospfv2: true
+          ospfv3: true
+          bgp: true
+          ripv2: true
+          ripng: true
+        gateway:
+          protocol:
+          - vrrp
+      description: Cisco IOSv
+      loopback_interface_name: Loopback{ifindex}
+      tunnel_interface_name: Tunnel{ifindex}
+      group_vars:
+        ansible_become_method: enable
+        ansible_network_os: ios
+        ansible_connection: network_cli
+        netlab_initial: always
+        netlab_ssh_args: -o KexAlgorithms=+diffie-hellman-group-exchange-sha1 -o
+          PubkeyAcceptedKeyTypes=ssh-rsa -o HostKeyAlgorithms=+ssh-rsa
+        netlab_device_type: ios
+        ansible_user: vagrant
+        ansible_ssh_pass: vagrant
+        ansible_become_password: vagrant
+      role: router
+      routing:
+        _rm_per_af: true
+      external:
+        image: none
+      graphite:
+        icon: router
+      interface_name: GigabitEthernet0/{ifindex}
+      libvirt:
+        image: cisco/iosv
+        build: https://netlab.tools/labs/iosv/
+        create_template: iosv.xml.j2
+      virtualbox:
+        image: cisco/iosv
+      clab:
+        group_vars:
+          ansible_ssh_pass: admin
+          ansible_user: admin
+          netlab_check_retries: 50
+        image: vrnetlab/cisco_vios:15.9.3
+        node:
+          kind: linux
+        interface:
+          name: eth{ifindex}
+        build: https://github.com/hellt/vrnetlab/tree/master/vios
+    iosvl2:
+      features:
+        bgp:
+          allowas_in: true
+          as_override: true
+          bfd: true
+          default_originate: true
+          gtsm: true
+          passive: true
+          password: true
+          remove_private_as: true
+          rs: true
+          rs_client: true
+          timers: true
+          local_as: true
+          vrf_local_as: true
+          local_as_ibgp: true
+          activate_af: true
+          import:
+          - ospf
+          - isis
+          - ripv2
+          - connected
+          - static
+          - vrf
+          community:
+            standard:
+            - standard
+            extended:
+            - extended
+          confederation: true
+        bfd: {}
+        dhcp:
+          client:
+            ipv4: true
+            ipv6: true
+            routing: true
+          relay: true
+          vrf: true
+          server: true
+        eigrp: {}
+        initial:
+          ipv4:
+            unnumbered:
+            - tunnel
+          ipv6:
+            lla: true
+            use_ra: true
+          roles:
+          - host
+          - router
+          - bridge
+          mgmt_vrf: true
+          min_mtu: 68
+          max_mtu: 4700
+          min_phy_mtu: 1500
+        isis:
+          import:
+          - bgp
+          - ospf
+          - ripv2
+          - connected
+          - static
+          unnumbered:
+            ipv4: true
+            ipv6: true
+            network: true
+        mpls:
+          ldp: true
+          bgp: true
+          vpn: true
+          6pe: true
+        ospf:
+          unnumbered: true
+          import:
+          - bgp
+          - isis
+          - ripv2
+          - connected
+          - static
+          - vrf
+          default:
+            policy: true
+          password: true
+          priority: true
+          timers: true
+        ripv2:
+          ipv4: true
+          ipv6: true
+          passive: true
+          import:
+          - bgp
+          - isis
+          - ospf
+          - connected
+          - static
+          - vrf
+        routing:
+          policy:
+            set:
+              locpref: true
+              med: true
+              weight: true
+              prepend: true
+              community:
+                standard: true
+                append: true
+                delete: clist
+                delete_list: true
+            match:
+            - prefix
+            - nexthop
+            - aspath
+            - community
+          prefix: true
+          aspath: true
+          community:
+            expanded: true
+          static:
+            vrf: true
+            inter_vrf: true
+            discard: true
+        vlan:
+          model: l3-switch
+          svi_interface_name: Vlan{vlan}
+          subif_name: '{ifname}.{subif_index}'
+          mixed_trunk: false
+          native_routed: true
+        vrf:
+          ospfv2: true
+          ospfv3: true
+          bgp: true
+          ripv2: true
+          ripng: true
+        gateway:
+          protocol:
+          - vrrp
+        stp:
+          supported_protocols:
+          - stp
+          - rstp
+          - mstp
+          - pvrst
+          enable_per_port: true
+          port_type: true
+        lag:
+          mlag: false
+          passive: true
+      description: IOSv L2 image
+      loopback_interface_name: Loopback{ifindex}
+      tunnel_interface_name: Tunnel{ifindex}
+      group_vars:
+        ansible_become_method: enable
+        ansible_network_os: ios
+        ansible_connection: network_cli
+        netlab_initial: always
+        netlab_ssh_args: -o KexAlgorithms=+diffie-hellman-group-exchange-sha1 -o
+          PubkeyAcceptedKeyTypes=ssh-rsa -o HostKeyAlgorithms=+ssh-rsa
+        netlab_device_type: iosvl2
+        ansible_user: vagrant
+        ansible_ssh_pass: vagrant
+        ansible_become_password: vagrant
+      role: router
+      routing:
+        _rm_per_af: true
+      external:
+        image: none
+      graphite:
+        icon: router
+      interface_name: GigabitEthernet{ifindex // 4}/{ifindex % 4}
+      libvirt:
+        image: cisco/iosvl2
+        build: https://netlab.tools/labs/iosvl2/
+        create_template: iosv.xml.j2
+      virtualbox:
+        image: cisco/iosv
+      clab:
+        group_vars:
+          ansible_ssh_pass: admin
+          ansible_user: admin
+          netlab_check_retries: 50
+        image: vrnetlab/cisco_viosl2:15.2.2020
+        node:
+          kind: linux
+        interface:
+          name: eth{ifindex}
+        build: https://github.com/hellt/vrnetlab/tree/master/viosl2
+      lag_interface_name: Port-channel{lag.ifindex}
+    iosxr:
+      description: Cisco IOS XRv
+      support:
+        level: minimal
+      mgmt_if: MgmtEth0/RP0/CPU0/0
+      interface_name: GigabitEthernet0/0/0/{ifindex}
+      loopback_interface_name: Loopback{ifindex}
+      ifindex_offset: 0
+      group_vars:
+        ansible_user: vagrant
+        ansible_ssh_pass: vagrant
+        ansible_become_method: enable
+        ansible_become_password: vagrant
+        ansible_network_os: iosxr
+        ansible_connection: network_cli
+      features:
+        initial:
+          ipv4:
+            unnumbered: true
+          ipv6:
+            lla: true
+        ospf:
+          unnumbered: true
+        isis:
+          unnumbered:
+            ipv4: true
+            ipv6: true
+            network: true
+        bgp:
+          activate_af: true
+      external:
+        image: none
+      libvirt:
+        image: cisco/iosxr
+        build: https://netlab.tools/labs/iosxr/
+        create: virt-install --connect=qemu:///system --network 
+          network=vagrant-libvirt,model=e1000 --name=vm_box --cpu host 
+          --arch=x86_64 --vcpus=2 --ram=8192 --virt-type=kvm --disk 
+          path=vm.qcow2,format=qcow2,device=disk,bus=ide --graphics none 
+          --import
+      clab:
+        node:
+          kind: cisco_xrd
+          runtime: docker
+        mgmt_if: MgmtEth0/RP0/CPU0/0
+        interface:
+          name: Gi0-0-0-{ifindex}
+        image: ios-xr/xrd-control-plane:7.11.1
+        build: https://containerlab.dev/manual/kinds/xrd/
+        group_vars:
+          ansible_user: clab
+          ansible_ssh_pass: clab@123
+          ansible_become_password: clab@123
+    linux:
+      description: Generic Linux host
+      interface_name: eth{ifindex}
+      lag_interface_name: bond{lag.ifindex}
+      loopback_interface_name: lo{ifindex if ifindex else ""}
+      mgmt_if: eth0
+      role: host
+      features:
+        lag:
+          passive: false
+        routing:
+          static: true
+        initial:
+          ipv4:
+            unnumbered: peer
+          ipv6:
+            use_ra: true
+          roles:
+          - host
+      libvirt:
+        image: bento/ubuntu-24.04
+        group_vars:
+          netlab_linux_distro: ubuntu
+        features:
+          dhcp:
+            client:
+              ipv4: true
+              ipv6: true
+            server: true
+            relay:
+              ipv4: true
+            _provider: libvirt
+      virtualbox:
+        image: bento/ubuntu-24.04
+        group_vars:
+          netlab_linux_distro: ubuntu
+      group_vars:
+        ansible_network_os: linux
+        ansible_connection: paramiko
+        ansible_user: vagrant
+        ansible_ssh_pass: vagrant
+        docker_shell: sh -il
+        ansible_python_interpreter: auto_silent
+        netlab_lldp_enable: false
+        netlab_net_tools: false
+      clab:
+        features:
+          initial:
+            roles:
+            - host
+            - bridge
+          vlan:
+            mixed_trunk: true
+            model: router
+            native_routed: true
+            subif_name: '{ifname}.{vlan.access_id}'
+            svi_interface_name: vlan{vlan}
+            _provider: clab
+        image: python:3.13-alpine
+        mtu: 1500
+        kmods:
+        node:
+          kind: linux
+          config_templates:
+            hosts: /etc/hosts
+        group_vars:
+          ansible_connection: docker
+          ansible_user: root
+          netlab_linux_distro: vanilla
+      external:
+        image: none
+      graphite:
+        icon: server
+    openbsd:
+      description: OpenBSD
+      support:
+        level: best-effort
+      interface_name: vio{ifindex}
+      loopback_interface_name: lo{ifindex}
+      ifindex_offset: 1
+      mgmt_if: vio0
+      role: host
+      features:
+        routing:
+          static: true
+        initial:
+          roles:
+          - host
+          - router
+          ipv6:
+            use_ra: true
+            lla: true
+      libvirt:
+        create_template: openbsd.xml.j2
+        image: netlab/openbsd
+        create_iso: openbsd
+      clab:
+        build: https://containerlab.dev/manual/kinds/openbsd/
+        image: vrnetlab/openbsd_openbsd:7.7
+        group_vars:
+          ansible_user: admin
+          ansible_ssh_pass: admin
+          netlab_check_command: who
+        node:
+          kind: openbsd
+      group_vars:
+        ansible_network_os: openbsd
+        ansible_connection: paramiko
+        ansible_user: openbsd
+        ansible_ssh_pass: vagrant
+        docker_shell: sh -il
+        ansible_python_interpreter: auto_silent
+      external:
+        image: none
+      graphite:
+        icon: server
+    routeros:
+      description: Mikrotik RouterOS version 6
+      support:
+        level: obsolete
+      interface_name: ether{ifindex}
+      mgmt_if: ether1
+      ifindex_offset: 2
+      loopback_interface_name: loopback
+      libvirt:
+        image: mikrotik/chr
+        build: https://stefano.dscnet.org/a/mikrotik_vagrant/
+      group_vars:
+        ansible_network_os: routeros
+        ansible_connection: network_cli
+        ansible_user: admin
+        ansible_ssh_pass: admin
+      features:
+        bgp: {}
+        mpls:
+          ldp: true
+          vpn: true
+        ospf: {}
+        vlan:
+          model: router
+          svi_interface_name: bridge{vlan}
+          subif_name: '{ifname}-{vlan.access_id}'
+          mixed_trunk: true
+          native_routed: true
+        vrf:
+          ospfv2: true
+          bgp: true
+      external:
+        image: none
+      graphite:
+        icon: router
+    sonic:
+      description: Sonic VM
+      support:
+        level: minimal
+      interface_name: Ethernet{ifindex * 4}
+      ifindex_offset: 0
+      mgmt_if: eth0
+      loopback_interface_name: Loopback{ifindex}
+      group_vars:
+        ansible_network_os: frr
+        ansible_python_interpreter: auto_silent
+        netlab_device_type: sonic
+      libvirt:
+        image: netlab/sonic
+        mtu: 1500
+        create_template: sonic.xml.j2
+        group_vars:
+          ansible_connection: paramiko
+          ansible_user: admin
+          ansible_ssh_pass: YourPaSsWoRd
+          netlab_show_command:
+          - sudo
+          - vtysh
+          - -c
+          - show $@
+      external:
+        image: none
+      features:
+        initial:
+          ipv4:
+            unnumbered: true
+          ipv6:
+            lla: true
+        bgp:
+          activate_af: true
+          ipv6_lla: true
+          local_as: true
+          local_as_ibgp: true
+          vrf_local_as: true
+          community:
+            standard:
+            - standard
+            - large
+            large:
+            - large
+            extended:
+            - extended
+            2octet:
+            - standard
+      graphite:
+        icon: router
+    unknown:
+      description: Generic Unknown Device
+      interface_name: eth{ifindex}
+      mgmt_if: eth0
+      graphite:
+        icon: server
+      features:
+        bfd: {}
+        bgp: {}
+        evpn: {}
+        gateway: {}
+        isis: {}
+        mpls: {}
+        ospf: {}
+        sr: {}
+        srv6: {}
+        vlan: {}
+        vrf:
+          ospfv2: true
+          ospfv3: true
+          bgp: true
+        vxlan: {}
+    vjunos-router:
       features:
         bgp:
           allowas_in: true
@@ -2511,6 +3622,299 @@ defaults:
           passive: true
           remove_private_as: true
           timers: true
+          activate_af: true
+          local_as: true
+          local_as_ibgp: true
+          vrf_local_as: true
+        initial:
+          ipv4:
+            unnumbered: true
+          ipv6:
+            lla: true
+        bfd: {}
+        gateway:
+          protocol:
+          - anycast
+          - vrrp
+        isis:
+          unnumbered:
+            ipv4: true
+            ipv6: true
+        mpls:
+          ldp: true
+          vpn: true
+        ospf:
+          unnumbered: true
+        routing:
+          policy:
+            match:
+            - prefix
+            - aspath
+            - community
+            set:
+              locpref: true
+              med: true
+              prepend: true
+              community:
+                standard: true
+                large: true
+                extended: true
+                append: true
+                delete: true
+          static:
+            vrf: true
+            discard: true
+          prefix: true
+          aspath: true
+          community:
+            expanded: true
+        sr: {}
+        vrf:
+          ospfv2: true
+          ospfv3: true
+          bgp: true
+        vlan:
+          model: router
+          svi_interface_name: irb.{vlan}
+          subif_name: '{ifname}.{vlan.access_id}'
+          mixed_trunk: true
+          native_routed: true
+      description: vJunos Router (similar to vMX)
+      loopback_interface_name: lo0.{ifindex}
+      ifindex_offset: 0
+      interface_name: ge-0/0/{ifindex}
+      lag_interface_name: ae{lag.ifindex}
+      mgmt_if: fxp0
+      group_vars:
+        ansible_user: admin
+        ansible_ssh_pass: admin@123
+        ansible_network_os: junos
+        ansible_connection: netconf
+        netlab_console_connection: ssh
+        netlab_device_type: vjunos-router
+        netlab_check_retries: 20
+        netlab_license_url: 
+          https://www.juniper.net/content/dam/www/assets/dm/us/en/E421992502.txt
+      external:
+        image: none
+      clab:
+        image: vrnetlab/juniper_vjunos-router:23.4R2-S2.1
+        build: https://containerlab.dev/manual/kinds/vr-vjunosrouter/
+        node:
+          kind: juniper_vjunosrouter
+        interface:
+          name: eth{ifindex+1}
+        mtu: 1500
+        group_vars:
+          ansible_user: admin
+          ansible_ssh_pass: admin@123
+          netlab_check_retries: 60
+          netlab_check_delay: 10
+      graphite:
+        icon: router
+    vjunos-switch:
+      features:
+        bgp:
+          allowas_in: true
+          as_override: true
+          default_originate: true
+          bfd: true
+          password: true
+          passive: true
+          remove_private_as: true
+          timers: true
+          activate_af: true
+          local_as: true
+          local_as_ibgp: true
+          vrf_local_as: true
+        initial:
+          ipv4:
+            unnumbered: true
+          ipv6:
+            lla: true
+        bfd: {}
+        gateway:
+          protocol:
+          - anycast
+          - vrrp
+        isis:
+          unnumbered:
+            ipv4: true
+            ipv6: true
+        mpls:
+          ldp: true
+          vpn: true
+        ospf:
+          unnumbered: true
+        routing:
+          policy:
+            match:
+            - prefix
+            - aspath
+            - community
+            set:
+              locpref: true
+              med: true
+              prepend: true
+              community:
+                standard: true
+                large: true
+                extended: true
+                append: true
+                delete: true
+          static:
+            vrf: true
+            discard: true
+          prefix: true
+          aspath: true
+          community:
+            expanded: true
+        sr: {}
+        vrf:
+          ospfv2: true
+          ospfv3: true
+          bgp: true
+        evpn:
+          asymmetrical_irb: true
+          irb: true
+          multi_rt: true
+        lag:
+          passive: true
+        vlan:
+          model: l3-switch
+          svi_interface_name: irb.{vlan}
+          subif_name: '{ifname}.{vlan.access_id}'
+          native_routed: true
+        vxlan: {}
+      description: vJunos Switch
+      loopback_interface_name: lo0.{ifindex}
+      ifindex_offset: 0
+      interface_name: ge-0/0/{ifindex}
+      lag_interface_name: ae{lag.ifindex}
+      mgmt_if: fxp0
+      group_vars:
+        ansible_user: vagrant
+        ansible_ssh_pass: Vagrant
+        ansible_network_os: junos
+        ansible_connection: netconf
+        netlab_console_connection: ssh
+        netlab_device_type: vjunos-switch
+      external:
+        image: none
+      clab:
+        image: vrnetlab/juniper_vjunos-switch:23.4R2-S2.1
+        build: https://containerlab.dev/manual/kinds/vr-vjunosswitch/
+        mtu: 1500
+        node:
+          kind: juniper_vjunosswitch
+        interface:
+          name: eth{ifindex+1}
+        group_vars:
+          ansible_user: admin
+          ansible_ssh_pass: admin@123
+          netlab_check_retries: 40
+          netlab_check_delay: 10
+      graphite:
+        icon: switch
+    vmx:
+      features:
+        bgp:
+          allowas_in: true
+          as_override: true
+          default_originate: true
+          bfd: true
+          password: true
+          passive: true
+          remove_private_as: true
+          timers: true
+          activate_af: true
+          local_as: true
+          local_as_ibgp: true
+          vrf_local_as: true
+        initial:
+          ipv4:
+            unnumbered: true
+          ipv6:
+            lla: true
+        bfd: {}
+        gateway:
+          protocol:
+          - anycast
+          - vrrp
+        isis:
+          unnumbered:
+            ipv4: true
+            ipv6: true
+        mpls:
+          ldp: true
+          vpn: true
+        ospf:
+          unnumbered: true
+        routing:
+          policy:
+            match:
+            - prefix
+            - aspath
+            - community
+            set:
+              locpref: true
+              med: true
+              prepend: true
+              community:
+                standard: true
+                large: true
+                extended: true
+                append: true
+                delete: true
+          static:
+            vrf: true
+            discard: true
+          prefix: true
+          aspath: true
+          community:
+            expanded: true
+        sr: {}
+        vrf:
+          ospfv2: true
+          ospfv3: true
+          bgp: true
+        vlan:
+          model: router
+          svi_interface_name: irb.{vlan}
+          subif_name: '{ifname}.{vlan.access_id}'
+          mixed_trunk: true
+          native_routed: true
+      description: Juniper vMX container
+      loopback_interface_name: lo0.{ifindex}
+      ifindex_offset: 0
+      interface_name: ge-0/0/{ifindex}
+      lag_interface_name: ae{lag.ifindex}
+      mgmt_if: fxp0
+      group_vars:
+        ansible_user: admin
+        ansible_ssh_pass: admin@123
+        ansible_network_os: junos
+        ansible_connection: netconf
+        netlab_console_connection: ssh
+        netlab_device_type: vmx
+        netlab_check_retries: 20
+        netlab_license_url: 
+          https://www.juniper.net/content/dam/www/assets/dm/us/en/E421992502.txt
+      external:
+        image: none
+      support:
+        level: best-effort
+        caveats:
+        - vMX gets all new Junos features, but we don't test them on vMX
+      clab:
+        image: vrnetlab/vr-vmx:18.2R1.9
+        build: https://containerlab.dev/manual/kinds/vr-vmx/
+        node:
+          kind: vr-vmx
+        interface:
+          name: eth{ifindex+1}
+      graphite:
+        icon: router
     vptx:
       features:
         bgp:
@@ -2697,6 +4101,10 @@ defaults:
         netlab_device_type: vsrx
       external:
         image: none
+      support:
+        level: best-effort
+        caveats:
+        - vSRX gets all new Junos features, but we don't test them on vSRX
       virtualbox:
         image: juniper/vsrx3
       libvirt:
@@ -2723,379 +4131,43 @@ defaults:
           netlab_check_delay: 10
       graphite:
         icon: firewall
-    vmx:
+    bird:
+      description: BIRD Internet Routing Daemon
+      interface_name: eth{ifindex}
+      lag_interface_name: bond{lag.ifindex}
+      loopback_interface_name: lo{ifindex if ifindex else ""}
+      mgmt_if: eth0
+      role: host
       features:
-        bgp:
-          allowas_in: true
-          as_override: true
-          default_originate: true
-          bfd: true
-          password: true
-          passive: true
-          remove_private_as: true
-          timers: true
-          activate_af: true
-          local_as: true
-          local_as_ibgp: true
-          vrf_local_as: true
-        initial:
-          ipv4:
-            unnumbered: true
-          ipv6:
-            lla: true
-        bfd: {}
-        gateway:
-          protocol:
-          - anycast
-          - vrrp
-        isis:
-          unnumbered:
-            ipv4: true
-            ipv6: true
-        mpls:
-          ldp: true
-          vpn: true
-        ospf:
-          unnumbered: true
-        routing:
-          policy:
-            match:
-            - prefix
-            - aspath
-            - community
-            set:
-              locpref: true
-              med: true
-              prepend: true
-              community:
-                standard: true
-                large: true
-                extended: true
-                append: true
-                delete: true
-          static:
-            vrf: true
-            discard: true
-          prefix: true
-          aspath: true
-          community:
-            expanded: true
-        sr: {}
-        vrf:
-          ospfv2: true
-          ospfv3: true
-          bgp: true
-        vlan:
-          model: router
-          svi_interface_name: irb.{vlan}
-          subif_name: '{ifname}.{vlan.access_id}'
-          mixed_trunk: true
-          native_routed: true
-      description: Juniper vMX container
-      loopback_interface_name: lo0.{ifindex}
-      ifindex_offset: 0
-      interface_name: ge-0/0/{ifindex}
-      lag_interface_name: ae{lag.ifindex}
-      mgmt_if: fxp0
-      group_vars:
-        ansible_user: admin
-        ansible_ssh_pass: admin@123
-        ansible_network_os: junos
-        ansible_connection: netconf
-        netlab_console_connection: ssh
-        netlab_device_type: vmx
-        netlab_check_retries: 20
-        netlab_license_url: 
-          https://www.juniper.net/content/dam/www/assets/dm/us/en/E421992502.txt
-      external:
-        image: none
-      clab:
-        image: vrnetlab/vr-vmx:18.2R1.9
-        build: https://containerlab.dev/manual/kinds/vr-vmx/
-        node:
-          kind: vr-vmx
-        interface:
-          name: eth{ifindex+1}
-      graphite:
-        icon: router
-    vjunos-switch:
-      features:
-        bgp:
-          allowas_in: true
-          as_override: true
-          default_originate: true
-          bfd: true
-          password: true
-          passive: true
-          remove_private_as: true
-          timers: true
-          activate_af: true
-          local_as: true
-          local_as_ibgp: true
-          vrf_local_as: true
-        initial:
-          ipv4:
-            unnumbered: true
-          ipv6:
-            lla: true
-        bfd: {}
-        gateway:
-          protocol:
-          - anycast
-          - vrrp
-        isis:
-          unnumbered:
-            ipv4: true
-            ipv6: true
-        mpls:
-          ldp: true
-          vpn: true
-        ospf:
-          unnumbered: true
-        routing:
-          policy:
-            match:
-            - prefix
-            - aspath
-            - community
-            set:
-              locpref: true
-              med: true
-              prepend: true
-              community:
-                standard: true
-                large: true
-                extended: true
-                append: true
-                delete: true
-          static:
-            vrf: true
-            discard: true
-          prefix: true
-          aspath: true
-          community:
-            expanded: true
-        sr: {}
-        vrf:
-          ospfv2: true
-          ospfv3: true
-          bgp: true
-        evpn:
-          asymmetrical_irb: true
-          irb: true
-          multi_rt: true
         lag:
-          passive: true
-        vlan:
-          model: l3-switch
-          svi_interface_name: irb.{vlan}
-          subif_name: '{ifname}.{vlan.access_id}'
-          native_routed: true
-        vxlan: {}
-      description: vJunos Switch
-      loopback_interface_name: lo0.{ifindex}
-      ifindex_offset: 0
-      interface_name: ge-0/0/{ifindex}
-      lag_interface_name: ae{lag.ifindex}
-      mgmt_if: fxp0
-      group_vars:
-        ansible_user: vagrant
-        ansible_ssh_pass: Vagrant
-        ansible_network_os: junos
-        ansible_connection: netconf
-        netlab_console_connection: ssh
-        netlab_device_type: vjunos-switch
-      external:
-        image: none
-      clab:
-        image: vrnetlab/juniper_vjunos-switch:23.4R2-S2.1
-        build: https://containerlab.dev/manual/kinds/vr-vjunosswitch/
-        mtu: 1500
-        node:
-          kind: juniper_vjunosswitch
-        interface:
-          name: eth{ifindex+1}
-        group_vars:
-          ansible_user: admin
-          ansible_ssh_pass: admin@123
-          netlab_check_retries: 40
-          netlab_check_delay: 10
-      graphite:
-        icon: switch
-    vjunos-router:
-      features:
-        bgp:
-          allowas_in: true
-          as_override: true
-          default_originate: true
-          bfd: true
-          password: true
-          passive: true
-          remove_private_as: true
-          timers: true
-          activate_af: true
-          local_as: true
-          local_as_ibgp: true
-          vrf_local_as: true
+          passive: false
+        routing:
+          static:
+            discard: true
         initial:
           ipv4:
-            unnumbered: true
+            unnumbered: peer
           ipv6:
+            use_ra: true
             lla: true
-        bfd: {}
-        gateway:
-          protocol:
-          - anycast
-          - vrrp
-        isis:
-          unnumbered:
-            ipv4: true
-            ipv6: true
-        mpls:
-          ldp: true
-          vpn: true
-        ospf:
-          unnumbered: true
-        routing:
-          policy:
-            match:
-            - prefix
-            - aspath
-            - community
-            set:
-              locpref: true
-              med: true
-              prepend: true
-              community:
-                standard: true
-                large: true
-                extended: true
-                append: true
-                delete: true
-          static:
-            vrf: true
-            discard: true
-          prefix: true
-          aspath: true
-          community:
-            expanded: true
-        sr: {}
-        vrf:
-          ospfv2: true
-          ospfv3: true
-          bgp: true
-        vlan:
-          model: router
-          svi_interface_name: irb.{vlan}
-          subif_name: '{ifname}.{vlan.access_id}'
-          mixed_trunk: true
-          native_routed: true
-      description: vJunos Router (similar to vMX)
-      loopback_interface_name: lo0.{ifindex}
-      ifindex_offset: 0
-      interface_name: ge-0/0/{ifindex}
-      lag_interface_name: ae{lag.ifindex}
-      mgmt_if: fxp0
-      group_vars:
-        ansible_user: admin
-        ansible_ssh_pass: admin@123
-        ansible_network_os: junos
-        ansible_connection: netconf
-        netlab_console_connection: ssh
-        netlab_device_type: vjunos-router
-        netlab_check_retries: 20
-        netlab_license_url: 
-          https://www.juniper.net/content/dam/www/assets/dm/us/en/E421992502.txt
-      external:
-        image: none
-      clab:
-        image: vrnetlab/juniper_vjunos-router:23.4R2-S2.1
-        build: https://containerlab.dev/manual/kinds/vr-vjunosrouter/
-        node:
-          kind: juniper_vjunosrouter
-        interface:
-          name: eth{ifindex+1}
-        mtu: 1500
-        group_vars:
-          ansible_user: admin
-          ansible_ssh_pass: admin@123
-          netlab_check_retries: 60
-          netlab_check_delay: 10
-      graphite:
-        icon: router
-    routeros7:
-      features:
+          roles:
+          - host
+          - router
         bgp:
-          default_originate: true
-          allowas_in: true
-          as_override: true
-          password: true
-          remove_private_as: true
-        mpls:
-          ldp: true
-          vpn: true
-        ospf: {}
-        vlan:
-          model: l3-switch
-          svi_interface_name: vlan{vlan}
-          subif_name: '{ifname}-{vlan.access_id}'
-          native_routed: true
-        vrf:
-          ospfv2: true
-          bgp: true
-      description: Mikrotik RouterOS version 7
-      interface_name: ether{ifindex}
-      mgmt_if: ether1
-      loopback_interface_name: loopback{ifindex}
-      ifindex_offset: 2
-      libvirt:
-        image: mikrotik/chr7
-        build: https://netlab.tools/labs/routeros7/
-        create: virt-install --connect=qemu:///system --name=vm_box 
-          --arch=x86_64 --cpu host --vcpus=2 --hvm --ram=256 
-          --network=network:vagrant-libvirt,model=virtio --graphics none 
-          --import --disk path=vm.qcow2,format=qcow2,bus=ide
-      group_vars:
-        ansible_network_os: routeros
-        ansible_connection: network_cli
-        ansible_user: admin
-        ansible_ssh_pass: admin
-        netlab_device_type: routeros7
-      clab:
-        image: vrnetlab/vr-routeros:7.6
-        build: https://containerlab.dev/manual/kinds/vr-ros/
-        node:
-          kind: vr-ros
-        interface:
-          name: eth{ifindex-1}
-      external:
-        image: none
-      graphite:
-        icon: router
-    srlinux:
-      features:
-        bgp:
-          default_originate: true
-          allowas_in: true
-          as_override: true
-          password: true
-          tcp_ao: false
-          timers: true
-          remove_private_as: true
-          rs_client: true
           bfd: true
+          default_originate: true
+          gtsm: true
           passive: true
-          local_as: true
-          vrf_local_as: true
-          local_as_ibgp: true
+          password: true
+          remove_private_as: true
+          rs: true
+          rs_client: true
+          timers: true
           activate_af: true
-          ipv6_lla: true
-          import:
-          - ospf
-          - isis
-          - connected
-          - vrf
-          - no_policy
+          ipv6_lla: false
+          rfc8950: true
+          local_as: true
+          local_as_ibgp: true
           community:
             standard:
             - standard
@@ -3106,763 +4178,21 @@ defaults:
             - extended
             2octet:
             - standard
-        initial:
-          system_mtu: true
-          min_mtu: 1436
-          max_mtu: 9500
-          ipv4:
-            unnumbered: true
-          ipv6:
-            lla: true
-        bfd: {}
-        evpn:
-          irb: true
-          asymmetrical_irb: true
-        gateway:
-          protocol:
-          - anycast
-        isis:
-          unnumbered:
-            ipv4: true
-            ipv6: true
-            network: true
-          import:
-          - ospf
-          - bgp
-          - connected
-          - vrf
-          - no_policy
-        mpls:
-          ldp: true
-        ospf:
-          unnumbered: true
-          import:
-          - bgp
-          - isis
-          - connected
-          - vrf
-          - no_policy
-          default: true
-        routing:
-          policy:
-            match:
-              prefix: true
-            set:
-            - locpref
-            - med
-          prefix: true
-        sr: {}
-        vlan:
-          model: router
-          svi_interface_name: irb0.{vlan}
-          subif_name: '{ifname}.{vlan.access_id}'
-          mixed_trunk: true
-        vrf:
-          keep_module: true
-          ospfv2: true
-          ospfv3: true
-          bgp: true
-          isis: true
-        vxlan:
-          requires:
-          - evpn
-      description: Nokia SR Linux container
-      mgmt_if: mgmt0
-      interface_name: ethernet-1/{ifindex}
-      loopback_interface_name: lo0.{ifindex}
-      group_vars:
-        ansible_user: admin
-        ansible_ssh_pass: NokiaSrl1!
-        ansible_network_os: srlinux
-        ansible_connection: paramiko
-        netlab_console_connection: ssh
-        netlab_match_protomap:
-          ospf:
-          - ospfv2
-          - ospfv3
-          bgp:
-          - bgp
-          - bgp-evpn
-          connected:
-          - local
-          isis:
-          - isis
-      sr:
-        srgb_range_start: 500000
-        srgb_range_size: 1000
-        ipv6_sid_offset: 100
-      bfd:
-        min_tx: 100
-        min_rx: 100
-      clab:
-        image: ghcr.io/nokia/srlinux:25.3.2
-        node:
-          kind: srl
-          type: ixrd2
-        interface:
-          name: e1-{ifindex}
-        group_vars:
-          srlinux_grpc_port: 57400
-      external:
-        image: none
-      graphite:
-        icon: router
-    sros:
-      features:
-        bgp:
-          default_originate: true
-          allowas_in: true
-          as_override: true
-          password: true
-          tcp_ao: true
-          local_as: true
-          vrf_local_as: true
-          local_as_ibgp: true
-          activate_af: true
-          ipv6_lla: false
-          import:
-          - ospf
-          - isis
-          - connected
-          - vrf
-          - no_policy
-        initial:
-          ipv4:
-            unnumbered: true
-          ipv6:
-            lla: true
-          min_phy_mtu: 1500
-          max_mtu: 9782
-        bfd: {}
-        evpn:
-          irb: true
-          asymmetrical_irb: true
-        isis:
-          unnumbered:
-            ipv4: true
-            ipv6: true
-            network: false
-          import:
-          - ospf
-          - bgp
-          - connected
-          - vrf
-          - no_policy
-        mpls:
-          ldp: true
-          bgp: true
-          vpn: true
-          6pe: true
-        ospf:
-          unnumbered: true
-          import:
-          - bgp
-          - isis
-          - connected
-          - vrf
-          - no_policy
-          strict_bfd: true
-        ripv2:
-          ipv4: true
-          ipv6: true
-          passive: true
-        routing:
-          policy:
-            set:
-            - locpref
-            - med
-        gateway:
-          protocol:
-          - anycast
-          - vrrp
-        sr: {}
-        srv6:
-          bgp: true
-          isis: true
-        vlan:
-          model: router
-          svi_interface_name: svi.{vlan}
-          subif_name: '{ifname}/1_{vlan.access_id}'
-          mixed_trunk: true
-          native_routed: true
-        vrf:
-          ospfv2: true
-          ospfv3: true
-          isis: true
-          bgp: true
-        vxlan: {}
-      description: Nokia SR OS container
-      mgmt_if: A/1
-      interface_name: eth-1/1/c{ifindex}
-      loopback_interface_name: >-
-        {"loopback."+str(ifindex) if ifindex else "system"}
-      group_vars:
-        ansible_user: admin
-        ansible_ssh_pass: admin
-        ansible_network_os: sros
-        ansible_connection: paramiko_ssh
-        netlab_console_connection: ssh
-        sros_use_openconfig: false
-        netlab_match_protomap:
-          ospf:
-          - ospf
-          - ospf3
-          bgp:
-          - bgp
-          connected:
-          - direct
-          isis:
-          - isis
-      sr:
-        srgb_range_start: 500000
-        srgb_range_size: 1000
-        ipv6_sid_offset: 100
-      bfd:
-        min_tx: 100
-        min_rx: 100
-      clab:
-        image: vrnetlab/nokia_sros:25.3.R2
-        build: https://containerlab.dev/manual/kinds/vr-sros/
-        mtu: 1500
-        node:
-          kind: vr-sros
-          type: sr-1
-          license: ~/.netlab/license_sros25.txt
-        interface:
-          name: eth{ifindex}
-        group_vars:
-          sros_grpc_port: 57400
-      external:
-        image: none
-      graphite:
-        icon: router
-    vyos:
-      features:
-        bgp:
-          default_originate: true
-          allowas_in: true
-          as_override: true
-          password: true
-          remove_private_as: true
-          activate_af: true
-          ipv6_lla: true
-          local_as: true
-          vrf_local_as: true
-          import:
-          - ospf
-          - ripv2
-          - connected
-          - static
-          - vrf
-        initial:
-          ipv4:
-            unnumbered: true
-          ipv6:
-            lla: true
-        bfd: {}
-        evpn:
-          asymmetrical_irb: true
-          irb: true
-        gateway:
-          protocol:
-          - vrrp
-        isis: {}
-        mpls:
-          ldp: true
-          vpn:
-            ipv4: true
-        ospf:
-          unnumbered: true
-          import:
-          - bgp
-          - ripv2
-          - connected
-          - static
-          - vrf
-          default: true
-        ripv2:
-          ipv4: true
-          ipv6: true
-          passive: true
-        routing:
-          policy:
-            set:
-              locpref: true
-              med: true
-              prepend: true
-              community:
-                standard: true
-                large: true
-                extended: true
-                append: true
-                delete: false
-            match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
-          prefix: true
-          aspath: true
-          community:
-            expanded: true
-          static:
-            vrf: true
-            inter_vrf: true
-            discard: true
-        vlan:
-          model: l3-switch
-          svi_interface_name: br0.{vlan}
-          subif_name: '{ifname}.{vlan.access_id}'
-          native_routed: true
-        vrf:
-          ospfv2: true
-          ospfv3: true
-          bgp: true
-        vxlan:
-          vtep6: true
-      description: VyOS VM/container
-      interface_name: eth{ifindex}
-      loopback_interface_name: dum{ifindex}
-      mgmt_if: eth0
-      libvirt:
-        image: vyos/current
-      group_vars:
-        ansible_network_os: vyos
-        ansible_connection: paramiko
-        ansible_user: vyos
-        ansible_ssh_pass: vyos
-        docker_shell: su - vyos
-      clab:
-        image: ghcr.io/sysoleg/vyos-container
-        mtu: 1500
-        kmods:
-        node:
-          kind: linux
-          binds:
-            /lib/modules: /lib/modules
-        group_vars:
-          ansible_connection: docker
-          ansible_user: vyos
-        features:
-          stub_loopback: {}
-      external:
-        image: none
-      graphite:
-        icon: router
-    arubacx:
-      features:
-        bgp:
-          allowas_in: true
-          bfd: true
-          default_originate: true
-          gtsm: true
-          password: true
-          remove_private_as: true
-          timers: true
-          activate_af: true
-          local_as: true
-          local_as_ibgp: false
-          vrf_local_as: true
           import:
           - ospf
           - connected
           - static
-          - vrf
-        initial:
-          ipv4:
-            unnumbered: true
-          ipv6:
-            lla: true
         bfd: {}
-        evpn:
-          asymmetrical_irb: true
-          irb: true
-        gateway:
-          protocol:
-          - anycast
-          - vrrp
-        lag:
-          mlag:
-            peer:
-              ifindex: 255
-              mac: 0600.0000.0000
-          passive: true
-        mpls:
-          ldp: true
-          vpn: true
         ospf:
           import:
           - bgp
           - connected
-          - vrf
           - static
-          default: true
           password: true
           priority: true
           timers: true
           unnumbered: true
-        routing:
-          policy:
-            set:
-              locpref: true
-              med: true
-              weight: true
-              prepend: true
-              community:
-                standard: true
-                delete: true
-                append: true
-            match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
-          prefix: true
-          aspath: true
-          community:
-            expanded: true
-          static:
-            vrf: true
-            inter_vrf: true
-            discard: true
-        stp:
-          supported_protocols:
-          - mstp
-          - pvrst
-          - stp
-          enable_per_port: true
-        vlan:
-          model: switch
-          svi_interface_name: vlan{vlan}
-        vrf:
-          ospfv2: true
-          ospfv3: true
-          bgp: true
-        vxlan: {}
-      description: ArubaOS-CX
-      interface_name: 1/1/{ifindex}
-      mgmt_if: mgmt
-      loopback_interface_name: loopback {ifindex}
-      tunnel_interface_name: tunnel {ifindex}
-      lag_interface_name: lag {lag.ifindex}
-      ifindex_offset: 1
       libvirt:
-        image: aruba/cx
-        build: https://netlab.tools/labs/arubacx/
-        create: virt-install --connect=qemu:///system --name=vm_box 
-          --arch=x86_64 --cpu host --vcpus=2 --hvm --ram=4096 
-          --network=network:vagrant-libvirt,model=virtio --graphics none 
-          --import --disk path=vm.qcow2,format=qcow2,bus=ide
-      clab:
-        image: vrnetlab/vr-aoscx:20240129204649
-        build: https://containerlab.dev/manual/kinds/vr-aoscx/
-        mtu: 1500
-        node:
-          kind: vr-aoscx
-        interface:
-          name: eth{ifindex}
-        group_vars:
-          netlab_check_retries: 40
-          netlab_check_delay: 15
-      group_vars:
-        ansible_network_os: arubanetworks.aoscx.aoscx
-        ansible_connection: network_cli
-        ansible_user: admin
-        ansible_ssh_pass: admin
-        netlab_device_type: arubacx
-      external:
-        image: none
-      graphite:
-        icon: switch
-    asav:
-      description: Cisco ASAv
-      interface_name: GigabitEthernet0/{ifindex}
-      ifindex_offset: 0
-      mgmt_if: Management0/0
-      group_vars:
-        ansible_user: vagrant
-        ansible_ssh_pass: vagrant1
-        ansible_become_method: enable
-        ansible_become_password: vagrant1
-        ansible_network_os: asa
-        ansible_connection: network_cli
-        netlab_ssh_args: -o KexAlgorithms=+diffie-hellman-group14-sha1 -o 
-          PubkeyAcceptedKeyTypes=+ssh-rsa -o HostKeyAlgorithms=+ssh-rsa
-      external:
-        image: none
-      features:
-        bgp: {}
-        isis: {}
-      libvirt:
-        image: cisco/asav
-        create_template: asav.xml.j2
-        build: https://netlab.tools/labs/asav/
-        create_iso: asav
-    fortios:
-      description: Fortinet FortiOS firewall
-      interface_name: port{ifindex}
-      loopback_interface_name: loopback{ifindex}
-      mgmt_if: port1
-      mtu: 1500
-      ifindex_offset: 2
-      libvirt:
-        image: fortinet/fortios
-        build: https://netlab.tools/labs/fortios/
-        create_template: fortios.xml.j2
-      group_vars:
-        ansible_user: admin
-        ansible_password: admin
-        ansible_ssh_pass: admin
-        ansible_network_os: fortinet.fortios.fortios
-        ansible_connection: httpapi
-        collections:
-        - fortinet.fortios
-        vdom: root
-        ansible_httpapi_use_ssl: 'no'
-        ansible_httpapi_validate_certs: 'no'
-        ansible_httpapi_port: 80
-        netlab_console_connection: ssh
-        netlab_skip_missing_template: true
-        netlab_config_tasks: true
-      external:
-        image: none
-      features:
-        ospf: {}
-      graphite:
-        icon: firewall
-    iosvl2:
-      description: IOSv L2 image
-      loopback_interface_name: Loopback{ifindex}
-      tunnel_interface_name: Tunnel{ifindex}
-      group_vars:
-        ansible_become_method: enable
-        ansible_network_os: ios
-        ansible_connection: network_cli
-        netlab_initial: always
-        netlab_ssh_args: -o KexAlgorithms=+diffie-hellman-group-exchange-sha1 -o
-          PubkeyAcceptedKeyTypes=ssh-rsa -o HostKeyAlgorithms=+ssh-rsa
-        netlab_device_type: iosvl2
-        ansible_user: vagrant
-        ansible_ssh_pass: vagrant
-        ansible_become_password: vagrant
-      role: router
-      routing:
-        _rm_per_af: true
-      features:
-        bfd: {}
-        bgp:
-          local_as: true
-          vrf_local_as: true
-          local_as_ibgp: true
-          activate_af: true
-          import:
-          - ospf
-          - isis
-          - ripv2
-          - connected
-          - static
-          - vrf
-          community:
-            standard:
-            - standard
-            extended:
-            - extended
-        dhcp:
-          client:
-            ipv4: true
-            ipv6: true
-            routing: true
-          relay: true
-          vrf: true
-          server: true
-        eigrp: {}
-        initial:
-          ipv4:
-            unnumbered: false
-          ipv6:
-            lla: true
-            use_ra: true
-          roles:
-          - host
-          - router
-          - bridge
-          mgmt_vrf: true
-          min_mtu: 68
-          max_mtu: 4700
-          min_phy_mtu: 1500
-        isis:
-          import:
-          - bgp
-          - ospf
-          - ripv2
-          - connected
-          - static
-          unnumbered:
-            ipv4: true
-            ipv6: true
-            network: true
-        mpls:
-          ldp: true
-          bgp: true
-          vpn: true
-          6pe: true
-        ospf:
-          unnumbered: true
-          import:
-          - bgp
-          - isis
-          - ripv2
-          - connected
-          - static
-          - vrf
-          default:
-            policy: true
-          password: true
-          priority: true
-          timers: true
-        ripv2:
-          ipv4: true
-          ipv6: true
-          passive: true
-          import:
-          - bgp
-          - isis
-          - ospf
-          - connected
-          - static
-          - vrf
-        routing:
-          policy:
-            set:
-              locpref: true
-              med: true
-              weight: true
-              prepend: true
-              community:
-                standard: true
-                append: true
-            match:
-            - prefix
-            - nexthop
-            - aspath
-            - community
-          prefix: true
-          aspath: true
-          community:
-            expanded: true
-          static:
-            vrf: true
-            inter_vrf: true
-            discard: true
-        vlan:
-          model: l3-switch
-          svi_interface_name: Vlan{vlan}
-          subif_name: '{ifname}.{subif_index}'
-          mixed_trunk: false
-          native_routed: true
-        vrf:
-          ospfv2: true
-          ospfv3: true
-          bgp: true
-          ripv2: true
-          ripng: true
-        gateway:
-          protocol:
-          - vrrp
-      external:
-        image: none
-      graphite:
-        icon: router
-      interface_name: GigabitEthernet{ifindex // 4}/{ifindex % 4}
-      libvirt:
-        image: cisco/iosvl2
-        build: https://netlab.tools/labs/iosvl2/
-        create_template: iosv.xml.j2
-      virtualbox:
-        image: cisco/iosv
-      clab:
-        group_vars:
-          ansible_ssh_pass: VR-netlab9
-          ansible_user: vrnetlab
-          netlab_check_retries: 50
-        image: vrnetlab/cisco_vios:15.9.3
-        node:
-          kind: linux
-        interface:
-          name: eth{ifindex}
-        build: https://github.com/hellt/vrnetlab/tree/master/vios
-    iosxr:
-      description: Cisco IOS XRv
-      mgmt_if: MgmtEth0/RP0/CPU0/0
-      interface_name: GigabitEthernet0/0/0/{ifindex}
-      loopback_interface_name: Loopback{ifindex}
-      ifindex_offset: 0
-      group_vars:
-        ansible_user: vagrant
-        ansible_ssh_pass: vagrant
-        ansible_become_method: enable
-        ansible_become_password: vagrant
-        ansible_network_os: iosxr
-        ansible_connection: network_cli
-      features:
-        initial:
-          ipv4:
-            unnumbered: true
-          ipv6:
-            lla: true
-        ospf:
-          unnumbered: true
-        isis:
-          unnumbered:
-            ipv4: true
-            ipv6: true
-            network: true
-        bgp:
-          activate_af: true
-      external:
-        image: none
-      libvirt:
-        image: cisco/iosxr
-        build: https://netlab.tools/labs/iosxr/
-        create: virt-install --connect=qemu:///system --network 
-          network=vagrant-libvirt,model=e1000 --name=vm_box --cpu host 
-          --arch=x86_64 --vcpus=2 --ram=8192 --virt-type=kvm --disk 
-          path=vm.qcow2,format=qcow2,device=disk,bus=ide --graphics none 
-          --import
-      clab:
-        node:
-          kind: cisco_xrd
-          runtime: docker
-        mgmt_if: MgmtEth0/RP0/CPU0/0
-        interface:
-          name: Gi0-0-0-{ifindex}
-        image: ios-xr/xrd-control-plane:7.11.1
-        build: https://containerlab.dev/manual/kinds/xrd/
-        group_vars:
-          ansible_user: clab
-          ansible_ssh_pass: clab@123
-          ansible_become_password: clab@123
-    linux:
-      description: Generic Linux host
-      interface_name: eth{ifindex}
-      lag_interface_name: bond{lag.ifindex}
-      loopback_interface_name: lo{ifindex if ifindex else ""}
-      mgmt_if: eth0
-      role: host
-      features:
-        lag:
-          passive: false
-        routing:
-          static: true
-        initial:
-          ipv4:
-            unnumbered: peer
-          ipv6:
-            use_ra: true
-          roles:
-          - host
-      libvirt:
-        image: bento/ubuntu-24.04
         group_vars:
           netlab_linux_distro: ubuntu
         features:
@@ -3875,7 +4205,6 @@ defaults:
               ipv4: true
             _provider: libvirt
       virtualbox:
-        image: bento/ubuntu-24.04
         group_vars:
           netlab_linux_distro: ubuntu
       group_vars:
@@ -3887,12 +4216,18 @@ defaults:
         ansible_python_interpreter: auto_silent
         netlab_lldp_enable: false
         netlab_net_tools: false
+        netlab_import_map:
+          bgp: RTS_BGP
+          ospf: RTS_OSPF
+          connected: RTS_DEVICE
+          static: RTS_STATIC_DEVICE,RTS_STATIC
+        netlab_device_type: bird
       clab:
         features:
           initial:
             roles:
             - host
-            - bridge
+            - router
           vlan:
             mixed_trunk: true
             model: router
@@ -3900,9 +4235,8 @@ defaults:
             subif_name: '{ifname}.{vlan.access_id}'
             svi_interface_name: vlan{vlan}
             _provider: clab
-        image: python:3.13-alpine
+        image: netlab/bird:latest
         mtu: 1500
-        kmods:
         node:
           kind: linux
           config_templates:
@@ -3911,114 +4245,25 @@ defaults:
           ansible_connection: docker
           ansible_user: root
           netlab_linux_distro: vanilla
-      external:
-        image: none
-      graphite:
-        icon: server
-    routeros:
-      description: Mikrotik RouterOS version 6
-      interface_name: ether{ifindex}
-      mgmt_if: ether1
-      ifindex_offset: 2
-      loopback_interface_name: loopback
-      libvirt:
-        image: mikrotik/chr
-        build: https://stefano.dscnet.org/a/mikrotik_vagrant/
-      group_vars:
-        ansible_network_os: routeros
-        ansible_connection: network_cli
-        ansible_user: admin
-        ansible_ssh_pass: admin
-      features:
-        bgp: {}
-        mpls:
-          ldp: true
-          vpn: true
-        ospf: {}
-        vlan:
-          model: router
-          svi_interface_name: bridge{vlan}
-          subif_name: '{ifname}-{vlan.access_id}'
-          mixed_trunk: true
-          native_routed: true
-        vrf:
-          ospfv2: true
-          bgp: true
-      external:
-        image: none
-      graphite:
-        icon: router
-    sonic:
-      description: Sonic VM
-      interface_name: Ethernet{ifindex * 4}
-      ifindex_offset: 0
-      mgmt_if: eth0
-      loopback_interface_name: Loopback{ifindex}
-      group_vars:
-        ansible_network_os: frr
-        ansible_python_interpreter: auto_silent
-        netlab_device_type: sonic
-      libvirt:
-        image: netlab/sonic
-        mtu: 1500
-        create_template: sonic.xml.j2
-        group_vars:
-          ansible_connection: paramiko
-          ansible_user: admin
-          ansible_ssh_pass: YourPaSsWoRd
           netlab_show_command:
-          - sudo
-          - vtysh
-          - -c
+          - birdc
           - show $@
+          docker_shell: bash -il
+        build: https://netlab.tools/netlab/clab/#netlab-clab-build
       external:
         image: none
-      features:
-        initial:
-          ipv4:
-            unnumbered: true
-          ipv6:
-            lla: true
-        bgp:
-          activate_af: true
-          ipv6_lla: true
-          local_as: true
-          local_as_ibgp: true
-          vrf_local_as: true
-          community:
-            standard:
-            - standard
-            - large
-            large:
-            - large
-            extended:
-            - extended
-            2octet:
-            - standard
-      graphite:
-        icon: router
-    unknown:
-      description: Generic Unknown Device
-      interface_name: eth{ifindex}
-      mgmt_if: eth0
       graphite:
         icon: server
-      features:
-        bfd: {}
-        bgp: {}
-        evpn: {}
-        gateway: {}
-        isis: {}
-        mpls: {}
-        ospf: {}
-        sr: {}
-        srv6: {}
-        vlan: {}
-        vrf:
-          ospfv2: true
-          ospfv3: true
-          bgp: true
-        vxlan: {}
+      daemon_config:
+        bgp@session: /etc/bird/bgp.session.conf
+        bird: /etc/bird/bird.conf
+        bgp: /etc/bird/bgp.mod.conf
+        ospf: /etc/bird/ospf.mod.conf
+        routing: /etc/bird/routing.mod.conf
+      packages:
+        bird: bird
+      daemon: true
+      daemon_parent: linux
     dnsmasq:
       description: DNSmasq - DNS and DHCP server
       interface_name: eth{ifindex}
@@ -4464,6 +4709,13 @@ defaults:
           type: id
           _requires:
           - routing
+    bgp_session_type:
+      _description: BGP session types
+      type: str
+      valid_values:
+        ibgp:
+        ebgp:
+        localas_ibgp:
     rp_entry:
       _description: Routing policy entry
       action:
@@ -4724,6 +4976,17 @@ defaults:
         min_value: 1
       links: list
       loopback:
+        ipv4:
+          type: ipv4
+          use: host_prefix
+        ipv6:
+          type: ipv6
+          use: host_prefix
+        pool: addr_pool
+        _alt_types:
+        - bool
+        - prefix_str
+        - NoneType
       _namespace:
       - link
   bgp:
@@ -4788,22 +5051,18 @@ defaults:
         as_list: dict
         sessions:
           ipv4:
-          - ibgp
-          - ebgp
-          - localas_ibgp
+            type: list
+            _subtype: bgp_session_type
           ipv6:
-          - ibgp
-          - ebgp
-          - localas_ibgp
+            type: list
+            _subtype: bgp_session_type
         activate:
           ipv4:
-          - ibgp
-          - ebgp
-          - localas_ibgp
+            type: list
+            _subtype: bgp_session_type
           ipv6:
-          - ibgp
-          - ebgp
-          - localas_ibgp
+            type: list
+            _subtype: bgp_session_type
         advertise_loopback: bool
         advertise_roles: list
         community:
@@ -4821,6 +5080,13 @@ defaults:
           - str
           - BoxList
         replace_global_as: bool
+        confederation:
+          type: dict
+          _keytype: asn
+          _subtype:
+            members:
+              type: list
+              _subtype: asn
       node:
         bfd:
           type: bool
@@ -4877,22 +5143,18 @@ defaults:
         advertise_loopback: bool
         sessions:
           ipv4:
-          - ibgp
-          - ebgp
-          - localas_ibgp
+            type: list
+            _subtype: bgp_session_type
           ipv6:
-          - ibgp
-          - ebgp
-          - localas_ibgp
+            type: list
+            _subtype: bgp_session_type
         activate:
           ipv4:
-          - ibgp
-          - ebgp
-          - localas_ibgp
+            type: list
+            _subtype: bgp_session_type
           ipv6:
-          - ibgp
-          - ebgp
-          - localas_ibgp
+            type: list
+            _subtype: bgp_session_type
         community:
           ibgp:
           - standard
@@ -4977,6 +5239,8 @@ defaults:
         advertise:
           type: bool
           _intra_as: true
+      _inherit_community:
+        localas_ibgp: ibgp
       vrf:
         router_id:
           type: ipv4
@@ -5011,11 +5275,18 @@ defaults:
       advertise_roles:
       rr_list:
       as_list:
+      confederation:
     transform_after:
     - vlan
     config_after:
     - routing
+    - ospf
+    - isis
+    - eigrp
+    - ripv2
     next_hop_self: true
+    hooks:
+    - normalize
     features:
       local_as: Supports local-as functionality
       vrf_local_as: Supports local-as within a VRF
@@ -5024,6 +5295,7 @@ defaults:
       ipv6_lla: Can run EBGP sessions over IPv6 link-local addresses
       rfc8950: Can run IPv4 AF over regular IPv6 EBGP session
       community: Granular BGP community propagation
+      confederation: BGP confederations
       import: Import routes from other routing protocols
     warnings:
       missing_igp: true
@@ -5080,6 +5352,7 @@ defaults:
       - startup-delay
       - restart-policy
       template: clab.j2
+      version: 0.68.0
       start: sudo -E containerlab deploy --reconfigure -t clab.yml
       stop: sudo -E containerlab destroy --cleanup -t clab.yml
       act_probe: docker ps
@@ -5174,8 +5447,8 @@ defaults:
       cleanup:
       - Vagrantfile
       - .vagrant
-      tunnel_id: '17'
-      vifprefix: vgif_17
+      tunnel_id: '30'
+      vifprefix: vgif_30
       clab:
         start: sudo -E containerlab deploy --reconfigure -t clab-augment.yml
         stop: sudo -E containerlab destroy --cleanup -t clab-augment.yml
@@ -5220,115 +5493,6 @@ defaults:
         ssh: 2000
         http: 8000
         netconf: 3000
-  daemons:
-    bird:
-      description: BIRD Internet Routing Daemon
-      group_vars:
-        netlab_import_map:
-          bgp: RTS_BGP
-          ospf: RTS_OSPF
-          connected: RTS_DEVICE
-          static: RTS_STATIC_DEVICE,RTS_STATIC
-      packages:
-        bird: bird
-      daemon_config:
-        bird: /etc/bird/bird.conf
-        bgp: /etc/bird/bgp.mod.conf
-        ospf: /etc/bird/ospf.mod.conf
-        routing: /etc/bird/routing.mod.conf
-      clab:
-        group_vars:
-          netlab_show_command:
-          - birdc
-          - show $@
-          docker_shell: bash -il
-        image: netlab/bird:latest
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
-        features:
-          initial:
-            roles:
-            - host
-            - router
-      libvirt:
-        image:
-      virtualbox:
-        image:
-      features:
-        bfd: true
-        bgp:
-          activate_af: true
-          ipv6_lla: false
-          rfc8950: true
-          local_as: true
-          local_as_ibgp: true
-          community:
-            standard:
-            - standard
-            - large
-            large:
-            - large
-            extended:
-            - extended
-            2octet:
-            - standard
-          import:
-          - ospf
-          - connected
-          - static
-        ospf:
-          import:
-          - bgp
-          - connected
-          - static
-          password: true
-          priority: true
-          timers: true
-          unnumbered: true
-        routing:
-          static:
-            discard: true
-        dhcp: false
-        initial:
-          ipv4:
-            unnumbered: peer
-          ipv6:
-            lla: true
-          roles:
-          - host
-          - router
-    dnsmasq:
-      description: DNSmasq - DNS and DHCP server
-      packages:
-        dnsmasq: dnsmasq
-      daemon_config:
-        dnsmasq: /etc/dnsmasq.conf
-        dhcp: /etc/dhcp.ignore
-      node:
-        module:
-        - dhcp
-      clab:
-        group_vars:
-          docker_shell: bash -il
-        image: netlab/dnsmasq:latest
-        build: https://netlab.tools/netlab/clab/#netlab-clab-build
-        features:
-          initial:
-            roles:
-            - host
-      libvirt:
-        image:
-      virtualbox:
-        image:
-      features:
-        dhcp:
-          server: true
-        initial:
-          roles:
-          - host
-      dhcp:
-        server: true
-      module:
-      - dhcp
   outputs:
     d2:
       node_address_label: true
@@ -5436,7 +5600,7 @@ defaults:
         up: docker run -d --rm {sys.docker_net} --mount 
           type=bind,source="$(pwd)/graphite/graphite-default.json",target=/htdocs/default/default.json,readonly
           -p { 8080 + defaults.multilab.id if defaults.multilab.id else 8080 
-          }:80 --name '{name}_graphite' netreplica/graphite:0.4.2
+          }:80 --name "{name}_graphite" netreplica/graphite:0.4.2
         message: Open http://{sys.ipaddr}:{ 8080 + defaults.multilab.id if 
           defaults.multilab.id else 8080 }/graphite/ in your browser
         down: docker kill '{name}_graphite'
@@ -5470,16 +5634,125 @@ defaults:
         down: docker kill {name}-cisco-nso
         cleanup: docker volume rm '{name}-nso-vol' docker volume rm 
           '{name}-nso-log-vol'
+    nuts:
+      runtime: docker
+      docker:
+        up: docker run --rm -itd --name '{name}_nuts' {sys.docker_net} -v 
+          './nuts':/nuts -w /nuts ghcr.io/network-unit-testing-system/nuts
+        message: Use 'netlab connect nuts' to connect to the NUTS container. Run
+          'pytest' in the container to execute tests.
+        connect: docker exec -it '{name}_nuts' bash
+        down: docker kill '{name}_nuts'
+        cleanup: docker volume rm '{name}_nuts'
+      config:
+      - dest: nr-config.yaml
+        template: nr-config.yaml
+      - dest: inventory/groups.yaml
+        template: inventory/groups.yaml
+      - dest: inventory/hosts.yaml
+        template: inventory/hosts.j2
+      - dest: tests/test_interfaces.yaml
+        template: tests/test_interfaces.j2
+      - dest: tests/test_ospf.yaml
+        template: tests/test_ospf.j2
+      - dest: tests/test_bgp.yaml
+        template: tests/test_bgp.j2
+      inventory:
+        napalm:
+          nxos: nxos_ssh
+          asav: ios
+          cat8000c: ios
+          iol: ios
+          ioll2: ios
+          iosv: ios
+          iosvl2: ios
+          iosxr: iosxr
+          vmx: junos
+          vptx: junos
+          vsrx: junos
+          vjunos-switch: junos
+          vjunos-router: junos
+          srlinux: srl
+          routeros: ros
+          routeros7: ros
+          arubacx: aoscx
+        netmiko:
+          nxos: cisco_nxos
+          cat8000c: cisco_xe
+          iol: cisco_xe
+          ioll2: cisco_xe
+          iosv: cisco_xe
+          iosvl2: cisco_xe
+          iosxr: iosxr
+          vmx: juniper_junos
+          vptx: juniper_junos
+          vsrx: juniper_junos
+          vjunos-switch: juniper_junos
+          vjunos-router: juniper_junos
+          asav: cisco_asa
+          srlinux: nokia_srl
+          sros: nokia_sros
+          routeros: mikrotik_routeros
+          routeros7: mikrotik_routeros
+          arubacx: aruba_aoscx
+          fortios: fortinet
+          dellos10: dell_os10
+        napalm_using_netmiko:
+          nxos_ssh: true
+          ios: true
+      test_creation:
+        interface:
+          nxos: nxos_ssh
+          asav: ios
+          cat8000c: ios
+          iol: ios
+          ioll2: ios
+          iosv: ios
+          iosvl2: ios
+          iosxr: iosxr
+          vmx: junos
+          vptx: junos
+          vsrx: junos
+          vjunos-switch: junos
+          vjunos-router: junos
+          srlinux: srl
+          routeros: ros
+          routeros7: ros
+          arubacx: aoscx
+        bgp:
+          nxos: nxos_ssh
+          asav: ios
+          cat8000c: ios
+          iol: ios
+          ioll2: ios
+          iosv: ios
+          iosvl2: ios
+          iosxr: iosxr
+          vmx: junos
+          vptx: junos
+          vsrx: junos
+          vjunos-switch: junos
+          vjunos-router: junos
+          srlinux: srl
+          routeros: ros
+          routeros7: ros
+          arubacx: aoscx
+        ospf:
+          cat8000c: cisco_xe
+          iol: cisco_xe
+          ioll2: cisco_xe
+          iosv: cisco_xe
+          iosvl2: cisco_xe
     suzieq:
       runtime: docker
       docker:
-        up: docker run --rm -itd --name '{name}_suzieq' {sys.docker_net} -v 
-          '{name}_suzieq':/parquet -v './suzieq':/suzieq netenglabs/suzieq-demo 
-          -c 'sq-poller -I /suzieq/suzieq-inventory.yml'
+        up: docker run -itd --name '{name}_suzieq' {sys.docker_net} -v 
+          '{name}_suzieq_data':/parquet -v './suzieq':/suzieq 
+          netenglabs/suzieq-demo -c 'sq-poller -I /suzieq/suzieq-inventory.yml'
         message: Use 'netlab connect suzieq' to start SuzieQ CLI
         connect: docker exec -it '{name}_suzieq' /usr/local/bin/suzieq-cli
-        down: docker kill '{name}_suzieq'
-        cleanup: docker volume rm '{name}_suzieq'
+        down: docker kill '{name}_suzieq'; docker rm '{name}_suzieq'
+        cleanup: docker volume rm '{name}_suzieq_data'
       config:
       - dest: suzieq-inventory.yml
         template: suzieq.inventory.j2
@@ -5602,39 +5875,45 @@ defaults:
       unmanaged_device: Netlab uses the node device type for unmanaged nodes to 
         figure out what features the node supports. If you're using a device 
         that is not supported by netlab, set the device type to 'none'.
+    support:
+      best-effort: While a core contributor might still work on the platform, we
+        don't run integration tests
+      minimal: Don't expect too much (particularly new functionality)
+      obsolete: These platforms are still part of the netlab package because the
+        storage prices keep falling
   multilab:
     change:
-      name: ml_17
+      name: ml_30
       defaults:
-        name: ml_17
+        name: ml_30
         providers:
           libvirt:
-            tunnel_id: '17'
-            vifprefix: vgif_17
+            tunnel_id: '30'
+            vifprefix: vgif_30
       addressing:
         mgmt:
-          ipv4: 192.168.17.0/24
-          _network: nl_mgmt_17
-          _bridge: nl_mgmt_17
-    id: 17
+          ipv4: 192.168.30.0/24
+          _network: nl_mgmt_30
+          _bridge: nl_mgmt_30
+    id: 30
   netlab:
     capture:
       command: tcpdump -i {intf}
       command_args: --immediate-mode -l -vv
   paths:
     validate:
-    - /home/pipi/netlab_gh/netsim/validate
+    - /home/pipi/net101/tools/netsim/validate
     plugin:
-    - /work/netlab_cicd
+    - /work/netlab_cicd/cisco
     - /home/pipi/net101/tools/tests/integration/bgp.session
     - /home/pipi/.netlab
-    - /home/pipi/netlab_gh/netsim/extra
+    - /home/pipi/net101/tools/netsim/extra
     custom:
       dirs:
       - /home/pipi/net101/tools/tests/integration/bgp.session
-      - /work/netlab_cicd
+      - /work/netlab_cicd/cisco
       - /home/pipi/.netlab
-      - /home/pipi/netlab_gh/netsim/extra
+      - /home/pipi/net101/tools/netsim/extra
       files:
       - "{{ custom_config + '/' + inventory_hostname + '.' + netlab_device_type +
         '-' + node_provider + '.j2' }}"
@@ -5665,7 +5944,7 @@ defaults:
       - '{{ custom_config }}/deploy.yml'
     deploy:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks
+      - /home/pipi/net101/tools/netsim/ansible/tasks
       tasks_generic:
       - deploy-config/{{ netlab_device_type }}-{{ node_provider }}.yml
       - deploy-config/{{ netlab_device_type }}.yml
@@ -5686,8 +5965,8 @@ defaults:
       - deploy-config/{{ ansible_network_os }}.yml
     templates:
       dirs:
-      - /home/pipi/netlab_gh/netsim/daemons
-      - /home/pipi/netlab_gh/netsim/ansible/templates
+      - /home/pipi/net101/tools/netsim/daemons
+      - /home/pipi/net101/tools/netsim/ansible/templates
     t_files:
       files:
       - '{{config_module}}/{{netlab_device_type}}-{{provider|default(netlab_provider)}}.j2'
@@ -5699,7 +5978,7 @@ defaults:
       - '{{netlab_device_type}}/{{config_module}}.j2'
     ready:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check
+      - /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check
       files:
       - '{{netlab_device_type}}-{{provider|default(netlab_provider)}}.yml'
       - '{{netlab_device_type}}.yml'
@@ -5707,7 +5986,7 @@ defaults:
       - '{{ansible_network_os}}.yml'
     collect:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks/fetch-config
+      - /home/pipi/net101/tools/netsim/ansible/tasks/fetch-config
   ports:
     ssh: 22
     http: 80
@@ -6270,9 +6549,16 @@ defaults:
             _alt_types:
             - bool
           mac: mac
+      interface:
+        lacp_system_id:
+          type: mac
+          _alt_types:
+          - int
+      intf_to_neighbor: false
       lag_l2_linkattr:
         mtu:
         bandwidth:
+        lacp_system_id:
       lag_member_linkattr:
         mtu:
         bandwidth:
@@ -6292,11 +6578,14 @@ defaults:
       dnsmasq: true
       eos: true
       frr: true
+      ioll2: true
+      iosvl2: true
       linux: true
       none: true
       vjunos-switch: true
       vptx: true
       vsrx: true
+      vyos: true
   mpls:
     config_after:
     - vlan
@@ -6880,6 +7169,7 @@ defaults:
       cat8000v: true
       csr: true
       cumulus: true
+      cumulus_nvue: true
       dellos10: true
       dnsmasq: true
       eos: true
@@ -6892,6 +7182,7 @@ defaults:
       junos: true
       linux: true
       none: true
+      openbsd: true
       srlinux: true
       sros: true
       vjunos-router: true
@@ -7135,6 +7426,8 @@ defaults:
       dellos10: true
       eos: true
       frr: true
+      ioll2: true
+      iosvl2: true
       none: true
   vlan:
     config_after:
@@ -7190,6 +7483,7 @@ defaults:
         stp:
         virtual_interface:
         lag:
+        evpn:
       keep_subif:
         vlan:
         ifindex:
@@ -7394,8 +7688,8 @@ defaults:
     - vxlan
   module:
   - bgp
-  name: ml_17
-name: ml_17
+  name: ml_30
+name: ml_30
 addressing:
   lan:
     ipv4: 172.16.0.0/16
@@ -7410,11 +7704,11 @@ addressing:
     ipv4: 10.0.0.0/24
     prefix: 32
   mgmt:
-    ipv4: 192.168.17.0/24
+    ipv4: 192.168.30.0/24
     start: 100
     mac: 08-4F-A9-00-00-00
-    _network: nl_mgmt_17
-    _bridge: nl_mgmt_17
+    _network: nl_mgmt_30
+    _bridge: nl_mgmt_30
     prefix: 24
   l2only: {}
   vrf_loopback:
