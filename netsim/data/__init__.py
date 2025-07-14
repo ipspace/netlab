@@ -33,7 +33,7 @@ append_to_list: Given a box, a list name, and an item:
 * Create an empty list if it does not exist
 * Append the item to the list
 """
-def append_to_list(BX: typing.Optional[Box], list_name: str, item: typing.Any) -> list:
+def append_to_list(BX: typing.Optional[Box], list_name: str, item: typing.Any, flatten: bool = False) -> list:
   if BX is None:
     return []
 
@@ -41,7 +41,10 @@ def append_to_list(BX: typing.Optional[Box], list_name: str, item: typing.Any) -
     BX[list_name] = []
 
   if not item in BX[list_name]:
-    BX[list_name].append(item)
+    if flatten and isinstance(item,list):
+      BX[list_name].extend(item)
+    else:
+      BX[list_name].append(item)
 
   return BX[list_name]
 
