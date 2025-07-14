@@ -1,7 +1,96 @@
 Release Notes Archive
 ====================
 
-This page describes _netlab_ releases that are at least 18 months old. Newer release notes are [here](release.md).
+This page describes _netlab_ releases before release 1.9.0. Newer release notes are [here](release.md).
+
+**Release 1.8.4-post2 (2024-07-13)**
+
+This release contains only [bug fixes](bug-fixes-1.8.4-post2) and [documentation fixes](doc-fixes-1.8.4-post2).
+
+**Release 1.8.4-post1 (2024-07-01)**
+
+This release contains only [bug fixes](bug-fixes-1.8.4-post1) and [documentation fixes](doc-fixes-1.8.4-post1).
+
+**[Release 1.8.4](release-1.8.4) (2024-06-22)**
+
+* Support for [Cisco Catalyst 8000v](platform-devices)
+* Unified support of [vrnetlab containers](clab-vrnetlab) (including ArubaCX, Cisco Catalyst 8000v, Cisco CSR 1000v, Dell OS10, Cisco Nexus 9000v, Mikrotik RouterOS, Juniper vMX, vPTX and vSRX)
+* Automated build of [GitHub Codespaces devcontainer](https://github.com/users/ipspace/packages/container/package/netlab%2Fdevcontainer)
+* Handle keyboard interrupts in long-running netlab commands, including **[netlab up](netlab-up)**, **[netlab initial](netlab-initial)** and **[netlab validate](netlab-validate)**.
+* Add `--ready` action to **[netlab initial](netlab-initial)** command to wait for lab devices to become ready without configuring them.
+
+[More details...](release-1.8.4)
+
+**[Release 1.8.3](release-1.8.3) (2024-06-16)**
+
+* [RIPv2/RIPng configuration module](module-ripv2)
+* BGP Link Bandwidth community in [bgp.policy](plugin-bgp-policy) plugin
+* BGP route server/client in [bgp.session](plugin-bgp-session) plugin.
+* Installation scripts work with Ubuntu 24.04. They were also tested on Ubuntu 22.04, Ubuntu 20.04, and Debian Bookworm.
+
+[More details...](release-1.8.3)
+
+**[Release 1.8.2](release-1.8.2) (2024-05-13)**
+
+* [Create reports](netlab-report) from a subset of nodes
+* [Inspect](netlab-inspect) the same variable(s) [across multiple nodes](netlab-inspect-node)
+* Check for the presence of Vagrant boxes or Docker containers before [starting the lab](netlab-up) and display pointers to build recipes.
+* Check installed Ansible collections before starting **[netlab up](netlab-up)** or **[netlab initial](netlab-initial)**
+* Support for [Sonic VM](platform-devices) based on Azure sonic-vs images.
+* [Numerous improvements](release-1.8.2-vagrant) in the Vagrant box-building process
+
+[More details...](release-1.8.2)
+
+**Release 1.8.1-post1 (2024-04-24)**
+
+This release contains only [bug fixes](bug-fixes-1.8.1-post1) and [documentation fixes](doc-fixes-1.8.1-post1).
+
+**[Release 1.8.1](release-1.8.1) (2024-04-08)**
+
+* Refactor the **[netlab status](netlab-status)** printout
+* Add '[retry tests until the timeout](validate-retry)' functionality to **[netlab validate](netlab-validate)** (including the actual time it took to get the expected results).
+* [OSPFv3 in VRFs](module-vrf-platform-routing-support), implemented on Arista EOS, Cisco IOS, Cisco IOS-XE, FRR, and Junos (vMX, vPTX, vSRX).
+* [EBGP sessions over IPv4 unnumbered and IPv6 LLA interfaces](bgp-platform) on Arista EOS
+* Cisco IOS XRd container support
+* [Numerous configuration template fixes](release-1.8.1-device-fixes), including reduced OSPF SPF/LSA and IPv6 ND RA timers.
+
+[More details...](release-1.8.1)
+
+**[Release 1.8.0](release-1.8.0) (2024-03-01)**
+
+* **netlab up** command can [reload saved device configurations](netlab-up-reload) instead of starting the initial device configuration process.
+* [DHCP configuration module](module-dhcp) implements DHCP clients, DHCP servers, and DHCP relays for IPv4 and IPv6.
+* Lab topology can include control plane- and network services [daemons](platform-daemons) running in Linux containers. This release includes BIRD and dnsmasq daemons.
+* [BGP configuration module](module-bgp) supports 4-octet BGP AS numbers and [large BGP communities](bgp-community-propagation).
+* [Validation plugins](validate-plugin) allow you to write more powerful **netlab validate** validation tests without creating complex Jinja2 templates
+* You can build Docker containers for the [supported daemons](platform-daemons) with the **[netlab clab build](netlab-clab-build)** command
+
+[More details...](release-1.8.0)
+
+**Release 1.7.2 (2024-01-26)**
+
+This release contains only [bug fixes](bug-fixes-1.7.2) and [documentation fixes](doc-fixes-1.7.2).
+
+**[Release 1.7.1](release-1.7.1) (2024-01-08)**
+
+* [Automatically create nodes from group members](groups-auto-create)
+* [Add 'wait' parameter](validate-wait) to validation tests
+* Use colors in netlab up/down/test/validate printouts
+* Use color-coded error messages
+* Use the **rich** Python library to pretty-print tables, JSON, and YAML
+
+[More details...](release-1.7.1)
+
+**[Release 1.7.0](release-1.7.0) (2023-12-03)**
+
+* **[netlab validate](netlab/validate.md)** command can be used to execute [lab validation tests](topology/validate.md).
+* The [**fabric** plugin](plugins/fabric.md) generates a whole leaf-and-spine fabric topology from a few parameters.
+* The [**bgp.domain** plugin](plugins/bgp.domain.md) allows you to create topologies with multiple independent devices or sites using the same BGP AS number.
+* The [**bgp.policy** plugin](plugins/bgp.policy.md) supports AS-path prepending on Arista EOS, Aruba AOS-CX, Cisco CSR 1000v, Cisco IOSv, Cumulus Linux, FRR
+* [**bgp.originate** plugin](plugins/bgp.originate.md) uses loopbacks (instead of static routes to Null device) to originate BGP IPv4 and IPv6 prefixes
+* The `--show` option of the **[netlab connect](netlab/connect.md)** command implements a consistent cross-device way of executing show commands.
+
+[More details...](release-1.7.0)
 
 **[Release 1.6.4](release-1.6.4) (2023-10-23)**
 
@@ -399,6 +488,8 @@ Refactored configuration gathering -- use explicit **device_facts** modules or p
    :caption: Individual release notes
    :maxdepth: 2
 
+   release/1.8.md
+   release/1.7.md
    release/1.6.md
    release/1.5.md
    release/1.4.md
