@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 #
+import typing
 from pathlib import Path
 from box import Box
 
@@ -125,7 +126,28 @@ def read_topology() -> Box:
 def read_setup() -> Box:
   return Box.from_yaml(filename=f'setup.yml',default_box=True,box_dots=True)
 
+def get_min_max_version(r: Box) -> typing.Tuple[str,str]:
+  min_version = '99.99'
+  max_version = ''
+
+  if not isinstance(r,Box):
+    return (min_version,max_version)
+  for k,v in r.items():
+    if not isinstance(v,Box):
+      continue
+    if '_version' in v:
+      sub_min = v._version
+      sub_max = v._version
+    else:
+      (sub_min,sub_max) = get_min_max_version(v)
+    min_version = min(sub_min,min_version)
+    max_version = max(sub_max,max_version)
+
+  return (min_version,max_version)
+
 def read_results(setup: Box) -> Box:
   results = get_empty_box()
   fetch_results('.',results,skip=setup.skip)
+  for t_elem,t_data in results.items():
+    (t_data._min_version,t_data._max_version) = get_min_max_version(results[t_elem])
   return results

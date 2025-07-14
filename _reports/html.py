@@ -65,7 +65,7 @@ def create_recursive_html(
       continue
     if not '_path' in i_data:
       continue
-    if limit and item not in limit:
+    if limit and item not in limit and limit != '*':
       continue
     path = i_data._path.replace('/','-').replace('#','.')
     create_html_page(args,f'{template}.html.j2',topology + { 'results': i_data },path+".html")
@@ -83,6 +83,17 @@ def create(
     topology._version = __version__
 
   topology.coverage = coverage
+  devices = topology.defaults.devices + topology.defaults.daemons
+  for d_name in sorted(list(devices)):
+    d_data = devices[d_name]
+    if d_name in results:
+      if 'support.level' in d_data:
+        topology.partial_results[d_name] = results[d_name]
+      else:
+        topology.full_results[d_name] = results[d_name]
+    elif not '_meta_device' in d_data:
+      topology.no_tests[d_name].description = d_data.description
+
   create_html_page(
     args,
     'index.html.j2',
