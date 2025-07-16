@@ -67,6 +67,7 @@ nodes:
 * **config** -- extra [configuration templates](custom-config) applied to this device.
 * **cpu** -- virtual CPU cores allocated to the VM lab device. It does not apply to container-based devices.
 * **device** -- device type (see [supported platforms](platforms.md)). [Default device type](default-device-type) is specified in **defaults.device**.
+* **debug** -- device-specific [debugging settings](node-debug) enabled at the very beginning of the initial device configuration.
 * **group** -- list of [groups](topo-groups) this node belongs to.
 * **id** -- static node identifier[^id] (see below)
 * **image** or **box** -- specifies the Vagrant box or Docker container used by the lab device. Default images for individual device types are defined in system defaults and can be changed with **defaults.devices...** settings ([more details](default-device-image)).
@@ -321,5 +322,6 @@ $ netlab inspect --node all id
 .. toctree::
    :maxdepth: 1
 
-   node-roles.md
+   node/roles.md
+   node/debug.md
 ```
