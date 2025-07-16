@@ -123,6 +123,7 @@ These caveats are common to all Cisco IOS/IOS-XE platforms:
 * Cisco IOS does not support passive interfaces in RIPng.
 * Cisco IOS requires a *default metric* when redistributing routes into RIPv2. The RIPv2 configuration template sets the default metric to the value of the **netlab_ripv2_default_metric** node parameter (default: 5)
 * Cisco IOS behaves like an awful IP host from the 1980s with the **no ip routing** configuration; it does not use static routes and relies only on the **ip default-gateway**. IPv4 routing is thus enabled even when a Cisco IOS device has **role** set to *host*.
+* You can use the **ios.debug** attribute to [enable debugging](node-debug-attribute) during the initial device configuration.
 
 These caveats apply only to Cisco IOSv and IOSvL2
 
@@ -314,6 +315,7 @@ diag debug application httpsd -1
 * IPv6 L3VPN over SRv6 does not work in parallel with the IPv6 AF. You have to disable the IPv6 AF on IPv6 IBGP sessions with **bgp.activate.ipv6: []**.
 * An OSPFv3 ABR running FRR release 10.3 does not originate summary external routes from NSSA areas
 * FRR has no default logging destinations. The initial device configuration adds file logging to `/tmp/logging`.
+* You can use the **frr.debug** attribute to [enable debugging](node-debug-attribute) during the initial device configuration.
 
 (caveats-junos)=
 ## Common Junos caveats

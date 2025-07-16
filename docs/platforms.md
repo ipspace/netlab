@@ -283,6 +283,14 @@ The following interface addresses are supported on various platforms:
 * See [Initial Configuration Integration Tests Results](https://release.netlab.tools/_html/coverage.initial) for up-to-date details.
 ```
 
+(platform-initial-extra)=
+Some platforms can enable additional functionality during the initial device configuration:
+
+| Operating system | [Debugging<br>attribute](node-debug-attribute) |
+|------------------|:-:|
+| Cisco IOS/IOS XE[^18v]| **ios.debug** |
+| FRRouting             | **frr.debug** |
+
 ## Supported Configuration Modules
 
 (platform-routing-support)=
