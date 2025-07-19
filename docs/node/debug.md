@@ -33,11 +33,14 @@ You can enable debugging *before* configuring network devices with this simple t
 3. Log into the network devices and enable debugging, or use a custom configuration template and execute it with **netlab config _debugging_template_** (this approach yet again gives you multi-vendor capabilities).
 4. Start device configuration with **netlab initial**
 
-Finally, you might be worried that the symptoms you're experiencing depend on the time after the device boots, so you want to enable debugging as soon as possible. In that case, you can use the node **debug** attribute (on devices for which we implemented it), which is a list of device-specific debugging parameters that will be executed at the very beginning of the initial device configuration.
+(node-debug-attribute)=
+Finally, you might be worried that the symptoms you're experiencing depend on the time after the device boots, so you want to enable debugging as soon as possible. In that case, you can use the node **debug** attribute (on [devices for which we implemented it](platform-initial-extra)), which is a list of device-specific debugging parameters that will be executed at the very beginning of the initial device configuration.
 
 **Caveats:**
 
-* The contents of the **debug** attribute are device-specific. *netlab* currently does not have multi-vendor **debug** capabilites. The values of the **debug** attribute must be relevant to the underlying network device, or you'll get configuration errors during the initial configuration
+* The contents of the **debug** attribute are device-specific. *netlab* currently does not have multi-vendor **debug** capabilites.
+* The values of the **debug** attribute are not checked. They must be relevant to the underlying network device, or you'll get configuration errors during the initial configuration
+* _netlab_ does not check whether the initial configuration template of the device you're using includes debugging support. See the [initial device configuration support tables](platform-initial-extra) for more details.
 * The initial device configuration template supplies the mandatory prefix (for example, **do debug**). You only have to list the debugging conditions, for example:
 
 ```
