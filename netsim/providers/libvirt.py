@@ -262,6 +262,9 @@ def create_vagrant_batches(topology: Box) -> None:
 
 class Libvirt(_Provider):
 
+  def augment_node_data(self, node: Box, topology: Box) -> None:
+    node.domain = self.get_node_name(node.name,topology)
+
   """
   pre_transform hook: mark multi-provider links as LAN links
   """
