@@ -438,15 +438,23 @@ Exceptions:
 """
 
 @type_test(false_value=[],empty_value=[])
-def must_be_list(value: typing.Any, make_list: bool = False) -> dict:
+def must_be_list(value: typing.Any, make_list: bool = False, split_lines: bool = False) -> dict:
 
   def transform_to_list(value: typing.Any) -> list:
+    if isinstance(value,str) and split_lines:
+      return value.rstrip().split("\n")
+
     return [ value ]
 
   if isinstance(value,list):                            # A list is what we want to have ;)
     return { '_valid': True }
 
-  if isinstance(value,(str,int,float,bool)):            # Handle scalar-to-list transformations with a callback function
+  # Handle scalar-to-list transformations with a callback function
+  # Please note that the 'split_lines' value used in that callback function
+  # is tied to the argument value passed to this function (it's a magic
+  # transfer of hidden variables)
+  #
+  if isinstance(value,(str,int,float,bool)):
     return { '_valid': True, '_transform': transform_to_list }
 
   if make_list:                                         # Optional: force any other value to become a list

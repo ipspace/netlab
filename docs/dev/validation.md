@@ -131,11 +131,14 @@ See [](validation-definition-examples) for more details.
 
 When an attribute has a data type defined with the **type** attribute, you can use the following attributes to perform value-based validations:
 
+{.wrap-cells}
 | Data type | Value validation option |
 |-----------|-------------------------|
 | **str**   | **valid_values** -- list of valid values |
 | **list**  | **valid_values** -- list of valid values, checked for every element in the list |
 |           | **create_empty** (bool) -- replace None value with an empty list |
+|           | **make_list** (bool) -- force non-scalar values to become single-element lists |
+|           | **split_lines** (bool) -- split multi-line string value into multiple list elements |
 |           | **_subtype** -- validate values as belonging to the specified subtype |
 | **dict**  | **create_empty** (bool) -- replace None value with an empty dictionary |
 |           | **_keys** -- validation rules for individual dictionary keys. |
