@@ -10,15 +10,11 @@ from .. import data
 from ..augment import devices
 
 '''
-Check VirtualBMC server device compatibility:
-
-VirtualBMC servers need to be able to connect to libvirt and manage VMs.
-This is typically only supported on Linux hosts or containers that can
-access the libvirt daemon.
+Check VirtualBMC server node compatibility
 '''
 def valid_vbmc_server(node: Box, topology: Box) -> bool:
   if not node.get('vbmc.server', False):
-    return False  # Not a VirtualBMC server, no need to check
+    return False
 
   features = devices.get_device_features(node,topology.defaults)
 
@@ -35,21 +31,21 @@ Build the list of VirtualBMC client nodes for the server to manage.
 This function creates the vbmc_nodes list that will be used by Ansible tasks.
 '''
 def build_vbmc_node_list(topology: Box) -> None:
-  vbmc_nodes = []
+  vbmc_nodes: list[dict[str, typing.Any]] = []
   
   # Find all nodes that are VirtualBMC clients
-  for node_name, node_data in topology.get('nodes', {}).items():
-    if not node_data.get('vbmc.client', False):
+  for node_name, node in topology.get('nodes', {}).items():
+    if not node.get('vbmc.client', False):
       continue
     
-    # Build IPMI configuration for this client node
-    vbmc_node = {
-      'name': node_data.get('domain', node_name),
-      'ipmi_port': node_data.get('vbmc.ipmi_port', 6230 + len(vbmc_nodes)),
-      'ipmi_address': node_data.get('vbmc.ipmi_address', '::'),
-      'ipmi_user': node_data.get('vbmc.ipmi_user', 'admin'),
-      'ipmi_password': node_data.get('vbmc.ipmi_password', 'admin'),
-    }
+    # Build and append IPMI configuration for this client node
+    vbmc_node = dict({
+      'name': node.get('domain', node_name),
+      'ipmi_port': node.get('vbmc.ipmi_port', 6230 + len(vbmc_nodes)),
+      'ipmi_address': node.get('vbmc.ipmi_address', '::'),
+      'ipmi_user': node.get('vbmc.ipmi_user', 'admin'),
+      'ipmi_password': node.get('vbmc.ipmi_password', 'admin'),
+    })
     
     vbmc_nodes.append(vbmc_node)
   
@@ -84,6 +80,7 @@ class VBMC(_Module):
         continue
       else:
         # Add necessary binds for qemu:///system access
+        # VirtualBMC uses this to abstract IPMI actions to libvirt domains
         binds = [
           '/var/run/libvirt/libvirt-sock:/var/run/libvirt/libvirt-sock',
           '/var/run/libvirt/libvirt-sock-ro:/var/run/libvirt/libvirt-sock-ro'

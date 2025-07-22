@@ -6,6 +6,7 @@ from box import Box
 import typing
 import re
 from netsim.data import global_vars
+from netsim.validate.vbmc import *
 
 def exec_ping(
       host: str,
