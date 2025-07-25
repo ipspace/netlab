@@ -300,9 +300,6 @@ def find_node_device(n: Box, topology: Box) -> bool:
   for group in dev_def.features.get('group',[]):
     groups.add_node_to_group(n.name,group,topology)
 
-  if 'attributes' in dev_def:                               # Add any device specific attributes to the data model
-    topology.defaults.attributes = topology.defaults.attributes + dev_def.attributes
-
   return True
 
 """
