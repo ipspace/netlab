@@ -31,6 +31,7 @@ Once you want to know more, check out these lab topology tutorials:
 * [Mix Containers and VMs in the Same Lab Topology](https://blog.ipspace.net/2023/02/netlab-vm-containers/)
 * [Using VLAN and VRF Links](https://blog.ipspace.net/2023/04/netlab-vrf-vlan-links/)
 * [](example-bridge)
+* [](node-debug)
 
 ## User Interface Tutorials
 
