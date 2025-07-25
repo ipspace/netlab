@@ -419,7 +419,8 @@ def augment_node_system_data(topology: Box) -> None:
 augment_node_device_data: copy attributes that happen to be node attributes from device defaults into node data
 """
 
-def augment_node_device_data(n: Box, defaults: Box) -> None:
+def augment_node_device_data(n: Box, topology: Box) -> None:
+  defaults = topology.defaults
   node_attr = defaults.attributes.get('node',[])
   dev_data  = devices.get_consolidated_device_data(n,defaults)
 
@@ -431,6 +432,9 @@ def augment_node_device_data(n: Box, defaults: Box) -> None:
     for k in defaults.devices[n.device].node.keys():
       if not k in n:
         n[k] = defaults.devices[n.device].node[k]
+
+  if n.device in topology:                        # Do we have global device-specific settings?
+    n[n.device] = topology[n.device] + n[n.device]
 
   if dev_data.get('daemon',False):                # Special handling of daemons
     n._daemon = True                              # First, set the daemon flag so we don't have to look up the device data
@@ -485,7 +489,7 @@ def transform(topology: Box, defaults: Box, pools: Box) -> None:
       log.fatal(f"Internal error: node does not have a name {n}",'nodes')
       return
 
-    augment_node_device_data(n,defaults)
+    augment_node_device_data(n,topology)
 
     n.af = {}                                                 # Nodes must have AF attribute
 
