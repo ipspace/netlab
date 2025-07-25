@@ -286,10 +286,12 @@ The following interface addresses are supported on various platforms:
 (platform-initial-extra)=
 Some platforms can enable additional functionality during the initial device configuration:
 
-| Operating system | [Debugging<br>attribute](node-debug-attribute) |
+| Operating system | [Debugging<br>attribute](node-debug-attribute)[^GNDA] |
 |------------------|:-:|
 | Cisco IOS/IOS XE[^18v]| **ios.debug** |
 | FRRouting             | **frr.debug** |
+
+[^GNDA]: The debugging attribute can be specified for a single node or globally, in which case the debugging is activated on all nodes using the specified device.
 
 ## Supported Configuration Modules
 

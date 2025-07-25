@@ -38,6 +38,8 @@ Some devices (for example, Arista EOS) accept debugging commands only after the 
 ```
 
 (node-debug-attribute)=
+## Device-Specific Debugging Attributes
+
 Finally, you might be worried that the symptoms you're experiencing depend on the time after the device boots, so you want to enable debugging as soon as possible. In that case, you can use the device-specific **debug** attribute (on [devices for which we implemented it](platform-initial-extra)), which is a list of debugging parameters that will be executed at the very beginning of the initial device configuration.
 
 **Caveats:**
