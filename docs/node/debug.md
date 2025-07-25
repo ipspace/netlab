@@ -36,3 +36,27 @@ You can enable debugging *before* configuring network devices with this simple t
 ```{warning}
 Some devices (for example, Arista EOS) accept debugging commands only after the corresponding control-plane protocol has been configured, making the above approach a non-starter.
 ```
+
+(node-debug-attribute)=
+## Device-Specific Debugging Attributes
+
+Finally, you might be worried that the symptoms you're experiencing depend on the time after the device boots, so you want to enable debugging as soon as possible. In that case, you can use the device-specific **debug** attribute (on [devices for which we implemented it](platform-initial-extra)), which is a list of debugging parameters that will be executed at the very beginning of the initial device configuration.
+
+**Caveats:**
+
+* The contents of the **_device_.debug** attribute are device-specific. *netlab* currently does not have multi-vendor **debug** capabilites.
+* The values of the **_device_.debug** attribute are not checked. They must be relevant to the underlying network device, or you'll get configuration errors during the initial configuration
+* The initial device configuration template supplies the mandatory prefix (for example, **do debug**). You only have to list the debugging conditions, for example:
+
+```
+nodes:
+  dut:
+    module: [ bgp, ospf, routing ]
+    bgp.as: 65000
+    device: iol
+    ios.debug:
+    - ip routing
+    - bgp ipv4 unicast updates
+    frr.debug:
+    - bgp updates
+```
