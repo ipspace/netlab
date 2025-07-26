@@ -57,7 +57,6 @@ def add_groups(maps: Box, graph_groups: list, topology: Box) -> None:
 
 def graph_clusters(graph: Box, topology: Box, settings: Box) -> None:
   if 'groups' in settings:
-    print(settings.groups)
     must_be_list(
       parent=settings,
       key='groups',path='defaults.outputs.graph',
