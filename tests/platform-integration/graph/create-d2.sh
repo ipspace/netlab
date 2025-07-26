@@ -1,6 +1,9 @@
 #!/bin/bash
 OPTS=${*:-bgp topo}
 rm *svg
+if [[ "$OPTS" == *"elk"* ]]; then
+  export D2_LAYOUT=elk
+fi
 if [[ "$OPTS" == *"topo"* ]]; then
   netlab create -o d2 topo.yml && d2 graph.d2 d2-topo-default.svg
   NETLAB_OUTPUTS_D2_NODE__ADDRESS__LABEL=False netlab create -o d2 topo.yml && d2 graph.d2 d2-topo-no-labels.svg
