@@ -12,6 +12,7 @@ from ..data.validate import must_be_list
 from . import _TopologyOutput
 from ..utils import files as _files
 from ..utils import log
+from ._graph import topology_graph,bgp_graph
 
 '''
 Copy default settings into a D2 map converting Python dictionaries into
@@ -47,13 +48,16 @@ def d2_node_attr(f : typing.TextIO, n: Box, settings: Box, indent: str = '') -> 
 Add D2 styling information from d2.* link/node attributes
 '''
 STYLE_MAP: Box
+IGNORE_KW: list = ['dir', 'type', 'name']
 
 def d2_style(f : typing.TextIO, obj: Box, indent: str) -> None:
   if 'd2' not in obj:
     return
-  d2_data = { STYLE_MAP[k]:v for k,v in obj.d2.items() if k in STYLE_MAP }
-  if d2_data:
-    dump_d2_dict(f,{ 'style': d2_data },indent)
+  d2_style = { STYLE_MAP[k]:v for k,v in obj.d2.items() if k in STYLE_MAP }
+  d2_extra = obj.get('d2.format',{})
+
+  if d2_style or d2_extra:
+    dump_d2_dict(f,d2_extra + { 'style': d2_style },indent)
 
 '''
 Create a node in D2 graph and add a label and styling attributes to it
@@ -84,7 +88,7 @@ Similar to node-with-label, create a LAN segment node in the D2 graph. Node name
 the LAN bridge name, node label is its IPv4 or IPv6 prefix.
 '''
 def network_with_label(f : typing.TextIO, n: Box, settings: Box, indent: str = '') -> None:
-  f.write(f'{indent}{n.bridge} {{\n')
+  f.write(f'{indent}{n.name} {{\n')
   if settings.node_interfaces:
     if n.prefix.ipv4 or n.prefix.ipv6:
       f.write(f'{indent}  interfaces: |md\n{indent}    {n.prefix.ipv4 or n.prefix.ipv6}\n{indent}  |\n')
@@ -98,171 +102,97 @@ def network_with_label(f : typing.TextIO, n: Box, settings: Box, indent: str = '
 Add an arrowhead label to a connection
 '''
 def edge_label(f : typing.TextIO, direction: str, data: Box, subnet: bool = True) -> None:
-  addr = data.ipv4 or data.ipv6
-  if isinstance(addr,str):
-    if not subnet:
-      addr = addr.split('/')[0]
-    f.write(f"  {direction}-arrowhead.label: '{addr}'\n")
+  f.write(f"  {direction}-arrowhead.label: '{data.label}'\n")
 
 '''
 Create a P2P connection between two nodes
 '''
 def edge_p2p(f : typing.TextIO, l: Box, labels: typing.Optional[bool] = False) -> None:
-  f.write(f"{l.interfaces[0].node} -- {l.interfaces[1].node} {{\n")
+  e_direction = ('source','target')
+  dir = l.interfaces[0].get('attr.dir','--')
+  f.write(f"{l.interfaces[0].d2.name} {dir} {l.interfaces[1].d2.name} {{\n")
   d2_style(f,l,'  ')
   if labels:
-    edge_label(f,'source',l.interfaces[0],True)
-    edge_label(f,'target',l.interfaces[1],True)
+    for e_idx,intf in enumerate(l.interfaces):
+      if '_subnet' not in intf:
+        edge_label(f,e_direction[e_idx],intf,True)
   f.write("}\n")
 
 '''
-Create a connection between a node and a LAN segment
+Create a group container (or ASN container)
 '''
-def edge_node_net(f : typing.TextIO, link: Box, ifdata: Box, labels: typing.Optional[bool] = False) -> None:
-  f.write(f"{ifdata.node} -> {link.bridge} {{\n")
-  d2_style(f,link,'  ')
-  if labels:
-    edge_label(f,'source',ifdata,False)
-  f.write("}\n")
-
-'''
-Create an ASN or group container
-'''
-def as_start(f : typing.TextIO, asn: str, label: typing.Optional[str], settings: Box) -> None:
+def d2_cluster_start(f : typing.TextIO, asn: str, label: typing.Optional[str], settings: Box) -> None:
   f.write(f'{asn} {{\n')
   copy_d2_attr(f,'container',settings,'-  ')
   asn = asn.replace('_',' ')
   f.write('  label: '+ (f'{label} ({asn})' if label else asn)+'\n')
 
 '''
-Create a topology graph as a set of containers (groups or ASNs)
+Create graph containers
 '''
-def graph_clusters(f : typing.TextIO, clusters: Box, settings: Box, nodes: Box) -> None:
-  for asn in clusters.keys():
-    as_start(f,asn,clusters[asn].get('name',None),settings)
-    for n in clusters[asn].nodes.values():
-      node_with_label(f,n,settings,'  ')                    # Create a node within a cluster
-      nodes[n.name].d2.name = f'{asn}.{n.name}'             # And change the D2 node name that will be used in connections
+def d2_clusters(f: typing.TextIO, graph: Box, topology: Box, settings: Box) -> None:
+  for c_name,c_data in graph.clusters.items():
+    d2_cluster_start(f,c_name,c_data.get('name',None),settings)
+    for n in c_data.nodes.values():
+      node_with_label(f,n,settings,'  ')          # Create a node within a cluster
+      n_data = graph.nodes[n.name]                # Get pointer to graph node data
+      n_data.d2.name = f'{c_name}.{n.name}'       # Change the D2 node name that will be used in connections
+      n_data.d2.cluster = c_name                  # ... and mark it's part of a cluster
+
     f.write('}\n')
 
-def build_maps(topology: Box) -> Box:
-  maps = Box({},default_box=True,box_dots=True)
-  for name,n in topology.nodes.items():
-    maps.nodes[name] = n
+def d2_nodes(f: typing.TextIO, graph: Box, topology: Box, settings: Box) -> None:
+  for n_name,n_data in graph.nodes.items():
+    if 'd2.cluster' not in n_data:
+      n_data.d2.name = n_data.name
+      if 'prefix' in n_data:
+        network_with_label(f,n_data,settings)
+      else:
+        node_with_label(f,n_data,settings)
 
-  if 'bgp' in topology.get('module',[]):
-    for name,n in topology.nodes.items():
-      bgp_as = n.get('bgp.as',None)
-      if bgp_as:
-        bgp_as = f'AS_{bgp_as}'
-        maps.bgp[bgp_as].nodes[n.name] = n
-
-  if 'bgp' in topology and 'as_list' in topology.bgp:
-    for (asn,asdata) in topology.bgp.as_list.items():
-      if 'name' in asdata and asn in maps.bgp:
-        maps.bgp[asn].name = asdata.name
-
-  return maps
-
-'''
-add_groups -- use topology groups as graph clustering mechanism
-'''
-def add_groups(maps: Box, groups: list, topology: Box) -> None:
-  if not 'groups' in topology:
-    return
-
-  placed_hosts = []
-  for g,v in topology.groups.items():
-    if g in groups:
-      for n in v.members:
-        if n in placed_hosts:
-          log.error(
-            f'Cannot create overlapping graph clusters: node {n} is in two groups',
-            log.IncorrectValue,
-            'graph')
-          continue
-        else:
-          maps.groups[g].nodes[n] = topology.nodes[n]
-          placed_hosts.append(n)
+def d2_links(f: typing.TextIO, graph: Box, topology: Box, settings: Box) -> None:
+  for edge in graph.edges:
+    fake_link = get_box({ 'interfaces': edge.nodes, 'd2': edge.attr })
+    for intf in edge.nodes:
+      intf.d2.name = intf.node
+      if intf.node in graph.nodes:
+        intf.d2.name = graph.nodes[intf.node].d2.name
+    edge_p2p(f,fake_link,settings.interface_labels)
 
 def graph_topology(topology: Box, fname: str, settings: Box,g_format: typing.Optional[list]) -> bool:
+  graph = topology_graph(topology,settings,'d2')
   f = _files.open_output_file(fname)
-  maps = build_maps(topology)
 
-  if 'groups' in settings:
-    must_be_list(
-      parent=settings,
-      key='groups',path='defaults.outputs.graph',
-      true_value=list(topology.get('groups',{}).keys()),
-      create_empty=True,
-      module='graph')
-    add_groups(maps,settings.groups,topology)
-    graph_clusters(f,maps.groups,settings,topology.nodes)
-  elif 'bgp' in maps and settings.as_clusters:
-    graph_clusters(f,maps.bgp,settings,topology.nodes)
-  else:
-    for name,n in topology.nodes.items():
-      node_with_label(f,n,settings)
+  d2_clusters(f,graph,topology,settings)
+  d2_nodes(f,graph,topology,settings)
+  d2_links(f,graph,topology,settings)
 
-  for l in sorted(topology.links,key=lambda x: x.get('d2.linkorder',100)):
-    for intf in l.interfaces:
-      intf._topo_node = intf.node
-      intf.node = topology.nodes[intf.node].d2.name
-    if l.type == "p2p":
-      edge_p2p(f,l,settings.interface_labels)
-    else:
-      l.bridge = l.name or f'{l.type}_{l.linkindex}'
-      network_with_label(f,l,settings)
-      for ifdata in l.interfaces:
-        if ifdata._topo_node in maps.nodes:
-          edge_node_net(f,l,ifdata,settings.interface_labels)
-
-  f.close()
+  if fname != '-':
+    f.close()
   return True
 
-'''
-Create a BGP session as a connection between two nodes
-
-* Select the connection (arrow) type based on whether a connection is a RR-to-client session
-* Copy IBGP or EBGP attributes to the connection
-
-Please note that we call this function once for every pair of nodes, so it has to deal with
-RR being the first (node) or the second (session) connection endpoint.
-'''
-def bgp_session(f : typing.TextIO, node: Box, session: Box, settings: Box, rr_session: bool, nodes: Box) -> None:
-  arrow_dir = '<->'
-  if rr_session:
-    if session.type == 'ibgp':
-      if 'rr' in node.bgp and node.bgp.rr and not 'rr' in session:
-        arrow_dir = '->'
-      if not 'rr' in node.bgp and 'rr' in session:
-        arrow_dir = '<-'
-
-  f.write(f'{node.d2.name} {arrow_dir} {nodes[session.name].d2.name} {{\n')
-  copy_d2_attr(f,session.type,settings,'  ')
-  f.write('}\n')
-
-def graph_bgp(topology: Box, fname: str, settings: Box,g_format: typing.Optional[list]) -> bool:
-  if not 'bgp' in topology.get('module',{}):
-    log.error('BGP graph format can only be used to draw topologies using BGP',module='d2')
-    return False
-
-  f = _files.open_output_file(fname)
-
+def graph_bgp(topology: Box, fname: str, settings: Box, g_format: typing.Optional[list]) -> bool:
   rr_session = settings.get('rr_sessions',False)
   if g_format is not None and len(g_format) > 1:
     rr_session = g_format[1] == 'rr'
 
-  maps = build_maps(topology)
-  graph_clusters(f,maps.bgp,settings,topology.nodes)
+  graph = bgp_graph(topology,settings,'d2',rr_sessions=rr_session)
+  if graph is None:
+    return False
 
-  for name,n in topology.nodes.items():
-    if 'bgp' in n:
-      for neighbor in n.bgp.get('neighbors',[]):
-        if neighbor.name > n.name:
-          bgp_session(f,n,neighbor,settings,rr_session,topology.nodes)
+  f = _files.open_output_file(fname)
 
-  f.close()
+  d2_clusters(f,graph,topology,settings)
+  d2_nodes(f,graph,topology,settings)
+
+  for edge in graph.edges:
+    if edge.nodes[0].type in settings:
+      edge.attr.format = settings[edge.nodes[0].type] + edge.attr.format
+
+  d2_links(f,graph,topology,settings)
+
+  if fname != '-':
+    f.close()
   return True
 
 graph_dispatch = {

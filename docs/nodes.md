@@ -321,5 +321,6 @@ $ netlab inspect --node all id
 .. toctree::
    :maxdepth: 1
 
-   node-roles.md
+   node/roles.md
+   node/debug.md
 ```

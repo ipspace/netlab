@@ -216,7 +216,7 @@ def include_environment_defaults(topology: Box) -> None:
   for k in os.environ:
     v = os.environ[k]                             # Get the variable value
     try:
-      v = eval(v,{'__builtins__': {}})            # Try to evaluate it as bool/int/whatever
+      v = yaml.load(v,Loader=yaml.SafeLoader)     # Try to evaluate it as bool/int/whatever
     except:
       pass                                        # Can't do that? No harm, we'll assume it's a string
 

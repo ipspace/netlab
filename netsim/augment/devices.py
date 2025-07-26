@@ -296,6 +296,14 @@ def merge_daemons(topology: Box) -> None:
     devices[dname].daemon_parent = devices[dname].parent    # Save the parent for future use (it is removed when merging parent device data)
 
 """
+Add device-specific attributes
+"""
+def add_device_attributes(topology: Box) -> None:
+  for dev_def in topology.defaults.devices.values():        # Iterate over all devices
+    if 'attributes' in dev_def:                             # ... and add device specific attributes to the data model
+      topology.defaults.attributes = topology.defaults.attributes + dev_def.attributes
+
+"""
 Initial device setting augmentation:
 
 * Build supported_on module lists
@@ -312,6 +320,7 @@ def augment_device_settings(topology: Box) -> None:
       log.fatal(f'Internal error: definition of device {dname} is not a dictionary')
 
   merge_daemons(topology)
+  add_device_attributes(topology)
   process_device_inheritance(topology)
   build_module_support_lists(topology)
 
