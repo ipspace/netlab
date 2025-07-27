@@ -111,7 +111,7 @@ IS-IS is automatically started on all interfaces within an autonomous system (in
 
 You can also set these parameters:
 
-* **isis.type** -- Link type (**level-1**, **level-2** or **level-1-2**). Recognized as a valid attribute but not implemented. Please feel free to fix the configuration templates and submit a pull request.
+* **isis.type** -- Link type (**level-1**, **level-2** or **level-1-2**). Recognized as a valid attribute, but not implemented for all platforms. Currently supported on ios family, eos and frr devices. Please feel free to fix the configuration templates and submit a pull request.
 * **isis.network_type** -- Set IS-IS network type. Valid values are **point-to-point** or *False* (do not set the network type). See also [Default Link Parameters](#default-link-parameters).
 * **isis.metric** or **isis.cost** -- Interface cost. Both parameters are recognized to make IS-IS configuration similar to OSPF (*metric* takes precedence over *cost*)
 * **isis.bfd** -- enable or disable BFD on individual interfaces. Like with the node-level **isis.bfd** parameter, this parameter could be a boolean value (*True* to enable BFD for all address families, *False* to disable IS-IS BFD on the interface) or a dictionary of address families, for example:
