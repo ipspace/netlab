@@ -8,11 +8,12 @@ module: [ isis ]
 
 defaults.interfaces.mtu: 1500
 defaults.sources.extra: [ defaults-ds.yml, ../wait_times.yml, ../warnings.yml ]
+defaults.isis.warnings.circuit_type: False
 
 groups:
   probes:
     provider: clab
-    members: [ x1, x2 ]
+    members: [ x1, x2, x3 ]
 
 isis.type: level-1-2
 
@@ -20,6 +21,7 @@ nodes:
   dut:
   x1:
   x2:
+  x3:
 
 links:
 - dut:
@@ -28,6 +30,10 @@ links:
 - dut:
   x2:
 
+- dut:
+    isis.type: level-1
+  x3:
+
 validate:
   adj:
     description: Check IS-IS adjacencies
@@ -35,6 +41,18 @@ validate:
     wait: isis_adj_p2p
     nodes: [ x1, x2 ]
     plugin: isis_neighbor('dut',level='L1L2')
+  adj_x3:
+    description: Check the DUT-X3 IS-IS adjacency
+    wait_msg: Waiting for IS-IS adjacency process to complete
+    wait: isis_adj_p2p
+    nodes: [ x3 ]
+    plugin: isis_neighbor('dut')
+  adj_ct:
+    description: Check the level of DUT-X3 IS-IS adjacency
+    fail: The IS-IS adjacency is not limited by the circuit type on DUT
+    nodes: [ x3 ]
+    plugin: isis_neighbor('dut',level='L1')
+    level: warning
   pfx_v4:
     description: Check IS-IS IPv4 prefix
     wait_msg: Waiting for IS-IS SPF run
