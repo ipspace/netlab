@@ -1,12 +1,12 @@
 (module-isis)=
 # IS-IS Configuration Module
 
-This configuration module configures the IS-IS routing process on Cisco IOS, Cisco NX-OS, Arista EOS, Junos (tested on vSRX), Nokia SR OS, and Nokia SR Linux.
+This configuration module configures the IS-IS routing process on Arista EOS, Cisco ASAv, Cisco IOS, Cisco IOS-XR, Cisco NX-OS,  FRRouting, Junos, Nokia SR OS, Nokia SR Linux, and VyOS.
 
 The module supports the following IS-IS features:
 
 * IPv4 and IPv6
-* IS type (L1 and/or L2)
+* IS type and circuit type (L1 and/or L2)
 * Multi-topology IPv6 (enabled by default as soon as the node has at least one IPv6 address, cannot be disabled)
 * Wide metrics (enabled by default, cannot be turned off)
 * Unnumbered IPv4 interfaces
@@ -28,21 +28,33 @@ The module supports the following IS-IS features:
 
 The following table describes per-platform support of individual IS-IS features:
 
-| Operating system   | IS type | IPv6<br>AF | Multi<br>topology | Unnumbered<br />interfaces | Route<br>import | VRF<br>instances |
-|------------------- | :-: | :-: | :-: | :-: | :-: | :-: |
-| Arista EOS         | ✅  | ✅  | ✅  | ✅  | ✅  | ✅  |
-| Cisco ASAv         | ✅  | ✅  | ✅  |  ❌  |  ❌  |  ❌  |
-| Cisco IOSv/IOSvL2  | ✅  | ✅  | ✅  | ✅  | ✅  |  ❌  |
-| Cisco IOS XE[^18v] | ✅  | ✅  | ✅  | ✅  | ✅  |  ❌  |
-| Cisco IOS XRv      | ✅  | ✅  | ✅  | ✅  |  ❌  |  ❌  |
-| Cisco Nexus OS     | ✅  | ✅  | ✅  | ✅  |  ❌  |  ❌  |
-| FRR                | ✅  | ✅  | ✅  | ✅  | ✅  | ✅  |
-| Junos[^Junos]      | ✅  | ✅  | ✅  | ✅  |  ❌  |  ❌  |
-| Nokia SR Linux     | ✅  | ✅  | ✅  | ✅  | ✅ [❗](caveats-srlinux) | ✅  |
-| Nokia SR OS        | ✅  | ✅  | ✅  | ✅  | ✅ [❗](caveats-sros) | ✅  |
-| VyOS               | ✅  | ✅  | ✅  |  ❌  |  ❌  |  ❌  |
+| Operating system   | IS type | Circuit<br>type | IPv6<br>AF | Multi<br>topology |
+|------------------- | :-: | :-: | :-: | :-: |
+| Arista EOS         | ✅  | ✅  | ✅  | ✅  |
+| Cisco ASAv         | ✅  |  ❌  | ✅  | ✅  |
+| Cisco IOS/XE[^18v] | ✅  | ✅  | ✅  | ✅  |
+| Cisco IOS XRv      | ✅  |  ❌  | ✅  | ✅  |
+| Cisco Nexus OS     | ✅  |  ❌  | ✅  | ✅  |
+| FRR                | ✅  | ✅  | ✅  | ✅  |
+| Junos[^Junos]      | ✅  |  ❌  | ✅  | ✅  |
+| Nokia SR Linux     | ✅  |  ❌  | ✅  | ✅  |
+| Nokia SR OS        | ✅  |  ❌  | ✅  | ✅  |
+| VyOS               | ✅  |  ❌  | ✅  | ✅  |
 
-[^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
+These platforms support additional IS-IS features:
+
+| Operating system   | Unnumbered<br />interfaces | Route<br>import | VRF<br>instances |
+|------------------- | :-: | :-: | :-: |
+| Arista EOS         | ✅  | ✅  | ✅  |
+| Cisco IOS/XE[^18v] | ✅  | ✅  |  ❌  |
+| Cisco IOS XRv      | ✅  |  ❌  |  ❌  |
+| Cisco Nexus OS     | ✅  |  ❌  |  ❌  |
+| FRR                | ✅  | ✅  | ✅  |
+| Junos[^Junos]      | ✅  |  ❌  |  ❌  |
+| Nokia SR Linux     | ✅  | ✅ [❗](caveats-srlinux) | ✅  |
+| Nokia SR OS        | ✅  | ✅ [❗](caveats-sros) | ✅  |
+
+[^18v]: Includes Cisco IOSv, Cisco IOSvL2, Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
 
 [^Junos]: Includes vMX, vSRX, vPTX, vJunos-switch, and vJunos-router
 
@@ -111,7 +123,7 @@ IS-IS is automatically started on all interfaces within an autonomous system (in
 
 You can also set these parameters:
 
-* **isis.type** -- Link type (**level-1**, **level-2** or **level-1-2**). Recognized as a valid attribute, but not implemented for all platforms. Currently supported on ios family, eos and frr devices. Please feel free to fix the configuration templates and submit a pull request.
+* **isis.type** -- Set link type (**level-1**, **level-2** or **level-1-2**).
 * **isis.network_type** -- Set IS-IS network type. Valid values are **point-to-point** or *False* (do not set the network type). See also [Default Link Parameters](#default-link-parameters).
 * **isis.metric** or **isis.cost** -- Interface cost. Both parameters are recognized to make IS-IS configuration similar to OSPF (*metric* takes precedence over *cost*)
 * **isis.bfd** -- enable or disable BFD on individual interfaces. Like with the node-level **isis.bfd** parameter, this parameter could be a boolean value (*True* to enable BFD for all address families, *False* to disable IS-IS BFD on the interface) or a dictionary of address families, for example:
