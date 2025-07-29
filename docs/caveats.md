@@ -17,6 +17,7 @@
 * Use **libvirt.uuid** node property to ensure a vEOS VM does not change its serial number every time you start the lab.
 * Anycast gateways and DHCP/DHCPv6 clients do not work on Arista cEOS Ethernet interfaces.
 * Arista EOS cannot configure OSPF NSSA type-7 address ranges.
+* IPv6 BFD for IS-IS cannot be enabled on individual interfaces.  If you set **isis.bfd.ipv6** to *True*, BFD is enabled on all IS-IS interfaces.
 * cEOS MPLS data plane was introduced in release 4.32.1F.
 * Arista cEOS disables OSPFv2 on broadcast container stub interfaces (implemented as _dummy_ interfaces). _netlab_ automatically changes the OSPF network type for Arista cEOS dummy interfaces to **point-to-point**.
 * Arista EOS virtual machines and containers use [proprietary control-plane messages to indicate the loss of Ethernet line protocol](https://blog.ipspace.net/2025/03/arista-spooky-action-distance/). Set the **netlab_phy_control** node variable to *False* to disable this functionality.
