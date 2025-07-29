@@ -39,10 +39,13 @@
 | Mikrotik RouterOS 6 (CHR) [❗](caveats-routeros6) | routeros           | end of life |
 | Mikrotik RouterOS 7 (CHR) [❗](caveats-routeros7) | routeros7           | minimal |
 | Nokia SR Linux [❗](caveats-srlinux) | srlinux | full       |
-| Nokia SR OS [❗](caveats-sros)    | sros    | full          |
+| Nokia SR OS [❗](caveats-sros)    | sros    | best effort[^SROSBE]   |
+| Nokia SR-SIM [❗](caveats-srsim)  | srsim   | full          |
 | OpenBSD [❗](caveats-openbsd)     | openbsd | best effort   |
 | Sonic [❗](caveats-sonic)         | sonic   | minimal       |
 | VyOS 1.4 [❗](caveats-vyos)       | vyos    | full          |
+
+[^SROSBE]: With the launch of the Nokia SR SIM, we stopped running integration tests for the SR-OS VM, assuming the behavior of the two products would be nearly identical.
 
 (platform-daemons)=
 *netlab* also supports the following daemons (control-plane software running in containers):
@@ -125,6 +128,7 @@ You cannot use all supported network devices with all virtualization providers. 
 | Mikrotik RouterOS 7 | [✅](build-chr7)  |  ❌  |  ❌  |
 | Nokia SR Linux      |  ❌  |  ❌  | ✅  |
 | Nokia SR OS         |  ❌  |  ❌  | ✅  |
+| Nokia SR-SIM        |  ❌  |  ❌  | ✅  |
 | OpenBSD             | [✅](build-openbsd)  |  ❌  | [✅](clab-vrnetlab) |
 | Sonic               | [✅](build-sonic)  |  ❌  |  ❌  | 
 | VyOS                | ✅  |  ❌  | ✅[❗](caveats-vyos) |
@@ -186,7 +190,7 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 | Mikrotik RouterOS 6   | ✅ | ✅ |
 | Mikrotik RouterOS 7   | ✅ | ✅ |
 | Nokia SR Linux        | ✅ | ✅ |
-| Nokia SR OS           | ✅ | ✅ |
+| Nokia SR OS[^SROS]    | ✅ | ✅ |
 | OpenBSD               | ✅ | ❌  |
 | Sonic                 | ✅ | ✅ |
 | VyOS                  | ✅ | ✅ |
@@ -194,6 +198,8 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 [^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL) and IOL Layer-2 image
 
 [^Junos]: Includes vMX, vSRX, vPTX, vJunos-switch, and vJunos-router
+
+[^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
 
 ## Initial Device Configurations
 
@@ -218,7 +224,7 @@ The following system-wide features are configured on supported network operating
 | Mikrotik RouterOS 6      | ✅  | ✅  | ✅[❗](caveats-routeros6) | ✅ | ✅ |
 | Mikrotik RouterOS 7      | ✅ | ✅ | ✅[❗](caveats-routeros7) | ✅ | ✅ |
 | Nokia SR Linux           | ✅  | ✅  | ✅  | ✅  | ✅  |
-| Nokia SR OS              | ✅  | ✅  | ✅  | ✅  | ✅  |
+| Nokia SR OS[^SROS]       | ✅  | ✅  | ✅  | ✅  | ✅  |
 | OpenBSD                  | ✅  | ✅  |  ❌  | ✅  | ✅  |
 | Sonic                    | ✅  | ✅  |  ❌  | ✅  | ✅  |
 | VyOS                     | ✅  | ✅  | ✅  | ✅  | ✅  |
@@ -246,7 +252,7 @@ The following interface parameters are configured on supported network operating
 | Mikrotik RouterOS 6   | ✅  |  ❌  | ✅  |  ❌  |
 | Mikrotik RouterOS 7   | ✅  |  ❌  | ✅  | ✅  |
 | Nokia SR Linux        | ✅  |  ❌  | ✅  | ✅  |
-| Nokia SR OS           | ✅  |  ❌  | ✅  | ✅  |
+| Nokia SR OS[^SROS]    | ✅  |  ❌  | ✅  | ✅  |
 | OpenBSD               |  ❌  |  ❌  | ✅  |  ❌  |
 | Sonic                 | ✅  | ✅  | ✅  | ✅  |
 | VyOS                  | ✅  |  ❌  | ✅  | ✅  |
@@ -273,7 +279,7 @@ The following interface addresses are supported on various platforms:
 | Mikrotik RouterOS 6   | ✅  | ✅  |  ❌  |
 | Mikrotik RouterOS 7   | ✅  | ✅  |  ❌  |
 | Nokia SR Linux        | ✅  | ✅  |  ❌  |
-| Nokia SR OS           | ✅  | ✅  | ✅  |
+| Nokia SR OS[^SROS]    | ✅  | ✅  | ✅  |
 | OpenBSD               | ✅  | ✅  |  ❌  |
 | Sonic                 | ✅  | ✅  | ✅  |
 | VyOS                  | ✅  | ✅  | ✅  |
@@ -318,7 +324,7 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 | Mikrotik RouterOS 6   | ✅   |   ❌   |   ❌  | ✅  |   ❌  |
 | Mikrotik RouterOS 7   | ✅   |   ❌   |   ❌  | ✅  |   ❌  |
 | Nokia SR Linux        | ✅   |  ✅   |   ❌  | ✅  |   ❌  |
-| Nokia SR OS           | ✅   |  ✅   |   ❌  | ✅  |   ❌  |
+| Nokia SR OS[^SROS]    | ✅   |  ✅   |   ❌  | ✅  | ✅  |
 | Sonic                 |  ❌   |   ❌   |   ❌  | ✅  |   ❌  |
 | VyOS                  | ✅   |  ✅   |   ❌  | ✅  |   ❌  |
 
@@ -349,7 +355,7 @@ These devices support additional control-plane protocols or BGP address families
 | Mikrotik RouterOS 6   | ✅  |  ❌  | ✅  |  ❌  |
 | Mikrotik RouterOS 7   | ✅  |  ❌  | ✅  |  ❌  |
 | Nokia SR Linux        | ✅  | ✅  |  ❌  | ✅  |
-| Nokia SR OS           | ✅  | ✅  | ✅  | ✅  |
+| Nokia SR OS[^SROS]    | ✅  | ✅  | ✅  | ✅  |
 | VyOS                  | ✅  | ✅  | ✅  |  ❌  |
 
 **Notes:**
@@ -384,7 +390,7 @@ The data plane [configuration modules](module-reference.md) are supported on the
 | Cumulus Linux         | ✅ | ✅ | ✅ |  ❌ |  ❌ |  ❌ |
 | Cumulus Linux 5.x (NVUE) | ✅ |[❗](module-vrf-platform-support)| ❌ | ❌ | ❌ | ❌ |
 | Dell OS10             | ✅ | ✅ | ✅ |  ❌ |  ❌ |  ❌ | 
-| FRR                   | ✅ | ✅ | ✅ | ✅ | ✅ |  ❌ | 
+| FRR                   | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Juniper vMX           | ✅ | ✅ |  ❌ | ✅ | ✅ |  ❌ | 
 | Juniper vPTX          | ✅ | ✅ |  ❌ | ✅ | ✅ |  ❌ | 
 | Juniper vSRX 3.0      | ❌  | ✅ |  ❌ |  ❌ |  ❌ |  ❌ |
@@ -392,9 +398,9 @@ The data plane [configuration modules](module-reference.md) are supported on the
 | vJunos-router         | ❌  | ✅ |  ❌ |  ❌ |  ❌ |  ❌ |
 | Mikrotik RouterOS 6   | ✅ | ✅ |  ❌ | ✅ |  ❌ |  ❌ |
 | Mikrotik RouterOS 7   | ✅ | ✅ |  ❌ | ✅ |  ❌ |  ❌ |
-| Nokia SR Linux        | ✅ | ❌  |  ❌ |  ❌ | ✅ |  ❌ |
-| Nokia SR OS           | ❌  | ❌  |  ❌ |  ❌ | ✅ | ✅ |
-| VyOS                  | ✅ | ✅ | ✅ | ✅ | ✅ |  ❌ |  ❌ |
+| Nokia SR Linux        | ✅ | ✅ | ✅ |  ❌ | ✅ |  ❌ |
+| Nokia SR OS[^SROS]    | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| VyOS                  | ✅ | ✅ | ✅ | ✅ |  ❌ |  ❌ |
 
 (platform-services-support)=
 Network services [configuration modules](module-reference.md) are supported on these devices[^NSM]
@@ -418,30 +424,27 @@ See [integration test results](https://release.netlab.tools/) for more details.
 
 ## IPv6 Support
 
-Core *netlab* functionality and all multi-protocol routing protocol configuration modules fully support IPv6. OSPFv3 is implemented only on some platforms.
+Core *netlab* functionality and all multi-protocol routing protocol configuration modules fully support IPv6. However, you might not be able to configure IPv6 versions of some routing protocols on all platforms.
 
-| Operating system      | IPv6<br />addresses | OSPFv3 | IS-IS MT | EIGRP<br />IPv6 AF | BGP<br />IPv6 AF | SR-MPLS |
-| --------------------- |:--:|:--:|:--:|:--:|:--:|:--:|
-| Arista EOS            | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ |
-| Aruba AOS-CX          | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ |
-| Cisco ASAv            | ✅ | ❌ | ✅ | ❌ | ✅ | ❌ |
-| Cisco IOSv/IOSvL2     | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Cisco IOS XE[^18v]    | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Cisco Nexus OS        | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Cumulus Linux 4.x     | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ |
-| Cumulus Linux NVUE    | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| Dell OS10             | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ |
-| Fortinet FortiOS      | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| FRR                   | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ |
-| Generic Linux         | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Operating system      | OSPFv3 | IS-IS MT | EIGRP<br />IPv6 AF | BGP<br />IPv6 AF | SR-MPLS |
+| --------------------- |:--:|:--:|:--:|:--:|:--:|
+| Arista EOS            | ✅ | ✅ | ❌ | ✅ | ✅ |
+| Aruba AOS-CX          | ✅ | ❌ | ❌ | ✅ | ❌ |
+| Cisco ASAv            | ❌ | ✅ | ❌ | ✅ | ❌ |
+| Cisco IOSv/IOSvL2     | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Cisco IOS XE[^18v]    | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Cisco Nexus OS        | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Cumulus Linux 4.x     | ✅ | ❌ | ❌ | ✅ | ❌ |
+| Cumulus Linux NVUE    |  ❌ | ❌ | ❌ | ✅ | ❌ |
+| Dell OS10             | ✅ | ❌ | ❌ | ✅ | ❌ |
+| FRR                   | ✅ | ✅ | ❌ | ✅ | ❌ |
 | Junos[^Junos]         | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ |
-| Mikrotik RouterOS 6   | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| Mikrotik RouterOS 7   | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ |
-| Nokia SR Linux        | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ |
-| Nokia SR OS           | ✅ | ❌ | ❌ | ❌ | ✅ | ✅ |
-| OpenBSD               | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Sonic                 | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| VyOS                  | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ |
+| Mikrotik RouterOS 6   |  ❌ | ❌ | ❌ | ✅ | ❌ |
+| Mikrotik RouterOS 7   | ✅ | ❌ | ❌ | ✅ | ❌ |
+| Nokia SR Linux        | ✅ | ✅ | ❌ | ✅ | ✅ |
+| Nokia SR OS[^SROS]    | ✅ | ✅ | ❌ | ✅ | ✅ |
+| Sonic                 |  ❌ | ❌ | ❌ | ✅ | ❌ |
+| VyOS                  | ✅ | ✅ | ❌ | ✅ | ❌ |
 
 (platform-unknown)=
 ## Unknown Devices

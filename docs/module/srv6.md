@@ -17,7 +17,9 @@ The following table describes the per-platform support of individual router-leve
 | Operating system         | IS-IS | OSPFv3 | BGP v4/v6 | Transit only |
 | ------------------------ |:-----:|:------:|:---------:|:-------------:
 | FRR                      |   ✅  |   ❌   |    ❌     |      ❌      | 
-| Nokia SR OS              |   ✅  |   ❌   |    ✅     |      ✅      |
+| Nokia SR OS[^SROS]       |   ✅  |   ❌   |    ✅     |      ✅      |
+
+[^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
 
 (srv6-l3vpn-supported-platforms)=
 ### BGP/SRv6 L3VPN
@@ -25,7 +27,7 @@ The following table describes the per-platform support of individual router-leve
 | Operating system      | VPNv4 | VPNv6 |
 | ----------------------| :---: | :---: |
 | FRR                   |   ✅  |   ✅ [❗️](caveats-frr)  |
-| Nokia SR OS           |   ❌  |   ❌  |
+| Nokia SR OS[^SROS]    |   ❌  |   ❌  |
 
 **Notes**
 * VPNv4 and VPNv6 address families are enabled on IPv6 IBGP sessions

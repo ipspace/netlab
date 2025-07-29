@@ -71,9 +71,11 @@ The following features are only supported on a subset of platforms:
 | FRR                      |  ✅ | ✅ |  ✅ |  ✅ |
 | Junos[^Junos]            |  ✅ |  ❌  |  ❌  |  ❌  |
 | Nokia SR Linux           |  ✅ |  ❌  |  ✅ [❗](caveats-srlinux) |  ✅ [❗](caveats-srlinux) |
-| Nokia SR OS              |  ✅ |  ❌  |  ✅ [❗](caveats-sros) |  ✅ [❗](caveats-sros) |
+| Nokia SR OS[^SROS]       |  ✅ |  ❌  |  ✅ [❗](caveats-sros) |  ✅ [❗](caveats-sros) |
 | Sonic                    |  ✅ |  ❌  |  ❌  |  ❌  |
 | VyOS                     |  ✅ |  ❌  |  ✅ |  ✅ |
+
+[^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
 
 These devices support EBGP sessions between IPv6 LLA or IPv4 AF on IPv6 EBGP sessions:
 
@@ -105,7 +107,7 @@ These devices support BGP local-AS functionality to build EBGP or IBGP sessions:
 | FRR                      |  ✅ |  ✅ |
 | JunOS                    |  ✅ |  ✅ |
 | Nokia SR Linux           |  ✅ |  ✅ |
-| Nokia SR OS              |  ✅ |  ✅ |
+| Nokia SR OS[^SROS]       |  ✅ |  ✅ |
 | Sonic                    |  ✅ |  ✅ |
 | VyOS                     |  ✅ |  ❌  |
 

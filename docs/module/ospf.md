@@ -67,14 +67,17 @@ The following table describes per-platform support of individual router-level OS
 | Mikrotik RouterOS 6      | ✅| ❌ | ❌ | ❌ | ❌ |
 | Mikrotik RouterOS 7      | ✅| ❌ | ✅| ❌ | ❌ |
 | Nokia SR Linux           | ✅| ✅| ✅| ✅ [❗](caveats-srlinux) | ✅ [❗](caveats-srlinux) |
-| Nokia SR OS              | ✅| ✅| ✅| ✅ [❗](caveats-sros) | ❌ |
+| Nokia SR OS[^SROS]       | ✅| ✅| ✅| ✅ [❗](caveats-sros) | ❌ |
 | VyOS                     | ✅| ✅| ✅| ✅| ✅|
+
 
 **Notes:**
 * Dell OS10 does not support OSPF on the so-called *Virtual Network* interface, the VLAN implementation model currently used in our templates.
 * Use the `netlab show modules -m ospf` command to display the route types that can be imported into OSPFv2/OSPFv3.
 
 [^18v]: Includes Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
+
+[^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
 
 [^Junos]: Includes vMX, vSRX, vPTX, vJunos-switch, and vJunos-router
 
@@ -92,7 +95,7 @@ The following devices support BFD with OSPF:
 | Junos[^Junos]            |  ✅  |  ❌   |
 | Mikrotik RouterOS 6      |  ✅  |  ❌   |
 | Nokia SR Linux           |  ✅  |  ❌   |
-| Nokia SR OS              |  ✅  |  ✅  |
+| Nokia SR OS[^SROS]       |  ✅  |  ✅  |
 | VyOS                     |  ✅  |  ❌   |
 
 **Notes:**
@@ -128,7 +131,7 @@ The following table documents the common interface-level OSPF features:
 | Mikrotik RouterOS 6      | ✅ | ✅ | ❌  | ✅ |
 | Mikrotik RouterOS 7      | ✅ | ✅ | ❌  | ✅ |
 | Nokia SR Linux           | ✅ | ✅ | ✅ | ✅ |
-| Nokia SR OS              | ✅ | ✅ | ✅ | ✅ |
+| Nokia SR OS[^SROS]       | ✅ | ✅ | ✅ | ✅ |
 | VyOS                     | ✅ | ✅ | ✅ | ✅ |
 
 **Notes:**

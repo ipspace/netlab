@@ -38,7 +38,7 @@ The following table describes per-platform support of individual IS-IS features:
 | FRR                | ✅  | ✅  | ✅  | ✅  |
 | Junos[^Junos]      | ✅  | ✅  | ✅  | ✅  |
 | Nokia SR Linux     | ✅  | ✅  | ✅  | ✅  |
-| Nokia SR OS        | ✅  | ✅  | ✅  | ✅  |
+| Nokia SR OS[^SROS] | ✅  | ✅  | ✅  | ✅  |
 | VyOS               | ✅  | ✅  | ✅  | ✅  |
 
 These platforms support additional IS-IS features:
@@ -52,11 +52,13 @@ These platforms support additional IS-IS features:
 | FRR                | ✅  | ✅  | ✅  |
 | Junos[^Junos]      | ✅  |  ❌  |  ❌  |
 | Nokia SR Linux     | ✅  | ✅ [❗](caveats-srlinux) | ✅  |
-| Nokia SR OS        | ✅  | ✅ [❗](caveats-sros) | ✅  |
+| Nokia SR OS[^SROS] | ✅  | ✅ [❗](caveats-sros) | ✅  |
 
 [^18v]: Includes Cisco IOSv, Cisco IOSvL2, Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
 
 [^Junos]: Includes vMX, vSRX, vPTX, vJunos-switch, and vJunos-router
+
+[^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
 
 **Notes:**
 * On Arista EOS, IPv6 is enabled on all interfaces as soon as one has an IPv6 address. Arista EOS implementation of IS-IS refuses to work on interfaces with missing address families.
@@ -76,7 +78,7 @@ Some platforms can use BFD to speed up IS-IS convergence:
 | Cisco Nexus OS     | ✅  |  ❌ |
 | Junos[^Junos]      | ✅  | ✅ |
 | Nokia SR Linux     | ✅  | ✅ | 
-| Nokia SR OS        | ✅  | ✅ | 
+| Nokia SR OS[^SROS] | ✅  | ✅ | 
 | VyOS               | ✅  | ✅ |
 
 ```{tip}
