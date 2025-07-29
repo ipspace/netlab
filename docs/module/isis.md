@@ -70,7 +70,7 @@ Some platforms can use BFD to speed up IS-IS convergence:
 
 | Operating system      | IPv4<br />BFD | IPv6<br />BFD |
 | ------------------ | :-: | :-: |
-| Arista EOS         | ✅  | ❌  |
+| Arista EOS         | ✅  | ✅  |
 | Cisco IOSv/IOSvL2  | ✅  | ✅ | 
 | Cisco IOS XE[^18v] | ✅  | ✅ | 
 | Cisco Nexus OS     | ✅  |  ❌ |
@@ -78,6 +78,9 @@ Some platforms can use BFD to speed up IS-IS convergence:
 | Nokia SR Linux     | ✅  | ✅ | 
 | Nokia SR OS        | ✅  | ✅ | 
 | VyOS               | ✅  | ✅ |
+
+**Notes:**
+* On Arista EOS, IPv6 BFD is only supported on all interfaces.
 
 ```{tip}
 See [IS-IS Integration Tests Results](https://release.netlab.tools/_html/coverage.isis) for more details.
