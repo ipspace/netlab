@@ -78,6 +78,7 @@ class ISIS(_Module):
     if 'sr' in node.module:
       _routing.router_id(node,'isis',topology.pools)
 
+    isis_ct_intf = []
     for l in node.get('interfaces',[]):
       if _routing.external(l,'isis') or not (l.get('ipv4',False) or l.get('ipv6',False)):
         l.pop('isis',None) # Don't run IS-IS on external interfaces, or l2-only
@@ -86,6 +87,16 @@ class ISIS(_Module):
         err = _routing.network_type(l,'isis',['point-to-point'])
         if err:
           log.error(f'{err}\n... node {node.name} link {l}')
+        if 'isis.type' in l and not features.isis.circuit_type:
+          isis_ct_intf.append(l.ifname)
+
+    if isis_ct_intf:
+      log.warning(
+        text=f'Device {node.device} (node {node.name}) does not support IS-IS circuit type',
+        flag='circuit_type',
+        module='isis',
+        more_data=f'Used on interface(s) {",".join(isis_ct_intf)}',
+        category=log.IncorrectAttr)
 
     _routing.igp_post_transform(node,topology,proto='isis',vrf_aware=True)
     bfd.multiprotocol_bfd_link_state(node,'isis')

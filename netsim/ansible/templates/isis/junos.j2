@@ -1,3 +1,9 @@
+{% macro disable_level(l_type) %}
+{%   for level in ['1','2'] if level not in l_type|default('1-2') %}
+    level {{ level }} disable;
+{%   endfor %}
+{% endmacro %}
+
 protocols {
   delete: isis;
 }
@@ -8,9 +14,7 @@ protocols {
       ipv6-unicast;
     }
 {% endif %}
-{% for level in ['1','2'] if level not in isis.type|default('1-2') %}
-    level {{ level }} disable;
-{% endfor %}
+{{ disable_level(isis.type) }}
     level 1 wide-metrics-only;
     level 2 wide-metrics-only;
     interface lo0.0;
@@ -19,6 +23,7 @@ protocols {
 {%   if l.isis.network_type is defined %}
       {{ l.isis.network_type }};
 {%   endif %}
+{{   disable_level(l.isis.type)|indent(2,first=True) }}
 {%   if l.isis.passive %}
       passive;
 {%   endif %}
