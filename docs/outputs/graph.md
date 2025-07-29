@@ -13,30 +13,90 @@ A single formatting modifier can be used to specify the graph type:
 
 ## Modifying Graph Attributes
 
-Graphing routines use **[default](topo-defaults)** topology settings to modify the generated DOT file's node- or link parameters. You can change these defaults.
+Graphing routines use **[default](topo-defaults)** topology settings to modify the generated DOT file's node- or link parameters. These defaults influence how your graphs look:
 
+* **outputs.graph.as_clusters** (default: *True*) -- use BGP AS numbers to create graph clusters
+* **outputs.graph.groups** -- use the specified list of groups (or all groups when set to *True*) to create graph clusters
 * **outputs.graph.interface_labels** -- Add IP addresses to links in **topology** graph. Results in a cluttered image (but feel free to fix that and submit a pull request).
+* **outputs.graphs.node_address_label** (default: *True*) -- add node loopback IP addresses or IP addresses of the first interface (for hosts) to node labels.
+* **outputs.graph.rr_sessions** (default: *False*) -- draw IBGP sessions between BGP route reflectors and clients as directional connections.
+
+You can also change the formatting of individual graph objects with the **outputs.styles._object_** defaults:
+
+| Object | Description |
+|--------|-------------|
+| graph  | Generic graph formatting |
+| node   | Device formatting |
+| edge   | Link formatting   |
+| as     | Autonomous system/group container formatting |
+| stub   | Subnet formatting
+| ibgp   | IBGP session formatting |
+| ebgp   | IBGP session formatting |
+
+Each **styles** parameter is a dictionary of *Graphviz* attributes and their values (see the following printout for an example).
+
+You can also change graph colors and margins with old-style defaults:
+
 * **outputs.graph.colors._object_** -- Specify background color for *as*, *node*, *stub* subnet, *ibgp* or *ebgp* session.
 * **outputs.graph.margins.as** -- Inner margin for graph clusters (BGP autonomous system or groups).
-* **outputs.graph.groups** -- use the specified list of groups (or all groups when set to *True*) to create graph clusters
-* **outputs.graphs.node_address_labels** -- add node loopback IP addresses or IP addresses of the first interface (for hosts) to node labels.
 
-You could specify these attributes in your [topology file](defaults-topology) (where you would have to prefix them with **defaults**), in [per-user topology defaults](defaults-user-file), or with [environment variables](defaults-env) (even [more details](../defaults.md)). You could also specify them with the `-s` parameter of the **[netlab create](netlab-create)** command, yet again prefixed with **defaults** ([more details](netlab-create-set)).
+You could specify the graph defaults in your [topology file](defaults-topology) (where you would have to prefix them with **defaults**), in [per-user topology defaults](defaults-user-file), or with [environment variables](defaults-env) (even [more details](../defaults.md)). You could also specify them with the `-s` parameter of the **[netlab create](netlab-create)** command, yet again prefixed with **defaults** ([more details](netlab-create-set)).
 
-The system defaults in *netlab* release 1.9.1 are included below; you can always inspect them with **netlab show defaults outputs.graph**
+The system defaults in *netlab* release 25.09 are included below; you can always inspect them with **netlab show defaults outputs.graph**
 
 ```
-outputs:
+% netlab show defaults outputs.graph
+
+netlab default settings within the outputs.graph subtree
+=============================================================================
+
+as_clusters: true
+attributes:
+  link:
+    _keys:
+      linkorder:
+        max_value: 200
+        min_value: 1
+        type: int
+      type:
+        type: str
+        valid_values:
+        - lan
+    type: dict
+  shared:
+  - linkorder
+interface_labels: false
+node_address_label: true
+styles:
+  as:
+    bgcolor: '#e8e8e8'
+    color: '#c0c0c0'
+    fontname: Verdana
+    margin: 16
+  ebgp:
+    color: '#b21a1a'
+    penwidth: 2
+  edge:
+    fontname: Verdana
+    labeldistance: 1.5
+    labelfontsize: 8
   graph:
-    interface_labels: False
-    node_address_label: True
-    as_clusters: True
-    colors:
-      as: "#e8e8e8"
-      node: "#ff9f01"
-      stub: "#d1bfab"
-      ibgp: "#613913"
-      ebgp: "#b21a1a"
-    margins:
-      as: 16
+    bgcolor: transparent
+    nodesep: 0.5
+    ranksep: 1
+  ibgp:
+    color: '#613913'
+    penwidth: 2
+  node:
+    bgcolor: '#ff9f01'
+    fillcolor: '#ff9f01'
+    fontname: Verdana
+    margin: 0.3,0.1
+    shape: box
+    style: rounded,filled
+  stub:
+    bgcolor: '#d1bfab'
+    fillcolor: '#d1bfab'
+    fontsize: 11
+    margin: 0.3,0.1
 ```

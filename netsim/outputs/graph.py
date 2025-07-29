@@ -8,30 +8,11 @@ import os
 from box import Box
 
 from ..data.validate import must_be_list
+from ..data import get_empty_box,get_box
 from . import _TopologyOutput
 from ..utils import files as _files
 from ..utils import log
-
-def node_with_label(f : typing.TextIO, n: Box, settings: Box, indent: typing.Optional[str] = '') -> None:
-  f.write('%s  "%s" [\n' % (indent,n.name))
-  node_ip_str = ""
-  if settings.node_address_label:
-    node_ip = n.loopback.ipv4 or n.loopback.ipv6
-    if not node_ip and n.interfaces:
-      node_ip = n.interfaces[0].ipv4 or n.interfaces[0].ipv6
-    if node_ip:
-      node_ip_str = f'{node_ip}'
-
-  f.write(f'{indent}    label="{n.name} [{n.device}]\\n{node_ip_str}"\n')
-  f.write('%s    fillcolor="%s"\n' % (indent,settings.colors.get('node','#ff9f01')))
-  f.write('%s    margin="0.3,0.1"\n' % indent)
-  f.write('%s  ]\n' % indent)
-
-def network_with_label(f : typing.TextIO, n: Box, settings: Box, indent: typing.Optional[str] = '') -> None:
-  f.write('%s  "%s" [' % (indent,n.bridge))
-  f.write('style=filled fillcolor="%s" fontsize=11 margin="0.3,0.1"' % (settings.colors.get("stub","#d1bfab")))
-  f.write(' label="%s"' % (n.prefix.ipv4 or n.prefix.ipv6 or n.bridge))
-  f.write("]\n")
+from ._graph import topology_graph,bgp_graph
 
 def edge_label(f : typing.TextIO, direction: str, data: Box, subnet: bool = True) -> None:
   addr = data.ipv4 or data.ipv6
@@ -40,13 +21,6 @@ def edge_label(f : typing.TextIO, direction: str, data: Box, subnet: bool = True
       addr = addr.split('/')[0]
     f.write(' %slabel="%s"' % (direction,addr))
 
-def edge_p2p(f : typing.TextIO, l: Box, labels: typing.Optional[bool] = False) -> None:
-  f.write(f' "{l.interfaces[0].node}" -- "{l.interfaces[1].node}"')
-  f.write(' [')
-  if labels:
-    edge_label(f,'tail',l.interfaces[0])
-    edge_label(f,'head',l.interfaces[1])
-  f.write(' ]\n')
 
 def edge_node_net(f : typing.TextIO, link: Box, ifdata: Box, labels: typing.Optional[bool] = False) -> None:
   f.write(' "%s" -- "%s"' % (ifdata.node,link.bridge))
@@ -55,147 +29,174 @@ def edge_node_net(f : typing.TextIO, link: Box, ifdata: Box, labels: typing.Opti
     edge_label(f,'tail',ifdata,subnet=False)
   f.write(' ]\n')
 
-def graph_start(f : typing.TextIO) -> None:
-  f.write('graph {\n')
-  f.write('  bgcolor="transparent"\n')
-  f.write('  node [shape=box, style="rounded,filled" fontname=Verdana]\n')
-  f.write('  edge [fontname=Verdana labelfontsize=10 labeldistance=1.5]\n')
+def get_gv_attr(c_data: Box, o_type: str, settings: Box) -> None:
+  c_data.graph.format = settings.styles[o_type] + c_data.graph.format
 
-def as_start(f : typing.TextIO, asn: str, label: typing.Optional[str], settings: Box) -> None:
-  f.write('  subgraph cluster_%s {\n' % asn)
-  f.write('    bgcolor="%s"\n' % settings.colors.get('as','#e8e8e8'))
-  f.write('    fontname=Verdana\n')
-  f.write('    margin=%s\n' % settings.margins.get('as',16))
-  if label:
-    f.write('    label="%s (%s)"\n' % (label,asn.replace('_',' ')))
-  else:
-    f.write('    label="%s"\n' % asn.replace('_',' '))
-
-def graph_clusters(f : typing.TextIO, clusters: Box, settings: Box) -> None:
-  for asn in clusters.keys():
-    as_start(f,asn,clusters[asn].get('name',None),settings)
-    for n in clusters[asn].nodes.values():
-      node_with_label(f,n,settings,'  ')
-    f.write('  }\n')
-
-def build_maps(topology: Box) -> Box:
-  maps = Box({},default_box=True,box_dots=True)
-  for name,n in topology.nodes.items():
-    maps.nodes[name] = n
-
-  if 'bgp' in topology.get('module',[]):
-    for name,n in topology.nodes.items():
-      bgp_as = n.get('bgp.as',None)
-      if bgp_as:
-        bgp_as = f'AS_{bgp_as}'
-        maps.bgp[bgp_as].nodes[n.name] = n
-
-  if 'bgp' in topology and 'as_list' in topology.bgp:
-    for (asn,asdata) in topology.bgp.as_list.items():
-      if 'name' in asdata and asn in maps.bgp:
-        maps.bgp[asn].name = asdata.name
-
-  return maps
-
-"""
-add_groups -- use topology groups as graph clustering mechanism
-"""
-
-def add_groups(maps: Box, groups: list, topology: Box) -> None:
-  if not 'groups' in topology:
+def gv_multiline_attr(
+      f : typing.TextIO,
+      c_data: typing.Optional[Box] = None,
+      attr: typing.Optional[Box] = None,
+      indent: int = 2) -> None:
+  
+  if attr is None and isinstance(c_data,Box):
+    attr = c_data.graph.format
+  if attr is None:
     return
 
-  placed_hosts = []
-  for g,v in topology.groups.items():
-    if g in groups:
-      for n in v.members:
-        if n in placed_hosts:
-          log.error(
-            f'Cannot create overlapping graph clusters: node {n} is in two groups',
-            log.IncorrectValue,
-            'graph')
-          continue
-        else:
-          maps.groups[g].nodes[n] = topology.nodes[n]
-          placed_hosts.append(n)
+  for k,v in attr.items():
+    f.write(f'{" " * indent}{k}="{v}"\n')
+
+def gv_line_attr(
+      f : typing.TextIO,
+      c_data: typing.Optional[Box] = None,
+      attr: typing.Optional[Box] = None,
+      newline: bool = True) -> None:
+
+  if attr is None and isinstance(c_data,Box):
+    attr = c_data.graph.format
+  if attr is None:
+    return
+
+  lead = " ["
+  trail = ""
+  for k,v in attr.items():
+    f.write(f'{lead}{k}="{v}"')
+    lead = " "
+    trail = "]"
+  f.write(trail)
+  if newline:
+    f.write("\n")
+
+def gv_start(f : typing.TextIO, settings: Box) -> None:
+  f.write('graph {\n')
+  gv_multiline_attr(f,attr=settings.styles.graph,indent=2)
+  f.write('  node')
+  gv_line_attr(f,attr=settings.styles.node,newline=True)
+  f.write('  edge')
+  gv_line_attr(f,attr=settings.styles.edge,newline=True)
+
+def gv_end(f : typing.TextIO, fname: str) -> None:
+  f.write('}\n')
+  if fname != '-':
+    f.close()
+
+def gv_node(f : typing.TextIO, n: Box, settings: Box, indent: int = 0) -> None:
+  f.write(f'{" "*indent}"{n.name}" [\n')
+  node_ip_str = ""
+  if settings.node_address_label:
+    node_ip = n.loopback.ipv4 or n.loopback.ipv6
+    if not node_ip and n.interfaces:
+      node_ip = n.interfaces[0].ipv4 or n.interfaces[0].ipv6
+    if node_ip:
+      node_ip_str = f'{node_ip}'
+
+  f.write(f'{" "*indent}    label="{n.name} [{n.device}]\\n{node_ip_str}"\n')
+  f.write(f'{" "*indent}]\n')
+
+def gv_network(f : typing.TextIO, n: Box, settings: Box, indent: int = 0) -> None:
+  f.write(f'{" "*indent}{n.name}')
+  n_type = n.get('type','stub')
+  get_gv_attr(n,n_type,settings)
+  if n_type != 'stub':
+    get_gv_attr(n,'stub',settings)
+
+  n.graph.format.label = n.prefix.ipv4 or n.prefix.ipv6 or n.bridge
+  gv_line_attr(f,c_data=n)  
+
+def gv_clusters(f : typing.TextIO, graph: Box, topology: Box, settings: Box) -> None:
+  for c_name,c_data in graph.clusters.items():
+    f.write(f'  subgraph cluster_{c_name} {{\n')
+
+    get_gv_attr(c_data,'as',settings)
+    label = c_data.get('name',None)
+    c_data.graph.format.label = f"{label} ({c_name}" if label else c_name
+    gv_multiline_attr(f,c_data,indent=4)
+    for n in c_data.nodes.values():
+      gv_node(f,n,settings,indent=4)              # Create a node within a cluster
+      n_data = graph.nodes[n.name]                # Get pointer to graph node data
+      n_data.graph.cluster = c_name
+    f.write('  }\n')
+
+def gv_nodes(f: typing.TextIO, graph: Box, topology: Box, settings: Box) -> None:
+  for n_name,n_data in graph.nodes.items():
+    if 'graph.cluster' not in n_data:
+      if 'prefix' in n_data:
+        gv_network(f,n_data,settings,indent=2)
+      else:
+        gv_node(f,n_data,settings,indent=2)
+
+def gv_links(f: typing.TextIO, graph: Box, topology: Box, settings: Box) -> None:
+  for edge in graph.edges:
+    dir = edge.nodes[0].get('attr.dir','--')
+    f.write(f' "{edge.nodes[0].node}" -- "{edge.nodes[1].node}"')
+    attr = get_empty_box()
+    for n_data in edge.nodes:
+      if 'type' in n_data:
+        attr = attr + settings.styles[n_data.type]
+
+    if '<-' in dir:
+      attr.arrowtail = 'normal'
+      attr.dir = 'back'
+    if '->' in dir:
+      attr.arrowhead = 'normal'
+      attr.dir = 'forward'
+    if '<->' in dir:
+      attr.dir = 'both'
+
+    if settings.interface_labels:
+      direction = ('tail','head')
+      for i,n_data in enumerate(edge.nodes):
+        if '_subnet' not in n_data and 'label'in n_data:
+          attr[direction[i]+'label'] = n_data.label
+    gv_line_attr(f,attr=attr)
+
+def gv_adjust_style(settings: Box, o_type: str, adjust: dict) -> None:
+  for k,v in adjust.items():
+    log.info(f'Adjusting styles.{o_type}.{k} setting to {v}',module='graph')
+    settings.styles[o_type].k = v
+
+def gv_migrate_styles(settings: Box) -> None:
+  if settings.interface_labels:
+    gv_adjust_style(settings,'graph',{'ranksep': 1, 'nodesep': 0.5})
+
+  for c_obj,c_val in settings.colors.items():
+    a_name = 'color' if 'bgp' in c_obj else 'bgcolor'
+    settings.styles[c_obj][a_name] = c_val
+
+  for c_obj,c_val in settings.margins.items():
+    settings.styles[c_obj].margin = c_val
 
 def graph_topology(topology: Box, fname: str, settings: Box,g_format: typing.Optional[list]) -> bool:
+  graph = topology_graph(topology,settings,'graph')
   f = _files.open_output_file(fname)
-  graph_start(f)
+  gv_migrate_styles(settings)
+  gv_start(f,settings)
 
-  maps = build_maps(topology)
+  gv_clusters(f,graph,topology,settings)
+  gv_nodes(f,graph,topology,settings)
+  gv_links(f,graph,topology,settings)
 
-  if 'groups' in settings:
-    must_be_list(
-      parent=settings,
-      key='groups',path='defaults.outputs.graph',
-      true_value=list(topology.get('groups',{}).keys()),
-      create_empty=True,
-      module='graph')
-    add_groups(maps,settings.groups,topology)
-    graph_clusters(f,maps.groups,settings)
-  if 'bgp' in maps and settings.as_clusters:
-    graph_clusters(f,maps.bgp,settings)
-  else:
-    for name,n in topology.nodes.items():
-      node_with_label(f,n,settings)
-
-  for l in topology.links:
-    if l.type == "p2p":
-      edge_p2p(f,l,settings.interface_labels)
-    else:
-      if not l.bridge:
-        log.error('Found a lan/stub link without a bridge name, skipping',log.IncorrectValue,'graph')
-        next
-      network_with_label(f,l,settings)
-      for ifdata in l.interfaces:
-        if ifdata.node in maps.nodes:
-          edge_node_net(f,l,ifdata,settings.interface_labels)
-
-  f.write("}\n")
-  f.close()
+  gv_end(f,fname)
   return True
 
-def bgp_session(f : typing.TextIO, node: Box, session: Box, settings: Box, rr_session: bool) -> None:
-  arrow_dir = 'both'
-  if rr_session:
-    arrow_dir = 'none'
-    if session.type == 'ibgp':
-      if 'rr' in node.bgp and node.bgp.rr and not 'rr' in session:
-        arrow_dir = 'forward'
-      if not 'rr' in node.bgp and 'rr' in session:
-        arrow_dir = 'back'
-
-  f.write('  "%s" -- "%s"' % (node.name,session.name))
-  f.write('  [\n')
-  if session.type == 'ibgp':
-    f.write('    color="%s"\n' % settings.colors.get('ibgp','#613913'))
-  else:
-    f.write('    color="%s"\n' % settings.colors.get('ebgp','#b21a1a'))
-  f.write(f'    penwidth=2.5 arrowsize=0.7 dir={arrow_dir}\n')
-  f.write('  ]\n')
-
 def graph_bgp(topology: Box, fname: str, settings: Box,g_format: typing.Optional[list]) -> bool:
-  if not 'bgp' in topology.get('module',{}):
-    log.error('BGP graph format can only be used to draw topologies using BGP')
+  rr_session = settings.get('rr_sessions',False)
+  if g_format is not None and len(g_format) > 1:
+    rr_session = g_format[1] == 'rr'
+
+  graph = bgp_graph(topology,settings,'graph',rr_sessions=rr_session)
+  if graph is None:
     return False
 
   f = _files.open_output_file(fname)
-  graph_start(f)
+  gv_migrate_styles(settings)
+  gv_start(f,settings)
 
-  rr_session = g_format is not None and len(g_format) > 1 and g_format[1] == 'rr'
+  gv_clusters(f,graph,topology,settings)
+  gv_nodes(f,graph,topology,settings)
+  gv_links(f,graph,topology,settings)
 
-  maps = build_maps(topology)
-  graph_clusters(f,maps.bgp,settings)
-
-  for name,n in topology.nodes.items():
-    if 'bgp' in n:
-      for neighbor in n.bgp.get('neighbors',[]):
-        if neighbor.name > n.name:
-          bgp_session(f,n,neighbor,settings,rr_session)
-
-  f.write("}\n")
-  f.close()
+  gv_end(f,fname)
   return True
 
 graph_dispatch = {
