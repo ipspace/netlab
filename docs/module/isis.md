@@ -34,12 +34,12 @@ The following table describes per-platform support of individual IS-IS features:
 | Cisco ASAv         | ✅  |  ❌  | ✅  | ✅  |
 | Cisco IOS/XE[^18v] | ✅  | ✅  | ✅  | ✅  |
 | Cisco IOS XRv      | ✅  |  ❌  | ✅  | ✅  |
-| Cisco Nexus OS     | ✅  |  ❌  | ✅  | ✅  |
+| Cisco Nexus OS     | ✅  | ✅  | ✅  | ✅  |
 | FRR                | ✅  | ✅  | ✅  | ✅  |
-| Junos[^Junos]      | ✅  |  ❌  | ✅  | ✅  |
-| Nokia SR Linux     | ✅  |  ❌  | ✅  | ✅  |
-| Nokia SR OS        | ✅  |  ❌  | ✅  | ✅  |
-| VyOS               | ✅  |  ❌  | ✅  | ✅  |
+| Junos[^Junos]      | ✅  | ✅  | ✅  | ✅  |
+| Nokia SR Linux     | ✅  | ✅  | ✅  | ✅  |
+| Nokia SR OS        | ✅  | ✅  | ✅  | ✅  |
+| VyOS               | ✅  | ✅  | ✅  | ✅  |
 
 These platforms support additional IS-IS features:
 
