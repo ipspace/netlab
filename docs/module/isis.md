@@ -62,15 +62,17 @@ These platforms support additional IS-IS features:
 * On Arista EOS, IPv6 is enabled on all interfaces as soon as one has an IPv6 address. Arista EOS implementation of IS-IS refuses to work on interfaces with missing address families.
 * On VyOS, IPv6 is enabled on all interfaces as soon as one has an IPv6 address.
 * Cisco ASA does not support P2P IS-IS links. You could add `isis.network_type: false` to point-to-point links connecting ASA to other devices.
-* See [IS-IS](https://release.netlab.tools/_html/isis)  Integration Tests Results for more details.
-
 * Use the `netlab show modules -m isis` command to display the route types that can be imported into IS-IS.
+
+```{tip}
+See [IS-IS Integration Tests Results](https://release.netlab.tools/_html/coverage.isis) for more details.
+```
 
 Some platforms can use BFD to speed up IS-IS convergence:
 
 | Operating system      | IPv4<br />BFD | IPv6<br />BFD |
 | ------------------ | :-: | :-: |
-| Arista EOS         | ✅  | ❌  |
+| Arista EOS         | ✅  | ✅❗|
 | Cisco IOSv/IOSvL2  | ✅  | ✅ | 
 | Cisco IOS XE[^18v] | ✅  | ✅ | 
 | Cisco Nexus OS     | ✅  |  ❌ |
@@ -79,9 +81,8 @@ Some platforms can use BFD to speed up IS-IS convergence:
 | Nokia SR OS        | ✅  | ✅ | 
 | VyOS               | ✅  | ✅ |
 
-```{tip}
-See [IS-IS Integration Tests Results](https://release.netlab.tools/_html/coverage.isis) for more details.
-```
+**Notes:**
+* On Arista EOS, IPv6 BFD for IS-IS is enabled globally (on all IS-IS-enabled interfaces).
 
 ## Global Parameters
 
