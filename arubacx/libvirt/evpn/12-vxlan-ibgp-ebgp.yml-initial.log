@@ -29,7 +29,7 @@ skipping: [l2]
 skipping: [spine]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, l1, l2, spine
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, l1, l2, spine
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [h1]
@@ -74,7 +74,7 @@ skipping: [l2]
 skipping: [spine]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, l1, l2, spine
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, l1, l2, spine
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [h1]
@@ -262,6 +262,9 @@ ok: [l2] =>
     cat >/tmp/config <<CONFIG
     hostname l2
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -290,7 +293,47 @@ ok: [l2] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
+ok: [spine] => 
+  msg: |-
+    initial configuration for spine
+    =========================================
+    hostname spine
+    !
+    lldp
+    !
+  
+  
+  
+    interface mgmt
+        no lldp transmit
+        no lldp receive
+    !
+  
+  
+    interface loopback 0
+        ip address 10.0.0.5/32
+    !
+  
+    interface 1/1/1
+        shutdown
+        mtu 9198
+        ip mtu 1600
+        description spine -> l1 [external]
+        ip address 10.1.0.2/30
+        no shutdown
+    !
+  
+    interface 1/1/2
+        shutdown
+        mtu 9198
+        ip mtu 1600
+        description spine -> l2 [external]
+        ip address 10.1.0.6/30
+        no shutdown
+    !
+    !
 ok: [l1] => 
   msg: |-
     initial configuration for l1
@@ -339,76 +382,37 @@ ok: [l1] =>
         description VLAN red (1000) -> [h1,h2,l2]
     !
     !
-ok: [spine] => 
-  msg: |-
-    initial configuration for spine
-    =========================================
-    hostname spine
-    !
-    lldp
-    !
-  
-  
-  
-    interface mgmt
-        no lldp transmit
-        no lldp receive
-    !
-  
-  
-    interface loopback 0
-        ip address 10.0.0.5/32
-    !
-  
-    interface 1/1/1
-        shutdown
-        mtu 9198
-        ip mtu 1600
-        description spine -> l1 [external]
-        ip address 10.1.0.2/30
-        no shutdown
-    !
-  
-    interface 1/1/2
-        shutdown
-        mtu 9198
-        ip mtu 1600
-        description spine -> l2 [external]
-        ip address 10.1.0.6/30
-        no shutdown
-    !
-    !
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for l1, spine
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for l2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/arubacx.yml for l1, spine
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for l2
 
 TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
+TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
 skipping: [h2]
 
-TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 skipping: [h1]
 skipping: [h2]
 
-TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
+TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-ewfvtrag.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-2yf4hjzi.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -417,10 +421,10 @@ changed: [l1 -> localhost]
 changed: [spine -> localhost]
 
 TASK [template] ****************************************************************
-changed: [l1 -> localhost]
 changed: [spine -> localhost]
+changed: [l1 -> localhost]
 
-TASK [aoscx_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/arubacx.j2] ***
+TASK [aoscx_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/arubacx.j2] ***
 changed: [spine]
 changed: [l1]
 
@@ -435,7 +439,7 @@ TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [l2]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for l2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for l2
 
 TASK [template] ****************************************************************
 changed: [l2]
@@ -443,10 +447,10 @@ changed: [l2]
 TASK [set_fact] ****************************************************************
 ok: [l2]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [l2]
 
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [l2]
 
 PLAY [Deploy module-specific configurations] ***********************************
@@ -459,11 +463,11 @@ ok: [l1]
 ok: [spine]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, l1, l2, spine => (item=vlan)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, l1, l2, spine => (item=routing)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, l1, l2, spine => (item=bgp)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, l1, l2, spine => (item=vxlan)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, l1, l2, spine => (item=evpn)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, l1, l2, spine => (item=vlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, l1, l2, spine => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, l1, l2, spine => (item=bgp)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, l1, l2, spine => (item=vxlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, l1, l2, spine => (item=evpn)
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [h1]
@@ -531,8 +535,8 @@ TASK [Deploy vlan configuration] ***********************************************
 skipping: [h1]
 skipping: [h2]
 skipping: [spine]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for l1
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/arubacx.yml for l1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
 TASK [tempfile] ****************************************************************
 changed: [l1 -> localhost]
@@ -540,7 +544,7 @@ changed: [l1 -> localhost]
 TASK [template] ****************************************************************
 changed: [l1 -> localhost]
 
-TASK [aoscx_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/arubacx.j2] ***
+TASK [aoscx_config: deploying vlan from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/arubacx.j2] ***
 changed: [l1]
 
 TASK [file] ********************************************************************
@@ -552,10 +556,10 @@ changed: [l2]
 TASK [set_fact] ****************************************************************
 ok: [l2]
 
-TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
+TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/frr.j2] ***
 changed: [l2]
 
-TASK [run vtysh to import vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
+TASK [run vtysh to import vlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/frr.j2] ***
 skipping: [l2]
 
 TASK [Figure out whether to deploy the module routing on current device] *******
@@ -569,8 +573,8 @@ TASK [Find configuration template for routing] *********************************
 skipping: [l1]
 skipping: [l2]
 ok: [h1]
-ok: [h2]
 skipping: [spine]
+ok: [h2]
 
 TASK [fail] ********************************************************************
 skipping: [h1]
@@ -625,7 +629,7 @@ TASK [Deploy routing configuration] ********************************************
 skipping: [l1]
 skipping: [l2]
 skipping: [spine]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
 
 TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
@@ -635,7 +639,7 @@ TASK [Create a temporary file for the rendered script] *************************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
+TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -643,15 +647,15 @@ TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
 skipping: [h1]
 skipping: [h2]
 
-TASK [Execute /tmp/config-h1_routing.sh to deploy routing config based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
+TASK [Execute /tmp/config-h1_routing.sh to deploy routing config based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
 skipping: [h1]
 skipping: [h2]
 
-TASK [Container configuration for routing based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
+TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-l0gtpu5j.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-wysad5f0.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -809,18 +813,18 @@ ok: [spine] =>
 TASK [Deploy bgp configuration] ************************************************
 skipping: [h1]
 skipping: [h2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for l1, spine
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/arubacx.yml for l1, spine
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
 TASK [tempfile] ****************************************************************
 changed: [l1 -> localhost]
 changed: [spine -> localhost]
 
 TASK [template] ****************************************************************
-changed: [spine -> localhost]
 changed: [l1 -> localhost]
+changed: [spine -> localhost]
 
-TASK [aoscx_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/arubacx.j2] ***
+TASK [aoscx_config: deploying bgp from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/arubacx.j2] ***
 changed: [l1]
 changed: [spine]
 
@@ -834,10 +838,10 @@ changed: [l2]
 TASK [set_fact] ****************************************************************
 ok: [l2]
 
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [l2]
 
-TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [l2]
 
 TASK [Figure out whether to deploy the module vxlan on current device] *********
@@ -922,8 +926,8 @@ TASK [Deploy vxlan configuration] **********************************************
 skipping: [h1]
 skipping: [h2]
 skipping: [spine]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for l1
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/arubacx.yml for l1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
 TASK [tempfile] ****************************************************************
 changed: [l1 -> localhost]
@@ -931,7 +935,7 @@ changed: [l1 -> localhost]
 TASK [template] ****************************************************************
 changed: [l1 -> localhost]
 
-TASK [aoscx_config: deploying vxlan from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/arubacx.j2] ***
+TASK [aoscx_config: deploying vxlan from /home/pipi/netlab_gh/netsim/ansible/templates/vxlan/arubacx.j2] ***
 changed: [l1]
 
 TASK [file] ********************************************************************
@@ -943,10 +947,10 @@ changed: [l2]
 TASK [set_fact] ****************************************************************
 ok: [l2]
 
-TASK [run /tmp/config.sh to deploy vxlan config from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/frr.j2] ***
+TASK [run /tmp/config.sh to deploy vxlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vxlan/frr.j2] ***
 changed: [l2]
 
-TASK [run vtysh to import vxlan config from /home/pipi/net101/tools/netsim/ansible/templates/vxlan/frr.j2] ***
+TASK [run vtysh to import vxlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vxlan/frr.j2] ***
 skipping: [l2]
 
 TASK [Figure out whether to deploy the module evpn on current device] **********
@@ -1055,18 +1059,18 @@ ok: [spine] =>
 TASK [Deploy evpn configuration] ***********************************************
 skipping: [h1]
 skipping: [h2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for l1, spine
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/arubacx.yml for l1, spine
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for l2
 
 TASK [tempfile] ****************************************************************
 changed: [l1 -> localhost]
 changed: [spine -> localhost]
 
 TASK [template] ****************************************************************
-changed: [spine -> localhost]
 changed: [l1 -> localhost]
+changed: [spine -> localhost]
 
-TASK [aoscx_config: deploying evpn from /home/pipi/net101/tools/netsim/ansible/templates/evpn/arubacx.j2] ***
+TASK [aoscx_config: deploying evpn from /home/pipi/netlab_gh/netsim/ansible/templates/evpn/arubacx.j2] ***
 changed: [spine]
 changed: [l1]
 
@@ -1080,10 +1084,10 @@ changed: [l2]
 TASK [set_fact] ****************************************************************
 ok: [l2]
 
-TASK [run /tmp/config.sh to deploy evpn config from /home/pipi/net101/tools/netsim/ansible/templates/evpn/frr.j2] ***
+TASK [run /tmp/config.sh to deploy evpn config from /home/pipi/netlab_gh/netsim/ansible/templates/evpn/frr.j2] ***
 changed: [l2]
 
-TASK [run vtysh to import evpn config from /home/pipi/net101/tools/netsim/ansible/templates/evpn/frr.j2] ***
+TASK [run vtysh to import evpn config from /home/pipi/netlab_gh/netsim/ansible/templates/evpn/frr.j2] ***
 skipping: [l2]
 
 PLAY [Deploy custom deployment templates] **************************************
