@@ -19,7 +19,7 @@ evpn
  arp-suppression
  redistribute local-mac
  redistribute local-svi
-{%   for v in vlans.values() if v.vni is defined %}
+{%   for v in vlans.values() if v.evpn.evi is defined and v.evpn.bundle is not defined %}
 {%     set import_target = v.evpn.import|join(' ') -%}
 {%     set export_target = v.evpn.export|join(' ') %}
  vlan {{ v.id }}
@@ -36,6 +36,23 @@ evpn
 {%       endif %}
 {%     endif %}
 
+{%   endfor %}
+{% endif %}
+{# vlan-aware bundles #}
+{% if vrfs is defined %}
+{%   for n,v in vrfs.items() if v.evpn.vlans is defined %}
+{%     set import_target = v.import|join(' ') -%}
+{%     set export_target = v.export|join(' ') %}
+!
+ vlan-aware-bundle {{ n }}
+  rd {{ v.rd }}
+  route-target import {{ v.import|join(' ') }}
+  route-target export {{ v.export|join(' ') }}
+{%     if import_target == export_target %}
+  route-target both {{ v.export|join(' ') }}
+{%     endif %}
+  redistribute host-route
+  vlan {{ v.evpn.vlan_ids|join(',') }}
 {%   endfor %}
 {% endif %}
 

@@ -24,7 +24,7 @@ The following table describes the per-platform support of individual EVPN/VXLAN 
 | Operating system   | VLAN-based<br>service | VLAN Bundle<br>service | Asymmetric<br>IRB | Symmetric<br>IRB |
 | ------------------ | :-: | :-: | :-: | :-: |
 | Arista EOS         | ✅  |  ✅  | ✅  | ✅  |
-| Aruba AOS-CX       | ✅  |  ❌  | ✅  | ✅[❗](caveats-aruba)  |
+| Aruba AOS-CX       | ✅  |  ✅  | ✅  | ✅[❗](caveats-aruba)  |
 | Cisco Nexus OS     | ✅  |  ❌  | ✅  | ✅  |
 | Cumulus Linux 4.x  | ✅  |  ❌  | ✅  | ✅  |
 | Cumulus 5.x (NVUE) | ✅  |  ❌  | ✅  | ✅  |
@@ -50,6 +50,7 @@ Devices supporting [EVPN VLAN bundle services](evpn-bundle-service) implement th
 | Operating system   | VLAN<br>bundle | Port<br>service | VLAN-aware<br>bundle | Port-based<br>VLAN bundle |
 | ------------------ | :-: | :-: | :-: | :-: |
 | Arista EOS         |  ❌  |  ❌  | ✅  |  ❌  |
+| Aruba AOS-CX       |  ❌  |  ❌  | ✅  |  ❌  |
 | Nokia SR Linux     |  ❌  |  ❌  | ✅  |  ❌  |
 
 EVPN module supports IBGP- and EBGP-based EVPN:
