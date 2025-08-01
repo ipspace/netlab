@@ -114,12 +114,25 @@ topology:
 {%       set clab = nl.clab|default({}) %}
   - endpoints:
     - "{{ n.name }}:{{ clab.name|default(nl.ifname) }}"
-{# Use node_intf name for bridge veth interface in standard setup and more cryptic (but unique) name in multilab deployment #}
-{%       if defaults.multilab.id|default(False) %}
-    - "{{ l.bridge }}:{{ name[:6] }}_{{ n.id }}_{{ nl.ifindex }}"
-{%       else %}
-    - "{{ l.bridge }}:{{ n.name[:10] }}_{{ clab.name|default(nl.ifname) }}"
-{%       endif %}
+{# 
+    Whatever we try to do to make the bridge interface names sane, someone
+    inevitably finds a "counter-example" because (for example) one could not
+    possibly make the node names unique in the first 10 characters
+    (see #2564 for details).
+
+    As a desperate attempt to get away from that nasty can of worms, we'll
+    make the bridge interface names cryptic and made of three parts:
+
+    * nbi{multilab.id} to handle the multilab scenarios
+    * n{id} to make interface names unique based on node ID
+    * i{id} to distinguish between interfaces on the node
+
+    None of these components can use 'native' node or interface names, or
+    we run out of the 16-character limit. Please note this only applies to
+    bridge-side part of vEth pair; the overly-long names of VM interfaces
+    connected to a bridge are left to Vagrant).
+#}
+    - "{{ l.bridge }}:bni{{ defaults.multilab.id|default(0) }}n{{ n.id }}i{{ nl.ifindex }}"
 {%     endfor %}
 {%   endfor %}
 {% endif %}
