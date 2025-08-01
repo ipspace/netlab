@@ -14,9 +14,28 @@ def set_shared_attributes(topology: Box) -> None:
   global SHARED_GRAPH_ATTRIBUTES
   SHARED_GRAPH_ATTRIBUTES = topology.defaults.outputs.graph.attributes.shared
 
-def build_nodes(topology: Box) -> Box:
+"""
+Utility function: map shared attributes (color, fill, width) into GL-specific attributes
+"""
+def map_style(g_attr: Box, style_map: Box) -> Box:
+  return get_box({ style_map[k]:v for k,v in g_attr.items() if k in style_map })
+
+"""
+Build graph nodes data structure (first step in graph-building)
+
+* Copy shared graph attributes into GL-specific ones
+* Collect nodes into graph.nodes dict
+* Collect BGP AS into graph.bgp dict
+* Return the new graph data structure
+"""
+def build_nodes(topology: Box, g_type: str) -> Box:
+  global SHARED_GRAPH_ATTRIBUTES
   maps = Box({},default_box=True,box_dots=True)
   for name,n in topology.nodes.items():
+    if g_type != 'graph':
+      for kw in SHARED_GRAPH_ATTRIBUTES:
+        if kw in n.get('graph',{}) and kw not in n.get(g_type,{}):
+          n[g_type][kw] = n.graph[kw]
     maps.nodes[name] = n
 
   if 'bgp' in topology.get('module',[]):
@@ -55,6 +74,12 @@ def add_groups(maps: Box, graph_groups: list, topology: Box) -> None:
       maps.clusters[g_name].nodes[node] = topology.nodes[node]
       placed_hosts.append(node)
 
+"""
+Create graph clusters:
+
+* Use 'groups' when available
+* Use BGP AS otherwise (if the topology is using BGP)
+"""
 def graph_clusters(graph: Box, topology: Box, settings: Box) -> None:
   if 'groups' in settings:
     must_be_list(
@@ -134,7 +159,7 @@ def topo_edges(graph: Box, topology: Box, settings: Box,g_type: str) -> None:
 
 def topology_graph(topology: Box, settings: Box,g_type: str) -> Box:
   set_shared_attributes(topology)
-  graph = build_nodes(topology)
+  graph = build_nodes(topology,g_type)
   graph_clusters(graph,topology,settings)
   topo_edges(graph,topology,settings,g_type)
   log.exit_on_error()
@@ -171,7 +196,7 @@ def bgp_graph(topology: Box, settings: Box, g_type: str, rr_sessions: bool) -> t
       module='graph')
     return None
 
-  graph = build_nodes(topology)
+  graph = build_nodes(topology,g_type)
   graph.clusters = graph.bgp
   graph.edges = []
   bgp_sessions(graph,topology,settings,g_type,rr_sessions)

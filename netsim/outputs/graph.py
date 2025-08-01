@@ -12,7 +12,7 @@ from ..data import get_empty_box,get_box
 from . import _TopologyOutput
 from ..utils import files as _files
 from ..utils import log
-from ._graph import topology_graph,bgp_graph
+from ._graph import topology_graph,bgp_graph,map_style
 
 def edge_label(f : typing.TextIO, direction: str, data: Box, subnet: bool = True) -> None:
   addr = data.ipv4 or data.ipv6
@@ -28,6 +28,12 @@ def edge_node_net(f : typing.TextIO, link: Box, ifdata: Box, labels: typing.Opti
   if labels and 'ipv4' in ifdata and isinstance(ifdata.ipv4,str):
     edge_label(f,'tail',ifdata,subnet=False)
   f.write(' ]\n')
+
+'''
+Add graph styling information from graph.* link/node attributes
+'''
+STYLE_MAP: Box
+IGNORE_KW: list = ['dir', 'type', 'name']
 
 def get_gv_attr(c_data: Box, o_type: str, settings: Box) -> None:
   c_data.graph.format = settings.styles[o_type] + c_data.graph.format
@@ -81,6 +87,8 @@ def gv_end(f : typing.TextIO, fname: str) -> None:
     f.close()
 
 def gv_node(f : typing.TextIO, n: Box, settings: Box, indent: int = 0) -> None:
+  global STYLE_MAP
+
   f.write(f'{" "*indent}"{n.name}" [\n')
   node_ip_str = ""
   if settings.node_address_label:
@@ -90,7 +98,10 @@ def gv_node(f : typing.TextIO, n: Box, settings: Box, indent: int = 0) -> None:
     if node_ip:
       node_ip_str = f'{node_ip}'
 
-  f.write(f'{" "*indent}    label="{n.name} [{n.device}]\\n{node_ip_str}"\n')
+  gv_attr = n.get('graph.format',{})
+  gv_attr.label = f"{n.name} [{n.device}]\\n{node_ip_str}"
+  gv_attr += map_style(n.get('graph',{}),STYLE_MAP)
+  gv_multiline_attr(f,attr=gv_attr,indent=indent + 2)
   f.write(f'{" "*indent}]\n')
 
 def gv_network(f : typing.TextIO, n: Box, settings: Box, indent: int = 0) -> None:
@@ -126,10 +137,12 @@ def gv_nodes(f: typing.TextIO, graph: Box, topology: Box, settings: Box) -> None
         gv_node(f,n_data,settings,indent=2)
 
 def gv_links(f: typing.TextIO, graph: Box, topology: Box, settings: Box) -> None:
+  global STYLE_MAP
   for edge in graph.edges:
     dir = edge.nodes[0].get('attr.dir','--')
     f.write(f' "{edge.nodes[0].node}" -- "{edge.nodes[1].node}"')
-    attr = get_empty_box()
+
+    attr = map_style(edge.attr,STYLE_MAP) + edge.attr.get('format',{})
     for n_data in edge.nodes:
       if 'type' in n_data:
         attr = attr + settings.styles[n_data.type]
@@ -209,6 +222,9 @@ class Graph(_TopologyOutput):
   DESCRIPTION :str = 'Topology graph in graphviz format'
 
   def write(self, topology: Box) -> None:
+    global STYLE_MAP
+    STYLE_MAP = topology.defaults.outputs.graph.style_map
+
     graphfile = self.settings.filename or 'graph.dot'
     output_format = 'topology'
 
