@@ -75,8 +75,8 @@ def create_node_dict(nodes: Box) -> Box:
 Validate node attributes
 """
 def validate(topology: Box) -> None:
-  # Allow provider- and tool- specific node attributes
-  extra = get_object_attributes(['providers','tools','outputs'],topology)
+  # Allow provider-, tool- and output- specific node attributes
+  extra = get_object_attributes(topology.defaults.attributes.node_extra_ns,topology)
   for n_name,n_data in topology.nodes.items():
     must_be_id(
       parent=None,

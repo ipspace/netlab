@@ -119,9 +119,6 @@ def check_group_data_structure(
 
   list_of_modules = modules.list_of_modules(topology)
 
-  # Allow provider- and tool- specific node attributes
-  extra = get_object_attributes(['providers','tools'],topology)
-
   for grp,gdata in parent.groups.items():
     if grp.startswith('_'):                       # Skip stuff starting with underscore
       continue                                    # ... could be system settings
@@ -182,7 +179,8 @@ def validate_group_data(
   if 'groups' not in parent:
     return
 
-  extra = get_object_attributes(['providers','tools'],topology)
+  # Allow provider-, tool-, and output- specific node attributes
+  extra = get_object_attributes(topology.defaults.attributes.node_extra_ns,topology)
 
   for grp,gdata in parent.groups.items():
     if grp.startswith('_'):                       # Skip stuff starting with underscore
