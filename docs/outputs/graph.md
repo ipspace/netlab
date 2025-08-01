@@ -21,7 +21,22 @@ Graphing routines use **[default](topo-defaults)** topology settings to modify t
 * **outputs.graphs.node_address_label** (default: *True*) -- add node loopback IP addresses or IP addresses of the first interface (for hosts) to node labels.
 * **outputs.graph.rr_sessions** (default: *False*) -- draw IBGP sessions between BGP route reflectors and clients as directional connections.
 
-You can also change the formatting of individual graph objects with the **outputs.styles._object_** defaults:
+(outputs-graph-link-node-attributes)=
+## Modifying Link and Node Attributes
+
+You can use the **graph** link and node attributes to change the style of individual nodes or links. The following attributes are built into _netlab_[^XS]:
+
+* **graph.color** -- line color (*color* GraphViz attribute)
+* **graph.fill** -- fill color (*fillcolor* GraphViz attribute)
+* **graph.width** -- line width (*penwidth* GraphViz attribute)
+
+You can also use the **graph.linkorder** link attribute to change the order of links in the D2 graph description file, which can sometimes improve the diagrams' appearance. Links with lower **graph.linkorder** values (default: 100) appear earlier in the list of links.
+
+[^XS]: You can extend the GraphViz styling capabilities and add new **graph** attributes. See [](outputs-d2-styles) for details.
+
+## Object Styles
+
+You can also change the formatting of individual graph objects with the **outputs.graph.styles._object_** defaults:
 
 | Object | Description |
 |--------|-------------|

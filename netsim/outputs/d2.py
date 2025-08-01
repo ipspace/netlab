@@ -12,7 +12,7 @@ from ..data.validate import must_be_list
 from . import _TopologyOutput
 from ..utils import files as _files
 from ..utils import log
-from ._graph import topology_graph,bgp_graph
+from ._graph import topology_graph,bgp_graph,map_style
 
 '''
 Copy default settings into a D2 map converting Python dictionaries into
@@ -53,7 +53,7 @@ IGNORE_KW: list = ['dir', 'type', 'name']
 def d2_style(f : typing.TextIO, obj: Box, indent: str) -> None:
   if 'd2' not in obj:
     return
-  d2_style = { STYLE_MAP[k]:v for k,v in obj.d2.items() if k in STYLE_MAP }
+  d2_style = map_style(obj.d2,STYLE_MAP)
   d2_extra = obj.get('d2.format',{})
 
   if d2_style or d2_extra:
@@ -208,7 +208,7 @@ Set node attributes needed by D2 output module:
 '''
 def set_d2_attr(topology: Box) -> None:
   global STYLE_MAP
-  STYLE_MAP = topology.defaults.outputs.d2.styles
+  STYLE_MAP = topology.defaults.outputs.d2.style_map
 
   for n,ndata in topology.nodes.items():
     dev_data = topology.defaults.devices[ndata.device]
