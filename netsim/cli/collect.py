@@ -41,6 +41,12 @@ def collect_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespace, ty
     default='config',
     help='Output directory (default: config)')
   parser.add_argument(
+    '--suffix',
+    dest='suffix',
+    action='store',
+    default='cfg',
+    help='Configure file(s) suffix (default: cfg)')
+  parser.add_argument(
     '--tar',
     dest='tar',
     action='store',
@@ -77,6 +83,9 @@ def run(cli_args: typing.List[str]) -> None:
     rest = ['-v'] + rest
 
   rest = ['-e','target='+args.output ] + rest
+
+  if args.suffix:
+    rest += ['-e','suffix='+args.suffix]
 
   if args.tar and not args.quiet:
     external_commands.print_step(1,"Collecting device configurations")
