@@ -10,6 +10,7 @@ import argparse
 import os
 import shutil
 import typing
+from pathlib import Path
 
 from box import Box
 
@@ -163,8 +164,16 @@ def fs_cleanup(filelist: typing.List[str], verbose: bool = False) -> None:
       if verbose:
         print(f"... removing {fname}")
       try:
-        os.remove(fname)
-      except Exception as ex:
+        os.remove(fname)                                  # Remove the file
+        if '/' not in fname:                              # ... and move on if it was from current directory
+          continue
+        try:                                              # Otherwise try to remove the parent directory
+          f_parent = Path(fname).parent
+          f_parent.rmdir()
+          print(f"... removing empty directory {str(f_parent)}")
+        except Exception as ex:                           # No worries if we cannot do that
+          pass
+      except Exception as ex:                             # Finally, report an error if we cannot remove the file
         log.fatal(f"Cannot remove {fname}: {ex}")
 
 # Common topology loader (used by create and down)

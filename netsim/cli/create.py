@@ -87,6 +87,15 @@ def run(cli_args: typing.List[str],
     os.remove('netlab.lock')
     lab_status_log(topology,'Configuration files have been recreated')
 
+  # Iterate over plugins that registered 'output' hook
+  # We have to reload the plugin as the original 'Plugin' dictionary was removed
+  # as the last step in the topology transformation process
+  #
+  for p_name in topology.defaults.netlab.create.get('output',[]):
+    plugin = augment.plugin.load_plugin(p_name,topology)
+    if plugin:
+      augment.plugin.execute_plugin_hook('output',plugin,topology)
+
   for output_format in args.output:
     output_module = _TopologyOutput.load(output_format,topology.defaults.outputs[output_format.split(':')[0]])
     if output_module:
