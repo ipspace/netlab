@@ -230,6 +230,9 @@ ok: [x1] =>
     cat >/tmp/config <<CONFIG
     hostname x1
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -253,6 +256,7 @@ ok: [x1] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [x2] => 
   msg: |-
@@ -341,6 +345,9 @@ ok: [x2] =>
     cat >/tmp/config <<CONFIG
     hostname x2
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -364,20 +371,12 @@ ok: [x2] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for x1, x2
-
-TASK [wait_for_connection] *****************************************************
-skipping: [dut]
-
-TASK [wait_for] ****************************************************************
-skipping: [dut]
-
-TASK [set_fact] ****************************************************************
-ok: [dut]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
@@ -449,18 +448,7 @@ ok: [dut] =>
   msg: |-
     isis configuration for dut
     =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
-  
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-    fi
-  
-    # Configuration items start here
-    configure
-  
     set protocols isis level level-1
-  
     set protocols isis dynamic-hostname
     set protocols isis lsp-gen-interval 1
     set protocols isis spf-interval 1
@@ -485,13 +473,6 @@ ok: [dut] =>
   
     set protocols isis interface eth3 metric 25
     set protocols isis interface eth3 passive
-  
-  
-    # Commit, save and exit from subshell
-  
-    commit
-    save
-    exit
 ok: [x1] => 
   msg: |-
     isis configuration for x1
@@ -567,15 +548,6 @@ TASK [Deploy isis configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2
 
-TASK [wait_for_connection] *****************************************************
-skipping: [dut]
-
-TASK [wait_for] ****************************************************************
-skipping: [dut]
-
-TASK [set_fact] ****************************************************************
-ok: [dut]
-
 TASK [set_fact] ****************************************************************
 ok: [dut]
 
@@ -586,8 +558,8 @@ TASK [execute config-isis.sh to deploy isis config from /home/pipi/net101/tools/
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -605,12 +577,12 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=27   changed=4    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+dut                        : ok=25   changed=4    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
 x1                         : ok=27   changed=5    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
 x2                         : ok=26   changed=4    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
 
 
 
-This lab tests whether the OSPF interfaces on device under test are correctly
+This lab tests whether the IS-IS interfaces on device under test are correctly
 configured as passive interfaces.
 

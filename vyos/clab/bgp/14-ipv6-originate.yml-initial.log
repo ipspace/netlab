@@ -20,10 +20,17 @@ ok: [x1]
 ok: [x2]
 
 TASK [Wait for device to become ready] *****************************************
-skipping: [dut]
-skipping: [dut2]
 skipping: [x1]
 skipping: [x2]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/vyos-clab.yml for dut, dut2
+
+TASK [wait_for_connection] *****************************************************
+ok: [dut2]
+ok: [dut]
+
+TASK [wait_for] ****************************************************************
+ok: [dut]
+ok: [dut2]
 
 TASK [Normalize config on bridge-like devices] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, dut2, x1, x2
@@ -75,8 +82,8 @@ ok: [x2]
 
 TASK [Find configuration template for initial] *********************************
 ok: [dut]
-ok: [x1]
 ok: [dut2]
+ok: [x1]
 ok: [x2]
 
 TASK [fail] ********************************************************************
@@ -87,8 +94,8 @@ skipping: [x2]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [dut]
-ok: [x1]
 ok: [dut2]
+ok: [x1]
 ok: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -299,6 +306,9 @@ ok: [x1] =>
     cat >/tmp/config <<CONFIG
     hostname x1
     !
+    log file /tmp/logging
+  
+    !
     ipv6 forwarding
     vrf mgmt
      exit-vrf
@@ -321,6 +331,7 @@ ok: [x1] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [x2] => 
   msg: |-
@@ -406,6 +417,9 @@ ok: [x2] =>
     cat >/tmp/config <<CONFIG
     hostname x2
     !
+    log file /tmp/logging
+  
+    !
     ipv6 forwarding
     vrf mgmt
      exit-vrf
@@ -428,23 +442,12 @@ ok: [x2] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for dut, dut2
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for x1, x2
-
-TASK [wait_for_connection] *****************************************************
-ok: [dut]
-ok: [dut2]
-
-TASK [wait_for] ****************************************************************
-ok: [dut2]
-ok: [dut]
-
-TASK [set_fact] ****************************************************************
-ok: [dut]
-ok: [dut2]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
@@ -473,12 +476,12 @@ changed: [x1]
 changed: [x2]
 
 TASK [set_fact] ****************************************************************
-ok: [x2]
 ok: [x1]
+ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
@@ -524,16 +527,6 @@ ok: [dut2] =>
   msg: |-
     bgp configuration for dut2
     =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
-  
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-    fi
-  
-    # Configuration items start here
-  
-    configure
   
     set protocols bgp system-as 65001
   
@@ -562,29 +555,10 @@ ok: [dut2] =>
     set protocols bgp neighbor 2001:db8:cafe:e01::1 address-family ipv6-unicast nexthop-self
   
     set protocols bgp neighbor 2001:db8:cafe:e01::1 address-family ipv6-unicast disable-send-community extended
-  
-  
-  
-  
-    # Commit, save and exit from subshell
-  
-    commit
-    save
-    exit
 ok: [dut] => 
   msg: |-
     bgp configuration for dut
     =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
-  
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-    fi
-  
-    # Configuration items start here
-  
-    configure
   
     set protocols bgp system-as 65000
   
@@ -643,15 +617,6 @@ ok: [dut] =>
     set protocols bgp neighbor 2001:db8:cafe:e01::2 address-family ipv6-unicast nexthop-self
   
     set protocols bgp neighbor 2001:db8:cafe:e01::2 address-family ipv6-unicast disable-send-community extended
-  
-  
-  
-  
-    # Commit, save and exit from subshell
-  
-    commit
-    save
-    exit
 ok: [x1] => 
   msg: |-
     bgp configuration for x1
@@ -725,33 +690,21 @@ TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/vyos.yml for dut, dut2
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2
 
-TASK [wait_for_connection] *****************************************************
-skipping: [dut]
-skipping: [dut2]
-
-TASK [wait_for] ****************************************************************
-skipping: [dut]
-skipping: [dut2]
-
 TASK [set_fact] ****************************************************************
-ok: [dut]
 ok: [dut2]
-
-TASK [set_fact] ****************************************************************
 ok: [dut]
-ok: [dut2]
 
 TASK [template] ****************************************************************
-changed: [dut2]
 changed: [dut]
+changed: [dut2]
 
 TASK [execute config-bgp.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/vyos.j2] ***
 changed: [dut2]
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -769,8 +722,8 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=29   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-dut2                       : ok=29   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+dut                        : ok=28   changed=4    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
+dut2                       : ok=28   changed=4    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
 x1                         : ok=27   changed=5    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
 x2                         : ok=26   changed=4    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
 
