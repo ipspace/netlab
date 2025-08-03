@@ -106,6 +106,17 @@ def load_plugin_from_path(path: str, plugin: str, topology: Box) -> typing.Optio
   return pymodule
 
 '''
+Load plugin: try to load the plugin from any of the search path directories
+'''
+def load_plugin(pname: str,topology: Box) -> typing.Optional[object]:
+  for path in topology.defaults.paths.plugin:
+    plugin = load_plugin_from_path(path,pname,topology)     # Try to load plugin from the current search path directory
+    if plugin:                                              # Got it, get out of the loop
+      return plugin
+
+  return None
+
+'''
 Sort plugins based on their _requires and _execute_after attributes
 
 Input:
@@ -197,7 +208,6 @@ def init(topology: Box) -> None:
 
   topology.Plugin = []
   load_error = False
-  search_path = topology.defaults.paths.plugin
   for pname in list(topology.plugin):                         # Iterate over all plugins
     if not isinstance(pname,str):
       log.error(
@@ -207,10 +217,7 @@ def init(topology: Box) -> None:
       load_error = True
       continue
 
-    for path in search_path:
-      plugin = load_plugin_from_path(path,pname,topology)     # Try to load plugin from the current search path directory
-      if plugin:                                              # Got it, get out of the loop
-        break
+    plugin = load_plugin(pname,topology)                      # Try to load plugin from the search path
 
     if plugin:                                                # If we found the plugin...
       topology.Plugin.append(plugin)                          # ... and add it to the list of active plugins
@@ -218,7 +225,7 @@ def init(topology: Box) -> None:
       load_error = True
       log.error(
         f"Cannot find plugin {pname}",
-        more_data = f"Search path:\n{strings.get_yaml_string(search_path)}",
+        more_data = f"Search path:\n{strings.get_yaml_string(topology.defaults.paths.plugin)}",
         category=log.IncorrectValue,
         module='plugin')
 
@@ -260,6 +267,16 @@ def check_plugin_dependencies(topology: Box) -> None:
     plugin_requires_check(plugin,topology)
 
 '''
+Execute the specified hook in a plugin
+'''
+def execute_plugin_hook(action: str, plugin: object, topology: Box) -> None:
+  if hasattr(plugin,action):                                # Does the plugin have the required action?
+    func = getattr(plugin,action)                           # ... yes, fetch the function to call
+    if log.debug_active('plugin'):                          # ... do some logging to help the poor debugging souls
+      print(f'plug {action}: {plugin}')
+    func(topology)                                          # ... and execute the plugin function
+
+'''
 Execute a plugin action:
 
 * Iterate over all plugins
@@ -274,8 +291,4 @@ def execute(action: str, topology: Box) -> None:
     print(f'plug hook: {action}')
 
   for plugin in topology.Plugin:                              # Iterate over the loaded plugin modules
-    if hasattr(plugin,action):                                # Does the plugin have the required action?
-      func = getattr(plugin,action)                           # ... yes, fetch the function to call
-      if log.debug_active('plugin'):                          # ... do some logging to help the poor debugging souls
-        print(f'plug {action}: {plugin}')
-      func(topology)                                          # ... and execute the plugin function
+    execute_plugin_hook(action,plugin,topology)               # ... and try to execute the hook

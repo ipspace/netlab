@@ -16,6 +16,7 @@ from . import external_commands,set_dry_run,is_dry_run
 from . import lab_status_change,fs_cleanup,load_snapshot,parser_lab_location,change_lab_instance
 from .. import providers
 from ..utils import status,strings,log,read as _read
+from ..data import append_to_list
 from .up import provider_probes
 #
 # CLI parser for 'netlab down' command
@@ -64,6 +65,9 @@ def down_cleanup(topology: Box, verbose: bool = False) -> None:
       cleanup_list.append(s_filename)
 
   cleanup_list.extend(topology.defaults.automation.ansible.cleanup)
+  for v in topology.get('_cleanup',{}).values():
+    cleanup_list += v if isinstance(v,list) else [ v ]
+
   cleanup_list.append('netlab.snapshot.yml')
   fs_cleanup(cleanup_list,verbose)
 

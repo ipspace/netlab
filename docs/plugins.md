@@ -15,6 +15,7 @@
    plugins/bgp.originate.md
    plugins/check.config.md
    plugins/fabric.md
+   plugins/files.md
    plugins/mlag.vtep.md
    plugins/multilab.md
    plugins/node.clone.md
