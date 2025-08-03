@@ -97,7 +97,7 @@ Due to the structure of the custom configuration filenames, the **‌files** plu
 Use the **netlab show defaults paths.custom.files** command to display the order of components _netlab_ expects you to use in the custom configuration template names. The `.j2` suffix is automatically appended to the names generated from the **‌configlets** dictionary.
 ```
 
-Finally, you might want to create a variant of a configuration template for a specific provider, and a more generic one for all other providers. That cannot be easily expressed as a dictionary structure, so the **files** plugin treats **content** key as a special case, meaning *do not append anything to the file name*. The following example will thus create **ifup/eos.j2**  and **ifup/eos-clab.j2** files:
+Finally, you might want to create a variant of a configuration template for a specific provider, and a more generic one for all other providers. That cannot be easily expressed as a dictionary structure, so the **files** plugin treats **base** key as a special case, meaning *do not append anything to the file name*. The following example will thus create **ifup/eos.j2**  and **ifup/eos-clab.j2** files:
 
 ```
 configlets:
@@ -106,7 +106,7 @@ configlets:
       clab: |
         interface Management0
           description Management interface
-      content: |
+      base: |
         interface Management1
           description Management interface
 ```

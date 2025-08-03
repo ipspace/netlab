@@ -13,7 +13,7 @@ def restructure_files(topology: Box) -> None:
     return                                            # Everything else will be handled in attribute validation code
 
   f_dict = filemaps.box_to_dict(topology.files)       # Recover the original data structure
-  f_list = [ {'path': k, 'content': v} 
+  f_list = [ {'path': k, 'content': v}
                for k,v in f_dict.items() ]            # Create normalized list-based data structure
   topology.files = f_list                             # Replace dict with list
 
@@ -26,7 +26,7 @@ def restructure_configlets(topology: Box) -> None:
     for k,v in cfg.items():                           # Iterate over dictionary contents
       separator = '' if path.endswith('/') else \
                   '-' if k in topology.defaults.providers else '.'
-      if k != 'content':                              # If this is not a 'raw content' element
+      if k != 'base':                                 # If this is not a 'base content' element
         k_path = path + separator + k                 # ... add next bit to file name (provider is prefixed with '-')
       else:
         k_path = path
