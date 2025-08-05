@@ -8,7 +8,7 @@ import argparse
 
 from . import load_snapshot,_nodeset,parser_lab_location,parser_add_verbose
 from ..outputs import _TopologyOutput, common as outputs_common
-from ..utils import strings,log
+from ..utils import strings,log,read as _read
 
 #
 # CLI parser for 'netlab report' command
@@ -36,6 +36,7 @@ def report_parse(args: typing.List[str]) -> argparse.Namespace:
 def run(cli_args: typing.List[str]) -> None:
   args = report_parse(cli_args)
   topology = load_snapshot(args)
+  _read.include_environment_defaults(topology)
   report_module = _TopologyOutput.load(
                      f'report:{args.report}={args.output or "-"}',
                      topology.defaults.outputs.report)
