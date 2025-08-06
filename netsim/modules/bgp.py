@@ -178,38 +178,32 @@ build_ibgp_sessions: create IBGP session data structure
 * Other nodes need IBGP sessions with all RRs in the same AS
 """
 def build_ibgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
-  rrlist = find_bgp_rr(node.bgp.get("as"),topology)
-  has_ibgp     = False                            # Assume we have no IBGP sessions (yet)
+  node_as  = node.bgp['as']                       # Set up variables that will come handy, starting with node AS
+  is_rr    = node.bgp.get("rr",None)              # Is this node an RR?
+  bgp_nhs  = node.bgp.get("next_hop_self",None)   # Do we have to set next hop on IBGP sessions?
+  rrlist = [] if is_rr else find_bgp_rr(node_as,topology)
 
-  # If we don't have route reflectors, or if the current node is a route
-  # reflector, we need BGP sessions to all other nodes in the same AS
-  if not(rrlist) or node.bgp.get("rr",None):
-    for name,n in topology.nodes.items():
-      if "bgp" in n:
-        if n.bgp.get("as") == node.bgp.get("as") and n.name != node.name:
-          n_intf = get_remote_ibgp_endpoint(n)
-          neighbor_data = bgp_neighbor(n,n_intf,'ibgp',sessions,get_neighbor_rr(n))
-          if not neighbor_data is None:
-            if 'loopback' in node:
-              neighbor_data._source_intf = node.loopback
-            node.bgp.neighbors.append(neighbor_data)
-            has_ibgp = True
-
-  #
-  # The node is not a route reflector, and we have a non-empty RR list
-  # We need BGP sessions with the route reflectors
+  if is_rr or not rrlist:                         # If the current node is RR or we have a full mesh
+    ibgp_ngb_list = [                             # ... we need IBGP sessions to all nodes in the AS
+      ngb for ngb in topology.nodes.values()      # ... but while building the node list
+        if ngb.name != node.name and              # ... skip current node
+           ngb.get('bgp.as',None) == node_as]     # ... and everyone not in the current AS (or not running BGP)
   else:
-    for n in rrlist:
-      if n.name != node.name:
-        n_intf = get_remote_ibgp_endpoint(n)
-        neighbor_data = bgp_neighbor(n,n_intf,'ibgp',sessions,get_neighbor_rr(n))
-        if not neighbor_data is None:
-          if 'loopback' in node:
-            neighbor_data._source_intf = node.loopback
-          node.bgp.neighbors.append(neighbor_data)
-          has_ibgp = True
+    ibgp_ngb_list = rrlist
 
-  if not has_ibgp:
+  for n in ibgp_ngb_list:
+    n_intf = get_remote_ibgp_endpoint(n)
+    neighbor_data = bgp_neighbor(n,n_intf,'ibgp',sessions,get_neighbor_rr(n))
+    if not neighbor_data is None:
+      if 'loopback' in node:
+        neighbor_data._source_intf = node.loopback
+      if bgp_nhs:
+        neighbor_data.next_hop_self = True
+      if is_rr and not 'rr' in neighbor_data:
+        neighbor_data.rr_client = True
+      node.bgp.neighbors.append(neighbor_data)
+
+  if not ibgp_ngb_list:
     return
 
   # Do we have to warn the user that IBGP sessions work better with IGP?
@@ -387,6 +381,9 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
       ebgp_data = bgp_neighbor(neighbor,ngb_ifdata,session_type,sessions,extra_data)
       if not ebgp_data is None:
         ebgp_data['as'] = neighbor_local_as
+        if session_type == 'localas_ibgp':
+          ebgp_data.rr_client = True
+          ebgp_data.next_hop_self = 'all'
         if intf_vrf :                                 # VRF neighbor
           if node.vrfs[l.vrf].bgp is False:           # Is BGP disabled for this VRF?
             continue                                  # ... yeah, move on
