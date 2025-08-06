@@ -39,7 +39,7 @@ def macvrf_unique_rd_for_vlan_bundle(node: Box, topology: Box) -> None:
   for vname,vdata in node.vrfs.items():
     if vdata.get('evpn.bundle'):
       # in that case we need to generate a new RD for the mac-vrf (cannot be the same of L3 VRF)
-      free_vrf_idx = vrf.get_next_vrf_id(vrf.get_rd_as_number(node, topology))
+      free_vrf_idx = vrf.get_next_vrf_id(str(vrf.get_rd_as_number(node, topology)))
       vdata._junos_l2vrf_rd = free_vrf_idx[1]
 
 class Junos_switch(_JUNOS):
