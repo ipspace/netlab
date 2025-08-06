@@ -387,13 +387,14 @@ See also [](caveats-junos).
 
 _netlab_ can use *default-switch* or MAC VRF EVPN configuration on a vJunos-switch. It uses MAC VRF EVPN configuration unless you set the **evpn.\_junos\_default\_macvrf** variable to *True*.
 
-MAC VRF EVPN configuration (using VLAN-based EVPN service) works well with most other EVPN implementations. However, it uses a separate MAC VRF for every VLAN, and as we're not creating the VLAN subinterfaces, we have to assign physical interfaces to MAC VRFs. It's thus impossible to use an EVPN-enabled VLAN in a VLAN trunk.
+MAC VRF EVPN configuration (using VLAN-based or VLAN-aware EVPN service) works well with most other EVPN implementations. However, it uses a separate MAC VRF for every VLAN, and as we're not creating the VLAN subinterfaces, we have to assign physical interfaces to MAC VRFs. It's thus impossible to use an EVPN-enabled VLAN in a VLAN trunk.
 
-The VLAN-aware EVPN configuration (using the `switch-options` of the default routing instance) has other drawbacks and limitations:
+The *default macvrf* VLAN-aware EVPN configuration (using the `switch-options` of the default routing instance) has other drawbacks and limitations:
 
 * All EVPN routes are announced with the same RD (configured under `switch-options`). A default route target is configured under `switch-options` but is then overwritten for each VNI under the `protocol evpn` configuration.
 * You cannot use multiple import/export RT. The *first* import RT is used on the configuration templates as the VNI RT.
-* VLAN-aware EVPN service might not work with devices from other vendors using VLAN-based EVPN service. For example, the VLAN-aware EVPN service works with FRRouting but not with Arista EOS.
+* VLAN-aware EVPN service might not work with devices from other vendors using VLAN-based EVPN service.
+* Every JunOS *routing-instance* (i.e., L3 VRF and MAC-VRF) must use a unique *Route Distinguisher*. For this reason, when using EVPN with VLAN Bundles, a new RD is allocated for every MAC-VRF.
 
 (caveats-vjunos-router)=
 ## vJunos-Router in Containerlab
