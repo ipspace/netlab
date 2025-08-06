@@ -93,6 +93,7 @@ vlans {
 {%   endfor %}
 }
 
+{# vlan-based MAC VRF #}
 routing-instances {
 {%   for vname,v in vlans.items() if v.evpn.evi is defined and v.evpn.bundle is not defined %}
   vlan_{{ vname }} {
@@ -122,6 +123,53 @@ routing-instances {
         }
       }
     }
+    protocols {
+      evpn {
+        encapsulation vxlan;
+        default-gateway no-gateway-community;
+        extended-vni-list all;
+      }
+    }
+  }
+{%   endfor %}
+}
+{% endif %}
+
+{# vlan-aware MAC VRF #}
+{% if vrfs is defined %}
+routing-instances {
+{%   for n,v in vrfs.items() if v.evpn.vlans is defined %}
+  vlan_aware_{{ n }} {
+    instance-type mac-vrf;
+    service-type vlan-aware;
+    vtep-source-interface {{ vxlan.vtep_interface }};
+    route-distinguisher {{ v._junos_l2vrf_rd }};
+{%     for dir in ['import', 'export'] %}
+{%       set tlist_len = v[dir]|default([])|length %}
+{%       if tlist_len == 1 %}
+    vrf-target {{ dir }} target:{{ v[dir][0] }};
+{%       elif tlist_len > 1 %}
+{#  use targets already defined by vrf #}
+    vrf-{{ dir }} vrf-{{ n }}-rt-{{ dir }};
+{%       endif %}
+{%     endfor %}
+{# map vlans and access interfaces #}
+{%     for vname in v.evpn.vlans %}
+{%       for intf in interfaces if intf.vlan.access|default('') == vname %}
+    interface {{ intf.ifname }};
+{%       endfor %}
+    vlans {
+      {{ vname }} {
+        vlan-id {{ vlans[vname].id }};
+{%   if vlans[vname].mode == 'irb' %}
+        l3-interface irb.{{ vlans[vname].id }};
+{%   endif %}
+        vxlan {
+          vni {{ vlans[vname].vni }};
+        }
+      }
+    }
+{%     endfor %}
     protocols {
       evpn {
         encapsulation vxlan;
