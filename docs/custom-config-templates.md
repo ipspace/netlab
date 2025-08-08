@@ -1,7 +1,7 @@
 (custom-config)=
 # Custom Configuration Templates
 
-You can build complex labs with functionality that is [not yet part of *netlab*](netlab-customize) with the custom configuration templates that can be deployed with **[netlab config](netlab-config)**, **[netlab initial](netlab-initial)** or **[netlab up](netlab-up)** commands. The custom configuration templates could be stored in the lab topology directory, the user's defaults directory, or within the _netlab_ package. See [](dev-find-custom) for more details.
+You can build complex labs with functionality that is [not yet part of *netlab*](netlab-customize) with the custom configuration templates that can be deployed with **[netlab config](netlab-config)**, **[netlab initial](netlab-initial)**, or **[netlab up](netlab-up)** commands. The custom configuration templates could be stored in the lab topology directory, the user's defaults directory, or within the _netlab_ package. See [](dev-find-custom) for more details. You can also use the **[files](plugin-files)** plugin to [store the configuration templates in the lab topology](plugin-files-configlets).
 
 For a one-off deployment of custom configuration templates, use the **netlab config** command. To make the deployment of custom configuration template(s) part of a regular lab initialization process[^CC], use **config** group- or node attribute that can specify either a single template or a list of templates.
 
@@ -52,6 +52,8 @@ Node **config** attributes are merged with the group **‌config** attributes. [
 ```{warning}
 _netlab_ sorts custom configuration templates in the order specified in groups and nodes to speed up their deployment. Specifying `custom: [ a,b ]` on one node and `custom: [ b,a ]` on another will result in a sorting loop and a fatal error.
 ```
+
+Finally, the **files** plugin [allows you to use **config.inline** node— or group parameter](plugin-files-node-config) and store the configuration changes directly in the lab topology.
 
 (custom-config-groups)=
 ## Custom Configuration Templates in Hierarchical Groups
@@ -124,6 +126,10 @@ The following configuration templates would be applied to individual nodes in th
 | d    | g2a, g2b (from g2)                              |
 | e    | g2a, g2b (from g2 via g3), g3 (from g3), -g1 is ignored, e (from e) |
 | f    | none (it's not a member of any group)           |
+
+```{tip}
+With the **files** plugin, you can use the [**config.inline** group parameter](plugin-files-node-config) to apply a configuration change to a group of lab devices.
+```
 
 (custom-config-multivendor)=
 ## Multi-Vendor and Device-Specific Templates

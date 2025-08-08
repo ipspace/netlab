@@ -61,6 +61,7 @@ The files specified in the **files** attribute are created just before the outpu
 * The files specified in the **‌files** list will be removed during the `netlab down --cleanup` process, even when they existed before the `netlab up` was executed.
 ```
 
+(plugin-files-configlets)=
 ## Creating Custom Configuration Templates
 
 The **configlets** dictionary can be used to create custom configuration templates. Its contents are automatically converted to [elements of the **files** list](plugin-files-create), but provide a more intuitive way of specifying the templates.
@@ -126,6 +127,7 @@ configlets:
           description Management interface
 ```
 
+(plugin-files-node-config)=
 ## Inline Node/Group Configuration Templates
 
 The **files** plugin allows you to specify the contents of custom configuration templates directly in the node- or group **config** attribute.
@@ -171,6 +173,7 @@ nodes:
 Always use the YAML *literal ‌block scalar header* (`|`) for the custom configuration content; otherwise, the whole content will be folded into a single line.
 ```
 
+(plugin-files-validation-config)=
 ## Inline Configuration Changes in Validation Tests
 
 Once the **files** plugin is activated, the validation tests can use the **config.inline** attribute to specify the changes that should be made to the device configuration directly in the validation test, for example:
