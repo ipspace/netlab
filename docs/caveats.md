@@ -21,6 +21,7 @@
 * cEOS MPLS data plane was introduced in release 4.32.1F.
 * Arista cEOS disables OSPFv2 on broadcast container stub interfaces (implemented as _dummy_ interfaces). _netlab_ automatically changes the OSPF network type for Arista cEOS dummy interfaces to **point-to-point**.
 * Arista EOS virtual machines and containers use [proprietary control-plane messages to indicate the loss of Ethernet line protocol](https://blog.ipspace.net/2025/03/arista-spooky-action-distance/). Set the **netlab_phy_control** node variable to *False* to disable this functionality.
+* Reloading device configurations that contain `no lldp transmit` or `no lldp receive` configuration command randomly fails due to an Arista EOS bug ([more details](https://github.com/ipspace/netlab/issues/2577)). Remove these commands from the saved device configurations before restarting the lab.
 
 The default name of the management interface is **Management0** on vEOS and **Management1** on cEOS. If you'd like to change the management interface name on cEOS:
 
