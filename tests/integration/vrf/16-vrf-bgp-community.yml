@@ -8,6 +8,8 @@ message: |
 
 defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
 
+plugin: [ files ]
+
 groups:
   probes:
     members: [ x1, x2 ]
@@ -25,11 +27,25 @@ nodes:
   dut:
     bgp.as: 65000
     module: [ vrf, bgp ]
+
   x1:
     id: 10
     bgp.as: 65010
     bgp.originate: 172.0.42.0/24
-    config: [ frr-community ]
+    config.inline: |
+      route-map setcomm permit 10
+      set community 65000:1 additive
+      set extcommunity bandwidth 100
+      set large-community 65000:0:1 additive
+      exit
+      !
+      router bgp {{ bgp.as }}
+      !
+      address-family ipv4 unicast
+      {% for n in bgp.neighbors %}
+        neighbor {{ n.ipv4 }} route-map setcomm out
+      {% endfor %}
+
   x2:
     id: 11
     bgp.as: 65011

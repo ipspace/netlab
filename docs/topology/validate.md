@@ -40,9 +40,10 @@ You can also set these test string attributes to prettify the test results:
 
 The **show**, **exec**, and **valid** parameters can be strings or dictionaries. If you're building a lab that will be used with a single platform, specify them as strings; if you want to execute tests on different platforms, specify a dictionary of commands and Python validation snippets. The values of these parameters can be Jinja2 expressions (see [](validate-multi-platform) for more details).
 
-The **config** parameter can be a string (the template to deploy) or a dictionary with two parameters:
+The **config** parameter can be a string (the template to deploy) or a dictionary with these parameters:
 
-* **template**: the template to deploy
+* **template**: the template to deploy, or
+* **inline**: the [configuration change that has to be applied](plugin-files-validation-config) (needs **[files](plugin-files)** plugin to work)
 * **variable**: a dictionary of variable values that will be passed to the Ansible playbook as external variables. You can use these variables to influence the functionality of the configuration template ([example](validate-config))
 
 **Notes:**

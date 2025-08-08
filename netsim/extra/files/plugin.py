@@ -63,17 +63,72 @@ def restructure_configlets(topology: Box) -> None:
   topology.pop('configlets',None)                     # We no longer need this
 
 """
+Change 'validation._test_.config.inline' validation elements into templates
+"""
+def inline_validation_templates(topology: Box) -> bool:
+  found_inline = False
+  if not isinstance(topology.validate,Box):           # We're in pre-validation phase, so we can't trust anything
+    return False
+  for t_name,test in topology.validate.items():       # Iterate over tests
+    i_value = test.get('config.inline',None)          # Does this test have 'config.inline' element?
+    if i_value is None:                               # Nope, we're good
+      continue
+    v_template = f'_v_{t_name}'                       # Configlet name is derived from test name
+    topology.configlets[v_template] = i_value         # Save the template value, the next phase will take it from here
+    test.config.pop('inline',None)                    # Pop the 'inline' element from test config attribute
+    test.config.template = v_template                 # ... and replace it with a configlet template
+    found_inline = True
+
+  return found_inline
+
+"""
+Process 'config.inline' node- or group objects
+"""
+def process_inline_config(topology: Box, o_type: str) -> None:
+  if o_type not in topology:                          # The object type is not in current topology
+    return                                            # --> nothing to do
+  if not isinstance(topology[o_type],Box):            # ... or it's not a Box. Let someone else deal with that
+    return
+
+  for o_name,o_data in topology[o_type].items():      # We got something, iterate over it
+    if not isinstance(o_data,Box):                    # The data is not a Box, nothing to do, move on
+      continue
+    if not 'config' in o_data:                        # The object does not have a 'config' element, move on
+      continue
+    if not isinstance(o_data.config,Box):             # Or maybe it's a traditional 'config' element
+      continue
+    c_templates = []                                  # The fun part starts ;)
+    c_inline = '_' + o_type[0] + '_' + o_name         # Build the name for 'inline' template
+    for c_n,c_v in o_data.config.items():             # Now change the config keys/values into templates
+      if c_n == 'inline':                             # Change 'inline' into object-specific template name
+        c_n = c_inline
+      if c_n in topology.configlets:
+        log.error(
+          f'{o_type} {o_name} tries to define config template {c_n} that already exists in configlets',
+          category=log.IncorrectAttr,
+          module='files')                             # Overlap in naming
+      else:
+        topology.configlets[c_n] = c_v                # Add node- or group-defined configlet
+      c_templates.append(c_n)                         # ... and remember what templates the node/group uses
+
+    o_data.config = c_templates                       # Finally, make node/group config element a list of templates
+
+"""
 Restructure the 'files' and 'configlets'
 """
 def init(topology: Box) -> None:
   output_hook = False
+  process_inline_config(topology,'nodes')
+  process_inline_config(topology,'groups')
+  if 'validate' in topology:
+    if inline_validation_templates(topology):
+      output_hook = True
   if 'files' in topology:
     restructure_files(topology)
     output_hook = True
   if 'configlets' in topology:
     restructure_configlets(topology)
     output_hook = True
-
   if output_hook:
     append_to_list(topology.defaults.netlab.create,'output','files')
 
