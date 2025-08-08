@@ -181,6 +181,7 @@ def build_ibgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
   node_as  = node.bgp['as']                       # Set up variables that will come handy, starting with node AS
   is_rr    = node.bgp.get("rr",None)              # Is this node an RR?
   bgp_nhs  = node.bgp.get("next_hop_self",None)   # Do we have to set next hop on IBGP sessions?
+  has_ibgp = False                                # Assume we have no IBGP sessions (yet)
   rrlist = [] if is_rr else find_bgp_rr(node_as,topology)
 
   if is_rr or not rrlist:                         # If the current node is RR or we have a full mesh
@@ -202,8 +203,9 @@ def build_ibgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
       if is_rr and not 'rr' in neighbor_data:
         neighbor_data.rr_client = True
       node.bgp.neighbors.append(neighbor_data)
+      has_ibgp = True
 
-  if not ibgp_ngb_list:
+  if not has_ibgp:
     return
 
   # Do we have to warn the user that IBGP sessions work better with IGP?
