@@ -182,14 +182,23 @@ def validate_dictionary(
   # Option #1: Validate dictionary where every value is another type
   #
   if '_subtype' in data_type:
+    subtype = data_type._subtype
     for k,v in data.items():                      # Iterate over all dictionary values
-      if isinstance(data_type._subtype,str) and data_type._subtype in attributes:
+      if isinstance(subtype,Box) and subtype.get('type',None) == 'error':
+        log.error(
+          f"Incorrect {data_name} attribute '{k}' in {parent_path}",
+          category=log.IncorrectAttr,
+          module=module,
+          hint=subtype.get('_err_hint',None),
+          more_hints=subtype.get('_err_msg',None))
+        OK = False
+      elif isinstance(data_type._subtype,str) and data_type._subtype in attributes:
         OK = validate_attributes(                 # User defined data type, do full recursive validation including namespaces and modules
           data=v,                                 # Call main validation routines with as many parameters as we can supply
           topology=topology,
           data_path=f'{parent_path}.{k}',
-          data_name=f'{data_type._subtype}',
-          attr_list=[ data_type._subtype ],
+          data_name=f'{subtype}',
+          attr_list=[ subtype ],
           modules=enabled_modules,
           module=module,
           module_source=module_source,
@@ -198,7 +207,7 @@ def validate_dictionary(
         OK = validate_item(                       # ... call the simpler item validation routine
           parent=data,
           key=k,
-          data_type=data_type._subtype,
+          data_type=subtype,
           parent_path=parent_path,
           data_name=data_name,
           module=module,
@@ -217,17 +226,30 @@ def validate_dictionary(
     return return_value                           # ... there's nothing further to validate, return what we accumulated so far
 
   for k in list(data.keys()):                     # Iterate over the elements
-    if not k in data_type._keys:                  # ... and report elements with invalid name
+    key_type = data_type._keys.get(k,None)
+    is_error = isinstance(key_type,Box) and key_type.get('type',None) == 'error'
+    if not k in data_type._keys or is_error:       # ... and report elements with invalid name
+      #
+      # We can get here because the dictionary key is not a valid attribute according to our schema
+      # or because we stumbled upon an attribute with an explicit 'error' type
+      #
+      # In the latter case, we'll try to grab _err_hint and _err_msg attributes and use them
+      # (when present) in the error message for further clarification. Please note that we're
+      # using a different set of type attributes, to allow a plugin to replace the 'error' type
+      # with something useful without inheriting the hints from the 'error' type
+      #
       log.error(
         f"Incorrect {data_name} attribute '{k}' in {parent_path}",
-        log.IncorrectAttr,
-        module)
+        category=log.IncorrectAttr,
+        module=module,
+        hint=key_type.get('_err_hint',None) if is_error else None,
+        more_hints=key_type.get('_err_msg',None) if is_error else None)
       return_value = False
     else:                                         # For valid elements, validate them
       validate_item(
         parent=data,
         key=k,
-        data_type=data_type._keys[k],
+        data_type=key_type,
         parent_path=parent_path,
         data_name=data_name,
         module=module,

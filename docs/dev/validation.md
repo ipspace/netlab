@@ -161,6 +161,37 @@ You can also specify additional hints and help messages with an attribute:
 | **_help** | Help displayed when a value does not match the data type.<br>Overrides the built-in help message |
 | **_hint** | Additional hint(s) displayed together with an error message.<br>Use this attribute to explain what could be wrong |
 
+(validation-error-type)=
+### Error Data Type
+
+Sometimes you want to display a very specific error message when encountering an invalid attribute. For example, the **config.inline** validation test attribute only works when the **[files](plugin-files)** plugin is enabled. You can use the **error** data type to catch such scenarios, for example:
+
+```
+_v_entry:                   # Validation entry
+  config:
+    inline:
+      type: error
+      _err_msg: Enable "files" plugin to use the "inline" configuration template
+    _alt_types: [ str ]
+```
+
+You can also use the **error** data type as a **_subtype** definition when an attribute can have a dictionary value only under very specific conditions. For example, the node **config** attribute is usually a list but could be a dictionary if the lab topology uses the **files** plugin:
+
+```
+node:
+  config: 
+    type: dict
+    _subtype:
+      type: error
+      _err_msg: Enable "files" plugin to use the inline node/group configuration template(s)
+    _alt_types: [ list ]
+```
+
+The **error** data type can have two additional attributes:
+
+* **_err_msg**: The text to display as a hint to the user
+* **_err_hint**: A hint from the **defaults.hints** dictionary to display as an explanation of the error
+
 (validation-definition-examples)=
 ### Data Type Definition Examples
 
