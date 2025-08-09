@@ -47,8 +47,10 @@ VLANs are supported on these platforms:
 | Mikrotik RouterOS 6   | ✅  | ✅  | ✅  | ✅ | ✅ |
 | Mikrotik RouterOS 7   | ✅  | ✅  | ✅  | ✅ | ✅ |
 | Nokia SR Linux        | ✅  | ✅  | ✅   | ✅ | ✅ |
-| Nokia SR OS           | ✅  | ✅  | ✅   | ✅ | ✅ |
+| Nokia SR OS[^SROS]    | ✅  | ✅  | ✅   | ✅ | ✅ |
 | VyOS                  | ✅  | ✅  | ✅   | ✅ | ✅ |
+
+[^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
 
 ```{tip}
 See [VLAN Integration Tests Results](https://release.netlab.tools/_html/coverage.vlan) for more details.

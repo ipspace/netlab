@@ -33,7 +33,7 @@ The following table describes high-level per-platform support of generic routing
 | Linux              | ❌  | ❌  | ❌  | ❌  | ✅ |
 | Junos              | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Nokia SR Linux     |  ✅ |  ✅ [❗](caveats-srlinux) |
-| Nokia SR OS        |  ✅ |
+| Nokia SR OS[^SROS] |  ✅ |
 | OpenBSD            | ❌  | ❌  | ❌  | ❌  | ✅ |
 | VyOS               |  ✅ |  ✅ | ✅ |  ✅  |
 
@@ -42,6 +42,8 @@ See [Routing Integration Tests Results](https://release.netlab.tools/_html/cover
 ```
 
 [^18v]: Includes Cisco IOSv, Cisco IOSvL2, Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
+
+[^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
 
 (generic-routing-policies)=
 ## Routing Policies
@@ -126,7 +128,7 @@ You can use these routing policy **set** parameters on devices supported by the 
 | Junos               | ✅ | ✅ | ✅ | ❌  | ✅ |
 | FRR                 | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Nokia SR Linux      | ❌  | ✅ | ✅ | ❌  | ❌  |
-| Nokia SR OS         | ❌  | ✅ | ✅ | ❌  | ❌  |
+| Nokia SR OS[^SROS]  | ❌  | ✅ | ✅ | ❌  | ❌  |
 | VyOS                | ✅ | ✅ | ✅ | ❌  | ✅ |
 
 The **set.community** attribute can be used to set these BGP communities on supported devices:

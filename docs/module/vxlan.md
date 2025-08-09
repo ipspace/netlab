@@ -35,9 +35,11 @@ The following table describes the per-platform support of individual VXLAN featu
 | Dell OS10          | ✅  | ✅  |  ❌  |
 | FRR                | ✅  | ✅  | ✅  |
 | Nokia SR Linux     | ✅ [❗](caveats-srlinux)  |  ❌  |  ❌  |
-| Nokia SR OS        | ✅  |  ❌  |  ❌  |
+| Nokia SR OS[^SROS] | ✅  |  ❌  |  ❌  |
 | vJunos-switch      | ✅  | ✅  |  ❌ |
 | VyOS               | ✅  | ✅  | ✅  |
+
+[^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
 
 ```{tip}
 See [VXLAN Integration Tests Results](https://release.netlab.tools/_html/coverage.vxlan) for more details.

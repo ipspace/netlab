@@ -33,10 +33,12 @@ The following table describes the per-platform support of individual MPLS label 
 | Mikrotik RouterOS 6   |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Mikrotik RouterOS 7   |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 | Nokia SR Linux        |   [❗](caveats-srlinux)  |   ❌    |   ✅  |   ❌  |   ❌  |
-| Nokia SR OS           |   ✅  |   ✅    |   ✅  |   ❌  |   ❌  |
+| Nokia SR OS[^SROS]    |   ✅  |   ✅    |   ✅  |   ❌  |   ❌  |
 | VyOS                  |   ✅  |   ✅    |   ❌  |   ❌  |   ❌  |
 
 [^xe]: Cisco Catalyst 8000v, Cisco IOSv, Cisco IOSvL2, Cisco CSR 1000v, Cisco IOS on Linux (IOL) and IOL layer-2 image.
+
+[^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
 
 **Notes:**
 * LDP is enabled on all non-VRF intra-AS interfaces with IPv4 addresses.
@@ -50,7 +52,7 @@ The following table describes the per-platform support of individual MPLS label 
 | Cisco IOSv/IOS XE[^xe] |  ✅   |    ✅   |    ❌    |
 | Mikrotik RouterOS 6   |   ❌   |    ❌   |    ❌    |
 | Mikrotik RouterOS 7   |   ❌   |    ❌   |    ❌    |
-| Nokia SR OS           |   ✅   |    ✅   |    ❌    |
+| Nokia SR OS[^SROS]    |   ✅   |    ✅   |    ❌    |
 | VyOS                  |   ❌   |    ❌   |    ❌    |
 
 **Notes**
@@ -70,7 +72,7 @@ The following table describes the per-platform support of individual MPLS label 
 | Juniper vPTX          |   ✅  |   ✅  |
 | Mikrotik RouterOS 6   |   ✅  |   ❌  |
 | Mikrotik RouterOS 7   |   ✅  |   ❌  |
-| Nokia SR OS           |   ✅  |   ✅  |
+| Nokia SR OS[^SROS]    |   ✅  |   ✅  |
 | VyOS                  |   ✅  |   ✅  |
 
 **Notes**
@@ -83,7 +85,7 @@ The following table describes the per-platform support of individual MPLS label 
 | ----------------------| :-: |
 | Arista EOS            | ✅  |
 | Cisco IOSv/IOS XE[^xe] | ✅ |
-| Nokia SR OS           | ✅  |
+| Nokia SR OS[^SROS]    | ✅  |
 
 **Notes**
 

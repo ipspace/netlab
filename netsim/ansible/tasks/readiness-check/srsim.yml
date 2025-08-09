@@ -1,0 +1,25 @@
+---
+- name: Common SR-OS checks
+  include_tasks: sros.yml
+
+- vars:
+    hw_config: "{{ lookup('template','srsim-hardware.j2')|from_yaml }}"
+    ansible_connection: nokia.grpc.gnmi
+    ansible_gnmi_encoding: JSON
+    ansible_port: "{{ sros_grpc_port }}"
+  tags: [ print_action, always ]
+  block:
+  - name: Update SR-SIM hardware configuration
+    nokia.grpc.gnmi_config:
+      update: "{{ hw_config.updates }}"
+  - name: Get port {{ netlab_srsim_first_port }} status
+    nokia.grpc.gnmi_get:
+      type: STATE
+      prefix: /state
+      path:
+      - port[port-id={{ netlab_srsim_first_port }}]
+    register: result
+    until: >-
+      'ghost' not in result.output
+    retries: 10
+    delay: 3

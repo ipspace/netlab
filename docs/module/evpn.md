@@ -31,9 +31,11 @@ The following table describes the per-platform support of individual EVPN/VXLAN 
 | Dell OS 10         | ✅  |  ❌  | ✅  | ✅  |
 | FRR                | ✅  |  ❌  | ✅  | ✅  |
 | Nokia SR Linux     | ✅  |  ✅  | ✅  | ✅  |
-| Nokia SR OS        | ✅  |  ❌  | ✅  | ✅  |
+| Nokia SR OS[^SROS] | ✅  |  ❌  | ✅  | ✅  |
 | vJunos-switch [❗](caveats-vjunos-switch) | ✅  |  ❌  | ✅  | ✅  |
 | VyOS               | ✅  |  ❌  | ✅  | ✅  |
+
+[^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
 
 The following table describes the per-platform support of individual EVPN/MPLS features:
 
@@ -65,7 +67,7 @@ EVPN module supports IBGP- and EBGP-based EVPN:
 | Dell OS 10 [❗](caveats-os10) | ✅  | ✅  | ✅  | ✅  |
 | FRR                | ✅  | ✅  | ✅  | ✅  |
 | Nokia SR Linux     | ✅  | ✅  | ✅  | ✅  |
-| Nokia SR OS        | ✅  | ✅  | ✅  |  ❌  |
+| Nokia SR OS[^SROS] | ✅  | ✅  | ✅  |  ❌  |
 | vJunos-switch      | ✅  | ✅  |  ❌  |  ❌  |
 | VyOS               | ✅  | ✅  |  ❌  | ✅  |
 
@@ -84,7 +86,7 @@ With additional nerd knobs ([more details](evpn-weird-designs)), it's possible t
 | Dell OS 10         | ✅  | ❌   |
 | FRR                | ✅  | ✅  |
 | Nokia SR Linux     | ✅  | ✅  |
-| Nokia SR OS        | ✅  | ✅  |
+| Nokia SR OS[^SROS] | ✅  | ✅  |
 | vJunos-switch      | ✅  | ✅   |
 | VyOS               | ✅  | ❌   |
 
@@ -100,7 +102,7 @@ Most EVPN/VXLAN implementations support only IPv4 VXLAN transport; some can run 
 | Dell OS 10         | ✅  | ❌   |
 | FRR                | ✅  | ✅  |
 | Nokia SR Linux     | ✅  | ❌   |
-| Nokia SR OS        | ✅  | ❌   |
+| Nokia SR OS[^SROS] | ✅  | ❌   |
 | vJunos-switch      | ✅  | ❌   |
 | VyOS               | ✅  | ❌ [❗](caveats-vyos)   |
 

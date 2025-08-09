@@ -448,26 +448,51 @@ See [](generic-linux-devices)
 
 (caveats-sros)=
 ## Nokia SR OS
+
 * Only supported on top of *Containerlab*, using VRNetlab (VM running inside container)
-* Requires the latest `nokia.grpc` Ansible Galaxy collection and its dependencies to be installed from the git repo. You can also use the **netlab install grpc** command to install them
+* With the launch of the Nokia SR SIM, we stopped running integration tests for the SR-OS VM. The last release with which we ran a full suite of integration tests for the SR-OS VM was 25.07.
 
-```
-ansible-galaxy collection install git+https://github.com/nokia/ansible-networking-collections.git#/grpc/
-python3 -m pip install grpcio protobuf==3.20.1
-```
+Other caveats (shared with Nokia SR-SIM):
 
-* As of May 2024, the `nokia.grpc` collection crashes Ansible versions between 4.10.0 and 9.5.1. We recommend upgrading to Ansible release 9.5.1 (also included as part of **netlab install grpc** script):
+* We use the `nokia.grpc` Ansible Galaxy collection to configure SR-OS. The latest version of that collection has to be installed from the git repo:
+
+  ```
+  ansible-galaxy collection install git+https://github.com/nokia/ansible-networking-collections.git#/grpc/
+  python3 -m pip install grpcio protobuf==3.20.1
+  ```
+
+  You can also use the **netlab install grpc** command to install the `nokia.grpc` collection and prerequisite Python modules.
+* As of May 2024, the `nokia.grpc` collection crashes Ansible versions between 4.10.0 and 9.5.1. We recommend upgrading to Ansible release 9.5.1 or later (also included as part of the **netlab install grpc** script):
 
 ```
 sudo pip3 install --upgrade 'ansible>=9.5.1'
 ```
 
-Other caveats:
-
 * We implemented inter-VRF route leaking only for MPLS/VPN deployments.
 * The SR OS configuration templates do not support additional routing policies on routing protocol route imports
 * An SR OS interface cannot use an unnumbered IPv4 address in combination with IPv6 GUA
 * SR OS requires the IPv6 prefix configured on the global loopback interface to be a /128 prefix. _netlab_ automatically adjusts the **loopback.ipv6** prefix.
+
+(caveats-srsim)=
+## Nokia SR-SIM Container
+
+The Nokia Containerized Service Router Simulator (SR-SIM) uses environment variables to specify the emulated hardware (cards and MDAs), but also requires the same hardware to be specified in router configuration. A mismatch between the environment variables and router configuration results in *ghost* ports.
+
+The _netlab_ definition of **srsim** device uses SR-1 platform with two 12-port 100GE linecards, for a total of 24 dataplane interfaces.
+
+```{warning}
+_netlab_ supports *‌integrated* (single container), but not *‌distributed* (multiple containers) or *‌grouped* (a group of containers) [SR-SIM deployment](https://containerlab.dev/manual/kinds/sros/).
+```
+
+If you want to use a different hardware setup, you have to specify:
+
+* Desired platform in the **clab.kind** parameter
+* Desired linecards in the **clab.env** environment variables
+* Corresponding hardware configuration in the **netlab_srsim_hw** parameter.
+
+Use **netlab defaults devices.srsim** command to display the built-in hardware setup.
+
+See also [](caveats-sros) caveats for further details.
 
 (caveats-openbsd)=
 ## OpenBSD
