@@ -199,7 +199,7 @@ def build_ibgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
       if 'loopback' in node:
         neighbor_data._source_intf = node.loopback
       if bgp_nhs:
-        neighbor_data.next_hop_self = True
+        neighbor_data.next_hop_self = 'ebgp'
       if is_rr and not 'rr' in neighbor_data:
         neighbor_data.rr_client = True
       node.bgp.neighbors.append(neighbor_data)
@@ -385,6 +385,8 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
         ebgp_data['as'] = neighbor_local_as
         if session_type == 'localas_ibgp':
           ebgp_data.rr_client = True
+          ebgp_data.next_hop_self = 'all'
+        elif session_type == 'confed_ebgp':
           ebgp_data.next_hop_self = 'all'
         if intf_vrf :                                 # VRF neighbor
           if node.vrfs[l.vrf].bgp is False:           # Is BGP disabled for this VRF?
