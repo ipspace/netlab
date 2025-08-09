@@ -1,0 +1,49 @@
+---
+message: |
+  Use this topology to test the 'local_as' functionality on IBGP sessions. The
+  device under test uses local AS which is identical to remote AS, effectively
+  turning an EBGP session into an IBGP session. It should establish the BGP
+  sessions with X1 and X2, and propagate BGP prefixes between them.
+
+  The test also checks (as a warning) whether DUT propagates "real" IBGP routes
+  over local-as IBGP session. Failure to do that indicates that the next hop is
+  not set correctly, or that DUT is not working as a route reflector toward
+  local-as IBGP neighbor.
+
+module: [ bgp, ospf ]
+defaults.device: none
+
+groups:
+  probes:
+    members: [ x1, x2, x3, x4 ]
+  ebgp:
+    members: [ x1 ]
+    module: [ bgp ]
+
+defaults.bgp.as: 65000
+defaults.interfaces.mtu: 1500
+
+nodes:
+  dut:
+    bgp.originate: 172.42.42.0/24
+  x1:
+    bgp.as: 65100
+    loopback.ipv4: 172.42.1.1/24
+  x2:
+    bgp.as: 65101
+    loopback.ipv4: 172.42.2.1/24
+  x3:
+    bgp.originate: 172.42.3.0/24
+  x4:
+    bgp.as: 65101
+    loopback.ipv4: 172.42.4.1/24
+
+links:
+- dut:
+    bgp.local_as: 65002
+  x1:
+- dut:
+    bgp.local_as: 65101
+  x2:
+- dut-x3
+- x2-x4
