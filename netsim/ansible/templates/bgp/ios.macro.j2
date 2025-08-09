@@ -30,9 +30,15 @@
   neighbor {{ ip }} next-hop-self all
 {% endif %}
 {% if n.type in bgp.community|default({}) %}
-{%   for c_type in bgp.community[n.type] %}
+{%   set c_list = bgp.community[n.type] %}
+{#   Deal with IOS/XE regression to the 90s #}
+{%   if 'standard' in c_list and 'extended' in c_list %}
+  neighbor {{ ip }} send-community both
+{%   else %}
+{%     for c_type in c_list %}
   neighbor {{ ip }} send-community {{ c_type }}
-{%   endfor %}
+{%     endfor %}
+{%   endif %}
 {% endif %}
 {%- endmacro -%}
 {#
