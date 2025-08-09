@@ -18,9 +18,9 @@ groups:
   probes:
     device: frr
     provider: clab
-    members: [ x1, x2, x3 ]
+    members: [ x1, x2, x3, x4 ]
   ebgp:
-    members: [ x1, x2 ]
+    members: [ x1 ]
     module: [ bgp ]
 
 defaults.bgp.as: 65000
@@ -37,6 +37,9 @@ nodes:
     loopback.ipv4: 172.42.2.1/24
   x3:
     bgp.originate: 172.42.3.0/24
+  x4:
+    bgp.as: 65101
+    loopback.ipv4: 172.42.4.1/24
 
 links:
 - dut:
@@ -46,6 +49,7 @@ links:
     bgp.local_as: 65101
   x2:
 - dut-x3
+- x2-x4
 
 validate:
   ospf_adj_dut:
@@ -54,25 +58,33 @@ validate:
     nodes: [ x3 ]
     wait_msg: Waiting for OSPF adjacency process to complete
     plugin: ospf_neighbor(nodes.dut.ospf.router_id)
-  session:
+
+  bgp_dut:
     description: Check BGP sessions with DUT (wait up to 10 seconds)
     wait: ibgp_session
     wait_msg: Wait for BGP sessions to be established
     nodes: [ x1, x2, x3 ]
     plugin: bgp_neighbor(node.bgp.neighbors,'dut')
 
+  ibgp_x4:
+    description: Check IBGP sessions X2-X4
+    wait: ibgp_session
+    wait_msg: Wait for BGP sessions to be established
+    nodes: [ x2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'x4')
+
   prefix:
     description: Check whether DUT advertises the beacon prefix
     wait: bgp_scan_long
     wait_msg: Wait for BGP prefix origination and BGP convergence
-    nodes: [ x1, x2 ]
+    nodes: [ x1, x2, x3, x4 ]
     plugin: bgp_prefix('172.42.42.0/24')
 
   prop_ebgp:
     description: Check whether DUT propagates EBGP routes to IBGP
     wait: 3
     wait_msg: Wait for BGP convergence
-    nodes: [ x2 ]
+    nodes: [ x2, x3, x4 ]
     plugin: bgp_prefix('172.42.1.0/24')
 
   prop_ebgp_nh:
@@ -82,10 +94,17 @@ validate:
     nodes: [ x2 ]
     plugin: bgp_prefix('172.42.1.0/24',best=True)
 
-  prop_la_ibgp:
-    description: Check whether DUT propagates local-as IBGP routes to EBGP
+  prop_la_ebgp:
+    description: Check whether DUT propagates local-as IBGP routes to EBGP neighbors
     wait: 3
     nodes: [ x1 ]
+    plugin: bgp_prefix('172.42.2.0/24',best=True)
+
+  prop_la_ibgp:
+    description: Check whether DUT propagates local-as IBGP routes to real IBGP neighbors
+    wait: 3
+    nodes: [ x3 ]
+    level: warning
     plugin: bgp_prefix('172.42.2.0/24',best=True)
 
   prop_internal:
@@ -93,12 +112,19 @@ validate:
     level: warning
     wait: 3
     wait_msg: Wait for BGP convergence
-    nodes: [ x2 ]
+    nodes: [ x2, x4 ]
     plugin: bgp_prefix('172.42.3.0/24')
 
   nh_internal:
     description: Check whether DUT fixes the next hop of IBGP routes sent over IBGP local-as session
     level: warning
     wait_msg: Wait for BGP convergence
-    nodes: [ x2 ]
+    nodes: [ x2, x4 ]
     plugin: bgp_prefix('172.42.3.0/24',best=True)
+
+  prop_interas:
+    description: Check whether all routers receive a prefix from X4
+    wait: 3
+    nodes: [ x1, x2, x3 ]
+    plugin: bgp_prefix('172.42.4.0/24',best=True)
+    level: warning
