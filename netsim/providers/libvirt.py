@@ -16,7 +16,7 @@ import argparse
 from ..data import types,get_empty_box,get_box
 from ..utils import log,strings,linuxbridge
 from ..utils import files as _files
-from . import _Provider,validate_mgmt_ip
+from . import _Provider,validate_mgmt_ip,node_add_forwarded_ports,get_provider_forwarded_ports
 from ..augment import devices
 from ..augment.links import get_link_by_index
 from ..cli import is_dry_run,external_commands
@@ -291,6 +291,14 @@ class Libvirt(_Provider):
         l.type = 'lan'
         if not 'bridge' in l:
           l.bridge = "%s_%d" % (topology.name[0:10],l.linkindex)
+
+  """
+  Add default provider forwarded ports to node data
+  """
+  def augment_node_data(self, node: Box, topology: Box) -> None:
+    node_fp = get_provider_forwarded_ports(node,topology)
+    if node_fp:
+      node_add_forwarded_ports(node,node_fp,topology)
 
   def node_post_transform(self, node: Box, topology: Box) -> None:
     if node.get('_set_ifindex'):
