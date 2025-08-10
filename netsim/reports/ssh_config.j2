@@ -1,7 +1,8 @@
 {% set ssh_defaults = defaults.ssh|default({}) %}
 {% set hostname = ssh_defaults.hostname|default('netlab') %}
-{% set public_ip = ssh_defaults.publicip|default('127.0.0.1') %}
+{% set public_ip = ssh_defaults.publicip|default('') %}
 {% set netlab_path = ssh_defaults.netlabpath|default('netlab') %}
+{% set ssh_conn = ['paramiko','netconf','paramiko_ssh','network_cli'] %}
 #
 # This SSH configuration file allows you to connect to netlab devices running
 # on a remote server  straight from your workstation
@@ -11,26 +12,43 @@
 #
 # You can change the SSH parameters with these environment variables
 #
-# NETLAB_SSH_HOSTNAME         The hostname used for port forwarding (not implemented yet)
-# NETLAB_SSH_PUBLICIP         The IP address or hostname of the netlab server
+# NETLAB_SSH_HOSTNAME         The hostname of the netlab server
+# NETLAB_SSH_PUBLICIP         The IP address of the netlab server when the hostname is not resolvable
 # NETLAB_SSH_NETLABPATH       The path to 'netlab' command (if it's not in PATH)
 #
 Host {{ hostname }}
+  StrictHostKeyChecking off
+  UserKnownHostsFile /dev/null
+{% if public_ip %}
   HostName {{ public_ip }}
-{# for host in groups['fortios'] %}
-{%   set hv = hostvars[host] %}
-{%   if hv.get('provider') != 'clab' %}
-  LocalForward {{ 8000 + hv.id }} {{ hv.ansible_host }}:443
-{%   endif %}
-{% endfor #}
+{% endif %}
+{% for provider in defaults.providers.keys() %}
+{%   for n_name,n_data in nodes.items() if provider in n_data and 'ports' in n_data[provider] %}
+{%     for p_fwd in n_data[provider].ports %}
+{%       set p_data = p_fwd.split(':') %}
+  LocalForward {{ p_data[0] }} {{ n_data.ansible_host }}:{{ p_data[1] }}
+{%     endfor %}
+{%   endfor %}
+{% endfor %}
 
 {% for n_name,n_data in nodes.items() %}
 Host {{ n_name }}
-  HostName {{ public_ip }}
+  HostName {{ public_ip or hostname }}
   RequestTTY yes
   RemoteCommand {{ netlab_path }} connect -i {{ defaults.multilab.id|default('default') }} {{ n_name }}
   UserKnownHostsFile /dev/null
-  StrictHostKeyChecking no
+  StrictHostKeyChecking off
+  UserKnownHostsFile /dev/null
   LogLevel QUIET
+
+{% endfor %}
+{% for n_name,n_data in nodes.items() 
+     if n_data.ansible_connection in ssh_conn %}
+Host {{ n_name }}.ssh
+  HostName {{ n_data.ansible_host }}
+  User {{ n_data.ansible_user }}
+  ProxyJump {{ hostname }}
+  StrictHostKeyChecking off
+  UserKnownHostsFile /dev/null
 
 {% endfor %}
