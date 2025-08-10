@@ -211,9 +211,18 @@ You can change the IPv4 address of a device's management interface with the **mg
 (libvirt-port-forwarding)=
 ### Port Forwarding
 
-*netlab* supports *vagrant-libvirt* port forwarding -- mapping of TCP ports on VM management IP address to ports on the host. You can use port forwarding to access the lab devices via the host's external IP address without exposing the management network to the outside world.
+*netlab* supports *vagrant-libvirt* port forwarding -- SSH forwarding of TCP ports on the VM management IP address to ports on the host (see *vagrant-libvirt documentation* for more details). Thus, you can access the lab devices via the host's external IP address without exposing the management network to the outside world.
 
-Port forwarding is turned off by default and can be enabled by configuring the **defaults.providers.libvirt.forwarded** dictionary. Dictionary keys are TCP port names (`ssh`, `http`, `https`, or `netconf`), and dictionary values are the start values of host ports. *netlab* assigns a unique host port to every VM's forwarded port based on the start value and VM node ID.
+Port forwarding is turned off by default. It can be configured for a single node with the **libvirt.ports** node parameter -- a list of port mappings in the `host_port:vm_port` format. For example, the following topology maps the SSH port on node R1 to the host port 2001:
+
+```
+nodes:
+  r1:
+    libvirt.ports:
+    - 2001:22
+```
+
+Port forwarding can also be enabled for all libvirt nodes with the **defaults.providers.libvirt.forwarded** dictionary. Dictionary keys are TCP port names (`ssh`, `http`, `https`, or `netconf`), and dictionary values are the start values of host ports. *netlab* assigns a unique host port to every VM's forwarded port based on the start value and VM node ID, and adds the port mapping to the node **libvirt.ports** list.
 
 For example, when given the following topology...
 

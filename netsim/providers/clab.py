@@ -7,7 +7,7 @@ from box import Box
 import pathlib
 import argparse
 
-from . import _Provider,get_forwarded_ports,validate_mgmt_ip
+from . import _Provider,get_provider_forwarded_ports,node_add_forwarded_ports,validate_mgmt_ip
 from ..utils import log, strings, linuxbridge
 from ..data import filemaps, get_empty_box, append_to_list
 from ..data.types import must_be_dict
@@ -86,16 +86,6 @@ def destroy_ovs_bridge( brname: str ) -> bool:
   return True
 
 GENERATED_CONFIG_PATH = "clab_files"
-
-def add_forwarded_ports(node: Box, fplist: list) -> None:
-  if not fplist:
-    return
-  
-  node.clab.ports = node.clab.ports or []                       # Make sure the list of forwarded ports is a list
-  for port_map in fplist:                                       # Iterate over forwarded port mappings
-    port_map_string = f'{port_map[0]}:{port_map[1]}'            # Build the containerlab-compatible map entry
-    if not port_map_string in node.clab.ports:                  # ... and add it to the list of forwarded ports
-      node.clab.ports.append(port_map_string)                   # ... if the user didn't do it manually
 
 '''
 normalize_clab_filemaps: convert clab templates and file binds into host:target lists
@@ -176,9 +166,9 @@ class Containerlab(_Provider):
   
   def augment_node_data(self, node: Box, topology: Box) -> None:
     node.hostname = self.get_node_name(node.name,topology)
-    node_fp = get_forwarded_ports(node,topology)
+    node_fp = get_provider_forwarded_ports(node,topology)
     if node_fp:
-      add_forwarded_ports(node,node_fp)
+      node_add_forwarded_ports(node,node_fp,topology)
 
   def node_post_transform(self, node: Box, topology: Box) -> None:
     add_daemon_filemaps(node,topology)

@@ -17,7 +17,7 @@ from box import Box
 
 from ..utils.callback import Callback
 from ..augment import devices,links
-from ..data import get_box,get_empty_box,filemaps
+from ..data import get_box,get_empty_box,append_to_list,filemaps
 from ..utils import files as _files
 from ..utils import templates,log,strings
 from ..outputs.ansible import get_host_addresses
@@ -364,9 +364,9 @@ def select_topology(topology: Box, provider: str) -> Box:
   return topology
 
 """
-get_forwarded_ports -- build a list of forwarded ports for the specified node
+get_forwarded_ports -- build a list of default provider forwarded ports for the specified node
 """
-def get_forwarded_ports(node: Box, topology: Box) -> list:
+def get_provider_forwarded_ports(node: Box, topology: Box) -> list:
   p = devices.get_provider(node,topology.defaults)
   fmap = topology.defaults.providers[p].get('forwarded',{})     # Provider-specific forwarded ports
   if not fmap:                                                  # No forwarded ports?
@@ -381,6 +381,15 @@ def get_forwarded_ports(node: Box, topology: Box) -> list:
     node_fp.append([ fstart + node.id, pmap[fp]])               # Append [host,device] port mapping
 
   return node_fp
+
+def node_add_forwarded_ports(node: Box, fplist: list, topology: Box) -> None:
+  if not fplist:
+    return
+
+  p = devices.get_provider(node,topology.defaults)
+  for port_map in fplist:                                       # Iterate over forwarded port mappings
+    port_map_string = f'{port_map[0]}:{port_map[1]}'            # Build the provider-compatible map entry
+    append_to_list(node[p],'ports',port_map_string)             # ... and add it to the list of forwarded ports
 
 """
 validate_images -- check the images used by individual nodes against provider image repo
