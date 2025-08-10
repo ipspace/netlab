@@ -176,12 +176,12 @@ def fs_cleanup(filelist: typing.List[str], verbose: bool = False) -> None:
       except Exception as ex:                             # Finally, report an error if we cannot remove the file
         log.fatal(f"Cannot remove {fname}: {ex}")
 
-# Common topology loader (used by create and down)
+# Common topology loader (used by create)
 
 def load_topology(args: typing.Union[argparse.Namespace,Box]) -> Box:
   log.set_logging_flags(args)
   relative_name = 'test' in args and args.test and 'errors' in args.test
-  topology = _read.load(args.topology.name,args.defaults,relative_topo_name=relative_name)
+  topology = _read.load(args.topology,args.defaults,relative_topo_name=relative_name)
 
   if args.settings or args.device or args.provider or args.plugin:
     topology.nodes = augment.nodes.create_node_dict(topology.nodes)
@@ -268,25 +268,6 @@ def check_modified_source(snapshot: str, topology: typing.Optional[Box] = None) 
       flag='snapshot.modified',
       more_data=f'after the snapshot {snapshot} has been created',
       hint='recreate')
-
-# Load snapshot or topology -- used by 'netlab initial'
-#
-def load_snapshot_or_topology(args: typing.Union[argparse.Namespace,Box]) -> typing.Optional[Box]:
-  log.set_logging_flags(args)
-  if args.device or args.provider or args.settings:     # If we have -d, -p or -s flag
-    if not args.topology:                               # ... then the user wants to use the topology file
-      args.topology = 'topology.yml'                    # ... so let's set the default value if needed
-
-  topology = None
-  if args.topology:
-    topology = load_topology(args)
-    augment.main.transform(topology)
-    log.exit_on_error()
-  else:
-    args.snapshot = args.snapshot or 'netlab.snapshot.yml'
-    return load_snapshot(args)
-
-  return topology
 
 # get_message: get action-specific message from topology file
 #

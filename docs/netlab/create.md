@@ -50,7 +50,7 @@ usage: netlab create [-h] [--log] [-q] [-v] [--defaults DEFAULTS] [-d DEVICE]
 Create provider- and automation configuration files
 
 positional arguments:
-  topology              Topology file (default: topology.yml)
+  topology              Topology file or URL (default: topology.yml)
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -80,6 +80,12 @@ For a complete list of output formats please consult the documentation
 ```
 
 For more details on topology file format, please read the [lab topology overview](../topology-overview.md) and [reference documentation](../topology-reference.md).
+
+```{tip}
+You can specify the lab topology with a URL. The contents from the specified URL will be downloaded, saved into `downloaded.yml`, and used as the lab topology.
+
+The lab topology downloaded from a URL must be self-contained. Any external files it needs must be embedded in the lab topology with the **[‌files](plugin-files)** plugin.
+```
 
 (netlab-create-output-formats)=
 ## Output Formats
