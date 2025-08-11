@@ -1047,19 +1047,20 @@ filter_by_test: select only tests specified in arguments
 def filter_by_tests(args: argparse.Namespace, topology: Box) -> None:
   if not args.tests:
     return
-
+  tests_to_execute = {}
   for t in args.tests:
-    find_test = [ v_entry for v_entry in topology.validate if v_entry.name == t ]
+    find_test = { v_entry.name: v_entry for v_entry in topology.validate if re.match(t,v_entry.name) }
     if not find_test:
       log.error(
-        f'Invalid test name {t}, use "netlab validate --list" to list test names',
+        f'Invalid test name or regex expression {t}, use "netlab validate --list" to list test names',
         category=log.IncorrectValue,
         module='validation')
+    tests_to_execute.update(find_test)
 
   if log.pending_errors():
     return
 
-  topology.validate = [ v_entry for v_entry in topology.validate if v_entry.name in args.tests ]
+  topology.validate = tests_to_execute.values()
 
 '''
 filter_by_nodes: select only tests executed on specified node

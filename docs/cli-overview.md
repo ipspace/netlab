@@ -31,3 +31,6 @@ The following programs, scripts and Ansible playbooks are included with *netlab*
 
 **netlab exec**
 : Use Ansible inventory to connect to one or more lab devices using the inventory names and executes an arbitrary command on them. Device IP address (**ansible_host**) and username/passwords are retrieved from Ansible inventory. Ideal when you use centralized Vagrant or Clab environments and want to execute commands on the devices. [More details...](netlab/exec.md)
+
+**netlab validate**
+: Run validation tests included with the topology. A subset of tests can be selected by using one or more test names, or a regular expression [More details...](topology/validate.md)
