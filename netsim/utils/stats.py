@@ -166,6 +166,7 @@ def update_topo_stats(topology: Box) -> None:
   max_vals = get_empty_box()
   add_counter(stats,f'provider.{topology.provider}.use')            # Count the use of primary provider
   p_list = [ topology.provider ]
+  plugins = topology.get('plugin',[])                               # Get the list of plugins used in this topology
 
   for ndata in topology.nodes.values():
     n_provider = devices.get_provider(ndata,topology.defaults)      # For node-specific providers
@@ -180,9 +181,21 @@ def update_topo_stats(topology: Box) -> None:
     for m in ndata.get('module',[]):
       add_counter(stats,f'device.{ndata.device}.module.{m}')        # Count device/module statistics
       add_counter(max_vals,f'module.{m}.use')                       # ... and max number of devices using a module
+  
+    for c in ndata.get('config',[]):
+      if c not in plugins:
+        add_counter(stats,f'device.{ndata.device}.custom')          # Someone is using a custom config template
+      else:
+        c = c.replace('.','_')
+        add_counter(stats,f'device.{ndata.device}.plugin.{c}')      # Count device/plugin statistics
+        add_counter(max_vals,f'plugin.{c}.use')                     # ... and max devices using a plugin
 
   for m in topology.get('module',[]):                               # Count overall module use
     add_counter(stats,f'module.{m}.use')
+
+  for p in plugins:                                                 # Count overall plugin use
+    p = p.replace('.','_')
+    add_counter(stats,f'plugin.{p}.use')
 
   update_max_vals(stats,max_vals)                                   # Move max values to statistics
   write_stats(stats)                                                # ... and update statistics
