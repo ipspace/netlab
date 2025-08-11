@@ -76,6 +76,7 @@ A dictionary describing an individual link contains *node names* and *additional
 * **name** -- link name (used for interface description)
 * **pool** -- addressing pool used to assign a prefix to this link. The **pool** attribute is ignored on links with a **prefix** attribute.
 * **prefix** -- [prefix (or a set of prefixes)](links-static-addressing) used on the link. Setting **prefix** to *false* will give you a link without any IP configuration[^NOIP]
+* **ra** -- IPv6 Router Advertisement parameters ([more details](links-ra))
 * **role** -- The link *role* influences the behavior of several configuration modules. Typical link roles include *stub*, *passive*, and *external*. Please read [](module/routing.md) for more details.
 * **type** -- [link type](links-types) (lan, p2p, stub, loopback, tunnel)
 
@@ -346,10 +347,24 @@ links:
 You can also use the **unnumbered** link attribute to get a single unnumbered link. Using an unnumbered pool is recommended when testing network-wide addressing changes.
 ```
 
+(links-ra)=
+## IPv6 Router Advertisement Parameters
+
+_netlab_ configures [routers](node-role-router) to send IPv6 Router Advertisement messages and [hosts](node-role-host) to listen to them and use them to generate an IPv6 default route. Router Advertisement messages are disabled on [bridges](node-role-bridge). The default router advertisement interface is (when possible) set to a few seconds to speed up the IPv6 addressing of attached hosts using SLAAC.
+
+You can use the **ra** link- or interface dictionary to control the contents of the Router Advertisement messages on [devices supporting fine-grained **ra** control](platform-initial-addresses):
+
+* **ra.disable** -- do not send RA messages when set to True
+* **ra.slaac** -- set *autonomous* flag on the link prefix when set to True or missing. Set **ra.slaac** to False to disable SLAAC on attached hosts.
+* **ra.onlink** -- set *on-link* flag on the link prefix when set to True or missing. Set **ra.onlink** to False to disable direct host-to-host communication.
+* **ra.dhcp** -- set *other configuration* flag when set to **other** or *managed configuration* flag when set to **all**. No DHCPv6-related flag is set by default.
+
+While you can set **ra** parameters on individual interfaces (node-to-link attachments), it's best to set them as link parameters to have a consistent set of parameters applied to all attached routers.
+
 (links-mtu)=
 ## Changing MTU
 
-All devices supported by *netlab* are assumed to use ancient default layer-3 MTU value of 1500 bytes. Most VM-based network devices already use that default; container-based devices have their MTU set to 1500 through system settings.
+All devices supported by *netlab* are assumed to use the ancient default layer-3 MTU value of 1500 bytes. Most VM-based network devices already use that default; container-based devices have their MTU set to 1500 through system settings.
 
 Please note that the **mtu** specified by *netlab* is always the layer-3 (IPv4 or IPv6) MTU. The peculiarities of individual device configuration commands are transparently (to the end-user) handled in the device configuration templates.
 

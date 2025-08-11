@@ -70,9 +70,27 @@ interface {{ l.ifname }}
     Set interface IPv6 addresses
 #}
 {% if 'ipv6' in l %}
-{%   if role != 'host' %}
+{%   if role == 'router' %}
+{%     if l.ra.disable|default(false) is true %}
+ ipv6 nd ra disabled all
+{%     else %}
  ipv6 nd ra interval 5
-{%   else %}
+{%       if 'ra' in l and l.ipv6 is string %}
+{%         if l.ra.slaac|default(true) is false %}
+ ipv6 nd prefix {{ l.ipv6|ipaddr(0) }} no-autoconfig
+{%         endif %}
+{%         if l.ra.onlink|default(true) is false %}
+ ipv6 nd prefix {{ l.ipv6|ipaddr(0) }} no-onlink
+{%         endif %}
+{%       endif %}
+{%       if l.ra.dhcp|default(false) == 'all' %}
+ ipv6 nd managed-config-flag
+{%       endif %}
+{%       if l.ra.dhcp|default(false) == 'other' %}
+ ipv6 nd other-config-flag
+{%       endif %}
+{%     endif %}
+{%   elif role == 'host' %}
  ipv6 nd ra rx accept default-route
 {%   endif %}
 {%   if l.ipv6 is sameas True %}

@@ -1,0 +1,128 @@
+---
+message:
+  This scenario tests IPv6 RA behavior
+
+defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
+
+addressing:
+  loopback:
+    ipv4: False
+    ipv6: 2001:db8:0::/48
+  lan:
+    ipv4: False
+    ipv6: 2001:db8:1::/48
+
+groups:
+  _auto_create: True
+  hosts:
+    members: [ h0, h1, h2, h3, h4 ]
+    device: frr
+    role: host
+    provider: clab
+
+nodes:
+  dut:
+    module: []
+    id: 132
+    loopback: True
+  h4:
+    device: linux
+    provider: libvirt
+  dhsrv:
+    module: [ dhcp ]
+    device: dnsmasq
+    dhcp.server: true
+    provider: clab
+
+links:
+- name: Regular link (default RA behavior)
+  dut:
+  h0:
+    ipv6: True
+- name: no RA
+  dut:
+  h1:
+    ipv6: True
+  ra.disable: True              # No RA on this link -> no SLAAC, no default route
+- name: No SLAAC
+  dut:
+  h2:
+    ipv6: True
+  ra.slaac: False               # No SLAAC on this link, default route should be present
+- name: No onlink
+  dut:
+  h3:
+    ipv6: True
+  ra.onlink: False              # The prefix should not be in the IPv6 routing table
+- name: DHCPv6 managed config
+  dut:
+  h4:
+    ipv6: dhcp
+  dhsrv:
+  ra.dhcp: all                  # The host should use DHCP to get an IPv6 address
+  ra.slaac: False
+
+# Expected results
+#
+# H0: SLAAC address, default route, prefix in routing table
+# H1: No SLAAC address, no default route, no prefix
+# H2: Default route, prefix, no SLAAC address
+# H3: Default route, SLAAC address, no prefix
+# H4: Default route, SLAAC address, prefix, DHCPv6 address (maybe)
+
+validate:
+  ra:
+    description: Check RA-generated default route
+    wait: ra_send
+    wait_msg: Waiting for RA message to generate the default route
+    nodes: [ h0, h2, h3, h4 ]
+    plugin: default6()
+    stop_on_error: True
+  slaac:
+    description: Check for SLAAC IPv6 address
+    wait: ra_send
+    devices: [ linux ]
+    nodes: [ h0, h3, h4 ]
+    exec: ip addr show dev {{ interfaces[0].ifname }}
+    valid: >-
+      '2001:db8' in stdout
+  onlink:
+    description: Check for onlink prefix
+    wait: ra_send
+    devices: [ linux ]
+    nodes: [ h0, h2, h4 ]
+    exec: ip -6 route
+    valid: >-
+      '2001:db8' in stdout
+  dhcpv6:
+    description: Check for DHCPv6 IPv6 address
+    wait: ra_send
+    devices: [ linux ]
+    nodes: [ h4 ]
+    exec: ip addr show dev {{ interfaces[0].ifname }}
+    valid: >-
+      '2001:db8' in stdout and '/128' in stdout
+  w3:
+    description: Waiting a few seconds just in case...
+    wait: 3
+  no_slaac:
+    description: Check for lack of SLAAC address
+    devices: [ linux ]
+    nodes: [ h1, h2 ]
+    exec: ip addr show dev {{ interfaces[0].ifname }}
+    valid: >-
+      '2001:db8' not in stdout
+  no_link:
+    description: Check for lack of onlink prefix
+    devices: [ linux ]
+    nodes: [ h1, h3 ]
+    exec: ip -6 route
+    valid: >-
+      '2001:db8' not in stdout
+  no_def:
+    description: Check for lack of IPv6 default route
+    devices: [ linux ]
+    nodes: [ h1 ]
+    exec: ip -6 route
+    valid: >-
+      'default' not in stdout

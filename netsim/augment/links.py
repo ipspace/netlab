@@ -1103,6 +1103,86 @@ def copy_link_gateway(link: Box, nodes: Box) -> None:
         intf.gateway[af] = link.gateway[af]
 
 """
+process_link_ra -- copy link IPv6 RA parameters to node-on-link (future interface) data
+
+The link.ra attributes are copied only into the router nodes that support RA
+(features.initial.ra). _netlab_ creates a warning message if a link has an 'ra'
+dictionary but no routers attached, or if no routers attached to the link supports
+'ra' attribute.
+
+Furthermore, when there are no link/intf RA settings, all routers supporting 'ra'
+attributes get the default RA settings when there are hosts attached to the link,
+hopefully simplifying the configuration templates.
+
+TODO: If a router is a DHCP relay and supports 'ra', 'ra.dhcp' should be set to 'all'
+"""
+
+def process_link_ra(link: Box, nodes: Box, defaults: Box) -> None:
+  rtr_list  = []
+  host_list = []
+
+  for intf in link.interfaces:                              # First figure out what we're dealing with
+    role = nodes[intf.node].get('role','router')
+    if role == 'router':
+      rtr_list.append(intf)
+      if 'ra' in intf and 'ipv6' not in intf:
+        log.warning(
+          text='Applying RA attributes to an interface without an IPv6 address makes no sense',
+          more_data='Node {intf.node} link {link._linkname}',
+          module='links',
+          flag='ra_no_ipv6')
+      continue
+    elif role == 'host':
+      host_list.append(intf)
+    if 'ra' in intf:
+      log.warning(
+        text='Applying RA attributes to a device that is not a router makes no sense',
+        more_data='Node {intf.node} link {link._linkname}',
+        module='links',
+        flag='ra_not_router')
+
+  if 'ra' in link and not rtr_list:                         # Link RA attribute with no hosts attached
+    log.warning(
+      text='Cannot use link IPv6 RA attributes on link {link._linkname} with no routers',
+      module='links',flag='ra_useless')
+    return
+
+  if 'ra' not in link and not link.get('prefix.ipv6',None): # Processing RAs makes sense only if
+    return                                                  # the link contains RA attribute(s) or uses IPv6
+
+  if 'ra' not in link and not host_list:                    # No link RA attributes, no attached hosts
+    return                                                  # ... there's nothing for us to do
+
+  if not rtr_list:                                          # No hosts, no routers... what are we doing here?
+    return
+
+  ra_supported = False                                      # Does at least one router support RA attributes?
+  link_ra = link.get('ra',{})
+  for intf in rtr_list:                                     # Now iterate over routers attached to the link
+    n_data = nodes[intf.node]
+    d_features = devices.get_device_features(n_data,defaults)
+    if not d_features.initial.ra:                           # The router does not support the RA attributes
+      if 'ra' in intf:
+        log.error(
+          f'We did not implement configurable IPv6 RA parameters for {n_data.device} yet',
+          category=log.IncorrectAttr,
+          module='links',
+          more_data='Node {intf.node}, link {link._linkname}')
+      continue
+    if 'ra' in intf or link_ra:
+      intf.ra = link_ra + intf.ra                           # Merge link attributes with interface attributes
+    elif host_list:
+      intf.ra.slaac = True
+    ra_supported = True
+
+  if link_ra and not ra_supported:                          # At least one node on the link supports RA
+    log.warning(
+      text='None of the routers connected to link {link._linkname} supports netlab IPv6 RA attributes',
+      module='links',flag='ra_unsupported')
+
+  return
+
+"""
 Set node.af flags to indicate that the node has IPv4 and/or IPv6 address family configured on its interfaces
 """
 def set_node_af(nodes: Box) -> None:
@@ -1250,6 +1330,7 @@ def transform(link_list: typing.Optional[Box], defaults: Box, nodes: Box, pools:
       link_default_pools.append('lan')
     assign_link_prefix(link,link_default_pools,pools,nodes,link._linkname)
     copy_link_gateway(link,nodes)
+    process_link_ra(link,nodes,defaults)
     assign_interface_addresses(link,pools,nodes,defaults)
     create_node_interfaces(link,pools,nodes,defaults=defaults)
 
