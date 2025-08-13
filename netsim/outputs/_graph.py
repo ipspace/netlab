@@ -6,7 +6,7 @@ from box import Box
 
 from ..data import get_box,get_empty_box
 from ..data.types import must_be_list
-from ..utils import log
+from ..utils import log,routing as _routing
 
 SHARED_GRAPH_ATTRIBUTES: Box                      # Graph attributes shared between all graph output modules
 
@@ -169,7 +169,7 @@ def bgp_sessions(graph: Box, topology: Box, settings: Box, g_type: str, rr_sessi
   for n_name,n_data in topology.nodes.items():
     if 'bgp' not in n_data:
       continue
-    for neighbor in n_data.bgp.get('neighbors',[]):
+    for neighbor in _routing.neighbors(n_data,vrf=True):
       if neighbor.name < n_name:
         continue
 
