@@ -194,8 +194,10 @@ def graph_topology(topology: Box, fname: str, settings: Box,g_format: typing.Opt
 
 def graph_bgp(topology: Box, fname: str, settings: Box,g_format: typing.Optional[list]) -> bool:
   rr_session = settings.get('rr_sessions',False)
-  if g_format is not None and len(g_format) > 1:
-    rr_session = g_format[1] == 'rr'
+  g_format = g_format or []
+  for kw in g_format[1:]:
+    if kw == 'rr':
+      rr_session = True
 
   graph = bgp_graph(topology,settings,'graph',rr_sessions=rr_session)
   if graph is None:
