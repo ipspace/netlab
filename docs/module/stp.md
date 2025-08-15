@@ -12,8 +12,8 @@ The following table describes per-platform support of individual STP features:
 | Operating system   | STP | MSTP | RSTP | Per-VLAN<br>RSTP | Enable<br>per port |
 | ------------------ |:---:|:---:|:---:|:---:|:---:|
 | Arista EOS[^EOS]   | ✅  | ✅  | ✅  | ✅ |  ✅ |
-| Cisco IOL L2^[IOLL2]   | ✅  | ✅  | ✅  | ✅ |  ✅ |
-| Cisco IOSv L2^[IOLL2]   | ✅  | ✅  | ✅  | ✅ |  ✅ |
+| Cisco IOL L2[^IOLL2]   | ✅  | ✅  | ✅  | ✅ |  ✅ |
+| Cisco IOSv L2[^IOLL2]   | ✅  | ✅  | ✅  | ✅ |  ✅ |
 | Aruba AOS-CX[^AOSCX] | ❗  | ✅  | ❌  | ✅ |  ✅ |
 | Cumulus Linux 4.x[^CL] | ✅  |  ❌  | ✅  | ❌   |  ✅ |
 | Cumulus 5.x (NVUE)[^CL] | ✅  |  ❌  | ✅  | ❌   |  ✅ |
