@@ -157,7 +157,7 @@ Additionally, you might have to execute `sudo update-crypto-policies --set LEGAC
 (caveats-iol)=
 ## Cisco IOS on Linux (IOL) and IOL Layer-2 Image
 
-* The Cisco IOL and IOL L2 images work only as containers created with Roman Dodin's fork of [vrnetlab](https://github.com/hellt/vrnetlab/).
+* The Cisco IOL and IOL L2 images work only as containers created with Roman Dodin's fork of [vrnetlab](https://github.com/srl-labs/vrnetlab).
 * You need Containerlab 0.59.0 or greater to run these images.
 * You cannot use VLANs 1002 through 1005 with the Cisco IOL layer-2 image
 * Cisco IOL layer-2 image cannot configure tagged VLAN 1 in a trunk. Internal VLAN 1002 is used as a fake native VLAN on interfaces that have tagged VLAN 1 in a trunk.
@@ -378,7 +378,7 @@ See also [](caveats-junos).
 (caveats-vjunos-switch)=
 ## vJunos-Switch in Containerlab
 
-* You can run Juniper vJunos-switch as a container packaged by Roman Dodin's fork of [vrnetlab](https://github.com/hellt/vrnetlab/). See [_containerlab_ documentation](https://containerlab.dev/manual/kinds/vr-vjunosswitch/) for further details.
+* You can run Juniper vJunos-switch as a container packaged by Roman Dodin's fork of [vrnetlab](https://github.com/srl-labs/vrnetlab). See [_containerlab_ documentation](https://containerlab.dev/manual/kinds/vr-vjunosswitch/) for further details.
 * Use a recent *vrnetlab* release that places the management interface into the **mgmt_junos** routing instance to avoid the conflict between [management IP subnet](clab-vrnetlab) `10.0.0.0/24` and **netlab** loopback addressing.
 * vJunos-switch VLAN configuration uses the so-called *Enterprise Style VLAN configuration* (which uses `family ethernet-switching` on unit 0 of interfaces).
 
@@ -400,7 +400,7 @@ The *default macvrf* VLAN-aware EVPN configuration (using the `switch-options` o
 (caveats-vjunos-router)=
 ## vJunos-Router in Containerlab
 
-* You can run Juniper vJunos-switch as a container packaged by Roman Dodin's fork of [vrnetlab](https://github.com/hellt/vrnetlab/). See [_containerlab_ documentation](https://containerlab.dev/manual/kinds/vr-vjunosswitch/) for further details.
+* You can run Juniper vJunos-switch as a container packaged by Roman Dodin's fork of [vrnetlab](https://github.com/srl-labs/vrnetlab). See [_containerlab_ documentation](https://containerlab.dev/manual/kinds/vr-vjunosswitch/) for further details.
 * Use a recent *vrnetlab* release that places the management interface into the **mgmt_junos** routing instance to avoid the conflict between [management IP subnet](clab-vrnetlab) `10.0.0.0/24` and **netlab** loopback addressing.
 
 See also [](caveats-junos).
