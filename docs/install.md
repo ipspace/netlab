@@ -32,7 +32,7 @@ When selecting the virtualization environment, consider the following:
 
 * We are developing and testing _netlab_ on Ubuntu. Ubuntu-based _netlab_ is also easiest to set up; the **[netlab install](netlab-install)** command does all the heavy lifting for you and installs all the prerequisite software (KVM, libvirt, Vagrant, Docker, containerlab, Ansible).
 * **Vagrant provider for libvirt** supports parallel VM provisioning, resulting in pretty fast lab creation. Unfortunately, most vendors don't offer virtual devices packaged as libvirt Vagrant boxes, so you must build your boxes manually. The **[netlab libvirt package](netlab-libvirt-package)** usually does 90% of the work for you.
-* **Containers** provisioned with containerlab start much faster than virtual machines, but you can get only a few network devices in native container format (Arista cEOS, FRR, Nokia SR Linux, VyOS). On the other hand, the [**vrnetlab** fork by Roman Dodin](https://github.com/hellt/vrnetlab) can build containers running virtual machines for numerous network devices.
+* **Containers** provisioned with containerlab start much faster than virtual machines, but you can get only a few network devices in native container format (Arista cEOS, FRR, Nokia SR Linux, VyOS). On the other hand, the [**vrnetlab** fork by Roman Dodin](https://github.com/srl-labs/vrnetlab) can build containers running virtual machines for numerous network devices.
 
 We no longer recommend or support **VirtualBox**-based solutions. It is no longer needed on Windows; Windows Subsystem for Linux is a much better option. Apple stopped shipping x86-based hardware years ago, and no major vendor is shipping ARM-based VM images for network devices.
 
@@ -55,7 +55,7 @@ Finally, you can use _netlab_ on Apple Silicon ([basics](https://blog.ipspace.ne
 ## Building Boxes and Containers
 
 * You might have to build Vagrant boxes for your network devices if you use [*libvirt* with KVM on a Linux system](labs/libvirt.md). *netlab* includes [box building recipes](libvirt-vagrant-boxes) for most supported platforms.
-* You can get a [few network devices as Docker containers](labs/clab.md#container-images) you can use with [*containerlab*](labs/clab.md). You can also build Docker containers from VM images with **[vrnetlab](https://github.com/hellt/vrnetlab)**.
+* You can get a [few network devices as Docker containers](labs/clab.md#container-images) you can use with [*containerlab*](labs/clab.md). You can also build Docker containers from VM images with **[vrnetlab](https://github.com/srl-labs/vrnetlab)**.
 
 (package)=
 ## Installing Python Package
