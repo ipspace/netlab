@@ -61,7 +61,7 @@ Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab creat
 * Nokia SR OS container image requires a license; see also [vrnetlab instructions](https://containerlab.srlinux.dev/manual/vrnetlab/).
 * Follow Cisco's documentation to install the IOS XRd container, making sure the container image name matches the one _netlab_ uses (alternatively, [change the default image name](default-device-image) for the IOS XRd container).
 
-You can also use [vrnetlab](https://github.com/vrnetlab/vrnetlab) to build VM-in-container images for Catalyst 8000v, Cisco CSR 1000v, Cisco IOSv, Cisco IOS on Linux (including layer-2 image), Nexus 9300v, IOS XR, Mikrotik RouterOS, Arista vEOS, Juniper vMX and vQFX, and a few other devices.
+You can also use [vrnetlab](https://github.com/srl-labs/vrnetlab) to build VM-in-container images for Catalyst 8000v, Cisco CSR 1000v, Cisco IOSv, Cisco IOS on Linux (including layer-2 image), Nexus 9300v, IOS XR, Mikrotik RouterOS, Arista vEOS, Juniper vMX and vQFX, and a few other devices.
 
 ```{warning}
 * You might have to change the default loopback address pool when using _vrnetlab_ images. See [](clab-vrnetlab) for details.
@@ -180,7 +180,7 @@ nodes:
 ```{warning}
 * _vrnetlab_ has to add another layer of abstraction and [spaghetti networking](vrnetlab-internal-net). If you can choose between a _vrnetlab_ container and a Vagrant box supported by _netlab_, use the Vagrant box.
 * Do not create device containers using the original _vrnetlab_ project. _netlab_ has been tested with the [vrnetlab fork](https://github.com/hellt/vrnetlab) supported by _containerlab_ (see [containerlab documentation](https://containerlab.dev/manual/vrnetlab/) for more details).
-* Finally, _vrnetlab_ is an independent open-source project. If it fails to produce a working container image ([example](https://github.com/hellt/vrnetlab/issues/231)), please contact them.
+* Finally, _vrnetlab_ is an independent open-source project. If it fails to produce a working container image ([example](https://github.com/srl-labs/vrnetlabissues/231)), please contact them.
 ```
 
 (vrnetlab-images)=
