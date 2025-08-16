@@ -31,9 +31,9 @@ The following table describes per-platform support of individual IS-IS features:
 | Operating system   | IS type | Circuit<br>type | IPv6<br>AF | Multi<br>topology |
 |------------------- | :-: | :-: | :-: | :-: |
 | Arista EOS         | ✅  | ✅  | ✅  | ✅  |
-| Cisco ASAv         | ✅  |  ❌  | ✅  | ✅  |
+| Cisco ASAv         | ✅  | ✅  | ✅  | ✅  |
 | Cisco IOS/XE[^18v] | ✅  | ✅  | ✅  | ✅  |
-| Cisco IOS XRv      | ✅  |  ❌  | ✅  | ✅  |
+| Cisco IOS XRv      | ✅  | ✅  | ✅  | ✅  |
 | Cisco Nexus OS     | ✅  | ✅  | ✅  | ✅  |
 | FRR                | ✅  | ✅  | ✅  | ✅  |
 | Junos[^Junos]      | ✅  | ✅  | ✅  | ✅  |
