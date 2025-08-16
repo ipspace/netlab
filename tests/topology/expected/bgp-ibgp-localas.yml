@@ -1,0 +1,566 @@
+bgp:
+  advertise_loopback: true
+  as: 65000
+  community:
+    ebgp:
+    - standard
+    ibgp:
+    - standard
+    - extended
+  next_hop_self: true
+groups:
+  as65000:
+    members:
+    - dut
+    - x3
+  as65100:
+    members:
+    - x1
+  as65101:
+    members:
+    - x2
+    - x4
+  ebgp:
+    members:
+    - x1
+    module:
+    - bgp
+  probes:
+    members:
+    - x1
+    - x2
+    - x3
+    - x4
+input:
+- topology/input/bgp-ibgp-localas.yml
+- package:topology-defaults.yml
+links:
+- _linkname: links[1]
+  interfaces:
+  - bgp:
+      local_as: 65002
+    ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.1/30
+    node: dut
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.2/30
+    node: x1
+  linkindex: 1
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.0/30
+  role: external
+  type: p2p
+- _linkname: links[2]
+  interfaces:
+  - bgp:
+      local_as: 65101
+    ifindex: 2
+    ifname: eth2
+    ipv4: 10.1.0.5/30
+    node: dut
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.6/30
+    node: x2
+  linkindex: 2
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.4/30
+  role: external
+  type: p2p
+- _linkname: links[3]
+  interfaces:
+  - ifindex: 3
+    ifname: eth3
+    ipv4: 10.1.0.9/30
+    node: dut
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.10/30
+    node: x3
+  linkindex: 3
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.8/30
+  type: p2p
+- _linkname: links[4]
+  interfaces:
+  - ifindex: 2
+    ifname: eth2
+    ipv4: 10.1.0.13/30
+    node: x2
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 10.1.0.14/30
+    node: x4
+  linkindex: 4
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.12/30
+  type: p2p
+message: 'Use this topology to test the ''local_as'' functionality on IBGP sessions.
+  The
+
+  device under test uses local AS which is identical to remote AS, effectively
+
+  turning an EBGP session into an IBGP session. It should establish the BGP
+
+  sessions with X1 and X2, and propagate BGP prefixes between them.
+
+
+  The test also checks (as a warning) whether DUT propagates "real" IBGP routes
+
+  over local-as IBGP session. Failure to do that indicates that the next hop is
+
+  not set correctly, or that DUT is not working as a route reflector toward
+
+  local-as IBGP neighbor.
+
+  '
+module:
+- ospf
+- bgp
+name: input
+nodes:
+  dut:
+    af:
+      ipv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65000
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+        localas_ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - _source_intf:
+          ifindex: 0
+          ifname: Loopback0
+          ipv4: 10.0.0.1/32
+          neighbors: []
+          type: loopback
+          virtual_interface: true
+        activate:
+          ipv4: true
+        as: 65000
+        ipv4: 10.0.0.4
+        name: x3
+        next_hop_self: all
+        type: ibgp
+      - activate:
+          ipv4: true
+        as: 65100
+        ifindex: 1
+        ipv4: 10.1.0.2
+        local_as: 65002
+        name: x1
+        type: ebgp
+      - activate:
+          ipv4: true
+        as: 65101
+        ifindex: 2
+        ipv4: 10.1.0.6
+        local_as: 65101
+        name: x2
+        next_hop_self: all
+        rr_client: true
+        type: localas_ibgp
+      next_hop_self: true
+      originate:
+      - 172.42.42.0/24
+      router_id: 10.0.0.1
+    box: none
+    device: none
+    id: 1
+    interfaces:
+    - bgp:
+        local_as: 65002
+      ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.1/30
+      linkindex: 1
+      mtu: 1500
+      name: dut -> x1
+      neighbors:
+      - ifname: eth1
+        ipv4: 10.1.0.2/30
+        node: x1
+      role: external
+      type: p2p
+    - bgp:
+        local_as: 65101
+      ifindex: 2
+      ifname: eth2
+      ipv4: 10.1.0.5/30
+      linkindex: 2
+      mtu: 1500
+      name: dut -> x2
+      neighbors:
+      - ifname: eth1
+        ipv4: 10.1.0.6/30
+        node: x2
+      role: external
+      type: p2p
+    - ifindex: 3
+      ifname: eth3
+      ipv4: 10.1.0.9/30
+      linkindex: 3
+      mtu: 1500
+      name: dut -> x3
+      neighbors:
+      - ifname: eth1
+        ipv4: 10.1.0.10/30
+        node: x3
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
+      type: p2p
+    loopback:
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.1/32
+      neighbors: []
+      ospf:
+        area: 0.0.0.0
+        passive: false
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.101
+      mac: 08:4f:a9:01:00:00
+    module:
+    - ospf
+    - bgp
+    mtu: 1500
+    name: dut
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.0
+      router_id: 10.0.0.1
+  x1:
+    af:
+      ipv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65100
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+        localas_ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - activate:
+          ipv4: true
+        as: 65002
+        ifindex: 1
+        ipv4: 10.1.0.1
+        name: dut
+        type: ebgp
+      next_hop_self: true
+      router_id: 172.42.1.1
+    box: none
+    device: none
+    id: 2
+    interfaces:
+    - ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.2/30
+      linkindex: 1
+      mtu: 1500
+      name: x1 -> dut
+      neighbors:
+      - bgp:
+          local_as: 65002
+        ifname: eth1
+        ipv4: 10.1.0.1/30
+        node: dut
+      role: external
+      type: p2p
+    loopback:
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 172.42.1.1/24
+      neighbors: []
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.102
+      mac: 08:4f:a9:02:00:00
+    module:
+    - bgp
+    mtu: 1500
+    name: x1
+  x2:
+    af:
+      ipv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65101
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+        localas_ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - _source_intf:
+          ifindex: 0
+          ifname: Loopback0
+          ipv4: 172.42.2.1/24
+          neighbors: []
+          type: loopback
+          virtual_interface: true
+        activate:
+          ipv4: true
+        as: 65101
+        ipv4: 172.42.4.1
+        name: x4
+        next_hop_self: all
+        type: ibgp
+      - activate:
+          ipv4: true
+        as: 65101
+        ifindex: 1
+        ipv4: 10.1.0.5
+        name: dut
+        next_hop_self: all
+        rr_client: true
+        type: localas_ibgp
+      next_hop_self: true
+      router_id: 172.42.2.1
+    box: none
+    device: none
+    id: 3
+    interfaces:
+    - ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.6/30
+      linkindex: 2
+      mtu: 1500
+      name: x2 -> dut
+      neighbors:
+      - bgp:
+          local_as: 65101
+        ifname: eth2
+        ipv4: 10.1.0.5/30
+        node: dut
+      role: external
+      type: p2p
+    - ifindex: 2
+      ifname: eth2
+      ipv4: 10.1.0.13/30
+      linkindex: 4
+      mtu: 1500
+      name: x2 -> x4
+      neighbors:
+      - ifname: eth1
+        ipv4: 10.1.0.14/30
+        node: x4
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
+      type: p2p
+    loopback:
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 172.42.2.1/24
+      neighbors: []
+      ospf:
+        area: 0.0.0.0
+        passive: false
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.103
+      mac: 08:4f:a9:03:00:00
+    module:
+    - ospf
+    - bgp
+    mtu: 1500
+    name: x2
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.0
+      router_id: 172.42.2.1
+  x3:
+    af:
+      ipv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65000
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+        localas_ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - _source_intf:
+          ifindex: 0
+          ifname: Loopback0
+          ipv4: 10.0.0.4/32
+          neighbors: []
+          type: loopback
+          virtual_interface: true
+        activate:
+          ipv4: true
+        as: 65000
+        ipv4: 10.0.0.1
+        name: dut
+        next_hop_self: ebgp
+        type: ibgp
+      next_hop_self: true
+      originate:
+      - 172.42.3.0/24
+      router_id: 10.0.0.4
+    box: none
+    device: none
+    id: 4
+    interfaces:
+    - ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.10/30
+      linkindex: 3
+      mtu: 1500
+      name: x3 -> dut
+      neighbors:
+      - ifname: eth3
+        ipv4: 10.1.0.9/30
+        node: dut
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
+      type: p2p
+    loopback:
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.4/32
+      neighbors: []
+      ospf:
+        area: 0.0.0.0
+        passive: false
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.104
+      mac: 08:4f:a9:04:00:00
+    module:
+    - ospf
+    - bgp
+    mtu: 1500
+    name: x3
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.0
+      router_id: 10.0.0.4
+  x4:
+    af:
+      ipv4: true
+    bgp:
+      advertise_loopback: true
+      as: 65101
+      community:
+        ebgp:
+        - standard
+        ibgp:
+        - standard
+        - extended
+        localas_ibgp:
+        - standard
+        - extended
+      ipv4: true
+      neighbors:
+      - _source_intf:
+          ifindex: 0
+          ifname: Loopback0
+          ipv4: 172.42.4.1/24
+          neighbors: []
+          type: loopback
+          virtual_interface: true
+        activate:
+          ipv4: true
+        as: 65101
+        ipv4: 172.42.2.1
+        name: x2
+        next_hop_self: ebgp
+        type: ibgp
+      next_hop_self: true
+      router_id: 172.42.4.1
+    box: none
+    device: none
+    id: 5
+    interfaces:
+    - ifindex: 1
+      ifname: eth1
+      ipv4: 10.1.0.14/30
+      linkindex: 4
+      mtu: 1500
+      name: x4 -> x2
+      neighbors:
+      - ifname: eth2
+        ipv4: 10.1.0.13/30
+        node: x2
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
+      type: p2p
+    loopback:
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 172.42.4.1/24
+      neighbors: []
+      ospf:
+        area: 0.0.0.0
+        passive: false
+      type: loopback
+      virtual_interface: true
+    mgmt:
+      ifname: eth0
+      ipv4: 192.168.121.105
+      mac: 08:4f:a9:05:00:00
+    module:
+    - ospf
+    - bgp
+    mtu: 1500
+    name: x4
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.0
+      router_id: 172.42.4.1
+ospf:
+  area: 0.0.0.0
+provider: libvirt

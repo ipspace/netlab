@@ -399,6 +399,33 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
           data.append_to_list(node.bgp,'neighbors',ebgp_data)
 
 """
+localas_ibgp_nhs_fixup: Set 'next_hop_self' to 'all' on IBGP neighbors if a router
+has at least one 'localas_ibgp' session. Also, a router with 'localas_ibgp' session
+SHOULD NOT be a route reflector.
+
+See https://blog.ipspace.net/2025/08/ibgp-local-as-rr/ (after August 29th 2025) for details
+"""
+def localas_ibgp_nhs_fixup(node: Box,topology: Box) -> None:
+  ngb_list = node.bgp.get('neighbors',None)
+  if not ngb_list:                                    # No neighbors, no worries ;)
+    return
+
+  localas_ibgp_list = [ ngb for ngb in ngb_list if ngb.type == 'localas_ibgp' ]
+  if not localas_ibgp_list:                           # No localas_ibgp sessions, no worries
+    return
+
+  for ngb in ngb_list:                                # We have at least one localas_ibgp session
+    if ngb.type != 'ibgp':                            # Now we have to iterate over all true IBGP neighbors
+      continue
+    ngb.next_hop_self = 'all'                         # And enable next-hop-self on all routes
+
+  if node.get('bgp.rr',None):
+    log.warning(
+      text='{node.name} has a local-as IBGP session and SHOULD NOT be a route reflector',
+      module='bgp',
+      flag='localas_ibgp_rr')
+
+"""
 activate_bgp_default_af -- activate default AF on IPv4 and/or IPv6 transport sessions
 
 Based on transport session(s) with a BGP neighbor, local BGP AF, and BGP AF configuration
@@ -468,6 +495,7 @@ def build_bgp_sessions(node: Box, topology: Box) -> None:
 
   build_ibgp_sessions(node,bgp_sessions,topology)
   build_ebgp_sessions(node,bgp_sessions,topology)
+  localas_ibgp_nhs_fixup(node,topology)
 
   # Calculate BGP address families
   #
