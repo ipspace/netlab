@@ -1,0 +1,24 @@
+{# description: IS-IS nodes and areas #}
+{% set node_list = nodes.values()|selectattr('isis','defined')|sort(attribute='isis.net') %}
+{% set rid_list = node_list|map(attribute='isis.router_id',default=False)|select|list %}
+{% set row_fmt = "| {0:15} | {2:>12} | {3:>14} | {4:9} |" %}
+{% set hdr_divider = "+-----------------+--------------+----------------+-----------+" %}
+{% set hdr_legend  = "| Node            | IS-IS area   | System ID      | IS Type   |" %}
+{% if rid_list %}
+{%   set row_fmt = "| {0:15} | {1:>15} | {2:>12} | {3:>14} | {4:9} |" %}
+{%   set hdr_divider = "+-----------------+-----------------+--------------+----------------+-----------+" %}
+{%   set hdr_legend  = "| Node            | Router ID       | IS-IS area   | System ID      | IS Type   |" %}
+{% endif %}
+{% for n in node_list if 'isis' in n %}
+{%   if loop.first %}
+{{     hdr_divider }}
+{{     hdr_legend }}
+{{     hdr_divider }}
+{%   endif %}
+{{   row_fmt.format(n.name,n.isis.router_id|default(''),n.isis.area,n.isis.system_id,n.isis.type|default('')) }}
+{%   if loop.last %}
+{{     hdr_divider }}
+{%   endif %}
+{% else %}
+Your network is not running IS-IS.
+{% endfor %}
