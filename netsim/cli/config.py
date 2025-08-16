@@ -12,7 +12,7 @@ from box import Box
 from . import parser_add_verbose,parser_lab_location,load_snapshot
 from .external_commands import set_ansible_flags
 from . import ansible
-from ..utils import log
+from ..utils import log, files as _files
 
 #
 # CLI parser for 'netlab config' command
@@ -35,14 +35,21 @@ def custom_config_parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespa
 
   return parser.parse_known_args(args)
 
+def path_exists(c_path: str) -> bool:
+  return bool(
+      os.path.isdir(c_path) or
+      os.path.exists(c_path+'.j2') or
+      glob.glob(c_path+'.*.j2'))
+
 def template_sanity_check(template: str, topology: Box, verbose: bool) -> bool:
+  if template.startswith("/"):                    # Absolute path specified as the template name?
+    return path_exists(template)
+
   for path in topology.defaults.paths.custom.dirs:
     c_path = path+"/"+template
     if verbose:
       print(f"Looking for {c_path}")
-    if os.path.isdir(c_path) or \
-       os.path.exists(c_path+'.j2') or \
-       glob.glob(c_path+'.*.j2'):
+    if path_exists(c_path):
       return True
 
   return False
@@ -55,6 +62,9 @@ def run(cli_args: typing.List[str]) -> None:
   topology = load_snapshot(args)
 
   if args.template != '-':
+    if args.template[0] in "~/.":                 # Change directory references into absolute path
+      args.template = str(_files.absolute_path(args.template))
+
     if template_sanity_check(args.template,topology,args.verbose):
       rest = ['-e','config='+args.template] + rest
     else:
