@@ -29,7 +29,7 @@ After configuring the lab with **netlab initial**, **netlab up** displays the [h
 
 ## Usage
 
-You can use `netlab up` to create configuration files and start the lab, or use `netlab up --snapshot` to start a previously created lab or restart a lab after a server reboot ([more details](netlab-up-restart)) using the transformed lab topology stored in `netlab.snapshot.yml` snapshot file.
+You can use `netlab up` to create configuration files and start the lab, or use `netlab up --snapshot` to start a previously created lab or restart a lab after a server reboot ([more details](netlab-up-restart)) using the transformed lab topology stored in the `netlab.snapshot.yml` snapshot file.
 
 ```text
 usage: netlab up [-h] [--log] [-v] [-q] [--defaults [DEFAULTS ...]] [-d DEVICE]
@@ -40,7 +40,7 @@ usage: netlab up [-h] [--log] [-v] [-q] [--defaults [DEFAULTS ...]] [-d DEVICE]
 Create configuration files, start a virtual lab, and configure it
 
 positional arguments:
-  topology              Topology file (default: topology.yml)
+  topology              Topology file or URL (default: topology.yml)
 
 options:
   -h, --help            show this help message and exit
@@ -65,6 +65,12 @@ options:
   --fast-config         Use fast device configuration (Ansible strategy = free)
   --snapshot [SNAPSHOT]
                         Use netlab snapshot file created by a previous lab run
+```
+
+```{tip}
+You can specify the lab topology with a URL. The contents from the specified URL will be downloaded, saved into `downloaded.yml`, and used as the lab topology.
+
+The lab topology downloaded from a URL must be self-contained. Any external files it needs must be embedded in the lab topology with the **[‌files](plugin-files)** plugin.
 ```
 
 ```{warning}
