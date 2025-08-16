@@ -68,15 +68,11 @@ router bgp {{ bgp.as }}
                   else False %}
 {%     if peer %}
   neighbor {{ peer }} activate
-{%       if n.type in ['ibgp','confed_ebgp'] and bgp.next_hop_self|default(False) %}
-  neighbor {{ peer }} next-hop-self
+{%       if n.next_hop_self|default(False) %}
+  neighbor {{ peer }} next-hop-self{% if n.next_hop_self == 'all' %} force{% endif +%}
 {%       endif %}
-{%       if n.type == 'ibgp' and bgp.rr|default('') and not n.rr|default('') %}
+{%       if n.rr_client|default(False) %}
   neighbor {{ peer }} route-reflector-client
-{%       endif %}
-{%       if n.type == 'localas_ibgp' %}
-  neighbor {{ peer }} route-reflector-client
-  neighbor {{ peer }} next-hop-self force
 {%       endif %}
 {%       if n.type in bgp.community|default({}) %}
   no neighbor {{ peer }} send-community all

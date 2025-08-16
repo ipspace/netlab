@@ -19,15 +19,11 @@
 {% macro neighbor_af(n,ip,bgp) %}
   neighbor {{ ip }} activate
   neighbor {{ ip }} advertisement-interval 0
-{% if n.type in ['ibgp','confed_ebgp'] and bgp.next_hop_self|default(False) %}
-  neighbor {{ ip }} next-hop-self
+{% if n.next_hop_self|default(False) %}
+  neighbor {{ ip }} next-hop-self{% if n.next_hop_self == 'all' %} all{% endif +%}
 {% endif %}
-{% if n.type == 'ibgp' and bgp.rr|default('') and not n.rr|default('') %}
+{% if n.rr_client|default(False) %}
   neighbor {{ ip }} route-reflector-client
-{% endif %}
-{% if n.type == 'localas_ibgp' %}
-  neighbor {{ ip }} route-reflector-client
-  neighbor {{ ip }} next-hop-self all
 {% endif %}
 {% if n.type in bgp.community|default({}) %}
 {%   set c_list = bgp.community[n.type] %}
