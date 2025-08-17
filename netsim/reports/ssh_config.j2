@@ -12,9 +12,17 @@
 #
 # You can change the SSH parameters with these environment variables
 #
-# NETLAB_SSH_HOSTNAME         The hostname of the netlab server
+# NETLAB_SSH_HOSTNAME         The desired hostname of the netlab server
 # NETLAB_SSH_PUBLICIP         The IP address of the netlab server when the hostname is not resolvable
 # NETLAB_SSH_NETLABPATH       The path to 'netlab' command (if it's not in PATH)
+#
+# Use the 'netlab_ssh_forward' node parameter to set up port forwarding, for example, to map the 'fw'
+# HTTPS (port 443) server into local port 8080, use the following setup:
+#
+# nodes:
+#   fw:
+#     netlab_ssh_forward:
+#     - 8080:443
 #
 Host {{ hostname }}
   StrictHostKeyChecking off
@@ -22,12 +30,10 @@ Host {{ hostname }}
 {% if public_ip %}
   HostName {{ public_ip }}
 {% endif %}
-{% for provider in defaults.providers.keys() %}
-{%   for n_name,n_data in nodes.items() if provider in n_data and 'ports' in n_data[provider] %}
-{%     for p_fwd in n_data[provider].ports %}
-{%       set p_data = p_fwd.split(':') %}
+{% for n_name,n_data in nodes.items() if 'netlab_ssh_forward' in n_data %}
+{%   for p_fwd in n_data.netlab_ssh_forward %}
+{%     set p_data = p_fwd.split(':') %}
   LocalForward {{ p_data[0] }} {{ n_data.ansible_host }}:{{ p_data[1] }}
-{%     endfor %}
 {%   endfor %}
 {% endfor %}
 
