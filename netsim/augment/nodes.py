@@ -20,7 +20,7 @@ from ..data.types import must_be_int,must_be_string,must_be_id,must_be_device
 from ..data import global_vars,is_true_int
 from ..modules._dataplane import extend_id_set,is_id_used,set_id_counter,get_next_id
 
-MAX_NODE_ID: typing.Final[int] = 250
+MAX_NODE_ID: int
 
 """
 Reserve a node ID, for example for gateway ID, return True if successful, False if duplicate
@@ -38,6 +38,9 @@ Or lists of strings into a unified dictionary structure
 """
 
 def create_node_dict(nodes: Box) -> Box:
+  global MAX_NODE_ID                                        # Max node ID has to be initialized early in the transformation
+  MAX_NODE_ID = global_vars.get_const('MAX_NODE_ID',250)
+
   if isinstance(nodes,dict):
     node_dict = nodes
   else:
@@ -469,6 +472,7 @@ Main node transformation code
 * set management IP and MAC addresses
 '''
 def transform(topology: Box, defaults: Box, pools: Box) -> None:
+  global MAX_NODE_ID
   for name,n in topology.nodes.items():
     if not must_be_int(n,'id',f'nodes.{name}',module='nodes',min_value=1,max_value=MAX_NODE_ID):
       continue
