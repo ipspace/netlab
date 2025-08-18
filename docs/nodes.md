@@ -183,7 +183,7 @@ After the initial cleanup, the *netlab* [topology transformation code](dev/trans
 * Device interfaces created as needed during the link transformation phase and collected in the **interfaces** list.
 * [](modules.md) document describes further processing done on configuration module parameters.
 
-[^id]: Node **id** must be an integer between 1 and 250. When using the standard management interface IP addressing (where management IPv4 addresses start with .100), the node **id** should not exceed 150.
+[^id]: Node **id** must be an integer between 1 and MAX_NODE_ID (default: 250). You can change the maximum node ID with the **const.MAX_NODE_ID** [system default](topo-defaults). When using the standard management interface IP addressing (where management IPv4 addresses start with .100), the node **id** should not exceed 150.
 
 [^HOST]: Identified by **role: host** attribute
 
