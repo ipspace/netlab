@@ -14,6 +14,7 @@ from ..utils import log
 from .. import data
 from . import nodes,links
 from ..data.types import must_be_dict,must_be_list,must_be_string,must_be_id
+from ..data import global_vars
 
 '''
 Validate topology components:
@@ -87,6 +88,8 @@ Iterate over all nodes in the component:
 Also: check that the total number of nodes does not exceed the maximum allowed
 '''
 def include_nodes(n_name: str, c_data: Box, topology: Box) -> None:
+  MAX_NODE_ID = global_vars.get_const('MAX_NODE_ID',150)
+
   for inc_name,inc_data in c_data.nodes.items():
     node_name = f'{n_name}_{inc_name}'
     must_be_id(
@@ -108,7 +111,7 @@ def include_nodes(n_name: str, c_data: Box, topology: Box) -> None:
     else:
       topology.nodes[node_name] = data.get_box(inc_data)    # Regular included node, just copy it
       topology.nodes[node_name].name = node_name            # Fix the name of the newly-generated node
-      if len(topology.nodes) > nodes.MAX_NODE_ID:
+      if len(topology.nodes) > MAX_NODE_ID:
         log.fatal(
           'Exceeded maximum node limit while adding node {node_name}',
           module='components',

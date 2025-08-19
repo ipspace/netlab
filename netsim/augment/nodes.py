@@ -20,8 +20,6 @@ from ..data.types import must_be_int,must_be_string,must_be_id,must_be_device
 from ..data import global_vars,is_true_int
 from ..modules._dataplane import extend_id_set,is_id_used,set_id_counter,get_next_id
 
-MAX_NODE_ID: int
-
 """
 Reserve a node ID, for example for gateway ID, return True if successful, False if duplicate
 """
@@ -31,16 +29,6 @@ def reserve_id(n_id: int) -> bool:
 
   extend_id_set('node_id',set([n_id]))
   return True
-
-"""
-Fetch and adjust node constants
-"""
-def adjust_node_constants(topology: Box) -> None:
-  global MAX_NODE_ID                                        # Max node ID has to be initialized early in the transformation
-  MAX_NODE_ID = global_vars.get_const('MAX_NODE_ID',150)
-
-  if MAX_NODE_ID > 150:
-    topology.defaults.attributes.node.id.max_value = MAX_NODE_ID
 
 """
 Node data structure is a dictionary. Convert lists of dictionaries (now obsolete)
@@ -487,7 +475,8 @@ Main node transformation code
 * set management IP and MAC addresses
 '''
 def transform(topology: Box, defaults: Box, pools: Box) -> None:
-  global MAX_NODE_ID
+  MAX_NODE_ID = global_vars.get_const('MAX_NODE_ID',150)
+
   for name,n in topology.nodes.items():
     if not must_be_int(n,'id',f'nodes.{name}',module='nodes',min_value=1,max_value=MAX_NODE_ID):
       continue
