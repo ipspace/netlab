@@ -22,7 +22,7 @@ def remove_blanks(data: Box) -> None:
     elif isinstance(data[k],Box):
       remove_blanks(data[k])
 
-def display_results(data: Box, header: dict, args: argparse.Namespace) -> None:
+def display_results(data: Box, header: dict, args: argparse.Namespace, underscore_is_dot: bool = False) -> None:
   if args.format == 'yaml':
     remove_blanks(data)
     print(data.to_yaml())
@@ -35,6 +35,8 @@ def display_results(data: Box, header: dict, args: argparse.Namespace) -> None:
     row: list = []
     for item in header.keys():
       if item == 'key':
+        if underscore_is_dot:
+          k = k.replace('_','.')
         row.append(k)
       else:
         cell = v[item] if item in v else ""
@@ -86,6 +88,28 @@ def show_modules(args: argparse.Namespace) -> None:
 
   display_results(result,t_header,args)
 
+def show_plugins(args: argparse.Namespace) -> None:
+  d_stat = stats.read_stats()
+  topology = _read.load("package:cli/empty.yml")
+  t_header = {
+    'key': 'Plugin',
+    'cnt': 'Used',
+    'pct': '% use' }
+
+  p_list = sorted(topology.defaults.providers.keys())
+  m_max = d_stat.cli.up.start.cnt or 0
+
+  result = get_empty_box()
+  for m_name in sorted(d_stat.plugin.keys()):
+    m_data = d_stat.plugin[m_name]
+    result[m_name].cnt = m_data.use.cnt or 0
+
+  m_max = max([ m_data.cnt for m_data in result.values() ] + [ m_max ])
+  for m_data in result.values():
+    m_data.pct = f'{100 * m_data.cnt/m_max:5.2f}'
+
+  display_results(result,t_header,args,underscore_is_dot=True)
+
 def show_devices(args: argparse.Namespace) -> None:
   d_stat = stats.read_stats()
   topology = _read.load("package:cli/empty.yml")
@@ -117,6 +141,11 @@ show_dispatch: dict = {
     'exec':  show_modules,
     'parser': format_parser,
     'description': 'show modules used in lab topologies'
+  },
+  'plugins': {
+    'exec':  show_plugins,
+    'parser': format_parser,
+    'description': 'show plugins used in lab topologies'
   }
 }
 

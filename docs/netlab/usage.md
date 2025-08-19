@@ -25,3 +25,4 @@ The **netlab usage show** command can display these statistics:
 * **commands** -- the netlab commands you're using
 * **devices** -- the devices and virtualization providers used in your lab topologies
 * **modules** -- the modules used in your lab topologies
+* **plugins** -- the plugins used in your lab topologies
