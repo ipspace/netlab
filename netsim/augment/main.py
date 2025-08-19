@@ -32,6 +32,7 @@ def topology_init(topology: Box) -> None:
   global_vars.init(topology)
   augment.config.attributes(topology)
   augment.config.paths(topology)
+  augment.nodes.adjust_node_constants(topology)
   augment.plugin.init(topology)
   augment.devices.augment_device_settings(topology)
 
