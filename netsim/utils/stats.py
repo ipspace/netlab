@@ -100,10 +100,13 @@ def write_stats(stats: Box, force: bool = False) -> None:
   if '_created' not in stats:
     stats._created = ts
 
+  if '_id' not in stats:
+    stats._id = format(time.time_ns(),'020x')
+
   stats._updated = ts
   stat_name = get_filename()
   if lock_stats(stat_name):
-    stats.to_json(filename=stat_name)
+    stats.to_json(filename=stat_name,indent=2)
     unlock_stats()
 
 '''
