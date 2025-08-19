@@ -502,6 +502,11 @@ def check_int_type(
   if isinstance(value,bool):                            # but not a bool
     return { '_value': 'a true integer (not a bool)' }
 
+  if isinstance(max_value,str):
+    max_value = resolve_const_value(max_value,None)
+  if isinstance(min_value,str):
+    min_value = resolve_const_value(min_value,None)
+
   if isinstance(min_value,int) and isinstance(max_value,int):
     if value < min_value or value > max_value:
       return { '_value': f'an integer between {min_value} and {max_value}' }
