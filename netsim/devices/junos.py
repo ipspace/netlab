@@ -151,6 +151,8 @@ def default_originate_check(node: Box, topology: Box) -> None:
       for ngb in vdata.get('bgp.neighbors', []):
         if ngb.get('default_originate', False):
           vdata.bgp._junos_default_originate = True
+          # node flag required for creating policy
+          node.bgp._junos_default_originate = True
           break
 
 def policy_aspath_quirks(node: Box, topology: Box) -> None:

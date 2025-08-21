@@ -2,14 +2,16 @@ message:
   This lab tests the BGP default route origination. The DUT should advertise a
   default route to X1.
 
-plugin: [ bgp.session ]
+plugin: [ bgp.session, test.vrf_check ]
 module: [ bgp ]
+
+defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
 
 groups:
   probes:
     device: frr
     provider: clab
-    members: [ x1 ]
+    members: [ x1, x2 ]
 
 defaults.bgp.as: 65000
 bgp.advertise_loopback: false
@@ -20,15 +22,25 @@ addressing:
   lan:
     ipv6: 2001:db8:4::/48
 
+vrfs:
+  tenant:
+
 nodes:
   dut:
+    module: [ bgp, vrf ]
   x1:
     bgp.as: 65100
+  x2:
+    bgp.as: 65200
 
 links:
 - dut:
     bgp.default_originate: true
   x1:
+- dut:
+    bgp.default_originate: true
+    vrf: tenant
+  x2:
 
 validate:
   ebgp_v4:
@@ -54,4 +66,28 @@ validate:
     wait: 10
     wait_msg: Waiting for BGP convergence
     nodes: [ x1 ]
+    plugin: bgp_prefix('::/0',af='ipv6')
+  vrf_ebgp_v4:
+    description: Check IPv4 EBGP sessions with DUT (vrf)
+    wait_msg: Waiting for EBGP session establishment
+    wait: ebgp_session
+    nodes: [ x2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+  vrf_ebgp_v6:
+    description: Check IPv6 EBGP sessions with DUT (vrf)
+    wait_msg: Waiting for EBGP session establishment
+    wait: ebgp_session
+    nodes: [ x2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6')
+  vrf_def_ipv4:
+    description: Check whether DUT (vrf) advertises IPv4 default route to X2
+    wait: bgp_scan_time
+    wait_msg: Waiting for BGP convergence
+    nodes: [ x2 ]
+    plugin: bgp_prefix('0.0.0.0/0')
+  vrf_def_ipv6:
+    description: Check whether (vrf) DUT advertises IPv6 default route to X2
+    wait: bgp_scan_time
+    wait_msg: Waiting for BGP convergence
+    nodes: [ x2 ]
     plugin: bgp_prefix('::/0',af='ipv6')
