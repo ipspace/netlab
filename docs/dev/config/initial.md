@@ -327,6 +327,53 @@ interface {{ ifdata.ifname }}
 {% endfor %}
 ```
 
+### Configuring IPv6 RA Parameters
+
+If you decide to implement [IPv6 RA parameters](links-ra), you might appreciate these hints:
+
+* RA parameters have to be processed whenever **ipv6** attribute is set (*string* or *True*) and the node **role** is **router**. RA parameters do not apply to **host** or **bridge** nodes.
+* Do not expect any parameters to be set; always work with default values.
+* If **ra.disable** is **true** (default: false), disable RA and move on. Otherwise, enable IPv6 RA and set the RA interval to some small value (for example, 5 seconds).
+* If **ipv6** attribute is a real address (not *True*), check the **ra.slaac** (default: *True*) and **ra.onlink** (default: *True*) parameters. The **ipv6** attribute is a CIDR *address* ; use `intf.ipv6|ipaddress(0)` to get the prefix.
+* Set further RA flags if **ra.dhcp** is set (regardless of the value of the **ipv6** attribute).
+
+This is the FRRouting implementation of the above hints:
+
+```
+{% if i.ipv6 is defined %}
+{%   if i.ipv6 is string and i.ipv6|ipv6 %}
+ ipv6 address {{ i.ipv6 }}
+{%   endif %}
+{%   if i.type != 'loopback' and role == 'router' %}
+{%     if i.ra.disable|default(false) is true %}
+ ipv6 nd suppress-ra
+{%     else %}
+ ipv6 nd ra-interval 5
+ no ipv6 nd suppress-ra
+{%     endif %}
+{%     if 'ra' in i and i.ipv6 is string %}
+{%       if i.ra.slaac|default(true) is false %}
+ ipv6 nd prefix {{ i.ipv6|ipaddr(0) }} no-autoconfig
+{%       endif %}
+{%       if i.ra.onlink|default(true) is false %}
+ ipv6 nd prefix {{ i.ipv6|ipaddr(0) }} off-link
+{%       endif %}
+{%     endif %}
+{%     if i.ra.dhcp|default(false) == 'all' %}
+ ipv6 nd managed-config-flag
+{%     endif %}
+{%     if i.ra.dhcp|default(false) == 'other' %}
+ ipv6 nd other-config-flag
+{%     endif %}
+{%   endif %}
+{% endif %}
+```
+
+```{tip}
+* FRRouting does not send RA messages by default (RA has to be explicitly enabled). If your device sends the RA messages by default, change the initial tests to `if ra.disabled is true or role != 'router'`.
+* On devices that send RA messages by default, configure RA parameters before configuring IPv6 addresses (you don't want the device to send a spurious RA before the RA parameters are configured).
+```
+
 ## Setting Static Host Names (Optional)
 
 Your device might support static host-to-address mapping. If that's the case, configuring it is worthwhile -- users troubleshooting their configurations might appreciate seeing hostnames instead of IP addresses.

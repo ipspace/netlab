@@ -1123,26 +1123,27 @@ def process_link_ra(link: Box, nodes: Box, defaults: Box) -> None:
 
   for intf in link.interfaces:                              # First figure out what we're dealing with
     role = nodes[intf.node].get('role','router')
-    if role == 'router':
-      rtr_list.append(intf)
-      if 'ra' in intf and 'ipv6' not in intf:
+    if role == 'router':                                    # This is a router
+      rtr_list.append(intf)                                 # ... remember that
+      if 'ra' in intf and 'ipv6' not in intf:               # ... and check that RA is only used with IPv6
         log.warning(
           text='Applying RA attributes to an interface without an IPv6 address makes no sense',
           more_data='Node {intf.node} link {link._linkname}',
           module='links',
           flag='ra_no_ipv6')
-      continue
-    elif role == 'host':
-      host_list.append(intf)
-    if 'ra' in intf:
-      log.warning(
+      continue                                              # No further checks on routers (yet)
+    elif role == 'host':                                    # If we have a host
+      host_list.append(intf)                                # ... then let's remember that
+
+    if 'ra' in intf:                                        # Anyhow, RA attribute on anything not a router makes no sense
+      log.warning(                                          # ... be that a host or a bridge
         text='Applying RA attributes to a device that is not a router makes no sense',
         more_data='Node {intf.node} link {link._linkname}',
         module='links',
         flag='ra_not_router')
 
   if 'ra' in link and not rtr_list:                         # Link RA attribute with no hosts attached
-    log.warning(
+    log.warning(                                            # ... doesn't make much sense either
       text='Cannot use link IPv6 RA attributes on link {link._linkname} with no routers',
       module='links',flag='ra_useless')
     return
@@ -1168,14 +1169,14 @@ def process_link_ra(link: Box, nodes: Box, defaults: Box) -> None:
           category=log.IncorrectAttr,
           module='links',
           more_data='Node {intf.node}, link {link._linkname}')
-      continue
+      continue                                              # Makes no sense to go any further with this interface
     if 'ra' in intf or link_ra:
       intf.ra = link_ra + intf.ra                           # Merge link attributes with interface attributes
-    elif host_list:
-      intf.ra.slaac = True
-    ra_supported = True
+    elif host_list:                                         # No RA attributes, but we have hosts attached
+      intf.ra.slaac = True                                  # ... so let's go with the default behavior: SLAAC
+    ra_supported = True                                     # We found at least one router supporting RA parameters
 
-  if link_ra and not ra_supported:                          # At least one node on the link supports RA
+  if link_ra and not ra_supported:                          # Does at least one node on the link supports RA?
     log.warning(
       text='None of the routers connected to link {link._linkname} supports netlab IPv6 RA attributes',
       module='links',flag='ra_unsupported')
