@@ -260,29 +260,29 @@ The following interface parameters are configured on supported network operating
 (platform-initial-addresses)=
 The following interface addresses are supported on various platforms:
 
-| Operating system      | IPv4<br />addresses | IPv6<br />addresses | Unnumbered<br />IPv4 interfaces |
-| --------------------- | :-: | :-: | :-: |
-| Arista EOS            | ✅  | ✅  | ✅  |
-| Aruba AOS-CX          | ✅  | ✅  |  ✅  |
-| Cisco ASAv            | ✅  | ✅  |  ❌  |
-| Cisco IOSv/IOSvL2     | ✅  | ✅  |  ❌  |
-| Cisco IOS XE[^18v]    | ✅  | ✅  | ✅  |
-| Cisco IOS XRv         | ✅  | ✅  | ✅  |
-| Cisco Nexus OS        | ✅  | ✅  | ✅  |
-| Cumulus Linux         | ✅  | ✅  | ✅  |
-| Cumulus Linux 5.x (NVUE) | ✅ | ✅ | ✅ |
-| Dell OS10             | ✅  | ✅  |  ❌  |
-| Fortinet FortiOS      | ✅  | ✅  |  ❌  |
-| FRR                   | ✅  | ✅  | ✅  |
-| Generic Linux         | ✅  | ✅  |  ❌  |
-| Junos[^Junos]         | ✅  | ✅  | ✅  |
-| Mikrotik RouterOS 6   | ✅  | ✅  |  ❌  |
-| Mikrotik RouterOS 7   | ✅  | ✅  |  ❌  |
-| Nokia SR Linux        | ✅  | ✅  |  ❌  |
-| Nokia SR OS[^SROS]    | ✅  | ✅  | ✅  |
-| OpenBSD               | ✅  | ✅  |  ❌  |
-| Sonic                 | ✅  | ✅  | ✅  |
-| VyOS                  | ✅  | ✅  | ✅  |
+| Operating system      | IPv4<br />addresses | IPv6<br />addresses | Unnumbered<br />IPv4 interfaces | Configurable<br>IPv6 RA |
+| --------------------- | :-: | :-: | :-: | :-: |
+| Arista EOS            | ✅  | ✅  | ✅  | ✅  |
+| Aruba AOS-CX          | ✅  | ✅  | ✅  |  ❌  |
+| Cisco ASAv            | ✅  | ✅  |  ❌  |  ❌  |
+| Cisco IOSv/IOSvL2     | ✅  | ✅  |  ❌  | ✅  |
+| Cisco IOS XE[^18v]    | ✅  | ✅  | ✅  | ✅  |
+| Cisco IOS XRv         | ✅  | ✅  | ✅  |  ❌  |
+| Cisco Nexus OS        | ✅  | ✅  | ✅  |  ❌  |
+| Cumulus Linux         | ✅  | ✅  | ✅  |  ❌  |
+| Cumulus Linux 5.x (NVUE) | ✅ | ✅ | ✅ |  ❌  |
+| Dell OS10             | ✅  | ✅  |  ❌  |  ❌  |
+| Fortinet FortiOS      | ✅  | ✅  |  ❌  |  ❌  |
+| FRR                   | ✅  | ✅  | ✅  | ✅  |
+| Generic Linux         | ✅  | ✅  |  ❌  |  ❌  |
+| Junos[^Junos]         | ✅  | ✅  | ✅  |  ❌  |
+| Mikrotik RouterOS 6   | ✅  | ✅  |  ❌  |  ❌  |
+| Mikrotik RouterOS 7   | ✅  | ✅  |  ❌  |  ❌  |
+| Nokia SR Linux        | ✅  | ✅  |  ❌  |  ❌  |
+| Nokia SR OS[^SROS]    | ✅  | ✅  | ✅  |  ❌  |
+| OpenBSD               | ✅  | ✅  |  ❌  |  ❌  |
+| Sonic                 | ✅  | ✅  | ✅  |  ❌  |
+| VyOS                  | ✅  | ✅  | ✅  |  ❌  |
 
 ```{tip}
 * Use **‌netlab show modules -m initial** to display optional initial configuration features supported by individual devices
