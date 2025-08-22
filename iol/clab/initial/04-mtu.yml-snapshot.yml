@@ -113,9 +113,8 @@ defaults:
       act_title: KVM/libvirt domains (virtual machines)
       cleanup:
       - Vagrantfile
-      - .vagrant
-      tunnel_id: '30'
-      vifprefix: vgif_30
+      tunnel_id: '17'
+      vifprefix: vgif_17
       clab:
         start: sudo -E containerlab deploy --reconfigure -t clab-augment.yml
         stop: sudo -E containerlab destroy --cleanup -t clab-augment.yml
@@ -127,6 +126,7 @@ defaults:
           nic_adapter_count: int
           image: str
           uuid: str
+          ports: list
         link:
           permanent: bool
           public:
@@ -213,6 +213,8 @@ defaults:
         evpn:
           asymmetrical_irb: true
           irb: true
+          bundle:
+          - vlan_aware
         gateway:
           protocol:
           - anycast
@@ -299,7 +301,8 @@ defaults:
         image: none
       features:
         bgp: {}
-        isis: {}
+        isis:
+          circuit_type: true
       libvirt:
         image: cisco/asav
         create_template: asav.xml.j2
@@ -307,6 +310,18 @@ defaults:
         create_iso: asav
     cat8000v:
       description: Cisco CSR 1000v
+      _meta_device: true
+      attributes:
+        global:
+          ios:
+            debug:
+              type: list
+              split_lines: true
+        node:
+          ios:
+            debug:
+              type: list
+              split_lines: true
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
       group_vars:
@@ -363,10 +378,12 @@ defaults:
           - router
           - bridge
           mgmt_vrf: true
+          ra: true
           min_mtu: 68
           min_phy_mtu: 1500
           max_mtu: 9216
         isis:
+          circuit_type: true
           import:
           - bgp
           - ospf
@@ -480,6 +497,18 @@ defaults:
         create_iso: cat8000v
     csr:
       description: Cisco CSR 1000v
+      _meta_device: true
+      attributes:
+        global:
+          ios:
+            debug:
+              type: list
+              split_lines: true
+        node:
+          ios:
+            debug:
+              type: list
+              split_lines: true
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
       group_vars:
@@ -536,10 +565,12 @@ defaults:
           - router
           - bridge
           mgmt_vrf: true
+          ra: true
           min_mtu: 68
           min_phy_mtu: 1500
           max_mtu: 9216
         isis:
+          circuit_type: true
           import:
           - bgp
           - ospf
@@ -676,6 +707,8 @@ defaults:
             interfaces: /etc/network/interfaces
             hosts: /etc/hosts
         image: networkop/cx:4.4.0
+        caveats:
+        - Cumulus 4.x containers are out-of-date and not supported
         group_vars:
           ansible_connection: docker
           ansible_user: root
@@ -819,6 +852,11 @@ defaults:
       mtu: 1500
       libvirt:
         image: CumulusCommunity/cumulus-vx:5.10.0
+        caveats:
+        - >-
+          The Vagrant account on public Cumulus 5.x Vagrant boxes has expired password
+          (details in https://netlab.tools/labs/cumulus_nvue/#changing-the-password-expiration-policy)
+        - Newer Cumulus 5.x releases run only on NVIDIA Air
       virtualbox:
         image: CumulusCommunity/cumulus-vx:5.10.0
       group_vars:
@@ -902,6 +940,8 @@ defaults:
           kind: cvx
           runtime: docker
         image: networkop/cx:5.3.0
+        caveats:
+        - Cumulus 5.x containers are out-of-date and not supported
         group_vars:
           ansible_connection: docker
           ansible_user: root
@@ -1050,6 +1090,9 @@ defaults:
         ansible_ssh_pass: vagrant
         ansible_network_os: eos
         ansible_connection: network_cli
+        netlab_config_remove:
+        - no lldp transmit
+        - no lldp receive
       features:
         initial:
           system_mtu: true
@@ -1060,6 +1103,7 @@ defaults:
             use_ra: true
           max_mtu: 9194
           min_mtu: 68
+          ra: true
           roles:
           - host
           - router
@@ -1106,10 +1150,7 @@ defaults:
           - anycast
           - vrrp
         isis:
-          unnumbered:
-            ipv4: true
-            ipv6: true
-            network: true
+          circuit_type: true
           import:
           - bgp
           - ospf
@@ -1117,6 +1158,10 @@ defaults:
           - connected
           - static
           - vrf
+          unnumbered:
+            ipv4: true
+            ipv6: true
+            network: true
         lag:
           mlag:
             peer:
@@ -1304,7 +1349,7 @@ defaults:
           - -c
           - show $@
           netlab_mgmt_vrf: true
-        image: quay.io/frrouting/frr:10.3.1
+        image: quay.io/frrouting/frr:10.4.1
         kmods:
         node:
           kind: linux
@@ -1344,6 +1389,7 @@ defaults:
           ipv6:
             lla: true
             use_ra: true
+          ra: true
           roles:
           - host
           - router
@@ -1382,6 +1428,7 @@ defaults:
           - vrrp
           - anycast
         isis:
+          circuit_type: true
           import:
           - bgp
           - ripv2
@@ -1477,8 +1524,31 @@ defaults:
           vtep6: true
       graphite:
         icon: router
+      attributes:
+        global:
+          frr:
+            debug:
+              type: list
+              split_lines: true
+        node:
+          frr:
+            debug:
+              type: list
+              split_lines: true
     iol:
       description: Cisco IOL
+      _meta_device: true
+      attributes:
+        global:
+          ios:
+            debug:
+              type: list
+              split_lines: true
+        node:
+          ios:
+            debug:
+              type: list
+              split_lines: true
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
       group_vars:
@@ -1531,10 +1601,12 @@ defaults:
           - router
           - bridge
           mgmt_vrf: true
+          ra: true
           min_mtu: 68
           min_phy_mtu: 1501
           max_mtu: 1500
         isis:
+          circuit_type: true
           import:
           - bgp
           - ospf
@@ -1631,12 +1703,24 @@ defaults:
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         build: https://containerlab.dev/manual/kinds/cisco_iol/
-        image: vrnetlab/cisco_iol:17.15.01
+        image: vrnetlab/cisco_iol:17.16.01a
         node:
           kind: cisco_iol
       provider: clab
     ioll2:
       description: IOSv L2 image
+      _meta_device: true
+      attributes:
+        global:
+          ios:
+            debug:
+              type: list
+              split_lines: true
+        node:
+          ios:
+            debug:
+              type: list
+              split_lines: true
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
       group_vars:
@@ -1689,10 +1773,12 @@ defaults:
           - router
           - bridge
           mgmt_vrf: true
+          ra: true
           min_mtu: 68
           min_phy_mtu: 1501
           max_mtu: 1500
         isis:
+          circuit_type: true
           import:
           - bgp
           - ospf
@@ -1800,7 +1886,7 @@ defaults:
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         build: https://containerlab.dev/manual/kinds/cisco_iol/
-        image: vrnetlab/cisco_iol:L2-17.15.01
+        image: vrnetlab/cisco_iol:L2-17.16.01a
         node:
           kind: cisco_iol
           type: l2
@@ -1809,6 +1895,18 @@ defaults:
       lag_interface_name: Port-channel{lag.ifindex}
     iosv:
       description: Cisco IOSv
+      _meta_device: true
+      attributes:
+        global:
+          ios:
+            debug:
+              type: list
+              split_lines: true
+        node:
+          ios:
+            debug:
+              type: list
+              split_lines: true
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
       group_vars:
@@ -1866,9 +1964,11 @@ defaults:
           - router
           - bridge
           mgmt_vrf: true
+          ra: true
           min_mtu: 64
           max_mtu: 9600
         isis:
+          circuit_type: true
           import:
           - bgp
           - ospf
@@ -1970,9 +2070,21 @@ defaults:
           kind: linux
         interface:
           name: eth{ifindex}
-        build: https://github.com/hellt/vrnetlab/tree/master/vios
+        build: https://github.com/srl-labs/vrnetlab/tree/master/vios
     iosvl2:
       description: IOSv L2 image
+      _meta_device: true
+      attributes:
+        global:
+          ios:
+            debug:
+              type: list
+              split_lines: true
+        node:
+          ios:
+            debug:
+              type: list
+              split_lines: true
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
       group_vars:
@@ -2030,10 +2142,12 @@ defaults:
           - router
           - bridge
           mgmt_vrf: true
+          ra: true
           min_mtu: 68
           max_mtu: 4700
           min_phy_mtu: 1500
         isis:
+          circuit_type: true
           import:
           - bgp
           - ospf
@@ -2146,7 +2260,7 @@ defaults:
           kind: linux
         interface:
           name: eth{ifindex}
-        build: https://github.com/hellt/vrnetlab/tree/master/viosl2
+        build: https://github.com/srl-labs/vrnetlab/tree/master/viosl2
       lag_interface_name: Port-channel{lag.ifindex}
     iosxr:
       description: Cisco IOS XRv
@@ -2172,6 +2286,7 @@ defaults:
         ospf:
           unnumbered: true
         isis:
+          circuit_type: true
           unnumbered:
             ipv4: true
             ipv6: true
@@ -2217,6 +2332,7 @@ defaults:
           ipv4:
             unnumbered: peer
           ipv6:
+            lla: true
             use_ra: true
           roles:
           - host
@@ -2276,6 +2392,7 @@ defaults:
         icon: server
     none:
       description: Dummy device used to test topology transformation
+      _meta_device: true
       interface_name: eth{ifindex}
       lag_interface_name: bond{lag.ifindex}
       loopback_interface_name: Loopback{ifindex}
@@ -2351,6 +2468,7 @@ defaults:
           ipv6:
             lla: true
           mgmt_vrf: true
+          ra: true
           roles:
           - router
           - bridge
@@ -2496,6 +2614,7 @@ defaults:
           protocol:
           - vrrp
         isis:
+          circuit_type: true
           unnumbered:
             ipv4: true
             ipv6: true
@@ -2773,6 +2892,7 @@ defaults:
           protocol:
           - anycast
         isis:
+          circuit_type: true
           unnumbered:
             ipv4: true
             ipv6: true
@@ -2822,7 +2942,7 @@ defaults:
       graphite:
         icon: router
     sros:
-      description: Nokia SR OS container
+      description: Nokia SR OS VM in container
       mgmt_if: A/1
       interface_name: eth-1/1/c{ifindex}
       loopback_interface_name: >-
@@ -2876,6 +2996,7 @@ defaults:
           irb: true
           asymmetrical_irb: true
         isis:
+          circuit_type: true
           unnumbered:
             ipv4: true
             ipv6: true
@@ -2947,8 +3068,149 @@ defaults:
         icon: router
       warnings:
         loopback_ipv6: false
+    srsim:
+      description: Nokia SR-SIM (SR-OS) container
+      mgmt_if: A/1
+      interface_name: eth-1/{ifindex // 12 + 1}/c{(ifindex - 1) % 12 + 1}
+      loopback_interface_name: >-
+        {"loopback."+str(ifindex) if ifindex else "system"}
+      group_vars:
+        ansible_user: admin
+        ansible_ssh_pass: NokiaSros1!
+        ansible_network_os: sros
+        ansible_connection: paramiko_ssh
+        netlab_console_connection: ssh
+        sros_use_openconfig: false
+        netlab_match_protomap:
+          ospf:
+          - ospf
+          - ospf3
+          bgp:
+          - bgp
+          connected:
+          - direct
+          isis:
+          - isis
+        netlab_srsim_first_port: 1/1/c1
+        netlab_device_type: srsim
+        netlab_srsim_hw:
+        - slot-number: 1
+          card-type: iom-1
+          mda:
+          - mda-slot: 1
+            mda-type: me12-100gb-qsfp28
+          - mda-slot: 2
+            mda-type: me12-100gb-qsfp28
+      sr:
+        srgb_range_start: 500000
+        srgb_range_size: 1000
+        ipv6_sid_offset: 100
+      bfd:
+        min_tx: 100
+        min_rx: 100
+      features:
+        initial:
+          ipv4:
+            unnumbered: true
+          ipv6:
+            lla: true
+          min_phy_mtu: 1500
+          max_mtu: 9782
+        bfd: {}
+        bgp:
+          local_as: true
+          vrf_local_as: true
+          local_as_ibgp: true
+          activate_af: true
+          ipv6_lla: false
+          import:
+          - ospf
+          - isis
+          - connected
+          - vrf
+          - no_policy
+        evpn:
+          irb: true
+          asymmetrical_irb: true
+        isis:
+          circuit_type: true
+          unnumbered:
+            ipv4: true
+            ipv6: true
+            network: false
+          import:
+          - ospf
+          - bgp
+          - connected
+          - vrf
+          - no_policy
+        mpls:
+          ldp: true
+          bgp: true
+          vpn: true
+          6pe: true
+        ospf:
+          unnumbered: true
+          import:
+          - bgp
+          - isis
+          - connected
+          - vrf
+          - no_policy
+          strict_bfd: true
+        ripv2:
+          ipv4: true
+          ipv6: true
+          passive: true
+        routing:
+          policy:
+            set:
+            - locpref
+            - med
+        gateway:
+          protocol:
+          - anycast
+          - vrrp
+        sr: {}
+        srv6:
+          bgp: true
+          isis: true
+        vlan:
+          model: router
+          svi_interface_name: svi.{vlan}
+          subif_name: '{ifname}/1_{vlan.access_id}'
+          mixed_trunk: true
+          native_routed: true
+        vrf:
+          ospfv2: true
+          ospfv3: true
+          isis: true
+          bgp: true
+        vxlan: {}
+      clab:
+        image: nokia_srsim:25.7.R1
+        build: https://containerlab.dev/manual/kinds/sros/
+        mtu: 1500
+        node:
+          kind: nokia_srsim
+          type: sr-1
+          license: ~/.netlab/license_srsim25.txt
+          env:
+            NOKIA_SROS_MDA_1: me12-100gb-qsfp28
+            NOKIA_SROS_MDA_2: me12-100gb-qsfp28
+        interface:
+          name: 1/{ifindex // 12 + 1}/c{(ifindex - 1) % 12 + 1}/1
+        group_vars:
+          sros_grpc_port: 57400
+      external:
+        image: none
+      graphite:
+        icon: router
+      warnings:
+        loopback_ipv6: false
     unknown:
       description: Generic Unknown Device
+      _meta_device: true
       interface_name: eth{ifindex}
       mgmt_if: eth0
       graphite:
@@ -2971,6 +3233,7 @@ defaults:
         vxlan: {}
     vjunos-router:
       description: vJunos Router (similar to vMX)
+      _meta_device: true
       loopback_interface_name: lo0.{ifindex}
       ifindex_offset: 0
       interface_name: ge-0/0/{ifindex}
@@ -3003,6 +3266,7 @@ defaults:
           - anycast
           - vrrp
         isis:
+          circuit_type: true
           unnumbered:
             ipv4: true
             ipv6: true
@@ -3064,6 +3328,7 @@ defaults:
         icon: router
     vjunos-switch:
       description: vJunos Switch
+      _meta_device: true
       loopback_interface_name: lo0.{ifindex}
       ifindex_offset: 0
       interface_name: ge-0/0/{ifindex}
@@ -3093,6 +3358,7 @@ defaults:
           - anycast
           - vrrp
         isis:
+          circuit_type: true
           unnumbered:
             ipv4: true
             ipv6: true
@@ -3133,6 +3399,8 @@ defaults:
           asymmetrical_irb: true
           irb: true
           multi_rt: true
+          bundle:
+          - vlan_aware
         lag:
           passive: true
         vlan:
@@ -3163,6 +3431,7 @@ defaults:
           wait: 30
     vmx:
       description: Juniper vMX container
+      _meta_device: true
       loopback_interface_name: lo0.{ifindex}
       ifindex_offset: 0
       interface_name: ge-0/0/{ifindex}
@@ -3195,6 +3464,7 @@ defaults:
           - anycast
           - vrrp
         isis:
+          circuit_type: true
           unnumbered:
             ipv4: true
             ipv6: true
@@ -3254,6 +3524,7 @@ defaults:
         icon: router
     vptx:
       description: Juniper vPTX
+      _meta_device: true
       loopback_interface_name: lo0.{ifindex}
       ifindex_offset: 0
       interface_name: et-0/0/{ifindex}
@@ -3282,6 +3553,7 @@ defaults:
           protocol:
           - vrrp
         isis:
+          circuit_type: true
           unnumbered:
             ipv4: true
             ipv6: true
@@ -3352,6 +3624,7 @@ defaults:
           wait: 30
     vsrx:
       description: Juniper vSRX 3.0
+      _meta_device: true
       loopback_interface_name: lo0.{ifindex}
       ifindex_offset: 0
       interface_name: ge-0/0/{ifindex}
@@ -3380,6 +3653,7 @@ defaults:
           protocol:
           - vrrp
         isis:
+          circuit_type: true
           unnumbered:
             ipv4: true
             ipv6: true
@@ -3493,7 +3767,8 @@ defaults:
         gateway:
           protocol:
           - vrrp
-        isis: {}
+        isis:
+          circuit_type: true
         lag:
           passive: false
         mpls:
@@ -3583,8 +3858,8 @@ defaults:
           ipv4:
             unnumbered: peer
           ipv6:
-            use_ra: true
             lla: true
+            use_ra: true
           roles:
           - host
           - router
@@ -3705,6 +3980,7 @@ defaults:
           ipv4:
             unnumbered: peer
           ipv6:
+            lla: true
             use_ra: true
           roles:
           - host
@@ -3913,6 +4189,14 @@ defaults:
           shape: arrow
         target-arrowhead:
           shape: arrow
+      localas_ibgp:
+        style:
+          stroke: '#9b652f'
+          stroke-width: 4
+        source-arrowhead:
+          shape: arrow
+        target-arrowhead:
+          shape: arrow
       ebgp:
         style:
           stroke: '#b21a1a'
@@ -3921,12 +4205,22 @@ defaults:
           shape: arrow
         target-arrowhead:
           shape: arrow
-      styles:
+      confed_ebgp:
+        style:
+          stroke: '#d26400'
+          stroke-width: 4
+        source-arrowhead:
+          shape: arrow
+        target-arrowhead:
+          shape: arrow
+      style_map:
         color: stroke
         width: stroke-width
+        fill: fill
       attributes:
         node:
           color: str
+          fill: str
           width:
             type: int
             min_value: 1
@@ -3945,14 +4239,77 @@ defaults:
       interface_labels: false
       node_address_label: true
       as_clusters: true
-      colors:
-        as: '#e8e8e8'
-        node: '#ff9f01'
-        stub: '#d1bfab'
-        ibgp: '#613913'
-        ebgp: '#b21a1a'
-      margins:
-        as: 16
+      styles:
+        as:
+          bgcolor: '#e8e8e8'
+          color: '#c0c0c0'
+          fontname: Verdana
+          margin: 16
+        stub:
+          bgcolor: '#d1bfab'
+          fillcolor: '#d1bfab'
+          fontsize: 11
+          margin: 0.3,0.1
+        ibgp:
+          color: '#613913'
+          penwidth: 2
+        localas_ibgp:
+          color: '#9b652f'
+          penwidth: 2
+        ebgp:
+          color: '#b21a1a'
+          penwidth: 2
+        confed_ebgp:
+          color: '#d26400'
+          penwidth: 2
+        graph:
+          bgcolor: transparent
+          nodesep: 0.5
+          ranksep: 1
+        node:
+          bgcolor: '#ff9f01'
+          fillcolor: '#ff9f01'
+          margin: 0.3,0.1
+          shape: box
+          style: rounded,filled
+          fontname: Verdana
+        edge:
+          fontname: Verdana
+          labelfontsize: 8
+          labeldistance: 1.5
+      style_map:
+        color: color
+        width: penwidth
+        fill: fillcolor
+      attributes:
+        node:
+          color: str
+          fill: str
+          width:
+            type: int
+            min_value: 1
+            max_value: 32
+        link:
+          type: dict
+          _keys:
+            linkorder:
+              type: int
+              min_value: 1
+              max_value: 200
+            type:
+              type: str
+              valid_values:
+              - lan
+            color: str
+            width:
+              type: int
+              min_value: 1
+              max_value: 32
+        shared:
+        - linkorder
+        - color
+        - fill
+        - width
     provider: {}
     yaml=netlab:
       snapshot:
@@ -4215,6 +4572,14 @@ defaults:
         _keytype: id
         _requires:
         - vrf
+      frr:
+        debug:
+          type: list
+          split_lines: true
+      ios:
+        debug:
+          type: list
+          split_lines: true
     internal:
       input:
       pools: dict
@@ -4249,6 +4614,15 @@ defaults:
         - bool_false
         - prefix_str
         - named_pfx
+      ra:
+        disable: bool
+        slaac: bool
+        dhcp:
+          type: str
+          valid_values:
+          - all
+          - other
+        onlink: bool
       role: id
       pool: id
       type:
@@ -4287,6 +4661,10 @@ defaults:
         use: interface
       ifindex: int
       ifname: str
+    node_extra_ns:
+    - providers
+    - tools
+    - outputs
     node:
       name: str
       interfaces: list
@@ -4298,8 +4676,15 @@ defaults:
       id:
         type: int
         min_value: 1
-        max_value: 150
-      config: list
+        max_value: MAX_NODE_ID
+      config:
+        type: dict
+        _subtype:
+          type: error
+          _err_msg: Enable "files" plugin to use the inline node/group 
+            configuration template(s)
+        _alt_types:
+        - list
       group: list
       role:
         type: str
@@ -4354,6 +4739,14 @@ defaults:
       eos:
         serialnumber: str
         systemmacaddr: mac
+      frr:
+        debug:
+          type: list
+          split_lines: true
+      ios:
+        debug:
+          type: list
+          split_lines: true
     pool:
       ipv4:
         type: ipv4
@@ -4470,6 +4863,10 @@ defaults:
       config:
         template: str
         variable: dict
+        inline:
+          type: error
+          _err_msg: Enable "files" plugin to use the "inline" configuration 
+            template
         _alt_types:
         - str
       valid: _v_option
@@ -4824,6 +5221,7 @@ defaults:
     ifname:
       neighbors: 5
       maxlength: 255
+    MAX_NODE_ID: 150
     validate:
       ping: 5
       ping_long: 15
@@ -4930,35 +5328,36 @@ defaults:
         storage prices keep falling
   multilab:
     change:
-      name: ml_30
+      name: ml_17
       defaults:
-        name: ml_30
+        name: ml_17
         providers:
           libvirt:
-            tunnel_id: '30'
-            vifprefix: vgif_30
+            tunnel_id: '17'
+            vifprefix: vgif_17
       addressing:
         mgmt:
-          ipv4: 192.168.30.0/24
-          _network: nl_mgmt_30
-          _bridge: nl_mgmt_30
-    id: 30
+          ipv4: 192.168.17.0/24
+          _network: nl_mgmt_17
+          _bridge: nl_mgmt_17
+    id: 17
   netlab:
     capture:
       command: tcpdump -i {intf}
       command_args: --immediate-mode -l -vv
+    create: {}
   paths:
     validate:
     - /home/pipi/net101/tools/netsim/validate
     plugin:
-    - /work/netlab_cicd/cisco
+    - /work/netlab_cicd
     - /home/pipi/net101/tools/tests/integration/initial
     - /home/pipi/.netlab
     - /home/pipi/net101/tools/netsim/extra
     custom:
       dirs:
       - /home/pipi/net101/tools/tests/integration/initial
-      - /work/netlab_cicd/cisco
+      - /work/netlab_cicd
       - /home/pipi/.netlab
       - /home/pipi/net101/tools/netsim/extra
       files:
@@ -5105,6 +5504,7 @@ defaults:
       nxos: true
       srlinux: true
       sros: true
+      srsim: true
       unknown: true
       vjunos-router: true
       vjunos-switch: true
@@ -5308,6 +5708,7 @@ defaults:
       sonic: true
       srlinux: true
       sros: true
+      srsim: true
       unknown: true
       vjunos-router: true
       vjunos-switch: true
@@ -5498,6 +5899,7 @@ defaults:
       nxos: true
       srlinux: true
       sros: true
+      srsim: true
       unknown: true
       vjunos-switch: true
       vyos: true
@@ -5596,6 +5998,7 @@ defaults:
       nxos: true
       srlinux: true
       sros: true
+      srsim: true
       unknown: true
       vjunos-router: true
       vjunos-switch: true
@@ -5703,6 +6106,7 @@ defaults:
         ipv6: IPv6 unnumbered interfaces
         network: multi-access unnumbered links
       import: Route redistribution
+      circuit_type: Circuit type
     warnings:
       inactive: true
     supported_on:
@@ -5722,6 +6126,7 @@ defaults:
       nxos: true
       srlinux: true
       sros: true
+      srsim: true
       unknown: true
       vjunos-router: true
       vjunos-switch: true
@@ -5958,6 +6363,7 @@ defaults:
       routeros7: true
       srlinux: true
       sros: true
+      srsim: true
       unknown: true
       vjunos-router: true
       vjunos-switch: true
@@ -6195,6 +6601,7 @@ defaults:
       routeros7: true
       srlinux: true
       sros: true
+      srsim: true
       unknown: true
       vjunos-router: true
       vjunos-switch: true
@@ -6305,6 +6712,7 @@ defaults:
       iosvl2: true
       none: true
       sros: true
+      srsim: true
       vyos: true
   prefix:
     any:
@@ -6438,6 +6846,7 @@ defaults:
       openbsd: true
       srlinux: true
       sros: true
+      srsim: true
       vjunos-router: true
       vjunos-switch: true
       vmx: true
@@ -6481,6 +6890,7 @@ defaults:
       none: true
       srlinux: true
       sros: true
+      srsim: true
       unknown: true
       vjunos-router: true
       vjunos-switch: true
@@ -6587,6 +6997,7 @@ defaults:
       frr: true
       none: true
       sros: true
+      srsim: true
       unknown: true
   stp:
     requires:
@@ -6775,6 +7186,7 @@ defaults:
       routeros7: true
       srlinux: true
       sros: true
+      srsim: true
       unknown: true
       vjunos-router: true
       vjunos-switch: true
@@ -6840,6 +7252,7 @@ defaults:
       routeros7: true
       srlinux: true
       sros: true
+      srsim: true
       unknown: true
       vjunos-router: true
       vjunos-switch: true
@@ -6897,6 +7310,7 @@ defaults:
       nxos: true
       srlinux: true
       sros: true
+      srsim: true
       unknown: true
       vjunos-switch: true
       vyos: true
@@ -6907,18 +7321,14 @@ defaults:
     list: []
     user: []
     system: []
+  workdir: /work/netlab_cicd
+  device: iol
   groups:
-    external:
-      device: frr
-      members: []
-      _default_group: true
     all:
       vars:
         netlab_show_config: true
       members: []
       _default_group: true
-  workdir: /work/netlab_cicd
-  device: iol
   plugin:
   - multilab
   _globals:
@@ -6941,7 +7351,7 @@ defaults:
     - vlan
     - vrf
     - vxlan
-  name: ml_30
+  name: ml_17
   module:
   - routing
 addressing:
@@ -6960,11 +7370,11 @@ addressing:
     ipv4: 10.0.0.0/24
     prefix: 32
   mgmt:
-    ipv4: 192.168.30.0/24
+    ipv4: 192.168.17.0/24
     start: 100
     mac: 08-4F-A9-00-00-00
-    _network: nl_mgmt_30
-    _bridge: nl_mgmt_30
+    _network: nl_mgmt_17
+    _bridge: nl_mgmt_17
     prefix: 24
   l2only: {}
   vrf_loopback:
@@ -6990,10 +7400,6 @@ groups:
     - t_1300
     - t_1400
     device: linux
-  external:
-    device: frr
-    members: []
-    _default_group: true
   all:
     vars:
       netlab_show_config: true
@@ -7024,12 +7430,14 @@ nodes:
         node: p1
       _use_ip_mtu: true
     - mtu: 1400
+      ra:
+        slaac: true
       ipv4: 172.16.1.1/24
       ipv6: 2001:db8:1:1::1/64
       linkindex: 2
       role: stub
       type: lan
-      bridge: ml_30_2
+      bridge: ml_17_2
       name: dut -> t_1400
       ifindex: 2
       ifname: Ethernet0/2
@@ -7041,12 +7449,14 @@ nodes:
         ifname: eth1
         node: t_1400
       _use_ip_mtu: true
-    - ipv4: 172.16.2.1/24
+    - ra:
+        slaac: true
+      ipv4: 172.16.2.1/24
       ipv6: 2001:db8:1:2::1/64
       linkindex: 3
       role: stub
       type: lan
-      bridge: ml_30_3
+      bridge: ml_17_3
       name: dut -> t_1300
       ifindex: 3
       ifname: Ethernet0/3
@@ -7062,7 +7472,7 @@ nodes:
     device: iol
     clab:
       kind: cisco_iol
-    box: vrnetlab/cisco_iol:17.15.01
+    box: vrnetlab/cisco_iol:17.16.01a
     id: 1
     provider: clab
     af:
@@ -7071,8 +7481,8 @@ nodes:
     mgmt:
       ifname: Ethernet0/0
       mac: 08:4f:a9:01:00:00
-      ipv4: 192.168.30.101
-    hostname: clab-ml_30-dut
+      ipv4: 192.168.17.101
+    hostname: clab-ml_17-dut
     loopback:
       type: loopback
       neighbors: []
@@ -7132,8 +7542,8 @@ nodes:
     mgmt:
       ifname: Management0
       mac: 08:4f:a9:02:00:00
-      ipv4: 192.168.30.102
-    hostname: clab-ml_30-p1
+      ipv4: 192.168.17.102
+    hostname: clab-ml_17-p1
     loopback:
       type: loopback
       neighbors: []
@@ -7150,7 +7560,7 @@ nodes:
       linkindex: 3
       role: stub
       type: lan
-      bridge: ml_30_3
+      bridge: ml_17_3
       name: t_1300 -> dut
       ifindex: 1
       ifname: eth1
@@ -7180,8 +7590,8 @@ nodes:
     mgmt:
       ifname: eth0
       mac: 08:4f:a9:03:00:00
-      ipv4: 192.168.30.103
-    hostname: clab-ml_30-t_1300
+      ipv4: 192.168.17.103
+    hostname: clab-ml_17-t_1300
     routing:
       static:
       - ipv4: 172.16.0.0/16
@@ -7218,7 +7628,7 @@ nodes:
       linkindex: 2
       role: stub
       type: lan
-      bridge: ml_30_2
+      bridge: ml_17_2
       name: t_1400 -> dut
       ifindex: 1
       ifname: eth1
@@ -7248,8 +7658,8 @@ nodes:
     mgmt:
       ifname: eth0
       mac: 08:4f:a9:04:00:00
-      ipv4: 192.168.30.104
-    hostname: clab-ml_30-t_1400
+      ipv4: 192.168.17.104
+    hostname: clab-ml_17-t_1400
     routing:
       static:
       - ipv4: 172.16.0.0/16
@@ -7304,6 +7714,8 @@ links:
   interfaces:
   - mtu: 1400
     node: dut
+    ra:
+      slaac: true
     ipv4: 172.16.1.1/24
     ipv6: 2001:db8:1:1::1/64
     ifindex: 2
@@ -7317,13 +7729,15 @@ links:
   node_count: 2
   role: stub
   type: lan
-  bridge: ml_30_2
+  bridge: ml_17_2
   prefix:
     ipv4: 172.16.1.0/24
     ipv6: 2001:db8:1:1::/64
 - _linkname: links[3]
   interfaces:
   - node: dut
+    ra:
+      slaac: true
     ipv4: 172.16.2.1/24
     ipv6: 2001:db8:1:2::1/64
     ifindex: 3
@@ -7337,7 +7751,7 @@ links:
   node_count: 2
   role: stub
   type: lan
-  bridge: ml_30_3
+  bridge: ml_17_3
   prefix:
     ipv4: 172.16.2.0/24
     ipv6: 2001:db8:1:2::/64
@@ -7496,7 +7910,7 @@ input:
 - package:topology-defaults.yml
 plugin:
 - multilab
-name: ml_30
+name: ml_17
 provider: clab
 module:
 - routing
