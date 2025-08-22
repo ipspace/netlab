@@ -4,27 +4,11 @@ message: This lab tests the BGP default route origination. The DUT should
   advertise a default route to X1.
 plugin:
 - bgp.session
+- test.vrf_check
 - multilab
 module:
 - bgp
-groups:
-  probes:
-    device: frr
-    members:
-    - x1
-    node_data:
-      provider: clab
-  all:
-    vars:
-      netlab_show_config: true
-    members: []
-    _default_group: true
-  as65000:
-    members:
-    - dut
-  as65100:
-    members:
-    - x1
+- vrf
 defaults:
   daemons:
     bird:
@@ -447,6 +431,9 @@ defaults:
         ansible_ssh_pass: vagrant
         ansible_network_os: eos
         ansible_connection: network_cli
+        netlab_config_remove:
+        - no lldp transmit
+        - no lldp receive
       clab:
         build: https://netlab.tools/labs/ceos/
         features:
@@ -488,6 +475,8 @@ defaults:
           eos:
             serialnumber: str
             systemmacaddr: mac
+      warnings:
+        ospf_stub: false
     frr:
       features:
         bgp:
@@ -1193,7 +1182,7 @@ defaults:
           kind: linux
         interface:
           name: eth{ifindex}
-        build: https://github.com/hellt/vrnetlab/tree/master/viosl2
+        build: https://github.com/srl-labs/vrnetlab/tree/master/viosl2
       lag_interface_name: Port-channel{lag.ifindex}
     nxos:
       features:
@@ -1712,7 +1701,7 @@ defaults:
           isis: true
           bgp: true
         vxlan: {}
-      description: Nokia SR OS container
+      description: Nokia SR OS VM in container
       mgmt_if: A/1
       interface_name: eth-1/1/c{ifindex}
       loopback_interface_name: >-
@@ -1757,6 +1746,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        loopback_ipv6: false
     vyos:
       features:
         bgp:
@@ -2021,7 +2012,8 @@ defaults:
         image: none
       features:
         bgp: {}
-        isis: {}
+        isis:
+          circuit_type: true
       libvirt:
         image: cisco/asav
         create_template: asav.xml.j2
@@ -3029,7 +3021,7 @@ defaults:
           kind: linux
         interface:
           name: eth{ifindex}
-        build: https://github.com/hellt/vrnetlab/tree/master/vios
+        build: https://github.com/srl-labs/vrnetlab/tree/master/vios
     iosxr:
       description: Cisco IOS XRv
       support:
@@ -3054,6 +3046,7 @@ defaults:
         ospf:
           unnumbered: true
         isis:
+          circuit_type: true
           unnumbered:
             ipv4: true
             ipv6: true
@@ -3099,6 +3092,7 @@ defaults:
           ipv4:
             unnumbered: peer
           ipv6:
+            lla: true
             use_ra: true
           roles:
           - host
@@ -3285,6 +3279,151 @@ defaults:
             - standard
       graphite:
         icon: router
+    srsim:
+      features:
+        bgp:
+          default_originate: true
+          allowas_in: true
+          as_override: true
+          password: true
+          tcp_ao: true
+          local_as: true
+          vrf_local_as: true
+          local_as_ibgp: true
+          activate_af: true
+          ipv6_lla: false
+          import:
+          - ospf
+          - isis
+          - connected
+          - vrf
+          - no_policy
+        initial:
+          ipv4:
+            unnumbered: true
+          ipv6:
+            lla: true
+          min_phy_mtu: 1500
+          max_mtu: 9782
+        bfd: {}
+        evpn:
+          irb: true
+          asymmetrical_irb: true
+        isis:
+          circuit_type: true
+          unnumbered:
+            ipv4: true
+            ipv6: true
+            network: false
+          import:
+          - ospf
+          - bgp
+          - connected
+          - vrf
+          - no_policy
+        mpls:
+          ldp: true
+          bgp: true
+          vpn: true
+          6pe: true
+        ospf:
+          unnumbered: true
+          import:
+          - bgp
+          - isis
+          - connected
+          - vrf
+          - no_policy
+          strict_bfd: true
+        ripv2:
+          ipv4: true
+          ipv6: true
+          passive: true
+        routing:
+          policy:
+            set:
+            - locpref
+            - med
+        gateway:
+          protocol:
+          - anycast
+          - vrrp
+        sr: {}
+        srv6:
+          bgp: true
+          isis: true
+        vlan:
+          model: router
+          svi_interface_name: svi.{vlan}
+          subif_name: '{ifname}/1_{vlan.access_id}'
+          mixed_trunk: true
+          native_routed: true
+        vrf:
+          ospfv2: true
+          ospfv3: true
+          isis: true
+          bgp: true
+        vxlan: {}
+      description: Nokia SR-SIM (SR-OS) container
+      mgmt_if: A/1
+      interface_name: eth-1/{ifindex // 12 + 1}/c{(ifindex - 1) % 12 + 1}
+      loopback_interface_name: >-
+        {"loopback."+str(ifindex) if ifindex else "system"}
+      group_vars:
+        ansible_user: admin
+        ansible_ssh_pass: NokiaSros1!
+        ansible_network_os: sros
+        ansible_connection: paramiko_ssh
+        netlab_console_connection: ssh
+        sros_use_openconfig: false
+        netlab_match_protomap:
+          ospf:
+          - ospf
+          - ospf3
+          bgp:
+          - bgp
+          connected:
+          - direct
+          isis:
+          - isis
+        netlab_srsim_first_port: 1/1/c1
+        netlab_device_type: srsim
+        netlab_srsim_hw:
+        - slot-number: 1
+          card-type: iom-1
+          mda:
+          - mda-slot: 1
+            mda-type: me12-100gb-qsfp28
+          - mda-slot: 2
+            mda-type: me12-100gb-qsfp28
+      sr:
+        srgb_range_start: 500000
+        srgb_range_size: 1000
+        ipv6_sid_offset: 100
+      bfd:
+        min_tx: 100
+        min_rx: 100
+      clab:
+        image: nokia_srsim:25.7.R1
+        build: https://containerlab.dev/manual/kinds/sros/
+        mtu: 1500
+        node:
+          kind: nokia_srsim
+          type: sr-1
+          license: ~/.netlab/license_srsim25.txt
+          env:
+            NOKIA_SROS_MDA_1: me12-100gb-qsfp28
+            NOKIA_SROS_MDA_2: me12-100gb-qsfp28
+        interface:
+          name: 1/{ifindex // 12 + 1}/c{(ifindex - 1) % 12 + 1}/1
+        group_vars:
+          sros_grpc_port: 57400
+      external:
+        image: none
+      graphite:
+        icon: router
+      warnings:
+        loopback_ipv6: false
     unknown:
       description: Generic Unknown Device
       _meta_device: true
@@ -3478,6 +3617,8 @@ defaults:
           asymmetrical_irb: true
           irb: true
           multi_rt: true
+          bundle:
+          - vlan_aware
         lag:
           passive: true
         vlan:
@@ -3855,8 +3996,8 @@ defaults:
           ipv4:
             unnumbered: peer
           ipv6:
-            use_ra: true
             lla: true
+            use_ra: true
           roles:
           - host
           - router
@@ -3987,6 +4128,7 @@ defaults:
           ipv4:
             unnumbered: peer
           ipv6:
+            lla: true
             use_ra: true
           roles:
           - host
@@ -4213,8 +4355,15 @@ defaults:
       id:
         type: int
         min_value: 1
-        max_value: 150
-      config: list
+        max_value: MAX_NODE_ID
+      config:
+        type: dict
+        _subtype:
+          type: error
+          _err_msg: Enable "files" plugin to use the inline node/group 
+            configuration template(s)
+        _alt_types:
+        - list
       group: list
       role:
         type: str
@@ -4393,6 +4542,10 @@ defaults:
       config:
         template: str
         variable: dict
+        inline:
+          type: error
+          _err_msg: Enable "files" plugin to use the "inline" configuration 
+            template
         _alt_types:
         - str
       valid: _v_option
@@ -4990,6 +5143,7 @@ defaults:
           rr:
             type: list
             _subtype: node_id
+      vrf_aware: {}
     ebgp_role: external
     advertise_roles:
     - stub
@@ -5060,6 +5214,7 @@ defaults:
       sonic: true
       srlinux: true
       sros: true
+      srsim: true
       unknown: true
       vjunos-router: true
       vjunos-switch: true
@@ -5177,8 +5332,8 @@ defaults:
       act_title: KVM/libvirt domains (virtual machines)
       cleanup:
       - Vagrantfile
-      tunnel_id: '17'
-      vifprefix: vgif_17
+      tunnel_id: '32'
+      vifprefix: vgif_32
       clab:
         start: sudo -E containerlab deploy --reconfigure -t clab-augment.yml
         stop: sudo -E containerlab destroy --cleanup -t clab-augment.yml
@@ -5190,6 +5345,7 @@ defaults:
           nic_adapter_count: int
           image: str
           uuid: str
+          ports: list
         link:
           permanent: bool
           public:
@@ -5250,9 +5406,25 @@ defaults:
           shape: arrow
         target-arrowhead:
           shape: arrow
+      localas_ibgp:
+        style:
+          stroke: '#9b652f'
+          stroke-width: 4
+        source-arrowhead:
+          shape: arrow
+        target-arrowhead:
+          shape: arrow
       ebgp:
         style:
           stroke: '#b21a1a'
+          stroke-width: 4
+        source-arrowhead:
+          shape: arrow
+        target-arrowhead:
+          shape: arrow
+      confed_ebgp:
+        style:
+          stroke: '#d26400'
           stroke-width: 4
         source-arrowhead:
           shape: arrow
@@ -5298,8 +5470,14 @@ defaults:
         ibgp:
           color: '#613913'
           penwidth: 2
+        localas_ibgp:
+          color: '#9b652f'
+          penwidth: 2
         ebgp:
           color: '#b21a1a'
+          penwidth: 2
+        confed_ebgp:
+          color: '#d26400'
           penwidth: 2
         graph:
           bgcolor: transparent
@@ -5593,6 +5771,34 @@ defaults:
     ifname:
       neighbors: 5
       maxlength: 255
+    MAX_NODE_ID: 150
+    validate:
+      ping: 5
+      ping_long: 15
+      vxlan_ping: 20
+      ping_xx_long: 40
+      ra_send: 30
+      ospfv2_adj_p2p: 30
+      ospfv2_adj_lan: 50
+      ospfv2_spf: 10
+      ospfv3_adj_p2p: 30
+      ospfv3_adj_lan: 50
+      ospfv3_spf: 10
+      ospf_import: 20
+      ebgp_session: 30
+      ibgp_session: 30
+      bgp_scan_time: 5
+      bgp_scan_long: 15
+      bgp_ios_redist: 60
+      isis_adj_p2p: 20
+      isis_adj_lan: 50
+      isis_spf: 15
+      isis_spf_long: 45
+      rip_start: 60
+      rip_update: 20
+      ldp_adj: 30
+      stp_forwarding: 40
+      lacp_setup: 10
   hints:
     evpn:
       irb_group: >
@@ -5672,19 +5878,19 @@ defaults:
         storage prices keep falling
   multilab:
     change:
-      name: ml_17
+      name: ml_32
       defaults:
-        name: ml_17
+        name: ml_32
         providers:
           libvirt:
-            tunnel_id: '17'
-            vifprefix: vgif_17
+            tunnel_id: '32'
+            vifprefix: vgif_32
       addressing:
         mgmt:
-          ipv4: 192.168.17.0/24
-          _network: nl_mgmt_17
-          _bridge: nl_mgmt_17
-    id: 17
+          ipv4: 192.168.32.0/24
+          _network: nl_mgmt_32
+          _bridge: nl_mgmt_32
+    id: 32
   netlab:
     capture:
       command: tcpdump -i {intf}
@@ -5692,18 +5898,18 @@ defaults:
     create: {}
   paths:
     validate:
-    - /home/pipi/netlab_gh/netsim/validate
+    - /home/pipi/net101/tools/netsim/validate
     plugin:
-    - /work/netlab_cicd
+    - /work/netlab_cicd/sample
     - /home/pipi/net101/tools/tests/integration/bgp.session
     - /home/pipi/.netlab
-    - /home/pipi/netlab_gh/netsim/extra
+    - /home/pipi/net101/tools/netsim/extra
     custom:
       dirs:
       - /home/pipi/net101/tools/tests/integration/bgp.session
-      - /work/netlab_cicd
+      - /work/netlab_cicd/sample
       - /home/pipi/.netlab
-      - /home/pipi/netlab_gh/netsim/extra
+      - /home/pipi/net101/tools/netsim/extra
       files:
       - "{{ custom_config + '/' + inventory_hostname + '.' + netlab_device_type +
         '-' + node_provider + '.j2' }}"
@@ -5734,7 +5940,7 @@ defaults:
       - '{{ custom_config }}/deploy.yml'
     deploy:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks
+      - /home/pipi/net101/tools/netsim/ansible/tasks
       tasks_generic:
       - deploy-config/{{ netlab_device_type }}-{{ node_provider }}.yml
       - deploy-config/{{ netlab_device_type }}.yml
@@ -5755,8 +5961,8 @@ defaults:
       - deploy-config/{{ ansible_network_os }}.yml
     templates:
       dirs:
-      - /home/pipi/netlab_gh/netsim/daemons
-      - /home/pipi/netlab_gh/netsim/ansible/templates
+      - /home/pipi/net101/tools/netsim/daemons
+      - /home/pipi/net101/tools/netsim/ansible/templates
     t_files:
       files:
       - '{{config_module}}/{{netlab_device_type}}-{{provider|default(netlab_provider)}}.j2'
@@ -5768,7 +5974,7 @@ defaults:
       - '{{netlab_device_type}}/{{config_module}}.j2'
     ready:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check
+      - /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check
       files:
       - '{{netlab_device_type}}-{{provider|default(netlab_provider)}}.yml'
       - '{{netlab_device_type}}.yml'
@@ -5776,7 +5982,7 @@ defaults:
       - '{{ansible_network_os}}.yml'
     collect:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks/fetch-config
+      - /home/pipi/net101/tools/netsim/ansible/tasks/fetch-config
   ports:
     ssh: 22
     http: 80
@@ -5784,6 +5990,8 @@ defaults:
     netconf: 830
   warnings:
     duplicate_address: true
+    providers:
+      change: false
   bfd:
     min_echo_rx: 0
     multiplier: 3
@@ -5846,6 +6054,7 @@ defaults:
       nxos: true
       srlinux: true
       sros: true
+      srsim: true
       unknown: true
       vjunos-router: true
       vjunos-switch: true
@@ -6036,6 +6245,7 @@ defaults:
       nxos: true
       srlinux: true
       sros: true
+      srsim: true
       unknown: true
       vjunos-switch: true
       vyos: true
@@ -6134,6 +6344,7 @@ defaults:
       nxos: true
       srlinux: true
       sros: true
+      srsim: true
       unknown: true
       vjunos-router: true
       vjunos-switch: true
@@ -6241,6 +6452,7 @@ defaults:
         ipv6: IPv6 unnumbered interfaces
         network: multi-access unnumbered links
       import: Route redistribution
+      circuit_type: Circuit type
     warnings:
       inactive: true
     supported_on:
@@ -6260,6 +6472,7 @@ defaults:
       nxos: true
       srlinux: true
       sros: true
+      srsim: true
       unknown: true
       vjunos-router: true
       vjunos-switch: true
@@ -6496,6 +6709,7 @@ defaults:
       routeros7: true
       srlinux: true
       sros: true
+      srsim: true
       unknown: true
       vjunos-router: true
       vjunos-switch: true
@@ -6733,6 +6947,7 @@ defaults:
       routeros7: true
       srlinux: true
       sros: true
+      srsim: true
       unknown: true
       vjunos-router: true
       vjunos-switch: true
@@ -6843,6 +7058,7 @@ defaults:
       iosvl2: true
       none: true
       sros: true
+      srsim: true
       vyos: true
   prefix:
     any:
@@ -6975,6 +7191,7 @@ defaults:
       openbsd: true
       srlinux: true
       sros: true
+      srsim: true
       vjunos-router: true
       vjunos-switch: true
       vmx: true
@@ -7018,6 +7235,7 @@ defaults:
       none: true
       srlinux: true
       sros: true
+      srsim: true
       unknown: true
       vjunos-router: true
       vjunos-switch: true
@@ -7124,6 +7342,7 @@ defaults:
       frr: true
       none: true
       sros: true
+      srsim: true
       unknown: true
   stp:
     requires:
@@ -7312,6 +7531,7 @@ defaults:
       routeros7: true
       srlinux: true
       sros: true
+      srsim: true
       unknown: true
       vjunos-router: true
       vjunos-switch: true
@@ -7347,6 +7567,7 @@ defaults:
       - mgmt
       - management
       - mgmt_junos
+      node_copy: {}
     warnings:
       inactive: true
     features:
@@ -7377,6 +7598,7 @@ defaults:
       routeros7: true
       srlinux: true
       sros: true
+      srsim: true
       unknown: true
       vjunos-router: true
       vjunos-switch: true
@@ -7434,12 +7656,15 @@ defaults:
       nxos: true
       srlinux: true
       sros: true
+      srsim: true
       unknown: true
       vjunos-switch: true
       vyos: true
   sources:
+    extra:
+    - ../wait_times.yml
+    - ../warnings.yml
     list: []
-    extra: []
     user: []
     system: []
   workdir: /work/netlab_cicd
@@ -7474,7 +7699,30 @@ defaults:
     - vxlan
   module:
   - bgp
-  name: ml_17
+  - vrf
+  name: ml_32
+groups:
+  probes:
+    device: frr
+    members:
+    - x1
+    - x2
+    node_data:
+      provider: clab
+  all:
+    vars:
+      netlab_show_config: true
+    members: []
+    _default_group: true
+  as65000:
+    members:
+    - dut
+  as65100:
+    members:
+    - x1
+  as65200:
+    members:
+    - x2
 bgp:
   advertise_loopback: false
   community:
@@ -7501,18 +7749,29 @@ addressing:
     ipv4: 10.0.0.0/24
     prefix: 32
   mgmt:
-    ipv4: 192.168.17.0/24
+    ipv4: 192.168.32.0/24
     start: 100
     mac: 08-4F-A9-00-00-00
-    _network: nl_mgmt_17
-    _bridge: nl_mgmt_17
+    _network: nl_mgmt_32
+    _bridge: nl_mgmt_32
     prefix: 24
   l2only: {}
   vrf_loopback:
     ipv4: 10.2.0.0/24
     prefix: 32
+vrfs:
+  tenant:
+    id: 1
+    rd: '65000:1'
+    import:
+    - '65000:1'
+    export:
+    - '65000:1'
 nodes:
   dut:
+    module:
+    - bgp
+    - vrf
     name: dut
     interfaces:
     - bgp:
@@ -7531,6 +7790,23 @@ nodes:
         ipv6: 2001:db8:3::2/64
         ifname: eth1
         node: x1
+    - bgp:
+        default_originate: true
+      vrf: tenant
+      ipv4: 10.1.0.5/30
+      ipv6: 2001:db8:3:1::1/64
+      linkindex: 2
+      role: external
+      type: p2p
+      name: dut -> x2
+      ifindex: 2
+      ifname: eth2
+      mtu: 1500
+      neighbors:
+      - ipv4: 10.1.0.6/30
+        ipv6: 2001:db8:3:1::2/64
+        ifname: eth1
+        node: x2
     device: frr
     clab:
       kind: linux
@@ -7541,8 +7817,6 @@ nodes:
       - clab_files/dut/daemons:/etc/frr/daemons
       - clab_files/dut/hosts:/etc/hosts
     box: quay.io/frrouting/frr:10.4.1
-    module:
-    - bgp
     bgp:
       advertise_loopback: false
       community:
@@ -7576,6 +7850,10 @@ nodes:
       _session_clear:
       - 10.1.0.2
       - 2001:db8:3::2
+      - 10.1.0.6
+      - 2001:db8:3:1::2
+    vrf:
+      as: 65000
     id: 1
     role: router
     mtu: 1500
@@ -7583,11 +7861,13 @@ nodes:
     af:
       ipv4: true
       ipv6: true
+      vpnv4: true
+      vpnv6: true
     mgmt:
       ifname: eth0
       mac: 08:4f:a9:01:00:00
-      ipv4: 192.168.17.101
-    hostname: clab-ml_17-dut
+      ipv4: 192.168.32.101
+    hostname: clab-ml_32-dut
     loopback:
       type: loopback
       neighbors: []
@@ -7595,6 +7875,34 @@ nodes:
       ifindex: 0
       ifname: lo
       ipv4: 10.0.0.1/32
+    vrfs:
+      tenant:
+        id: 1
+        rd: '65000:1'
+        import:
+        - '65000:1'
+        export:
+        - '65000:1'
+        bgp:
+          neighbors:
+          - ifindex: 2
+            name: x2
+            as: 65200
+            type: ebgp
+            ipv4: 10.1.0.6
+            ipv6: 2001:db8:3:1::2
+            activate:
+              ipv4: true
+              ipv6: true
+            _src_vrf: tenant
+            default_originate: true
+          import:
+            connected:
+              auto: true
+        af:
+          ipv4: true
+          ipv6: true
+        vrfidx: 100
     config:
     - bgp.session
   x1:
@@ -7667,8 +7975,8 @@ nodes:
     mgmt:
       ifname: eth0
       mac: 08:4f:a9:02:00:00
-      ipv4: 192.168.17.102
-    hostname: clab-ml_17-x1
+      ipv4: 192.168.32.102
+    hostname: clab-ml_32-x1
     loopback:
       type: loopback
       neighbors: []
@@ -7676,6 +7984,86 @@ nodes:
       ifindex: 0
       ifname: lo
       ipv4: 10.0.0.2/32
+  x2:
+    bgp:
+      advertise_loopback: false
+      community:
+        ibgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      next_hop_self: true
+      as: 65200
+      router_id: 10.0.0.3
+      neighbors:
+      - ifindex: 1
+        name: dut
+        as: 65000
+        type: ebgp
+        ipv4: 10.1.0.5
+        ipv6: 2001:db8:3:1::1
+        activate:
+          ipv4: true
+          ipv6: true
+      ipv4: true
+      ipv6: true
+    name: x2
+    interfaces:
+    - ipv4: 10.1.0.6/30
+      ipv6: 2001:db8:3:1::2/64
+      linkindex: 2
+      role: external
+      type: p2p
+      name: x2 -> dut
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - bgp:
+          default_originate: true
+        vrf: tenant
+        ipv4: 10.1.0.5/30
+        ipv6: 2001:db8:3:1::1/64
+        ifname: eth2
+        node: dut
+    device: frr
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts
+      binds:
+      - clab_files/x2/daemons:/etc/frr/daemons
+      - clab_files/x2/hosts:/etc/hosts
+    box: quay.io/frrouting/frr:10.4.1
+    module:
+    - bgp
+    id: 3
+    role: router
+    mtu: 1500
+    provider: clab
+    af:
+      ipv4: true
+      ipv6: true
+    mgmt:
+      ifname: eth0
+      mac: 08:4f:a9:03:00:00
+      ipv4: 192.168.32.103
+    hostname: clab-ml_32-x2
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.3/32
 links:
 - _linkname: links[1]
   interfaces:
@@ -7698,6 +8086,28 @@ links:
   prefix:
     ipv4: 10.1.0.0/30
     ipv6: 2001:db8:3::/64
+- _linkname: links[2]
+  interfaces:
+  - bgp:
+      default_originate: true
+    vrf: tenant
+    node: dut
+    ipv4: 10.1.0.5/30
+    ipv6: 2001:db8:3:1::1/64
+    ifindex: 2
+    ifname: eth2
+  - node: x2
+    ipv4: 10.1.0.6/30
+    ipv6: 2001:db8:3:1::2/64
+    ifindex: 1
+    ifname: eth1
+  linkindex: 2
+  role: external
+  node_count: 2
+  type: p2p
+  prefix:
+    ipv4: 10.1.0.4/30
+    ipv6: 2001:db8:3:1::/64
 validate:
 - description: Check IPv4 EBGP sessions with DUT
   wait_msg: Waiting for EBGP session establishment
@@ -7727,9 +8137,41 @@ validate:
   - x1
   plugin: bgp_prefix('::/0',af='ipv6')
   name: def_ipv6
+- description: Check IPv4 EBGP sessions with DUT (vrf)
+  wait_msg: Waiting for EBGP session establishment
+  wait: 30
+  nodes:
+  - x2
+  plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+  name: vrf_ebgp_v4
+- description: Check IPv6 EBGP sessions with DUT (vrf)
+  wait_msg: Waiting for EBGP session establishment
+  wait: 30
+  nodes:
+  - x2
+  plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6')
+  name: vrf_ebgp_v6
+- description: Check whether DUT (vrf) advertises IPv4 default route to X2
+  wait: 5
+  wait_msg: Waiting for BGP convergence
+  nodes:
+  - x2
+  plugin: bgp_prefix('0.0.0.0/0')
+  name: vrf_def_ipv4
+- description: Check whether (vrf) DUT advertises IPv6 default route to X2
+  wait: 5
+  wait_msg: Waiting for BGP convergence
+  nodes:
+  - x2
+  plugin: bgp_prefix('::/0',af='ipv6')
+  name: vrf_def_ipv6
 input:
 - /home/pipi/net101/tools/tests/integration/bgp.session/04-default-originate.yml
+- /home/pipi/net101/tools/tests/integration/wait_times.yml
+- /home/pipi/net101/tools/tests/integration/warnings.yml
 - /home/pipi/.netlab.yml
 - package:topology-defaults.yml
-name: ml_17
+name: ml_32
 provider: clab
+vrf:
+  as: 65000
