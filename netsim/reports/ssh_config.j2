@@ -1,0 +1,60 @@
+{% set ssh_defaults = defaults.ssh|default({}) %}
+{% set hostname = ssh_defaults.hostname|default('netlab') %}
+{% set public_ip = ssh_defaults.publicip|default('') %}
+{% set netlab_path = ssh_defaults.netlabpath|default('netlab') %}
+{% set ssh_conn = ['paramiko','netconf','paramiko_ssh','network_cli'] %}
+#
+# This SSH configuration file allows you to connect to netlab devices running
+# on a remote server  straight from your workstation
+#
+# Save it into the ~/.ssh directory (or similar) and include it in your ~/.ssh/config
+# file with the "Include" directive (which has to be before the first Host directive)
+#
+# You can change the SSH parameters with these environment variables
+#
+# NETLAB_SSH_HOSTNAME         The desired hostname of the netlab server
+# NETLAB_SSH_PUBLICIP         The IP address of the netlab server when the hostname is not resolvable
+# NETLAB_SSH_NETLABPATH       The path to 'netlab' command (if it's not in PATH)
+#
+# Use the 'netlab_ssh_forward' node parameter to set up port forwarding, for example, to map the 'fw'
+# HTTPS (port 443) server into local port 8080, use the following setup:
+#
+# nodes:
+#   fw:
+#     netlab_ssh_forward:
+#     - 8080:443
+#
+Host {{ hostname }}
+  StrictHostKeyChecking off
+  UserKnownHostsFile /dev/null
+{% if public_ip %}
+  HostName {{ public_ip }}
+{% endif %}
+{% for n_name,n_data in nodes.items() if 'netlab_ssh_forward' in n_data %}
+{%   for p_fwd in n_data.netlab_ssh_forward %}
+{%     set p_data = p_fwd.split(':') %}
+  LocalForward {{ p_data[0] }} {{ n_data.ansible_host }}:{{ p_data[1] }}
+{%   endfor %}
+{% endfor %}
+
+{% for n_name,n_data in nodes.items() %}
+Host {{ n_name }}
+  HostName {{ public_ip or hostname }}
+  RequestTTY yes
+  RemoteCommand {{ netlab_path }} connect -i {{ defaults.multilab.id|default('default') }} {{ n_name }}
+  UserKnownHostsFile /dev/null
+  StrictHostKeyChecking off
+  UserKnownHostsFile /dev/null
+  LogLevel QUIET
+
+{% endfor %}
+{% for n_name,n_data in nodes.items() 
+     if n_data.ansible_connection in ssh_conn %}
+Host {{ n_name }}.ssh
+  HostName {{ n_data.ansible_host }}
+  User {{ n_data.ansible_user }}
+  ProxyJump {{ hostname }}
+  StrictHostKeyChecking off
+  UserKnownHostsFile /dev/null
+
+{% endfor %}

@@ -15,7 +15,7 @@ _netlab_ contains several mechanisms that allow you to manage physical labs, add
 
 *libvirt* and *containerlab* try to add IPv4 default routes to lab devices. *libvirt* uses a DHCP option, *containerlab* installs a default route into the container network namespace[^DR_EOS]. Most network devices running in a virtual lab are thus able to reach external destinations.
 
-Most box-building recipes for *libvirt* Vagrant boxes recommend using a management VRF for the management interface. The default route is thus installed into the management VRF, and the client you're using on the network device has to be VRF-aware to reach external destinations. For example, you'll have to use a command similar to **ping vrf _name_ _destination_** to ping external IP addresses.
+Most box-building recipes for *libvirt* Vagrant boxes recommend using a management VRF for the management interface. The default route is thus installed into the management VRF, and the client you're using on the network device must be VRF-aware to reach external destinations. For example, you'll have to use a command similar to **ping vrf _name_ _destination_** to ping external IP addresses.
 
 [^DR_EOS]: The default route added to the Linux kernel by *containerlab* might not be displayed by the network operating system. For example, if you execute **show ip route** on an Arista EOS container, you won't see a default route, but you'll still be able to reach external destinations.
 
@@ -28,7 +28,7 @@ Alternatively, use *[graphite](../extool/graphite.md)* for GUI-based SSH access 
 
 ### Finding the Management IP Addresses
 
-**netlab report mgmt** command displays the management IP addresses[^VBS] of the lab devices, protocol used to configure the devices (SSH, NETCONF or docker), and the username/password used by _netlab_ to configure the device.
+The **netlab report mgmt** command displays the management IP addresses of the lab devices, protocol used to configure the devices (SSH, NETCONF, or Docker), and the username/password used by _netlab_ to configure the device.
 
 Alternatively, you could use Ansible inventory to find the same information:
 
@@ -37,7 +37,34 @@ Alternatively, you could use Ansible inventory to find the same information:
 
 Finally, you could display node information in YAML format with the **[netlab inspect --node _nodename_](../netlab/inspect.md)** command, or analyze the  **nodes** dictionary in the `netlab.snapshot.yml` file with `yq` or a custom script.
 
-[^VBS]: And SSH ports if you're using *Virtualbox*.
+### Using SSH Port Forwarding
+
+_netlab_ can also create an SSH configuration file that you can add to your `.ssh` directory to access lab devices directly through SSH sessions using the _netlab_ host as a proxy host[^SSHDIY].
+
+After starting the lab, run **netlab report ssh_config** ([more details](netlab-report)) in the lab directory and save the contents into a file in your workstation's `.ssh` directory. Use `Include` directive in the SSH `config` file[^SBF] to give your **ssh** client access to the definitions of lab devices.
+
+[^SSHDIY]: If you're not familiar with SSH configuration files, explore LocalForward, ProxyJump, ProxyCommand, and RemoteCommand OpenSSH [configuration parameters](https://man.openbsd.org/ssh_config).
+
+[^SBF]: At the beginning of the file
+
+You might have to set several [default](topo-defaults) parameters, either in the [user default file](defaults-user-file) or by [using environment variables](defaults-env), to adapt the contents of the SSH configuration to your environment:
+
+* **defaults.ssh.hostname** -- The name under which the _netlab_ server is known on your workstation (default: `netlab`). You have to set this parameter to a hostname that is resolvable on your workstation or combine it with the **defaults.ssh.publicip** parameter, in which case the SSH configuration file will include the definition of the hostname specified in this parameter[^SCTIO].
+* **defaults.ssh.publicip** -- The public IP address you can use to reach the _netlab_ server. Use this parameter if you're running the _netlab_ host in an environment where its public IP address might change (for example, in a public cloud).
+* **defaults.ssh.netlabpath** -- The `netlab` command path when it's not in the default PATH[^SPLS].
+
+[^SCTIO]: Sounds confusing? Try it out; you cannot do any damage until you save the report results in a file.
+
+[^SPLS]: The SSH process doing proxying on the _netlab_ server is started without executing the shell login script
+
+The **ssh_config** report can also set up SSH port forwarding using the **netlab_ssh_forward** node variable. For example, using the following lab topology, you'd get access to the firewall's HTTPS port (port 443) through the workstation (`localhost`) port 8080 *after establishing an SSH session to the netlab host*.
+
+```
+nodes:
+  fw:
+    netlab_ssh_forward:
+    - 8080:443
+```
 
 (external-connectivity-control-plane)=
 ## Control-Plane Connectivity
@@ -46,9 +73,7 @@ If you need control-plane connectivity to your lab devices (for example, you'd l
 
 To connect *libvirt* virtual machines or *containerlab* containers to the outside world, set [**libvirt.uplink**](libvirt-network-external) or [**clab.uplink**](clab-network-external) link attribute on any link in your topology.
 
-*VirtualBox* uses a different connectivity model. It maps device TCP/UDP ports into host TCP/UDP ports. The default ports mapped for each network device are **ssh**, **http** and **netconf**. It's possible to add additional forwarded ports to the **defaults.providers.virtualbox.forwarded** parameter; the details are beyond the scope of this tutorial.
-
-*VirtualBox* can connect VMs to the external world. That capability is not part of _netlab_ functionality; please feel free to [submit a Pull Request](../dev/guidelines.md) implementing it.
+*VirtualBox* uses a different connectivity model. It maps device TCP/UDP ports into host TCP/UDP ports. The default ports mapped for each network device are **ssh**, **http**, and **netconf**. You can add further forwarded ports to the **defaults.providers.virtualbox.forwarded** parameter; the details are beyond the scope of this tutorial.
 
 (external-unprovisioned-devices)=
 ## Unprovisioned Devices
@@ -56,9 +81,9 @@ To connect *libvirt* virtual machines or *containerlab* containers to the outsid
 The easiest way to add network management software (or any third-party workload) to your lab is to deploy it as a node in your network:
 
 * Define an extra **linux** node in your lab topology
-* Use **image** node attribute to specify a Vagrant box or container image to use.
+* Use the **image** node attribute to specify the node's Vagrant box or container image.
 
-The lab provisioning process will configure the static routes on your VM/container to allow it to reach all other devices in your lab.
+The lab provisioning process will configure the static routes on your VM/container so that it can reach all other devices in your lab.
 
 The VM device provisioning process will fail if your VM does not contain Python (used by Ansible) or the necessary Linux CLI commands (example: **ip** to add static routes); container interface addresses and routing tables are [configured from the Linux server](clab-linux).
 
@@ -89,7 +114,7 @@ As they are still connected to the management network, they can always reach the
 (external-unmanaged)=
 ## Unmanaged Devices
 
-In advanced scenarios connecting your virtual lab with the outside world, you might want to include external devices into your lab topology without managing or provisioning them[^UDC].
+In advanced scenarios connecting your virtual lab with the outside world, you might want to add external devices to your lab topology without managing or provisioning them[^UDC].
 
 [^UDC]: Assuming you connected one or more Linux bridges in your lab with the outside world.
 
@@ -128,8 +153,8 @@ You still have to specify the device type (either in the node or as the [default
 
 If you want to create configurations for a prewired physical lab, use the [**external** provider](../labs/external.md).
 
-Before using _netlab_ with a physical lab, you'll have to create a lab topology that specifies the specify management IP addresses and interface names for all devices in your lab. Once that's done, save the topology as a blueprint for further lab work.
+Before using _netlab_ with a physical lab, you must create a lab topology specifying the management IP addresses and interface names for all devices in your lab. Once that's done, save the topology as a blueprint for further lab work.
 
-Starting with the physical lab blueprint topology, add addressing plans (if needed), configuration modules, and configuration module parameters. Use **netlab up** to start the data transformation process and configuration deployment on physical devices.
+Starting with the physical lab blueprint topology, add addressing plans (if needed), configuration modules, and configuration module parameters. Use **netlab up** to start the data transformation and configuration deployment on physical devices.
 
 Please note that _netlab_ does not contain a cleanup procedure for physical devices -- you'll have to remove the device configurations before starting the next lab.
