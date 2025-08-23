@@ -39,9 +39,11 @@ Finally, you could display node information in YAML format with the **[netlab in
 
 ### Using SSH Port Forwarding
 
-_netlab_ can also create an SSH configuration file that you can add to your `.ssh` directory to access lab devices directly through SSH sessions using the _netlab_ host as a proxy host.
+_netlab_ can also create an SSH configuration file that you can add to your `.ssh` directory to access lab devices directly through SSH sessions using the _netlab_ host as a proxy host[^SSHDIY].
 
-After starting the lab, run **netlab report ssh_config** in the lab directory and save the contents into a file in your workstation's `.ssh` directory. Use `Include` directive in the SSH `config` file[^SBF] to give your **ssh** client access to the definitions of lab devices.
+After starting the lab, run **netlab report ssh_config** ([more details](netlab-report)) in the lab directory and save the contents into a file in your workstation's `.ssh` directory. Use `Include` directive in the SSH `config` file[^SBF] to give your **ssh** client access to the definitions of lab devices.
+
+[^SSHDIY]: If you're not familiar with SSH configuration files, explore LocalForward, ProxyJump, ProxyCommand, and RemoteCommand OpenSSH [configuration parameters](https://man.openbsd.org/ssh_config).
 
 [^SBF]: At the beginning of the file
 
