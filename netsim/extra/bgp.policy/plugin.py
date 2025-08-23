@@ -23,7 +23,7 @@ def must_be_autobw(
     if value == 'auto':
       return { '_valid': True } 
     
-  result = types.check_int_type(value,min_value,max_value)
+  result = types.check_num_type(value,min_value,max_value)
   return expected_type if '_type' in result else result
 
 types.register_type('autobw',must_be_autobw)

@@ -6,6 +6,7 @@ import typing,typing_extensions
 import functools
 import ipaddress
 import netaddr
+import datetime
 import re
 import textwrap
 
@@ -491,31 +492,34 @@ def must_be_id(value: typing.Any, max_length: typing.Union[int,str] = 16) -> dic
 
   return { '_valid': True } 
 
-def check_int_type(
+def check_num_type(
       value: typing.Any,
       min_value:  typing.Optional[int] = None,          # Minimum value
       max_value:  typing.Optional[int] = None,          # Maximum value
-                ) -> dict:
-  if not isinstance(value,int):                         # value must be an int
-    return { '_type': 'an integer' }
+      datatype:   typing.Type = int,
+      dataname:   str = 'an integer') -> dict:
+  
+  # Value must be an integer or the specified data type
+  if not isinstance(value,(int,datatype)):
+    return { '_type': dataname }
 
   if isinstance(value,bool):                            # but not a bool
-    return { '_value': 'a true integer (not a bool)' }
+    return { '_value': 'a true number (not a bool)' }
 
   if isinstance(max_value,str):
     max_value = resolve_const_value(max_value,None)
   if isinstance(min_value,str):
     min_value = resolve_const_value(min_value,None)
 
-  if isinstance(min_value,int) and isinstance(max_value,int):
+  if isinstance(min_value,(int,datatype)) and isinstance(max_value,(int,datatype)):
     if value < min_value or value > max_value:
-      return { '_value': f'an integer between {min_value} and {max_value}' }
-  elif isinstance(min_value,int):
+      return { '_value': f'{dataname} between {min_value} and {max_value}' }
+  elif isinstance(min_value,(int,datatype)):
     if value < min_value:
-      return { '_value': f'an integer larger or equal to {min_value}' }
-  elif isinstance(max_value,int):
+      return { '_value': f'{dataname} larger or equal to {min_value}' }
+  elif isinstance(max_value,(int,datatype)):
     if value > max_value:
-      return { '_value': f'an integer less than or equal to {max_value}' }
+      return { '_value': f'{dataname} less than or equal to {max_value}' }
 
   return { '_valid': True } 
 
@@ -536,7 +540,26 @@ def must_be_int(
     except:
       pass
 
-  return(check_int_type(value,min_value,max_value))
+  return(check_num_type(value,min_value,max_value))
+
+@type_test()
+def must_be_float(
+      value: typing.Any,
+      min_value:  typing.Optional[int] = None,          # Minimum value
+      max_value:  typing.Optional[int] = None,          # Maximum value
+                ) -> dict:
+
+  def transform_to_float(value: typing.Any) -> float:
+    return float(value)
+
+  if isinstance(value,str):                             # Try to convert STR to INT
+    try:
+      transform_to_float(value)
+      return { '_valid': True, '_transform': transform_to_float }
+    except:
+      pass
+
+  return(check_num_type(value,min_value,max_value,float,'a number'))
 
 @type_test(false_value=False)
 def must_be_bool(value: typing.Any) -> dict:
@@ -563,6 +586,30 @@ def must_be_bool(value: typing.Any) -> dict:
 def must_be_bool_false(value: typing.Any) -> dict:
 
   return { '_valid': True } if value is False else { '_type': 'False' }
+
+@type_test()
+def must_be_time(value: typing.Any) -> dict:
+
+  def transform_to_msec(duration: str) -> int:
+    # Regex to capture number + unit (e.g. "200ms", "1s", "5m")
+    match = re.fullmatch(r"(\d+(?:\.\d+)?)(ms|s)", duration.strip())
+    if not match:
+      raise ValueError(f"Invalid duration format: '{duration}'")
+    
+    value, unit = match.groups()
+    return int(value) if unit == 'ms' else int(1000 * float(value))
+
+  if isinstance(value,(int,float)) and not isinstance(value,bool):
+    return { '_valid': True }
+
+  if isinstance(value,str):                             # Try to convert STR to delta time
+    try:
+      transform_to_msec(value)
+      return { '_valid': True, '_transform': transform_to_msec }
+    except Exception as ex:
+      pass
+
+  return { '_type': 'a time interval'}
 
 @type_test()
 def must_be_asn2(value: typing.Any) -> dict:                          # 2-octet ASN (in case we need it somewhere)
