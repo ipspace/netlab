@@ -83,7 +83,7 @@ The dictionary-based approach allows in-depth validation of nested attributes, w
 (dev-valid-data-types)=
 ## Valid Data Types
 
-Validator recognizes standard Python data types (**str**, **int**, **bool**, **list** or **dict**) and the following networking-specific data types:
+Validator recognizes standard Python data types (**str**, **int**, **float**, **bool**, **list** or **dict**) and the following networking-specific data types:
 
 | Data type.     | Meaning |
 |----------------|---------|
@@ -102,6 +102,7 @@ Validator recognizes standard Python data types (**str**, **int**, **bool**, **l
 | **prefix_str** | An IPv4 or IPv6 prefix |
 | **rd**         | Route distinguisher (ASN:ID or IP:ID) |
 | **r_proto**    | Routing protocol identifier |
+| **time**       | Time duration specified in seconds (`s`) or milliseconds (`ms`) |
  
 The data type can be specified as a string (without additional parameters) or a dictionary with a **type** attribute (data type as a string) and other type-specific validation parameters.
 
@@ -145,6 +146,8 @@ When an attribute has a data type defined with the **type** attribute, you can u
 |           | **_subtype** -- validate values as belonging to the specified subtype |
 |           | **_keytype** -- validate keys as belonging to the specified scalar type |
 |           | **_list_to_dict** -- [value can be specified as a list](validation-list-to-dict) |
+| **float** | **min_value** -- minimum parameter value |
+|           | **max_value** -- maximum parameter value |
 | **id**    | **max_length** -- maximum identifier length |
 | **int**   | **min_value** -- minimum parameter value |
 |           | **max_value** -- maximum parameter value |
