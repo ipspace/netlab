@@ -442,6 +442,23 @@ A lab device could be a networking device or a host[^HOST]. Links with attached 
 
 [^NOPASS]: To turn a link with hosts attached into a transit link, set link **role** to **lan** (or any other role).
 
+(links-netem)=
+## Link Impairment
+
+_netlab_ can configure the Linux **netem** queuing discipline to introduce link impairment on point-to-point or LAN links[^tc]. The **tc** link- or interface attribute allows you to configure these QoS parameters:
+
+* **tc.delay** -- transmission delay specified in milliseconds (`ms`) or seconds (`s`)
+* **tc.jitter** -- jitter (using the same units as **tc.delay**)
+* **tc.loss** -- loss percentage (0..100)
+* **tc.corrupt** -- packet corruption percentage
+* **tc.duplicate** -- packet duplication percentage
+* **tc.reorder** -- packet reordering percentage
+* **tc.rate** -- rate throttling (in kbps). Delays packets to emulate a fixed link speed
+
+[^tc]: This feature works with *[clab](lab-clab)* and *[libvirt](lab-libvirt)* providers. *libvirt* point-to-point links are converted to LAN links (using a Linux bridge), which means that you cannot use **tc** together with link aggregation on inter-VM links.
+
+While you could configure **tc** parameters on individual interfaces, the **netem** queuing discipline applies them only to outgoing traffic. You should therefore configure **tc** parameters on links to ensure the same parameters are applied to all interfaces connected to the link.
+
 (links-bridge)=
 ## Bridge Names
 
