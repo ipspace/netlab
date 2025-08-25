@@ -2,13 +2,14 @@
 # VLAN configuration module
 #
 import typing
+
 from box import Box
 
-from . import _Module,get_effective_module_attribute,_dataplane
-from ..utils import log,strings
 from .. import data
-from ..data import get_empty_box,get_box,get_global_parameter
-from ..augment import devices,groups,links,addressing
+from ..augment import addressing, devices, groups, links
+from ..data import get_box, get_empty_box, get_global_parameter
+from ..utils import log, strings
+from . import _dataplane, _Module, get_effective_module_attribute
 
 # Static lists of keywords
 #
@@ -1407,7 +1408,7 @@ class VLAN(_Module):
     for n in topology.nodes.values():
       if 'vlan' in n.get('module',[]):
         populate_node_vlan_data(n,topology)
-        vlan_ifmap = create_svi_interfaces(n,topology)
+        create_svi_interfaces(n,topology)
         map_trunk_vlans(n,topology)
         rename_vlan_subinterfaces(n,topology)
         cleanup_routed_native_vlan(n,topology)

@@ -3,16 +3,14 @@
 #
 # Collect device configurations
 #
-import typing
-import os
 import argparse
-import shutil
+import os
 import subprocess
+import typing
 
-from . import fs_cleanup,parser_lab_location,load_snapshot
-from . import ansible
-from . import external_commands
 from ..utils import log
+from . import ansible, external_commands, fs_cleanup, load_snapshot, parser_lab_location
+
 
 #
 # CLI parser for 'netlab collect' command
@@ -70,7 +68,7 @@ def run(cli_args: typing.List[str]) -> None:
   (args,rest) = collect_parse(cli_args)
   log.set_logging_flags(args)
 
-  topology = load_snapshot(args)
+  load_snapshot(args)
 
   fs_cleanup([ args.output ])
   try:

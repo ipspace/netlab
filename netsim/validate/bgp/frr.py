@@ -2,12 +2,15 @@
 FRR BGP validation routines
 """
 
-from box import Box,BoxList
 import typing
+
+from box import Box, BoxList
+
 from netsim.data import global_vars
-from .. import _common
-from . import BGP_PREFIX_NAMES,check_community_kw
+
 from ...utils import log
+from .. import _common
+from . import BGP_PREFIX_NAMES, check_community_kw
 
 af_lookup: typing.Final[dict] = {
   'ipv4': 'ipv4Unicast',
@@ -146,7 +149,6 @@ def filter_best(data: list, value: typing.Any, **kwargs: typing.Any) -> list:
 Check BGP cluster ID on BGP paths
 """
 def check_cluster_id(data: list, value: typing.Any, pfx: str, state: str) -> list:
-  OK = False
   result = [ p_element for p_element in data
                 if 'clusterList' in p_element and value in p_element.clusterList.get('list',[]) ]
 

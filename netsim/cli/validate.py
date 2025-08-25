@@ -3,23 +3,26 @@
 #
 # Perform lab validation tests
 #
-import typing
-import os
-import sys
 import argparse
-import re
-import time
 import math
+import os
+import re
+import sys
+import time
 import traceback
+import typing
 
-from box import Box,BoxList
+from box import Box, BoxList
 
-from . import load_snapshot, parser_add_debug, parser_add_verbose, external_commands, parser_lab_location
-from ..utils import log, templates, strings, status as _status, files as _files
-from ..data import global_vars,get_box
-from ..augment import devices
 from .. import data
-from .connect import connect_to_node, connect_to_tool, LogLevel
+from ..augment import devices
+from ..data import get_box, global_vars
+from ..utils import files as _files
+from ..utils import log, strings, templates
+from ..utils import status as _status
+from . import external_commands, load_snapshot, parser_add_debug, parser_add_verbose, parser_lab_location
+from .connect import LogLevel, connect_to_node, connect_to_tool
+
 
 #
 # CLI parser for 'netlab validate' command
@@ -1119,7 +1122,6 @@ def run(cli_args: typing.List[str]) -> None:
   templates.load_ansible_filters()
 
   ERROR_ONLY = args.error_only
-  status = True
   cnt = 0
   topology._v_len = max([ len(v_entry.name) for v_entry in topology.validate ] + [ 7 ])
   start_time = _status.lock_timestamp() or time.time()
@@ -1143,7 +1145,6 @@ def run(cli_args: typing.List[str]) -> None:
       log.fatal('Unhandled exception')
 
     if result is False:
-      status = False
       if v_entry.stop_on_error:
         print()
         log_failure('Mandatory test failed, validation stopped',topology)

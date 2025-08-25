@@ -10,10 +10,11 @@ from box import Box
 
 # Related modules
 from .. import data
-from ..utils import log,sort as _sort
-from ..data.validate import must_be_list
-from ..utils.callback import Callback
 from ..augment import devices
+from ..data.types import must_be_list
+from ..utils import log
+from ..utils import sort as _sort
+from ..utils.callback import Callback
 
 # List of attributes we don't want propagated from defaults to global/node
 #

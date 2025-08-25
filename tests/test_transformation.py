@@ -4,21 +4,21 @@
 # topology file
 #
 
-import sys
-import os
-import glob
-import pathlib
-import pytest
 import difflib
+import glob
+import os
 import pathlib
+import sys
+
+import pytest
+import utils
 from box import Box
 
-import utils
-
-from netsim.utils import log,strings,read as _read
 from netsim import augment
-from netsim.outputs import _TopologyOutput,ansible
-from netsim.data import types as _types
+from netsim.outputs import _TopologyOutput, ansible
+from netsim.utils import log
+from netsim.utils import read as _read
+
 
 def run_test(fname):
   log.init_log_system(header = False)
@@ -80,7 +80,7 @@ def test_error_cases():
     print("Test case: %s" % test_case)
     log.err_count = 0
     with pytest.raises(log.ErrorAbort):
-      topo = run_test(test_case)
+      run_test(test_case)
 
     error_log = log.get_error_log()
     log_file = pathlib.Path(test_case.replace('.yml','.log'))

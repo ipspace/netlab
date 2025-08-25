@@ -1,10 +1,12 @@
-import typing
 import argparse
 
 from box import Box
-from .. import parser_subcommands,subcommand_usage
-from ...utils import stats,log,strings,read as _read
+
 from ...data import get_empty_box
+from ...utils import read as _read
+from ...utils import stats, strings
+from .. import parser_subcommands
+
 
 def format_parser(parser: argparse.ArgumentParser) -> None:
   parser.add_argument(
@@ -68,13 +70,11 @@ def show_commands(args: argparse.Namespace) -> None:
 
 def show_modules(args: argparse.Namespace) -> None:
   d_stat = stats.read_stats()
-  topology = _read.load("package:cli/empty.yml")
   t_header = {
     'key': 'Module',
     'cnt': 'Used',
     'pct': '% use' }
 
-  p_list = sorted(topology.defaults.providers.keys())
   m_max = d_stat.cli.up.start.cnt or 0
 
   result = get_empty_box()
@@ -90,13 +90,11 @@ def show_modules(args: argparse.Namespace) -> None:
 
 def show_plugins(args: argparse.Namespace) -> None:
   d_stat = stats.read_stats()
-  topology = _read.load("package:cli/empty.yml")
   t_header = {
     'key': 'Plugin',
     'cnt': 'Used',
     'pct': '% use' }
 
-  p_list = sorted(topology.defaults.providers.keys())
   m_max = d_stat.cli.up.start.cnt or 0
 
   result = get_empty_box()

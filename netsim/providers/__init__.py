@@ -5,22 +5,23 @@
 # Provider class and replacing or augmenting its methods (most commonly, transform)
 #
 
+import ipaddress
+import os
+import pathlib
 import platform
 import subprocess
-import os
 import typing
-import pathlib
-import ipaddress
 
 # Related modules
 from box import Box
 
-from ..utils.callback import Callback
-from ..augment import devices,links
-from ..data import get_box,get_empty_box,append_to_list,filemaps
-from ..utils import files as _files
-from ..utils import templates,log,strings
+from ..augment import devices, links
+from ..data import append_to_list, filemaps, get_box, get_empty_box
 from ..outputs.ansible import get_host_addresses
+from ..utils import files as _files
+from ..utils import log, strings, templates
+from ..utils.callback import Callback
+
 
 def get_cpu_model() -> str:
   processor_name = ""
@@ -395,7 +396,6 @@ def node_add_forwarded_ports(node: Box, fplist: list, topology: Box) -> None:
 validate_images -- check the images used by individual nodes against provider image repo
 """
 def validate_images(topology: Box) -> None:
-  p_cache: dict = {}
 
   for n_data in topology.nodes.values():
     execute_node('validate_node_image',n_data,topology)

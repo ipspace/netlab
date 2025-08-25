@@ -1,16 +1,17 @@
 #
 # VRF module
 #
-import typing, re
 import ipaddress
+import typing
+
 from box import Box
 
-from . import _Module,_routing,_dataplane,get_effective_module_attribute,remove_module
-from ..utils import log
 from .. import data
+from ..augment import addressing, devices, groups, links
 from ..data import global_vars
 from ..data.types import must_be_list
-from ..augment import devices,groups,links,addressing
+from ..utils import log
+from . import _dataplane, _Module, _routing, get_effective_module_attribute, remove_module
 
 #
 # get_node_vrf_data: an abstraction layer that returns node-level VRF data structure
@@ -68,16 +69,16 @@ def get_rd_as_number(obj: Box, topology: Box) -> typing.Optional[typing.Any]:
 def parse_rdrt_value(value: str) -> typing.Optional[typing.List[typing.Union[int,str]]]:
   try:
     (asn,vid) = str(value).split(':')
-  except Exception as ex:
+  except Exception:
     return None
 
   try:
     return [int(asn),int(vid)]
-  except Exception as ex:
+  except Exception:
     try:
       ipaddress.IPv4Address(asn)
       return [asn,int(vid)]
-    except Exception as ex:
+    except Exception:
       return None
 
 def get_next_vrf_id(asn: str) -> typing.Tuple[int,str]:
@@ -205,7 +206,6 @@ def set_vrf_ids(obj: Box, topology: Box) -> None:
 
   asn = None
   is_global = obj is topology
-  obj_name = 'global VRFs' if is_global else obj.name
 
   for vname,vdata in obj.vrfs.items():                      # Iterate over object VRFs
     if not vrf_needs_id(vdata):                             # Skip if the ID/RD is set
@@ -232,7 +232,6 @@ def set_import_export_rt(obj : Box, topology: Box) -> None:
     return None
 
   is_global = obj is topology
-  obj_name = 'global VRFs' if is_global else obj.name
   obj_id   = 'vrfs' if obj is topology else f'nodes.{obj.name}.vrfs'
   asn      = None
 

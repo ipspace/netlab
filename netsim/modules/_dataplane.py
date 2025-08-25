@@ -2,11 +2,12 @@
 # Generic data plane routines
 #
 import typing
+
 from box import Box
 
-from ..utils import log
 from ..data import global_vars
-from ..data.validate import must_be_list
+from ..data.types import must_be_list
+from ..utils import log
 
 """
 The ID Set routines provide a common interface to identifiers that can be auto-assigned or static:
