@@ -5,22 +5,26 @@
 # Provider class and replacing or augmenting its methods (most commonly, transform)
 #
 
-import platform
-import subprocess
-import os
-import typing
-import pathlib
 import ipaddress
+import multiprocessing
+import os
+import pathlib
+import platform
+import threading
+import time
+import typing
+from queue import Empty, Queue
 
 # Related modules
 from box import Box
 
-from ..utils.callback import Callback
-from ..augment import devices,links
-from ..data import get_box,get_empty_box,append_to_list,filemaps
-from ..utils import files as _files
-from ..utils import templates,log,strings
+from ..augment import devices, links
+from ..data import append_to_list, filemaps, get_box, get_empty_box
 from ..outputs.ansible import get_host_addresses
+from ..utils import files as _files
+from ..utils import log, strings, templates
+from ..utils.callback import Callback
+
 
 def get_cpu_model() -> str:
   processor_name = ""
@@ -31,6 +35,37 @@ def get_cpu_model() -> str:
   elif platform.system() == "Linux":
     processor_name = pathlib.Path("/proc/cpuinfo").read_text().splitlines()[1].split()[2]
   return processor_name.lower()
+
+def _progress_monitor_lightweight(progress_queue: Queue, total_tasks: int, description: str = "Processing"):
+  """Ultra-lightweight progress monitor with minimal overhead"""
+  completed = 0
+  start_time = time.monotonic()  # Use monotonic for more accurate timing
+  last_update = start_time
+  update_interval = 5.0  # Update every 5 second
+  
+  while completed < total_tasks:
+    try:
+      # Non-blocking check with longer timeout to reduce overhead
+      increment = progress_queue.get(timeout=1.0)
+      completed += increment
+      current_time = time.monotonic()
+      
+      # Update less frequently to reduce overhead
+      if current_time - last_update > update_interval or completed == total_tasks:
+        elapsed = current_time - start_time
+        if completed > 0 and elapsed > 0:
+          rate = completed / elapsed
+          eta = (total_tasks - completed) / rate if rate > 0 else 0
+          
+          strings.print_colored_text('[PROGRESS]','bright_blue','')
+          print(f"{description}: {completed}/{total_tasks} ({completed/total_tasks*100:.0f}%) "
+                f"ETA: {eta:.0f}s")
+        last_update = current_time
+        
+    except Empty:
+      continue  # Timeout, check again
+    except:
+      break  # Error or queue closed
 
 """
 The generic provider class. Used as a super class of all other providers
@@ -157,6 +192,13 @@ class _Provider(Callback):
     if not binds:
       return
 
+    # Pre-compute shared data once to avoid O(n²) complexity
+    shared_data = {
+      'hostvars': topology.nodes,
+      'hosts': get_host_addresses(topology),
+      'addressing': topology.addressing
+    }
+
     sys_folder = str(_files.get_moddir())+"/"
     out_folder = f"{self.provider}_files/{node.name}"
 
@@ -167,9 +209,8 @@ class _Provider(Callback):
       file_name = file.replace(out_folder+"/","")
       template_name = self.find_extra_template(node,file_name,topology)
       if template_name:
-        node_data = node + { 'hostvars': topology.nodes, 
-                             'hosts': get_host_addresses(topology),
-                             'addressing': topology.addressing }  # Needed for subnet prefix
+        # Create node-specific data efficiently by merging with pre-computed shared data
+        node_data = {**shared_data, **node}
         if '/' in file_name:                      # Create subdirectory in out_folder if needed
           pathlib.Path(f"{out_folder}/{os.path.dirname(file_name)}").mkdir(parents=True,exist_ok=True)
         try:
@@ -187,6 +228,322 @@ class _Provider(Callback):
         print(f"{out_folder}/{file_name} to {node.name}:{mapping} (from {template_name.replace(sys_folder,'')})")
       else:
         log.error(f"Cannot find template for {file_name} on node {node.name}",log.MissingValue,'provider')
+
+  def create_extra_files_batch(
+      self,
+      topology: Box,
+      inkey: str = 'config_templates',
+      outkey: str = 'binds',
+    ) -> None:
+    """
+    Batch process extra files for all nodes to avoid O(n²) complexity.
+    This method pre-computes shared data once and processes all nodes efficiently.
+    OPTIMIZED PROGRESS TRACKING - set show_progress=False for maximum performance!
+    
+    Args:
+        topology: The topology data
+        inkey: Input key for config templates
+        outkey: Output key for binds
+    """
+    start_time = time.monotonic()
+    
+    # If not specified, let the smart detection decide
+    use_multiprocessing = topology.defaults.providers.clab.get('use_multiprocessing', None)
+    show_progress = hasattr(topology.defaults, 'show_progress')
+
+    
+    # Pre-compute shared data once for all nodes
+    shared_data = {
+      'hostvars': topology.nodes,
+      'hosts': get_host_addresses(topology),
+      'addressing': topology.addressing
+    }
+    
+    # Pre-load and cache templates to avoid repeated file I/O
+    template_cache = {}
+    
+    # Collect all file mappings that need processing
+    file_tasks = self._collect_file_tasks(topology, inkey, outkey, template_cache)
+    
+    if not file_tasks:
+      return
+    
+    # Smart multiprocessing detection
+    if use_multiprocessing is None:
+      use_multiprocessing = self._should_use_multiprocessing(file_tasks, topology)
+    
+    # Show performance info for larger topologies 
+    if len(file_tasks) > 50:
+      strings.print_colored_text('[PERF]    ','bright_yellow','Processing ')
+      print(f"{len(file_tasks)} files for {len(topology.nodes)} nodes using {'multiprocessing' if use_multiprocessing else 'single-threaded'} mode")
+    
+    progress_queue = None
+    progress_thread = None
+
+    if show_progress:
+      progress_queue = Queue()
+      progress_thread = threading.Thread(
+        target=_progress_monitor_lightweight, 
+        args=(progress_queue, len(file_tasks), "File processing"),
+        daemon=True
+      )
+      progress_thread.start()
+    
+    try:
+      if use_multiprocessing and len(file_tasks) > 10 and multiprocessing.cpu_count() > 1:
+        self._process_files_multiprocessing(file_tasks, shared_data, progress_queue, topology)
+      else:
+        self._process_files_single_threaded(file_tasks, shared_data, template_cache, progress_queue)
+    finally:
+      # Clean up
+      if progress_queue:
+        progress_queue.put(0)
+      if progress_thread and progress_thread.is_alive():
+        progress_thread.join(timeout=1.0)
+    
+    # Show performance summary
+    if len(file_tasks) > 50:
+      elapsed_time = time.monotonic() - start_time
+      strings.print_colored_text('[PERF]    ','bright_green','Completed ')
+      print(f"in {elapsed_time:.1f}s ({len(file_tasks)/elapsed_time:.0f} files/sec)")
+  
+  def _collect_file_tasks(self, topology: Box, inkey: str, outkey: str, template_cache: dict) -> list:
+    """Collect all file tasks that need processing"""
+    file_tasks = []
+    
+    for node in topology.nodes.values():
+      binds = node.get(f'{self.provider}.{outkey}',None)
+      if not binds:
+        continue
+        
+      out_folder = f"{self.provider}_files/{node.name}"
+      bind_dict = filemaps.mapping_to_dict(binds)
+      
+      for file, mapping in bind_dict.items():
+        if not out_folder in file:
+          continue
+        file_name = file.replace(out_folder+"/","")
+        template_name = self.find_extra_template(node, file_name, topology)
+        if template_name:
+          # Cache template path to avoid repeated template finding
+          if template_name not in template_cache:
+            template_cache[template_name] = {
+              'in_folder': os.path.dirname(template_name),
+              'j2': os.path.basename(template_name)
+            }
+          
+          file_tasks.append({
+            'node': node,
+            'file_name': file_name,
+            'template_name': template_name,
+            'out_folder': out_folder,
+            'mapping': mapping,
+            'template_info': template_cache[template_name]
+          })
+    
+    return file_tasks
+  
+  def _should_use_multiprocessing(self, file_tasks: list, topology: Box) -> bool:
+    """Determine if multiprocessing should be used based on topology size"""
+    total_files = len(file_tasks)
+    total_nodes = len(topology.nodes)
+    
+    return (
+      total_files > 20 or 
+      (total_nodes > 10 and total_files > 5) or  
+      (total_nodes > 5 and total_files > 10)   
+    )
+  
+  def _process_files_single_threaded(self, file_tasks: list, shared_data: dict, template_cache: dict, progress_queue: Queue = None) -> None:
+    """Process files using single-threaded approach with minimal progress overhead"""
+    total_files = len(file_tasks)
+    
+    if progress_queue and total_files > 200:
+      update_interval = max(10, total_files // 20)
+      
+      for i, task in enumerate(file_tasks):
+        self._process_single_file(task, shared_data, template_cache)
+        if (i + 1) % update_interval == 0:
+          progress_queue.put(update_interval)
+      
+      # Send final progress update
+      remaining = total_files % update_interval
+      if remaining > 0:
+        progress_queue.put(remaining)
+    else:
+      for task in file_tasks:
+        self._process_single_file(task, shared_data, template_cache)
+  
+  def _process_files_multiprocessing(self, file_tasks: list, shared_data: dict, progress_queue: Queue = None, topology: Box = None) -> None:
+    """Process files using multiprocessing for better performance with optional progress reporting"""
+    # Convert shared_data to serializable format for multiprocessing
+    serializable_shared_data = self._prepare_serializable_data(shared_data)
+    
+    # Prepare tasks for multiprocessing
+    mp_tasks = self._prepare_multiprocessing_tasks(file_tasks)
+    
+    # Use multiprocessing with appropriate number of workers
+    available_cores = multiprocessing.cpu_count()
+    
+    # Get max_workers from topology defaults with smart fallback
+    max_workers = None
+    if topology and hasattr(topology, 'defaults'):
+      if hasattr(topology.defaults, 'multiprocessing') and hasattr(topology.defaults.multiprocessing, 'max_workers'):
+        max_workers = topology.defaults.multiprocessing.max_workers
+      elif hasattr(topology.defaults, 'max_workers'):
+        max_workers = topology.defaults.max_workers
+    
+    if max_workers is None or max_workers == {}:
+      if available_cores <= 4:
+        max_workers = available_cores
+      else:
+        max_workers = int(available_cores * 0.75)
+    
+    # never exceed task count)
+    num_workers = min(len(mp_tasks), max_workers)
+    
+    strings.print_colored_text('[WORKERS]    ','bright_yellow','Using ')
+    if max_workers == available_cores:
+      print(f"{num_workers} workers (using all {available_cores} available cores)")
+    elif max_workers == int(available_cores * 0.75):
+      print(f"{num_workers} workers (auto-scaled to 75% of {available_cores} available cores)")
+    else:
+      print(f"{num_workers} workers (configured: {max_workers}, available cores: {available_cores})")
+    
+    if topology and hasattr(topology, 'defaults') and hasattr(topology.defaults, 'multiprocessing') and hasattr(topology.defaults.multiprocessing, 'show_progress') and topology.defaults.multiprocessing.show_progress:
+      strings.print_colored_text('[PROGRESS]  ','bright_cyan','Progress tracking ')
+      print("enabled (slower but informative)")
+    else:
+      strings.print_colored_text('[PROGRESS]  ','bright_cyan','Progress tracking ')
+      print("disabled (faster) - add 'show_progress: true' to defaults.multiprocessing if needed")
+
+    # Process in chunks for progress reporting
+    if progress_queue and len(mp_tasks) > 100:
+      chunk_size = max(1, len(mp_tasks) // (num_workers * 2))  # Fewer chunks to reduce overhead
+      self._process_chunks_with_progress(mp_tasks, serializable_shared_data, num_workers, chunk_size, progress_queue, file_tasks)
+    else:
+      # no progress overhead
+      with multiprocessing.Pool(processes=num_workers) as pool:
+        results = pool.map(self._process_file_worker, 
+                          [(task, serializable_shared_data) for task in mp_tasks])
+      self._handle_multiprocessing_results(results, file_tasks)
+  
+  def _process_chunks_with_progress(self, mp_tasks: list, serializable_shared_data: dict, 
+                                  num_workers: int, chunk_size: int, progress_queue: Queue, file_tasks: list) -> None:
+    """Process tasks in chunks to enable progress reporting"""
+    chunks = [mp_tasks[i:i + chunk_size] for i in range(0, len(mp_tasks), chunk_size)]
+    all_results = []
+    
+    with multiprocessing.Pool(processes=num_workers) as pool:
+      for chunk in chunks:
+        chunk_args = [(task, serializable_shared_data) for task in chunk]
+        chunk_results = pool.map(self._process_file_worker, chunk_args)
+        all_results.extend(chunk_results)
+        
+        if progress_queue:
+          progress_queue.put(len(chunk))
+    
+    self._handle_multiprocessing_results(all_results, file_tasks)
+  
+  def _prepare_serializable_data(self, shared_data: dict) -> dict:
+    """Convert shared_data to serializable format for multiprocessing"""
+    return {
+      'hostvars': dict(shared_data['hostvars']),
+      'hosts': dict(shared_data['hosts']),
+      'addressing': dict(shared_data['addressing'])
+    }
+  
+  def _prepare_multiprocessing_tasks(self, file_tasks: list) -> list:
+    """Prepare tasks for multiprocessing by converting to serializable format"""
+    mp_tasks = []
+    for task in file_tasks:
+      mp_task = {
+        'node_name': task['node'].name,
+        'node_data': dict(task['node']),
+        'file_name': task['file_name'],
+        'template_name': task['template_name'],
+        'template_info': task['template_info'],
+        'out_folder': task['out_folder'],
+        'mapping': task['mapping'],
+        'provider': self.provider
+      }
+      mp_tasks.append(mp_task)
+    return mp_tasks
+  
+  def _handle_multiprocessing_results(self, results: list, file_tasks: list) -> None:
+    """Handle results from multiprocessing and display output"""
+    for i, result in enumerate(results):
+      if result.get('success'):
+        task = file_tasks[i]
+        strings.print_colored_text('[MAPPED]  ','bright_cyan','Mapped ')
+        sys_folder = str(_files.get_moddir())+"/"
+        print(f"{task['out_folder']}/{task['file_name']} to {task['node'].name}:{task['mapping']} (from {task['template_name'].replace(sys_folder,'')})")
+      else:
+        log.error(f"Failed to process file: {result.get('error', 'Unknown error')}", 
+                 log.IncorrectValue, self.provider)
+
+  def _process_single_file(self, task: dict, shared_data: dict, template_cache: dict) -> None:
+    """Process a single file task"""
+    node = task['node']
+    file_name = task['file_name']
+    template_name = task['template_name']
+    out_folder = task['out_folder']
+    template_info = task['template_info']
+    
+    node_data = {**shared_data, **node}
+    
+    # Create subdirectory if needed
+    if '/' in file_name:
+      pathlib.Path(f"{out_folder}/{os.path.dirname(file_name)}").mkdir(parents=True,exist_ok=True)
+    
+    # Render template
+    try:
+      templates.write_template(
+        in_folder=template_info['in_folder'],
+        j2=template_info['j2'],
+        data=node_data.to_dict(),
+        out_folder=out_folder, 
+        filename=file_name)
+    except Exception as ex:
+      log.fatal(
+        text=f"Error rendering {template_name} into {file_name}\n{strings.extra_data_printout(str(ex))}",
+        module=self.provider)
+
+    strings.print_colored_text('[MAPPED]  ','bright_cyan','Mapped ')
+    sys_folder = str(_files.get_moddir())+"/"
+    print(f"{out_folder}/{file_name} to {node.name}:{task['mapping']} (from {template_name.replace(sys_folder,'')})")
+  
+  @staticmethod
+  def _process_file_worker(args: tuple) -> dict:
+    """Worker function for multiprocessing file processing"""
+    try:
+      task, shared_data = args
+      
+      # Reconstruct node object
+      node = type('Node', (), task['node_data'])()
+      node.name = task['node_name']
+      
+      # Create node-specific data
+      node_data = {**shared_data, **task['node_data']}
+      
+      file_name = task['file_name']
+      template_info = task['template_info']
+      out_folder = task['out_folder']
+      
+      if '/' in file_name:
+        pathlib.Path(f"{out_folder}/{os.path.dirname(file_name)}").mkdir(parents=True,exist_ok=True)
+      
+      templates.write_template(
+        in_folder=template_info['in_folder'],
+        j2=template_info['j2'],
+        data=node_data,
+        out_folder=out_folder, 
+        filename=file_name)
+      
+      return {'success': True}
+      
+    except Exception as ex:
+      return {'success': False, 'error': str(ex)}
 
   def create(self, topology: Box, fname: typing.Optional[str]) -> None:
     self.transform(topology)
@@ -395,7 +752,6 @@ def node_add_forwarded_ports(node: Box, fplist: list, topology: Box) -> None:
 validate_images -- check the images used by individual nodes against provider image repo
 """
 def validate_images(topology: Box) -> None:
-  p_cache: dict = {}
 
   for n_data in topology.nodes.values():
     execute_node('validate_node_image',n_data,topology)
