@@ -1030,46 +1030,53 @@ def check_link_type(data: Box) -> bool:
   return True
 
 #
-# Interface Feature Check -- validate that the selected addressing works on target lab devices
+# Interface Feature Check -- validate that the selected interface features work on target lab devices
 #
+
+def interface_fc_ipv4(ifdata: Box, ndata: Box, features: Box, more_data: str) -> None:
+  if 'ipv4' not in ifdata:
+    return
+  if ifdata.ipv4 is True:
+    f_v4_unnum = features.initial.ipv4.unnumbered
+    if not f_v4_unnum:
+      log.error(
+        text=f'Invalid unnumbered IPv4 interface {ifdata.ifname} ({ifdata.name}) on node {ndata.name} ',
+        more_hints=f'Device {ndata.device} (node {ndata.name}) does not support unnumbered IPv4 interfaces',
+        category=log.IncorrectValue,
+        module='interfaces')
+    elif isinstance(f_v4_unnum,list):
+      if ifdata.type not in features.initial.ipv4.unnumbered:
+        log.error(
+          text=f'Node {ndata.name} uses unsupported unnumbered IPv4 interface type {ifdata.type}',
+          more_data=more_data,
+          more_hints=f'Device {ndata.device} supports only {",".join(f_v4_unnum)} unnumbered IPv4 interfaces',
+          category=log.IncorrectValue,
+          module='interfaces')
+    elif f_v4_unnum == 'peer':
+      if len(ifdata.neighbors)!=1 or ifdata.neighbors[0].get('ipv4',False) is not True:
+        log.error(
+          text=f'The unnumbered IPv4 interface {ifdata.ifname} ({ifdata.name}) on node {ndata.name} is not supported',
+          more_hints=f'Device {ndata.device} can have unnumbered IPv4 interfaces with a single unnumbered peer',
+          category=log.IncorrectType,
+          module='interfaces')
+
+def interface_fc_ipv6(ifdata: Box, ndata: Box, features: Box, more_data: str) -> None:
+  if 'ipv6' not in ifdata:
+    return
+  if ifdata.ipv6 is True and not features.initial.ipv6.lla:
+    log.error(
+      f'Device {ndata.device} (node {ndata.name}) does not support LLA-only IPv6 interfaces',
+      category=log.IncorrectValue,
+      more_data=more_data,
+      module='interfaces')
 
 def interface_feature_check(nodes: Box, defaults: Box) -> None:
   for node,ndata in nodes.items():
     features = devices.get_device_features(ndata,defaults)
     for ifdata in ndata.get('interfaces',[]):
       more_data = f'Interface {ifdata.ifname} (link {ifdata.name})'
-      if 'ipv4' in ifdata:
-        if ifdata.ipv4 is True:
-          f_v4_unnum = features.initial.ipv4.unnumbered
-          if not f_v4_unnum:
-            log.error(
-              text=f'Invalid unnumbered IPv4 interface {ifdata.ifname} ({ifdata.name}) on node {node} ',
-              more_hints=f'Device {ndata.device} (node {node}) does not support unnumbered IPv4 interfaces',
-              category=log.IncorrectValue,
-              module='interfaces')
-          elif isinstance(f_v4_unnum,list):
-            if ifdata.type not in features.initial.ipv4.unnumbered:
-              log.error(
-                text=f'Node {node} uses unsupported unnumbered IPv4 interface type {ifdata.type}',
-                more_data=more_data,
-                more_hints=f'Device {ndata.device} supports only {",".join(f_v4_unnum)} unnumbered IPv4 interfaces',
-                category=log.IncorrectValue,
-                module='interfaces')
-          elif f_v4_unnum == 'peer':
-            if len(ifdata.neighbors)!=1 or ifdata.neighbors[0].get('ipv4',False) is not True:
-              log.error(
-                text=f'The unnumbered IPv4 interface {ifdata.ifname} ({ifdata.name}) on node {node} is not supported',
-                more_hints=f'Device {ndata.device} can have unnumbered IPv4 interfaces with a single unnumbered peer',
-                category=log.IncorrectType,
-                module='interfaces')
-
-      if 'ipv6' in ifdata:
-        if ifdata.ipv6 is True and not features.initial.ipv6.lla:
-          log.error(
-            f'Device {ndata.device} (node {node}) does not support LLA-only IPv6 interfaces',
-            category=log.IncorrectValue,
-            more_data=more_data,
-            module='interfaces')
+      interface_fc_ipv4(ifdata,ndata,features,more_data)
+      interface_fc_ipv6(ifdata,ndata,features,more_data)
 
 '''
 copy_link_gateway -- copy link gateway addresses to node-on-link (future interface) data
