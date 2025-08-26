@@ -217,8 +217,9 @@ class _Provider(Callback):
             text=f"Error rendering {template_name} into {file_name}\n{strings.extra_data_printout(str(ex))}",
             module=self.provider)
 
-        strings.print_colored_text('[MAPPED]  ','bright_cyan','Mapped ')
-        print(f"{out_folder}/{file_name} to {node.name}:{mapping} (from {template_name.replace(sys_folder,'')})")
+        if not log.QUIET:
+          strings.print_colored_text('[MAPPED]  ','bright_cyan','Mapped ')
+          print(f"{out_folder}/{file_name} to {node.name}:{mapping} (from {template_name.replace(sys_folder,'')})")
       else:
         log.error(f"Cannot find template for {file_name} on node {node.name}",log.MissingValue,'provider')
 

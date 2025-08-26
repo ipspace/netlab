@@ -182,59 +182,9 @@ class Containerlab(_Provider):
     if use_ovs_bridge(topology):
       check_ovs_installation()
 
-    # Pre-compute hosts entries before parallel processing
-    # Move hosts pre-computation to the parent class method since it's defined there
-    log.print_verbose("Initializing cache for hosts entries")
-
-    # Collect nodes that need extra files
-    nodes_with_binds = [n for n in topology.nodes.values() if n.get('clab.binds',None)]
-    
-    if not nodes_with_binds:
-      return
-    
-    log.print_verbose(f"Processing {len(nodes_with_binds)} nodes for extra files")
-    
-    # Check if we should use parallel processing
-    use_parallel = len(nodes_with_binds) > 10  # Only use parallel for more than 10 nodes
-    
-    if use_parallel:
-      try:
-        import multiprocessing
-        from concurrent.futures import ThreadPoolExecutor, as_completed
-        
-        # Determine number of workers (limit to 16 threads since I/O bound)
-        num_workers = min(multiprocessing.cpu_count() * 2, 16, len(nodes_with_binds))
-        log.print_verbose(f"Using parallel processing with {num_workers} threads")
-        
-        # Process nodes in parallel using threads (better for I/O bound tasks)
-        with ThreadPoolExecutor(max_workers=num_workers) as executor:
-          # Submit all tasks
-          futures = {}
-          for n in nodes_with_binds:
-            future = executor.submit(self._process_node_files, n, topology)
-            futures[future] = n.name
-          
-          # Wait for completion and handle results
-          for future in as_completed(futures):
-            node_name = futures[future]
-            try:
-              future.result()
-            except Exception as ex:
-              log.error(f"Failed to process files for node {node_name}: {ex}", log.IncorrectValue, 'provider')
-      
-      except ImportError:
-        log.print_verbose("Parallel processing not available, falling back to sequential")
-        use_parallel = False
-    
-    if not use_parallel:
-      # Sequential processing
-      for n in nodes_with_binds:
-        log.print_verbose(f"Creating extra files for node {n.name}")
+    for n in topology.nodes.values():
+      if n.get('clab.binds',None):
         self.create_extra_files(n,topology)
-    
-    # Clean up the cache after all nodes are processed
-    if hasattr(topology.defaults, '_cache'):
-      del topology.defaults._cache
 
   def _process_node_files(self, node: Box, topology: Box) -> None:
     """Process extra files for a single node (used for parallel processing)"""
