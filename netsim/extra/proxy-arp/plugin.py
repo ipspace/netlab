@@ -1,4 +1,3 @@
-import typing
 from box import Box
 
 from netsim import api

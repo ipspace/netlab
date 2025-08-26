@@ -1,11 +1,11 @@
 #
 # Dell OS10 quirks
 #
-from box import Box,BoxList
+from box import Box, BoxList
 
-from . import _Quirks,need_ansible_collection,report_quirk
-from ..utils import log, routing as _rp_utils
-from ..augment import devices
+from ..utils import routing as _rp_utils
+from . import _Quirks, need_ansible_collection, report_quirk
+
 
 def check_vlan_ospf(node: Box, iflist: BoxList, vname: str) -> None:
   name = node.name

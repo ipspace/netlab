@@ -2,10 +2,12 @@
 # Plugin to add a shared VTEP loopback to MLAG pairs that use VXLAN
 #
 
-from netsim.utils import log, routing as _rp_utils
-from netsim.augment import addressing, links, devices
-from netsim import data
 from box import Box
+
+from netsim import data
+from netsim.augment import addressing, devices, links
+from netsim.utils import log
+from netsim.utils import routing as _rp_utils
 
 _config_name = 'mlag.vtep'
 _requires    = [ 'vxlan', 'lag' ]

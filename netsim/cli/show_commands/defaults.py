@@ -4,12 +4,12 @@
 
 import argparse
 import typing
-import textwrap
+
 from box import Box
 
-from ...utils import strings,log
-from ... import data
-from . import show_common_parser,parser_add_module,DEVICES_TO_SKIP,get_modlist
+from ...utils import log, strings
+from . import show_common_parser
+
 
 def parse() -> argparse.ArgumentParser:
   parser = show_common_parser('defaults','(a subset) of system/user defaults')

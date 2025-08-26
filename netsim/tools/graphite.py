@@ -11,14 +11,13 @@
 #  netreplica/graphite:webssh2
 #
 
-import typing
 
 import json
+
 from box import Box
 
 from ..data import get_empty_box
 from ..utils import strings
-
 from . import _ToolOutput
 
 DEFAULT_NODE_ICON = "router"

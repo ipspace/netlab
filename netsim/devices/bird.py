@@ -6,6 +6,7 @@ from box import Box
 from . import _Quirks
 from ._common import check_indirect_static_routes
 
+
 class Bird(_Quirks):
 
   @classmethod

@@ -5,10 +5,10 @@
 #
 import typing
 
-from box import Box
+from ..utils import log
+from ..utils import read as _read
+from .libvirt_actions import config, libvirt_usage, package, remove
 
-from ..utils import log, read as _read
-from .libvirt_actions import libvirt_usage,package,config,remove
 
 def run(cli_args: typing.List[str]) -> None:
   topology = _read.system_defaults()

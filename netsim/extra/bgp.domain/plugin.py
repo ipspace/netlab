@@ -1,5 +1,5 @@
-import typing
 from box import Box
+
 from netsim.utils import log
 
 _requires    = [ 'bgp' ]

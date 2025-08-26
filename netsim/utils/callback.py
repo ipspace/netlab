@@ -9,10 +9,11 @@ The Callback class defines two methods:
 
 import importlib
 import inspect
-import typing
 import sys
+import typing
 
 from . import log
+
 
 class Callback():
 

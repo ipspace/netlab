@@ -3,12 +3,14 @@
 #
 
 import argparse
+
 from box import Box
 
-from ...utils import strings
 from ... import data
+from ...utils import strings
 from .. import error_and_exit
-from . import show_common_parser,parser_add_device,parser_add_provider,DEVICES_TO_SKIP
+from . import DEVICES_TO_SKIP, parser_add_device, parser_add_provider, show_common_parser
+
 
 def parse() -> argparse.ArgumentParser:
 

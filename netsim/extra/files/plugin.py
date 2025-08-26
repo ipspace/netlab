@@ -1,8 +1,10 @@
+from pathlib import Path
+
 from box import Box
-from netsim.data import filemaps,append_to_list
+
+from netsim.data import append_to_list, filemaps
 from netsim.data.types import must_be_dict
 from netsim.utils import log
-from pathlib import Path
 
 """
 Restructure 'files' dictionary into a list of files to avoid Box-dotting

@@ -1,15 +1,11 @@
 #
 # netlab usage utility commands
 #
-import typing
 import argparse
-import os
-import pathlib
-import tempfile
 
-from box import Box
-from ...utils import stats,log,strings
 from ...data import get_box
+from ...utils import log, stats, strings
+
 
 def is_enabled(flag: bool) -> str:
   return 'enabled' if flag else 'disabled'

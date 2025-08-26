@@ -1,11 +1,10 @@
-import os
-import typing
-
-from netsim import __version__
-from netsim.utils import log, files as _files,strings
-from netsim import data
 
 from box import Box
+
+from netsim import data
+from netsim.utils import files as _files
+from netsim.utils import log, strings
+
 
 def cleanup(topology: Box) -> None:
   missing = data.get_empty_box()

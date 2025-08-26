@@ -4,17 +4,15 @@
 # topology file
 #
 
-import sys
-import os
-import yaml
-import re
 import argparse
-from jinja2 import Environment, FileSystemLoader, Undefined, StrictUndefined, make_logging_undefined
 
-import netsim.common
-from netsim.utils import read as _read, log
-import netsim.augment
 import utils
+
+import netsim.augment
+import netsim.common
+from netsim.utils import log
+from netsim.utils import read as _read
+
 
 def create_expected_results_file(topology,fname):
   with open(fname,"w") as output:

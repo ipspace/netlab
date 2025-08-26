@@ -3,13 +3,13 @@
 #
 # Connect to a lab device using SSH or Docker
 #
-import typing
-import os
-import sys
 import argparse
-import subprocess
+import sys
+import typing
 from enum import IntEnum
+
 from .external_commands import run_command
+
 
 class LogLevel(IntEnum):
   NONE = 0
@@ -19,11 +19,10 @@ class LogLevel(IntEnum):
 
 from box import Box
 
-from . import external_commands, set_dry_run, error_and_exit, parser_lab_location
-
-from . import load_snapshot, parser_add_verbose
 from ..outputs import common as outputs_common
-from ..utils import strings, log, templates
+from ..utils import log, strings, templates
+from . import error_and_exit, external_commands, load_snapshot, parser_add_verbose, parser_lab_location, set_dry_run
+
 
 #
 # CLI parser for 'netlab initial' command

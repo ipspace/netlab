@@ -1,18 +1,18 @@
 #
 # Common routines for create-topology script
 #
-import sys
-import os
-import typing
-import warnings
-import typing
 import argparse
 import inspect
-from box import Box
-from ..data import types as _types
-from . import strings
+import os
+import sys
+import typing
+import warnings
 
 import rich.table
+from box import Box
+
+from ..data import types as _types
+from . import strings
 
 LOGGING : bool = False
 VERBOSE : int = 0

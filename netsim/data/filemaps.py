@@ -7,9 +7,10 @@
 #
 
 import typing
+
 from box import Box
-from ..utils.log import error,IncorrectType,IncorrectValue
-from ..data.types import must_be_list,must_be_dict
+
+from ..utils.log import IncorrectType, IncorrectValue, error
 
 """
 Convert a box into a traditional dictionary, turning a hierarchy

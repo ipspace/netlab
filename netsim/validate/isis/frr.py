@@ -3,9 +3,12 @@ FRR IS-IS validation routines
 """
 
 import typing
+
 from box import Box
+
 from netsim.data import global_vars
 from netsim.utils import routing as _rp_utils
+
 
 def show_isis_neighbor(id: str, **kwargs: typing.Any) -> str:
   return f'isis neighbor {id} json'

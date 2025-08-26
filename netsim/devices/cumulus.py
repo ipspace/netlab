@@ -3,9 +3,10 @@
 #
 from box import Box
 
-from . import _Quirks,report_quirk
-from ..utils import log
 from ..augment import devices
+from ..utils import log
+from . import _Quirks, report_quirk
+
 
 def check_ospf_vrf_default(node: Box) -> None:
   for vname,vdata in node.get('vrfs',{}).items():

@@ -3,11 +3,13 @@
 #
 
 import argparse
+
 from box import Box
 
-from ...utils import strings
 from ... import data
-from . import show_common_parser,parser_add_device,DEVICES_TO_SKIP
+from ...utils import strings
+from . import DEVICES_TO_SKIP, parser_add_device, show_common_parser
+
 
 def parse() -> argparse.ArgumentParser:
   parser = show_common_parser('devices','supported devices')

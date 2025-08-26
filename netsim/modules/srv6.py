@@ -1,16 +1,16 @@
 #
 # SRv6 transformation module
 #
+import ipaddress
 import typing
 
 from box import Box
-from ..augment import addressing,devices
 
-from . import _Module
-from ..utils import log
 from .. import data
-import ipaddress
+from ..augment import addressing, devices
 from ..data.global_vars import get_const
+from ..utils import log
+from . import _Module
 
 # Defaults used for both srv6.bgp and srv6.vpn
 DEFAULT_BGP_AF: typing.Final[dict] = {

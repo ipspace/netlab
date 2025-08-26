@@ -1,14 +1,11 @@
 #
 # RIPv2/RIPng transformation module
 #
-import typing
 
 from box import Box
 
-from . import _Module,_routing
-from . import bfd
-from ..utils import log
 from ..augment import devices
+from . import _Module, _routing, bfd
 
 """
 adjust_rip_timers: Make sure all three timers are set if at least one of the 'ripv2.timers'

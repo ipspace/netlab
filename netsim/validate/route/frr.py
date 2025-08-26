@@ -2,10 +2,13 @@
 FRR routing table validation routines
 """
 
-from box import Box
 import typing
+
+from box import Box
+
 from netsim.data import global_vars
 from netsim.utils import routing as _rp_utils
+
 
 def show_rt_prefix(pfx: str, af: str = 'ipv4', proto: str = '', **kwargs: typing.Any) -> str:
   if af == 'ipv4':

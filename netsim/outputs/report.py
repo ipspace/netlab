@@ -2,17 +2,14 @@
 # Create YAML or JSON output
 #
 import typing
-from rich.markdown import Markdown
-from rich.console import Console
 
-from box import Box
 import jinja2
+from box import Box
+from rich.console import Console
+from rich.markdown import Markdown
 
-from .. import data
-from ..augment import topology
 from ..utils import files as _files
-from ..utils import log,templates,strings
-
+from ..utils import log, strings, templates
 from . import _TopologyOutput
 
 EXTRA_PATH: typing.List[str] = []

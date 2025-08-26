@@ -5,14 +5,13 @@ Bridge-specific data transformation:
 * Set vlan.mode to 'bridge' on bridge devices
 * Set vlan.access on bridge interfaces without the 'vlan' parameter
 '''
-import typing
 
-from box import Box, BoxList
+from box import Box
 
-from ..utils import log
-from ..data import global_vars,append_to_list,get_box
 from ..augment import links
+from ..data import append_to_list, get_box, global_vars
 from ..modules import _dataplane
+from ..utils import log
 from . import select_nodes_by_role
 
 """

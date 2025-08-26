@@ -3,14 +3,16 @@
 #
 # Read network topology, add default settings, and dump the results
 #
-import typing
-import sys
 import argparse
+import sys
+import typing
 
-from . import common_parse_args, topology_parse_args, parser_add_debug
 from .. import augment
-from ..utils import log, strings, read as _read
 from ..augment.main import transform_setup
+from ..utils import log, strings
+from ..utils import read as _read
+from . import common_parse_args, parser_add_debug, topology_parse_args
+
 
 #
 # CLI parser for 'netlab read' command

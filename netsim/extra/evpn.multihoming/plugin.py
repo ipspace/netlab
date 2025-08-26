@@ -2,12 +2,13 @@
 
 #### side notes: on platform supporting both ESI-LAG and MC-LAG, must remove _mclag flag from lag interfaces, to avoid mclag config
 
-from netsim.utils import log
-from netsim.augment import addressing, devices
-from netsim.modules import _dataplane
-from netsim import api,data
-from box import Box
 import netaddr
+from box import Box
+
+from netsim import api, data
+from netsim.augment import devices
+from netsim.modules import _dataplane
+from netsim.utils import log
 
 _config_name = 'evpn.multihoming'
 _requires = [ 'evpn' ]

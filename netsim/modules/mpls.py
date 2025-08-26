@@ -5,11 +5,11 @@ import typing
 
 from box import Box
 
-from . import _Module,_routing
 from .. import data
-from ..data.validate import must_be_bool,must_be_list
 from ..augment import devices
+from ..data.validate import must_be_bool, must_be_list
 from ..utils import log
+from . import _Module, _routing
 
 AF_LIST: typing.Final[list] = ['ipv4','ipv6']
 BGP_SESSIONS: typing.Final[list] = ['ibgp','ebgp']

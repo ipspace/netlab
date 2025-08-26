@@ -7,9 +7,10 @@
 #
 from box import Box
 
-from . import _Quirks,need_ansible_collection,report_quirk
 from ..augment import devices
 from ..utils import log
+from . import _Quirks, need_ansible_collection, report_quirk
+
 
 class ARUBACX(_Quirks):
 

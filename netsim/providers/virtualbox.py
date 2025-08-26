@@ -4,9 +4,10 @@
 
 import typing
 
-from . import _Provider
-from .libvirt import Libvirt as _Libvirt
 from box import Box
+
+from . import _Provider
+
 
 class Virtualbox(_Provider):
 

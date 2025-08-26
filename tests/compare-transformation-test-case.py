@@ -4,19 +4,14 @@
 # topology file
 #
 
-import sys
-import os
-import yaml
-import pathlib
-import difflib
-
-import common
 import argparse
-import read_topology
+import difflib
+import pathlib
+
 import augment.main
-import inventory
-import provider
+import read_topology
 import utils
+
 
 def parse():
   parser = argparse.ArgumentParser(description='Create topology test cases')

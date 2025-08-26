@@ -3,9 +3,8 @@
 #
 from box import Box
 
-from . import _Quirks,report_quirk
+from . import _Quirks, report_quirk
 from ._common import check_indirect_static_routes
-from ..utils import log
 
 """
 You cannot reach OpenBSD loopback interface unless it runs as a router (with IP forwarding)

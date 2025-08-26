@@ -3,8 +3,8 @@
 #
 from box import Box
 
-from . import _Quirks,report_quirk
 from ..utils import log
+from . import _Quirks, report_quirk
 
 """
 Because FRR uses a 'bridge per VLAN' model, STP BPDUs are sent as tagged packets, not untagged.

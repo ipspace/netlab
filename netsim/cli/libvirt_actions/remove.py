@@ -3,24 +3,14 @@
 #
 # Deploy custom configuration template to network devices
 #
-import typing
 import argparse
-import os
-import sys
-import string
-import pathlib
-import shutil
-import tarfile
-import re
+import typing
 
 from box import Box
 
-from ...utils import strings, status, templates, log, read as _read, files as _files
-from ...data.types import must_be_id
-from .. import external_commands,error_and_exit
-from .. import parser_add_debug, parser_add_verbose
-from ...providers.libvirt import create_vagrant_network,LIBVIRT_MANAGEMENT_NETWORK_NAME
-from ...providers import get_cpu_model
+from ...utils import log, strings
+from .. import error_and_exit, external_commands
+
 
 def remove_parse(args: typing.List[str], settings: Box) -> argparse.Namespace:
   parser = argparse.ArgumentParser(

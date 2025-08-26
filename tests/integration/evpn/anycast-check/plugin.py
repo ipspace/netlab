@@ -6,10 +6,12 @@ whether it supports anycast gateway, and removes
 """
 
 from box import Box
+
 from netsim.augment.devices import get_device_features
 from netsim.data import get_box
 from netsim.modules import get_effective_module_attribute
 from netsim.utils import log
+
 
 def pre_transform(topology: Box) -> None:
   gw_proto = get_effective_module_attribute('gateway.protocol',topology=topology,defaults=topology.defaults)

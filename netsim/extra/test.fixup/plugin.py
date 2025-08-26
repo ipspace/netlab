@@ -1,7 +1,5 @@
 from box import Box
-from netsim.augment.devices import get_device_features
-from netsim.utils import log
-from netsim.data import merge_with_removed_attributes
+
 
 def get_key_paths(data: Box, path: str='', k_list: list = []) -> list:
   for k,v in data.items():

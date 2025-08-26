@@ -4,6 +4,7 @@
 
 from netsim.augment.nodes import ghost_buster
 
+
 def transformation_results_yaml(topology):
   """
   Return the results of topology transformation YAML format

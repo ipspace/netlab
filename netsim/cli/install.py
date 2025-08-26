@@ -3,18 +3,19 @@
 #
 # Deploy custom configuration template to network devices
 #
-import typing
 import argparse
+import csv
 import os
 import sysconfig
-import csv
-import yaml
+import typing
 from pathlib import Path
+
 from box import Box
 
-from ..utils import log,strings,read
+from ..utils import log, read, strings
 from ..utils.files import get_moddir
-from . import external_commands,error_and_exit,set_dry_run
+from . import error_and_exit, external_commands, set_dry_run
+
 
 #
 # CLI parser for 'netlab install' command
@@ -320,8 +321,8 @@ def run(cli_args: typing.List[str]) -> None:
       else:
         script_completed(script,setup,args)
 
-    except KeyboardInterrupt as ex:
+    except KeyboardInterrupt:
       print()
       log.fatal('User aborted the installation request')
-    except Exception as ex:
+    except Exception:
       log.fatal('Python exception: {ex}')

@@ -3,14 +3,14 @@
 # Print netlab usage
 #
 
-import sys
 import typing
+
 from netsim.utils import strings
 
 try:
   from importlib import resources
 except ImportError:
-  import importlib_resources as resources # type: ignore
+  import importlib_resources as resources  # type: ignore
 
 def print_usage(fname: str) -> None:
   package = '.'.join(__name__.split('.')[:-1])

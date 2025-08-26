@@ -8,10 +8,13 @@ node name or a glob.
 '''
 
 import fnmatch
+
 from box import Box
-from ..utils import log
+
 from .. import data
 from ..augment import groups
+from ..utils import log
+
 
 # Is a string a glob expression?
 #

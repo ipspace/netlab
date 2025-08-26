@@ -3,8 +3,9 @@
 #
 from box import Box
 
-from .iosvl2 import check_reserved_vlans
 from .iol import IOSXE as _IOSXE
+from .iosvl2 import check_reserved_vlans
+
 
 class IOSL2(_IOSXE):
   @classmethod

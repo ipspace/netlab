@@ -1,19 +1,20 @@
 #
 # Containerlab provider module
 #
-import typing
-import json
-from box import Box
-import pathlib
 import argparse
+import json
+import pathlib
+import typing
 
-from . import _Provider,get_provider_forwarded_ports,node_add_forwarded_ports,validate_mgmt_ip
-from ..utils import log, strings, linuxbridge
-from ..data import filemaps, get_empty_box, append_to_list
-from ..data.types import must_be_dict
-from ..cli import is_dry_run,external_commands
+from box import Box
+
 from ..augment import devices
-from ..cli import external_commands
+from ..cli import external_commands, is_dry_run
+from ..data import append_to_list, filemaps, get_empty_box
+from ..data.types import must_be_dict
+from ..utils import linuxbridge, log, strings
+from . import _Provider, get_provider_forwarded_ports, node_add_forwarded_ports, validate_mgmt_ip
+
 
 def list_bridges( topology: Box ) -> typing.Set[str]:
   return { l.bridge for l in topology.links if l.bridge and l.node_count > 2 and not 'external_bridge' in l.clab }

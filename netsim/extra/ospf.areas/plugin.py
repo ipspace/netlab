@@ -1,10 +1,12 @@
-import typing
 import ipaddress
+
 from box import Box
-from netsim.utils import log, routing as _ospf
-from netsim import api,data,modules
+
+from netsim import api
 from netsim.augment import devices
 from netsim.data import merge_with_removed_attributes
+from netsim.utils import log
+from netsim.utils import routing as _ospf
 
 _config_name = 'ospf.areas'
 _requires    = [ 'ospf' ]

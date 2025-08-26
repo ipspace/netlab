@@ -4,10 +4,10 @@ Top-level Arista EOS validation plugin
 Import BGP checks
 """
 
-from box import Box
+from netsim.utils import routing as _rp_utils
 from netsim.validate.bgp.eos import *
 from netsim.validate.ospf.eos import *
-from netsim.utils import routing as _rp_utils
+
 
 def exec_ping(
       host: str,

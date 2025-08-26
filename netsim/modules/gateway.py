@@ -2,14 +2,16 @@
 # First-hop gateway transformation module
 #
 import typing
+
 from box import Box
 
-from . import _Module,get_effective_module_attribute,remove_module
-from ..utils import log, strings
 from .. import data
-from ..augment.nodes import reserve_id
 from ..augment import devices
-from ..data.validate import validate_attributes,must_be_string
+from ..augment.nodes import reserve_id
+from ..data.validate import must_be_string
+from ..utils import log, strings
+from . import _Module, remove_module
+
 
 def check_gw_protocol(gw: Box, path: str, topology: Box) -> typing.Any:
   return must_be_string(

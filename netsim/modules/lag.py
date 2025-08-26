@@ -1,12 +1,13 @@
 import typing
-import netaddr
 
-from box import Box, BoxList
-from . import _Module, _dataplane
+import netaddr
+from box import Box
+
 from .. import data
+from ..augment import devices, links
 from ..data import types as _types
 from ..utils import log
-from ..augment import devices, links
+from . import _dataplane, _Module
 
 ID_SET = 'lag_id'
 PEERLINK_ID_SET = 'peerlink_id'

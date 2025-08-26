@@ -5,12 +5,14 @@
 import argparse
 import os
 import typing
+
 from box import Box
 
-from ...utils import strings,log,files as _files
 from ... import data
-from ...outputs import _TopologyOutput
+from ...utils import files as _files
+from ...utils import strings
 from . import show_common_parser
+
 
 def parse() -> argparse.ArgumentParser:
   parser = show_common_parser('reports','available system reports',system_only=False)

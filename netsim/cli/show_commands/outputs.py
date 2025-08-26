@@ -4,12 +4,15 @@
 
 import argparse
 import os
+
 from box import Box
 
-from ...utils import strings,log,files as _files
 from ... import data
 from ...outputs import _TopologyOutput
+from ...utils import files as _files
+from ...utils import strings
 from . import show_common_parser
+
 
 def parse() -> argparse.ArgumentParser:
   parser = show_common_parser('outputs','output modules for the "netlab create" command',system_only=False)

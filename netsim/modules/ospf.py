@@ -1,14 +1,13 @@
 #
 # OSPF transformation module
 #
-import typing
 
 from box import Box
 
-from . import _Module,_routing
-from . import bfd
-from ..utils import log
 from ..augment import devices
+from ..utils import log
+from . import _Module, _routing, bfd
+
 
 # We need to set ospf.unnumbered if we happen to have OSPF running over an unnumbered
 # link -- Arista EOS needs an extra nerd knob to make it work

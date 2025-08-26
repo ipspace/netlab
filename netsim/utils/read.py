@@ -1,19 +1,18 @@
 #
 # Read topology and default settings files
 #
+import argparse
 import os
 import sys
 import typing
-import argparse
-import pathlib
-import yaml
 
+import yaml
 from box import Box
 
 # Related modules
-from .. import data
 from ..data import types as _types
-from ..utils import log, files as _files, versioning
+from ..utils import files as _files
+from ..utils import log, versioning
 
 USER_DEFAULTS: typing.Final[list] = ['./topology-defaults.yml','~/.netlab.yml','~/topology-defaults.yml']
 SYSTEM_DEFAULTS: typing.Final[list] = ['/etc/netlab/defaults.yml','package:topology-defaults.yml']

@@ -2,11 +2,13 @@
 # Create generic graph from lab topology
 #
 import typing
+
 from box import Box
 
-from ..data import get_box,get_empty_box
+from ..data import get_box, get_empty_box
 from ..data.types import must_be_list
-from ..utils import log,routing as _routing
+from ..utils import log
+from ..utils import routing as _routing
 
 SHARED_GRAPH_ATTRIBUTES: Box                      # Graph attributes shared between all graph output modules
 

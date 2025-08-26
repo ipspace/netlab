@@ -3,10 +3,11 @@
 #
 from box import Box
 
-from . import _Quirks,report_quirk
-from ._common import check_indirect_static_routes
-from ..utils import log
 from ..augment import devices
+from ..utils import log
+from . import _Quirks, report_quirk
+from ._common import check_indirect_static_routes
+
 
 def check_vm_modules(node: Box, topology: Box) -> None:
   if 'vlan' in node.get('module',[]):

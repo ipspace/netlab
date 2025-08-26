@@ -3,24 +3,24 @@
 #
 # Deploy custom configuration template to network devices
 #
-import typing
 import argparse
 import os
-import sys
-import string
 import pathlib
-import shutil
-import tarfile
 import re
+import shutil
+import string
+import sys
+import tarfile
+import typing
 
 from box import Box
 
-from ...utils import strings, status, templates, log, read as _read, files as _files
-from ...data.types import must_be_id
-from .. import external_commands
-from .. import parser_add_debug, parser_add_verbose
-from ...providers.libvirt import create_vagrant_network,LIBVIRT_MANAGEMENT_NETWORK_NAME
 from ...providers import get_cpu_model
+from ...providers.libvirt import LIBVIRT_MANAGEMENT_NETWORK_NAME, create_vagrant_network
+from ...utils import files as _files
+from ...utils import log, status, strings, templates
+from .. import external_commands, parser_add_debug, parser_add_verbose
+
 
 def package_parse(args: typing.List[str], settings: Box) -> argparse.Namespace:
   devs = [ k for k in settings.devices.keys() 
@@ -451,7 +451,7 @@ def run(cli_args: typing.List[str], topology: Box) -> None:
   workdir = f'/tmp/build_{args.device}'
   try:
     build(args,topology,workdir)
-  except KeyboardInterrupt as ex:
+  except KeyboardInterrupt:
     print("")
     log.error(
       'Aborted by user. Trying to clean up',

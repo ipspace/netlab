@@ -3,18 +3,20 @@
 #
 # Deploy custom configuration template to network devices
 #
-import typing
 import argparse
 import os
-import glob
-import subprocess
 import shutil
-
-from box import Box
+import subprocess
+import typing
 from pathlib import Path
 
-from ..utils import log,read as _read, files as _files
+from box import Box
+
+from ..utils import files as _files
+from ..utils import log
+from ..utils import read as _read
 from . import external_commands
+
 
 #
 # CLI parser for 'netlab config' command

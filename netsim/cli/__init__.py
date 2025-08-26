@@ -3,22 +3,23 @@
 # Main CLI entry point
 #
 
-import sys
-import importlib
-import datetime
 import argparse
+import datetime
+import importlib
 import os
 import shutil
+import sys
 import typing
 from pathlib import Path
 
 from box import Box
 
-from . import help
-from .. import augment
-from .. import __version__
-from ..utils import log, strings, status as _status, read as _read, stats
+from .. import __version__, augment
 from ..data import global_vars
+from ..utils import log, stats, strings
+from ..utils import read as _read
+from ..utils import status as _status
+from . import help
 
 DRY_RUN: bool = False
 NETLAB_SCRIPT: str = ''
@@ -171,7 +172,7 @@ def fs_cleanup(filelist: typing.List[str], verbose: bool = False) -> None:
           f_parent = Path(fname).parent
           f_parent.rmdir()
           print(f"... removing empty directory {str(f_parent)}")
-        except Exception as ex:                           # No worries if we cannot do that
+        except Exception:                           # No worries if we cannot do that
           pass
       except Exception as ex:                             # Finally, report an error if we cannot remove the file
         log.fatal(f"Cannot remove {fname}: {ex}")

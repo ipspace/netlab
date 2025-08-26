@@ -2,15 +2,15 @@
 # Common routines used to implement lab status and locking commands
 #
 
-import typing
 import os
 import sys
-import traceback
-from box import Box
-from filelock import Timeout, FileLock
+import typing
 
-from ..utils import log,strings
+from box import Box
+from filelock import FileLock
+
 from ..data import get_empty_box
+from ..utils import log, strings
 
 '''
 get_status_filename -- get the name of the netlab status file

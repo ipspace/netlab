@@ -2,7 +2,9 @@
 # Nokia SR SIM quirks
 #
 from box import Box
-from . import _Quirks,need_ansible_collection
+
+from . import _Quirks, need_ansible_collection
+
 
 class SRSIM(_Quirks):
 

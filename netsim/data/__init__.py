@@ -2,7 +2,9 @@
 # Generic data model manipulation outines
 #
 
-import typing,typing_extensions
+import typing
+
+import typing_extensions
 from box import Box
 
 #

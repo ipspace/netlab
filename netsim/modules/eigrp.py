@@ -3,7 +3,8 @@
 #
 from box import Box
 
-from . import _Module,_routing
+from . import _Module, _routing
+
 
 class EIGRP(_Module):
 

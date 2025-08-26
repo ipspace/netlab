@@ -3,23 +3,13 @@
 #
 # run a command on one or more lab devices
 #
-import typing
-import os
-import sys
 import argparse
-import subprocess
-from enum import IntEnum
+import typing
 
-from box import Box
+from ..utils import log
+from . import _nodeset, load_snapshot, parser_add_verbose, parser_lab_location, set_dry_run
+from .connect import LogLevel, connect_to_node, get_log_level, quote_list
 
-from . import external_commands, set_dry_run
-from . import load_snapshot, _nodeset, parser_add_verbose, parser_lab_location
-from .connect import quote_list, docker_connect, ssh_connect, connect_to_node,\
-  LogLevel, get_log_level
-
-from ..outputs import common as outputs_common
-from ..utils import strings, log
-from ..augment.groups import group_members
 
 #
 # CLI parser for 'netlab ' command

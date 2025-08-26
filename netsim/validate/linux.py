@@ -2,10 +2,11 @@
 FRR OSPFv2 validation routines
 """
 
-from box import Box
-import typing
 import re
+import typing
+
 from netsim.data import global_vars
+
 
 def exec_ping(
       host: str,

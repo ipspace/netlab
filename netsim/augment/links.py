@@ -2,19 +2,20 @@
 # Create detailed link data structures including automatic interface numbering
 # from high-level topology
 #
+import ipaddress
 import typing
 
-import ipaddress
 from box import Box
 
-# Related modules
-from ..utils import log,strings
 from .. import data
-from ..modules import get_effective_module_attribute
-from ..data.validate import validate_attributes,get_object_attributes
-from ..data.types import must_be_string,must_be_list,must_be_dict,must_be_id
 from ..data.global_vars import get_const
-from . import devices,addressing
+from ..data.types import must_be_dict, must_be_id, must_be_list, must_be_string
+from ..data.validate import get_object_attributes, validate_attributes
+from ..modules import get_effective_module_attribute
+
+# Related modules
+from ..utils import log, strings
+from . import addressing, devices
 
 VIRTUAL_INTERFACE_TYPES: typing.Final[typing.List[str]] = [
   'loopback', 'tunnel', 'lag', 'svi' ]

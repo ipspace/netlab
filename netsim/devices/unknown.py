@@ -3,9 +3,8 @@
 #
 from box import Box
 
-from . import _Quirks
 from ..utils import log
-from ..augment import devices
+from . import _Quirks
 
 '''
 Check whether the 'unknown' device has clab kind (cannot use 'unknown', that would annoy clab)

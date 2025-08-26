@@ -3,11 +3,11 @@
 #
 # Contains routines used by routing protocol modules to adjust node/link BFD state
 #
-import typing
 
 from box import Box
 
 from . import _Module
+
 
 class BFD(_Module):
   pass

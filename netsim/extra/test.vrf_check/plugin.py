@@ -4,8 +4,10 @@
 #
 
 from box import Box
+
 from netsim.augment.devices import get_device_features
 from netsim.utils import log
+
 
 def remove_vrf(ndata: Box, topology: Box) -> None:
   if 'vrf' in topology.module:

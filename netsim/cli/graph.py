@@ -3,12 +3,13 @@
 #
 # Connect a graph description for Graphviz or D2
 #
-import typing
 import argparse
+import typing
 
-from . import load_snapshot,parser_lab_location
 from ..outputs import _TopologyOutput
-from ..utils import strings,log
+from ..utils import log
+from . import load_snapshot, parser_lab_location
+
 
 #
 # CLI parser for 'netlab graph' command

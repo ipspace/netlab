@@ -3,16 +3,16 @@
 #
 import typing
 
-import re
 from box import Box
 
-from . import _Module,_routing
 from .. import data
-from ..data import global_vars
-from ..data.types import must_be_int,must_be_list,must_be_asn
-from ..data.validate import validate_item
 from ..augment import devices
-from ..utils import log, routing as _rp_utils
+from ..data import global_vars
+from ..data.types import must_be_asn, must_be_list
+from ..data.validate import validate_item
+from ..utils import log
+from ..utils import routing as _rp_utils
+from . import _Module, _routing
 
 BGP_DEFAULT_SESSIONS: typing.Dict[str,list] = {
 }

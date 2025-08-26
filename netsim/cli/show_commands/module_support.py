@@ -3,13 +3,14 @@
 #
 
 import argparse
-import textwrap
 import math
+
 from box import Box
 
-from ...utils import strings
 from ... import data
-from . import show_common_parser,parser_add_module,parser_add_device,DEVICES_TO_SKIP,get_modlist
+from ...utils import strings
+from . import DEVICES_TO_SKIP, get_modlist, parser_add_device, parser_add_module, show_common_parser
+
 
 def parse() -> argparse.ArgumentParser:
   parser = show_common_parser('module-support','configuration modules supported by individual devices')

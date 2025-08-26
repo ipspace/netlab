@@ -1,18 +1,21 @@
 #
 # Change netlab defaults
 #
-import typing
 import argparse
 import fnmatch
-import re
-import yaml
 import pathlib
+import re
+import typing
 
+import yaml
 from box import Box
 
+from ..data import get_empty_box
+from ..utils import files as _files
+from ..utils import log, strings
+from ..utils import read as _read
 from . import error_and_exit
-from ..utils import files as _files, log, read as _read,strings
-from ..data import get_box,get_empty_box
+
 
 def defaults_parse(args: typing.List[str]) -> argparse.Namespace:
   parser = argparse.ArgumentParser(

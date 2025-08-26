@@ -3,8 +3,11 @@
 #
 
 import typing
-from box import Box,BoxList
-from ..utils import log,files as _files
+
+from box import Box, BoxList
+
+from ..utils import files as _files
+from ..utils import log
 
 """
 Augment module attributes

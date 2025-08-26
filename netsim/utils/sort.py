@@ -1,6 +1,7 @@
 # Implement simple sorting routines
 
 import typing
+
 from . import log
 
 '''

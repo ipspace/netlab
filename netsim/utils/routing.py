@@ -2,12 +2,14 @@
 # BGP neighbor traversal utilities
 #
 
-import typing
 import ipaddress
+import typing
 
 from box import Box
-from . import log
+
 from ..augment import devices
+from . import log
+
 
 # Return IP address from int, address, or prefix
 #
