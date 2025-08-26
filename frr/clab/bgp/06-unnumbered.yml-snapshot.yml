@@ -129,6 +129,7 @@ defaults:
           nic_adapter_count: int
           image: str
           uuid: str
+          ports: list
         link:
           permanent: bool
           public:
@@ -303,7 +304,8 @@ defaults:
         image: none
       features:
         bgp: {}
-        isis: {}
+        isis:
+          circuit_type: true
       libvirt:
         image: cisco/asav
         create_template: asav.xml.j2
@@ -379,6 +381,7 @@ defaults:
           - router
           - bridge
           mgmt_vrf: true
+          ra: true
           min_mtu: 68
           min_phy_mtu: 1500
           max_mtu: 9216
@@ -565,6 +568,7 @@ defaults:
           - router
           - bridge
           mgmt_vrf: true
+          ra: true
           min_mtu: 68
           min_phy_mtu: 1500
           max_mtu: 9216
@@ -1089,6 +1093,9 @@ defaults:
         ansible_ssh_pass: vagrant
         ansible_network_os: eos
         ansible_connection: network_cli
+        netlab_config_remove:
+        - no lldp transmit
+        - no lldp receive
       features:
         initial:
           system_mtu: true
@@ -1099,6 +1106,7 @@ defaults:
             use_ra: true
           max_mtu: 9194
           min_mtu: 68
+          ra: true
           roles:
           - host
           - router
@@ -1384,6 +1392,7 @@ defaults:
           ipv6:
             lla: true
             use_ra: true
+          ra: true
           roles:
           - host
           - router
@@ -1596,6 +1605,7 @@ defaults:
           - router
           - bridge
           mgmt_vrf: true
+          ra: true
           min_mtu: 68
           min_phy_mtu: 1501
           max_mtu: 1500
@@ -1766,6 +1776,7 @@ defaults:
           - router
           - bridge
           mgmt_vrf: true
+          ra: true
           min_mtu: 68
           min_phy_mtu: 1501
           max_mtu: 1500
@@ -1955,6 +1966,7 @@ defaults:
           - router
           - bridge
           mgmt_vrf: true
+          ra: true
           min_mtu: 64
           max_mtu: 9600
         isis:
@@ -2060,7 +2072,7 @@ defaults:
           kind: linux
         interface:
           name: eth{ifindex}
-        build: https://github.com/hellt/vrnetlab/tree/master/vios
+        build: https://github.com/srl-labs/vrnetlab/tree/master/vios
     iosvl2:
       description: IOSv L2 image
       _meta_device: true
@@ -2132,6 +2144,7 @@ defaults:
           - router
           - bridge
           mgmt_vrf: true
+          ra: true
           min_mtu: 68
           max_mtu: 4700
           min_phy_mtu: 1500
@@ -2249,7 +2262,7 @@ defaults:
           kind: linux
         interface:
           name: eth{ifindex}
-        build: https://github.com/hellt/vrnetlab/tree/master/viosl2
+        build: https://github.com/srl-labs/vrnetlab/tree/master/viosl2
       lag_interface_name: Port-channel{lag.ifindex}
     iosxr:
       description: Cisco IOS XRv
@@ -2275,6 +2288,7 @@ defaults:
         ospf:
           unnumbered: true
         isis:
+          circuit_type: true
           unnumbered:
             ipv4: true
             ipv6: true
@@ -2320,6 +2334,7 @@ defaults:
           ipv4:
             unnumbered: peer
           ipv6:
+            lla: true
             use_ra: true
           roles:
           - host
@@ -2455,6 +2470,7 @@ defaults:
           ipv6:
             lla: true
           mgmt_vrf: true
+          ra: true
           roles:
           - router
           - bridge
@@ -3838,8 +3854,8 @@ defaults:
           ipv4:
             unnumbered: peer
           ipv6:
-            use_ra: true
             lla: true
+            use_ra: true
           roles:
           - host
           - router
@@ -3960,6 +3976,7 @@ defaults:
           ipv4:
             unnumbered: peer
           ipv6:
+            lla: true
             use_ra: true
           roles:
           - host
@@ -4168,9 +4185,25 @@ defaults:
           shape: arrow
         target-arrowhead:
           shape: arrow
+      localas_ibgp:
+        style:
+          stroke: '#9b652f'
+          stroke-width: 4
+        source-arrowhead:
+          shape: arrow
+        target-arrowhead:
+          shape: arrow
       ebgp:
         style:
           stroke: '#b21a1a'
+          stroke-width: 4
+        source-arrowhead:
+          shape: arrow
+        target-arrowhead:
+          shape: arrow
+      confed_ebgp:
+        style:
+          stroke: '#d26400'
           stroke-width: 4
         source-arrowhead:
           shape: arrow
@@ -4216,8 +4249,14 @@ defaults:
         ibgp:
           color: '#613913'
           penwidth: 2
+        localas_ibgp:
+          color: '#9b652f'
+          penwidth: 2
         ebgp:
           color: '#b21a1a'
+          penwidth: 2
+        confed_ebgp:
+          color: '#d26400'
           penwidth: 2
         graph:
           bgcolor: transparent
@@ -4571,6 +4610,15 @@ defaults:
         - bool_false
         - prefix_str
         - named_pfx
+      ra:
+        disable: bool
+        slaac: bool
+        dhcp:
+          type: str
+          valid_values:
+          - all
+          - other
+        onlink: bool
       role: id
       pool: id
       type:
@@ -4624,7 +4672,7 @@ defaults:
       id:
         type: int
         min_value: 1
-        max_value: 150
+        max_value: MAX_NODE_ID
       config:
         type: dict
         _subtype:
@@ -5169,6 +5217,7 @@ defaults:
     ifname:
       neighbors: 5
       maxlength: 255
+    MAX_NODE_ID: 150
     validate:
       ping: 5
       ping_long: 15
@@ -5295,18 +5344,18 @@ defaults:
     create: {}
   paths:
     validate:
-    - /home/pipi/net101/tools/netsim/validate
+    - /home/pipi/netlab_gh/netsim/validate
     plugin:
     - /work/netlab_cicd
     - /home/pipi/net101/tools/tests/integration/bgp
     - /home/pipi/.netlab
-    - /home/pipi/net101/tools/netsim/extra
+    - /home/pipi/netlab_gh/netsim/extra
     custom:
       dirs:
       - /home/pipi/net101/tools/tests/integration/bgp
       - /work/netlab_cicd
       - /home/pipi/.netlab
-      - /home/pipi/net101/tools/netsim/extra
+      - /home/pipi/netlab_gh/netsim/extra
       files:
       - "{{ custom_config + '/' + inventory_hostname + '.' + netlab_device_type +
         '-' + node_provider + '.j2' }}"
@@ -5337,7 +5386,7 @@ defaults:
       - '{{ custom_config }}/deploy.yml'
     deploy:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks
+      - /home/pipi/netlab_gh/netsim/ansible/tasks
       tasks_generic:
       - deploy-config/{{ netlab_device_type }}-{{ node_provider }}.yml
       - deploy-config/{{ netlab_device_type }}.yml
@@ -5358,8 +5407,8 @@ defaults:
       - deploy-config/{{ ansible_network_os }}.yml
     templates:
       dirs:
-      - /home/pipi/net101/tools/netsim/daemons
-      - /home/pipi/net101/tools/netsim/ansible/templates
+      - /home/pipi/netlab_gh/netsim/daemons
+      - /home/pipi/netlab_gh/netsim/ansible/templates
     t_files:
       files:
       - '{{config_module}}/{{netlab_device_type}}-{{provider|default(netlab_provider)}}.j2'
@@ -5371,7 +5420,7 @@ defaults:
       - '{{netlab_device_type}}/{{config_module}}.j2'
     ready:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check
+      - /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check
       files:
       - '{{netlab_device_type}}-{{provider|default(netlab_provider)}}.yml'
       - '{{netlab_device_type}}.yml'
@@ -5379,7 +5428,7 @@ defaults:
       - '{{ansible_network_os}}.yml'
     collect:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks/fetch-config
+      - /home/pipi/netlab_gh/netsim/ansible/tasks/fetch-config
   ports:
     ssh: 22
     http: 80
@@ -6054,6 +6103,7 @@ defaults:
         ipv6: IPv6 unnumbered interfaces
         network: multi-access unnumbered links
       import: Route redistribution
+      circuit_type: Circuit type
     warnings:
       inactive: true
     supported_on:

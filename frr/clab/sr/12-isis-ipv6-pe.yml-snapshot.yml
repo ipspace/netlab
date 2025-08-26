@@ -132,6 +132,7 @@ defaults:
           nic_adapter_count: int
           image: str
           uuid: str
+          ports: list
         link:
           permanent: bool
           public:
@@ -306,7 +307,8 @@ defaults:
         image: none
       features:
         bgp: {}
-        isis: {}
+        isis:
+          circuit_type: true
       libvirt:
         image: cisco/asav
         create_template: asav.xml.j2
@@ -382,6 +384,7 @@ defaults:
           - router
           - bridge
           mgmt_vrf: true
+          ra: true
           min_mtu: 68
           min_phy_mtu: 1500
           max_mtu: 9216
@@ -568,6 +571,7 @@ defaults:
           - router
           - bridge
           mgmt_vrf: true
+          ra: true
           min_mtu: 68
           min_phy_mtu: 1500
           max_mtu: 9216
@@ -1092,6 +1096,9 @@ defaults:
         ansible_ssh_pass: vagrant
         ansible_network_os: eos
         ansible_connection: network_cli
+        netlab_config_remove:
+        - no lldp transmit
+        - no lldp receive
       features:
         initial:
           system_mtu: true
@@ -1102,6 +1109,7 @@ defaults:
             use_ra: true
           max_mtu: 9194
           min_mtu: 68
+          ra: true
           roles:
           - host
           - router
@@ -1385,6 +1393,7 @@ defaults:
           ipv6:
             lla: true
             use_ra: true
+          ra: true
           roles:
           - host
           - router
@@ -1597,6 +1606,7 @@ defaults:
           - router
           - bridge
           mgmt_vrf: true
+          ra: true
           min_mtu: 68
           min_phy_mtu: 1501
           max_mtu: 1500
@@ -1767,6 +1777,7 @@ defaults:
           - router
           - bridge
           mgmt_vrf: true
+          ra: true
           min_mtu: 68
           min_phy_mtu: 1501
           max_mtu: 1500
@@ -1956,6 +1967,7 @@ defaults:
           - router
           - bridge
           mgmt_vrf: true
+          ra: true
           min_mtu: 64
           max_mtu: 9600
         isis:
@@ -2061,7 +2073,7 @@ defaults:
           kind: linux
         interface:
           name: eth{ifindex}
-        build: https://github.com/hellt/vrnetlab/tree/master/vios
+        build: https://github.com/srl-labs/vrnetlab/tree/master/vios
     iosvl2:
       description: IOSv L2 image
       _meta_device: true
@@ -2133,6 +2145,7 @@ defaults:
           - router
           - bridge
           mgmt_vrf: true
+          ra: true
           min_mtu: 68
           max_mtu: 4700
           min_phy_mtu: 1500
@@ -2250,7 +2263,7 @@ defaults:
           kind: linux
         interface:
           name: eth{ifindex}
-        build: https://github.com/hellt/vrnetlab/tree/master/viosl2
+        build: https://github.com/srl-labs/vrnetlab/tree/master/viosl2
       lag_interface_name: Port-channel{lag.ifindex}
     iosxr:
       description: Cisco IOS XRv
@@ -2276,6 +2289,7 @@ defaults:
         ospf:
           unnumbered: true
         isis:
+          circuit_type: true
           unnumbered:
             ipv4: true
             ipv6: true
@@ -2321,6 +2335,7 @@ defaults:
           ipv4:
             unnumbered: peer
           ipv6:
+            lla: true
             use_ra: true
           roles:
           - host
@@ -2456,6 +2471,7 @@ defaults:
           ipv6:
             lla: true
           mgmt_vrf: true
+          ra: true
           roles:
           - router
           - bridge
@@ -2929,7 +2945,7 @@ defaults:
       graphite:
         icon: router
     sros:
-      description: Nokia SR OS container
+      description: Nokia SR OS VM in container
       mgmt_if: A/1
       interface_name: eth-1/1/c{ifindex}
       loopback_interface_name: >-
@@ -3047,6 +3063,144 @@ defaults:
           license: ~/.netlab/license_sros25.txt
         interface:
           name: eth{ifindex}
+        group_vars:
+          sros_grpc_port: 57400
+      external:
+        image: none
+      graphite:
+        icon: router
+    srsim:
+      description: Nokia SR-SIM (SR-OS) container
+      mgmt_if: A/1
+      interface_name: eth-1/{ifindex // 12 + 1}/c{(ifindex - 1) % 12 + 1}
+      loopback_interface_name: >-
+        {"loopback."+str(ifindex) if ifindex else "system"}
+      group_vars:
+        ansible_user: admin
+        ansible_ssh_pass: NokiaSros1!
+        ansible_network_os: sros
+        ansible_connection: paramiko_ssh
+        netlab_console_connection: ssh
+        sros_use_openconfig: false
+        netlab_match_protomap:
+          ospf:
+          - ospf
+          - ospf3
+          bgp:
+          - bgp
+          connected:
+          - direct
+          isis:
+          - isis
+        netlab_srsim_first_port: 1/1/c1
+        netlab_device_type: srsim
+        netlab_srsim_hw:
+        - slot-number: 1
+          card-type: iom-1
+          mda:
+          - mda-slot: 1
+            mda-type: me12-100gb-qsfp28
+          - mda-slot: 2
+            mda-type: me12-100gb-qsfp28
+      sr:
+        srgb_range_start: 500000
+        srgb_range_size: 1000
+        ipv6_sid_offset: 100
+      bfd:
+        min_tx: 100
+        min_rx: 100
+      features:
+        initial:
+          ipv4:
+            unnumbered: true
+          ipv6:
+            lla: true
+          min_phy_mtu: 1500
+          max_mtu: 9782
+        bfd: {}
+        bgp:
+          local_as: true
+          vrf_local_as: true
+          local_as_ibgp: true
+          activate_af: true
+          ipv6_lla: false
+          import:
+          - ospf
+          - isis
+          - connected
+          - vrf
+          - no_policy
+        evpn:
+          irb: true
+          asymmetrical_irb: true
+        isis:
+          circuit_type: true
+          unnumbered:
+            ipv4: true
+            ipv6: true
+            network: false
+          import:
+          - ospf
+          - bgp
+          - connected
+          - vrf
+          - no_policy
+        mpls:
+          ldp: true
+          bgp: true
+          vpn: true
+          6pe: true
+        ospf:
+          unnumbered: true
+          import:
+          - bgp
+          - isis
+          - connected
+          - vrf
+          - no_policy
+          strict_bfd: true
+        ripv2:
+          ipv4: true
+          ipv6: true
+          passive: true
+        routing:
+          policy:
+            set:
+            - locpref
+            - med
+        gateway:
+          protocol:
+          - anycast
+          - vrrp
+        sr: {}
+        srv6:
+          bgp: true
+          isis: true
+        vlan:
+          model: router
+          svi_interface_name: svi.{vlan}
+          subif_name: '{ifname}/1_{vlan.access_id}'
+          mixed_trunk: true
+          native_routed: true
+        vrf:
+          ospfv2: true
+          ospfv3: true
+          isis: true
+          bgp: true
+        vxlan: {}
+      clab:
+        image: nokia_srsim:25.7.R1
+        build: https://containerlab.dev/manual/kinds/sros/
+        mtu: 1500
+        node:
+          kind: nokia_srsim
+          type: sr-1
+          license: ~/.netlab/license_srsim25.txt
+          env:
+            NOKIA_SROS_MDA_1: me12-100gb-qsfp28
+            NOKIA_SROS_MDA_2: me12-100gb-qsfp28
+        interface:
+          name: 1/{ifindex // 12 + 1}/c{(ifindex - 1) % 12 + 1}/1
         group_vars:
           sros_grpc_port: 57400
       external:
@@ -3246,6 +3400,8 @@ defaults:
           asymmetrical_irb: true
           irb: true
           multi_rt: true
+          bundle:
+          - vlan_aware
         lag:
           passive: true
         vlan:
@@ -3698,8 +3854,8 @@ defaults:
           ipv4:
             unnumbered: peer
           ipv6:
-            use_ra: true
             lla: true
+            use_ra: true
           roles:
           - host
           - router
@@ -3820,6 +3976,7 @@ defaults:
           ipv4:
             unnumbered: peer
           ipv6:
+            lla: true
             use_ra: true
           roles:
           - host
@@ -4028,9 +4185,25 @@ defaults:
           shape: arrow
         target-arrowhead:
           shape: arrow
+      localas_ibgp:
+        style:
+          stroke: '#9b652f'
+          stroke-width: 4
+        source-arrowhead:
+          shape: arrow
+        target-arrowhead:
+          shape: arrow
       ebgp:
         style:
           stroke: '#b21a1a'
+          stroke-width: 4
+        source-arrowhead:
+          shape: arrow
+        target-arrowhead:
+          shape: arrow
+      confed_ebgp:
+        style:
+          stroke: '#d26400'
           stroke-width: 4
         source-arrowhead:
           shape: arrow
@@ -4076,8 +4249,14 @@ defaults:
         ibgp:
           color: '#613913'
           penwidth: 2
+        localas_ibgp:
+          color: '#9b652f'
+          penwidth: 2
         ebgp:
           color: '#b21a1a'
+          penwidth: 2
+        confed_ebgp:
+          color: '#d26400'
           penwidth: 2
         graph:
           bgcolor: transparent
@@ -4435,6 +4614,15 @@ defaults:
         - bool_false
         - prefix_str
         - named_pfx
+      ra:
+        disable: bool
+        slaac: bool
+        dhcp:
+          type: str
+          valid_values:
+          - all
+          - other
+        onlink: bool
       role: id
       pool: id
       type:
@@ -4488,8 +4676,15 @@ defaults:
       id:
         type: int
         min_value: 1
-        max_value: 150
-      config: list
+        max_value: MAX_NODE_ID
+      config:
+        type: dict
+        _subtype:
+          type: error
+          _err_msg: Enable "files" plugin to use the inline node/group 
+            configuration template(s)
+        _alt_types:
+        - list
       group: list
       role:
         type: str
@@ -4668,6 +4863,10 @@ defaults:
       config:
         template: str
         variable: dict
+        inline:
+          type: error
+          _err_msg: Enable "files" plugin to use the "inline" configuration 
+            template
         _alt_types:
         - str
       valid: _v_option
@@ -5022,6 +5221,7 @@ defaults:
     ifname:
       neighbors: 5
       maxlength: 255
+    MAX_NODE_ID: 150
   hints:
     evpn:
       irb_group: >
@@ -5275,6 +5475,7 @@ defaults:
       nxos: true
       srlinux: true
       sros: true
+      srsim: true
       unknown: true
       vjunos-router: true
       vjunos-switch: true
@@ -5478,6 +5679,7 @@ defaults:
       sonic: true
       srlinux: true
       sros: true
+      srsim: true
       unknown: true
       vjunos-router: true
       vjunos-switch: true
@@ -5668,6 +5870,7 @@ defaults:
       nxos: true
       srlinux: true
       sros: true
+      srsim: true
       unknown: true
       vjunos-switch: true
       vyos: true
@@ -5766,6 +5969,7 @@ defaults:
       nxos: true
       srlinux: true
       sros: true
+      srsim: true
       unknown: true
       vjunos-router: true
       vjunos-switch: true
@@ -5874,6 +6078,7 @@ defaults:
         ipv6: IPv6 unnumbered interfaces
         network: multi-access unnumbered links
       import: Route redistribution
+      circuit_type: Circuit type
     warnings:
       inactive: true
     supported_on:
@@ -5893,6 +6098,7 @@ defaults:
       nxos: true
       srlinux: true
       sros: true
+      srsim: true
       unknown: true
       vjunos-router: true
       vjunos-switch: true
@@ -6129,6 +6335,7 @@ defaults:
       routeros7: true
       srlinux: true
       sros: true
+      srsim: true
       unknown: true
       vjunos-router: true
       vjunos-switch: true
@@ -6366,6 +6573,7 @@ defaults:
       routeros7: true
       srlinux: true
       sros: true
+      srsim: true
       unknown: true
       vjunos-router: true
       vjunos-switch: true
@@ -6476,6 +6684,7 @@ defaults:
       iosvl2: true
       none: true
       sros: true
+      srsim: true
       vyos: true
   prefix:
     any:
@@ -6608,6 +6817,7 @@ defaults:
       openbsd: true
       srlinux: true
       sros: true
+      srsim: true
       vjunos-router: true
       vjunos-switch: true
       vmx: true
@@ -6652,6 +6862,7 @@ defaults:
       none: true
       srlinux: true
       sros: true
+      srsim: true
       unknown: true
       vjunos-router: true
       vjunos-switch: true
@@ -6758,6 +6969,7 @@ defaults:
       frr: true
       none: true
       sros: true
+      srsim: true
       unknown: true
   stp:
     requires:
@@ -6946,6 +7158,7 @@ defaults:
       routeros7: true
       srlinux: true
       sros: true
+      srsim: true
       unknown: true
       vjunos-router: true
       vjunos-switch: true
@@ -7011,6 +7224,7 @@ defaults:
       routeros7: true
       srlinux: true
       sros: true
+      srsim: true
       unknown: true
       vjunos-router: true
       vjunos-switch: true
@@ -7068,6 +7282,7 @@ defaults:
       nxos: true
       srlinux: true
       sros: true
+      srsim: true
       unknown: true
       vjunos-switch: true
       vyos: true
@@ -7173,6 +7388,8 @@ links:
     ifindex: 1
     ifname: eth1
   - node: dut
+    ra:
+      slaac: true
     ipv6: 2001:db8:2::3/64
     ifindex: 1
     ifname: eth1
@@ -7232,6 +7449,8 @@ links:
   isis: false
   interfaces:
   - node: pe2
+    ra:
+      slaac: true
     ipv6: 2001:db8:2:1::4/64
     ifindex: 2
     ifname: eth2
@@ -7382,7 +7601,7 @@ nodes:
           ipv6: 2001:db8:1::3/128
           isis:
             passive: false
-        next_hop_self: true
+        next_hop_self: ebgp
         activate:
           ipv4: true
           ipv6: true
@@ -7390,7 +7609,9 @@ nodes:
       ipv6: true
     name: dut
     interfaces:
-    - ipv6: 2001:db8:2::3/64
+    - ra:
+        slaac: true
+      ipv6: 2001:db8:2::3/64
       linkindex: 1
       role: stub
       type: lan
@@ -7499,7 +7720,7 @@ nodes:
           ipv6: 2001:db8:1::4/128
           isis:
             passive: false
-        next_hop_self: true
+        next_hop_self: ebgp
         activate:
           ipv4: true
           ipv6: true
@@ -7521,7 +7742,9 @@ nodes:
       isis:
         passive: false
         network_type: point-to-point
-    - ipv6: 2001:db8:2:1::4/64
+    - ra:
+        slaac: true
+      ipv6: 2001:db8:2:1::4/64
       linkindex: 5
       role: stub
       type: lan
