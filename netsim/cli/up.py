@@ -5,24 +5,31 @@
 #   or read transformed lab topology from snapshot file
 # * Start the lab, including provider-specific pre- and post-start hooks
 #
-import typing
 import argparse
 import os
 import re
 import sys
 import time
+import typing
 
 from box import Box
-from pathlib import Path
 
-from . import create
-from . import external_commands, set_dry_run, is_dry_run, load_snapshot
-from . import common_parse_args, get_message
-from . import lab_status_update, lab_status_change
-from .. import providers, augment
-from ..utils import log,strings,status as _status, read as _read, stats
-from ..data import global_vars
+from .. import augment, providers
 from ..devices import process_config_sw_check
+from ..utils import log, stats, strings
+from ..utils import status as _status
+from . import (
+  common_parse_args,
+  create,
+  external_commands,
+  get_message,
+  is_dry_run,
+  lab_status_change,
+  lab_status_update,
+  load_snapshot,
+  set_dry_run,
+)
+
 
 #
 # Extra arguments for 'netlab up' command
@@ -336,7 +343,6 @@ def run_up(cli_args: typing.List[str]) -> None:
   if not is_dry_run():
     check_lab_instance(topology)
 
-  settings = topology.defaults
   if log.QUIET:
     os.environ["ANSIBLE_STDOUT_CALLBACK"] = "selective"
 

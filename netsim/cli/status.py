@@ -3,20 +3,21 @@
 #
 # Deploy custom configuration template to network devices
 #
-import typing
 import argparse
 import os
-import sys
 import subprocess
+import sys
+import typing
 
 from box import Box
 
-from ..utils import status, strings, log, read as _read
-from ..outputs import common as outputs_common
-from ..data import get_empty_box
 from .. import providers
+from ..data import get_empty_box
+from ..outputs import common as outputs_common
+from ..utils import log, status, strings
+from ..utils import read as _read
+from . import parser_add_verbose, parser_lab_location
 
-from . import parser_add_verbose,parser_lab_location
 
 def status_parse(args: typing.List[str]) -> argparse.Namespace:
   parser = argparse.ArgumentParser(
@@ -198,14 +199,14 @@ def cleanup_lab(topology: Box,args: argparse.Namespace,lab_states: Box) -> None:
   try:
     if not strings.confirm(confirm_msg):
       return
-  except KeyboardInterrupt as ex:
+  except KeyboardInterrupt:
     print("")
     log.fatal('User interrupt, exiting...')
 
   print(f'Shutting down lab {iid} in {lab_states[iid].dir}')
   os.chdir(lab_states[iid].dir)
   try:
-    result = subprocess.run(['netlab','down','--cleanup'],capture_output=False,check=True)
+    subprocess.run(['netlab','down','--cleanup'],capture_output=False,check=True)
   except Exception as ex:
     log.error(
       f'Error shutting down lab {iid}: {ex}',

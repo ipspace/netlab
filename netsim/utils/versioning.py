@@ -2,18 +2,16 @@
 # Version checking utilities
 #
 
-import typing
-import sys
-import os
 import pathlib
-import glob
-
-from packaging import version as _pv,specifiers as _ps
+import sys
+import typing
 
 from box import Box
-from . import log, files as _files
+from packaging import specifiers as _ps
+from packaging import version as _pv
 
 from .. import __version__
+from . import log
 
 """
 get_version_specifier:

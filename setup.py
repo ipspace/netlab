@@ -1,8 +1,10 @@
 """setup.py file."""
-from setuptools import setup, find_packages
-from pathlib import Path
-import netsim
 import sys
+from pathlib import Path
+
+from setuptools import find_packages, setup
+
+import netsim
 
 long_description = (Path(__file__).parent / "README.md").read_text()
 

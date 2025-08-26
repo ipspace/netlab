@@ -2,12 +2,17 @@
 Arista EOS BGP validation routines
 """
 
-from box import Box,BoxList
 import typing
+
+from box import Box, BoxList
+
 from netsim.data import global_vars
-from netsim.utils import log, routing as _rp_utils
+from netsim.utils import log
+from netsim.utils import routing as _rp_utils
+
 from .. import _common
-from . import BGP_PREFIX_NAMES,check_community_kw
+from . import BGP_PREFIX_NAMES, check_community_kw
+
 
 def check_vrf_data(data: Box, vrf: str, key: str, missing_data: str) -> Box:
   if 'vrfs' not in data:
@@ -118,7 +123,6 @@ def filter_best(data: list, value: typing.Any, **kwargs: typing.Any) -> list:
 Check BGP cluster ID on BGP paths
 """
 def check_cluster_id(data: list, value: typing.Any, pfx: str, state: str, **kwargs: typing.Any) -> list:
-  OK = False
   result = [ p_element for p_element in data
                 if 'routeDetail' in p_element and value in p_element.routeDetail.get('clusterList','') ]
 

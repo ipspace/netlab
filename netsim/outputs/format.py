@@ -4,7 +4,9 @@
 # someone already used it in their workflow.
 #
 import typing
+
 from .report import REPORT
+
 
 class FORMAT(REPORT):
   DESCRIPTION :typing.Any = None

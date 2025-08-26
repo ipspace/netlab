@@ -1,12 +1,11 @@
 #
 # External provider module
 #
-import subprocess
-import typing
 from box import Box
 
+from ..utils import log, status
 from . import _Provider
-from ..utils import log,status
+
 
 class External(_Provider):
 

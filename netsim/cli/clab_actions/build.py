@@ -3,18 +3,18 @@
 #
 # Deploy custom configuration template to network devices
 #
-import typing
 import argparse
 import os
 import pathlib
 import tempfile
+import typing
 
 from box import Box
 
-from ...utils import files as _files, log, strings
+from ...utils import files as _files
+from ...utils import log, strings
 from .. import external_commands
-from .. import collect
-from .. import fs_cleanup
+
 
 def build_parser(parser: argparse.ArgumentParser) -> None:
   parser.add_argument(

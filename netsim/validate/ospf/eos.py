@@ -2,13 +2,17 @@
 FRR OSPFv2 validation routines
 """
 
-from box import Box
-import typing
 import ipaddress
+import typing
+
+from box import Box
+
 from netsim.data import global_vars
 from netsim.utils import log
+
 from .. import _common
 from . import OSPF_PREFIX_NAMES
+
 
 def get_ospf_neighbor_data(data: Box, *, id: str, proto: str, vrf: str = 'default') -> list:
   data = data.get('vrfs',{})

@@ -3,7 +3,6 @@
 #
 # Deploy custom configuration template to network devices
 #
-import typing
 import argparse
 import sys
 
@@ -11,6 +10,7 @@ from box import Box
 
 from ...utils import log, strings
 from .. import external_commands
+
 
 def cleanup_parser(parser: argparse.Namespace) -> None:
   parser.add_argument(

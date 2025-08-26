@@ -1,16 +1,17 @@
 #
 # VRF module
 #
-import typing, re
 import ipaddress
+import typing
+
 from box import Box
 
-from . import _Module,_routing,_dataplane,get_effective_module_attribute,remove_module
-from ..utils import log
 from .. import data
+from ..augment import addressing, devices, groups, links
 from ..data import global_vars
 from ..data.types import must_be_list
-from ..augment import devices,groups,links,addressing
+from ..utils import log
+from . import _dataplane, _Module, _routing, get_effective_module_attribute, remove_module
 
 #
 # get_node_vrf_data: an abstraction layer that returns node-level VRF data structure
@@ -68,16 +69,16 @@ def get_rd_as_number(obj: Box, topology: Box) -> typing.Optional[typing.Any]:
 def parse_rdrt_value(value: str) -> typing.Optional[typing.List[typing.Union[int,str]]]:
   try:
     (asn,vid) = str(value).split(':')
-  except Exception as ex:
+  except Exception:
     return None
 
   try:
     return [int(asn),int(vid)]
-  except Exception as ex:
+  except Exception:
     try:
       ipaddress.IPv4Address(asn)
       return [asn,int(vid)]
-    except Exception as ex:
+    except Exception:
       return None
 
 def get_next_vrf_id(asn: str) -> typing.Tuple[int,str]:
@@ -205,7 +206,7 @@ def set_vrf_ids(obj: Box, topology: Box) -> None:
 
   asn = None
   is_global = obj is topology
-  obj_name = 'global VRFs' if is_global else obj.name
+  obj_name = 'global VRFs' if obj is topology else obj.name
 
   for vname,vdata in obj.vrfs.items():                      # Iterate over object VRFs
     if not vrf_needs_id(vdata):                             # Skip if the ID/RD is set
@@ -218,7 +219,7 @@ def set_vrf_ids(obj: Box, topology: Box) -> None:
 
     asn = asn or get_rd_as_number(obj,topology)
     if not asn:
-      log.error('Need a usable vrf.as or bgp.as to create auto-generated VRF RD for {vname} in {obj_name}',
+      log.error(f'Need a usable vrf.as or bgp.as to create auto-generated VRF RD for {vname} in {obj_name}',
         log.MissingValue,
         'vrf')
       return
@@ -232,7 +233,6 @@ def set_import_export_rt(obj : Box, topology: Box) -> None:
     return None
 
   is_global = obj is topology
-  obj_name = 'global VRFs' if is_global else obj.name
   obj_id   = 'vrfs' if obj is topology else f'nodes.{obj.name}.vrfs'
   asn      = None
 
@@ -253,20 +253,20 @@ def set_import_export_rt(obj : Box, topology: Box) -> None:
         if isinstance(rtvalue,int):         # RT can be specified as an integer, in which case ASN is prepended to it
           asn = asn or get_rd_as_number(obj,topology)
           if not asn:
-            log.error('VRF {vname} in {obj_id} uses integer {rtname} value without a usable vrf.as or bgp.as AS number',
+            log.error(f'VRF {vname} in {obj_id} uses integer {rtname} value without a usable vrf.as or bgp.as AS number',
               log.MissingValue,
               'vrf')
             continue
           rtvalue = f'{asn}:{rtvalue}'
         elif not isinstance(rtvalue,str):   # If RT is not an integer, it really should be a string
-          log.error('{rtname} value {rtvalue} in VRF {vname} in {obj_id} should be a string or an integer',
+          log.error(f'{rtname} value {rtvalue} in VRF {vname} in {obj_id} should be a string or an integer',
             log.IncorrectValue,
             'vrf')
           continue
         else:
           if ':' in rtvalue:                # If there's a colon in RT value, then we're assuming N:N format
             if parse_rdrt_value(rtvalue) is None:
-              log.error('{rtname} value {rtvalue} in VRF {vname} in {obj_id} is not in valid N:N format',
+              log.error(f'{rtname} value {rtvalue} in VRF {vname} in {obj_id} is not in valid N:N format',
                 log.IncorrectValue,
                 'vrf')
               continue

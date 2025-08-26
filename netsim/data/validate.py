@@ -3,17 +3,18 @@
 #
 
 import typing
-import builtins as _bi
-from box import Box
-from ..utils import log
 
-#
-# Import functions from data.types to cope with legacy calls to must_be_something
-from .types import must_be_list,must_be_dict,must_be_string,must_be_int,must_be_bool,attr_help
+from box import Box
+
+from ..utils import log
+from . import get_a_list, get_empty_box
 
 # We also need to import the whole data.types module to be able to do validation function lookup
 from . import types as _tv
-from . import get_empty_box,get_a_list
+
+#
+# Import functions from data.types to cope with legacy calls to must_be_something
+from .types import attr_help
 
 # It's easier to have a few global functions than to pass topology parameter
 # around

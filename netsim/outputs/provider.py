@@ -2,12 +2,15 @@
 # Vagrant/libvirt provider module
 #
 import typing
+
 from box import Box
 
-from . import _TopologyOutput,check_writeable,common as output_common
 from .. import providers
 from ..augment import nodes
-from ..utils import log,strings
+from ..utils import log, strings
+from . import _TopologyOutput, check_writeable
+from . import common as output_common
+
 
 def write_provider_file(topology: Box, provider: str, filename: typing.Optional[str]) -> None:
   p_module = providers.get_provider_module(topology,provider)

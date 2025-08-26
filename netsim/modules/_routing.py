@@ -7,15 +7,18 @@ Routing Protocol utility functions:
 * passive: set IGP 'passive' flag on an interface
 """
 
-from box import Box
 import typing
 
-from ..utils import log, routing as _rp_utils
-from ..augment import addressing,devices
-from .routing import import_routing_policy,check_routing_policy
-from . import get_effective_module_attribute
+from box import Box
+
 from .. import data
+from ..augment import addressing, devices
 from ..data import global_vars
+from ..utils import log
+from ..utils import routing as _rp_utils
+from . import get_effective_module_attribute
+from .routing import check_routing_policy, import_routing_policy
+
 
 # Build routing protocol address families
 #

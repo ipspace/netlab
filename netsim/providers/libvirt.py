@@ -2,24 +2,23 @@
 # Vagrant/libvirt provider module
 #
 
-import subprocess
+import argparse
+import ipaddress
+import os
 import re
 import sys
-import os
-import typing
-from box import Box
-import pathlib
 import tempfile
-import ipaddress,netaddr
-import argparse
+import typing
 
-from ..data import types,get_empty_box,get_box
-from ..utils import log,strings,linuxbridge
-from ..utils import files as _files
-from . import _Provider,validate_mgmt_ip,node_add_forwarded_ports,get_provider_forwarded_ports
+from box import Box
+
 from ..augment import devices
 from ..augment.links import get_link_by_index
-from ..cli import is_dry_run,external_commands
+from ..cli import external_commands, is_dry_run
+from ..data import get_box, get_empty_box, types
+from ..utils import files as _files
+from ..utils import linuxbridge, log, strings
+from . import _Provider, get_provider_forwarded_ports, node_add_forwarded_ports, validate_mgmt_ip
 
 LIBVIRT_MANAGEMENT_NETWORK_NAME  = "vagrant-libvirt"
 LIBVIRT_MANAGEMENT_BRIDGE_NAME   = "libvirt-mgmt"
@@ -91,7 +90,7 @@ def create_network_template(topology: Box) -> str:
   try:
     with open(net_template_xml) as xfile:
       xml = xfile.read()
-  except Exception as ex:
+  except Exception:
     log.fatal(f'Cannot open/read XML definition of vagrant-libvirt network {str(sys.exc_info()[1])}')
 
   if mgmt._network:

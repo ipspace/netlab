@@ -3,17 +3,18 @@
 #
 # Deploy custom configuration template to network devices
 #
-import typing
 import argparse
 import os
 import subprocess
+import typing
 
 from box import Box
 
-from ...utils import files as _files, log, strings, read as _read
-from .. import external_commands
-from .. import collect
-from .. import fs_cleanup
+from ...utils import files as _files
+from ...utils import log, strings
+from ...utils import read as _read
+from .. import collect, external_commands, fs_cleanup
+
 
 def tarball_parser(parser: argparse.ArgumentParser) -> None:
   parser.add_argument(

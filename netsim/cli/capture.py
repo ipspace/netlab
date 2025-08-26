@@ -3,14 +3,14 @@
 #
 # Starts packet capturing on specified node/interface
 #
-import sys
-import typing
 import argparse
+import typing
 
-from . import load_snapshot,_nodeset,external_commands,error_and_exit,parser_lab_location
 from .. import providers
 from ..augment import devices
-from ..utils import strings,log
+from ..utils import log, strings
+from . import error_and_exit, external_commands, load_snapshot, parser_lab_location
+
 
 #
 # CLI parser for 'netlab capture' command

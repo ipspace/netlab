@@ -1,16 +1,17 @@
 #
 # Create devices inventory in YAML format
 #
-import typing
-
-import yaml
 import os
 import sys
+import typing
+
 from box import Box
 
-from . import _TopologyOutput,check_writeable
+from ..utils import files as _files
+from ..utils import log, strings
+from . import _TopologyOutput, check_writeable
 from .common import adjust_inventory_host
-from ..utils import files as _files, log, strings
+
 
 def create(nodes: Box, defaults: Box, addressing: typing.Optional[Box] = None) -> Box:
   inventory = Box({},default_box=True,box_dots=True)

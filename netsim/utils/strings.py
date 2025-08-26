@@ -1,13 +1,16 @@
 #
 # Common routines for create-topology script
 #
+import re
+import sys
 import textwrap
 import typing
-import sys
-import re
 
-from box import Box,BoxList
-import rich.console, rich.table, rich.json, rich.syntax
+import rich.console
+import rich.json
+import rich.syntax
+import rich.table
+from box import Box, BoxList
 
 rich_console   = rich.console.Console()
 rich_stderr    = rich.console.Console(stderr=True)
@@ -149,7 +152,7 @@ def confirm(prompt: str,blank_line: bool = False) -> bool:
         return True
       if answer in ['n','no']:
         return False
-  except KeyboardInterrupt as ex:
+  except KeyboardInterrupt:
     from . import log
     print()
     log.fatal('Aborted by user')

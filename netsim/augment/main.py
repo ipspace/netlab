@@ -2,18 +2,13 @@
 # Build full-blown topology data structures (nodes, links, global parameter) from high-level topology
 #
 
-import sys
 from box import Box
 
-from ..utils import log,versioning
-from .. import __version__
-from .. import augment
-from .. import providers
-from .. import modules
+from .. import augment, modules, providers, roles
 from .. import devices as quirks
-from ..data import global_vars,validate
+from ..data import global_vars, validate
+from ..utils import log, versioning
 from . import addressing
-from .. import roles
 
 """
 Initializing the topology transformation:

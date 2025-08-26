@@ -5,7 +5,6 @@ from box import Box
 
 from ..augment import devices
 from ..utils import log
-
 from . import _Module
 
 """

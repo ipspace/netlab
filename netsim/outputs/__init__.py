@@ -5,13 +5,13 @@
 # TopologyOutput class and replacing or augmenting its methods (most commonly, write)
 #
 
-import typing
 import re
+import typing
 
 # Related modules
 from box import Box
 
-from ..utils import status,log
+from ..utils import log, status
 from ..utils.callback import Callback
 
 '''

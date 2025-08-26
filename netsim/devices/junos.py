@@ -5,12 +5,12 @@
 # # the same can apply to loopbacks, irbs, ...
 # # + if the vlan module is in use, and multiple units are present, set the unit 0 as untagged vlan but with the vlan-id (default 1)
 #
+import copy
+
 from box import Box
 
-from . import _Quirks,report_quirk
 from ..utils import log
-from ..augment import devices
-import copy
+from . import _Quirks, report_quirk
 
 JUNOS_MTU_DEFAULT_HEADER_LENGTH = 14
 JUNOS_MTU_FLEX_VLAN_HEADER_LENGTH = 22

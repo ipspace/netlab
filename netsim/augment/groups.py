@@ -4,20 +4,18 @@ data transformation. The end result is a dictionary of groups in 'groups'
 top-level element. That dictionary is merged from global- and node-level parameters
 '''
 
-import typing
-import re
 import copy
+import re
+import typing
 
 from box import Box
 
-from ..utils import log
-from .. import data
-from .. import modules
+from .. import data, modules
+from ..data import get_box
+from ..data.types import must_be_dict, must_be_id, must_be_list, transform_asdot
+from ..data.validate import get_object_attributes, validate_attributes
 from ..modules import bgp
-from ..data import get_box,get_empty_box
-from ..data.validate import validate_attributes,get_object_attributes
-from ..data.types import must_be_dict,must_be_list,must_be_id,transform_asdot
-from . import nodes
+from ..utils import log
 
 '''
 Return members of the specified group. Recurse through child groups if needed
@@ -264,7 +262,6 @@ def auto_create_members(
   if not 'groups' in parent:                      # Parent has no groups, what are we doing here?
     return
 
-  parent_path = 'groups' if parent is topology else 'defaults.groups'
   for gname,gdata in parent.groups.items():       # Iterate over groups
     if gname.startswith('_'):                     # Skip stuff starting with '_' (could be global settings)
       continue

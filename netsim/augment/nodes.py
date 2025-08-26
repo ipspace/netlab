@@ -7,18 +7,16 @@ Create detailed node-level data structures from topology
 '''
 import typing
 
-from box import Box, BoxList
 import netaddr
+from box import Box
 
+from .. import data, providers, utils
+from ..data import global_vars, is_true_int
+from ..data.types import must_be_device, must_be_id, must_be_int, must_be_string
+from ..data.validate import get_object_attributes, validate_attributes
+from ..modules._dataplane import extend_id_set, get_next_id, is_id_used, set_id_counter
 from ..utils import log
-from .. import data
-from .. import utils
-from .. import providers
-from . import devices,addressing,links,groups
-from ..data.validate import validate_attributes,get_object_attributes
-from ..data.types import must_be_int,must_be_string,must_be_id,must_be_device
-from ..data import global_vars,is_true_int
-from ..modules._dataplane import extend_id_set,is_id_used,set_id_counter,get_next_id
+from . import addressing, devices, groups, links
 
 """
 Reserve a node ID, for example for gateway ID, return True if successful, False if duplicate
@@ -168,7 +166,7 @@ def augment_mgmt_if(node: Box, defaults: Box, addrs: typing.Optional[Box]) -> No
 
     try:                                                              # Try to assign management address (might fail due to large ID)
       node.mgmt[af] = str(addrs[pfx][node.mgmt[af]])
-    except Exception as ex:
+    except Exception:
       log.error(
         f'Cannot assign management address #{node.mgmt[af]} for node {node.name} from prefix {str(addrs[pfx])}',
         more_data=f'Node id {node.id}, management address offset {addrs.start}',
@@ -286,7 +284,7 @@ def find_node_device(n: Box, topology: Box) -> bool:
 
   try:
     must_be_device(n,'device',f'nodes.{n.name}',module='nodes',_abort=True)
-  except Exception as ex:
+  except Exception:
     return False
 
   devtype = n.device

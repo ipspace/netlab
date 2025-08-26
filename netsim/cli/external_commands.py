@@ -1,15 +1,17 @@
 #
 # Run external commands from netlab CLI
 #
-import typing
 import os
-import sys
 import subprocess
+import sys
+import typing
+
 from box import Box
 
-from . import is_dry_run,lab_status_log
-from ..utils import strings,log
 from ..data import global_vars
+from ..utils import log, strings
+from . import is_dry_run, lab_status_log
+
 
 def print_step(n: int, txt: str, spacing: typing.Optional[bool] = False) -> None:
   if spacing:

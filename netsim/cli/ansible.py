@@ -2,20 +2,16 @@
 # Common Ansible interface commands
 #
 
-import typing
+import json
+import os
 import subprocess
 import sys
-import os
-import json
+import typing
 from pathlib import Path
 
 from ..utils import log
 from . import external_commands
 
-try:
-  from importlib import resources
-except ImportError:
-  import importlib_resources as resources # type: ignore
 
 def find_playbook(name: str) -> typing.Union[str,None]:
   cwd = Path(os.getcwd()).resolve()

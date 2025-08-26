@@ -4,9 +4,8 @@
 from box import Box
 
 from ..utils import log
-from ..modules import _routing
-from ..augment import devices
-from . import report_quirk,_Quirks
+from . import _Quirks, report_quirk
+
 
 def check_reserved_vlans(node: Box, topology: Box) -> None:
   for vname,vdata in node.get('vlans',{}).items():

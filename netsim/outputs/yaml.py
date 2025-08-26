@@ -3,16 +3,13 @@
 #
 import typing
 
-import yaml
-import os
-from box import Box,BoxList
+from box import Box, BoxList
 
-from .. import data
 from ..augment import topology
 from ..utils import files as _files
-from ..utils import log,strings
+from ..utils import log, strings
+from . import _TopologyOutput, check_writeable
 
-from . import _TopologyOutput,check_writeable
 
 class YAML(_TopologyOutput):
 

@@ -1,5 +1,7 @@
 from box import Box
+
 from netsim.utils import log
+
 
 def post_transform(topology: Box) -> None:
   for n in topology.groups.probes.members:

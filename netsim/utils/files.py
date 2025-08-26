@@ -2,22 +2,22 @@
 # File handling routines
 #
 
-import pathlib
 import importlib
 import importlib.util
 import os
+import pathlib
 import sys
 import typing
 
-from . import log
 from ..data import global_vars
+from . import log
 
 try:
   from importlib import resources
   new_resources = hasattr(resources,'files')
 except ImportError:
   new_resources = False
-  import importlib_resources as resources         # type: ignore
+  import importlib_resources as resources  # type: ignore
 
 #
 # Find paths to module, user and system directory (needed for various templates)
@@ -182,7 +182,7 @@ def create_file_from_text(fname: str, txt: str) -> None:
   fh = open_output_file(fname)
   try:
     fh.write(txt)
-  except Exception as ex:
+  except Exception:
     log.fatal('Cannot write to {fname}: {ex}')
     return
   close_output_file(fh)

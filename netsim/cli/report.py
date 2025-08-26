@@ -3,12 +3,15 @@
 #
 # Create a text or HTML report from the current lab topology
 #
-import typing
 import argparse
+import typing
 
-from . import load_snapshot,_nodeset,parser_lab_location,parser_add_verbose
-from ..outputs import _TopologyOutput, common as outputs_common
-from ..utils import strings,log,read as _read
+from ..outputs import _TopologyOutput
+from ..outputs import common as outputs_common
+from ..utils import log
+from ..utils import read as _read
+from . import _nodeset, load_snapshot, parser_add_verbose, parser_lab_location
+
 
 #
 # CLI parser for 'netlab report' command

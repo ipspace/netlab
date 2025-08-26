@@ -4,11 +4,10 @@
 from box import Box
 
 from ..utils import log
-from ..modules import _routing
-from ..augment import devices
 from . import report_quirk
+from .iosv import IOS as _IOS
+from .iosv import common_ios_quirks
 
-from .iosv import IOS as _IOS,common_ios_quirks
 
 def check_reserved_vlans(node: Box, topology: Box) -> None:
   for vname,vdata in node.get('vlans',{}).items():

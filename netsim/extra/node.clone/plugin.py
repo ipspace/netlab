@@ -1,9 +1,10 @@
 import typing
 
 from box import Box
+
 from netsim import data
-from netsim.utils import log,strings
 from netsim.augment import links
+from netsim.utils import log, strings
 
 """
 clone_link - makes a copy of the given link for each clone, updating its node

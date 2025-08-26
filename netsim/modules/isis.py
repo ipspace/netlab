@@ -1,14 +1,13 @@
 #
 # IS-IS transformation module
 #
-from box import Box
 import re
 
-from . import _Module,_routing
-from . import bfd
-from ..utils import log
+from box import Box
+
 from ..augment import devices
-from ..data import validate
+from ..utils import log
+from . import _Module, _routing, bfd
 
 """
 Create net/area/system_id items from a subset of parameters

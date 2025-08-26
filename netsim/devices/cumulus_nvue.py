@@ -3,13 +3,14 @@
 #
 from box import Box
 
+from ..augment import devices
+from ..utils import log
+from ..utils import routing as _rp_utils
 from . import _Quirks, report_quirk
+
 # from .cumulus import Cumulus  # This causes Cumulus_Nvue to get skipped
 from .cumulus import check_ospf_vrf_default
-from ..utils import log, routing as _rp_utils
-from ..augment import devices
-from .. import data
-import netaddr
+
 
 def nvue_check_stp_features(node: Box, topology: Box) -> None:
   err_data = []

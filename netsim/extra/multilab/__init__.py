@@ -1,6 +1,8 @@
 import typing
+
 from box import Box
-from netsim import utils,data
+
+from netsim import data, utils
 
 """
 Depth-first evaluation of changed parameters:

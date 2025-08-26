@@ -1,4 +1,3 @@
 # Import the whole augmentation tree
 
-from . import log
-from . import strings
+from . import log, strings

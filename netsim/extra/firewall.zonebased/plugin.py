@@ -1,11 +1,11 @@
 # Firewall Zone-Based Plugin
 ## Simple rules for now, only default policy supported initially
 
-from netsim.utils import log
-from netsim.augment import addressing, devices
-from netsim import api,data
 from box import Box
-import netaddr
+
+from netsim import api
+from netsim.augment import devices
+from netsim.utils import log
 
 _config_name = 'firewall.zonebased'
 

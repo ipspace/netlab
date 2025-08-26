@@ -1,12 +1,13 @@
-from box import Box
 import ipaddress
 
-from netsim.utils import log,routing as _bgp
-from netsim.modules import vrf
-from netsim import api,data
-from netsim.augment import devices
-from netsim.augment import links
+from box import Box
+
+from netsim import api
+from netsim.augment import devices, links
 from netsim.data.validate import validate_attributes
+from netsim.modules import vrf
+from netsim.utils import log
+from netsim.utils import routing as _bgp
 
 _config_name = 'ebgp.multihop'
 _execute_after = [ 'ebgp.utils', 'bgp.session' ]

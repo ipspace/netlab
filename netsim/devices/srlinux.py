@@ -4,11 +4,14 @@
 # # inter-VRF route leaking is only supported in combination with BGP EVPN
 # # based on IP prefixes, not (currently 24.3.1) on communities
 #
+import re
+
 from box import Box
 
-from . import _Quirks,need_ansible_collection,report_quirk
-from ..utils import log,routing as _routing
-import re
+from ..utils import log
+from ..utils import routing as _routing
+from . import _Quirks, need_ansible_collection, report_quirk
+
 
 def check_prefix_deny(node: Box) -> None:
   for pf_name,pf_list in node.get('routing.prefix',{}).items():

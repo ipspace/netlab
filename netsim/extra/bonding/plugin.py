@@ -1,8 +1,10 @@
 import typing
+
 from box import Box
-from netsim.utils import log, strings
-from netsim import api,data
+
+from netsim import api, data
 from netsim.augment import devices
+from netsim.utils import log, strings
 
 _config_name = 'bonding'
 

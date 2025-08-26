@@ -1,13 +1,13 @@
 #
 # DHCP module
 #
-import typing
 from box import Box
 
-from . import _Module,_routing,routing
-from ..utils import log, strings, routing as _rp_utils
 from .. import data
 from ..augment import devices
+from ..utils import log, strings
+from ..utils import routing as _rp_utils
+from . import _Module, _routing, routing
 
 '''
 Do sanity checks on DHCP data:

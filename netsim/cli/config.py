@@ -3,16 +3,18 @@
 #
 # Deploy custom configuration template to network devices
 #
-import typing
 import argparse
-import os
 import glob
+import os
+import typing
+
 from box import Box
 
-from . import parser_add_verbose,parser_lab_location,load_snapshot
+from ..utils import files as _files
+from ..utils import log
+from . import ansible, load_snapshot, parser_add_verbose, parser_lab_location
 from .external_commands import set_ansible_flags
-from . import ansible
-from ..utils import log, files as _files
+
 
 #
 # CLI parser for 'netlab config' command

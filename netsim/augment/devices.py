@@ -8,7 +8,7 @@ from enum import Enum
 from box import Box
 
 from .. import data
-from ..utils import log,strings
+from ..utils import log, strings
 
 """
 Get generic device attribute:
@@ -103,7 +103,6 @@ def check_optional_features(
         category: typing.Optional[typing.Union[typing.Type[Warning],typing.Type[Exception]]] = None,
         features: typing.Optional[Box] = None) -> FC_MODE:
 
-  error = False
   module = attribute.split('.')[0]
   if features is None:              # Fetch the initial device features (we'll set the value in recursive calls)
     d_features = get_device_features(node,topology.defaults)

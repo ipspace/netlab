@@ -1,5 +1,5 @@
-from . import log
 from ..cli import external_commands
+from . import log
 
 """
 configure_bridge_forwarding - Enables LLDP (and some other L2 protocols) forwarding on the given Linux bridge

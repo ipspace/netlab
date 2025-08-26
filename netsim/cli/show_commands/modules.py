@@ -5,12 +5,14 @@
 import argparse
 import textwrap
 import typing
+
 from box import Box
 
-from ...utils import strings
 from ... import data
+from ...utils import strings
 from .. import error_and_exit
-from . import show_common_parser,parser_add_module,DEVICES_TO_SKIP,get_modlist
+from . import DEVICES_TO_SKIP, get_modlist, parser_add_module, show_common_parser
+
 
 def parse() -> argparse.ArgumentParser:
   parser = show_common_parser('modules','supported configuration modules')

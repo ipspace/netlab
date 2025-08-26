@@ -1,11 +1,12 @@
 #
 # Nokia SR OS quirks
 #
+
 from box import Box
 
-from . import _Quirks,need_ansible_collection,report_quirk
-from ..utils import log,routing as _routing
-import re
+from ..utils import log
+from . import _Quirks, need_ansible_collection, report_quirk
+
 
 def ipv4_unnumbered(node: Box) -> None:
   for intf in node.interfaces:

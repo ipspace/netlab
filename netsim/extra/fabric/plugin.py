@@ -1,8 +1,10 @@
 import typing
+
 from box import Box
-from netsim import api,data
-from netsim.utils import log,strings
+
+from netsim import data
 from netsim.augment.links import adjust_link_list
+from netsim.utils import strings
 
 _config_name = 'fabric'
 

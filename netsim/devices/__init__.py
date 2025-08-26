@@ -3,16 +3,18 @@
 #
 # Each device with quirks should have a module file in this directory with a class derived from _Quirks
 #
-import typing
-import os
 import json
+import os
+import typing
 
 from box import Box
 
+from ..data.global_vars import get_topology
+from ..utils import log
+
 # Related modules
 from ..utils.callback import Callback
-from ..utils import log
-from ..data.global_vars import get_topology
+
 
 class _Quirks(Callback):
 
@@ -101,7 +103,7 @@ def get_ansible_collection(cname: str) -> typing.Optional[dict]:
         if ack not in ANSIBLE_COLLECTIONS:    # ... and keep the first one found
           ANSIBLE_COLLECTIONS[ack] = acv
 
-  except Exception as ex:
+  except Exception:
     log.fatal('Cannot parse the ansible-galaxy JSON printout: {ex}')
 
   return ANSIBLE_COLLECTIONS.get(cname,None)

@@ -11,10 +11,13 @@ these features:
 """
 
 import typing
+
 from box import Box
+
 from netsim.augment.devices import get_device_features
-from netsim.utils import log
 from netsim.data import get_box
+from netsim.utils import log
+
 
 def remove_validation(topology: Box, warning: str) -> None:
   for tname,tdata in get_box(topology.validate).items():

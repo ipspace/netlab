@@ -2,16 +2,18 @@
 plugin - implement custom topology transformation plugins
 '''
 
+import importlib
+import importlib.util
 import os
 import sys
 import typing
-import importlib
-import importlib.util
 
 from box import Box
-from ..utils import log, read as _read, sort as _sort, strings
-from ..utils.files import get_moddir,get_search_path,load_python_module
+
 from .. import data
+from ..utils import log, strings
+from ..utils import read as _read
+from ..utils import sort as _sort
 from . import config
 
 '''
@@ -47,7 +49,6 @@ def load_plugin_from_path(path: str, plugin: str, topology: Box) -> typing.Optio
     else:
       return None
 
-  module: typing.Optional[object] = None
   config_name = None
 
   plugin_is_dir = os.path.isdir(module_path)                # Plugin name could specify a directory

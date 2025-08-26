@@ -3,16 +3,13 @@
 #
 import typing
 
-import yaml
-import os
 from box import Box
 
 from ..data import get_box
-from ..data.validate import must_be_list
-from . import _TopologyOutput
 from ..utils import files as _files
 from ..utils import log
-from ._graph import topology_graph,bgp_graph,map_style
+from . import _TopologyOutput
+from ._graph import bgp_graph, map_style, topology_graph
 
 '''
 Copy default settings into a D2 map converting Python dictionaries into

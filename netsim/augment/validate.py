@@ -1,13 +1,12 @@
 #
 # Process validation data structures
 #
+import typing
+
 from box import Box
 
-from ..utils import strings,log
-from .. import data
 from ..data.global_vars import get_const
-
-import typing
+from ..utils import log
 
 '''
 lookup_wait_time: convert wait time to integer

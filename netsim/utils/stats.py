@@ -1,15 +1,16 @@
 # Usage stats utility functions
 #
-import typing
 import os
 import time
-from box import Box
-from filelock import Timeout, FileLock
+import typing
 
-from ..utils import log,strings
+from box import Box
+from filelock import FileLock
+
 from ..augment import devices
-from ..data import get_empty_box,get_box
+from ..data import get_box, get_empty_box
 from ..data.global_vars import get_const
+from ..utils import log
 
 '''
 get_filename -- get the name of the netlab stats file

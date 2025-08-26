@@ -2,17 +2,18 @@
 # Data validation routines
 #
 
-import typing,typing_extensions
 import functools
 import ipaddress
-import netaddr
-import datetime
 import re
 import textwrap
+import typing
 
+import netaddr
+import typing_extensions
 from box import Box
+
 from ..utils import log
-from . import global_vars,append_to_list
+from . import append_to_list, global_vars
 
 """
 Common error checking routines:
@@ -606,7 +607,7 @@ def must_be_time(value: typing.Any) -> dict:
     try:
       transform_to_msec(value)
       return { '_valid': True, '_transform': transform_to_msec }
-    except Exception as ex:
+    except Exception:
       pass
 
   return { '_type': 'a time interval'}
@@ -845,7 +846,7 @@ def must_be_prefix_str(value: typing.Any) -> dict:
 
   try:
     parse = ipaddress.ip_network(value)                              # now let's check if we have a valid prefix
-  except Exception as ex:
+  except Exception:
     return check_named_prefix(value) or { '_value': f"IPv4, IPv6, or named prefix" }
 
   if isinstance(parse,ipaddress.IPv4Network):
@@ -886,7 +887,7 @@ def must_be_mac(value: typing.Any) -> dict:
 
     if int(parse) & 0x010000000000:                                   # Check if the multicast bit is set
       return { '_value': "Unicast MAC address" }
-  except Exception as ex:
+  except Exception:
     return { '_value': "MAC address" }
 
   return { '_valid': True }
@@ -930,20 +931,20 @@ def must_be_rd(value: typing.Any) -> dict:
 
   try:
     (rdt,rdi) = value.split(':')
-  except Exception as ex:
+  except Exception:
     return { '_value': "route distinguisher in asn:id or ip:id format" }
 
   try:
-    rdi_parsed = int(rdi)
-  except Exception as ex:
+    int(rdi)
+  except Exception:
     return { '_value': "an RD in asn:id or ip:id format where id is an integer value" }
 
   try:
-    rdt_parsed = int(rdt)
-  except Exception as ex:
+    int(rdt)
+  except Exception:
     try:
       ipaddress.IPv4Address(rdt)
-    except Exception as ex:
+    except Exception:
       return { '_value': "an RD in asn:id or ip:id format where asn is an integer or ip is an IPv4 address" }
 
   return { '_valid': True }

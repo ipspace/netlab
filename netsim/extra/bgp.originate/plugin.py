@@ -1,8 +1,7 @@
-import typing
 from box import Box
-from netsim.utils import log
-from netsim.data import get_box
+
 from netsim.augment import links
+from netsim.data import get_box
 
 _requires    = [ 'bgp' ]
 

@@ -5,16 +5,14 @@ This module handles topology components
 * Expands included components into groups, nodes and links
 '''
 
-import typing
-import re
 
 from box import Box
 
-from ..utils import log
 from .. import data
-from . import nodes,links
-from ..data.types import must_be_dict,must_be_list,must_be_string,must_be_id
 from ..data import global_vars
+from ..data.types import must_be_dict, must_be_id, must_be_string
+from ..utils import log
+from . import links, nodes
 
 '''
 Validate topology components:

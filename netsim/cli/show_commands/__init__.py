@@ -3,6 +3,7 @@
 #
 
 import argparse
+
 from box import Box
 
 from ...utils import log

@@ -3,13 +3,11 @@
 #
 # Perform 'netlab down' followed by 'netlab up'
 #
-import typing
 import argparse
+import typing
 
-from box import Box
+from . import common_parse_args, down, parser_lab_location, up
 
-from . import down, up
-from . import common_parse_args,parser_lab_location
 
 #
 # Extra arguments for 'netlab up' command
@@ -37,7 +35,7 @@ def restart_parse_args() -> argparse.ArgumentParser:
 
 def run(cli_args: typing.List[str]) -> None:
   parser = restart_parse_args()
-  args = parser.parse_args(cli_args)
+  parser.parse_args(cli_args)
   up_only_args = ['--fast-config','--no-config','--snapshot']
 
   down.run([ arg for arg in cli_args if arg not in up_only_args ])

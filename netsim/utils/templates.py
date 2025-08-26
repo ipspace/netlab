@@ -1,14 +1,13 @@
 #
 # Common routines for create-topology script
 #
-import typing
-import os
 import pathlib
+import typing
 
-from jinja2 import Environment, PackageLoader, FileSystemLoader, StrictUndefined, make_logging_undefined
+from jinja2 import Environment, FileSystemLoader, StrictUndefined, make_logging_undefined
 
-from .log import debug_active,fatal
-from .files import get_moddir,create_file_from_text
+from .files import create_file_from_text, get_moddir
+from .log import debug_active, fatal
 
 ansible_filter_map: dict = {}
 ANSIBLE_DEBUG = False

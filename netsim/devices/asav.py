@@ -3,8 +3,9 @@
 #
 from box import Box
 
-from . import _Quirks,report_quirk
 from ..utils import log
+from . import _Quirks, report_quirk
+
 
 def check_isis_p2p_interfaces(node: Box, topology: Box) -> None:
   for intf in node.interfaces:

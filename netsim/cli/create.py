@@ -5,18 +5,20 @@
 # the specified topology
 #
 import argparse
-import typing
-import textwrap
 import os
 import sys
-import requests
-from box import Box
+import textwrap
+import typing
 from pathlib import Path
 
-from . import common_parse_args, topology_parse_args, load_topology, lab_status_log, error_and_exit
+import requests
+from box import Box
+
 from .. import augment
-from ..utils import log, read as _read,strings
 from ..outputs import _TopologyOutput
+from ..utils import log, strings
+from . import common_parse_args, error_and_exit, lab_status_log, load_topology, topology_parse_args
+
 
 #
 # CLI parser for create-topology script

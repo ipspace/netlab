@@ -5,9 +5,9 @@ import typing
 
 from box import Box
 
-from ..data.validate import must_be_list
-from ..utils import log,strings
-from ..data import append_to_list,global_vars
+from ..data import append_to_list, global_vars
+from ..data.types import must_be_list
+from ..utils import log, strings
 
 '''
 get_config_name: get the name of configuration to be added to node.config attribute

@@ -1,8 +1,10 @@
 import typing
+
 from box import Box
-from netsim.utils import log,routing as _bgp
-from netsim import api,data,modules
-from netsim.augment import devices
+
+from netsim import api, data, modules
+from netsim.utils import log
+from netsim.utils import routing as _bgp
 
 _config_name = 'bgp.session'
 _requires    = [ 'bgp' ]

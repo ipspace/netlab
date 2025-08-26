@@ -3,16 +3,23 @@
 #
 # Deploys initial device configurations
 #
-import typing
-import os
 import argparse
+import os
+import typing
 
-from . import common_parse_args,get_message,load_snapshot,lab_status_change,parser_lab_location
-from . import external_commands
-from . import ansible
-from ..utils import log,status as _status
 from .. import devices
-from box import Box
+from ..utils import log
+from ..utils import status as _status
+from . import (
+  ansible,
+  common_parse_args,
+  external_commands,
+  get_message,
+  lab_status_change,
+  load_snapshot,
+  parser_lab_location,
+)
+
 
 #
 # CLI parser for 'netlab initial' command

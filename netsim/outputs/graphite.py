@@ -7,7 +7,9 @@
 import sys
 
 from box import Box
+
 from . import _TopologyOutput
+
 
 class Graphite(_TopologyOutput):
 

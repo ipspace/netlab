@@ -2,9 +2,13 @@
 Common BGP validation code -- utility functions and such
 """
 
-from box import Box,BoxList
 import typing
-from ..utils import log,routing as _rp_utils
+
+from box import Box, BoxList
+
+from ..utils import log
+from ..utils import routing as _rp_utils
+
 
 # Find neighbor IP address from neighbor name
 def get_bgp_neighbor_id(ngb: list, n_id: str, af: str) -> typing.Union[bool, str]:

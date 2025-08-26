@@ -5,15 +5,11 @@ Create detailed node-level data structures from topology
 * Add default module list to nodes without specific modules
 * Set loopback and management interface data
 '''
-import typing
 
-from box import Box, BoxList
-import netaddr
+from box import Box
 
-from ..utils import log
 from .. import data
 from ..augment import devices
-
 from . import select_nodes_by_role
 
 '''

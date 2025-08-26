@@ -3,11 +3,12 @@
 #
 from box import Box
 
-from . import _Quirks,report_quirk
-from ..utils import log, routing as _rp_utils
-from ..modules import _routing
 from .. import data
 from ..augment import devices
+from ..modules import _routing
+from ..utils import log
+from . import _Quirks, report_quirk
+
 
 def check_mlps_vlan_bundle(node: Box) -> None:
   if node.get('evpn.transport',None) != 'mpls':                         # This quirk applies only to EVPN/MPLS

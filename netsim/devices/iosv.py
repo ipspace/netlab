@@ -3,9 +3,10 @@
 #
 from box import Box
 
-from . import _Quirks,report_quirk
-from ..utils import log
 from ..modules import _routing
+from ..utils import log
+from . import _Quirks, report_quirk
+
 
 # Cisco IOSv does not support VRRP on BVI interfaces. Go figure...
 #

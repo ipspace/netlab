@@ -2,11 +2,9 @@
 Tool-related topology transformation functions
 '''
 
-import os
 from box import Box
 
 from ..utils import log
-from .. import data
 
 """
 Check the 'tools' section of the topology file

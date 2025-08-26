@@ -1,18 +1,18 @@
 #
 # Create tool configurations
 #
-import typing
 
-import os
-import sys
-from box import Box
 from pathlib import Path
 
-from . import _TopologyOutput,check_writeable,common as outputs_common
-from ..tools import _ToolOutput
-from ..utils import templates,strings,log
-from ..utils import files as _files
+from box import Box
+
 from ..data import get_box
+from ..tools import _ToolOutput
+from ..utils import files as _files
+from ..utils import log, strings, templates
+from . import _TopologyOutput, check_writeable
+from . import common as outputs_common
+
 
 def render_tool_config(tool: str, fmt: str, topology: Box) -> str:
     output_module = _ToolOutput.load(tool)
@@ -42,7 +42,6 @@ def create_tool_config(tool: str, topology: Box) -> None:
       config_text = render_tool_config(tool,config.render,topology)
       config_src  = f'rendering "{config.render}" format'
     elif 'template' in config:
-      template = config.template
       try:
         config_text = templates.render_template(
                         j2_file=config.template,

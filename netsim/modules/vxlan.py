@@ -2,13 +2,14 @@
 # VXLAN module
 #
 import typing
+
 from box import Box
 
-from . import _Module,get_effective_module_attribute,_dataplane
-from ..utils import log,routing as _rp_utils
-from .. import data
-from ..data.validate import must_be_int,must_be_string
-from ..augment import addressing,devices
+from ..augment import devices
+from ..data.types import must_be_int, must_be_string
+from ..utils import log
+from ..utils import routing as _rp_utils
+from . import _dataplane, _Module
 
 """
 register_static_vni -- register all static VNIs

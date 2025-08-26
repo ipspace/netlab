@@ -6,18 +6,26 @@
 # * Clean up the working directory (optional)
 #
 import argparse
-import typing
-import textwrap
 import os
 import sys
+import typing
+
 from box import Box
 
-from . import external_commands,set_dry_run,is_dry_run
-from . import lab_status_change,fs_cleanup,load_snapshot,parser_lab_location,change_lab_instance
 from .. import providers
-from ..utils import status,strings,log,read as _read
-from ..data import append_to_list
+from ..utils import log, status, strings
+from . import (
+  external_commands,
+  fs_cleanup,
+  is_dry_run,
+  lab_status_change,
+  load_snapshot,
+  parser_lab_location,
+  set_dry_run,
+)
 from .up import provider_probes
+
+
 #
 # CLI parser for 'netlab down' command
 #

@@ -1,19 +1,17 @@
 #
 # Create Ansible inventory
 #
+import os
 import typing
 
-import yaml
-import os
 from box import Box
 
-from . import _TopologyOutput,check_writeable
-from ..augment import nodes
-from ..augment import devices
-from ..augment import plugin
-from ..utils import templates,strings,log,routing as _rp_utils
+from ..augment import devices, nodes, plugin
+from ..data import append_to_list, global_vars
 from ..utils import files as _files
-from ..data import global_vars,append_to_list
+from ..utils import log, strings, templates
+from ..utils import routing as _rp_utils
+from . import _TopologyOutput, check_writeable
 
 forwarded_port_name = { 'ssh': 'ansible_port', }
 
@@ -50,7 +48,6 @@ topo_to_host = { 'mgmt.ipv4': 'ansible_host', 'hostname': 'ansible_host', 'id': 
 topo_to_host_skip = [ 'name','device' ]
 
 def ansible_inventory_host(node: Box, topology: Box) -> Box:
-  defaults = topology.defaults
   host = Box({})
   for (node_key,inv_key) in topo_to_host.items():
     if "." in node_key:

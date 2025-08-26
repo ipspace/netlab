@@ -3,14 +3,15 @@
 #
 # Deploy custom configuration template to network devices
 #
-import typing
 import argparse
-import pathlib
 import glob
+import pathlib
+import typing
 
 from box import Box
 
 from ...utils import files as _files
+
 
 def config_parse(args: typing.List[str], settings: Box) -> argparse.Namespace:
   moddir = _files.get_moddir()

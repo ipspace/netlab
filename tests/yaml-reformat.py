@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 #
-import typing
 import argparse
-import sys
-from ruyaml import YAML
+import typing
 from pathlib import Path
+
+from ruyaml import YAML
+
 
 def parse() -> typing.Tuple[argparse.Namespace, typing.List[str]]:
   parser = argparse.ArgumentParser(

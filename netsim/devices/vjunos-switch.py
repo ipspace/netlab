@@ -2,10 +2,12 @@
 # vJunos-switch quirks
 #
 from box import Box
-from .junos import JUNOS as _JUNOS
-from . import report_quirk
-from ..utils import log
+
 from ..modules import vrf
+from ..utils import log
+from . import report_quirk
+from .junos import JUNOS as _JUNOS
+
 
 def check_evpn_vlan_trunks(node: Box, topology: Box) -> None:
   if 'evpn' not in node.get('module',[]):

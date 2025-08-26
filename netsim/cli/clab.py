@@ -3,24 +3,15 @@
 #
 # Deploy custom configuration template to network devices
 #
-import typing
 import argparse
-import os
-import string
-import pathlib
-import glob
-import subprocess
-import shutil
+import typing
 
-from box import Box
-
-from ..utils import files as _files, log, strings, read as _read
-from . import external_commands,parser_subcommands,subcommand_usage
-from . import collect
-from . import fs_cleanup
-from .clab_actions import tarball as _tarball
+from ..utils import log
+from ..utils import read as _read
+from . import parser_subcommands, subcommand_usage
 from .clab_actions import build as _build
 from .clab_actions import cleanup as _cleanup
+from .clab_actions import tarball as _tarball
 
 clab_dispatch: dict = {
   'tarball': {

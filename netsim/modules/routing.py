@@ -5,16 +5,18 @@
 # * Routing filters (prefixes, communities, as-paths)
 # * Static routes
 #
-import typing, re
 import ipaddress
-from box import Box,BoxList
+import re
+import typing
 
-from . import _Module,_routing,_dataplane,get_effective_module_attribute
-from ..utils import log, routing as _rp_utils
+from box import Box, BoxList
+
 from .. import data
-from ..data import global_vars,get_box
-from ..data.types import must_be_list
-from ..augment import devices,groups,links,addressing
+from ..augment import addressing, devices
+from ..data import get_box, global_vars
+from ..utils import log
+from ..utils import routing as _rp_utils
+from . import _Module, _routing
 
 set_kw: typing.Optional[Box] = None
 match_kw: typing.Optional[Box] = None

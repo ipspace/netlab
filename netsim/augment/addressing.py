@@ -48,18 +48,19 @@ parameters when the corresponding addressing parameteres are missing:
 * _p2p_ and _p2p_subnet_ defaults are used to create _p2p_ pool
 '''
 
-import sys
-import typing
-import types
-
 import ipaddress
+import sys
+import types
+import typing
+
 import netaddr
 from box import Box
 
 # Related modules
-from ..data import get_empty_box,get_box,null_to_string,global_vars
+from ..data import get_box, get_empty_box, global_vars, null_to_string
 from ..data.validate import validate_attributes
-from ..utils import log,strings
+from ..utils import log, strings
+
 
 def normalize_prefix(pfx: typing.Union[str,Box]) -> Box:
 

@@ -5,6 +5,7 @@
 #
 
 import typing
+
 from box import Box
 
 _topology: typing.Optional[Box] = None

@@ -5,14 +5,15 @@
 # TopologyOutput class and replacing or augmenting its methods (most commonly, write)
 #
 
-import typing
 import re
+import typing
 
 # Related modules
 from box import Box
 
 from ..utils import log
 from ..utils.callback import Callback
+
 
 class _ToolOutput(Callback):
   def __init__(self) -> None:

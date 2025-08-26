@@ -1,8 +1,8 @@
-import typing
 from box import Box
-from netsim.utils import log
-from netsim import api,data
+
+from netsim import api
 from netsim.augment import devices
+from netsim.utils import log
 
 _config_name = 'vrrp.version'
 _requires    = [ 'gateway' ]

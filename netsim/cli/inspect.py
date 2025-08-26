@@ -3,19 +3,17 @@
 #
 # Inspect data structures in transformed lab topology
 #
-import typing
-import os
-import sys
 import argparse
+import typing
 
-from box import Box,BoxList
+from box import Box, BoxList
 
-from . import load_snapshot,_nodeset,parser_lab_location,parser_add_verbose
+from ..data import get_empty_box
 from ..outputs import _TopologyOutput
 from ..outputs import common as outputs_common
-from ..utils import strings,log
-from ..data.types import must_be_id
-from ..data import global_vars,get_empty_box
+from ..utils import log, strings
+from . import _nodeset, load_snapshot, parser_add_verbose, parser_lab_location
+
 
 #
 # CLI parser for 'netlab inspect' command
@@ -64,7 +62,6 @@ def fmt_value(v: typing.Union[Box,BoxList], fmt: str) -> str:
 Read Ansible variables for the 'all' group (paths, pools, prefixes)
 """
 def read_all_group_vars() -> Box:
-  fname = 'group_vars/all/topology.yml'
   try:
     return Box().from_yaml(filename='group_vars/all/topology.yml')
   except Exception as ex:

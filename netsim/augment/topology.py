@@ -8,12 +8,12 @@ Topology-level transformation:
 '''
 
 import os
+
 from box import Box
 
-from ..utils import log,strings
-from .. import data
-from ..data.validate import validate_attributes,get_object_attributes
-from ..data.types import must_be_list,must_be_string,must_be_dict
+from ..data.types import must_be_list, must_be_string
+from ..data.validate import get_object_attributes, validate_attributes
+from ..utils import log, strings
 
 """
 Generate topology name from the lab topology file location:

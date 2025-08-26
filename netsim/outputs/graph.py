@@ -3,16 +3,13 @@
 #
 import typing
 
-import yaml
-import os
 from box import Box
 
-from ..data.validate import must_be_list
-from ..data import get_empty_box,get_box
-from . import _TopologyOutput
 from ..utils import files as _files
 from ..utils import log
-from ._graph import topology_graph,bgp_graph,map_style
+from . import _TopologyOutput
+from ._graph import bgp_graph, map_style, topology_graph
+
 
 def edge_label(f : typing.TextIO, direction: str, data: Box, subnet: bool = True) -> None:
   addr = data.ipv4 or data.ipv6
