@@ -160,14 +160,6 @@ class _Provider(Callback):
     sys_folder = str(_files.get_moddir())+"/"
     out_folder = f"{self.provider}_files/{node.name}"
 
-    # Initialize cache if needed
-    if not hasattr(topology.defaults, '_cache'):
-      topology.defaults._cache = Box()
-    
-    # Cache for template content checks
-    if '_template_checks' not in topology.defaults._cache:
-      topology.defaults._cache['_template_checks'] = {}
-    
     # Pre-compute hosts entries if needed
     cache_key = '_hosts_entries_cache'
     
@@ -207,7 +199,7 @@ class _Provider(Callback):
           # For other templates, include full data
           node_data = {
             **node.to_dict(),
-            'hostvars': topology.nodes.to_dict(), 
+            'hostvars': topology.nodes.to_dict(),
             'hosts': get_host_addresses(topology).to_dict(),
             'addressing': topology.addressing.to_dict()
           }
@@ -225,8 +217,8 @@ class _Provider(Callback):
             text=f"Error rendering {template_name} into {file_name}\n{strings.extra_data_printout(str(ex))}",
             module=self.provider)
 
-        # Only print mapping info in verbose mode to reduce I/O overhead
-        log.print_verbose(f"[MAPPED] {out_folder}/{file_name} to {node.name}:{mapping} (from {template_name.replace(sys_folder,'')})")
+        strings.print_colored_text('[MAPPED]  ','bright_cyan','Mapped ')
+        print(f"{out_folder}/{file_name} to {node.name}:{mapping} (from {template_name.replace(sys_folder,'')})")
       else:
         log.error(f"Cannot find template for {file_name} on node {node.name}",log.MissingValue,'provider')
 
