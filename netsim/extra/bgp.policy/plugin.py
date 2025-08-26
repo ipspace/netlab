@@ -160,8 +160,12 @@ def apply_config(node: Box, ngb: Box) -> None:
   global _config_name
   api.node_config(node,_config_name)                    # Remember that we have to do extra configuration
   for af in ('ipv4','ipv6'):                            # ... and add sessions that have to be cleared
-    if af in ngb:
+    if af in ngb and '_src_vrf' not in ngb:
       data.append_to_list(node.bgp,'_session_clear',ngb[af])
+    elif af in ngb and '_src_vrf' in ngb:
+      for vname,vdata in node.vrfs.items():
+        if vname == ngb['_src_vrf']:
+          data.append_to_list(node.vrfs[vname].bgp,'_session_clear',ngb[af])
 
 '''
 Apply attributes supported by bgp.policy plugin to a single neighbor
