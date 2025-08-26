@@ -186,23 +186,15 @@ class _Provider(Callback):
           topology.defaults._cache[cache_key] = hosts_entries
           log.print_verbose(f"Pre-computed {len(hosts_entries)} hosts entries (cached for all nodes)")
         
-        # Prepare minimal node data - only include what's actually needed
-        if is_hosts_file and cache_key in topology.defaults._cache:
-          # For hosts file with cache, we don't need hostvars
-          node_data = {
-            **node.to_dict(),
-            '_hosts_entries': topology.defaults._cache[cache_key],
-            'addressing': topology.addressing.to_dict()
-          }
-          log.print_verbose(f"Using cached hosts entries for {node.name}")
-        else:
-          # For other templates, include full data
-          node_data = {
-            **node.to_dict(),
-            'hostvars': topology.nodes.to_dict(),
-            'hosts': get_host_addresses(topology).to_dict(),
-            'addressing': topology.addressing.to_dict()
-          }
+        node_data = {
+          **node.to_dict(),
+          'addressing': topology.addressing.to_dict()
+        }
+
+        if cache_key in topology.defaults._cache:
+          node_data['_hosts_entries'] = topology.defaults._cache[cache_key]
+          node_data['hostvars'] = topology.nodes.to_dict()
+          node_data['hosts'] = get_host_addresses(topology).to_dict()
         
         if '/' in file_name:                      # Create subdirectory in out_folder if needed
           pathlib.Path(f"{out_folder}/{os.path.dirname(file_name)}").mkdir(parents=True,exist_ok=True)
@@ -272,7 +264,6 @@ class _Provider(Callback):
             else:
               entries.append(f"{ip_addr} {h_entry}")
     
-    # Join all entries with newlines for efficiency
     return '\n'.join(entries)
 
   def create(self, topology: Box, fname: typing.Optional[str]) -> None:
