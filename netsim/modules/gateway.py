@@ -8,7 +8,7 @@ from box import Box
 from .. import data
 from ..augment import devices
 from ..augment.nodes import reserve_id
-from ..data.validate import must_be_string
+from ..data.types import must_be_string
 from ..utils import log, strings
 from . import _Module, remove_module
 

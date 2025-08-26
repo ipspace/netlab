@@ -7,7 +7,7 @@ from box import Box
 
 from .. import data
 from ..augment import devices
-from ..data.validate import must_be_bool, must_be_list
+from ..data.types import must_be_bool, must_be_list
 from ..utils import log
 from . import _Module, _routing
 

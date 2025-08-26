@@ -6,7 +6,7 @@ import typing
 from box import Box
 
 from ..augment import devices
-from ..data.validate import must_be_int, must_be_string
+from ..data.types import must_be_int, must_be_string
 from ..utils import log
 from ..utils import routing as _rp_utils
 from . import _dataplane, _Module

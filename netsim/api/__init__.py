@@ -6,7 +6,7 @@ import typing
 from box import Box
 
 from ..data import append_to_list, global_vars
-from ..data.validate import must_be_list
+from ..data.types import must_be_list
 from ..utils import log, strings
 
 '''
