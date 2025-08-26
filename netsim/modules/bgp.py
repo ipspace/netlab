@@ -304,6 +304,8 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
       extra_data.ifindex = l.ifindex
       if 'bgp' in ngb_ifdata and isinstance(ngb_ifdata.bgp,Box):      # Copy neighbor BGP interface attributes into neighbor data
         extra_data = ngb_ifdata.bgp + extra_data                      # ... useful for things like BGP roles
+      if isinstance(ngb_ifdata.get('vrf',None),str):                  # Are we attached to the neighbor's VRF?
+        extra_data._vrf = ngb_ifdata.vrf
 
       # Figure out whether both neighbors have IPv6 LLA and/or unnumbered IPv4 interfaces
       #
