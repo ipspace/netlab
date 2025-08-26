@@ -186,10 +186,6 @@ class Containerlab(_Provider):
       if n.get('clab.binds',None):
         self.create_extra_files(n,topology)
 
-  def _process_node_files(self, node: Box, topology: Box) -> None:
-    """Process extra files for a single node (used for parallel processing)"""
-    self.create_extra_files(node, topology)
-
   def pre_start_lab(self, topology: Box) -> None:
     log.print_verbose('pre-start hook for Containerlab - create any bridges and load kernel modules')
     for brname in list_bridges(topology):
