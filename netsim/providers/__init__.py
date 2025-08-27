@@ -39,6 +39,7 @@ class _Provider(Callback):
     self.provider = provider
     if 'template' in data:
       self._default_template_name = data.template
+    self._template_cache = {}
 
   @classmethod
   def load(self, provider: str, data: Box) -> '_Provider':
@@ -53,10 +54,23 @@ class _Provider(Callback):
     return 'templates/provider/' + self.provider
 
   def get_full_template_path(self) -> str:
-    return str(_files.get_moddir()) + '/' + self.get_template_path()
+    return os.path.join(str(_files.get_moddir()), self.get_template_path())
 
   def find_extra_template(self, node: Box, fname: str, topology: Box) -> typing.Optional[str]:
-    if fname in node.get('config',[]):                    # Are we dealing with extra-config template?
+    """Find template with caching to avoid repeated filesystem searches"""
+    # Create a hashable key from mutable objects
+    cache_key = (node.name, node.device, fname, node.get('_daemon', False))
+    
+    if cache_key in self._template_cache:
+      return self._template_cache[cache_key]
+    
+    result = self._find_extra_template_uncached(node, fname, topology)
+    self._template_cache[cache_key] = result
+    return result
+
+  def _find_extra_template_uncached(self, node: Box, fname: str, topology: Box) -> typing.Optional[str]:
+    """Uncached version of find_extra_template"""
+    if fname in node.get('config',[]):
       path_prefix = topology.defaults.paths.custom.dirs
       path_suffix = [ fname ]
       fname = node.device
@@ -69,11 +83,11 @@ class _Provider(Callback):
           path_suffix.append(node._daemon_parent)
         path_prefix.append(str(_files.get_moddir() / 'daemons'))
 
-    path = [ pf + "/" + sf for pf in path_prefix for sf in path_suffix ]
+    path = [ os.path.join(pf, sf) for pf in path_prefix for sf in path_suffix ]
     if log.debug_active('clab'):
       print(f'Searching for {fname}.j2 in {path}')
 
-    found_file = _files.find_file(fname+'.j2',path)
+    found_file = _files.find_file(f'{fname}.j2', path)
     if log.debug_active('clab'):
       print(f'Found file: {found_file}')
 
@@ -173,10 +187,9 @@ class _Provider(Callback):
       'hosts': topology.nodes.to_dict()
     }
     
-    # Performance: cache constants and template lookups per-call
+    # Performance: cache constants and use instance-level template cache
     prefix = f"{self.provider}_files/"
     prefix_len = len(prefix)
-    template_cache: dict = {}
 
     for file,mapping in bind_dict.items():
       # Only handle files placed under provider_files/
@@ -204,12 +217,7 @@ class _Provider(Callback):
 
       full_out_path = pathlib.Path(out_folder) / file_rel
 
-      # Cache template lookup to avoid repeated filesystem searches
-      tmpl_key = file_rel
-      template_name = template_cache.get(tmpl_key)
-      if template_name is None:
-        template_name = self.find_extra_template(node,file_rel,topology)
-        template_cache[tmpl_key] = template_name
+      template_name = self.find_extra_template(node, file_rel, topology)
 
       if not template_name:
         log.error(f"Cannot find template for {file_rel} on node {node.name}",log.MissingValue,'provider')
