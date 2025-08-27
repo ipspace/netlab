@@ -16,7 +16,6 @@ from box import Box
 
 from ..augment import devices, links
 from ..data import append_to_list, filemaps, get_box, get_empty_box
-from ..outputs.ansible import get_host_addresses
 from ..utils import files as _files
 from ..utils import log, strings, templates
 from ..utils.callback import Callback
@@ -96,7 +95,7 @@ class _Provider(Callback):
     return self._default_template_name
 
   def node_image_version(self, topology: Box) -> None:
-    for name,n in topology.nodes.items():
+    for _,n in topology.nodes.items():
       if '.' in n.box:
         image_spec = n.box.split(':')
         n.box = image_spec[0]
@@ -111,9 +110,7 @@ class _Provider(Callback):
 
   def transform(self, topology: Box) -> None:
     self.transform_node_images(topology)
-    if "processor" in topology.defaults:
-      return
-    else:
+    if "processor" not in topology.defaults:
       topology.defaults.processor = get_cpu_model()
 
   def create_extra_files_mappings(
@@ -132,6 +129,15 @@ class _Provider(Callback):
     bind_dict = filemaps.mapping_to_dict(cur_binds)
     for file,mapping in map_dict.items():
       file = file.replace('@','.')
+      
+      # If hosts template -> create shared per-device file (shared across nodes of same device)
+      if file == 'hosts':
+        shared_device = node.get('device','shared')
+        out_folder = f"{self.provider}_files/shared/{shared_device}"
+        mapping = mapping + ':ro'
+      else:
+        out_folder = f"{self.provider}_files/{node.name}"
+      
       if file in bind_dict:
         continue
       if not self.find_extra_template(node,file,topology):
@@ -141,8 +147,8 @@ class _Provider(Callback):
           module=self.provider)
         continue
 
-      out_folder = f"{self.provider}_files/{node.name}"
-      bind_dict[f"{out_folder}/{file}"] = mapping         # note: node_files directory is flat
+      bind_dict[f"{out_folder}/{file}"] = mapping
+
 
     node[self.provider][outkey] = filemaps.dict_to_mapping(bind_dict)
 
@@ -150,7 +156,6 @@ class _Provider(Callback):
       self,
       node: Box,
       topology: Box,
-      inkey: str = 'config_templates',
       outkey: str = 'binds') -> None:
 
     binds = node.get(f'{self.provider}.{outkey}',None)
@@ -158,113 +163,83 @@ class _Provider(Callback):
       return
 
     sys_folder = str(_files.get_moddir())+"/"
-    out_folder = f"{self.provider}_files/{node.name}"
 
-    # Pre-compute hosts entries if needed
-    cache_key = '_hosts_entries_cache'
-    
     bind_dict = filemaps.mapping_to_dict(binds)
+    # Process other files normally
+    node_data = {
+      **node.to_dict(),
+      'addressing': topology.addressing.to_dict(),
+      'hostvars': topology.nodes.to_dict(),
+      'hosts': topology.nodes.to_dict()
+    }
+    
+    # Performance: cache constants and template lookups per-call
+    prefix = f"{self.provider}_files/"
+    prefix_len = len(prefix)
+    template_cache: dict = {}
+
     for file,mapping in bind_dict.items():
-      if not out_folder in file:                  # Skip files that are not mapped into the temporary provider folder
+      # Only handle files placed under provider_files/
+      if not file.startswith(prefix):
         continue
-      file_name = file.replace(out_folder+"/","")
-      template_name = self.find_extra_template(node,file_name,topology)
-      if template_name:
-        # Check if this is a hosts file (with caching)
-        is_hosts_file = False
-        if file_name == 'hosts':
-          if template_name not in topology.defaults._cache['_template_checks']:
-            # Cache the template check result
-            with open(template_name, 'r') as f:
-              topology.defaults._cache['_template_checks'][template_name] = 'hosts-common' in f.read()
-          is_hosts_file = topology.defaults._cache['_template_checks'][template_name]
-        
-        if is_hosts_file and cache_key not in topology.defaults._cache:
-          # Pre-compute hosts entries once for all nodes
-          log.print_verbose("Pre-computing hosts entries for all nodes")
-          hosts_entries = self._compute_hosts_entries(topology)
-          topology.defaults._cache[cache_key] = hosts_entries
-          log.print_verbose(f"Pre-computed {len(hosts_entries)} hosts entries (cached for all nodes)")
-        
-        node_data = {
-          **node.to_dict(),
-          'addressing': topology.addressing.to_dict()
-        }
 
-        if cache_key in topology.defaults._cache:
-          node_data['_hosts_entries'] = topology.defaults._cache[cache_key]
-          node_data['hostvars'] = topology.nodes.to_dict()
-          node_data['hosts'] = get_host_addresses(topology).to_dict()
-        
-        if '/' in file_name:                      # Create subdirectory in out_folder if needed
-          pathlib.Path(f"{out_folder}/{os.path.dirname(file_name)}").mkdir(parents=True,exist_ok=True)
-        try:
-          templates.write_template(
-            in_folder=os.path.dirname(template_name),
-            j2=os.path.basename(template_name),
-            data=node_data,
-            out_folder=out_folder, filename=file_name)
-        except Exception as ex:
-          log.fatal(
-            text=f"Error rendering {template_name} into {file_name}\n{strings.extra_data_printout(str(ex))}",
-            module=self.provider)
+      # Derive the out_folder (either node-specific or shared per-device) and the relative filename
+      rel = file[prefix_len:]  # e.g. 'node1/etc/hosts' or 'shared/<device>/etc/hosts'
+      if rel.startswith('shared/'):
+        # expected rel: 'shared/<device>/path/to/file'
+        parts = rel.split('/',2)
+        if len(parts) < 3:
+          file_rel = parts[-1]
+        else:
+          file_rel = parts[2]
+        out_folder = f"{prefix}{parts[0]}/{parts[1]}"   # provider_files/shared/<device>
+      else:
+        parts = rel.split('/',1)
+        out_folder = f"{prefix}{parts[0]}"               # provider_files/<node.name>
+        file_rel = parts[1] if len(parts) > 1 else ''
 
+      if not file_rel:
+        # nothing to render
+        continue
+
+      full_out_path = pathlib.Path(out_folder) / file_rel
+
+      # Cache template lookup to avoid repeated filesystem searches
+      tmpl_key = file_rel
+      template_name = template_cache.get(tmpl_key)
+      if template_name is None:
+        template_name = self.find_extra_template(node,file_rel,topology)
+        template_cache[tmpl_key] = template_name
+
+      if not template_name:
+        log.error(f"Cannot find template for {file_rel} on node {node.name}",log.MissingValue,'provider')
+        continue
+
+      # Create parent dirs if needed
+      full_out_path.parent.mkdir(parents=True,exist_ok=True)
+
+      # If the shared file already exists, skip re-rendering (shared per-device)
+      if full_out_path.exists():
         if not log.QUIET:
           strings.print_colored_text('[MAPPED]  ','bright_cyan','Mapped ')
-          print(f"{out_folder}/{file_name} to {node.name}:{mapping} (from {template_name.replace(sys_folder,'')})")
-      else:
-        log.error(f"Cannot find template for {file_name} on node {node.name}",log.MissingValue,'provider')
+          print(f"{str(full_out_path)} to {node.name}:{mapping} (from {template_name.replace(sys_folder,'')})")
+        continue
 
-  def _compute_hosts_entries(self, topology: Box) -> str:
-    """Pre-compute hosts entries from all nodes to avoid O(n²) template rendering"""
-    # Use a list for building strings efficiently
-    entries = []
-    underscores = set()
-    
-    for hname, hdata in topology.nodes.items():
-      intf_list = hdata.get('interfaces', [])
-      has_loopback = 'loopback' in hdata
-      
-      if has_loopback:
-        intf_list = [hdata.loopback] + intf_list
-      
-      # Pre-compute underscore fix for this node
-      has_underscore = '_' in hname
-      display_hname = hname.replace('_', '-') if has_underscore else hname
-      
-      for intf in intf_list:
-        h_entry_parts = [hname]
-        
-        # Build h_entry efficiently
-        if 'vrf' in intf:
-          h_entry_parts.insert(0, intf.vrf)
-        
-        if intf.get('type', 'loopback') != 'loopback':
-          h_entry_parts.insert(0, intf.ifname.replace('/', '-'))
-        
-        h_entry = '.'.join(reversed(h_entry_parts))
-        
-        # Determine if we need host name
-        underscore_fix = has_underscore and hname not in underscores
-        need_host = not has_loopback or underscore_fix
-        
-        if underscore_fix:
-          underscores.add(hname)
-        
-        # Process addresses more efficiently
-        for af in ('ipv4', 'ipv6'):
-          addr = intf.get(af)
-          if isinstance(addr, str):
-            # Extract IP address from CIDR notation
-            ip_addr = addr.split('/', 1)[0]
-            
-            # Build entry efficiently
-            if need_host:
-              entries.append(f"{ip_addr} {display_hname} {h_entry}")
-            else:
-              entries.append(f"{ip_addr} {h_entry}")
-    
-    return '\n'.join(entries)
+      try:
+        templates.write_template(
+          in_folder=os.path.dirname(template_name),
+          j2=os.path.basename(template_name),
+          data=node_data,
+          out_folder=str(full_out_path.parent),
+          filename=full_out_path.name)
+      except Exception as ex:
+        log.fatal(
+          text=f"Error rendering {template_name} into {file_rel}\n{strings.extra_data_printout(str(ex))}",
+          module=self.provider)
+
+      if not log.QUIET:
+        strings.print_colored_text('[MAPPED]  ','bright_cyan','Mapped ')
+        print(f"{str(full_out_path)} to {node.name}:{mapping} (from {template_name.replace(sys_folder,'')})")
 
   def create(self, topology: Box, fname: typing.Optional[str]) -> None:
     self.transform(topology)
@@ -350,7 +325,6 @@ def select_primary_provider(topology: Box) -> None:
   p_default = topology.provider
 
   # Build a set of all providers used in the topology
-  #
   p_set = { ndata.provider if 'provider' in ndata else p_default for ndata in topology.nodes.values() }
   if len(p_set) == 1:                             # Single-provider topology
     p_used = list(p_set)[0]
@@ -436,7 +410,6 @@ def select_topology(topology: Box, provider: str) -> Box:
   for n in list(topology.nodes.keys()):             # Remove all nodes not belonging to the current provider
     if topology.nodes[n].provider != provider:
       topology.nodes[n].unmanaged = True
-#      topology.nodes.pop(n,None)
 
   topology.links = [ l for l in topology.links if provider in l.provider ]      # Retain only the links used by current provider
   return topology
@@ -473,7 +446,6 @@ def node_add_forwarded_ports(node: Box, fplist: list, topology: Box) -> None:
 validate_images -- check the images used by individual nodes against provider image repo
 """
 def validate_images(topology: Box) -> None:
-
   for n_data in topology.nodes.values():
     execute_node('validate_node_image',n_data,topology)
 
