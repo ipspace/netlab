@@ -1,6 +1,7 @@
 #
 # Common routines for create-topology script
 #
+import functools
 import pathlib
 import typing
 
@@ -29,6 +30,14 @@ Path parameters:
 * user_template_path -- subdirectory of user directories to search (current, home)
 """
 
+@functools.lru_cache()
+def get_jinja2_env_for_path(template_path: tuple) -> Environment:
+  ENV = Environment(loader=FileSystemLoader(template_path), \
+          trim_blocks=True,lstrip_blocks=True, \
+          undefined=make_logging_undefined(base=StrictUndefined))
+  add_ansible_filters(ENV)
+  return ENV
+
 def render_template(
       data: typing.Dict,
       j2_file: typing.Optional[str] = None,
@@ -50,10 +59,7 @@ def render_template(
     template_path = extra_path + template_path
   if debug_active('template'):
     print(f"TEMPLATE PATH for {j2_file or 'text'}: {template_path}")
-  ENV = Environment(loader=FileSystemLoader(template_path), \
-          trim_blocks=True,lstrip_blocks=True, \
-          undefined=make_logging_undefined(base=StrictUndefined))
-  add_ansible_filters(ENV)
+  ENV = get_jinja2_env_for_path(tuple(template_path))
   if j2_file is not None:
     template = ENV.get_template(j2_file)
   elif j2_text is not None:
