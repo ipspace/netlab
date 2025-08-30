@@ -16,6 +16,7 @@ from box import Box
 
 from ..augment import devices, links
 from ..data import append_to_list, filemaps, get_box, get_empty_box
+from ..outputs.ansible import get_host_addresses
 from ..utils import files as _files
 from ..utils import log, strings, templates
 from ..utils.callback import Callback
@@ -39,7 +40,6 @@ class _Provider(Callback):
     self.provider = provider
     if 'template' in data:
       self._default_template_name = data.template
-    self._template_cache = {}
 
   @classmethod
   def load(self, provider: str, data: Box) -> '_Provider':
@@ -54,22 +54,9 @@ class _Provider(Callback):
     return 'templates/provider/' + self.provider
 
   def get_full_template_path(self) -> str:
-    return os.path.join(str(_files.get_moddir()), self.get_template_path())
+    return str(_files.get_moddir() / self.get_template_path())
 
   def find_extra_template(self, node: Box, fname: str, topology: Box) -> typing.Optional[str]:
-    """Find template with caching to avoid repeated filesystem searches"""
-    # Create a hashable key from mutable objects
-    cache_key = (node.name, node.device, fname, node.get('_daemon', False))
-    
-    if cache_key in self._template_cache:
-      return self._template_cache[cache_key]
-    
-    result = self._find_extra_template_uncached(node, fname, topology)
-    self._template_cache[cache_key] = result
-    return result
-
-  def _find_extra_template_uncached(self, node: Box, fname: str, topology: Box) -> typing.Optional[str]:
-    """Uncached version of find_extra_template"""
     if fname in node.get('config',[]):
       path_prefix = topology.defaults.paths.custom.dirs
       path_suffix = [ fname ]
@@ -144,11 +131,10 @@ class _Provider(Callback):
     for file,mapping in map_dict.items():
       file = file.replace('@','.')
       
-      # If hosts template -> create shared per-device file (shared across nodes of same device)
-      if file == 'hosts':
-        shared_device = node.get('device','shared')
-        out_folder = f"{self.provider}_files/shared/{shared_device}"
-        mapping = mapping + ':ro'
+      # Check if mapping ends with :shared - if so, make it a shared file
+      if mapping.endswith(':shared'):
+        mapping = mapping.rsplit(':shared', 1)[0] + ':ro'
+        out_folder = f"{self.provider}_files/shared"
       else:
         out_folder = f"{self.provider}_files/{node.name}"
       
@@ -181,11 +167,11 @@ class _Provider(Callback):
     bind_dict = filemaps.mapping_to_dict(binds)
     # Process other files normally
     node_data = {
-      **node.to_dict(),
-      'addressing': topology.addressing.to_dict(),
-      'hostvars': topology.nodes.to_dict(),
-      'hosts': topology.nodes.to_dict()
-    }
+        **node.to_dict(),
+        'hostvars': topology.nodes.to_dict(),
+        'hosts': get_host_addresses(topology),
+        'addressing': topology.addressing.to_dict()
+    }  
     
     # Performance: cache constants and use instance-level template cache
     prefix = f"{self.provider}_files/"
@@ -196,37 +182,35 @@ class _Provider(Callback):
       if not file.startswith(prefix):
         continue
 
-      # Derive the out_folder (either node-specific or shared per-device) and the relative filename
-      rel = file[prefix_len:]  # e.g. 'node1/etc/hosts' or 'shared/<device>/etc/hosts'
+      # Derive the out_folder and the relative filename
+      rel = file[prefix_len:]
       if rel.startswith('shared/'):
-        # expected rel: 'shared/<device>/path/to/file'
-        parts = rel.split('/',2)
-        if len(parts) < 3:
-          file_rel = parts[-1]
-        else:
-          file_rel = parts[2]
-        out_folder = f"{prefix}{parts[0]}/{parts[1]}"   # provider_files/shared/<device>
+        file_rel = rel[7:]  # Remove 'shared/' prefix
+        is_shared = True
       else:
         parts = rel.split('/',1)
-        out_folder = f"{prefix}{parts[0]}"               # provider_files/<node.name>
         file_rel = parts[1] if len(parts) > 1 else ''
+        is_shared = False
 
       if not file_rel:
         # nothing to render
         continue
 
-      full_out_path = pathlib.Path(out_folder) / file_rel
-
       template_name = self.find_extra_template(node, file_rel, topology)
-
       if not template_name:
         log.error(f"Cannot find template for {file_rel} on node {node.name}",log.MissingValue,'provider')
         continue
 
+
+      if is_shared:
+        full_out_path = pathlib.Path(f"{prefix}shared") / file_rel
+      else:
+        full_out_path = pathlib.Path(file)
+
       # Create parent dirs if needed
       full_out_path.parent.mkdir(parents=True,exist_ok=True)
 
-      # If the shared file already exists, skip re-rendering (shared per-device)
+      # If the file already exists (either shared or node-specific), skip re-rendering
       if full_out_path.exists():
         if not log.QUIET:
           strings.print_colored_text('[MAPPED]  ','bright_cyan','Mapped ')

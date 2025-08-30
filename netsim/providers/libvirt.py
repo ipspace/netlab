@@ -401,7 +401,7 @@ class Libvirt(_Provider):
         continue
 
       if log.debug_active('libvirt'):
-        print('libvirt post_start_lab: fixing Linux bridge for link {l}')
+         print(f'libvirt post_start_lab: fixing Linux bridge {brname} for link {l._linkname}')
 
       linux_bridge = get_linux_bridge_name(brname)
       if linux_bridge is None:
