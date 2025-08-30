@@ -30,13 +30,16 @@ def parse(args: typing.List[str]) -> argparse.Namespace:
 
   return parser.parse_args(args)
 
-def set_format_tags(data: Box) -> None:
+def set_format_tags(data: dict) -> None:
+  data.pop('_columns',None)
   for v in data.get('results',{}).values():
-    if not isinstance(v,Box):
+    if not isinstance(v,dict):
       continue
     for kw in ['timestamp','version','image']:
       if f'_{kw}' in v:
-        data._columns[kw] = True
+        if '_columns' not in data:
+          data['_columns'] = {}
+        data['_columns'][kw] = True
 
 def create_html_page(
       args: argparse.Namespace,
@@ -68,7 +71,8 @@ def create_recursive_html(
     if limit and item not in limit and limit != '*':
       continue
     path = i_data._path.replace('/','-').replace('#','.')
-    create_html_page(args,f'{template}.html.j2',topology + { 'results': i_data },path+".html")
+    topology['results'] = i_data
+    create_html_page(args,f'{template}.html.j2',topology,path+".html")
     if recursive:
       create_recursive_html(args,i_data,topology)
 
@@ -94,14 +98,16 @@ def create(
     elif not '_meta_device' in d_data:
       topology.no_tests[d_name].description = d_data.description
 
+  topo_dict = topology.to_dict()
+  topo_dict['results'] = results.to_dict()
   create_html_page(
     args,
     'index.html.j2',
-    topology + { 'results': results },
+    topo_dict,
     'index.html',
     output_dir='.')
   if not args.coverage:
-    create_recursive_html(args,results,topology,limit=args.device)
+    create_recursive_html(args,results,topo_dict,limit=args.device)
   
   if not args.device:
-    create_recursive_html(args,coverage,topology,template='coverage',recursive=False,limit=args.coverage)
+    create_recursive_html(args,coverage,topo_dict,template='coverage',recursive=False,limit=args.coverage)
