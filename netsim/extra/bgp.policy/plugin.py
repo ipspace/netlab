@@ -159,9 +159,7 @@ apply_config: add a plugin configuration template, collect BGP sessions that hav
 def apply_config(node: Box, ngb: Box) -> None:
   global _config_name
   api.node_config(node,_config_name)                    # Remember that we have to do extra configuration
-  for af in ('ipv4','ipv6'):                            # ... and add sessions that have to be cleared
-    if af in ngb:
-      data.append_to_list(node.bgp,'_session_clear',ngb[af])
+  _bgp.clear_bgp_session(node,ngb)
 
 '''
 Apply attributes supported by bgp.policy plugin to a single neighbor

@@ -7,6 +7,7 @@ import typing
 
 from box import Box
 
+from .. import data
 from ..augment import devices
 from . import log
 
@@ -67,6 +68,19 @@ def intf_neighbors(node: Box, vrf: bool = True, select: list = ['ibgp','ebgp']) 
       for ngb in node.get('bgp.neighbors',[]):
         if ngb.get('ifindex',None) == intf.ifindex and ngb.type in select:
           yield (intf,ngb)
+
+'''
+Mark a BGP session that needs to be cleared in the configuration template
+'''
+def clear_bgp_session(node: Box, ngb: Box) -> None:
+  for af in log.AF_LIST:                              # Check all relevant address families
+    if af not in ngb:                                 # ... neighbor not using this AF, move on
+      continue
+
+    # Otherwise, add the neighbor address to the global- or VRF bgp._session_clear list
+    #
+    bgp_data = node.bgp if '_src_vrf' not in ngb else node.vrfs[ngb._src_vrf].bgp
+    data.append_to_list(bgp_data,'_session_clear',ngb[af])
 
 '''
 rp_data: iterate over routing protocol instances (global and VRF)

@@ -2,7 +2,7 @@ import typing
 
 from box import Box
 
-from netsim import api, data, modules
+from netsim import api, modules
 from netsim.utils import log
 from netsim.utils import routing as _bgp
 
@@ -34,9 +34,7 @@ def mark_plugin_config(node: Box, ngb: Box) -> None:
   global _config_name
 
   api.node_config(node,_config_name)                  # Remember that we have to do extra configuration
-  for af in ('ipv4','ipv6'):                          # ... and add sessions that have to be cleared
-    if af in ngb:
-      data.append_to_list(node.bgp,'_session_clear',ngb[af])
+  _bgp.clear_bgp_session(node,ngb)
 
 '''
 Apply attributes supported by bgp.session plugin to a single neighbor
