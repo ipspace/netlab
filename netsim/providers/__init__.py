@@ -29,7 +29,11 @@ def get_cpu_model() -> str:
   elif platform.system() == "Darwin":
     processor_name = "arm64"          # Assume Apple silicon for MacOS
   elif platform.system() == "Linux":
-    processor_name = pathlib.Path("/proc/cpuinfo").read_text().splitlines()[1].split()[2]
+    # This might fail on some Linux distributions, but it's a reasonable default
+    try:
+      processor_name = pathlib.Path("/proc/cpuinfo").read_text().splitlines()[1].split()[2]
+    except:
+      processor_name = platform.processor()
   return processor_name.lower()
 
 """
@@ -128,18 +132,22 @@ class _Provider(Callback):
     map_dict = filemaps.mapping_to_dict(mappings)
     cur_binds = node.get(f'{self.provider}.{outkey}',[])
     bind_dict = filemaps.mapping_to_dict(cur_binds)
+    base_path = pathlib.Path(f"{self.provider}_files")
+
     for file,mapping in map_dict.items():
       file = file.replace('@','.')
       
-      # Check if mapping ends with :shared - if so, make it a shared file
+      # Check if mapping ends with :shared - if so, put it in the root provider folder
       if mapping.endswith(':shared'):
         mapping = mapping.rsplit(':shared', 1)[0] + ':ro'
-        out_folder = f"{self.provider}_files/shared"
+        out_path = base_path / file
       else:
-        out_folder = f"{self.provider}_files/{node.name}"
-      
-      if file in bind_dict:
+        out_path = base_path / node.name / file
+
+      out_key = out_path.as_posix()
+      if out_key in bind_dict:
         continue
+
       if not self.find_extra_template(node,file,topology):
         log.error(
           f"Cannot find template {file}.j2 for extra file {self.provider}.{inkey}.{file} on node {node.name}",
@@ -147,8 +155,7 @@ class _Provider(Callback):
           module=self.provider)
         continue
 
-      bind_dict[f"{out_folder}/{file}"] = mapping
-
+      bind_dict[out_key] = mapping
 
     node[self.provider][outkey] = filemaps.dict_to_mapping(bind_dict)
 
@@ -171,26 +178,21 @@ class _Provider(Callback):
         'hostvars': topology.nodes.to_dict(),
         'hosts': get_host_addresses(topology),
         'addressing': topology.addressing.to_dict()
-    }  
+    }
     
-    prefix = f"{self.provider}_files/"
-    prefix_len = len(prefix)
+    base_path = pathlib.Path(f"{self.provider}_files")
 
-    for file,mapping in bind_dict.items():
-      # Only handle files placed under provider_files/
-      if not file.startswith(prefix):
+    for file_str,mapping in bind_dict.items():
+      full_out_path = pathlib.Path(file_str)
+      
+      # Only handle files placed under the provider's file directory
+      try:
+        full_out_path.relative_to(base_path)
+      except ValueError:
         continue
 
-      # Derive the out_folder and the relative filename
-      rel = file[prefix_len:]
-      if rel.startswith('shared/'):
-        file_rel = rel[7:]  # Remove 'shared/' prefix
-        is_shared = True
-      else:
-        parts = rel.split('/',1)
-        file_rel = parts[1] if len(parts) > 1 else ''
-        is_shared = False
-
+      # The template name is the file name part of the path
+      file_rel = full_out_path.name
       if not file_rel:
         # nothing to render
         continue
@@ -199,12 +201,6 @@ class _Provider(Callback):
       if not template_name:
         log.error(f"Cannot find template for {file_rel} on node {node.name}",log.MissingValue,'provider')
         continue
-
-
-      if is_shared:
-        full_out_path = pathlib.Path(f"{prefix}shared") / file_rel
-      else:
-        full_out_path = pathlib.Path(file)
 
       # Create parent dirs if needed
       full_out_path.parent.mkdir(parents=True,exist_ok=True)
