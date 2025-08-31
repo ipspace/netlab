@@ -57,7 +57,7 @@ class _Provider(Callback):
     return str(_files.get_moddir() / self.get_template_path())
 
   def find_extra_template(self, node: Box, fname: str, topology: Box) -> typing.Optional[str]:
-    if fname in node.get('config',[]):
+    if fname in node.get('config',[]): # Are we dealing with extra-config template?
       path_prefix = topology.defaults.paths.custom.dirs
       path_suffix = [ fname ]
       fname = node.device
@@ -111,7 +111,7 @@ class _Provider(Callback):
 
   def transform(self, topology: Box) -> None:
     self.transform_node_images(topology)
-    if "processor" not in topology.defaults:
+    if not "processor" in topology.defaults:
       topology.defaults.processor = get_cpu_model()
 
   def create_extra_files_mappings(
@@ -173,7 +173,6 @@ class _Provider(Callback):
         'addressing': topology.addressing.to_dict()
     }  
     
-    # Performance: cache constants and use instance-level template cache
     prefix = f"{self.provider}_files/"
     prefix_len = len(prefix)
 
