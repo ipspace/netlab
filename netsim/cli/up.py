@@ -373,6 +373,8 @@ def run_up(cli_args: typing.List[str]) -> None:
     recreate_secondary_config(topology,p_provider,s_provider)
     start_provider_lab(topology,p_provider,s_provider)
 
+  providers.execute_tc_commands(topology)
+
   try:
     if args.reload:
       reload_saved_config(args,topology)

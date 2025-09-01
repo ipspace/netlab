@@ -18,7 +18,7 @@ from ..cli import external_commands, is_dry_run
 from ..data import get_box, get_empty_box, types
 from ..utils import files as _files
 from ..utils import linuxbridge, log, strings
-from . import _Provider, get_provider_forwarded_ports, node_add_forwarded_ports, validate_mgmt_ip
+from . import _Provider, get_provider_forwarded_ports, node_add_forwarded_ports, tc_netem_set, validate_mgmt_ip
 
 LIBVIRT_MANAGEMENT_NETWORK_NAME  = "vagrant-libvirt"
 LIBVIRT_MANAGEMENT_BRIDGE_NAME   = "libvirt-mgmt"
@@ -284,8 +284,22 @@ class Libvirt(_Provider):
         if not 'public' in l.libvirt:                            # ... but no 'public' libvirt attr
           l.libvirt.public = 'bridge'                            # ... default mode is bridge (MACVTAP)
 
+      """
+      The libvirt links could be modeled as P2P links (using UDP tunnels) or
+      LAN links using a Linux bridge. It's better to use the UDP tunnels, but
+      we must us the Linux bridge if:
+
+      * The link type is 'lan' or 'stub' (set/used elsewhere, also includes
+        hosts connected to links)
+      * The libvirt.provider attribute is set (multi-provider links or external
+        connectivity)
+      * The system defaults say P2P links should be modeled as bridges
+        (used for traffic capture)
+      * The link or any of the interfaces has the 'tc' parameter
+      """
       must_be_lan = l.get('libvirt.provider',None) and 'vlan' not in l.type
       must_be_lan = must_be_lan or (p2p_bridge and l.get('type','p2p') == 'p2p')
+      must_be_lan = must_be_lan or 'tc' in l or [ intf for intf in l.interfaces if 'tc' in intf ]
       if must_be_lan:
         l.type = 'lan'
         if not 'bridge' in l:
@@ -482,22 +496,37 @@ class Libvirt(_Provider):
         f"'vagrant box add <url>' command to add it, or use this recipe to build it:",
         dp_data.build ])
 
-  def capture_command(self, node: Box, topology: Box, args: argparse.Namespace) -> typing.Optional[list]:
-    intf = [ intf for intf in node.interfaces if intf.ifname == args.intf ][0]
-    if intf.get('libvirt.type',None) == 'tunnel':
+  def get_linux_intf(
+        self,
+        node: Box,
+        topology: Box,
+        ifname: str,
+        op: str,
+        hint: str,
+        exit_on_error: bool = True) -> typing.Optional[str]:
+
+    intf = [ intf for intf in node.interfaces if intf.ifname == ifname ][0]
+    if intf.get('libvirt.type',None) == 'tunnel' or 'bridge' not in intf:
       log.error(
-        f'Cannot perform packet capture on libvirt point-to-point links',
+        f'Cannot perform {op} on libvirt point-to-point links',
         category=log.FatalError,
         module='libvirt',
         skip_header=True,
-        exit_on_error=True,
-        hint='capture')
+        exit_on_error=exit_on_error,
+        hint=hint)
+      return None
 
     domiflist = external_commands.run_command(
                   ['virsh','domiflist',f'{topology.name}_{node.name}'],
                   check_result=True,
                   return_stdout=True)
     if not isinstance(domiflist,str):
+      log.error(
+        f'Cannot get the list of libvirt interface for node {node.name}',
+        category=log.FatalError,
+        module='libvirt',
+        skip_header=True,
+        exit_on_error=exit_on_error)
       return None
 
     for intf_line in domiflist.split('\n'):
@@ -505,14 +534,38 @@ class Libvirt(_Provider):
       if len(intf_data) != 5:
         continue
       if intf_data[2] == intf.bridge:
-        cmd = strings.string_to_list(topology.defaults.netlab.capture.command)
-        cmd = strings.eval_format_list(cmd,{'intf': intf_data[0]})
-        return ['sudo'] + cmd
-      
+        return intf_data[0]
+
     log.error(
       f'Cannot find the interface on node {node.name} attached to libvirt network {intf.bridge}',
       category=log.FatalError,
       module='libvirt',
       skip_header=True,
-      exit_on_error=True)
+      exit_on_error=exit_on_error)
     return None
+
+  def capture_command(self, node: Box, topology: Box, args: argparse.Namespace) -> typing.Optional[list]:
+    ifname = self.get_linux_intf(node,topology,args.intf,op='packet capture',hint='capture')
+    if not ifname:
+      return None
+
+    cmd = strings.string_to_list(topology.defaults.netlab.capture.command)
+    cmd = strings.eval_format_list(cmd,{'intf': ifname})
+    return ['sudo'] + cmd
+
+  def set_tc(self, node: Box, topology: Box, intf: Box) -> None:
+    vm_intf = self.get_linux_intf(
+                node,topology,ifname=intf.ifname,
+                op='traffic control',hint='tc',exit_on_error=False)
+    if not vm_intf:
+      return
+
+    status = tc_netem_set(intf=vm_intf,tc_data=intf.tc)
+    if status:
+      log.info(text=f'Traffic control on {node.name} {intf.ifname}:{status}')
+    else:
+      log.error(
+        text=f'Failed to deploy tc policy on {node.name} interface {intf.ifname} (Linux interface {vm_intf})',
+        module='libvirt',
+        skip_header=True,
+        category=log.ErrorAbort)

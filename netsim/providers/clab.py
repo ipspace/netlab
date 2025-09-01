@@ -13,7 +13,7 @@ from ..cli import external_commands, is_dry_run
 from ..data import append_to_list, filemaps, get_empty_box
 from ..data.types import must_be_dict
 from ..utils import linuxbridge, log, strings
-from . import _Provider, get_provider_forwarded_ports, node_add_forwarded_ports, validate_mgmt_ip
+from . import _Provider, get_provider_forwarded_ports, node_add_forwarded_ports, tc_netem_set, validate_mgmt_ip
 
 
 def list_bridges( topology: Box ) -> typing.Set[str]:
@@ -278,3 +278,17 @@ class Containerlab(_Provider):
     cmd = strings.eval_format_list(cmd,{'intf': args.intf})
     node_name = self.get_node_name(node.name,topology)
     return strings.string_to_list(f'sudo ip netns exec {node_name}') + cmd
+
+  def set_tc(self, node: Box, topology: Box, intf: Box) -> None:
+    c_name = self.get_node_name(node.name,topology)
+    c_intf = intf.get('clab.name',intf.ifname)
+    netns = 'sudo ip netns exec ' + c_name
+    status = tc_netem_set(intf=c_intf,tc_data=intf.tc,pfx=netns)
+    if status:
+      log.info(text=f'Traffic control on {node.name} {intf.ifname}:{status}')
+    else:
+      log.error(
+        text=f'Failed to deploy tc policy on {node.name} (container {c_name}) interface {c_intf}',
+        module='clab',
+        skip_header=True,
+        category=log.ErrorAbort)

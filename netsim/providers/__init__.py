@@ -233,6 +233,13 @@ class _Provider(Callback):
   def get_node_name(self, node: str, topology: Box) -> str:
     return node
 
+  def set_tc(self, node: Box, topology: Box, intf: Box) -> None:
+    n_provider = devices.get_provider(node,topology.defaults)
+    log.warning(
+      text=f'tc is not supported (node {node.name}, link {intf.name})',
+      module=n_provider,
+      flag=f'{n_provider}.tc')
+
   """
   Generic provider pre-transform processing: Mark multi-provider links
   """
@@ -329,10 +336,10 @@ def execute(hook: str, topology: Box) -> None:
 """
 Execute a node-level provider hook
 """
-def execute_node(hook: str, node: Box, topology: Box) -> typing.Any:
+def execute_node(hook: str, node: Box, topology: Box, **kwargs: typing.Any) -> typing.Any:
   node_provider = devices.get_provider(node,topology.defaults)
   p_module = get_provider_module(topology,node_provider)
-  return p_module.call(hook,node,topology)
+  return p_module.call(hook,node,topology,**kwargs)
 
 """
 Mark all nodes and links with relevant provider(s)
@@ -439,3 +446,51 @@ def validate_mgmt_ip(
         f'Management {af} address of node {node.name} ({n_mgmt[af]}) is not part of the management subnet',
         category=log.IncorrectValue,
         module=provider)
+
+"""
+Execute tc commands
+"""
+def execute_tc_commands(topology: Box) -> None:
+  for ndata in topology.nodes.values():
+    for intf in ndata.interfaces:
+      if 'tc' not in intf:
+        continue
+      execute_node('set_tc',node=ndata,topology=topology,intf=intf)
+
+"""
+Apply tc netem parameters to the specified interface
+"""
+NETEM_KW_MAP = {
+  'delay': ' delay {delay}ms {jitter}ms'
+}
+
+NETEM_SIMPLE_KW = [ 'loss', 'corrupt', 'duplicate', 'reorder', 'rate' ]
+
+def tc_netem_set(intf: str, tc_data: Box, pfx: str = '') -> typing.Union[str,bool]:
+  global NETEM_KW_MAP,NETEM_SIMPLE_KW
+  from ..cli import external_commands
+
+  netem_params = ''
+  if 'jitter' in tc_data and 'delay' not in tc_data:        # Delay and jitter have to be specified
+    tc_data.delay = 0                                       # ... in a single netem parameter
+  if 'delay' in tc_data and 'jitter' not in tc_data:        # ... so we have to ensure both of them
+    tc_data.jitter = 0                                      # ... are set at the same time
+
+  for kw in tc_data:
+    if kw in NETEM_SIMPLE_KW:
+      netem_params += f' {kw} {tc_data[kw]}'
+    elif kw in NETEM_KW_MAP:
+      netem_params += NETEM_KW_MAP[kw].format(**tc_data)
+
+  if 'sudo' not in pfx:
+    pfx = 'sudo '+pfx
+  qdisc = external_commands.run_command(
+    cmd=pfx + f' tc qdisc show dev {intf}',
+    ignore_errors=True,return_stdout=True,check_result=True)
+  if isinstance(qdisc,str) and 'noqueue' not in qdisc:
+    external_commands.run_command(
+      cmd=pfx + f' tc qdisc del dev {intf} root',
+      ignore_errors=True,return_stdout=True,check_result=True)
+
+  status = external_commands.run_command(pfx + f' tc qdisc add dev {intf} root netem'+netem_params)
+  return netem_params if status else False
