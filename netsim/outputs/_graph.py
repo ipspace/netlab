@@ -126,7 +126,7 @@ def append_edge(graph: Box, if_a: Box, if_b: Box, g_type: str) -> None:
                'node': intf.node,
                'attr': intf_attr,
                'label': addr})
-    for kw in ['type','_subnet']:
+    for kw in ['type','_subnet','vrf']:
       if kw in intf:
         e_data[kw] = intf[kw]
 
@@ -167,16 +167,30 @@ def topology_graph(topology: Box, settings: Box,g_type: str) -> Box:
   log.exit_on_error()
   return graph
 
-def bgp_sessions(graph: Box, topology: Box, settings: Box, g_type: str, rr_sessions: bool) -> None:
+def bgp_sessions(graph: Box, topology: Box, settings: Box, g_type: str) -> None:
+  rr_sessions = settings.get('bgp.rr',None)
+  no_vrf = settings.get('bgp.novrf',None)
+  add_vrf = settings.get('bgp.vrf',None)
+  bgp_af = settings.get('bgp.af')
   for n_name,n_data in topology.nodes.items():
     if 'bgp' not in n_data:
       continue
     for neighbor in _routing.neighbors(n_data,vrf=True):
+      is_vrf = '_vrf' in neighbor or '_src_vrf' in neighbor
+      if is_vrf and no_vrf:
+        continue
       if neighbor.name < n_name:
         continue
+      if bgp_af:
+        if not [ neighbor[af] for af in bgp_af if af in neighbor ]:
+          continue
 
       e_1 = get_box({ 'node': n_name, 'type': neighbor.type })
+      if '_src_vrf' in neighbor and add_vrf:
+        e_1.vrf = neighbor._src_vrf
       e_2 = get_box({ 'node': neighbor.name, 'type': neighbor.type })
+      if '_vrf' in neighbor and add_vrf:
+        e_2.vrf = neighbor._vrf
       dir = '<->'
       if 'ibgp' in neighbor.type:
         if n_data.bgp.get('rr',False) and not neighbor.get('rr',False):
@@ -186,10 +200,10 @@ def bgp_sessions(graph: Box, topology: Box, settings: Box, g_type: str, rr_sessi
           e_1, e_2 = e_2, e_1
 
       if rr_sessions:
-        e_1.graph.dir = dir
+        e_1[g_type].dir = dir
       append_edge(graph,e_1,e_2,g_type)
 
-def bgp_graph(topology: Box, settings: Box, g_type: str, rr_sessions: bool) -> typing.Optional[Box]:
+def bgp_graph(topology: Box, settings: Box, g_type: str) -> typing.Optional[Box]:
   set_shared_attributes(topology)
   if 'bgp' not in topology.module:
     log.error(
@@ -201,6 +215,29 @@ def bgp_graph(topology: Box, settings: Box, g_type: str, rr_sessions: bool) -> t
   graph = build_nodes(topology,g_type)
   graph.clusters = graph.bgp
   graph.edges = []
-  bgp_sessions(graph,topology,settings,g_type,rr_sessions)
+  bgp_sessions(graph,topology,settings,g_type)
   log.exit_on_error()
   return graph
+
+def parse_bgp_params(settings: Box, format: typing.Optional[list]) -> None:
+  if 'rr_sessions' in settings and settings.get('bgp.rr',None) is None:
+    settings.bgp.rr = settings.rr_sessions
+
+  if not format:
+    return
+
+  for kw in format[1:]:
+    if kw in ('rr','vrf','novrf'):
+      settings.bgp[kw] = True
+    elif kw in log.BGP_AF:
+      settings.bgp.af[kw] = True
+    else:
+      log.error(
+        'Invalid BGP graph parameter {kw}',
+        category=log.IncorrectValue,
+        module='graph',
+        skip_header=True)
+
+  if log.VERBOSE:
+    log.info('BGP graph parameters',more_data=settings.bgp.to_yaml().split('\n'))
+  log.exit_on_error()

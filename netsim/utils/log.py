@@ -22,8 +22,9 @@ QUIET : bool = False
 RAISE_ON_ERROR : bool = False
 WARNING : bool = False
 
-AF_LIST = ['ipv4','ipv6']
-BGP_SESSIONS = ['ibgp','ebgp']
+AF_LIST = ('ipv4','ipv6')
+BGP_AF  = ('ipv4','ipv6','vpnv4','vpnv6','6pe','evpn')
+BGP_SESSIONS = ('ibgp','ebgp')
 
 _ERROR_LOG: list = []
 _WARNING_LOG: list = []

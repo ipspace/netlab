@@ -8,7 +8,7 @@ from box import Box
 from ..utils import files as _files
 from ..utils import log
 from . import _TopologyOutput
-from ._graph import bgp_graph, map_style, topology_graph
+from ._graph import bgp_graph, map_style, parse_bgp_params, topology_graph
 
 
 def edge_label(f : typing.TextIO, direction: str, data: Box, subnet: bool = True) -> None:
@@ -143,6 +143,8 @@ def gv_links(f: typing.TextIO, graph: Box, topology: Box, settings: Box) -> None
     for n_data in edge.nodes:
       if 'type' in n_data:
         attr = attr + settings.styles[n_data.type]
+      if 'vrf' in n_data:
+        attr = attr + settings.styles.vrf
 
     if '<-' in dir:
       attr.arrowtail = 'normal'
@@ -190,13 +192,8 @@ def graph_topology(topology: Box, fname: str, settings: Box,g_format: typing.Opt
   return True
 
 def graph_bgp(topology: Box, fname: str, settings: Box,g_format: typing.Optional[list]) -> bool:
-  rr_session = settings.get('rr_sessions',False)
-  g_format = g_format or []
-  for kw in g_format[1:]:
-    if kw == 'rr':
-      rr_session = True
-
-  graph = bgp_graph(topology,settings,'graph',rr_sessions=rr_session)
+  parse_bgp_params(settings,g_format)
+  graph = bgp_graph(topology,settings,'graph')
   if graph is None:
     return False
 

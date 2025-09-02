@@ -14,5 +14,7 @@ if [[ "$OPTS" == *"topo"* ]]; then
 fi
 if [[ "$OPTS" == *"bgp"* ]]; then
   netlab create -o d2:bgp bgp.yml && d2 graph.d2 d2-bgp-default.svg
-  NETLAB_OUTPUTS_D2_RR__SESSIONS=False netlab create -o d2:bgp bgp.yml && d2 graph.d2 d2-bgp-no-rr.svg
+  NETLAB_OUTPUTS_D2_BGP_RR=False netlab create -o d2:bgp bgp.yml && d2 graph.d2 d2-bgp-no-rr.svg
+  netlab create -o d2:bgp:vrf bgp.yml && d2 graph.d2 d2-bgp-vrf.svg
+  netlab create -o d2:bgp:evpn bgp.yml && d2 graph.d2 d2-bgp-evpn.svg
 fi
