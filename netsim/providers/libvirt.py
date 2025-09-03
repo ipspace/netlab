@@ -503,17 +503,19 @@ class Libvirt(_Provider):
         ifname: str,
         op: str,
         hint: str,
+        report_error: bool = True,
         exit_on_error: bool = True) -> typing.Optional[str]:
 
     intf = [ intf for intf in node.interfaces if intf.ifname == ifname ][0]
     if intf.get('libvirt.type',None) == 'tunnel' or 'bridge' not in intf:
-      log.error(
-        f'Cannot perform {op} on libvirt point-to-point links',
-        category=log.FatalError,
-        module='libvirt',
-        skip_header=True,
-        exit_on_error=exit_on_error,
-        hint=hint)
+      if report_error:
+        log.error(
+          f'Cannot perform {op} on libvirt point-to-point links',
+          category=log.FatalError,
+          module='libvirt',
+          skip_header=True,
+          exit_on_error=exit_on_error,
+          hint=hint)
       return None
 
     domiflist = external_commands.run_command(
@@ -553,19 +555,19 @@ class Libvirt(_Provider):
     cmd = strings.eval_format_list(cmd,{'intf': ifname})
     return ['sudo'] + cmd
 
-  def set_tc(self, node: Box, topology: Box, intf: Box) -> None:
+  def set_tc(self, node: Box, topology: Box, intf: Box, error: bool = True) -> None:
     vm_intf = self.get_linux_intf(
                 node,topology,ifname=intf.ifname,
-                op='traffic control',hint='tc',exit_on_error=False)
+                op='traffic control',hint='tc',report_error=error, exit_on_error=False)
     if not vm_intf:
       return
 
     status = tc_netem_set(intf=vm_intf,tc_data=intf.tc)
-    if status:
-      log.info(text=f'Traffic control on {node.name} {intf.ifname}:{status}')
-    else:
+    if status is False:
       log.error(
         text=f'Failed to deploy tc policy on {node.name} interface {intf.ifname} (Linux interface {vm_intf})',
         module='libvirt',
         skip_header=True,
         category=log.ErrorAbort)
+    elif status:
+      log.info(text=f'Traffic control on {node.name} {intf.ifname}:{status}')

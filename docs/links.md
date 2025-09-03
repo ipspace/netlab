@@ -455,9 +455,11 @@ _netlab_ can configure the Linux **netem** queuing discipline to introduce link 
 * **tc.reorder** -- packet reordering percentage
 * **tc.rate** -- rate throttling (in kbps). Delays packets to emulate a fixed link speed
 
-[^tc]: This feature works with *[clab](lab-clab)* and *[libvirt](lab-libvirt)* providers. *libvirt* point-to-point links are converted to LAN links (using a Linux bridge), which means that you cannot use **tc** together with link aggregation on inter-VM links.
+[^tc]: This feature works with *[clab](lab-clab)* and *[libvirt](lab-libvirt)* providers. *libvirt* point-to-point links are converted to LAN links (using a Linux bridge), meaning you cannot use **tc** together with link aggregation on inter-VM links.
 
-While you could configure **tc** parameters on individual interfaces, the **netem** queuing discipline applies them only to outgoing traffic. You should therefore configure **tc** parameters on links to ensure the same parameters are applied to all interfaces connected to the link.
+While you could configure **tc** parameters on individual interfaces, the **netem** queuing discipline applies only to outgoing traffic. You should therefore configure **tc** parameters on links to ensure the same parameters are applied to all interfaces connected to the link.
+
+The **[netlab up](netlab-up)** configures the link impairment parameters after starting the virtual machines and containers unless you set the **defaults.tc.enable** parameter to *False*. You can always turn off the link impairment with the **[netlab tc disable](netlab-tc-disable)** command and reenable it with the **[netlab tc enable](netlab-tc-enable)** command.
 
 (links-bridge)=
 ## Bridge Names
