@@ -88,14 +88,15 @@ def parser_lab_location(
       help=argparse.SUPPRESS if hide else 'Transformed topology snapshot file')
 
 def parser_subcommands(parser: argparse.ArgumentParser, sc_dict: dict) -> None:
+  global NETLAB_COMMAND
   subparsers = parser.add_subparsers(
-                  title='netlab clab subcommands',
+                  title=f'netlab {NETLAB_COMMAND} subcommands',
                   dest='command',
                   required=True)
   for cmd,dispatch in sc_dict.items():
     cmd_parser = subparsers.add_parser(
       cmd,
-      prog=f'netlab clab {cmd}',
+      prog=f'netlab {NETLAB_COMMAND} {cmd}',
       description=dispatch.get('description',None))
 
     cmd_parser.set_defaults(execute=dispatch['exec'])
