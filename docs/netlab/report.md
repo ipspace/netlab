@@ -1,7 +1,7 @@
 (netlab-report)=
 # Creating a Report
 
-The **netlab report** command creates a report from the transformed lab topology data (usually stored in `netlab.snapshot.yml`) created by the **netlab create** command. It replicates the functionality of the **netlab create -o report:_name_** command with a more convenient user interface.
+The **netlab report** command creates a report from the transformed lab topology data (usually stored in `netlab.snapshot.pickle`) created by the **netlab create** or **netlab up** command. It replicates the functionality of the **netlab create -o report:*name*** command with a more convenient user interface.
 
 ## Usage
 

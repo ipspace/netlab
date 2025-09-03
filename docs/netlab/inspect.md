@@ -1,7 +1,7 @@
 (netlab-inspect)=
 # Inspect Data Structures in Transformed Lab Topology
 
-**netlab inspect** prints data structures in transformed lab topology (usually stored in `netlab.snapshot.yml`) created by the **netlab create** command. You can display data in YAML or JSON format and select a subset of data from the transformed topology or an individual node.
+**netlab inspect** prints data structures in transformed lab topology (usually stored in `netlab.snapshot.pickle`) created by the **netlab create** command. You can display data in YAML or JSON format and select a subset of data from the transformed topology or an individual node.
 
 When selecting data from an individual node, _netlab_ adds group variables to node data, effectively displaying what you would see in the Ansible inventory.
 

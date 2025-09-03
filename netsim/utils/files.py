@@ -168,8 +168,7 @@ def open_output_file(fname: str) -> typing.TextIO:
   try:
     return open(fname,mode='w')
   except Exception as ex:
-    log.fatal(f'Cannot open file {fname} for writing: {ex}')
-    return sys.stdout
+    log.fatal(f'Cannot open file {fname} for writing: {str(ex)}')
 
 def close_output_file(f: typing.TextIO) -> None:
   try:

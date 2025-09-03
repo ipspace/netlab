@@ -83,8 +83,8 @@ def parser_lab_location(
       dest='snapshot',
       action='store',
       nargs='?',
-      default='netlab.snapshot.yml',
-      const='netlab.snapshot.yml',
+      default='netlab.snapshot.pickle',
+      const='netlab.snapshot.pickle',
       help=argparse.SUPPRESS if hide else 'Transformed topology snapshot file')
 
 def parser_subcommands(parser: argparse.ArgumentParser, sc_dict: dict) -> None:
@@ -218,13 +218,14 @@ def change_lab_instance(instance: typing.Union[int,str], quiet: bool = False) ->
     log.status_green('CHANGED','')
     print(f'Selected instance {instance}, current directory changed to {target_dir}')
 
+#
 # Snapshot loading code -- loads the specified snapshot file and checks its modification date
 #
 def load_snapshot(args: typing.Union[argparse.Namespace,Box],ghosts: bool = True) -> Box:
   if 'instance' in args and args.instance:
     change_lab_instance(args.instance,args.quiet if 'quiet' in args else False)
   
-  snapshot = 'netlab.snapshot.yml'
+  snapshot = 'netlab.snapshot.pickle'
   if 'snapshot' in args and args.snapshot and args.snapshot != snapshot:
     snapshot = args.snapshot
     if 'quiet' not in args or not args.quiet:
@@ -238,10 +239,13 @@ def load_snapshot(args: typing.Union[argparse.Namespace,Box],ghosts: bool = True
           "Use 'netlab status --all' to display labs running on this system"])
     sys.exit(1)
 
-  topology = _read.read_yaml(filename=snapshot)
-  if topology is None:
-    print(f"Cannot read the topology snapshot file {args.snapshot}")
-    sys.exit(1)
+  if '.pickle' in snapshot:
+    topology = _read.load_pickled_data(snapshot)
+  else:
+    yaml_topology = _read.read_yaml(filename=snapshot)
+    if yaml_topology is None:
+      log.fatal(f"Cannot read the topology snapshot file {args.snapshot}")
+    topology = yaml_topology
 
   if not ghosts:
     topology = augment.nodes.ghost_buster(topology)

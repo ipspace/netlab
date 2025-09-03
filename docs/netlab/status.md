@@ -115,7 +115,7 @@ The **netlab status cleanup _instance_** command shuts down the specified lab in
 $ netlab status --cleanup
 Cleanup will remove lab instance "default" in /home/user/net101/tools/X. Are you sure? [y/n]y
 Shutting down lab default in /home/user/net101/tools/X
-Read transformed lab topology from snapshot file netlab.snapshot.yml
+Read transformed lab topology from snapshot file netlab.snapshot.pickle
 
 ┌──────────────────────────────────────────────────────────────────────────────────┐
 │ CHECKING virtualization provider installation                                    │
@@ -147,4 +147,5 @@ INFO[0001] Removing containerlab host entries from /etc/hosts file
 ... removing directory tree group_vars
 ... removing directory tree host_vars
 ... removing netlab.snapshot.yml
+... removing netlab.snapshot.pickle
 ```

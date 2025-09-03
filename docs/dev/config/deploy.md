@@ -193,7 +193,7 @@ The filename search patterns can use Jinja2 expressions that rely on [Ansible va
 | `package:` | **networklab** package (system file) |
 | `topology:` | Directory containing the current lab topology |
 
-The directory search patterns are evaluated during the [data transformation process](../transform.md), and the absolute paths are stored in the Ansible inventory (in the **all** group) and the `netlab.snapshot.yml` file. You can use the **netlab inspect defaults.paths** command to display the transformed values (**netlab inspect** command is available after starting the lab or executing the **netlab create** command).
+The directory search patterns are evaluated during the [data transformation process](../transform.md), and the absolute paths are stored in the Ansible inventory (in the **all** group) and the `netlab.snapshot.pickle` file. You can use the **netlab inspect defaults.paths** command to display the transformed values (**netlab inspect** command is available after starting the lab or executing the **netlab create** command).
 
 For example, the default custom configuration template directory  search path (**defaults.paths.custom.dirs**) contains these entries:
 
@@ -206,7 +206,7 @@ custom:                         # Custom configuration templates
   - "package:extra"
 ```
 
-The evaluated search path that is stored in `netlab.snapshot.yml` might contain these values (the topology directory is equal to the current directory, **netlab** is executed from local Git directory):
+The evaluated search path that is stored in `netlab.snapshot.pickle` might contain these values (the topology directory is equal to the current directory, **netlab** is executed from local Git directory):
 
 ```
 $ netlab inspect defaults.paths.custom.dirs

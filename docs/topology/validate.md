@@ -175,7 +175,7 @@ A similar approach cannot be used for Cisco IOSv. The only way to validate the c
 
 ```{tip}
 * You can use the **‌netlab validate -vv** command to generate debugging printouts to help you determine why your tests don't work as expected.
-* **‌netlab validate** command takes the tests from the `netlab.snapshot.yml` file created during the **‌netlab up** process. To recreate that file while the lab is running, use the hidden **‌netlab create --unlock** command.
+* **‌netlab validate** command takes the tests from the `netlab.snapshot.pickle` file created during the **‌netlab up** process. To recreate that file while the lab is running, use the hidden **‌netlab create --unlock** command.
 * Use [validation plugins](validate-plugin) to create complex validation tests.
 ```
 

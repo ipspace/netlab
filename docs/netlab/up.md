@@ -29,7 +29,7 @@ After configuring the lab with **netlab initial**, **netlab up** displays the [h
 
 ## Usage
 
-You can use `netlab up` to create configuration files and start the lab, or use `netlab up --snapshot` to start a previously created lab or restart a lab after a server reboot ([more details](netlab-up-restart)) using the transformed lab topology stored in the `netlab.snapshot.yml` snapshot file.
+You can use `netlab up` to create configuration files and start the lab, or use `netlab up --snapshot` to start a previously created lab or restart a lab after a server reboot ([more details](netlab-up-restart)) using the transformed lab topology stored in the `netlab.snapshot.pickle` snapshot file.
 
 ```text
 usage: netlab up [-h] [--log] [-v] [-q] [--defaults [DEFAULTS ...]] [-d DEVICE]

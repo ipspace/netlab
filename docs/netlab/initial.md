@@ -26,7 +26,7 @@ Jinja2 templates are used together with **_device_\_config** Ansible modules to 
 [^init]: For example, Juniper vMX requires an evaluation license to be applied after the device boots.
 
 ```{tip}
-* The **netlab initial** command reads the transformed lab data from the `netlab.snapshot.yml` file created by the **netlab up** command.
+* The **netlab initial** command reads the transformed lab data from the `netlab.snapshot.pickle` file created by the **netlab up** command.
 * When run with the **-v** parameter, the command displays device configurations before deploying them.
 ```
 

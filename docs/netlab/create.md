@@ -22,16 +22,17 @@ You can influence the data model transformation with optional [configuration mod
 
 **netlab create** uses transformed node- and link-level data structures to create:
 
-* Snapshot of the transformed topology in the **netlab.snapshot.yml** file. This file is used by **netlab down** command to find the virtualization provider and link (bridge) names.
+* Pickled transformed topology data in the **netlab.snapshot.pickle** file. This file is used by many other **netlab** commands to get the information about the currently running lab topology.
+* Snapshot of the transformed topology in the **netlab.snapshot.yml** file. You can use this file to get the information about the current lab topology in your own scripts.
 * **Vagrantfile** supporting *[libvirt](lab-libvirt)* environment
 * **clab.yml** file used by *containerlab*.
 * Ansible inventory[^1], either as a single-file data structure, or as a minimal inventory file with data stored primarily in **host_vars** and **group_vars**
 * Various graphs in *graphviz* DOT format
 * YAML or JSON representation of transformed lab topology or parts of the transformed data model
-* Configuration file for *graphite* visualization tool
+* Configuration files for [external tools](extools.md)
 
 ```{warning}
-**‌netlab create** command refuses to create provider configuration files, Ansible inventory, or `netlab.snapshot.yml` file if it finds `netlab.lock` file in the current directory. 
+**‌netlab create** command refuses to create provider configuration files, Ansible inventory, or `netlab.snapshot.pickle` file if it finds `netlab.lock` file in the current directory. 
 
 `netlab.lock` file is created by the **‌netlab up** command to ensure subsequent **‌netlab create** commands don't overwrite the provider configuration files. It is automatically removed after a successful completion of **‌netlab down** command.
 ```
@@ -71,6 +72,7 @@ optional arguments:
 
 output files created when no output is specified:
 
+  * Pickled transformed data in netlab.snapshot.pickle
   * Transformed topology snapshot in netlab.snapshot.yml
   * Virtualization provider file with provider-specific filename
     (Vagrantfile or clab.yml)

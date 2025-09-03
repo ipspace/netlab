@@ -55,7 +55,7 @@ def down_parse(args: typing.List[str]) -> argparse.Namespace:
     dest='force',
     action='count', default = 0,
     help='Force shutdown or cleanup (use at your own risk)')
-  parser_lab_location(parser,instance=True,action='shut down')
+  parser_lab_location(parser,instance=True,snapshot=True,action='shut down')
 
   return parser.parse_args(args)
 
@@ -77,6 +77,7 @@ def down_cleanup(topology: Box, verbose: bool = False) -> None:
     cleanup_list += v if isinstance(v,list) else [ v ]
 
   cleanup_list.append('netlab.snapshot.yml')
+  cleanup_list.append('netlab.snapshot.pickle')
   fs_cleanup(cleanup_list,verbose)
 
 #

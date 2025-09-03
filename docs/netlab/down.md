@@ -27,7 +27,7 @@ options:
 Notes:
 
 * **netlab down** needs transformed topology data to find the virtualization provider and link (bridge) names.
-* **netlab down** reads the transformed topology from `netlab.snapshot.yml` file created by **netlab up** or **netlab create**.
+* **netlab down** reads the transformed topology from `netlab.snapshot.pickle` file created by **netlab up** or **netlab create**.
 * With the `--instance` flag, you can shut down a lab instance running in a different directory. Use the `netlab status --all` command to display all running instances.
 * Use the `--cleanup` flag to delete all Ansible-, Vagrant- or containerlab-related configuration files.
 * Use the `--force` flag with the `--cleanup` flag if you want to clean up the directory even when the virtualization provider fails during the shutdown process.
