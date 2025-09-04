@@ -12,8 +12,8 @@ if [[ "$OPTS" == *"topo"* ]]; then
   NETLAB_OUTPUTS_D2_GROUPS=[fabric,host] netlab create -o d2 topo.yml && d2 graph.d2 d2-topo-groups.svg
 fi
 if [[ "$OPTS" == *"bgp"* ]]; then
-  netlab create -o d2:bgp bgp.yml && d2 graph.d2 d2-bgp-default.svg
+  NETLAB_GRAPH_TITLE="Default BGP graph" netlab create -o d2:bgp bgp.yml && d2 graph.d2 d2-bgp-default.svg
   NETLAB_OUTPUTS_D2_BGP_RR=False netlab create -o d2:bgp bgp.yml && d2 graph.d2 d2-bgp-no-rr.svg
-  netlab create -o d2:bgp:vrf bgp.yml && d2 graph.d2 d2-bgp-vrf.svg
-  netlab create -o d2:bgp:evpn bgp.yml && d2 graph.d2 d2-bgp-evpn.svg
+  NETLAB_GRAPH_TITLE="VRF BGP sessions" netlab create -o d2:bgp:vrf bgp.yml && d2 graph.d2 d2-bgp-vrf.svg
+  NETLAB_GRAPH_TITLE="BGP sessions with EVPN AF" netlab create -o d2:bgp:evpn bgp.yml && d2 graph.d2 d2-bgp-evpn.svg
 fi

@@ -11,9 +11,25 @@ A single formatting modifier can be used to specify the graph type:
 * **topology** (default) -- Display inter-node links, multi-access- and stub subnets. When the network topology contains BGP information, the graph groups nodes into autonomous systems. Alternatively, you could set **defaults.outputs.graph.groups** attribute to use topology **[groups](topo-groups)** to group graph nodes.
 * **bgp** -- Include autonomous systems, nodes, and BGP sessions. The formatting modifier can include [BGP formatting parameters](outputs-graph-bgp-parameters). For example, `netlab create -o graph:bgp:rr` draws RR-client sessions as directed arrows.
 
-## Modifying Graph Attributes
+(outputs-graph-link-node-attributes)=
+## Modifying Global, Link and Node Attributes
 
-Graphing routines use **[default](topo-defaults)** topology settings to modify the generated DOT file's node- or link parameters. These defaults influence how your graphs look:
+You can set the graph title with **graph.title** or **defaults.graph.title** topology attribute.
+
+You can use the **graph** link and node attributes to change the style of individual nodes or links. The following attributes are built into _netlab_[^XS]:
+
+* **graph.color** -- line color (*color* GraphViz attribute)
+* **graph.fill** -- fill color (*fillcolor* GraphViz attribute)
+* **graph.width** -- line width (*penwidth* GraphViz attribute)
+
+You can also use the **graph.linkorder** link attribute to change the order of links in the D2 graph description file, which can sometimes improve the diagrams' appearance. Links with lower **graph.linkorder** values (default: 100) appear earlier in the list of links.
+
+[^XS]: You can extend the GraphViz styling capabilities and add new **graph** attributes. See [](outputs-d2-styles) for details.
+
+(outputs-graph-appearance)=
+## Modifying Graph Appearance
+
+Graphing routines use **[defaults](topo-defaults)** topology settings to modify the generated DOT file's node- or link parameters. These defaults influence how your graphs look:
 
 * **outputs.graph.as_clusters** (default: *True*) -- use BGP AS numbers to create graph clusters
 * **outputs.graph.groups** -- use the specified list of groups (or all groups when set to *True*) to create graph clusters
@@ -30,20 +46,8 @@ These default settings modify how the BGP graphs look:
 
 You can specify the above BGP parameters in the *graph format* CLI argument.
 
-(outputs-graph-link-node-attributes)=
-## Modifying Link and Node Attributes
-
-You can use the **graph** link and node attributes to change the style of individual nodes or links. The following attributes are built into _netlab_[^XS]:
-
-* **graph.color** -- line color (*color* GraphViz attribute)
-* **graph.fill** -- fill color (*fillcolor* GraphViz attribute)
-* **graph.width** -- line width (*penwidth* GraphViz attribute)
-
-You can also use the **graph.linkorder** link attribute to change the order of links in the D2 graph description file, which can sometimes improve the diagrams' appearance. Links with lower **graph.linkorder** values (default: 100) appear earlier in the list of links.
-
-[^XS]: You can extend the GraphViz styling capabilities and add new **graph** attributes. See [](outputs-d2-styles) for details.
-
-## Object Styles
+(outputs-graph-styles)=
+## Graph Object Styles
 
 You can also change the formatting of individual graph objects with the **outputs.graph.styles._object_** defaults:
 
@@ -56,6 +60,9 @@ You can also change the formatting of individual graph objects with the **output
 | stub   | Subnet formatting
 | ibgp   | IBGP session formatting |
 | ebgp   | IBGP session formatting |
+| localas_ibgp | Local-AS IBGP session formatting |
+| confed_ebgp  | Confederation EBGP session formatting |
+| title  | Graph title formatting |
 
 Each **styles** parameter is a dictionary of *Graphviz* attributes and their values (see the following printout for an example).
 

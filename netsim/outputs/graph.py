@@ -70,9 +70,14 @@ def gv_line_attr(
   if newline:
     f.write("\n")
 
-def gv_start(f : typing.TextIO, settings: Box) -> None:
+def gv_start(f : typing.TextIO, settings: Box, topology: Box) -> None:
+  title = topology.get('graph.title') or topology.get('defaults.graph.title')
   f.write('graph {\n')
   gv_multiline_attr(f,attr=settings.styles.graph,indent=2)
+  if title:
+    gv_multiline_attr(f,attr=settings.styles.title,indent=2)
+    f.write(f'  label="{title}\n\n"\n')
+
   f.write('  node')
   gv_line_attr(f,attr=settings.styles.node,newline=True)
   f.write('  edge')
@@ -182,7 +187,7 @@ def graph_topology(topology: Box, fname: str, settings: Box,g_format: typing.Opt
   graph = topology_graph(topology,settings,'graph')
   f = _files.open_output_file(fname)
   gv_migrate_styles(settings)
-  gv_start(f,settings)
+  gv_start(f,settings,topology)
 
   gv_clusters(f,graph,topology,settings)
   gv_nodes(f,graph,topology,settings)
@@ -199,7 +204,7 @@ def graph_bgp(topology: Box, fname: str, settings: Box,g_format: typing.Optional
 
   f = _files.open_output_file(fname)
   gv_migrate_styles(settings)
-  gv_start(f,settings)
+  gv_start(f,settings,topology)
 
   gv_clusters(f,graph,topology,settings)
   gv_nodes(f,graph,topology,settings)
