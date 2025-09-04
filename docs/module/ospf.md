@@ -11,7 +11,7 @@ This configuration module configures OSPFv2 and OSPFv3 routing processes on most
 ```
 
 ```{note}
-Use **[netlab report](../netlab/report.md)** or **[netlab create -o report](../netlab/create.md)** commands to create reports on OSPF areas, routers, and interfaces. Use **[‌netlab show reports ospf](netlab-show-reports)** command to display available OSPF reports.
+Use **[netlab report](../netlab/report.md)** or **[netlab create -o report](../netlab/create.md)** commands to create reports on OSPF areas, routers, and interfaces. Use the **[‌netlab show reports ospf](netlab-show-reports)** command to display available OSPF reports.
 ```
 
 ## Supported Features
@@ -48,7 +48,7 @@ Need one of those? Create a plugin and contribute it.
 (ospf-platform)=
 ## Platform Support
 
-The following table describes per-platform support of individual router-level OSPF features:
+The following table describes the per-platform support of individual router-level OSPF features:
 
 | Operating system         | Areas | Reference<br/>bandwidth | OSPFv3 | Route<br>import | Default<br>route |
 | ------------------------ |:-:|:-:|:-:|:-:|:-:|
@@ -146,7 +146,7 @@ OSPF routing daemons support these interface-level features:
 
 **Notes:**
 * Routing daemons usually have a single interface. Running OSPF on them seems frivolous unless you need OSPF to get paths toward remote endpoints of IBGP sessions.
-* Unnumbered IPv4 interface support requires single unnumbered peer 
+* Unnumbered IPv4 interface support requires a single unnumbered peer 
 
 (ospf-interface-optional-support)=
 These devices also support optional OSPF interface attributes:
@@ -174,7 +174,7 @@ OSPF routing daemons support these optional OSPF interface attributes:
 
 * **ospf.process** -- process ID (default: 1)
 * **ospf.af** -- [OSPF address families](routing_af), usually set by the data transformation code. Configures OSPFv2 when **ospf.af.ipv4** is set to `True` and OSPFv3 (on devices that support OSPFv3) when **ospf.af.ipv6** is set to `True`. 
-* **ospf.area** -- default OSPF area (default: 0.0.0.0). Used on links without explicit OSPF area and the loopback interface.
+* **ospf.area** -- default OSPF area (default: 0.0.0.0). Used on links/interfaces (including the loopback interface) without an explicit OSPF area.
 * **ospf.bfd** -- enable BFD for OSPF (default: False)
 * **ospf.bfd.strict** enables RFC9355 BFD Strict-Mode (default: False)
 * **ospf.default** -- External default route origination ([more details](ospf-default))
@@ -207,13 +207,18 @@ You can specify most node parameters as global values (top-level topology elemen
 * **ospf.network_type** -- Set OSPF network type. Allowed values are **point-to-point**, **point-to-multipoint**, **broadcast** and **non-broadcast**[^NS]. See also [Default Link Parameters](#default-link-parameters)
 * **ospf.passive** -- explicitly enable or disable [passive interfaces](routing_passive)
 * **ospf.password** -- OSPFv2 cleartext interface authentication password
-* **ospf.timers** -- set OSPF interface timers. A dictionary containing **dead** and **hello** values (from 1 to 8192 seconds)[^TNVC]. Setting **dead** timer to one enables a sub-second hello timer on platforms supporting it.
+* **ospf.timers** -- set OSPF interface timers. A dictionary containing **dead** and **hello** values (from 1 to 8192 seconds)[^TNVC]. Setting the **dead** timer to one enables a sub-second hello timer on platforms supporting it.
 
 [^NS]: Some OSPF network types (non-broadcast or point-to-multipoint) are not supported by all platforms.
 
-[^TNVC]: The values of **hello** and **dead** timer are not checked. It is possible to configure a **hello** timer that is larger than the corresponding **dead** timer, resulting in potential network device configuration errors.
+[^TNVC]: The values of **hello** and **dead** timer are not checked. It is possible to configure a **hello** timer larger than the corresponding **dead** timer, resulting in potential network device configuration errors.
 
-**Note:** The same parameters can be specified for individual link nodes.
+**Notes:**
+
+* The same parameters can be specified for individual link nodes.
+* You can also set **ospf.area** and **ospf.cost** on the **loopback** interface[^LBI].
+
+[^LBI]: The loopback OSPF area is implemented in all OSPF configuration templates, but some might not set the loopback OSPF cost.
 
 OSPF is automatically started on all interfaces within an autonomous system (interfaces with no EBGP neighbors; see also [](routing_external)). To disable OSPF on an intra-AS link, set **ospf** to *False* (see also [](routing_disable)).
 
@@ -273,7 +278,7 @@ ospf:
   area: 0.0.0.0
 ```
 
-R1 and R2 are in default OSPF area (no need to specify per-node area):
+R1 and R2 are in the default OSPF area (no need to specify per-node area):
 
 ```
 nodes:
@@ -323,7 +328,7 @@ links:
 
 **Interesting details**:
 
-* The default value for interface OSPF area is the node OSPF area
+* The default value for the interface OSPF area is the node OSPF area
 * The default value for node OSPF area is the global OSPF area (default value: 0.0.0.0).
 * Due to the propagation of default values, the OSPF area for the R2-R3 link would be area 0 on R2 and area 1 on R3 -- you have to specify the OSPF area within the link definition or an individual node connected to the link.
 

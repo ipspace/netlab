@@ -60,8 +60,10 @@ def propagate_node_attributes(node: Box, topology: Box) -> None:
   if 'ospf' not in node:
     return
 
-  if 'loopback' in node and 'area' in node.ospf:
-    node.loopback.ospf.area = node.ospf.area
+  if 'loopback' in node:
+    if node.loopback.get('ospf') is not False:
+      if 'area' in node.ospf and 'area' not in node.loopback.ospf:
+        node.loopback.ospf.area = node.ospf.area
 
   if not 'vrfs' in node:
     return
