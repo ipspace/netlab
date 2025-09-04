@@ -66,17 +66,12 @@ def node_with_label(f : typing.TextIO, n: Box, settings: Box, indent: str = '') 
   d2_style(f,n,indent + '  ')
   node_ip_str = ""
   node_ip = n.loopback.ipv4 or n.loopback.ipv6
-  if settings.node_address_label and not settings.node_interfaces:
+  if settings.node_address_label:
     if not node_ip and n.interfaces:
       node_ip = n.interfaces[0].ipv4 or n.interfaces[0].ipv6
     if node_ip:
       node_ip_str = f'\\n{node_ip}'
   f.write(f"  {indent}label: \"{n.name} [{n.device}]{node_ip_str}\"\n")
-  if settings.node_interfaces:
-    node_intf = f'    {indent}* Loopback: {node_ip}' if node_ip else ''
-    for i in n.interfaces:
-      node_intf += f'\n    {indent}* {i.ifname}: {i.ipv4 or i.ipv6 or "l2_only"}'
-    f.write(f'{indent}  interfaces: |md\n{node_intf}\n{indent}  |\n')
   d2_node_attr(f,n,settings,indent+'  ')
   f.write(f'{indent}}}\n')
 
@@ -86,11 +81,7 @@ the LAN bridge name, node label is its IPv4 or IPv6 prefix.
 '''
 def network_with_label(f : typing.TextIO, n: Box, settings: Box, indent: str = '') -> None:
   f.write(f'{indent}{n.name} {{\n')
-  if settings.node_interfaces:
-    if n.prefix.ipv4 or n.prefix.ipv6:
-      f.write(f'{indent}  interfaces: |md\n{indent}    {n.prefix.ipv4 or n.prefix.ipv6}\n{indent}  |\n')
-  else:
-    f.write(f'{indent}  label: {n.prefix.ipv4 or n.prefix.ipv6 or n.bridge}\n')
+  f.write(f'{indent}  label: {n.prefix.ipv4 or n.prefix.ipv6 or n.bridge}\n')
   copy_d2_attr(f,'lan',settings,'  '+indent)
   f.write(f'{indent}}}\n')
 #  f.write('style=filled fillcolor="%s" fontsize=11' % (settings.colors.get("stub","#d1bfab")))
