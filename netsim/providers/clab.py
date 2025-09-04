@@ -279,16 +279,16 @@ class Containerlab(_Provider):
     node_name = self.get_node_name(node.name,topology)
     return strings.string_to_list(f'sudo ip netns exec {node_name}') + cmd
 
-  def set_tc(self, node: Box, topology: Box, intf: Box) -> None:
+  def set_tc(self, node: Box, topology: Box, intf: Box, error: bool = True) -> None:
     c_name = self.get_node_name(node.name,topology)
     c_intf = intf.get('clab.name',intf.ifname)
     netns = 'sudo ip netns exec ' + c_name
     status = tc_netem_set(intf=c_intf,tc_data=intf.tc,pfx=netns)
-    if status:
-      log.info(text=f'Traffic control on {node.name} {intf.ifname}:{status}')
-    else:
+    if status is False:
       log.error(
         text=f'Failed to deploy tc policy on {node.name} (container {c_name}) interface {c_intf}',
         module='clab',
         skip_header=True,
         category=log.ErrorAbort)
+    elif status:
+      log.info(text=f'Traffic control on {node.name} {intf.ifname}:{status}')

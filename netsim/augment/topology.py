@@ -65,7 +65,7 @@ def check_required_elements(topology: Box) -> None:
 
 def check_global_elements(topology: Box) -> None:
   # Allow provider-specific global attributes
-  providers = get_object_attributes(['providers'],topology)
+  providers = get_object_attributes(topology.defaults.attributes.global_extra_ns,topology)
 
   validate_attributes(
     data=topology,                                  # Validate node data

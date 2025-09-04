@@ -1,9 +1,10 @@
+(install-linux-server)=
 # Running *netlab* on a Linux Server
 
 This page describes generic installation steps for creating a virtual lab environment on any Linux distribution ([follow these instructions](ubuntu.md) if you plan to run your labs on an Ubuntu server).
 
 ```{warning}
-We test _netlab_ on Ubuntu to ensure we provide a reasonably hassle-free experience to networking engineers without Linux sysadmin skills. Unfortunately, we cannot help you if you run _netlab_ on another Linux distribution (dealing with one distro is more than enough pain). Still, please do try to make it work, and we would appreciate it if you could add your findings to this document. Thank you!
+We test _netlab_ on Ubuntu to ensure we provide a reasonably hassle-free experience to networking engineers without Linux sysadmin skills. Unfortunately, we cannot help you if you run _netlab_ on another Linux distribution (dealing with one distro is more than enough pain). Still, please try to make it work; we would appreciate it if you could add your findings to this document. Thank you!
 ```
 
 ## Prerequisite Software Installation
@@ -14,9 +15,9 @@ We test _netlab_ on Ubuntu to ensure we provide a reasonably hassle-free experie
 
 To build a Linux environment needed to run network devices as virtual machines or containers:
 
-* Install Python 3.8 or later
+* Install Python 3.8 or later (use the latest Python version supported by your Linux distribution)
 * Install KVM and libvirt
-* Install Vagrant 2.4.0-1 or later[^CSV]
+* Install Vagrant 2.4.3 or later[^CSV]
 * Install *vagrant-libvirt* plugin with `vagrant plugin install libvirt --plugin-version=0.12.2`
 * Install Ansible 2.9.1 or later and any Ansible networking dependencies (example: paramiko)
 * Optional: install Docker and containerlab
@@ -54,6 +55,7 @@ Installing Python packages as root is not recommended. If you're not setting up 
 
 **[netlab up](../netlab/up.md)** command automatically creates *vagrant-libvirt* virtual network with correct static DHCP bindings before calling **vagrant up**, so you SHOULD use **netlab up** instead of executing **vagrant** commands. Recent versions of the *vagrant-libvirt* plugin remove the *vagrant-libvirt* virtual network on **vagrant destroy**, so it makes no sense to create that network manually.
 
+(install-linux-server-test)=
 ## Testing the Installation
 
 The easiest way to test your installation is to use the **[netlab test](../netlab/test.md)** command. If you prefer to do step-by-step tests, you might find this recipe helpful:
@@ -63,7 +65,7 @@ The easiest way to test your installation is to use the **[netlab test](../netla
 ```
 ---
 defaults:
-  device: cumulus
+  device: frr
 
 module: [ ospf ]
 
@@ -72,14 +74,16 @@ links: [ s1-s2, s2-s3, s1-s2-s3 ]
 ```
 
 * Start the lab with `netlab up`
-* Connect to the Cumulus VX devices with `vagrant ssh` or `netlab connect`
+* Connect to the FRR devices with the `netlab connect` command
 * Destroy the lab with `netlab down`
 
-## Host networking caveats
+## Host Networking Caveats
 
-*netlab* relays on standard Linux bridges to implement multi-access links. If you encounter a situation where layer2 traffic passes through the bridge, but you have no layer3 connectivity, the easiest way to work arround the problem is to disable your distribution's firewall and reboot. In NixOS, the operating system where this problem was first encoutered, you can follow the receipe:
+*netlab* relies on standard Linux bridges to implement multi-access links. If you encounter a situation where Layer-2 traffic passes through the bridge but there's no Layer-3 connectivity,  you're probably fighting with a too-aggressive firewall.
 
-* Open your global `configuration.nix` file in the editor of choiche
+The easiest way to work around that problem is to turn off your distribution's firewall and reboot. In NixOS, the operating system where this problem was first encountered, you can follow this recipe:
+
+* Open your global `configuration.nix` file in the editor of your choice
 * Add the configuration option `networking.firewall.enable  = false;` Save the file
 * Execute `nixos-rebuild switch` command to reach the new desired configuration state
 * Reboot into the new configuration

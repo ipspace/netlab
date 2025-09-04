@@ -9,7 +9,7 @@ The *graph* output module is invoked with the **[netlab graph](netlab-graph)** c
 A single formatting modifier can be used to specify the graph type:
 
 * **topology** (default) -- Display inter-node links, multi-access- and stub subnets. When the network topology contains BGP information, the graph groups nodes into autonomous systems. Alternatively, you could set **defaults.outputs.graph.groups** attribute to use topology **[groups](topo-groups)** to group graph nodes.
-* **bgp** -- Include autonomous systems, nodes, and BGP sessions. With the **rr** option (specified with `netlab create -o graph:bgp:rr`), RR-client sessions are drawn as directed arrows.
+* **bgp** -- Include autonomous systems, nodes, and BGP sessions. The formatting modifier can include [BGP formatting parameters](outputs-graph-bgp-parameters). For example, `netlab create -o graph:bgp:rr` draws RR-client sessions as directed arrows.
 
 ## Modifying Graph Attributes
 
@@ -19,7 +19,16 @@ Graphing routines use **[default](topo-defaults)** topology settings to modify t
 * **outputs.graph.groups** -- use the specified list of groups (or all groups when set to *True*) to create graph clusters
 * **outputs.graph.interface_labels** -- Add IP addresses to links in **topology** graph. Results in a cluttered image (but feel free to fix that and submit a pull request).
 * **outputs.graphs.node_address_label** (default: *True*) -- add node loopback IP addresses or IP addresses of the first interface (for hosts) to node labels.
-* **outputs.graph.rr_sessions** (default: *False*) -- draw IBGP sessions between BGP route reflectors and clients as directional connections.
+
+(outputs-graph-bgp-parameters)=
+These default settings modify how the BGP graphs look:
+
+* **outputs.graph.bgp.rr** (default: True) -- draw arrows on BGP sessions to indicate peer-to-peer versus reflector-client sessions
+* **outputs.graph.bgp.vrf** (default: False) -- draw VRF BGP sessions as dotted lines
+* **outputs.graph.bgp.af._af_** (default: all address families) -- when one or more **af** parameters (valid keys: **ipv4**, **ipv6**, **vpnv4**, **vpnv6**, **6pe**, **evpn**) are set to *True*, the graph is limited to BGP sessions of the specified address families.
+* **outputs.graph.bgp.novrf** (default: False) -- do not include VRF BGP sessions in the graph
+
+You can specify the above BGP parameters in the *graph format* CLI argument.
 
 (outputs-graph-link-node-attributes)=
 ## Modifying Link and Node Attributes

@@ -9,7 +9,7 @@ from ..data import get_box
 from ..utils import files as _files
 from ..utils import log
 from . import _TopologyOutput
-from ._graph import bgp_graph, map_style, topology_graph
+from ._graph import bgp_graph, map_style, parse_bgp_params, topology_graph
 
 '''
 Copy default settings into a D2 map converting Python dictionaries into
@@ -28,10 +28,10 @@ Copy named D2 default settings into D2 output file. Just a convenience
 wrapper around dump_d2_dict
 '''
 def copy_d2_attr(f : typing.TextIO, dt: str, settings: Box, indent: str = '') -> None: 
-  if not dt in settings:
+  if not dt in settings.styles:
     return
 
-  dump_d2_dict(f,settings[dt],indent)
+  dump_d2_dict(f,settings.styles[dt],indent)
 
 '''
 Find D2-specific device type for a given node and copy device-specific attributes
@@ -66,17 +66,12 @@ def node_with_label(f : typing.TextIO, n: Box, settings: Box, indent: str = '') 
   d2_style(f,n,indent + '  ')
   node_ip_str = ""
   node_ip = n.loopback.ipv4 or n.loopback.ipv6
-  if settings.node_address_label and not settings.node_interfaces:
+  if settings.node_address_label:
     if not node_ip and n.interfaces:
       node_ip = n.interfaces[0].ipv4 or n.interfaces[0].ipv6
     if node_ip:
       node_ip_str = f'\\n{node_ip}'
   f.write(f"  {indent}label: \"{n.name} [{n.device}]{node_ip_str}\"\n")
-  if settings.node_interfaces:
-    node_intf = f'    {indent}* Loopback: {node_ip}' if node_ip else ''
-    for i in n.interfaces:
-      node_intf += f'\n    {indent}* {i.ifname}: {i.ipv4 or i.ipv6 or "l2_only"}'
-    f.write(f'{indent}  interfaces: |md\n{node_intf}\n{indent}  |\n')
   d2_node_attr(f,n,settings,indent+'  ')
   f.write(f'{indent}}}\n')
 
@@ -86,11 +81,7 @@ the LAN bridge name, node label is its IPv4 or IPv6 prefix.
 '''
 def network_with_label(f : typing.TextIO, n: Box, settings: Box, indent: str = '') -> None:
   f.write(f'{indent}{n.name} {{\n')
-  if settings.node_interfaces:
-    if n.prefix.ipv4 or n.prefix.ipv6:
-      f.write(f'{indent}  interfaces: |md\n{indent}    {n.prefix.ipv4 or n.prefix.ipv6}\n{indent}  |\n')
-  else:
-    f.write(f'{indent}  label: {n.prefix.ipv4 or n.prefix.ipv6 or n.bridge}\n')
+  f.write(f'{indent}  label: {n.prefix.ipv4 or n.prefix.ipv6 or n.bridge}\n')
   copy_d2_attr(f,'lan',settings,'  '+indent)
   f.write(f'{indent}}}\n')
 #  f.write('style=filled fillcolor="%s" fontsize=11' % (settings.colors.get("stub","#d1bfab")))
@@ -169,13 +160,8 @@ def graph_topology(topology: Box, fname: str, settings: Box,g_format: typing.Opt
   return True
 
 def graph_bgp(topology: Box, fname: str, settings: Box, g_format: typing.Optional[list]) -> bool:
-  rr_session = settings.get('rr_sessions',False)
-  g_format = g_format or []
-  for kw in g_format[1:]:
-    if kw == 'rr':
-      rr_session = True
-
-  graph = bgp_graph(topology,settings,'d2',rr_sessions=rr_session)
+  parse_bgp_params(settings,g_format)
+  graph = bgp_graph(topology,settings,'d2')
   if graph is None:
     return False
 
@@ -185,8 +171,10 @@ def graph_bgp(topology: Box, fname: str, settings: Box, g_format: typing.Optiona
   d2_nodes(f,graph,topology,settings)
 
   for edge in graph.edges:
-    if edge.nodes[0].type in settings:
-      edge.attr.format = settings[edge.nodes[0].type] + edge.attr.format
+    if edge.nodes[0].type in settings.styles:
+      edge.attr.format = settings.styles[edge.nodes[0].type] + edge.attr.format
+    if 'vrf' in edge.nodes[0] or 'vrf' in edge.nodes[1]:
+      edge.attr.format = settings.styles.vrf + edge.attr.format
 
   d2_links(f,graph,topology,settings)
 
@@ -219,6 +207,11 @@ class Graph(_TopologyOutput):
   DESCRIPTION :str = 'Topology graph in D2 format'
 
   def write(self, topology: Box) -> None:
+    for kw in ['router','switch','lan','ibgp','ebgp']:
+      if kw in self.settings:
+        log.info(f'Attribute defaults.outputs.d2.{kw} is deprecated, use defaults.outputs.d2.styles.{kw}')
+        self.settings.styles[kw] += self.settings[kw]
+
     graphfile = self.settings.filename or 'graph.d2'
     output_format = 'topology'
 
