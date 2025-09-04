@@ -28,10 +28,10 @@ Copy named D2 default settings into D2 output file. Just a convenience
 wrapper around dump_d2_dict
 '''
 def copy_d2_attr(f : typing.TextIO, dt: str, settings: Box, indent: str = '') -> None: 
-  if not dt in settings:
+  if not dt in settings.styles:
     return
 
-  dump_d2_dict(f,settings[dt],indent)
+  dump_d2_dict(f,settings.styles[dt],indent)
 
 '''
 Find D2-specific device type for a given node and copy device-specific attributes
@@ -171,10 +171,10 @@ def graph_bgp(topology: Box, fname: str, settings: Box, g_format: typing.Optiona
   d2_nodes(f,graph,topology,settings)
 
   for edge in graph.edges:
-    if edge.nodes[0].type in settings:
-      edge.attr.format = settings[edge.nodes[0].type] + edge.attr.format
+    if edge.nodes[0].type in settings.styles:
+      edge.attr.format = settings.styles[edge.nodes[0].type] + edge.attr.format
     if 'vrf' in edge.nodes[0] or 'vrf' in edge.nodes[1]:
-      edge.attr.format = settings.vrf + edge.attr.format
+      edge.attr.format = settings.styles.vrf + edge.attr.format
 
   d2_links(f,graph,topology,settings)
 
@@ -207,6 +207,11 @@ class Graph(_TopologyOutput):
   DESCRIPTION :str = 'Topology graph in D2 format'
 
   def write(self, topology: Box) -> None:
+    for kw in ['router','switch','lan','ibgp','ebgp']:
+      if kw in self.settings:
+        log.info(f'Attribute defaults.outputs.d2.{kw} is deprecated, use defaults.outputs.d2.styles.{kw}')
+        self.settings.styles[kw] += self.settings[kw]
+
     graphfile = self.settings.filename or 'graph.d2'
     output_format = 'topology'
 
