@@ -40,6 +40,10 @@ def get_cpu_model() -> str:
 The generic provider class. Used as a super class of all other providers
 """
 class _Provider(Callback):
+  SHARED_PREFIX = '-shared-'
+  SHARED_SUFFIX = ':shared'
+  READ_ONLY_SUFFIX = ':ro'
+
   def __init__(self, provider: str, data: Box) -> None:
     self.provider = provider
     if 'template' in data:
@@ -139,10 +143,10 @@ class _Provider(Callback):
     for file,mapping in map_dict.items():
       file = file.replace('@','.')
       # Check if mapping ends with :shared - if so, put it in the root provider folder
-      if mapping.endswith(':shared'):
-        mapping = mapping.rsplit(':shared', 1)[0] + ':ro'
+      if mapping.endswith(self.SHARED_SUFFIX):
+        mapping = mapping.rsplit(self.SHARED_SUFFIX, 1)[0] + self.READ_ONLY_SUFFIX
         # Prefix shared files to avoid node name conflicts
-        out_path = base_path / f"-shared-{file}" 
+        out_path = base_path / f"{self.SHARED_PREFIX}{file}" 
       else:
         out_path = base_path / node.name / file
 
@@ -175,7 +179,6 @@ class _Provider(Callback):
 
     bind_dict = filemaps.mapping_to_dict(binds)
     
-   # Process other files normally
     node_data = {
         **node.to_dict(),
         'hostvars': topology.nodes.to_dict(),
@@ -200,11 +203,8 @@ class _Provider(Callback):
         # nothing to render
         continue
 
-      # For shared files, extract the original file name (remove '-shared-' prefix)
-      if file_rel.startswith('-shared-'):
-        template_fname = file_rel[8:]  # e.g., '-shared-hosts' -> 'hosts'
-      else:
-        template_fname = file_rel
+      # For shared files, extract the original file name (remove 'shared-' prefix)
+      template_fname = file_rel.removeprefix(self.SHARED_PREFIX)
 
       template_name = self.find_extra_template(node, template_fname, topology)
       if not template_name:
