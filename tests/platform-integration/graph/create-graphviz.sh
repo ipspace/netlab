@@ -1,5 +1,6 @@
 #!/bin/bash
 graph() {
+  echo -n "graph $3 from $1 into $2 "
   netlab create -o graph$3 $1 && dot graph.dot -Tsvg -o $2
 }
 OPTS=${*:-bgp topo}
@@ -13,5 +14,8 @@ if [[ "$OPTS" == *"topo"* ]]; then
 fi
 if [[ "$OPTS" == *"bgp"* ]]; then
   graph bgp.yml dot-bgp-default.svg :bgp
-  NETLAB_OUTPUTS_GRAPH_RR__SESSIONS=True graph bgp.yml dot-bgp-rr.svg :bgp
+  graph bgp.yml dot-bgp-rr.svg :bgp:rr
+  graph bgp.yml dot-bgp-vrf.svg :bgp:vrf
+  graph bgp.yml dot-bgp-novrf.svg :bgp:novrf
+  graph bgp.yml dot-bgp-evpn.svg :bgp:evpn:rr
 fi

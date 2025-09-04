@@ -9,7 +9,7 @@ from ..data import get_box
 from ..utils import files as _files
 from ..utils import log
 from . import _TopologyOutput
-from ._graph import bgp_graph, map_style, topology_graph
+from ._graph import bgp_graph, map_style, parse_bgp_params, topology_graph
 
 '''
 Copy default settings into a D2 map converting Python dictionaries into
@@ -160,13 +160,8 @@ def graph_topology(topology: Box, fname: str, settings: Box,g_format: typing.Opt
   return True
 
 def graph_bgp(topology: Box, fname: str, settings: Box, g_format: typing.Optional[list]) -> bool:
-  rr_session = settings.get('rr_sessions',False)
-  g_format = g_format or []
-  for kw in g_format[1:]:
-    if kw == 'rr':
-      rr_session = True
-
-  graph = bgp_graph(topology,settings,'d2',rr_sessions=rr_session)
+  parse_bgp_params(settings,g_format)
+  graph = bgp_graph(topology,settings,'d2')
   if graph is None:
     return False
 
@@ -178,6 +173,8 @@ def graph_bgp(topology: Box, fname: str, settings: Box, g_format: typing.Optiona
   for edge in graph.edges:
     if edge.nodes[0].type in settings:
       edge.attr.format = settings[edge.nodes[0].type] + edge.attr.format
+    if 'vrf' in edge.nodes[0] or 'vrf' in edge.nodes[1]:
+      edge.attr.format = settings.vrf + edge.attr.format
 
   d2_links(f,graph,topology,settings)
 
