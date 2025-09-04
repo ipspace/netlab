@@ -48,6 +48,9 @@ If you encounter bugs using release 1.7.x, please downgrade to [1.6.4](https://g
 **netlab capture**
 : [Perform packet capture](https://netlab.tools/netlab/capture/) on VM- and container interfaces
 
+**netlab tc**
+: Disable, enable, display, or modify [link impairment](https://netlab.tools/links/#links-netem) parameters
+
 **netlab report**
 : Creates a report from the transformed lab topology data.  [More details](https://netlab.tools/netlab/report/)
 

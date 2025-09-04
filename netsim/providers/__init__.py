@@ -466,6 +466,17 @@ NETEM_KW_MAP = {
 
 NETEM_SIMPLE_KW = [ 'loss', 'corrupt', 'duplicate', 'reorder', 'rate' ]
 
+def tc_extract_netem_parameters(qdisc: str) -> str:
+  if 'qdisc netem' not in qdisc:
+    return ''
+
+  if 'root refcnt' not in qdisc:
+    log.error(f'Cannot parse netem qdisc parameters: {qdisc}')
+    return ''
+
+  params = qdisc.split('root refcnt')[1].strip(' \n')
+  return ' '+params.split(' ',maxsplit=1)[1]
+
 def tc_netem_set(intf: str, tc_data: Box, pfx: str = '') -> typing.Union[str,bool]:
   global NETEM_KW_MAP,NETEM_SIMPLE_KW
   from ..cli import external_commands
@@ -487,10 +498,21 @@ def tc_netem_set(intf: str, tc_data: Box, pfx: str = '') -> typing.Union[str,boo
   qdisc = external_commands.run_command(
     cmd=pfx + f' tc qdisc show dev {intf}',
     ignore_errors=True,return_stdout=True,check_result=True)
+  tc_action = tc_data.get('action',None)
   if isinstance(qdisc,str) and 'noqueue' not in qdisc:
-    external_commands.run_command(
-      cmd=pfx + f' tc qdisc del dev {intf} root',
-      ignore_errors=True,return_stdout=True,check_result=True)
+    if tc_action == 'show':
+      return tc_extract_netem_parameters(qdisc)
+    if 'qdisc netem' not in qdisc or tc_action != 'modify' or not(netem_params):
+      external_commands.run_command(
+        cmd=pfx + f' tc qdisc del dev {intf} root',
+        ignore_errors=True,return_stdout=True,check_result=True)
+      tc_action = ''
+    if not netem_params:
+      return ' disabled'
 
-  status = external_commands.run_command(pfx + f' tc qdisc add dev {intf} root netem'+netem_params)
-  return netem_params if status else False
+  if netem_params:
+    tc_action = 'change' if tc_action == 'modify' else 'add'
+    status = external_commands.run_command(pfx + f' tc qdisc {tc_action} dev {intf} root netem'+netem_params)
+    return netem_params if status else False
+  else:
+    return ''
