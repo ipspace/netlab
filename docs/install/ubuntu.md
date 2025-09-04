@@ -15,6 +15,7 @@ The simplest way to install *netlab* and the whole low-level toolchain on an exi
 ```
 
 * Install additional software with `netlab install ubuntu ansible libvirt containerlab` command ([more details](../netlab/install.md)).
+* After completing the software installation, log out from the VM, log back in, and test your installation with the **[netlab test](netlab-test)** command ([other options](install-linux-server-test)). If those tests fail, you might have to use **usermod** to add your user to the *libvirt* and *docker* groups.
 
 ```eval_rst
 .. toctree::
