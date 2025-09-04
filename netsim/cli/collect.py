@@ -9,7 +9,7 @@ import subprocess
 import typing
 
 from ..utils import log
-from . import ansible, external_commands, fs_cleanup, load_snapshot, parser_lab_location
+from . import ansible, external_commands, fs_cleanup, parser_lab_location
 
 
 #
@@ -68,8 +68,6 @@ def run(cli_args: typing.List[str]) -> None:
   (args,rest) = collect_parse(cli_args)
   log.set_logging_flags(args)
 
-  load_snapshot(args)
-
   fs_cleanup([ args.output ])
   try:
     os.mkdir(args.output)
@@ -104,7 +102,7 @@ def run(cli_args: typing.List[str]) -> None:
 
     tarball = get_tarball_file(args.tar)
     if not args.quiet:
-      external_commands.print_step(2,"Creating tarball {args.tar}",spacing = True)
+      external_commands.print_step(2,f"Creating tarball {args.tar}",spacing = True)
     try:
       subprocess.check_call(['tar','cfz' if args.quiet else 'cvfz',tarball,args.output])
     except Exception as ex:
