@@ -88,6 +88,12 @@ def extra_data_printout(
   return "\n".join(lines)
 
 """
+Implement removeprefix for Python 3.8
+"""
+def removeprefix(s: str, pfx: str) -> str:
+  return s[len(pfx):] if s.startswith(pfx) else s
+
+"""
 Pad text to specified width
 """
 def pad_text(t: str, w: int = 10) -> str:
