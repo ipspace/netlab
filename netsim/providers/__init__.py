@@ -9,7 +9,6 @@ import ipaddress
 import os
 import pathlib
 import platform
-import subprocess
 import typing
 
 # Related modules
@@ -30,13 +29,21 @@ def get_cpu_model() -> str:
   elif platform.system() == "Darwin":
     processor_name = "arm64"          # Assume Apple silicon for MacOS
   elif platform.system() == "Linux":
-    processor_name = pathlib.Path("/proc/cpuinfo").read_text().splitlines()[1].split()[2]
+    # This might fail on some Linux distributions, but it's a reasonable default
+    try:
+      processor_name = pathlib.Path("/proc/cpuinfo").read_text().splitlines()[1].split()[2]
+    except Exception:
+      processor_name = platform.processor()
   return processor_name.lower()
 
 """
 The generic provider class. Used as a super class of all other providers
 """
 class _Provider(Callback):
+  SHARED_PREFIX = '-shared-'
+  SHARED_SUFFIX = ':shared'
+  READ_ONLY_SUFFIX = ':ro'
+
   def __init__(self, provider: str, data: Box) -> None:
     self.provider = provider
     if 'template' in data:
@@ -55,7 +62,7 @@ class _Provider(Callback):
     return 'templates/provider/' + self.provider
 
   def get_full_template_path(self) -> str:
-    return str(_files.get_moddir()) + '/' + self.get_template_path()
+    return str(_files.get_moddir() / self.get_template_path())
 
   def find_extra_template(self, node: Box, fname: str, topology: Box) -> typing.Optional[str]:
     if fname in node.get('config',[]):                    # Are we dealing with extra-config template?
@@ -71,11 +78,11 @@ class _Provider(Callback):
           path_suffix.append(node._daemon_parent)
         path_prefix.append(str(_files.get_moddir() / 'daemons'))
 
-    path = [ pf + "/" + sf for pf in path_prefix for sf in path_suffix ]
+    path = [ os.path.join(pf, sf) for pf in path_prefix for sf in path_suffix ]
     if log.debug_active('clab'):
       print(f'Searching for {fname}.j2 in {path}')
 
-    found_file = _files.find_file(fname+'.j2',path)
+    found_file = _files.find_file(f'{fname}.j2', path)
     if log.debug_active('clab'):
       print(f'Found file: {found_file}')
 
@@ -97,7 +104,7 @@ class _Provider(Callback):
     return self._default_template_name
 
   def node_image_version(self, topology: Box) -> None:
-    for name,n in topology.nodes.items():
+    for _,n in topology.nodes.items():
       if '.' in n.box:
         image_spec = n.box.split(':')
         n.box = image_spec[0]
@@ -131,10 +138,22 @@ class _Provider(Callback):
     map_dict = filemaps.mapping_to_dict(mappings)
     cur_binds = node.get(f'{self.provider}.{outkey}',[])
     bind_dict = filemaps.mapping_to_dict(cur_binds)
+    base_path = pathlib.Path(f"{self.provider}_files")
+    
     for file,mapping in map_dict.items():
       file = file.replace('@','.')
-      if file in bind_dict:
+      # Check if mapping ends with :shared - if so, put it in the root provider folder
+      if mapping.endswith(self.SHARED_SUFFIX):
+        mapping = mapping.rsplit(self.SHARED_SUFFIX, 1)[0] + self.READ_ONLY_SUFFIX
+        # Prefix shared files to avoid node name conflicts
+        out_path = base_path / f"{self.SHARED_PREFIX}{file}" 
+      else:
+        out_path = base_path / node.name / file
+
+      out_key = out_path.as_posix()
+      if out_key in bind_dict:
         continue
+
       if not self.find_extra_template(node,file,topology):
         log.error(
           f"Cannot find template {file}.j2 for extra file {self.provider}.{inkey}.{file} on node {node.name}",
@@ -142,8 +161,7 @@ class _Provider(Callback):
           module=self.provider)
         continue
 
-      out_folder = f"{self.provider}_files/{node.name}"
-      bind_dict[f"{out_folder}/{file}"] = mapping         # note: node_files directory is flat
+      bind_dict[out_key] = mapping
 
     node[self.provider][outkey] = filemaps.dict_to_mapping(bind_dict)
 
@@ -151,7 +169,6 @@ class _Provider(Callback):
       self,
       node: Box,
       topology: Box,
-      inkey: str = 'config_templates',
       outkey: str = 'binds') -> None:
 
     binds = node.get(f'{self.provider}.{outkey}',None)
@@ -159,35 +176,74 @@ class _Provider(Callback):
       return
 
     sys_folder = str(_files.get_moddir())+"/"
-    out_folder = f"{self.provider}_files/{node.name}"
 
     bind_dict = filemaps.mapping_to_dict(binds)
-    for file,mapping in bind_dict.items():
-      if not out_folder in file:                  # Skip files that are not mapped into the temporary provider folder
-        continue
-      file_name = file.replace(out_folder+"/","")
-      template_name = self.find_extra_template(node,file_name,topology)
-      if template_name:
-        node_data = node + { 'hostvars': topology.nodes, 
-                             'hosts': get_host_addresses(topology),
-                             'addressing': topology.addressing }  # Needed for subnet prefix
-        if '/' in file_name:                      # Create subdirectory in out_folder if needed
-          pathlib.Path(f"{out_folder}/{os.path.dirname(file_name)}").mkdir(parents=True,exist_ok=True)
-        try:
-          templates.write_template(
-            in_folder=os.path.dirname(template_name),
-            j2=os.path.basename(template_name),
-            data=node_data.to_dict(),
-            out_folder=out_folder, filename=file_name)
-        except Exception as ex:
-          log.fatal(
-            text=f"Error rendering {template_name} into {file_name}\n{strings.extra_data_printout(str(ex))}",
-            module=self.provider)
+    
+    node_data = {
+        **node.to_dict(),
+        'hostvars': topology.nodes.to_dict(),
+        'hosts': get_host_addresses(topology),
+        'addressing': topology.addressing.to_dict()
+    }
 
+    base_path = pathlib.Path(f"{self.provider}_files")
+
+    for file_str,mapping in bind_dict.items():
+      full_out_path = pathlib.Path(file_str)
+
+      # Only handle files placed under the provider's file directory
+      try:
+        full_out_path.relative_to(base_path)
+      except ValueError:
+        continue
+
+      # We have to recover the template name from the final (local) file name
+      # If the final file name is within the provider/node directory, the template
+      # name is the rest of the path (which might be a file name or a relative path)
+      # otherwise the template name is just the file name (used for shared files)
+      #
+      try:
+        file_rel = str(full_out_path.relative_to(base_path / node.name))
+      except ValueError:
+        file_rel = full_out_path.name
+
+      if not file_rel:
+        # nothing to render
+        continue
+
+      # For shared files, extract the original file name (remove 'shared-' prefix)
+      template_fname = file_rel.removeprefix(self.SHARED_PREFIX)
+
+      template_name = self.find_extra_template(node, template_fname, topology)
+      if not template_name:
+        log.error(f"Cannot find template for {file_rel} on node {node.name}",log.MissingValue,'provider')
+        continue
+
+      # Create parent dirs if needed
+      full_out_path.parent.mkdir(parents=True,exist_ok=True)
+
+      # If the file already exists (either shared or node-specific), skip re-rendering
+      if full_out_path.exists():
+        if not log.QUIET:
+          strings.print_colored_text('[MAPPED]  ','bright_cyan','Mapped ')
+          print(f"{str(full_out_path)} to {node.name}:{mapping} (from {template_name.replace(sys_folder,'')})")
+
+        continue
+      try:
+        templates.write_template(
+          in_folder=os.path.dirname(template_name),
+          j2=os.path.basename(template_name),
+          data=node_data,
+          out_folder=str(full_out_path.parent),
+          filename=full_out_path.name)
+      except Exception as ex:
+        log.fatal(
+          text=f"Error rendering {template_name} into {file_rel}\n{strings.extra_data_printout(str(ex))}",
+          module=self.provider)
+
+      if not log.QUIET:
         strings.print_colored_text('[MAPPED]  ','bright_cyan','Mapped ')
-        print(f"{out_folder}/{file_name} to {node.name}:{mapping} (from {template_name.replace(sys_folder,'')})")
-      else:
-        log.error(f"Cannot find template for {file_name} on node {node.name}",log.MissingValue,'provider')
+        print(f"{str(full_out_path)} to {node.name}:{mapping} (from {template_name.replace(sys_folder,'')})")
 
   def create(self, topology: Box, fname: typing.Optional[str]) -> None:
     self.transform(topology)
@@ -280,7 +336,6 @@ def select_primary_provider(topology: Box) -> None:
   p_default = topology.provider
 
   # Build a set of all providers used in the topology
-  #
   p_set = { ndata.provider if 'provider' in ndata else p_default for ndata in topology.nodes.values() }
   if len(p_set) == 1:                             # Single-provider topology
     p_used = list(p_set)[0]
@@ -366,7 +421,6 @@ def select_topology(topology: Box, provider: str) -> Box:
   for n in list(topology.nodes.keys()):             # Remove all nodes not belonging to the current provider
     if topology.nodes[n].provider != provider:
       topology.nodes[n].unmanaged = True
-#      topology.nodes.pop(n,None)
 
   topology.links = [ l for l in topology.links if provider in l.provider ]      # Retain only the links used by current provider
   return topology
@@ -403,7 +457,6 @@ def node_add_forwarded_ports(node: Box, fplist: list, topology: Box) -> None:
 validate_images -- check the images used by individual nodes against provider image repo
 """
 def validate_images(topology: Box) -> None:
-
   for n_data in topology.nodes.values():
     execute_node('validate_node_image',n_data,topology)
 
