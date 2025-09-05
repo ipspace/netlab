@@ -5,6 +5,7 @@ import typing
 
 from box import Box, BoxList
 
+from .. import __version__
 from ..augment import topology
 from ..utils import files as _files
 from ..utils import log, strings
@@ -24,10 +25,11 @@ class YAML(_TopologyOutput):
       if len(self.filenames) > 1:
         log.error('Extra output filename(s) ignored: %s' % str(self.filenames[1:]),log.IncorrectValue,modname)
 
+    cleantopo: typing.Any = topology.cleanup_topology(topo)
+    cleantopo._netlab_version = __version__
     if outfile == 'netlab.snapshot.yml':
       check_writeable('netlab.snapshot.yml')
 
-    cleantopo: typing.Any = topology.cleanup_topology(topo)
     output = _files.open_output_file(outfile)
 
     for fmt in self.format:

@@ -248,6 +248,9 @@ def load_snapshot(args: typing.Union[argparse.Namespace,Box],ghosts: bool = True
       log.fatal(f"Cannot read the topology snapshot file {args.snapshot}")
     topology = yaml_topology
 
+  if '_netlab_version' not in topology:
+    log.fatal(f"{args.snapshot} is either not a netlab snapshot file or was created with an older netlab version")
+
   if not ghosts:
     topology = augment.nodes.ghost_buster(topology)
 

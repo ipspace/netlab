@@ -5,6 +5,7 @@ import pickle
 
 from box import Box
 
+from .. import __version__
 from ..augment import topology
 from ..utils import log
 from . import _TopologyOutput
@@ -20,6 +21,7 @@ class YAML(_TopologyOutput):
       log.fatal('Cannot write pickled data to stdout',module='pickle')
 
     topodict = topology.cleanup_topology(topo).to_dict()
+    topodict['_netlab_version'] = __version__
     try:
       output = open(outfile,mode='wb')
     except Exception as ex:
