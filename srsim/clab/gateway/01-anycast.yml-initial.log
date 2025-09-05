@@ -29,10 +29,10 @@ skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [th]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/srsim.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/srsim.yml for dut
 
 TASK [Common SR-OS checks] *****************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/sros.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/sros.yml for dut
 
 TASK [Check that required plugin exists, use 'netlab install grpc' to install it] ***
 ok: [dut]
@@ -49,7 +49,7 @@ FAILED - RETRYING: [dut]: Get port 1/1/c1 status (9 retries left).
 ok: [dut]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, h1, h2, h3, th
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, h1, h2, h3, th
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [dut]
@@ -79,8 +79,8 @@ TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [dut]
 ok: [x1]
 ok: [h1]
-ok: [h3]
 ok: [h2]
+ok: [h3]
 ok: [th]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -100,7 +100,7 @@ skipping: [h3]
 skipping: [th]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, h1, h2, h3, th
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, h1, h2, h3, th
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
@@ -311,6 +311,91 @@ ok: [x1] =>
     vtysh -f /tmp/config
     !
     exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+  
+  
+  
+  
+  
+    updates:
+    - path: configure/card[slot-number=1]
+      val:
+        card-type: iom-1
+        mda:
+        - mda-slot: 1
+          mda-type: me12-100gb-qsfp28
+        - mda-slot: 2
+          mda-type: me12-100gb-qsfp28
+        slot-number: 1
+  
+    - path: configure/router[router-name=Base]
+      val:
+       ecmp: 64
+  
+  
+  
+  
+  
+  
+    - path: configure/router[router-name=Base]/interface[interface-name=system]
+  
+      val:
+       admin-state: enable
+       description: "System interface"
+       ipv4:
+        primary:
+         address: "10.0.0.1"
+         prefix-length: 32
+  
+  
+  
+  
+  
+    - path: configure/port[port-id=1/1/c1]
+      val:
+       admin-state: enable
+       connector:
+        breakout: "c1-100g"
+    - path: configure/port[port-id=1/1/c1/1]
+      val:
+       admin-state: enable
+       ethernet:
+        mtu: 1514 # max 9800
+        mode: network
+  
+  
+  
+    - path: configure/router[router-name=Base]/interface[interface-name=eth-1/1/c1]
+  
+      val:
+       admin-state: enable
+       description: "dut ~ [x1,th] ()"
+       ip-mtu: 1500
+       port: "1/1/c1/1"
+       ipv4:
+        primary:
+         address: "172.16.44.1"
+         prefix-length: 24
+  
+       ipv6:
+        address:
+        - ipv6-address: "2001:db8:cafe:44::1"
+          prefix-length: 64
+  
+  
+  
+    - path: configure/router[router-name=Base]
+      val:
+        ipv6:
+          router-advertisement:
+            interface:
+            - ip-int-name: eth-1/1/c1
+              admin-state: enable
+              min-advertisement-interval: 3
+              max-advertisement-interval: 5
 ok: [h2] => 
   msg: |-
     initial configuration for h2
@@ -410,91 +495,6 @@ ok: [h2] =>
     vtysh -f /tmp/config
     !
     exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-  
-  
-  
-  
-  
-    updates:
-    - path: configure/card[slot-number=1]
-      val:
-        card-type: iom-1
-        mda:
-        - mda-slot: 1
-          mda-type: me12-100gb-qsfp28
-        - mda-slot: 2
-          mda-type: me12-100gb-qsfp28
-        slot-number: 1
-  
-    - path: configure/router[router-name=Base]
-      val:
-       ecmp: 64
-  
-  
-  
-  
-  
-  
-    - path: configure/router[router-name=Base]/interface[interface-name=system]
-  
-      val:
-       admin-state: enable
-       description: "System interface"
-       ipv4:
-        primary:
-         address: "10.0.0.1"
-         prefix-length: 32
-  
-  
-  
-  
-  
-    - path: configure/port[port-id=1/1/c1]
-      val:
-       admin-state: enable
-       connector:
-        breakout: "c1-100g"
-    - path: configure/port[port-id=1/1/c1/1]
-      val:
-       admin-state: enable
-       ethernet:
-        mtu: 1514 # max 9800
-        mode: network
-  
-  
-  
-    - path: configure/router[router-name=Base]/interface[interface-name=eth-1/1/c1]
-  
-      val:
-       admin-state: enable
-       description: "dut ~ [x1,th] ()"
-       ip-mtu: 1500
-       port: "1/1/c1/1"
-       ipv4:
-        primary:
-         address: "172.16.44.1"
-         prefix-length: 24
-  
-       ipv6:
-        address:
-        - ipv6-address: "2001:db8:cafe:44::1"
-          prefix-length: 64
-  
-  
-  
-    - path: configure/router[router-name=Base]
-      val:
-        ipv6:
-          router-advertisement:
-            interface:
-            - ip-int-name: eth-1/1/c1
-              admin-state: enable
-              min-advertisement-interval: 3
-              max-advertisement-interval: 5
 ok: [h1] => 
   msg: |-
     initial configuration for h1
@@ -695,14 +695,14 @@ ok: [h3] =>
     exit 0
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for x1, h1, h2, h3
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for th
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for x1, h1, h2, h3
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for th
 
 TASK [Generate gNMI YAML configuration] ****************************************
 ok: [dut]
 
-TASK [Update initial node configuration from gNMI template /home/pipi/net101/tools/netsim/ansible/templates/initial/sros.j2] ***
+TASK [Update initial node configuration from gNMI template /home/pipi/netlab_gh/netsim/ansible/templates/initial/sros.j2] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
@@ -718,7 +718,7 @@ skipping: [h2]
 skipping: [h3]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, h1, h2, h3
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for x1, h1, h2, h3
 
 TASK [template] ****************************************************************
 changed: [h3]
@@ -732,13 +732,13 @@ ok: [h1]
 ok: [h2]
 ok: [h3]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [h1]
-changed: [x1]
 changed: [h2]
+changed: [x1]
 changed: [h3]
 
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
 skipping: [h1]
 skipping: [h2]
@@ -750,19 +750,19 @@ ok: [th]
 TASK [Create a temporary file for the rendered script] *************************
 changed: [th -> localhost]
 
-TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [th -> localhost]
 
 TASK [Copy script into running container at /tmp/config-th_initial.sh] *********
 skipping: [th]
 
-TASK [Execute /tmp/config-th_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+TASK [Execute /tmp/config-th_initial.sh to deploy initial config based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 skipping: [th]
 
-TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
+TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [th -> localhost]
 
-TASK [Remove temporary file /tmp/th_initial-gib4frba.sh] ***********************
+TASK [Remove temporary file /tmp/th_initial-n1jzuwcs.sh] ***********************
 changed: [th -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
@@ -771,14 +771,14 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
 ok: [x1]
 ok: [h1]
-ok: [h2]
 ok: [h3]
+ok: [h2]
 ok: [th]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, h1, h2, h3, th => (item=vlan)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, h1, h2, h3, th => (item=gateway)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, h1, h2, h3, th => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, h1, h2, h3, th => (item=vlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, h1, h2, h3, th => (item=gateway)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, h1, h2, h3, th => (item=routing)
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [dut]
@@ -980,13 +980,13 @@ skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [th]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for x1
 
 TASK [Generate gNMI YAML configuration] ****************************************
 ok: [dut]
 
-TASK [Update vlan node configuration from gNMI template /home/pipi/net101/tools/netsim/ansible/templates/vlan/sros.j2] ***
+TASK [Update vlan node configuration from gNMI template /home/pipi/netlab_gh/netsim/ansible/templates/vlan/sros.j2] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
@@ -998,26 +998,26 @@ changed: [x1]
 TASK [set_fact] ****************************************************************
 ok: [x1]
 
-TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
+TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/frr.j2] ***
 changed: [x1]
 
-TASK [run vtysh to import vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
+TASK [run vtysh to import vlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/frr.j2] ***
 skipping: [x1]
 
 TASK [Figure out whether to deploy the module gateway on current device] *******
 ok: [dut]
 ok: [x1]
 ok: [h1]
+ok: [h3]
 ok: [h2]
 ok: [th]
-ok: [h3]
 
 TASK [Find configuration template for gateway] *********************************
 skipping: [h1]
 ok: [dut]
 skipping: [h2]
-skipping: [h3]
 ok: [x1]
+skipping: [h3]
 skipping: [th]
 
 TASK [fail] ********************************************************************
@@ -1112,13 +1112,13 @@ skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [th]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/sros.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for x1
 
 TASK [Generate gNMI YAML configuration] ****************************************
 ok: [dut]
 
-TASK [Update gateway node configuration from gNMI template /home/pipi/net101/tools/netsim/ansible/templates/gateway/sros.j2] ***
+TASK [Update gateway node configuration from gNMI template /home/pipi/netlab_gh/netsim/ansible/templates/gateway/sros.j2] ***
 changed: [dut]
 
 TASK [debug] *******************************************************************
@@ -1130,10 +1130,10 @@ changed: [x1]
 TASK [set_fact] ****************************************************************
 ok: [x1]
 
-TASK [run /tmp/config.sh to deploy gateway config from /home/pipi/net101/tools/netsim/ansible/templates/gateway/frr.j2] ***
+TASK [run /tmp/config.sh to deploy gateway config from /home/pipi/netlab_gh/netsim/ansible/templates/gateway/frr.j2] ***
 changed: [x1]
 
-TASK [run vtysh to import gateway config from /home/pipi/net101/tools/netsim/ansible/templates/gateway/frr.j2] ***
+TASK [run vtysh to import gateway config from /home/pipi/netlab_gh/netsim/ansible/templates/gateway/frr.j2] ***
 skipping: [x1]
 
 TASK [Figure out whether to deploy the module routing on current device] *******
@@ -1240,25 +1240,25 @@ ok: [h3] =>
 TASK [Deploy routing configuration] ********************************************
 skipping: [dut]
 skipping: [x1]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for h1, h2, h3
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for th
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for h1, h2, h3
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for th
 
 TASK [template] ****************************************************************
-changed: [h2]
 changed: [h3]
 changed: [h1]
+changed: [h2]
 
 TASK [set_fact] ****************************************************************
 ok: [h1]
 ok: [h2]
 ok: [h3]
 
-TASK [run /tmp/config.sh to deploy routing config from /home/pipi/net101/tools/netsim/ansible/templates/routing/frr.j2] ***
+TASK [run /tmp/config.sh to deploy routing config from /home/pipi/netlab_gh/netsim/ansible/templates/routing/frr.j2] ***
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 
-TASK [run vtysh to import routing config from /home/pipi/net101/tools/netsim/ansible/templates/routing/frr.j2] ***
+TASK [run vtysh to import routing config from /home/pipi/netlab_gh/netsim/ansible/templates/routing/frr.j2] ***
 changed: [h2]
 changed: [h1]
 changed: [h3]
@@ -1269,19 +1269,19 @@ ok: [th]
 TASK [Create a temporary file for the rendered script] *************************
 changed: [th -> localhost]
 
-TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
+TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
 changed: [th -> localhost]
 
 TASK [Copy script into running container at /tmp/config-th_routing.sh] *********
 skipping: [th]
 
-TASK [Execute /tmp/config-th_routing.sh to deploy routing config based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
+TASK [Execute /tmp/config-th_routing.sh to deploy routing config based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
 skipping: [th]
 
-TASK [Container configuration for routing based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
+TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
 changed: [th -> localhost]
 
-TASK [Remove temporary file /tmp/th_routing-4c84141h.sh] ***********************
+TASK [Remove temporary file /tmp/th_routing-htll1i0y.sh] ***********************
 changed: [th -> localhost]
 
 PLAY [Deploy custom deployment templates] **************************************
