@@ -1,6 +1,6 @@
 # Restart Virtual Lab
 
-**netlab restart** executes **[netlab down](down.md)** followed by **[netlab up](up.md)** to restart your lab from the transformed lab topology stored in `netlab.snapshot.yml` snapshot file.
+**netlab restart** executes **[netlab down](down.md)** followed by **[netlab up](up.md)** to restart your lab from the transformed lab topology stored in `netlab.snapshot.pickle` snapshot file.
 
 You can use **netlab restart** to restart the existing lab (use `--snapshot` keyword) or recreate the lab configuration files if you changed the lab topology.
 

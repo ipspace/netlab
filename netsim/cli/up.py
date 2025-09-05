@@ -70,7 +70,7 @@ def up_parse_args(standalone: bool) -> argparse.ArgumentParser:
     dest='snapshot',
     action='store',
     nargs='?',
-    const='netlab.snapshot.yml',
+    const='netlab.snapshot.pickle',
     help='Use netlab snapshot file created by a previous lab run')
   parser.add_argument(
     '--validate',

@@ -3,6 +3,7 @@
 #
 import argparse
 import os
+import pickle
 import sys
 import typing
 
@@ -10,6 +11,7 @@ import yaml
 from box import Box
 
 # Related modules
+from ..data import get_box
 from ..data import types as _types
 from ..utils import files as _files
 from ..utils import log, versioning
@@ -335,3 +337,22 @@ def add_cli_args(topo: Box, args: typing.Union[argparse.Namespace,Box]) -> None:
           log.fatal(f"Cannot set topology value {k}\n... {ex}")
       except Exception as ex:
         log.fatal(f"Cannot set topology value {k}\n... {ex}")
+
+"""
+Read pickled snapshot data
+"""
+def load_pickled_data(snapshot: str) -> Box:
+  try:
+    pfile = open(snapshot,'rb')
+  except Exception as ex:
+    log.fatal(f'Cannot open pickle file {pfile}: {str(ex)}')
+
+  try:
+    data = pickle.load(pfile)
+    if not isinstance(data,dict):
+      log.fatal(f'The picked snapshot {snapshot} contains {type(data)}, not a dictionary')
+    pfile.close()
+  except Exception as ex:
+    log.fatal(f'Cannot read pickled data from {pfile}: {str(ex)}')
+
+  return get_box(data)

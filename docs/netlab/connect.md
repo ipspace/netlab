@@ -35,7 +35,7 @@ The rest of the arguments are passed to SSH or docker exec command
 
 ## Collecting Device Data
 
-**netlab connect** uses the lab snapshot file (default: `netlab.snapshot.yml`) to read device- and node information. You can overwrite the default snapshot file with the `--snapshot` command line parameter.
+**netlab connect** uses the lab snapshot file (default: `netlab.snapshot.pickle`) to read device- and node information. You can overwrite the default snapshot file with the `--snapshot` command line parameter.
 
 **netlab connect** command uses the following device data. Most of that data is derived from the device **group_vars**, although you can override it on [node-](node-ansible-data) or [custom group](groups-object-data) level; use the **[`netlab inspect --node _name_`](inspect.md)** command to inspect it.
 
