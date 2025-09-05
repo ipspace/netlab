@@ -306,11 +306,20 @@ In the above example, the `daemons.j2` Jinja2 template from the configuration fi
 
 [^CFSP]: See [](dev-config-deploy-paths) for more details.
 
-_netlab_ tries to locate the Jinja2 templates in the device-specific **paths.templates.dir** directories[^CFTD]; the template file name is the dictionary key (for example, `daemons`) with the `.j2` suffix.
+_netlab_ tries to locate the Jinja2 templates in the device-specific **paths.templates.dirs** directories[^CFTD]; the template file name is the dictionary key (for example, `daemons`) with the `.j2` suffix.
 
 [^CFTD]: See [](change-search-paths) for more details.
 
-For example, with the default path settings, the user-specified `daemons.j2` template could be in the `templates/frr` subdirectory of the lab topology directory, the current directory, `~/.netlab` directory or `/etc/netlab` directory.
+For example, with the default path settings, the user-specified `daemons.j2` template could be in the `templates/frr` subdirectory of:
+
+* The lab topology directory
+* The current directory
+* The `~/.netlab` directory or
+* The `/etc/netlab` directory.
+
+```{tip}
+The template search path is based on directories existing at the time you run **‌netlab create** or **‌netlab up**. Creating new directories after that point will not change the search path.
+```
 
 You can use the ```clab.config_templates``` node attribute to add your own container configuration files[^UG], for example:
 
