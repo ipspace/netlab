@@ -42,20 +42,25 @@ input:
 - package:topology-defaults.yml
 links:
 - _linkname: links[1]
+  bridge: input_1
   interfaces:
   - ifindex: 1
     ifname: swp1
-    ipv4: 10.1.0.1/30
+    ipv4: 172.16.0.1/24
     node: a
   - ifindex: 1
     ifname: GigabitEthernet0/1
-    ipv4: 10.1.0.2/30
+    ipv4: 172.16.0.5/24
     node: e
+  - ifindex: 1
+    ifname: swp1
+    ipv4: 172.16.0.4/24
+    node: d
   linkindex: 1
-  node_count: 2
+  node_count: 3
   prefix:
-    ipv4: 10.1.0.0/30
-  type: p2p
+    ipv4: 172.16.0.0/24
+  type: lan
 module:
 - ospf
 - bgp
@@ -71,20 +76,23 @@ nodes:
     device: cumulus
     id: 1
     interfaces:
-    - ifindex: 1
+    - bridge: input_1
+      ifindex: 1
       ifname: swp1
-      ipv4: 10.1.0.1/30
+      ipv4: 172.16.0.1/24
       linkindex: 1
-      name: a -> e
+      name: a -> [e,d]
       neighbors:
       - ifname: GigabitEthernet0/1
-        ipv4: 10.1.0.2/30
+        ipv4: 172.16.0.5/24
         node: e
+      - ifname: swp1
+        ipv4: 172.16.0.4/24
+        node: d
       ospf:
         area: 0.0.0.42
-        network_type: point-to-point
         passive: false
-      type: p2p
+      type: lan
     loopback:
       ifindex: 0
       ifname: lo
@@ -161,21 +169,47 @@ nodes:
     - g2b
     device: cumulus
     id: 4
-    interfaces: []
+    interfaces:
+    - bridge: input_1
+      ifindex: 1
+      ifname: swp1
+      ipv4: 172.16.0.4/24
+      linkindex: 1
+      name: d -> [a,e]
+      neighbors:
+      - ifname: swp1
+        ipv4: 172.16.0.1/24
+        node: a
+      - ifname: GigabitEthernet0/1
+        ipv4: 172.16.0.5/24
+        node: e
+      ospf:
+        area: 0.0.0.42
+        passive: false
+      type: lan
     loopback:
       ifindex: 0
       ifname: lo
       ipv4: 10.0.0.4/32
       neighbors: []
+      ospf:
+        area: 0.0.0.42
+        passive: false
       type: loopback
       virtual_interface: true
     mgmt:
       ifname: eth0
       ipv4: 192.168.121.104
       mac: 08:4f:a9:04:00:00
-    module: []
+    module:
+    - ospf
     mtu: 1500
     name: d
+    ospf:
+      af:
+        ipv4: true
+      area: 0.0.0.42
+      router_id: 10.0.0.4
   e:
     af:
       ipv4: true
@@ -204,20 +238,23 @@ nodes:
     device: iosv
     id: 5
     interfaces:
-    - ifindex: 1
+    - bridge: input_1
+      ifindex: 1
       ifname: GigabitEthernet0/1
-      ipv4: 10.1.0.2/30
+      ipv4: 172.16.0.5/24
       linkindex: 1
-      name: e -> a
+      name: e -> [a,d]
       neighbors:
       - ifname: swp1
-        ipv4: 10.1.0.1/30
+        ipv4: 172.16.0.1/24
         node: a
+      - ifname: swp1
+        ipv4: 172.16.0.4/24
+        node: d
       ospf:
         area: 0.0.0.51
-        network_type: point-to-point
         passive: false
-      type: p2p
+      type: lan
     loopback:
       ifindex: 0
       ifname: Loopback0
