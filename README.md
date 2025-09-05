@@ -7,6 +7,9 @@
 * Create Ansible inventory and configuration file
 * Create IPv4 and IPv6 addressing plan and OSPFv2, OSPFv3, EIGRP, IS-IS, RIPv2, RIPng, and BGP routing design
 * Configure IPv4, IPv6, DHCP, DHCPv6, VLANs, VRFs, VXLAN, LLDP, BFD, OSPFv2, OSPFv3, EIGRP, IS-IS, BGP, RIPv2, RIPng, VRRP, LACP, LAG, MLAG, link bonding, STP, anycast gateways, static routes, route maps, prefix lists, AS-path prefix lists, route redistribution, default route origination, MPLS, BGP-LU, L3VPN (VPNv4 + VPNv6), 6PE, EVPN, SR-MPLS, or SRv6 on your lab devices.
+* Create graphs and reports of your lab topology and BGP, IS-IS, and OSPF routing
+* Configure and manage (virtual) link impairment
+* Provide local- or remote traffic capture capabilities
 
 Instead of wasting time creating a lab topology in a GUI and configuring boring details, you'll start with a lab preconfigured according to your specifications.
 
@@ -14,7 +17,7 @@ Interested? [Read the documentation](https://netlab.tools) and [installation gui
 
 ## Releases
 
-The latest release is [release 25.07](https://github.com/ipspace/netlab/releases/tag/release_25.07). It should be pretty stable, but if you encounter bugs, please report them as [GitHub issues](https://github.com/ipspace/netlab/issues/new/choose) and use [release 25.06](https://github.com/ipspace/netlab/releases/tag/release_25.06).
+The latest release is [release 25.09](https://github.com/ipspace/netlab/releases/tag/release_25.09). It should be pretty stable, but if you encounter bugs, please report them as [GitHub issues](https://github.com/ipspace/netlab/issues/new/choose) and use [release 25.07](https://github.com/ipspace/netlab/releases/tag/release_25.07).
 
 <!--
 or [1.8.4-post2](https://github.com/ipspace/netlab/releases/tag/release_1.8.4-post2).

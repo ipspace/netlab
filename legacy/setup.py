@@ -1,11 +1,12 @@
 """ redirect netsim-tools to networklab """
 import sys
-from setuptools import setup, find_packages
 from pathlib import Path
+
+from setuptools import setup
 
 sys.path.append('..')
 
-version="25.07"
+version="25.09"
 
 long_description = (Path(__file__).parent / "README.md").read_text()
 

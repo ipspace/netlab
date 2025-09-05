@@ -1,3 +1,4 @@
+(netlab-cli)=
 # netlab Command Reference
 
 The **netlab** command is the *netlab* CLI interface. It includes data model transformations, lab creation and deletion, device configurations with Ansible playbooks, reporting, and device console connectivity scripts.
