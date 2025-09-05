@@ -29,7 +29,7 @@ You can influence the data model transformation with optional [configuration mod
 * Ansible inventory[^1], either as a single-file data structure, or as a minimal inventory file with data stored primarily in **host_vars** and **group_vars**
 * Various graphs in *graphviz* DOT format
 * YAML or JSON representation of transformed lab topology or parts of the transformed data model
-* Configuration files for [external tools](extools.md)
+* Configuration files for [external tools](tools-intro)
 
 ```{warning}
 **‌netlab create** command refuses to create provider configuration files, Ansible inventory, or `netlab.snapshot.pickle` file if it finds `netlab.lock` file in the current directory. 
