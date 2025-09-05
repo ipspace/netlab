@@ -197,8 +197,16 @@ class _Provider(Callback):
       except ValueError:
         continue
 
-      # The template name is the file name part of the path
-      file_rel = full_out_path.name
+      # We have to recover the template name from the final (local) file name
+      # If the final file name is within the provider/node directory, the template
+      # name is the rest of the path (which might be a file name or a relative path)
+      # otherwise the template name is just the file name (used for shared files)
+      #
+      try:
+        file_rel = str(full_out_path.relative_to(base_path / node.name))
+      except ValueError:
+        file_rel = full_out_path.name
+
       if not file_rel:
         # nothing to render
         continue
