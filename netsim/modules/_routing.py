@@ -370,6 +370,8 @@ def remove_unused_igp(node: Box, proto: str, remove_module: bool = True) -> bool
 
   if not any(proto in ifdata for ifdata in node.interfaces):                # Is protocol configured on any non-loopback interface?
     node.pop(proto,None)                                                    # ... no, remove protocol data from node
+    if isinstance(node.get('loopback',None),Box):                           # Do we have a usable loopback interface on the node?
+      node.loopback.pop(proto,None)                                         # ... remove protocol data from loopback
 
   if proto in node and 'af' in node[proto] and node[proto].af:              # Is at least one global AF active for the protocol?
     return False                                                            # ... OK, we're good
