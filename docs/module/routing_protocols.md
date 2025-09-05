@@ -131,13 +131,15 @@ As a workaround, set the **‌nodes._node_.vlans._name_.role** node VLAN paramet
 (routing_disable)=
 ## Disabling a Routing Protocol on a Link/Interface
 
-IGP protocols are usually configured on all internal interfaces (see [](routing_external) for more details). You can disable an IGP protocol on a link or an individual interface with the **_protocol_: False** attribute, for example:
+IGP protocols are usually configured on all internal interfaces (see [](routing_external) for more details). You can disable an IGP protocol on a link, an individual interface, or a loopback interface with the **_protocol_: False** attribute, for example:
 
 ```
 module: [ ospf ]
 
 nodes:
   r1:
+    loopback:
+      ospf: False   # Do not include loopback in the OSPF process
   r2:
 
 links:

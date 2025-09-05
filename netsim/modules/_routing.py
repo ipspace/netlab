@@ -201,6 +201,9 @@ def add_loopback_igp(node: Box, proto: str, topology: Box) -> None:
   if 'loopback' not in node:                                # Node working in host mode, no loopback
     return
 
+  if node.loopback.get(proto) is False:
+    return
+
   d_feature = devices.get_device_features(node,topology.defaults)
   lb_data = d_feature[proto].get('loopback',{})             # Get device-specific loopback info (if present)
   if not isinstance(lb_data,Box):                           # Sanity check
@@ -362,8 +365,13 @@ def remove_unaddressed_intf(node: Box, proto: str) -> None:
 # remove_unused_igp -- remove IGP module if it's not configured on any interface
 #
 def remove_unused_igp(node: Box, proto: str, remove_module: bool = True) -> bool:
+  if 'loopback' in node and node.loopback.get(proto) is False:              # Deal with IGP disabled on the loopback interface
+    node.loopback.pop(proto,None)
+
   if not any(proto in ifdata for ifdata in node.interfaces):                # Is protocol configured on any non-loopback interface?
     node.pop(proto,None)                                                    # ... no, remove protocol data from node
+    if isinstance(node.get('loopback',None),Box):                           # Do we have a usable loopback interface on the node?
+      node.loopback.pop(proto,None)                                         # ... remove protocol data from loopback
 
   if proto in node and 'af' in node[proto] and node[proto].af:              # Is at least one global AF active for the protocol?
     return False                                                            # ... OK, we're good
@@ -820,11 +828,11 @@ def igp_post_transform(
   if propagate is not None:
     propagate(node,topology)
   
+  add_loopback_igp(node,proto,topology)
   check_interface_af(node,proto)
   if remove_unused_igp(node,proto):
     return
 
-  add_loopback_igp(node,proto,topology)
   process_imports(node,proto,topology,['bgp','connected'])
   process_default_route(node,proto,topology)
 

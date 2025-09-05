@@ -90,6 +90,15 @@ def validate(topology: Box) -> None:
       module='nodes',                                 # Function is called from 'nodes' module
       ignored=['_','netlab_','ansible_'],             # Ignore attributes starting with _, netlab_ or ansible_
       extra_attributes=extra)                         # Allow provider- and tool-specific settings
+    if 'loopback' in n_data and isinstance(n_data.loopback,Box):
+      validate_attributes(
+        data=n_data.loopback,                         # Validate loopback data
+        topology=topology,
+        data_path=f'nodes.{n_name}.loopback',         # Topology path to node loopback
+        data_name=f'loopback',
+        attr_list=['loopback'],                       # We're checking loopback attributes
+        modules=n_data.get('module',[]),              # ... against node modules
+        module='nodes')                               # Function is called from 'nodes' module
 
 """
 Sets missing management interface names and MAC, IPv4, and IPv6 addresses from the mgmt pool

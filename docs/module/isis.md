@@ -122,7 +122,7 @@ The IS-IS configuration module is automatically removed from a node that does no
 
 ## Link Parameters
 
-IS-IS is automatically started on all interfaces within an autonomous system (interfaces with no EBGP neighbors; see also [](routing_external)). To disable IS-IS on an intra-AS link, set the **isis** link parameter to *False* (see also [](routing_disable)).
+IS-IS is automatically started on all interfaces within an autonomous system (interfaces with no EBGP neighbors; see also [](routing_external)). To disable IS-IS on an intra-AS link or a loopback interface, set the **isis** link/interface parameter to *False* (see also [](routing_disable)).
 
 You can also set these parameters on links or interfaces:
 
@@ -130,6 +130,10 @@ You can also set these parameters on links or interfaces:
 * **isis.network_type** -- Set IS-IS network type. Valid values are **point-to-point** or *False* (do not set the network type). See also [Default Link Parameters](#default-link-parameters).
 * **isis.metric** or **isis.cost** -- Interface cost. Both parameters are recognized to make IS-IS configuration similar to OSPF (*metric* takes precedence over *cost*)
 * **isis.bfd** -- enable or disable BFD on individual interfaces. Like with the node-level **isis.bfd** parameter, this parameter could be a boolean value (*True* to enable BFD for all address families, *False* to disable IS-IS BFD on the interface) or a dictionary of address families, for example:
+
+You can also set **isis.type** and **isis.metric** on the **loopback** interface[^LBI].
+
+[^LBI]: Loopback metrics might not be implemented in all IS-IS configuration templates.
 
 Example:
 
