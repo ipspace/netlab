@@ -212,7 +212,7 @@ class _Provider(Callback):
         continue
 
       # For shared files, extract the original file name (remove 'shared-' prefix)
-      template_fname = file_rel.removeprefix(self.SHARED_PREFIX)
+      template_fname = strings.removeprefix(file_rel,self.SHARED_PREFIX)
 
       template_name = self.find_extra_template(node, template_fname, topology)
       if not template_name:
