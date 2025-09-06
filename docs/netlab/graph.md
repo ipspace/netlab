@@ -10,9 +10,8 @@ You will have to install [Graphviz](https://graphviz.org/download/) or [D2](http
 ## Usage
 
 ```text
-usage: netlab graph [-h] [-t {topology,bgp}] [-e {graphviz,d2}] [-i INSTANCE]
-                    [--snapshot [SNAPSHOT]]
-                    [output]
+usage: netlab graph [-h] [-t {topology,bgp}] [-f G_FORMAT] [-e {graphviz,d2}]
+                    [-i INSTANCE] [--snapshot [SNAPSHOT]] [output]
 
 Create a graph description in Graphviz or D2 format
 
@@ -23,6 +22,8 @@ options:
   -h, --help            show this help message and exit
   -t {topology,bgp}, --type {topology,bgp}
                         Graph type
+  -f, --format G_FORMAT
+                        Graph formatting parameters separated by commas
   -e {graphviz,d2}, --engine {graphviz,d2}
                         Graphing engine
   -i INSTANCE, --instance INSTANCE
@@ -39,3 +40,4 @@ When executed with the `--instance` option, **‌netlab graph** creates the grap
 
 * **netlab graph** creates lab topology graph in Graphviz format
 * **netlab graph -e d2 -t bgp** creates a graph of BGP sessions in D2 format.
+* **netlab graph -t bgp -f vrf** creates a graph of BGP sessions with VRF sessions show as dashed lines ([more details](outputs-graph-bgp-parameters))

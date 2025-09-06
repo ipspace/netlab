@@ -44,7 +44,7 @@ These default settings modify how the BGP graphs look:
 * **outputs.graph.bgp.af._af_** (default: all address families) -- when one or more **af** parameters (valid keys: **ipv4**, **ipv6**, **vpnv4**, **vpnv6**, **6pe**, **evpn**) are set to *True*, the graph is limited to BGP sessions of the specified address families.
 * **outputs.graph.bgp.novrf** (default: False) -- do not include VRF BGP sessions in the graph
 
-You can specify the above BGP parameters in the *graph format* CLI argument.
+You can specify the above BGP parameters in the *graph format* CLI argument, for example `netlab create -o graph:bgp:vrf` or `netlab graph -t bgp -f vrf`.
 
 (outputs-graph-styles)=
 ## Graph Object Styles
