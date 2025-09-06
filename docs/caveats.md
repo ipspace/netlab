@@ -350,6 +350,9 @@ You can change the license file parameters within a node definition or with **de
 
 * *netlab* supports only vJunosEvolved releases that do not require external PFE- and RPIO links. The first vJunosEvolved release implementing internal PFE- and RPIO links is the release 23.2R1-S1.8.
 * vJunosEvolved software is supposed to be run on an Intel CPU. _netlab_ implements the hacks [suggested by Juniper to run vJunos on an AMD CPU](https://www.juniper.net/documentation/us/en/software/nce/nce-510-virtual-switches-mist-cloud-managed/amd-cpu_unofficial_tweaks.html), but please note that this is not supported.
+* _netlab_ can start virtual machines running vJunosEvolved release 23.2 (release 24.1 and later requires UEFI BIOS). Use the vrnetlab-generated container as a workaround if you want to run vJunosEvolved release 24.1 or later.
+* _netlab_ supports the [vrnetlab-generated](https://containerlab.dev/manual/kinds/vr-vjunosevolved/) vJunosEvolved container, not the cJunosEvolved container. The differences between the two make it impossible to run both container versions as the same virtual device, and cJunosEvolved offers no significant advantages at the moment.
+* The vJunosEvolved container runs on Intel and AMD CPU.
 * The virtual MAC address of the anycast gateway is ignored. _netlab_, therefore, does not support the anycast gateway on vPTX.
 
 The rest of this section lists information you might find helpful if you're a long-time Junos user:
