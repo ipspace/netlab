@@ -109,18 +109,25 @@ def edge_p2p(f : typing.TextIO, l: Box, labels: typing.Optional[bool] = False) -
 '''
 Create a group container (or ASN container)
 '''
-def d2_cluster_start(f : typing.TextIO, asn: str, label: typing.Optional[str], settings: Box) -> None:
+def d2_cluster_start(
+      f : typing.TextIO,
+      settings: Box,
+      asn: str, 
+      label: typing.Optional[str] = None,
+      title: typing.Optional[str] = None) -> None:
   f.write(f'{asn} {{\n')
-  copy_d2_attr(f,'container',settings,'-  ')
+  copy_d2_attr(f,'container',settings,'  ')
   asn = asn.replace('_',' ')
-  f.write('  label: '+ (f'{label} ({asn})' if label else asn)+'\n')
+  if not title:
+    title = f'{label} ({asn})' if label else asn
+  f.write(f'  label: {title}\n')
 
 '''
 Create graph containers
 '''
 def d2_clusters(f: typing.TextIO, graph: Box, topology: Box, settings: Box) -> None:
   for c_name,c_data in graph.clusters.items():
-    d2_cluster_start(f,c_name,c_data.get('name',None),settings)
+    d2_cluster_start(f,asn=c_name,label=c_data.get('name',None),settings=settings)
     for n in c_data.nodes.values():
       node_with_label(f,n,settings,'  ')          # Create a node within a cluster
       n_data = graph.nodes[n.name]                # Get pointer to graph node data
@@ -128,6 +135,19 @@ def d2_clusters(f: typing.TextIO, graph: Box, topology: Box, settings: Box) -> N
       n_data.d2.cluster = c_name                  # ... and mark it's part of a cluster
 
     f.write('}\n')
+
+'''
+Graph title
+'''
+def d2_graph(f: typing.TextIO, topology: Box, settings: Box) -> None:
+  title = topology.get('graph.title') or topology.get('defaults.graph.title')
+  if not title:
+    return
+
+  title_settings = get_box(settings)
+  title_settings.styles.container = title_settings.styles.title
+  d2_cluster_start(f,asn='title',title=title,settings=title_settings)
+  f.write('}\n')
 
 def d2_nodes(f: typing.TextIO, graph: Box, topology: Box, settings: Box) -> None:
   for n_name,n_data in graph.nodes.items():
@@ -151,6 +171,7 @@ def graph_topology(topology: Box, fname: str, settings: Box,g_format: typing.Opt
   graph = topology_graph(topology,settings,'d2')
   f = _files.open_output_file(fname)
 
+  d2_graph(f,topology,settings)
   d2_clusters(f,graph,topology,settings)
   d2_nodes(f,graph,topology,settings)
   d2_links(f,graph,topology,settings)
@@ -167,6 +188,7 @@ def graph_bgp(topology: Box, fname: str, settings: Box, g_format: typing.Optiona
 
   f = _files.open_output_file(fname)
 
+  d2_graph(f,topology,settings)
   d2_clusters(f,graph,topology,settings)
   d2_nodes(f,graph,topology,settings)
 
