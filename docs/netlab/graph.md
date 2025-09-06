@@ -33,7 +33,8 @@ options:
 ```
 
 ```{tip}
-When executed with the `--instance` option, **‌netlab graph** creates the graph description file in the lab directory.
+* When executed with the `--instance` option, **‌netlab graph** creates the graph description file in the lab directory.
+* You can use [_netlab_ environment variables](defaults-env) to change the graph appearance ([graphviz](outputs-graph-appearance), [d2](outputs-d2-graph-appearance))
 ```
 
 ## Examples

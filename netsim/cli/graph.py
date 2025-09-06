@@ -8,6 +8,7 @@ import typing
 
 from ..outputs import _TopologyOutput
 from ..utils import log
+from ..utils import read as _read
 from . import load_snapshot, parser_lab_location
 
 
@@ -44,6 +45,7 @@ def graph_parse(args: typing.List[str]) -> argparse.Namespace:
 def run(cli_args: typing.List[str]) -> None:
   args = graph_parse(cli_args)
   topology = load_snapshot(args)
+  _read.include_environment_defaults(topology)
   o_module = 'graph' if args.engine == 'graphviz' else 'd2'
   o_param  = f'{o_module}:{args.g_type or "topology"}'
   if args.g_format:
