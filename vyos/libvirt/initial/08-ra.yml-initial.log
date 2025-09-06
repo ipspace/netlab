@@ -1,0 +1,910 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
+[WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+[WARNING]: Found variable using reserved name: hosts
+
+PLAY [Deploy initial device configuration] *************************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [h4]
+ok: [dhsrv]
+ok: [dut]
+ok: [h0]
+ok: [h1]
+ok: [h2]
+ok: [h3]
+
+TASK [Find device readiness script] ********************************************
+ok: [h4]
+ok: [dhsrv]
+ok: [dut]
+ok: [h0]
+ok: [h1]
+ok: [h2]
+ok: [h3]
+
+TASK [Wait for device to become ready] *****************************************
+skipping: [h4]
+skipping: [dhsrv]
+skipping: [dut]
+skipping: [h0]
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+
+TASK [Normalize config on bridge-like devices] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h4, dhsrv, dut, h0, h1, h2, h3
+
+TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [h4]
+ok: [dhsrv]
+ok: [dut]
+ok: [h0]
+ok: [h1]
+ok: [h2]
+ok: [h3]
+
+TASK [Find configuration template for normalize] *******************************
+ok: [h4]
+ok: [dhsrv]
+ok: [dut]
+ok: [h0]
+ok: [h1]
+ok: [h2]
+ok: [h3]
+
+TASK [fail] ********************************************************************
+skipping: [h4]
+skipping: [dhsrv]
+skipping: [dut]
+skipping: [h0]
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+
+TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [h4]
+ok: [dhsrv]
+ok: [dut]
+ok: [h0]
+ok: [h2]
+ok: [h1]
+ok: [h3]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [h4]
+skipping: [dhsrv]
+skipping: [dut]
+skipping: [h0]
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+
+TASK [Deploy normalize configuration] ******************************************
+skipping: [h4]
+skipping: [dhsrv]
+skipping: [dut]
+skipping: [h0]
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h4, dhsrv, dut, h0, h1, h2, h3
+
+TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [h4]
+ok: [dhsrv]
+ok: [dut]
+ok: [h0]
+ok: [h1]
+ok: [h2]
+ok: [h3]
+
+TASK [Find configuration template for initial] *********************************
+ok: [h4]
+ok: [dhsrv]
+ok: [dut]
+ok: [h1]
+ok: [h0]
+ok: [h2]
+ok: [h3]
+
+TASK [fail] ********************************************************************
+skipping: [h4]
+skipping: [dhsrv]
+skipping: [dut]
+skipping: [h0]
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [h4]
+ok: [dhsrv]
+ok: [dut]
+ok: [h0]
+ok: [h1]
+ok: [h3]
+ok: [h2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dhsrv] => 
+  msg: |-
+    initial configuration for dhsrv
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+  
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:1:4::2/64 dev eth1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:1:4::2/64 dev eth1
+    ip link set dev eth1 mtu 1500
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+  
+    configure
+    set system host-name 'dut'
+  
+  
+    set interfaces dummy dum0 address 2001:db8:0:84::1/64
+  
+  
+  
+    set interfaces ethernet eth1 description 'Regular link (default RA behavior) [stub]'
+  
+  
+  
+    set interfaces ethernet eth1 address 2001:db8:1::84/64;
+  
+  
+  
+  
+    set interfaces ethernet eth2 description 'no RA [stub]'
+  
+  
+  
+    set interfaces ethernet eth2 address 2001:db8:1:1::84/64;
+  
+  
+  
+  
+    set interfaces ethernet eth3 description 'No SLAAC [stub]'
+  
+  
+  
+    set interfaces ethernet eth3 address 2001:db8:1:2::84/64;
+  
+  
+  
+  
+    set interfaces ethernet eth4 description 'No onlink [stub]'
+  
+  
+  
+    set interfaces ethernet eth4 address 2001:db8:1:3::84/64;
+  
+  
+  
+  
+    set interfaces ethernet eth5 description 'DHCPv6 managed config'
+  
+  
+  
+    set interfaces ethernet eth5 address 2001:db8:1:4::84/64;
+  
+  
+  
+    set service lldp interface all
+    >/dev/null 2>/dev/null set service lldp interface eth0 disable
+    >/dev/null 2>/dev/null set service lldp interface eth0 mode disable
+  
+    set service router-advert interface eth1
+    set service router-advert interface eth2
+    set service router-advert interface eth3
+    set service router-advert interface eth4
+    set service router-advert interface eth5
+  
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
+  
+    # Restart FRR to pick up the new hostname
+    sudo service frr restart
+ok: [h4] => 
+  msg: |-
+    initial configuration for h4
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)$ "
+    SCRIPT
+    hostname h4
+    #
+    # Build hosts file
+    #
+    #
+    cat <<SCRIPT >/tmp/hosts
+    #
+    # Created by netlab initial
+    #
+    2001:db8:1:4::2 dhsrv eth1.dhsrv
+    2001:db8:0:84::1 dut
+    2001:db8:1::84 eth1.dut
+    2001:db8:1:1::84 eth2.dut
+    2001:db8:1:2::84 eth3.dut
+    2001:db8:1:3::84 eth4.dut
+    2001:db8:1:4::84 eth5.dut
+    SCRIPT
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
+    # It seems on the Vagrant box for ubuntu 20.04, DNS Servers are hardcoded as 4.2.2.1 & Co.
+    # This is annoying on a network with filtered DNS.
+    # DNSMasq server used for giving out DHCP addresses on the management network is able to act as a DNS Server.
+    # Let's use that.
+    #
+    # (Overwrite netplan config to remove DNS stuff)
+    echo -n 'Starting initial config ' && date
+    cat <<SCRIPT >/etc/netplan/01-netcfg.yaml
+    network:
+      version: 2
+      renderer: networkd
+      ethernets:
+        eth0:
+          dhcp4: true
+          dhcp6: false
+          optional: true
+    SCRIPT
+    netplan apply
+  
+    # (Overwrite resolved config to remove DNS stuff)
+    cat <<SCRIPT > /etc/systemd/resolved.conf
+    [Resolve]
+    DNS=
+    FallbackDNS=
+    Domains=
+    DNSOverTLS=no
+    Cache=yes
+    DNSStubListener=yes
+    SCRIPT
+  
+    systemctl restart systemd-resolved
+  
+    # Set persistent hostname
+    hostnamectl set-hostname h4
+  
+    NEED_APT_UPDATE=YES
+  
+    # Loopback addressing
+  
+    # Interface addressing and bonds, including any static routes
+    cat <<SCRIPT > /etc/netplan/03-eth-eth1.yaml
+    network:
+      version: 2
+      renderer: networkd
+      ethernets:
+        eth1:
+          dhcp6: true
+          accept-ra: true
+    SCRIPT
+  
+    # Disable auto-negotiation on Ethernet interfaces, needed to make LACP work correctly
+    cat <<SCRIPT > /etc/systemd/network/98-eth.link
+  
+    [Match]
+    OriginalName=eth*
+  
+    [Link]
+    BitsPerSecond=1G
+    AutoNegotiation=no
+    Duplex=full
+    SCRIPT
+  
+    chmod 400 /etc/netplan/*
+  
+    echo -n 'Starting netplan generate ' && date
+    netplan generate
+    echo -n 'Starting netplan apply ' && date
+    netplan apply
+  
+    #
+    # Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA
+    # Do this after 'netplan apply', e.g. bond devices won't exist before that
+    #
+    cat <<SCRIPT > /etc/sysctl.d/10-netsim.conf
+    net.ipv4.conf.all.arp_announce=2
+    net.ipv4.ip_forward=0
+    net.ipv6.conf.all.forwarding=0
+  
+    net.ipv6.conf.eth1.disable_ipv6=1
+  
+    SCRIPT
+    sysctl -p /etc/sysctl.d/10-netsim.conf
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.autoconf=1
+    sysctl -qw net.ipv6.conf.eth1.accept_ra=1
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname h2
+    !
+    log file /tmp/logging
+  
+    !
+    no ip forwarding
+    no ipv6 forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface eth1
+     no shutdown
+     description No SLAAC [stub]
+     ! no ip address
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    !
+    exit 0
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.autoconf=1
+    sysctl -qw net.ipv6.conf.eth1.accept_ra=1
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname h1
+    !
+    log file /tmp/logging
+  
+    !
+    no ip forwarding
+    no ipv6 forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface eth1
+     no shutdown
+     description no RA [stub]
+     ! no ip address
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    !
+    exit 0
+ok: [h0] => 
+  msg: |-
+    initial configuration for h0
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.autoconf=1
+    sysctl -qw net.ipv6.conf.eth1.accept_ra=1
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname h0
+    !
+    log file /tmp/logging
+  
+    !
+    no ip forwarding
+    no ipv6 forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface eth1
+     no shutdown
+     description Regular link (default RA behavior) [stub]
+     ! no ip address
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    !
+    exit 0
+ok: [h3] => 
+  msg: |-
+    initial configuration for h3
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.autoconf=1
+    sysctl -qw net.ipv6.conf.eth1.accept_ra=1
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname h3
+    !
+    log file /tmp/logging
+  
+    !
+    no ip forwarding
+    no ipv6 forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface eth1
+     no shutdown
+     description No onlink [stub]
+     ! no ip address
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    !
+    exit 0
+
+TASK [Deploy initial configuration] ********************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux.yml for h4
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for dhsrv
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/vyos.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for h0, h1, h2, h3
+
+TASK [template] ****************************************************************
+changed: [h4]
+
+TASK [Execute /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux.j2] ***
+changed: [h4]
+
+TASK [Define script filename and determine whether to execute in netns] ********
+ok: [dhsrv]
+
+TASK [Create a temporary file for the rendered script] *************************
+changed: [dhsrv -> localhost]
+
+TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
+changed: [dhsrv -> localhost]
+
+TASK [Copy script into running container at /tmp/config-dhsrv_initial.sh] ******
+skipping: [dhsrv]
+
+TASK [Execute /tmp/config-dhsrv_initial.sh to deploy initial config based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
+skipping: [dhsrv]
+
+TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
+changed: [dhsrv -> localhost]
+
+TASK [Remove temporary file /tmp/dhsrv_initial-svfs9rmt.sh] ********************
+changed: [dhsrv -> localhost]
+
+TASK [set_fact] ****************************************************************
+ok: [dut]
+
+TASK [template] ****************************************************************
+changed: [dut]
+
+TASK [execute config-initial.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/vyos.j2] ***
+changed: [dut]
+
+TASK [Attempt to load VRF kernel module] ***************************************
+changed: [h0 -> localhost]
+
+TASK [Disable FRR management VRF when modprobe fails] **************************
+skipping: [h0]
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+
+TASK [include_tasks] ***********************************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for h0, h1, h2, h3
+
+TASK [template] ****************************************************************
+changed: [h0]
+changed: [h1]
+changed: [h3]
+changed: [h2]
+
+TASK [set_fact] ****************************************************************
+ok: [h0]
+ok: [h1]
+ok: [h2]
+ok: [h3]
+
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+changed: [h0]
+changed: [h1]
+changed: [h2]
+changed: [h3]
+
+TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+skipping: [h0]
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+
+PLAY [Deploy module-specific configurations] ***********************************
+
+TASK [Set variables that cannot be set with VARS] ******************************
+ok: [h4]
+ok: [dhsrv]
+
+TASK [Deploy individual configuration modules] *********************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h4, dhsrv => (item=dhcp)
+
+TASK [Figure out whether to deploy the module dhcp on current device] **********
+ok: [h4]
+ok: [dhsrv]
+
+TASK [Find configuration template for dhcp] ************************************
+skipping: [dhsrv]
+ok: [h4]
+
+TASK [fail] ********************************************************************
+skipping: [h4]
+skipping: [dhsrv]
+
+TASK [Find configuration deployment deploy_script for dhcp] ********************
+skipping: [dhsrv]
+ok: [h4]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dhsrv]
+ok: [h4] => 
+  msg: |-
+    dhcp configuration for h4
+    =========================================
+    # This is a placeholder file. DHCP is configured during initial configuration
+    #
+    if [ `grep 'ID=ubuntu' /etc/os-release` ]; then
+      echo "DHCP is supported, it should work after another plea to netplan"
+      netplan apply
+    else
+      echo "netlab supports DHCP only on Ubuntu" >&2
+      exit 1
+    fi
+
+TASK [Deploy dhcp configuration] ***********************************************
+skipping: [dhsrv]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/linux/dhcp.yml for h4
+
+TASK [Install dnsmasq] *********************************************************
+skipping: [h4]
+
+TASK [Install isc-dhcp-relay] **************************************************
+skipping: [h4]
+
+TASK [Create DHCP deployment script] *******************************************
+changed: [h4]
+
+TASK [Execute /tmp/config.sh to deploy dhcp config from /home/pipi/netlab_gh/netsim/ansible/templates/dhcp/linux.j2] ***
+changed: [h4]
+
+PLAY [Deploy custom deployment templates] **************************************
+skipping: no hosts matched
+
+PLAY RECAP *********************************************************************
+dhsrv                      : ok=20   changed=4    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+dut                        : ok=15   changed=2    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
+h0                         : ok=17   changed=3    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+h1                         : ok=16   changed=2    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+h2                         : ok=16   changed=2    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+h3                         : ok=16   changed=2    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+h4                         : ok=23   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+
+
+
+This scenario tests IPv6 RA behavior
