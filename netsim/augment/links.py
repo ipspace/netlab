@@ -1152,7 +1152,7 @@ def process_link_ra(link: Box, nodes: Box, defaults: Box) -> None:
 
   if 'ra' in link and not rtr_list:                         # Link RA attribute with no hosts attached
     log.warning(                                            # ... doesn't make much sense either
-      text='Cannot use link IPv6 RA attributes on link {link._linkname} with no routers',
+      text=f'Cannot use link IPv6 RA attributes on link {link._linkname} with no routers',
       module='links',flag='ra_useless')
     return
 
@@ -1186,7 +1186,7 @@ def process_link_ra(link: Box, nodes: Box, defaults: Box) -> None:
 
   if link_ra and not ra_supported:                          # Does at least one node on the link supports RA?
     log.warning(
-      text='None of the routers connected to link {link._linkname} supports netlab IPv6 RA attributes',
+      text=f'None of the routers connected to link {link._linkname} supports netlab IPv6 RA attributes',
       module='links',flag='ra_unsupported')
 
   return
