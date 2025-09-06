@@ -159,6 +159,9 @@ ok: [x1] =>
     cat >/tmp/config <<CONFIG
     hostname x1
     !
+    log file /tmp/logging
+  
+    !
     ipv6 forwarding
     vrf mgmt
      exit-vrf
@@ -181,6 +184,7 @@ ok: [x1] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [x2] => 
   msg: |-
@@ -266,6 +270,9 @@ ok: [x2] =>
     cat >/tmp/config <<CONFIG
     hostname x2
     !
+    log file /tmp/logging
+  
+    !
     ipv6 forwarding
     vrf mgmt
      exit-vrf
@@ -288,6 +295,7 @@ ok: [x2] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [dut] => 
   msg: |-
@@ -296,6 +304,8 @@ ok: [dut] =>
     hostname dut
     !
     no ip domain lookup
+    logging buffered 256000
+  
     !
     lldp run
     !
@@ -317,12 +327,14 @@ ok: [dut] =>
     interface GigabitEthernet2
      description dut -> x1
      mtu 1500
+     ipv6 nd ra interval 5
      ipv6 address 2001:DB8:3::1/64
      no shutdown
     !
     interface GigabitEthernet3
      description dut -> x2
      mtu 1500
+     ipv6 nd ra interval 5
      ipv6 address 2001:DB8:3:1::1/64
      no shutdown
     !
@@ -355,8 +367,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -477,11 +489,13 @@ ok: [dut] =>
     ! dut -> x1
       ipv6 router isis Gandalf
       isis network point-to-point
+      isis three-way-handshake ietf
     !
     interface GigabitEthernet3
     ! dut -> x2
       ipv6 router isis Gandalf
       isis network point-to-point
+      isis three-way-handshake ietf
     !
     !
     router isis Gandalf
@@ -501,8 +515,8 @@ TASK [ios_config: deploying isis from /home/pipi/netlab_gh/netsim/ansible/templa
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -513,8 +527,8 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [run vtysh to import isis config from /home/pipi/netlab_gh/netsim/ansible/templates/isis/frr.j2] ***
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched

@@ -6,8 +6,8 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [r2]
 ok: [r3]
-ok: [dut]
 ok: [rs]
+ok: [dut]
 
 TASK [Find device readiness script] ********************************************
 ok: [r2]
@@ -19,7 +19,7 @@ TASK [Wait for device to become ready] *****************************************
 skipping: [r2]
 skipping: [r3]
 skipping: [rs]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/iol-clab.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/iol-clab.yml for dut
 
 TASK [Check if 'sshpass' is installed] *****************************************
 ok: [dut -> localhost]
@@ -37,7 +37,7 @@ ok: [dut] =>
   msg: Node dut is ready.
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, r3, rs
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r2, r3, rs
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [r2]
@@ -76,7 +76,7 @@ skipping: [r3]
 skipping: [rs]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, r3, rs
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r2, r3, rs
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [r2]
@@ -186,6 +186,9 @@ ok: [r2] =>
     cat >/tmp/config <<CONFIG
     hostname r2
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -204,6 +207,7 @@ ok: [r2] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [r3] => 
   msg: |-
@@ -288,6 +292,9 @@ ok: [r3] =>
     cat >/tmp/config <<CONFIG
     hostname r3
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -306,6 +313,7 @@ ok: [r3] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [rs] => 
   msg: |-
@@ -390,6 +398,9 @@ ok: [rs] =>
     cat >/tmp/config <<CONFIG
     hostname rs
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -408,6 +419,7 @@ ok: [rs] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [dut] => 
   msg: |-
@@ -416,6 +428,8 @@ ok: [dut] =>
     hostname dut
     !
     no ip domain lookup
+    logging buffered 256000
+  
     !
     lldp run
     !
@@ -454,10 +468,10 @@ ok: [dut] =>
     no banner incoming
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for r2, r3, rs
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for r2, r3, rs
 
-TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
+TASK [ios_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/ios.j2] ***
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
 should be similar to how they appear if present in the running configuration on
 device including the indentation
@@ -472,11 +486,11 @@ skipping: [r3]
 skipping: [rs]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r2, r3, rs
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for r2, r3, rs
 
 TASK [template] ****************************************************************
-changed: [r2]
 changed: [rs]
+changed: [r2]
 changed: [r3]
 
 TASK [set_fact] ****************************************************************
@@ -484,12 +498,12 @@ ok: [r2]
 ok: [r3]
 ok: [rs]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [r3]
-changed: [r2]
 changed: [rs]
+changed: [r2]
 
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r2]
 skipping: [r3]
 skipping: [rs]
@@ -503,7 +517,7 @@ ok: [rs]
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, r3, rs => (item=bgp)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r2, r3, rs => (item=bgp)
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [r2]
@@ -540,7 +554,6 @@ ok: [r2] =>
       no bgp default ipv4-unicast
       bgp default show-hostname
       bgp default show-nexthop-hostname
-  
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
@@ -575,7 +588,6 @@ ok: [r3] =>
       no bgp default ipv4-unicast
       bgp default show-hostname
       bgp default show-nexthop-hostname
-  
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
@@ -610,7 +622,6 @@ ok: [rs] =>
       no bgp default ipv4-unicast
       bgp default show-hostname
       bgp default show-nexthop-hostname
-  
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
@@ -682,36 +693,36 @@ ok: [dut] =>
     !
 
 TASK [Deploy bgp configuration] ************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r2, r3, rs
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r2, r3, rs
 
-TASK [ios_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/ios.j2] ***
+TASK [ios_config: deploying bgp from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/ios.j2] ***
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [r3]
 changed: [r2]
 changed: [rs]
+changed: [r3]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
 ok: [r3]
 ok: [rs]
 
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [r2]
 skipping: [r3]
 skipping: [rs]
 
-TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [r3]
+TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [r2]
+changed: [r3]
 changed: [rs]
 
 PLAY [Deploy custom deployment templates] **************************************
 
 TASK [Run custom configuration deployment scripts] *****************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-custom-config.yml for dut, r2, rs => (item=bgp.session)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-custom-config.yml for dut, r2, rs => (item=bgp.session)
 
 TASK [Find configuration template] *********************************************
 ok: [r2]
@@ -724,8 +735,8 @@ skipping: [r2]
 skipping: [rs]
 
 TASK [Check is the configuration template is a file] ***************************
-ok: [r2 -> localhost]
 ok: [dut -> localhost]
+ok: [r2 -> localhost]
 ok: [rs -> localhost]
 
 TASK [fail] ********************************************************************
@@ -733,7 +744,7 @@ skipping: [dut]
 skipping: [r2]
 skipping: [rs]
 
-TASK [Process template /home/pipi/net101/tools/netsim/extra/bgp.session/ios.j2 for dut] ***
+TASK [Process template /home/pipi/netlab_gh/netsim/extra/bgp.session/ios.j2 for dut] ***
 skipping: [r2]
 skipping: [rs]
 skipping: [dut]
@@ -744,25 +755,25 @@ ok: [rs]
 ok: [dut]
 
 TASK [Run the configuration deployment script] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r2, rs
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r2, rs
 
-TASK [ios_config: deploying bgp.session from /home/pipi/net101/tools/netsim/extra/bgp.session/ios.j2] ***
+TASK [ios_config: deploying bgp.session from /home/pipi/netlab_gh/netsim/extra/bgp.session/ios.j2] ***
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [rs]
 changed: [r2]
+changed: [rs]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
 ok: [rs]
 
-TASK [run /tmp/config.sh to deploy bgp.session config from /home/pipi/net101/tools/netsim/extra/bgp.session/frr.j2] ***
-changed: [r2]
+TASK [run /tmp/config.sh to deploy bgp.session config from /home/pipi/netlab_gh/netsim/extra/bgp.session/frr.j2] ***
 changed: [rs]
+changed: [r2]
 
-TASK [run vtysh to import bgp.session config from /home/pipi/net101/tools/netsim/extra/bgp.session/frr.j2] ***
+TASK [run vtysh to import bgp.session config from /home/pipi/netlab_gh/netsim/extra/bgp.session/frr.j2] ***
 skipping: [r2]
 skipping: [rs]
 

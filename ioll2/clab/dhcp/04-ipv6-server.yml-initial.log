@@ -27,8 +27,8 @@ ok: [c2 -> localhost]
 TASK [Execute local ssh command to check iol readiness] ************************
 FAILED - RETRYING: [c1 -> localhost]: Execute local ssh command to check iol readiness (20 retries left).
 FAILED - RETRYING: [c2 -> localhost]: Execute local ssh command to check iol readiness (20 retries left).
-FAILED - RETRYING: [c1 -> localhost]: Execute local ssh command to check iol readiness (19 retries left).
 FAILED - RETRYING: [c2 -> localhost]: Execute local ssh command to check iol readiness (19 retries left).
+FAILED - RETRYING: [c1 -> localhost]: Execute local ssh command to check iol readiness (19 retries left).
 ok: [c2 -> localhost]
 ok: [c1 -> localhost]
 
@@ -121,42 +121,6 @@ ok: [c2]
 ok: [server]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [c2] => 
-  msg: |-
-    initial configuration for c2
-    =========================================
-    hostname c2
-    !
-    no ip domain lookup
-    !
-    lldp run
-    !
-    ip host c1 10.0.0.1
-    ip host server 10.0.0.3 2001:db8:cafe::3
-    !
-    ip routing
-    !
-    ipv6 unicast-routing
-    !
-    !
-    interface Loopback0
-     ip address 10.0.0.2 255.255.255.255
-    !
-    interface Ethernet0/0
-     no lldp transmit
-     no lldp receive
-    !
-    interface Ethernet0/1
-     description c2 -> [c1,server]
-     no shutdown
-    !
-    !
-    line vty 0 4
-     exec-timeout 0 0
-    !
-    no banner exec
-    no banner login
-    no banner incoming
 ok: [c1] => 
   msg: |-
     initial configuration for c1
@@ -164,6 +128,8 @@ ok: [c1] =>
     hostname c1
     !
     no ip domain lookup
+    logging buffered 256000
+  
     !
     lldp run
     !
@@ -193,6 +159,44 @@ ok: [c1] =>
     no banner exec
     no banner login
     no banner incoming
+ok: [c2] => 
+  msg: |-
+    initial configuration for c2
+    =========================================
+    hostname c2
+    !
+    no ip domain lookup
+    logging buffered 256000
+  
+    !
+    lldp run
+    !
+    ip host c1 10.0.0.1
+    ip host server 10.0.0.3 2001:db8:cafe::3
+    !
+    ip routing
+    !
+    ipv6 unicast-routing
+    !
+    !
+    interface Loopback0
+     ip address 10.0.0.2 255.255.255.255
+    !
+    interface Ethernet0/0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Ethernet0/1
+     description c2 -> [c1,server]
+     no shutdown
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
+    !
+    no banner exec
+    no banner login
+    no banner incoming
 ok: [server] => 
   msg: |-
     initial configuration for server
@@ -200,6 +204,8 @@ ok: [server] =>
     hostname server
     !
     no ip domain lookup
+    logging buffered 256000
+  
     !
     lldp run
     !
@@ -222,6 +228,7 @@ ok: [server] =>
      no switchport
      description server -> [c1,c2]
      ipv6 mtu 1500
+     ipv6 nd ra interval 5
      ipv6 address 2001:DB8:CAFE::3/64
      no shutdown
     !
@@ -302,9 +309,9 @@ TASK [Deploy dhcp configuration] ***********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for c1, c2, server
 
 TASK [ios_config: deploying dhcp from /home/pipi/netlab_gh/netsim/ansible/templates/dhcp/ios.j2] ***
+changed: [c2]
 changed: [c1]
 changed: [server]
-changed: [c2]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
@@ -317,6 +324,6 @@ server                     : ok=29   changed=3    unreachable=0    failed=0    s
 
 
 Use this topology to test the DHCPv6 server on your device. Use 'netlab
-validate' to check whether your device allocated IPv6 addresses to DHCPv6
-clients running Cumulus Linux.
+validate' to check whether your device allocated IPv6 addresses to Cisco
+IOS clients.
 
