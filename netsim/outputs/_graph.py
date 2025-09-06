@@ -212,6 +212,9 @@ def bgp_graph(topology: Box, settings: Box, g_type: str) -> typing.Optional[Box]
       module='graph')
     return None
 
+  if not settings.bgp.all:
+    topology.nodes = { n_name:n_data for n_name,n_data in topology.nodes.items() if 'bgp' in n_data.module }
+
   graph = build_nodes(topology,g_type)
   graph.clusters = graph.bgp
   graph.edges = []
@@ -227,7 +230,7 @@ def parse_bgp_params(settings: Box, format: typing.Optional[list]) -> None:
     return
 
   for kw in format[1:]:
-    if kw in ('rr','vrf','novrf'):
+    if kw in ('rr','vrf','novrf','all'):
       settings.bgp[kw] = True
     elif kw in log.BGP_AF:
       settings.bgp.af[kw] = True

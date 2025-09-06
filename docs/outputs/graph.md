@@ -2,7 +2,7 @@
 
 *graph* output module create a description of network topology in [*graphviz* DOT format](https://graphviz.org/doc/info/lang.html). You can use that description with *graphviz* commands to create topology diagrams in [numerous output formats](https://graphviz.org/docs/outputs/).
 
-**Note**: The network topology graph description contains nodes and links but no placement information. *graphviz* is pretty good at figuring out how to draw the required graph, but it pays out to test out various [layout engines](https://graphviz.org/docs/layouts/) (hint: use the name of the layout engine as the [CLI command](https://graphviz.org/doc/info/command.html)).
+**Note**: The network topology graph description contains nodes and links, but no placement information. *graphviz* is pretty good at figuring out how to draw the required graph, but it pays out to test out various [layout engines](https://graphviz.org/docs/layouts/) (hint: use the name of the layout engine as the [CLI command](https://graphviz.org/doc/info/command.html)).
 
 The *graph* output module is invoked with the **[netlab graph](netlab-graph)** command or by specifying the `-o graph` parameter in the **netlab create** command. It takes an optional destination file name (default: `graph.dot`).
 
@@ -12,7 +12,7 @@ A single formatting modifier can be used to specify the graph type:
 * **bgp** -- Include autonomous systems, nodes, and BGP sessions. The formatting modifier can include [BGP formatting parameters](outputs-graph-bgp-parameters). For example, `netlab create -o graph:bgp:rr` draws RR-client sessions as directed arrows.
 
 (outputs-graph-link-node-attributes)=
-## Modifying Global, Link and Node Attributes
+## Modifying Global, Link, and Node Attributes
 
 You can set the graph title with **graph.title** or **defaults.graph.title** topology attribute.
 
@@ -39,12 +39,13 @@ Graphing routines use **[defaults](topo-defaults)** topology settings to modify 
 (outputs-graph-bgp-parameters)=
 These default settings modify how the BGP graphs look:
 
+* **outputs.graph.bgp.all** (default: False) -- show all lab devices in the BGP graph. By default, the BGP graphs include only lab devices running BGP
 * **outputs.graph.bgp.rr** (default: True) -- draw arrows on BGP sessions to indicate peer-to-peer versus reflector-client sessions
 * **outputs.graph.bgp.vrf** (default: False) -- draw VRF BGP sessions as dotted lines
 * **outputs.graph.bgp.af._af_** (default: all address families) -- when one or more **af** parameters (valid keys: **ipv4**, **ipv6**, **vpnv4**, **vpnv6**, **6pe**, **evpn**) are set to *True*, the graph is limited to BGP sessions of the specified address families.
 * **outputs.graph.bgp.novrf** (default: False) -- do not include VRF BGP sessions in the graph
 
-You can specify the above BGP parameters in the *graph format* CLI argument, for example `netlab create -o graph:bgp:vrf` or `netlab graph -t bgp -f vrf`.
+You can specify the above BGP parameters in the *graph format* CLI argument, for example, `netlab create -o graph:bgp:vrf` or `netlab graph -t bgp -f vrf`.
 
 (outputs-graph-styles)=
 ## Graph Object Styles
