@@ -17,16 +17,29 @@ def parse(args: typing.List[str]) -> argparse.Namespace:
     dest='release',
     action='store_true',
     help='Create release reports')
+  parser.add_argument(
+    '--device',
+    dest='device',
+    action='store',
+    help='Create the reports only for the specified device')
+  parser.add_argument(
+    '--coverage',
+    dest='coverage',
+    action='store',
+    help='Create only the specified coverage report')
 
   return parser.parse_args(args)
 
-def set_format_tags(data: Box) -> None:
+def set_format_tags(data: dict) -> None:
+  data.pop('_columns',None)
   for v in data.get('results',{}).values():
-    if not isinstance(v,Box):
+    if not isinstance(v,dict):
       continue
     for kw in ['timestamp','version','image']:
       if f'_{kw}' in v:
-        data._columns[kw] = True
+        if '_columns' not in data:
+          data['_columns'] = {}
+        data['_columns'][kw] = True
 
 def create_html_page(
       args: argparse.Namespace,
@@ -48,14 +61,18 @@ def create_recursive_html(
       results: Box,
       topology: Box,
       template: str = 'results',
-      recursive: bool = True) -> None:
+      recursive: bool = True,
+      limit: typing.Optional[str] = None) -> None:
   for item,i_data in results.items():
     if item.startswith('_'):
       continue
     if not '_path' in i_data:
       continue
+    if limit and item not in limit and limit != '*':
+      continue
     path = i_data._path.replace('/','-').replace('#','.')
-    create_html_page(args,f'{template}.html.j2',topology + { 'results': i_data },path+".html")
+    topology['results'] = i_data
+    create_html_page(args,f'{template}.html.j2',topology,path+".html")
     if recursive:
       create_recursive_html(args,i_data,topology)
 
@@ -70,11 +87,27 @@ def create(
     topology._version = __version__
 
   topology.coverage = coverage
+  devices = topology.defaults.devices + topology.defaults.daemons
+  for d_name in sorted(list(devices)):
+    d_data = devices[d_name]
+    if d_name in results:
+      if 'support.level' in d_data:
+        topology.partial_results[d_name] = results[d_name]
+      else:
+        topology.full_results[d_name] = results[d_name]
+    elif not '_meta_device' in d_data:
+      topology.no_tests[d_name].description = d_data.description
+
+  topo_dict = topology.to_dict()
+  topo_dict['results'] = results.to_dict()
   create_html_page(
     args,
     'index.html.j2',
-    topology + { 'results': results },
+    topo_dict,
     'index.html',
     output_dir='.')
-  create_recursive_html(args,results,topology)
-  create_recursive_html(args,coverage,topology,template='coverage',recursive=False)
+  if not args.coverage:
+    create_recursive_html(args,results,topo_dict,limit=args.device)
+  
+  if not args.device:
+    create_recursive_html(args,coverage,topo_dict,template='coverage',recursive=False,limit=args.coverage)

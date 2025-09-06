@@ -36,6 +36,11 @@ def parse(args: typing.List[str]) -> typing.Tuple[argparse.Namespace,typing.List
     action='store_true',
     help='Create summary failure report')
   parser.add_argument(
+    '--ignore-caveats',
+    dest='ignore_caveats',
+    action='store_true',
+    help='Display errors for tests with known caveats')
+  parser.add_argument(
     '--caveats',
     dest='caveats',
     action='store_true',
@@ -99,7 +104,7 @@ def check_test_result(path: str, results: Box, args: argparse.Namespace) -> bool
     if results[k] is False or (results[k] == 'warning' and args.warning):
       if k in ['create','supported']:
         continue
-      if k == 'validate' and 'caveat' in results:
+      if k == 'validate' and 'caveat' in results and not args.ignore_caveats:
         continue
 
       fail_step = k

@@ -26,6 +26,7 @@ defaults:
       - startup-delay
       - restart-policy
       template: clab.j2
+      version: 0.68.0
       start: sudo -E containerlab deploy --reconfigure -t clab.yml
       stop: sudo -E containerlab destroy --cleanup -t clab.yml
       act_probe: docker ps
@@ -119,7 +120,6 @@ defaults:
       act_title: KVM/libvirt domains (virtual machines)
       cleanup:
       - Vagrantfile
-      - .vagrant
       tunnel_id: '17'
       vifprefix: vgif_17
       clab:
@@ -287,6 +287,8 @@ defaults:
         icon: switch
     asav:
       description: Cisco ASAv
+      support:
+        level: minimal
       interface_name: GigabitEthernet0/{ifindex}
       ifindex_offset: 0
       mgmt_if: Management0/0
@@ -311,6 +313,7 @@ defaults:
         create_iso: asav
     cat8000v:
       description: Cisco CSR 1000v
+      _meta_device: true
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
       group_vars:
@@ -346,6 +349,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -420,6 +424,8 @@ defaults:
               community:
                 standard: true
                 append: true
+                delete: clist
+                delete_list: true
             match:
             - prefix
             - nexthop
@@ -481,6 +487,7 @@ defaults:
         create_iso: cat8000v
     csr:
       description: Cisco CSR 1000v
+      _meta_device: true
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
       group_vars:
@@ -516,6 +523,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -590,6 +598,8 @@ defaults:
               community:
                 standard: true
                 append: true
+                delete: clist
+                delete_list: true
             match:
             - prefix
             - nexthop
@@ -651,6 +661,10 @@ defaults:
           --import
     cumulus:
       description: Cumulus VX 4.x or 5.x configured without NVUE
+      support:
+        level: obsolete
+        caveats:
+        - The last Cumulus 4.x image was released in September 2022
       interface_name: swp{ifindex}
       loopback_interface_name: lo{ifindex if ifindex else ""}
       tunnel_interface_name: tun{ifindex}
@@ -670,6 +684,8 @@ defaults:
             interfaces: /etc/network/interfaces
             hosts: /etc/hosts
         image: networkop/cx:4.4.0
+        caveats:
+        - Cumulus 4.x containers are out-of-date and not supported
         group_vars:
           ansible_connection: docker
           ansible_user: root
@@ -801,6 +817,11 @@ defaults:
         icon: switch
     cumulus_nvue:
       description: Cumulus VX 5.x configured with NVUE
+      support:
+        level: minimal
+        caveats:
+        - The new Cumulus 5.x releases run only on NVIDIA air. The last public 
+          release was 5.10.0 from September 2024
       interface_name: swp{ifindex}
       lag_interface_name: bond{lag.ifindex}
       loopback_interface_name: lo{ifindex if ifindex else ""}
@@ -808,6 +829,11 @@ defaults:
       mtu: 1500
       libvirt:
         image: CumulusCommunity/cumulus-vx:5.10.0
+        caveats:
+        - >-
+          The Vagrant account on public Cumulus 5.x Vagrant boxes has expired password
+          (details in https://netlab.tools/labs/cumulus_nvue/#changing-the-password-expiration-policy)
+        - Newer Cumulus 5.x releases run only on NVIDIA Air
       virtualbox:
         image: CumulusCommunity/cumulus-vx:5.10.0
       group_vars:
@@ -828,6 +854,7 @@ defaults:
           import:
           - connected
           - ospf
+          - static
           - vrf
           ipv6_lla: true
           rfc8950: true
@@ -851,13 +878,20 @@ defaults:
               ip: linklocal
               backup_ip: loopback.ipv4
         ospf:
+          default: true
           import:
           - bgp
           - connected
+          - static
           - vrf
           unnumbered: true
           timers: true
           priority: true
+        routing:
+          static:
+            vrf: true
+            inter_vrf: true
+            discard: true
         stp:
           supported_protocols:
           - stp
@@ -883,6 +917,8 @@ defaults:
           kind: cvx
           runtime: docker
         image: networkop/cx:5.3.0
+        caveats:
+        - Cumulus 5.x containers are out-of-date and not supported
         group_vars:
           ansible_connection: docker
           ansible_user: root
@@ -911,6 +947,12 @@ defaults:
           local_as: true
           local_as_ibgp: false
           vrf_local_as: true
+          import:
+          - ospf
+          - connected
+          - static
+          - vrf
+          confederation: true
         evpn:
           asymmetrical_irb: true
           irb: true
@@ -928,6 +970,11 @@ defaults:
           passive: true
         ospf:
           default: true
+          import:
+          - bgp
+          - connected
+          - static
+          - vrf
           timers: true
           password: true
           priority: true
@@ -956,6 +1003,7 @@ defaults:
           static:
             vrf: true
             inter_vrf: true
+            discard: true
         stp:
           supported_protocols:
           - stp
@@ -966,7 +1014,7 @@ defaults:
           port_type: true
         vlan:
           model: switch
-          svi_interface_name: virtual-network{vlan}
+          svi_interface_name: vlan{vlan}
         vrf:
           ospfv2: true
           bgp: true
@@ -1058,6 +1106,7 @@ defaults:
             - extended
             2octet:
             - standard
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -1197,16 +1246,30 @@ defaults:
           eos:
             serialnumber: str
             systemmacaddr: mac
+      warnings:
+        ospf_stub: false
     fortios:
       description: Fortinet FortiOS firewall
+      support:
+        level: minimal
+        caveats:
+        - We don't test Fortinet configurations due to their ridiculous 
+          temporary licensing policy
       interface_name: port{ifindex}
       loopback_interface_name: loopback{ifindex}
-      mgmt_if: port1
+      loopback: false
+      mtu: 1500
       ifindex_offset: 2
       libvirt:
         image: fortinet/fortios
         build: https://netlab.tools/labs/fortios/
         create_template: fortios.xml.j2
+      clab:
+        node:
+          kind: fortinet_fortigate
+        interface:
+          name: eth{ifindex}
+        image: vrnetlab/vr-fortios:7.4.8
       group_vars:
         ansible_user: admin
         ansible_password: admin
@@ -1216,6 +1279,8 @@ defaults:
         collections:
         - fortinet.fortios
         vdom: root
+        netlab_vdom: root
+        mgmt_if: port1
         ansible_httpapi_use_ssl: 'no'
         ansible_httpapi_validate_certs: 'no'
         ansible_httpapi_port: 80
@@ -1324,6 +1389,7 @@ defaults:
             - extended
             2octet:
             - standard
+          confederation: true
         evpn:
           irb: true
           asymmetrical_irb: true
@@ -1430,6 +1496,7 @@ defaults:
         icon: router
     iol:
       description: Cisco IOL
+      _meta_device: true
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
       group_vars:
@@ -1461,6 +1528,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -1535,6 +1603,8 @@ defaults:
               community:
                 standard: true
                 append: true
+                delete: clist
+                delete_list: true
             match:
             - prefix
             - nexthop
@@ -1579,11 +1649,12 @@ defaults:
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         build: https://containerlab.dev/manual/kinds/cisco_iol/
-        image: vrnetlab/cisco_iol:17.12.01
+        image: vrnetlab/cisco_iol:17.15.01
         node:
           kind: cisco_iol
     ioll2:
       description: IOSv L2 image
+      _meta_device: true
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
       group_vars:
@@ -1615,6 +1686,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -1689,6 +1761,8 @@ defaults:
               community:
                 standard: true
                 append: true
+                delete: clist
+                delete_list: true
             match:
             - prefix
             - nexthop
@@ -1718,6 +1792,17 @@ defaults:
           protocol:
           - vrrp
         sr: {}
+        stp:
+          supported_protocols:
+          - stp
+          - rstp
+          - mstp
+          - pvrst
+          enable_per_port: true
+          port_type: true
+        lag:
+          mlag: false
+          passive: true
       external:
         image: none
       graphite:
@@ -1733,13 +1818,15 @@ defaults:
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         build: https://containerlab.dev/manual/kinds/cisco_iol/
-        image: vrnetlab/cisco_iol:L2-17.12.01
+        image: vrnetlab/cisco_iol:L2-17.15.01
         node:
           kind: cisco_iol
           type: l2
         mtu: 1500
+      lag_interface_name: Port-channel{lag.ifindex}
     iosv:
       description: Cisco IOSv
+      _meta_device: true
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
       group_vars:
@@ -1775,6 +1862,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -1786,7 +1874,8 @@ defaults:
         eigrp: {}
         initial:
           ipv4:
-            unnumbered: false
+            unnumbered:
+            - tunnel
           ipv6:
             lla: true
             use_ra: true
@@ -1848,6 +1937,8 @@ defaults:
               community:
                 standard: true
                 append: true
+                delete: clist
+                delete_list: true
             match:
             - prefix
             - nexthop
@@ -1889,8 +1980,8 @@ defaults:
         image: cisco/iosv
       clab:
         group_vars:
-          ansible_ssh_pass: VR-netlab9
-          ansible_user: vrnetlab
+          ansible_ssh_pass: admin
+          ansible_user: admin
           netlab_check_retries: 50
         image: vrnetlab/cisco_vios:15.9.3
         node:
@@ -1900,6 +1991,7 @@ defaults:
         build: https://github.com/hellt/vrnetlab/tree/master/vios
     iosvl2:
       description: IOSv L2 image
+      _meta_device: true
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
       group_vars:
@@ -1935,6 +2027,7 @@ defaults:
             - standard
             extended:
             - extended
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -1946,7 +2039,8 @@ defaults:
         eigrp: {}
         initial:
           ipv4:
-            unnumbered: false
+            unnumbered:
+            - tunnel
           ipv6:
             lla: true
             use_ra: true
@@ -2009,6 +2103,8 @@ defaults:
               community:
                 standard: true
                 append: true
+                delete: clist
+                delete_list: true
             match:
             - prefix
             - nexthop
@@ -2037,6 +2133,17 @@ defaults:
         gateway:
           protocol:
           - vrrp
+        stp:
+          supported_protocols:
+          - stp
+          - rstp
+          - mstp
+          - pvrst
+          enable_per_port: true
+          port_type: true
+        lag:
+          mlag: false
+          passive: true
       external:
         image: none
       graphite:
@@ -2050,17 +2157,20 @@ defaults:
         image: cisco/iosv
       clab:
         group_vars:
-          ansible_ssh_pass: VR-netlab9
-          ansible_user: vrnetlab
+          ansible_ssh_pass: admin
+          ansible_user: admin
           netlab_check_retries: 50
-        image: vrnetlab/cisco_vios:15.9.3
+        image: vrnetlab/cisco_viosl2:15.2.2020
         node:
           kind: linux
         interface:
           name: eth{ifindex}
-        build: https://github.com/hellt/vrnetlab/tree/master/vios
+        build: https://github.com/hellt/vrnetlab/tree/master/viosl2
+      lag_interface_name: Port-channel{lag.ifindex}
     iosxr:
       description: Cisco IOS XRv
+      support:
+        level: minimal
       mgmt_if: MgmtEth0/RP0/CPU0/0
       interface_name: GigabitEthernet0/0/0/{ifindex}
       loopback_interface_name: Loopback{ifindex}
@@ -2185,6 +2295,7 @@ defaults:
         icon: server
     none:
       description: Dummy device used to test topology transformation
+      _meta_device: true
       interface_name: eth{ifindex}
       lag_interface_name: bond{lag.ifindex}
       loopback_interface_name: Loopback{ifindex}
@@ -2234,6 +2345,7 @@ defaults:
           - connected
           - static
           - vrf
+          confederation: true
         dhcp:
           client:
             ipv4: true
@@ -2359,6 +2471,8 @@ defaults:
           vtep6: true
     nxos:
       description: Cisco Nexus 9300v
+      support:
+        level: best-effort
       interface_name: Ethernet1/{ifindex}
       mgmt_if: mgmt0
       loopback_interface_name: loopback{ifindex}
@@ -2427,8 +2541,53 @@ defaults:
         image: none
       graphite:
         icon: nexus5000
+    openbsd:
+      description: OpenBSD
+      support:
+        level: best-effort
+      interface_name: vio{ifindex}
+      loopback_interface_name: lo{ifindex}
+      ifindex_offset: 1
+      mgmt_if: vio0
+      role: host
+      features:
+        routing:
+          static: true
+        initial:
+          roles:
+          - host
+          - router
+          ipv6:
+            use_ra: true
+            lla: true
+      libvirt:
+        create_template: openbsd.xml.j2
+        image: netlab/openbsd
+        create_iso: openbsd
+      clab:
+        build: https://containerlab.dev/manual/kinds/openbsd/
+        image: vrnetlab/openbsd_openbsd:7.7
+        group_vars:
+          ansible_user: admin
+          ansible_ssh_pass: admin
+          netlab_check_command: who
+        node:
+          kind: openbsd
+      group_vars:
+        ansible_network_os: openbsd
+        ansible_connection: paramiko
+        ansible_user: openbsd
+        ansible_ssh_pass: vagrant
+        docker_shell: sh -il
+        ansible_python_interpreter: auto_silent
+      external:
+        image: none
+      graphite:
+        icon: server
     routeros:
       description: Mikrotik RouterOS version 6
+      support:
+        level: obsolete
       interface_name: ether{ifindex}
       mgmt_if: ether1
       ifindex_offset: 2
@@ -2462,6 +2621,8 @@ defaults:
         icon: router
     routeros7:
       description: Mikrotik RouterOS version 7
+      support:
+        level: minimal
       interface_name: ether{ifindex}
       mgmt_if: ether1
       loopback_interface_name: loopback{ifindex}
@@ -2506,6 +2667,8 @@ defaults:
         icon: router
     sonic:
       description: Sonic VM
+      support:
+        level: minimal
       interface_name: Ethernet{ifindex * 4}
       ifindex_offset: 0
       mgmt_if: eth0
@@ -2583,7 +2746,7 @@ defaults:
         min_tx: 100
         min_rx: 100
       clab:
-        image: ghcr.io/nokia/srlinux:25.3.2
+        image: ghcr.io/nokia/srlinux:25.7.1
         node:
           kind: srl
           type: ixrd2
@@ -2786,9 +2949,7 @@ defaults:
           ospfv3: true
           isis: true
           bgp: true
-        vxlan:
-          requires:
-          - evpn
+        vxlan: {}
       clab:
         image: vrnetlab/nokia_sros:25.3.R2
         build: https://containerlab.dev/manual/kinds/vr-sros/
@@ -2805,8 +2966,11 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        loopback_ipv6: false
     unknown:
       description: Generic Unknown Device
+      _meta_device: true
       interface_name: eth{ifindex}
       mgmt_if: eth0
       graphite:
@@ -2829,6 +2993,7 @@ defaults:
         vxlan: {}
     vjunos-router:
       description: vJunos Router (similar to vMX)
+      _meta_device: true
       loopback_interface_name: lo0.{ifindex}
       ifindex_offset: 0
       interface_name: ge-0/0/{ifindex}
@@ -2922,6 +3087,7 @@ defaults:
         icon: router
     vjunos-switch:
       description: vJunos Switch
+      _meta_device: true
       loopback_interface_name: lo0.{ifindex}
       ifindex_offset: 0
       interface_name: ge-0/0/{ifindex}
@@ -3018,6 +3184,7 @@ defaults:
         icon: switch
     vmx:
       description: Juniper vMX container
+      _meta_device: true
       loopback_interface_name: lo0.{ifindex}
       ifindex_offset: 0
       interface_name: ge-0/0/{ifindex}
@@ -3094,6 +3261,10 @@ defaults:
           native_routed: true
       external:
         image: none
+      support:
+        level: best-effort
+        caveats:
+        - vMX gets all new Junos features, but we don't test them on vMX
       clab:
         image: vrnetlab/vr-vmx:18.2R1.9
         build: https://containerlab.dev/manual/kinds/vr-vmx/
@@ -3105,6 +3276,7 @@ defaults:
         icon: router
     vptx:
       description: Juniper vPTX
+      _meta_device: true
       loopback_interface_name: lo0.{ifindex}
       ifindex_offset: 0
       interface_name: et-0/0/{ifindex}
@@ -3200,6 +3372,7 @@ defaults:
         icon: switch
     vsrx:
       description: Juniper vSRX 3.0
+      _meta_device: true
       loopback_interface_name: lo0.{ifindex}
       ifindex_offset: 0
       interface_name: ge-0/0/{ifindex}
@@ -3273,6 +3446,10 @@ defaults:
           native_routed: true
       external:
         image: none
+      support:
+        level: best-effort
+        caveats:
+        - vSRX gets all new Junos features, but we don't test them on vSRX
       virtualbox:
         image: juniper/vsrx3
       libvirt:
@@ -3303,6 +3480,7 @@ defaults:
       description: VyOS VM/container
       interface_name: eth{ifindex}
       loopback_interface_name: dum{ifindex}
+      lag_interface_name: bond{lag.ifindex}
       mgmt_if: eth0
       libvirt:
         image: vyos/current
@@ -3337,6 +3515,8 @@ defaults:
           protocol:
           - vrrp
         isis: {}
+        lag:
+          passive: false
         mpls:
           ldp: true
           vpn:
@@ -3834,7 +4014,7 @@ defaults:
         up: docker run -d --rm {sys.docker_net} --mount 
           type=bind,source="$(pwd)/graphite/graphite-default.json",target=/htdocs/default/default.json,readonly
           -p { 8080 + defaults.multilab.id if defaults.multilab.id else 8080 
-          }:80 --name '{name}_graphite' netreplica/graphite:0.4.2
+          }:80 --name "{name}_graphite" netreplica/graphite:0.4.2
         message: Open http://{sys.ipaddr}:{ 8080 + defaults.multilab.id if 
           defaults.multilab.id else 8080 }/graphite/ in your browser
         down: docker kill '{name}_graphite'
@@ -3868,16 +4048,125 @@ defaults:
         down: docker kill {name}-cisco-nso
         cleanup: docker volume rm '{name}-nso-vol' docker volume rm 
           '{name}-nso-log-vol'
+    nuts:
+      runtime: docker
+      docker:
+        up: docker run --rm -itd --name '{name}_nuts' {sys.docker_net} -v 
+          './nuts':/nuts -w /nuts ghcr.io/network-unit-testing-system/nuts
+        message: Use 'netlab connect nuts' to connect to the NUTS container. Run
+          'pytest' in the container to execute tests.
+        connect: docker exec -it '{name}_nuts' bash
+        down: docker kill '{name}_nuts'
+        cleanup: docker volume rm '{name}_nuts'
+      config:
+      - dest: nr-config.yaml
+        template: nr-config.yaml
+      - dest: inventory/groups.yaml
+        template: inventory/groups.yaml
+      - dest: inventory/hosts.yaml
+        template: inventory/hosts.j2
+      - dest: tests/test_interfaces.yaml
+        template: tests/test_interfaces.j2
+      - dest: tests/test_ospf.yaml
+        template: tests/test_ospf.j2
+      - dest: tests/test_bgp.yaml
+        template: tests/test_bgp.j2
+      inventory:
+        napalm:
+          nxos: nxos_ssh
+          asav: ios
+          cat8000c: ios
+          iol: ios
+          ioll2: ios
+          iosv: ios
+          iosvl2: ios
+          iosxr: iosxr
+          vmx: junos
+          vptx: junos
+          vsrx: junos
+          vjunos-switch: junos
+          vjunos-router: junos
+          srlinux: srl
+          routeros: ros
+          routeros7: ros
+          arubacx: aoscx
+        netmiko:
+          nxos: cisco_nxos
+          cat8000c: cisco_xe
+          iol: cisco_xe
+          ioll2: cisco_xe
+          iosv: cisco_xe
+          iosvl2: cisco_xe
+          iosxr: iosxr
+          vmx: juniper_junos
+          vptx: juniper_junos
+          vsrx: juniper_junos
+          vjunos-switch: juniper_junos
+          vjunos-router: juniper_junos
+          asav: cisco_asa
+          srlinux: nokia_srl
+          sros: nokia_sros
+          routeros: mikrotik_routeros
+          routeros7: mikrotik_routeros
+          arubacx: aruba_aoscx
+          fortios: fortinet
+          dellos10: dell_os10
+        napalm_using_netmiko:
+          nxos_ssh: true
+          ios: true
+      test_creation:
+        interface:
+          nxos: nxos_ssh
+          asav: ios
+          cat8000c: ios
+          iol: ios
+          ioll2: ios
+          iosv: ios
+          iosvl2: ios
+          iosxr: iosxr
+          vmx: junos
+          vptx: junos
+          vsrx: junos
+          vjunos-switch: junos
+          vjunos-router: junos
+          srlinux: srl
+          routeros: ros
+          routeros7: ros
+          arubacx: aoscx
+        bgp:
+          nxos: nxos_ssh
+          asav: ios
+          cat8000c: ios
+          iol: ios
+          ioll2: ios
+          iosv: ios
+          iosvl2: ios
+          iosxr: iosxr
+          vmx: junos
+          vptx: junos
+          vsrx: junos
+          vjunos-switch: junos
+          vjunos-router: junos
+          srlinux: srl
+          routeros: ros
+          routeros7: ros
+          arubacx: aoscx
+        ospf:
+          cat8000c: cisco_xe
+          iol: cisco_xe
+          ioll2: cisco_xe
+          iosv: cisco_xe
+          iosvl2: cisco_xe
     suzieq:
       runtime: docker
       docker:
-        up: docker run --rm -itd --name '{name}_suzieq' {sys.docker_net} -v 
-          '{name}_suzieq':/parquet -v './suzieq':/suzieq netenglabs/suzieq-demo 
-          -c 'sq-poller -I /suzieq/suzieq-inventory.yml'
+        up: docker run -itd --name '{name}_suzieq' {sys.docker_net} -v 
+          '{name}_suzieq_data':/parquet -v './suzieq':/suzieq 
+          netenglabs/suzieq-demo -c 'sq-poller -I /suzieq/suzieq-inventory.yml'
         message: Use 'netlab connect suzieq' to start SuzieQ CLI
         connect: docker exec -it '{name}_suzieq' /usr/local/bin/suzieq-cli
-        down: docker kill '{name}_suzieq'
-        cleanup: docker volume rm '{name}_suzieq'
+        down: docker kill '{name}_suzieq'; docker rm '{name}_suzieq'
+        cleanup: docker volume rm '{name}_suzieq_data'
       config:
       - dest: suzieq-inventory.yml
         template: suzieq.inventory.j2
@@ -3891,10 +4180,10 @@ defaults:
       ipv4: 10.0.0.0/24
       prefix: 32
     lan:
-      ipv4: false
+      ipv4: 172.16.0.0/16
       ipv6: 2001:db8:2::/48
     p2p:
-      ipv4: false
+      ipv4: 10.1.0.0/16
       ipv6: 2001:db8:3::/48
     mgmt:
       ipv4: 192.168.121.0/24
@@ -3902,9 +4191,16 @@ defaults:
       mac: 08-4F-A9-00-00-00
     l2only:
     vrf_loopback:
-      ipv4: false
+      ipv4: 10.2.0.0/24
       prefix: 32
-      ipv6: 2001:db8:cafe::/48
+      ipv6: 2001:db8:cafe::/56
+    lan_v6only:
+      ipv6: 2001:db8:12::/48
+    p2p_v6only:
+      ipv6: 2001:db8:13::/48
+    vrf_lb_v6only:
+      ipv6: 2001:db8:cafe:2000::/56
+      prefix6: 128
   attributes:
     global:
       addressing:
@@ -4036,6 +4332,9 @@ defaults:
         min_value: 1
         max_value: 150
       config: list
+      debug:
+        type: list
+        split_lines: true
       group: list
       role:
         type: str
@@ -4249,6 +4548,13 @@ defaults:
           type: id
           _requires:
           - routing
+    bgp_session_type:
+      _description: BGP session types
+      type: str
+      valid_values:
+        ibgp:
+        ebgp:
+        localas_ibgp:
     rp_entry:
       _description: Routing policy entry
       action:
@@ -4509,6 +4815,17 @@ defaults:
         min_value: 1
       links: list
       loopback:
+        ipv4:
+          type: ipv4
+          use: host_prefix
+        ipv6:
+          type: ipv6
+          use: host_prefix
+        pool: addr_pool
+        _alt_types:
+        - bool
+        - prefix_str
+        - NoneType
       _namespace:
       - link
   automation:
@@ -4539,6 +4856,33 @@ defaults:
     ifname:
       neighbors: 5
       maxlength: 255
+    validate:
+      ping: 5
+      ping_long: 15
+      vxlan_ping: 20
+      ping_xx_long: 40
+      ra_send: 30
+      ospfv2_adj_p2p: 30
+      ospfv2_adj_lan: 50
+      ospfv2_spf: 10
+      ospfv3_adj_p2p: 30
+      ospfv3_adj_lan: 50
+      ospfv3_spf: 10
+      ospf_import: 20
+      ebgp_session: 30
+      ibgp_session: 30
+      bgp_scan_time: 5
+      bgp_scan_long: 15
+      bgp_ios_redist: 60
+      isis_adj_p2p: 20
+      isis_adj_lan: 50
+      isis_spf: 15
+      isis_spf_long: 45
+      rip_start: 60
+      rip_update: 20
+      ldp_adj: 30
+      stp_forwarding: 40
+      lacp_setup: 10
   hints:
     evpn:
       irb_group: >
@@ -4610,6 +4954,12 @@ defaults:
       unmanaged_device: Netlab uses the node device type for unmanaged nodes to 
         figure out what features the node supports. If you're using a device 
         that is not supported by netlab, set the device type to 'none'.
+    support:
+      best-effort: While a core contributor might still work on the platform, we
+        don't run integration tests
+      minimal: Don't expect too much (particularly new functionality)
+      obsolete: These platforms are still part of the netlab package because the
+        storage prices keep falling
   multilab:
     change:
       name: ml_17
@@ -4631,18 +4981,18 @@ defaults:
       command_args: --immediate-mode -l -vv
   paths:
     validate:
-    - /home/pipi/netlab_gh/netsim/validate
+    - /home/pipi/net101/tools/netsim/validate
     plugin:
     - /work/netlab_cicd
     - /home/pipi/net101/tools/tests/integration/vrf
     - /home/pipi/.netlab
-    - /home/pipi/netlab_gh/netsim/extra
+    - /home/pipi/net101/tools/netsim/extra
     custom:
       dirs:
       - /home/pipi/net101/tools/tests/integration/vrf
       - /work/netlab_cicd
       - /home/pipi/.netlab
-      - /home/pipi/netlab_gh/netsim/extra
+      - /home/pipi/net101/tools/netsim/extra
       files:
       - "{{ custom_config + '/' + inventory_hostname + '.' + netlab_device_type +
         '-' + node_provider + '.j2' }}"
@@ -4673,7 +5023,7 @@ defaults:
       - '{{ custom_config }}/deploy.yml'
     deploy:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks
+      - /home/pipi/net101/tools/netsim/ansible/tasks
       tasks_generic:
       - deploy-config/{{ netlab_device_type }}-{{ node_provider }}.yml
       - deploy-config/{{ netlab_device_type }}.yml
@@ -4694,8 +5044,8 @@ defaults:
       - deploy-config/{{ ansible_network_os }}.yml
     templates:
       dirs:
-      - /home/pipi/netlab_gh/netsim/daemons
-      - /home/pipi/netlab_gh/netsim/ansible/templates
+      - /home/pipi/net101/tools/netsim/daemons
+      - /home/pipi/net101/tools/netsim/ansible/templates
     t_files:
       files:
       - '{{config_module}}/{{netlab_device_type}}-{{provider|default(netlab_provider)}}.j2'
@@ -4707,7 +5057,7 @@ defaults:
       - '{{netlab_device_type}}/{{config_module}}.j2'
     ready:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check
+      - /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check
       files:
       - '{{netlab_device_type}}-{{provider|default(netlab_provider)}}.yml'
       - '{{netlab_device_type}}.yml'
@@ -4715,7 +5065,7 @@ defaults:
       - '{{ansible_network_os}}.yml'
     collect:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks/fetch-config
+      - /home/pipi/net101/tools/netsim/ansible/tasks/fetch-config
   ports:
     ssh: 22
     http: 80
@@ -4723,6 +5073,8 @@ defaults:
     netconf: 830
   warnings:
     duplicate_address: true
+    providers:
+      change: false
   bfd:
     min_echo_rx: 0
     multiplier: 3
@@ -4808,6 +5160,7 @@ defaults:
       advertise_roles:
       rr_list:
       as_list:
+      confederation:
     transform_after:
     - vlan
     config_after:
@@ -4817,6 +5170,8 @@ defaults:
     - eigrp
     - ripv2
     next_hop_self: true
+    hooks:
+    - normalize
     attributes:
       global:
         as: asn
@@ -4829,22 +5184,18 @@ defaults:
         as_list: dict
         sessions:
           ipv4:
-          - ibgp
-          - ebgp
-          - localas_ibgp
+            type: list
+            _subtype: bgp_session_type
           ipv6:
-          - ibgp
-          - ebgp
-          - localas_ibgp
+            type: list
+            _subtype: bgp_session_type
         activate:
           ipv4:
-          - ibgp
-          - ebgp
-          - localas_ibgp
+            type: list
+            _subtype: bgp_session_type
           ipv6:
-          - ibgp
-          - ebgp
-          - localas_ibgp
+            type: list
+            _subtype: bgp_session_type
         advertise_loopback: bool
         advertise_roles: list
         community:
@@ -4862,6 +5213,15 @@ defaults:
           - str
           - BoxList
         replace_global_as: bool
+        confederation:
+          type: dict
+          _keytype: asn
+          _subtype:
+            members:
+              type: list
+              _subtype: asn
+      _inherit_community:
+        localas_ibgp: ibgp
       node:
         as:
           type: asn
@@ -4880,22 +5240,18 @@ defaults:
         advertise_loopback: bool
         sessions:
           ipv4:
-          - ibgp
-          - ebgp
-          - localas_ibgp
+            type: list
+            _subtype: bgp_session_type
           ipv6:
-          - ibgp
-          - ebgp
-          - localas_ibgp
+            type: list
+            _subtype: bgp_session_type
         activate:
           ipv4:
-          - ibgp
-          - ebgp
-          - localas_ibgp
+            type: list
+            _subtype: bgp_session_type
           ipv6:
-          - ibgp
-          - ebgp
-          - localas_ibgp
+            type: list
+            _subtype: bgp_session_type
         community:
           ibgp:
           - standard
@@ -4950,6 +5306,7 @@ defaults:
       ipv6_lla: Can run EBGP sessions over IPv6 link-local addresses
       rfc8950: Can run IPv4 AF over regular IPv6 EBGP session
       community: Granular BGP community propagation
+      confederation: BGP confederations
       import: Import routes from other routing protocols
     warnings:
       missing_igp: true
@@ -5476,9 +5833,16 @@ defaults:
             _alt_types:
             - bool
           mac: mac
+      interface:
+        lacp_system_id:
+          type: mac
+          _alt_types:
+          - int
+      intf_to_neighbor: false
       lag_l2_linkattr:
         mtu:
         bandwidth:
+        lacp_system_id:
       lag_member_linkattr:
         mtu:
         bandwidth:
@@ -5498,11 +5862,14 @@ defaults:
       dnsmasq: true
       eos: true
       frr: true
+      ioll2: true
+      iosvl2: true
       linux: true
       none: true
       vjunos-switch: true
       vptx: true
       vsrx: true
+      vyos: true
   mpls:
     config_after:
     - vlan
@@ -6086,6 +6453,7 @@ defaults:
       cat8000v: true
       csr: true
       cumulus: true
+      cumulus_nvue: true
       dellos10: true
       dnsmasq: true
       eos: true
@@ -6098,6 +6466,7 @@ defaults:
       junos: true
       linux: true
       none: true
+      openbsd: true
       srlinux: true
       sros: true
       vjunos-router: true
@@ -6341,6 +6710,8 @@ defaults:
       dellos10: true
       eos: true
       frr: true
+      ioll2: true
+      iosvl2: true
       none: true
   vlan:
     config_after:
@@ -6396,6 +6767,7 @@ defaults:
         stp:
         virtual_interface:
         lag:
+        evpn:
       keep_subif:
         vlan:
         ifindex:
@@ -6565,6 +6937,8 @@ defaults:
   sources:
     extra:
     - defaults-ipv6-only.yml
+    - ../wait_times.yml
+    - ../warnings.yml
     list: []
     user: []
     system: []
@@ -6657,9 +7031,163 @@ vrfs:
 nodes:
   dut:
     id: 1
+    vrfs:
+      blue:
+        loopback:
+          ipv6: 2001:db8:cafe:2001::/64
+        id: 2
+        rd: '65000:2'
+        import:
+        - '65000:2'
+        export:
+        - '65000:2'
+        af:
+          ipv6: true
+        networks:
+        - ipv6: 2001:db8:cafe:2001::1/64
+        loopback_address:
+          ipv6: 2001:db8:cafe:2001::1/64
+        vrfidx: 101
+        ospf:
+          area: 0.0.0.0
+          router_id: 10.0.0.1
+          active: true
+          interfaces:
+          - ipv6: 2001:db8:13::1/64
+            ospf:
+              area: 0.0.0.3
+              passive: false
+              network_type: point-to-point
+            pool: p2p_v6only
+            vrf: blue
+            linkindex: 3
+            type: p2p
+            name: dut -> r3
+            ifindex: 3
+            ifname: ethernet-1/3
+            clab:
+              name: e1-3
+            neighbors:
+            - ipv6: 2001:db8:13::2/64
+              ifname: eth1
+              node: r3
+          - ipv6: 2001:db8:13:1::1/64
+            ospf:
+              area: 0.0.0.4
+              passive: false
+              network_type: point-to-point
+            pool: p2p_v6only
+            vrf: blue
+            linkindex: 4
+            type: p2p
+            name: dut -> r4
+            ifindex: 4
+            ifname: ethernet-1/4
+            clab:
+              name: e1-4
+            neighbors:
+            - ipv6: 2001:db8:13:1::2/64
+              ifname: eth1
+              node: r4
+          - type: loopback
+            name: VRF Loopback blue
+            neighbors: []
+            vrf: blue
+            virtual_interface: true
+            ifindex: 10001
+            ifname: lo0.1
+            ospf:
+              area: 0.0.0.0
+              passive: false
+            ipv6: 2001:db8:cafe:2001::1/64
+          import:
+            connected:
+              auto: true
+          af:
+            ipv6: true
+      red:
+        ospf:
+          area: 0.0.0.2
+          router_id: 10.0.0.1
+          active: true
+          interfaces:
+          - ipv4: 10.1.0.1/30
+            ipv6: 2001:db8:3::1/64
+            vrf: red
+            linkindex: 1
+            type: p2p
+            name: dut -> r1
+            ifindex: 1
+            ifname: ethernet-1/1
+            clab:
+              name: e1-1
+            neighbors:
+            - ipv4: 10.1.0.2/30
+              ipv6: 2001:db8:3::2/64
+              ifname: eth1
+              node: r1
+            ospf:
+              area: 0.0.0.2
+              passive: false
+              network_type: point-to-point
+          - ipv4: 10.1.0.5/30
+            ipv6: 2001:db8:3:1::1/64
+            vrf: red
+            linkindex: 2
+            type: p2p
+            name: dut -> r2
+            ifindex: 2
+            ifname: ethernet-1/2
+            clab:
+              name: e1-2
+            neighbors:
+            - ipv4: 10.1.0.6/30
+              ipv6: 2001:db8:3:1::2/64
+              ifname: eth1
+              node: r2
+            ospf:
+              area: 0.0.0.2
+              passive: false
+              network_type: point-to-point
+          - type: loopback
+            name: VRF Loopback red
+            neighbors: []
+            vrf: red
+            virtual_interface: true
+            ifindex: 10002
+            ifname: lo0.2
+            ospf:
+              area: 0.0.0.2
+              passive: false
+            ipv4: 10.2.0.1/32
+            ipv6: 2001:db8:cafe::1/64
+          import:
+            connected:
+              auto: true
+          af:
+            ipv4: true
+            ipv6: true
+        loopback: true
+        id: 1
+        rd: '65000:1'
+        import:
+        - '65000:1'
+        export:
+        - '65000:1'
+        af:
+          ipv4: true
+          ipv6: true
+        networks:
+        - ipv4: 10.2.0.1/32
+          ipv6: 2001:db8:cafe::1/64
+        loopback_address:
+          ipv4: 10.2.0.1/32
+          ipv6: 2001:db8:cafe::1/64
+        vrfidx: 100
     name: dut
     interfaces:
-    - ipv6: 2001:db8:3::1/64
+    - ipv4: 10.1.0.1/30
+      ipv6: 2001:db8:3::1/64
       vrf: red
       linkindex: 1
       type: p2p
@@ -6669,10 +7197,12 @@ nodes:
       clab:
         name: e1-1
       neighbors:
-      - ipv6: 2001:db8:3::2/64
+      - ipv4: 10.1.0.2/30
+        ipv6: 2001:db8:3::2/64
         ifname: eth1
         node: r1
-    - ipv6: 2001:db8:3:1::1/64
+    - ipv4: 10.1.0.5/30
+      ipv6: 2001:db8:3:1::1/64
       vrf: red
       linkindex: 2
       type: p2p
@@ -6682,10 +7212,12 @@ nodes:
       clab:
         name: e1-2
       neighbors:
-      - ipv6: 2001:db8:3:1::2/64
+      - ipv4: 10.1.0.6/30
+        ipv6: 2001:db8:3:1::2/64
         ifname: eth1
         node: r2
-    - ipv6: 2001:db8:3:2::1/64
+    - ipv6: 2001:db8:13::1/64
+      pool: p2p_v6only
       vrf: blue
       linkindex: 3
       type: p2p
@@ -6695,10 +7227,11 @@ nodes:
       clab:
         name: e1-3
       neighbors:
-      - ipv6: 2001:db8:3:2::2/64
+      - ipv6: 2001:db8:13::2/64
         ifname: eth1
         node: r3
-    - ipv6: 2001:db8:3:3::1/64
+    - ipv6: 2001:db8:13:1::1/64
+      pool: p2p_v6only
       vrf: blue
       linkindex: 4
       type: p2p
@@ -6708,25 +7241,26 @@ nodes:
       clab:
         name: e1-4
       neighbors:
-      - ipv6: 2001:db8:3:3::2/64
+      - ipv6: 2001:db8:13:1::2/64
         ifname: eth1
         node: r4
-    - type: loopback
-      name: VRF Loopback red
-      neighbors: []
-      vrf: red
-      virtual_interface: true
-      ifindex: 10001
-      ifname: lo0.1
-      ipv6: 2001:db8:cafe::1/64
     - type: loopback
       name: VRF Loopback blue
       neighbors: []
       vrf: blue
       virtual_interface: true
+      ifindex: 10001
+      ifname: lo0.1
+      ipv6: 2001:db8:cafe:2001::1/64
+    - type: loopback
+      name: VRF Loopback red
+      neighbors: []
+      vrf: red
+      virtual_interface: true
       ifindex: 10002
       ifname: lo0.2
-      ipv6: 2001:db8:cafe:1::1/64
+      ipv4: 10.2.0.1/32
+      ipv6: 2001:db8:cafe::1/64
     module:
     - ospf
     - vrf
@@ -6734,7 +7268,7 @@ nodes:
     clab:
       kind: srl
       type: ixrd2
-    box: ghcr.io/nokia/srlinux:25.3.2
+    box: ghcr.io/nokia/srlinux:25.7.1
     mtu: 1500
     vrf:
       as: 65000
@@ -6742,6 +7276,7 @@ nodes:
     af:
       ipv4: true
       ipv6: true
+      vpnv4: true
       vpnv6: true
     mgmt:
       ifname: mgmt0
@@ -6759,148 +7294,7 @@ nodes:
       ospf:
         area: 0.0.0.0
         passive: false
-    vrfs:
-      red:
-        ospf:
-          area: 0.0.0.2
-          router_id: 10.0.0.1
-          active: true
-          interfaces:
-          - ipv6: 2001:db8:3::1/64
-            vrf: red
-            linkindex: 1
-            type: p2p
-            name: dut -> r1
-            ifindex: 1
-            ifname: ethernet-1/1
-            clab:
-              name: e1-1
-            neighbors:
-            - ipv6: 2001:db8:3::2/64
-              ifname: eth1
-              node: r1
-            ospf:
-              area: 0.0.0.2
-              passive: false
-              network_type: point-to-point
-          - ipv6: 2001:db8:3:1::1/64
-            vrf: red
-            linkindex: 2
-            type: p2p
-            name: dut -> r2
-            ifindex: 2
-            ifname: ethernet-1/2
-            clab:
-              name: e1-2
-            neighbors:
-            - ipv6: 2001:db8:3:1::2/64
-              ifname: eth1
-              node: r2
-            ospf:
-              area: 0.0.0.2
-              passive: false
-              network_type: point-to-point
-          - type: loopback
-            name: VRF Loopback red
-            neighbors: []
-            vrf: red
-            virtual_interface: true
-            ifindex: 10001
-            ifname: lo0.1
-            ospf:
-              area: 0.0.0.2
-              passive: false
-            ipv6: 2001:db8:cafe::1/64
-          import:
-            connected:
-              auto: true
-          af:
-            ipv6: true
-        loopback: true
-        id: 1
-        rd: '65000:1'
-        import:
-        - '65000:1'
-        export:
-        - '65000:1'
-        af:
-          ipv6: true
-        networks:
-        - ipv6: 2001:db8:cafe::1/64
-        loopback_address:
-          ipv6: 2001:db8:cafe::1/64
-        vrfidx: 100
-      blue:
-        loopback: true
-        id: 2
-        rd: '65000:2'
-        import:
-        - '65000:2'
-        export:
-        - '65000:2'
-        af:
-          ipv6: true
-        networks:
-        - ipv6: 2001:db8:cafe:1::1/64
-        loopback_address:
-          ipv6: 2001:db8:cafe:1::1/64
-        vrfidx: 101
-        ospf:
-          area: 0.0.0.0
-          router_id: 10.0.0.1
-          active: true
-          interfaces:
-          - ipv6: 2001:db8:3:2::1/64
-            ospf:
-              area: 0.0.0.3
-              passive: false
-              network_type: point-to-point
-            vrf: blue
-            linkindex: 3
-            type: p2p
-            name: dut -> r3
-            ifindex: 3
-            ifname: ethernet-1/3
-            clab:
-              name: e1-3
-            neighbors:
-            - ipv6: 2001:db8:3:2::2/64
-              ifname: eth1
-              node: r3
-          - ipv6: 2001:db8:3:3::1/64
-            ospf:
-              area: 0.0.0.4
-              passive: false
-              network_type: point-to-point
-            vrf: blue
-            linkindex: 4
-            type: p2p
-            name: dut -> r4
-            ifindex: 4
-            ifname: ethernet-1/4
-            clab:
-              name: e1-4
-            neighbors:
-            - ipv6: 2001:db8:3:3::2/64
-              ifname: eth1
-              node: r4
-          - type: loopback
-            name: VRF Loopback blue
-            neighbors: []
-            vrf: blue
-            virtual_interface: true
-            ifindex: 10002
-            ifname: lo0.2
-            ospf:
-              area: 0.0.0.0
-              passive: false
-            ipv6: 2001:db8:cafe:1::1/64
-          import:
-            connected:
-              auto: true
-          af:
-            ipv6: true
-    _srl_version: 25.3
+    _srl_version: 25.7
   r1:
     ospf:
       area: 0.0.0.2
@@ -6910,7 +7304,8 @@ nodes:
         ipv6: true
     name: r1
     interfaces:
-    - ipv6: 2001:db8:3::2/64
+    - ipv4: 10.1.0.2/30
+      ipv6: 2001:db8:3::2/64
       linkindex: 1
       type: p2p
       name: r1 -> dut
@@ -6918,7 +7313,8 @@ nodes:
       ifname: eth1
       mtu: 1500
       neighbors:
-      - ipv6: 2001:db8:3::1/64
+      - ipv4: 10.1.0.1/30
+        ipv6: 2001:db8:3::1/64
         vrf: red
         ifname: ethernet-1/1
         node: dut
@@ -6969,7 +7365,8 @@ nodes:
         ipv6: true
     name: r2
     interfaces:
-    - ipv6: 2001:db8:3:1::2/64
+    - ipv4: 10.1.0.6/30
+      ipv6: 2001:db8:3:1::2/64
       linkindex: 2
       type: p2p
       name: r2 -> dut
@@ -6977,7 +7374,8 @@ nodes:
       ifname: eth1
       mtu: 1500
       neighbors:
-      - ipv6: 2001:db8:3:1::1/64
+      - ipv4: 10.1.0.5/30
+        ipv6: 2001:db8:3:1::1/64
         vrf: red
         ifname: ethernet-1/2
         node: dut
@@ -7024,15 +7422,26 @@ nodes:
       area: 0.0.0.3
       router_id: 10.0.0.4
       af:
-        ipv4: true
         ipv6: true
+    loopback:
+      pool: vrf_lb_v6only
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv6: 2001:db8:cafe:2000::4/128
+      ospf:
+        area: 0.0.0.3
+        passive: false
     name: r3
     interfaces:
-    - ipv6: 2001:db8:3:2::2/64
+    - ipv6: 2001:db8:13::2/64
       ospf:
         area: 0.0.0.3
         passive: false
         network_type: point-to-point
+      pool: p2p_v6only
       linkindex: 3
       type: p2p
       name: r3 -> dut
@@ -7040,7 +7449,7 @@ nodes:
       ifname: eth1
       mtu: 1500
       neighbors:
-      - ipv6: 2001:db8:3:2::1/64
+      - ipv6: 2001:db8:13::1/64
         vrf: blue
         ifname: ethernet-1/3
         node: dut
@@ -7060,38 +7469,38 @@ nodes:
     id: 4
     role: router
     af:
-      ipv4: true
       ipv6: true
     mgmt:
       ifname: eth0
       mac: 08:4f:a9:04:00:00
       ipv4: 192.168.17.104
     hostname: clab-ml_17-r3
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.4/32
-      ipv6: 2001:db8:1:4::1/64
-      ospf:
-        area: 0.0.0.3
-        passive: false
+    router_id: 10.0.0.4
   r4:
     ospf:
       area: 0.0.0.4
       router_id: 10.0.0.5
       af:
-        ipv4: true
         ipv6: true
+    loopback:
+      pool: vrf_lb_v6only
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv6: 2001:db8:cafe:2000::5/128
+      ospf:
+        area: 0.0.0.4
+        passive: false
     name: r4
     interfaces:
-    - ipv6: 2001:db8:3:3::2/64
+    - ipv6: 2001:db8:13:1::2/64
       ospf:
         area: 0.0.0.4
         passive: false
         network_type: point-to-point
+      pool: p2p_v6only
       linkindex: 4
       type: p2p
       name: r4 -> dut
@@ -7099,7 +7508,7 @@ nodes:
       ifname: eth1
       mtu: 1500
       neighbors:
-      - ipv6: 2001:db8:3:3::1/64
+      - ipv6: 2001:db8:13:1::1/64
         vrf: blue
         ifname: ethernet-1/4
         node: dut
@@ -7119,57 +7528,87 @@ nodes:
     id: 5
     role: router
     af:
-      ipv4: true
       ipv6: true
     mgmt:
       ifname: eth0
       mac: 08:4f:a9:05:00:00
       ipv4: 192.168.17.105
     hostname: clab-ml_17-r4
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.5/32
-      ipv6: 2001:db8:1:5::1/64
-      ospf:
-        area: 0.0.0.4
-        passive: false
+    router_id: 10.0.0.5
 validate:
+- description: Check OSPFv2 adjacencies in red VRF
+  wait: 30
+  wait_msg: Waiting for OSPFv2 adjacencies
+  nodes:
+  - r1
+  - r2
+  plugin: ospf_neighbor(nodes.dut.vrfs.red.ospf.router_id)
+  stop_on_error: true
+  name: red_v2_adj
 - description: Check OSPFv3 adjacencies in red VRF
   wait: 30
+  wait_msg: Waiting for OSPFv3 adjacencies
   nodes:
   - r1
   - r2
   plugin: ospf6_neighbor(nodes.dut.vrfs.red.ospf.router_id)
   stop_on_error: true
-  name: red_adj
+  name: red_v3_adj
 - description: Check OSPFv3 adjacencies in blue VRF
   wait: 30
+  wait_msg: Waiting for OSPFv3 adjacencies
   nodes:
   - r3
   - r4
   plugin: ospf6_neighbor(nodes.dut.vrfs.blue.ospf.router_id)
+  stop_on_error: true
   name: blue_adj
-- description: Check OSPFv3 routes in red VRF
+- description: Check OSPFv2 routes in red VRF
   wait: 10
+  wait_msg: Waiting for OSPFv2 SPF run
   nodes:
   - r1
-  plugin: ospf6_prefix(nodes.r2.loopback.ipv6.replace('::1','::'))
-  name: red_route
+  plugin: ospf_prefix(nodes.r2.loopback.ipv4)
+  name: red_v4_route
+- description: Check connected OSPFv2 routes in red VRF
+  wait: 10
+  wait_msg: Waiting for OSPFv2 SPF run
+  nodes:
+  - r1
+  plugin: ospf_prefix(nodes.r2.interfaces[0].ipv4)
+  name: red_v4_conn
+- description: Check OSPFv3 routes in red VRF
+  wait: 10
+  wait_msg: Waiting for OSPFv3 SPF run
+  nodes:
+  - r1
+  plugin: ospf6_prefix(nodes.r2.loopback.ipv6)
+  name: red_v6_route
+- description: Check connected OSPFv3 routes in red VRF
+  wait: 10
+  wait_msg: Waiting for OSPFv3 SPF run
+  nodes:
+  - r1
+  plugin: ospf6_prefix(nodes.r2.interfaces[0].ipv6)
+  name: red_v6_conn
 - description: Ping-based reachability test in VRF red
-  wait: 20
+  wait: 5
+  nodes:
+  - r1
+  plugin: ping('r2',af='ipv4')
+  name: ping_red_v4
+- description: Ping-based reachability test in VRF red
+  wait: 5
   nodes:
   - r1
   plugin: ping('r2',af='ipv6')
-  name: ping_red
+  name: ping_red_v6
 - description: Check OSPFv3 routes in blue VRF
-  wait: 5
+  wait: 10
+  wait_msg: Waiting for OSPFv3 SPF run
   nodes:
   - r3
-  plugin: ospf6_prefix(nodes.r4.loopback.ipv6.replace('::1','::'))
+  plugin: ospf6_prefix(nodes.r4.loopback.ipv6)
   level: warning
   fail: Inter-area OSPFv3 routes are not propagated in VRF blue
   stop_on_error: true
@@ -7177,10 +7616,10 @@ validate:
 - description: Check for blue OSPFv3 routes in red VRF
   nodes:
   - r1
-  plugin: 
-    ospf6_prefix(nodes.r4.loopback.ipv6.replace('::1','::'),state='missing')
+  plugin: ospf6_prefix(nodes.r4.loopback.ipv6,state='missing')
   name: inter_route
 - description: Ping-based reachability test in VRF blue
+  wait: 5
   nodes:
   - r3
   plugin: ping('r4',af='ipv6')
@@ -7193,13 +7632,16 @@ validate:
 input:
 - /home/pipi/net101/tools/tests/integration/vrf/21-multi-vrf-ospfv3.yml
 - /home/pipi/net101/tools/tests/integration/vrf/defaults-ipv6-only.yml
+- /home/pipi/net101/tools/tests/integration/wait_times.yml
+- /home/pipi/net101/tools/tests/integration/warnings.yml
 - /home/pipi/.netlab.yml
 - package:topology-defaults.yml
-name: ml_17
 plugin:
 - multilab
+name: ml_17
 addressing:
   lan:
+    ipv4: 172.16.0.0/16
     prefix: 24
     ipv6: 2001:db8:2::/48
   loopback:
@@ -7207,6 +7649,7 @@ addressing:
     prefix: 32
     ipv6: 2001:db8:1::/48
   p2p:
+    ipv4: 10.1.0.0/16
     prefix: 30
     ipv6: 2001:db8:3::/48
   router_id:
@@ -7221,8 +7664,16 @@ addressing:
     prefix: 24
   l2only: {}
   vrf_loopback:
+    ipv4: 10.2.0.0/24
     prefix: 32
-    ipv6: 2001:db8:cafe::/48
+    ipv6: 2001:db8:cafe::/56
+  lan_v6only:
+    ipv6: 2001:db8:12::/48
+  p2p_v6only:
+    ipv6: 2001:db8:13::/48
+  vrf_lb_v6only:
+    ipv6: 2001:db8:cafe:2000::/56
+    prefix6: 128
 provider: clab
 ospf:
   area: 0.0.0.0
@@ -7231,10 +7682,12 @@ vrf:
 links:
 - interfaces:
   - node: dut
+    ipv4: 10.1.0.1/30
     ipv6: 2001:db8:3::1/64
     ifindex: 1
     ifname: ethernet-1/1
   - node: r1
+    ipv4: 10.1.0.2/30
     ipv6: 2001:db8:3::2/64
     ifindex: 1
     ifname: eth1
@@ -7244,13 +7697,16 @@ links:
   node_count: 2
   type: p2p
   prefix:
+    ipv4: 10.1.0.0/30
     ipv6: 2001:db8:3::/64
 - interfaces:
   - node: dut
+    ipv4: 10.1.0.5/30
     ipv6: 2001:db8:3:1::1/64
     ifindex: 2
     ifname: ethernet-1/2
   - node: r2
+    ipv4: 10.1.0.6/30
     ipv6: 2001:db8:3:1::2/64
     ifindex: 1
     ifname: eth1
@@ -7260,40 +7716,43 @@ links:
   node_count: 2
   type: p2p
   prefix:
+    ipv4: 10.1.0.4/30
     ipv6: 2001:db8:3:1::/64
 - interfaces:
   - node: dut
-    ipv6: 2001:db8:3:2::1/64
+    ipv6: 2001:db8:13::1/64
     ifindex: 3
     ifname: ethernet-1/3
   - node: r3
-    ipv6: 2001:db8:3:2::2/64
+    ipv6: 2001:db8:13::2/64
     ifindex: 1
     ifname: eth1
   ospf:
     area: 0.0.0.3
+  pool: p2p_v6only
   _linkname: vrfs.blue.links[1]
   vrf: blue
   linkindex: 3
   node_count: 2
   type: p2p
   prefix:
-    ipv6: 2001:db8:3:2::/64
+    ipv6: 2001:db8:13::/64
 - interfaces:
   - node: dut
-    ipv6: 2001:db8:3:3::1/64
+    ipv6: 2001:db8:13:1::1/64
     ifindex: 4
     ifname: ethernet-1/4
   - node: r4
-    ipv6: 2001:db8:3:3::2/64
+    ipv6: 2001:db8:13:1::2/64
     ifindex: 1
     ifname: eth1
   ospf:
     area: 0.0.0.4
+  pool: p2p_v6only
   _linkname: vrfs.blue.links[2]
   vrf: blue
   linkindex: 4
   node_count: 2
   type: p2p
   prefix:
-    ipv6: 2001:db8:3:3::/64
+    ipv6: 2001:db8:13:1::/64

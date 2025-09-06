@@ -1,3 +1,7 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -8,27 +12,24 @@ ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
-ok: [s2]
 ok: [s1]
+ok: [s2]
 
 TASK [Find device readiness script] ********************************************
 ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
-ok: [s2]
 ok: [s1]
+ok: [s2]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/eos-clab.yml for s2
 included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/iol-clab.yml for s1
-
-TASK [Wait for cEOS SSH daemon to start] ***************************************
-ok: [s2]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/eos-clab.yml for s2
 
 TASK [Check if 'sshpass' is installed] *****************************************
 ok: [s1 -> localhost]
@@ -43,40 +44,43 @@ TASK [Confirm s1 SSH server works] *********************************************
 ok: [s1] => 
   msg: Node s1 is ready.
 
+TASK [Wait for cEOS SSH daemon to start] ***************************************
+ok: [s2]
+
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s2, h1, h2, h3, h4, s1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, h3, h4, s1, s2
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
-ok: [s2]
 ok: [s1]
+ok: [s2]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
-ok: [s2]
 ok: [s1]
+ok: [s2]
 
 TASK [fail] ********************************************************************
-skipping: [s2]
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
 skipping: [s1]
+skipping: [s2]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
-ok: [s2]
 ok: [s1]
+ok: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
@@ -116,39 +120,39 @@ device including the indentation
 changed: [s2]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for s2, h1, h2, h3, h4, s1
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, h3, h4, s1, s2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
-ok: [s2]
 ok: [s1]
+ok: [s2]
 
 TASK [Find configuration template for initial] *********************************
 ok: [h1]
 ok: [h2]
-ok: [h4]
 ok: [h3]
-ok: [s2]
+ok: [h4]
 ok: [s1]
+ok: [s2]
 
 TASK [fail] ********************************************************************
-skipping: [s2]
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
 skipping: [s1]
+skipping: [s2]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
-ok: [s2]
 ok: [s1]
+ok: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [h1] => 
@@ -291,6 +295,74 @@ ok: [h4] =>
     ip addr add 172.16.1.4/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+ok: [s1] => 
+  msg: |-
+    initial configuration for s1
+    =========================================
+    hostname s1
+    !
+    no ip domain lookup
+    !
+    lldp run
+    !
+    ip host h1 172.16.0.1
+    ip host h2 172.16.0.2
+    ip host h3 172.16.1.3
+    ip host h4 172.16.1.4
+    ip host s2 10.0.0.6
+    !
+    ip routing
+    !
+    no ipv6 unicast-routing
+    !
+    !
+    bridge irb
+    !
+    bridge 1 protocol vlan-bridge
+    bridge 1 route ip
+    !
+    bridge 2 protocol vlan-bridge
+    bridge 2 route ip
+    !
+  
+    !
+    !
+    interface Loopback0
+     ip address 10.0.0.5 255.255.255.255
+    !
+    interface Ethernet0/0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Ethernet0/1
+     description s1 -> s2
+     no shutdown
+    !
+    interface Ethernet0/2
+     description [Access VLAN red] s1 -> h1
+     no shutdown
+    !
+    interface Ethernet0/3
+     description [Access VLAN blue] s1 -> h3
+     no shutdown
+    !
+    interface BDI700
+     description VLAN red (700) -> [h1,s2,h2]
+     ip address 172.16.0.5 255.255.255.0
+     no shutdown
+    !
+    interface BDI701
+     description VLAN blue (701) -> [h3,s2,h4]
+     ip address 172.16.1.5 255.255.255.0
+     no shutdown
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
+    !
+    no banner exec
+    no banner login
+    no banner incoming
 ok: [s2] => 
   msg: |-
     initial configuration for s2
@@ -345,82 +417,11 @@ ok: [s2] =>
     interface Vlan701
      description VLAN blue (701) -> [h3,s1,h4]
     !
-ok: [s1] => 
-  msg: |-
-    initial configuration for s1
-    =========================================
-    hostname s1
-    !
-    no ip domain lookup
-    !
-    lldp run
-    !
-    ip host h1 172.16.0.1
-    ip host h2 172.16.0.2
-    ip host h3 172.16.1.3
-    ip host h4 172.16.1.4
-    ip host s2 10.0.0.6
-    !
-    ip routing
-    !
-    no ipv6 unicast-routing
-    !
-    !
-    bridge irb
-    !
-    bridge 2 protocol vlan-bridge
-    bridge 2 route ip
-    !
-    bridge 1 protocol vlan-bridge
-    bridge 1 route ip
-    !
-  
-    !
-    !
-    interface Loopback0
-     ip address 10.0.0.5 255.255.255.255
-    !
-    interface Ethernet0/0
-     no lldp transmit
-     no lldp receive
-    !
-    interface Ethernet0/1
-     description s1 -> s2
-     no shutdown
-    !
-    interface Ethernet0/2
-     description [Access VLAN red] s1 -> h1
-     no shutdown
-    !
-    interface Ethernet0/3
-     description [Access VLAN blue] s1 -> h3
-     no shutdown
-    !
-    interface BDI700
-     description VLAN red (700) -> [h1,s2,h2]
-     ip address 172.16.0.5 255.255.255.0
-     no shutdown
-    !
-    interface BDI701
-     description VLAN blue (701) -> [h3,s2,h4]
-     ip address 172.16.1.5 255.255.255.0
-     no shutdown
-    !
-    !
-    line vty 0 4
-     exec-timeout 0 0
-    !
-    no banner exec
-    no banner login
-    no banner incoming
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for s2
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2, h3, h4
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for s1
-
-TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
-changed: [s2]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for s2
 
 TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
@@ -429,16 +430,16 @@ ok: [h3]
 ok: [h4]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h4 -> localhost]
 changed: [h1 -> localhost]
 changed: [h3 -> localhost]
+changed: [h4 -> localhost]
 changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+changed: [h1 -> localhost]
+changed: [h3 -> localhost]
 changed: [h2 -> localhost]
 changed: [h4 -> localhost]
-changed: [h3 -> localhost]
-changed: [h1 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -458,14 +459,17 @@ changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-ekl2ncff.sh] ***********************
-changed: [h1 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-4e67rij7.sh] ***********************
 changed: [h4 -> localhost]
-changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 changed: [h3 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
 changed: [s1]
+
+TASK [eos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/eos.j2] ***
+changed: [s2]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -523,13 +527,13 @@ ok: [s1] =>
     vlan configuration for s1
     =========================================
     !
-    bridge-domain 701
-     member Ethernet0/1 service-instance 701
-     member Ethernet0/3 service-instance 701
-    !
     bridge-domain 700
      member Ethernet0/1 service-instance 700
      member Ethernet0/2 service-instance 700
+    !
+    bridge-domain 701
+     member Ethernet0/1 service-instance 701
+     member Ethernet0/3 service-instance 701
     !
     interface Ethernet0/1
      service instance 700 ethernet
@@ -552,11 +556,11 @@ ok: [s2] =>
   msg: |-
     vlan configuration for s2
     =========================================
-    vlan 701
-     name blue
-    !
     vlan 700
      name red
+    !
+    vlan 701
+     name blue
     !
   
     !
@@ -602,8 +606,8 @@ ok: [s2]
 
 TASK [Find configuration template for routing] *********************************
 ok: [h1]
-ok: [h2]
 skipping: [s1]
+ok: [h2]
 ok: [h3]
 skipping: [s2]
 ok: [h4]
@@ -618,8 +622,8 @@ skipping: [s2]
 
 TASK [Find configuration deployment deploy_script for routing] *****************
 skipping: [s1]
-ok: [h1]
 skipping: [s2]
+ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
@@ -780,14 +784,14 @@ skipping: [h3]
 skipping: [h4]
 
 TASK [Container configuration for routing based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-0nam8tgf.sh] ***********************
-changed: [h2 -> localhost]
+TASK [Remove temporary file /tmp/h1_routing-8pljmk13.sh] ***********************
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 

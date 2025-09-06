@@ -1,3 +1,7 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -139,18 +143,6 @@ ok: [c1] =>
   
     NEED_APT_UPDATE=YES
   
-    # Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA
-    #
-    cat <<SCRIPT > /etc/sysctl.d/10-netsim.conf
-    net.ipv4.conf.all.arp_announce=2
-    net.ipv4.ip_forward=0
-    net.ipv6.conf.all.forwarding=0
-  
-    net.ipv6.conf.eth1.disable_ipv6=1
-  
-    SCRIPT
-    sysctl -p /etc/sysctl.d/10-netsim.conf
-  
     # Loopback addressing
   
     # Interface addressing and bonds, including any static routes
@@ -175,12 +167,26 @@ ok: [c1] =>
     Duplex=full
     SCRIPT
   
-    chmod 600 /etc/netplan/*
+    chmod 400 /etc/netplan/*
   
     echo -n 'Starting netplan generate ' && date
     netplan generate
     echo -n 'Starting netplan apply ' && date
-    nohup netplan apply &
+    netplan apply
+  
+    #
+    # Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA
+    # Do this after 'netplan apply', e.g. bond devices won't exist before that
+    #
+    cat <<SCRIPT > /etc/sysctl.d/10-netsim.conf
+    net.ipv4.conf.all.arp_announce=2
+    net.ipv4.ip_forward=0
+    net.ipv6.conf.all.forwarding=0
+  
+    net.ipv6.conf.eth1.disable_ipv6=1
+  
+    SCRIPT
+    sysctl -p /etc/sysctl.d/10-netsim.conf
 ok: [c2] => 
   msg: |-
     initial configuration for c2
@@ -245,18 +251,6 @@ ok: [c2] =>
   
     NEED_APT_UPDATE=YES
   
-    # Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA
-    #
-    cat <<SCRIPT > /etc/sysctl.d/10-netsim.conf
-    net.ipv4.conf.all.arp_announce=2
-    net.ipv4.ip_forward=0
-    net.ipv6.conf.all.forwarding=0
-  
-    net.ipv6.conf.eth1.disable_ipv6=1
-  
-    SCRIPT
-    sysctl -p /etc/sysctl.d/10-netsim.conf
-  
     # Loopback addressing
   
     # Interface addressing and bonds, including any static routes
@@ -281,12 +275,26 @@ ok: [c2] =>
     Duplex=full
     SCRIPT
   
-    chmod 600 /etc/netplan/*
+    chmod 400 /etc/netplan/*
   
     echo -n 'Starting netplan generate ' && date
     netplan generate
     echo -n 'Starting netplan apply ' && date
-    nohup netplan apply &
+    netplan apply
+  
+    #
+    # Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA
+    # Do this after 'netplan apply', e.g. bond devices won't exist before that
+    #
+    cat <<SCRIPT > /etc/sysctl.d/10-netsim.conf
+    net.ipv4.conf.all.arp_announce=2
+    net.ipv4.ip_forward=0
+    net.ipv6.conf.all.forwarding=0
+  
+    net.ipv6.conf.eth1.disable_ipv6=1
+  
+    SCRIPT
+    sysctl -p /etc/sysctl.d/10-netsim.conf
 ok: [server] => 
   msg: |-
     initial configuration for server
@@ -351,18 +359,6 @@ ok: [server] =>
   
     NEED_APT_UPDATE=YES
   
-    # Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA
-    #
-    cat <<SCRIPT > /etc/sysctl.d/10-netsim.conf
-    net.ipv4.conf.all.arp_announce=2
-    net.ipv4.ip_forward=0
-    net.ipv6.conf.all.forwarding=0
-  
-    net.ipv6.conf.eth1.disable_ipv6=1
-  
-    SCRIPT
-    sysctl -p /etc/sysctl.d/10-netsim.conf
-  
     # Loopback addressing
   
     # Interface addressing and bonds, including any static routes
@@ -388,20 +384,34 @@ ok: [server] =>
     Duplex=full
     SCRIPT
   
-    chmod 600 /etc/netplan/*
+    chmod 400 /etc/netplan/*
   
     echo -n 'Starting netplan generate ' && date
     netplan generate
     echo -n 'Starting netplan apply ' && date
-    nohup netplan apply &
+    netplan apply
+  
+    #
+    # Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA
+    # Do this after 'netplan apply', e.g. bond devices won't exist before that
+    #
+    cat <<SCRIPT > /etc/sysctl.d/10-netsim.conf
+    net.ipv4.conf.all.arp_announce=2
+    net.ipv4.ip_forward=0
+    net.ipv6.conf.all.forwarding=0
+  
+    net.ipv6.conf.eth1.disable_ipv6=1
+  
+    SCRIPT
+    sysctl -p /etc/sysctl.d/10-netsim.conf
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux.yml for c1, c2, server
 
 TASK [template] ****************************************************************
-changed: [c1]
 changed: [server]
 changed: [c2]
+changed: [c1]
 
 TASK [Execute /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux.j2] ***
 changed: [server]
@@ -447,7 +457,8 @@ ok: [c1] =>
     # This is a placeholder file. DHCP is configured during initial configuration
     #
     if [ `grep 'ID=ubuntu' /etc/os-release` ]; then
-      echo "DHCP is supported"
+      echo "DHCP is supported, it should work after another plea to netplan"
+      netplan apply
     else
       echo "netlab supports DHCP only on Ubuntu" >&2
       exit 1
@@ -459,7 +470,8 @@ ok: [c2] =>
     # This is a placeholder file. DHCP is configured during initial configuration
     #
     if [ `grep 'ID=ubuntu' /etc/os-release` ]; then
-      echo "DHCP is supported"
+      echo "DHCP is supported, it should work after another plea to netplan"
+      netplan apply
     else
       echo "netlab supports DHCP only on Ubuntu" >&2
       exit 1
@@ -471,7 +483,8 @@ ok: [server] =>
     # This is a placeholder file. DHCP is configured during initial configuration
     #
     if [ `grep 'ID=ubuntu' /etc/os-release` ]; then
-      echo "DHCP is supported"
+      echo "DHCP is supported, it should work after another plea to netplan"
+      netplan apply
     else
       echo "netlab supports DHCP only on Ubuntu" >&2
       exit 1
@@ -504,13 +517,13 @@ skipping: [c2]
 skipping: [server]
 
 TASK [Create DHCP deployment script] *******************************************
-changed: [c1]
-changed: [server]
 changed: [c2]
+changed: [server]
+changed: [c1]
 
 TASK [Execute /tmp/config.sh to deploy dhcp config from /home/pipi/net101/tools/netsim/ansible/templates/dhcp/linux.j2] ***
-changed: [c1]
 changed: [c2]
+changed: [c1]
 changed: [server]
 
 TASK [Figure out whether to deploy the module routing on current device] *******
@@ -573,5 +586,5 @@ server                     : ok=32   changed=7    unreachable=0    failed=0    s
 
 Use this topology to test the DHCPv4 server on your device. Use 'netlab
 validate' to check whether your device allocated IPv4 addresses to DHCP
-clients running Cumulus Linux.
+clients running on Linux VMs.
 

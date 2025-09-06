@@ -1,3 +1,7 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Invalid characters were found in group names but not replaced, use
 -vvvv to see details
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
@@ -21,10 +25,10 @@ TASK [Wait for device to become ready] *****************************************
 skipping: [probe]
 skipping: [x1]
 skipping: [x2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/vjunos-switch-clab.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vjunos-switch-clab.yml for dut
 
 TASK [Wait for SSH server] *****************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/vm-clab-ssh-check.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vm-clab-ssh-check.yml for dut
 
 TASK [Check if 'sshpass' is installed] *****************************************
 ok: [dut -> localhost]
@@ -45,13 +49,13 @@ ok: [dut] =>
   msg: Node dut is ready.
 
 TASK [Wait for ge-0/0/0 interface] *********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/vjunos-switch.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vjunos-switch.yml for dut
 
 TASK [Wait for ge-0/0/0 to appear] *********************************************
 ok: [dut]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1, x2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1, x2
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [probe]
@@ -62,8 +66,8 @@ ok: [dut]
 TASK [Find configuration template for normalize] *******************************
 ok: [probe]
 ok: [x1]
-ok: [x2]
 ok: [dut]
+ok: [x2]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -72,8 +76,8 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
-ok: [x2]
 ok: [probe]
+ok: [x2]
 ok: [dut]
 ok: [x1]
 
@@ -90,17 +94,17 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1, x2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1, x2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
-ok: [x1]
 ok: [probe]
+ok: [x1]
 ok: [x2]
 ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
-ok: [probe]
 ok: [x1]
+ok: [probe]
 ok: [dut]
 ok: [x2]
 
@@ -111,10 +115,10 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [probe]
 ok: [x2]
-ok: [x1]
+ok: [probe]
 ok: [dut]
+ok: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [probe] => 
@@ -201,6 +205,9 @@ ok: [probe] =>
     cat >/tmp/config <<CONFIG
     hostname probe
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     ipv6 forwarding
     vrf mgmt
@@ -224,7 +231,90 @@ ok: [probe] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    system {
+      host-name dut;
+      static-host-mapping {
+        probe inet 10.0.0.2;
+        x1 inet 172.42.42.1;
+        x2 inet 172.42.43.1;
+      }
+    }
+  
+  
+    interfaces {
+      ge-0/0/0 {
+        mtu 1514;
+      }
+      ge-0/0/1 {
+        mtu 1514;
+      }
+      ge-0/0/2 {
+        mtu 1514;
+      }
+  
+      lo0.0 {
+  
+          family inet {
+            address 10.0.0.1/32;
+          }
+          family inet6 {
+            address 2001:db8:1:1::1/64;
+          }
+  
+      }
+      ge-0/0/0.0 {
+        description "dut -> x1 [external]";
+  
+          family inet {
+            address 10.1.0.1/30;
+          }
+          family inet6 {
+            address 2001:db8:3::1/64;
+          }
+  
+      }
+      ge-0/0/1.0 {
+        description "dut -> x2 [external]";
+  
+          family inet {
+            address 10.1.0.5/30;
+          }
+          family inet6 {
+            address 2001:db8:3:1::1/64;
+          }
+  
+      }
+      ge-0/0/2.0 {
+        description "dut -> probe";
+  
+          family inet {
+            address 10.1.0.9/30;
+          }
+          family inet6 {
+            address 2001:db8:3:2::1/64;
+          }
+  
+      }
+    }
+    protocols {
+      lldp {
+        interface fxp0 {
+          disable;
+        }
+        interface all;
+      }
+      router-advertisement {
+        interface ge-0/0/0.0;
+        interface ge-0/0/1.0;
+        interface ge-0/0/2.0;
+      }
+    }
 ok: [x2] => 
   msg: |-
     initial configuration for x2
@@ -309,6 +399,9 @@ ok: [x2] =>
     cat >/tmp/config <<CONFIG
     hostname x2
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     ipv6 forwarding
     vrf mgmt
@@ -332,89 +425,8 @@ ok: [x2] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    system {
-      host-name dut;
-      static-host-mapping {
-        probe inet 10.0.0.2;
-        x1 inet 172.42.42.1;
-        x2 inet 172.42.43.1;
-      }
-    }
-  
-  
-    interfaces {
-      ge-0/0/0 {
-        mtu 1514;
-      }
-      ge-0/0/1 {
-        mtu 1514;
-      }
-      ge-0/0/2 {
-        mtu 1514;
-      }
-  
-      lo0.0 {
-  
-          family inet {
-            address 10.0.0.1/32;
-          }
-          family inet6 {
-            address 2001:db8:1:1::1/64;
-          }
-  
-      }
-      ge-0/0/0.0 {
-        description "dut -> x1 [external]";
-  
-          family inet {
-            address 10.1.0.1/30;
-          }
-          family inet6 {
-            address 2001:db8:3::1/64;
-          }
-  
-      }
-      ge-0/0/1.0 {
-        description "dut -> x2 [external]";
-  
-          family inet {
-            address 10.1.0.5/30;
-          }
-          family inet6 {
-            address 2001:db8:3:1::1/64;
-          }
-  
-      }
-      ge-0/0/2.0 {
-        description "dut -> probe";
-  
-          family inet {
-            address 10.1.0.9/30;
-          }
-          family inet6 {
-            address 2001:db8:3:2::1/64;
-          }
-  
-      }
-    }
-    protocols {
-      lldp {
-        interface fxp0 {
-          disable;
-        }
-        interface all;
-      }
-      router-advertisement {
-        interface ge-0/0/0.0;
-        interface ge-0/0/1.0;
-        interface ge-0/0/2.0;
-      }
-    }
 ok: [x1] => 
   msg: |-
     initial configuration for x1
@@ -499,6 +511,9 @@ ok: [x1] =>
     cat >/tmp/config <<CONFIG
     hostname x1
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     ipv6 forwarding
     vrf mgmt
@@ -522,13 +537,14 @@ ok: [x1] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for probe, x1, x2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for probe, x1, x2
 
-TASK [junos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/junos.j2] ***
+TASK [junos_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/junos.j2] ***
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
@@ -540,24 +556,24 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for probe, x1, x2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for probe, x1, x2
 
 TASK [template] ****************************************************************
-changed: [probe]
-changed: [x1]
 changed: [x2]
+changed: [x1]
+changed: [probe]
 
 TASK [set_fact] ****************************************************************
 ok: [probe]
 ok: [x1]
 ok: [x2]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x1]
-changed: [x2]
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [probe]
+changed: [x2]
+changed: [x1]
 
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [probe]
 skipping: [x1]
 skipping: [x2]
@@ -567,13 +583,13 @@ PLAY [Deploy module-specific configurations] ***********************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [probe]
 ok: [x1]
-ok: [x2]
 ok: [dut]
+ok: [x2]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1, x2 => (item=routing)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1, x2 => (item=bgp)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1, x2 => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1, x2 => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1, x2 => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1, x2 => (item=bgp)
 
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [probe]
@@ -667,23 +683,163 @@ TASK [Deploy routing configuration] ********************************************
 skipping: [probe]
 skipping: [x1]
 skipping: [x2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
 
-TASK [junos_config: deploying routing from /home/pipi/net101/tools/netsim/ansible/templates/routing/junos.j2] ***
+TASK [junos_config: deploying routing from /home/pipi/netlab_gh/netsim/ansible/templates/routing/junos.j2] ***
 [WARNING]:  statement not found
 changed: [dut]
+
+TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [probe]
+ok: [x1]
+ok: [x2]
+ok: [dut]
+
+TASK [Find configuration template for ospf] ************************************
+skipping: [x1]
+skipping: [x2]
+ok: [probe]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [probe]
+skipping: [x1]
+skipping: [x2]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+skipping: [x1]
+skipping: [x2]
+ok: [probe]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [x1]
+skipping: [x2]
+ok: [dut] => 
+  msg: |-
+    ospf configuration for dut
+    =========================================
+    routing-options {
+      router-id 10.0.0.1
+    }
+    protocols {
+      delete: ospf;
+    }
+  
+    protocols {
+      ospf {
+        area 0.0.0.0 {
+          interface lo0.0 {
+          }
+        }
+        area 0.0.0.0 {
+          interface ge-0/0/2.0 {
+            interface-type p2p;
+          }
+        }
+      }
+    }
+  
+    protocols {
+      delete: ospf3;
+    }
+  
+    protocols {
+      ospf3 {
+        area 0.0.0.0 {
+          interface lo0.0 {
+          }
+        }
+        area 0.0.0.0 {
+          interface ge-0/0/2.0 {
+            interface-type p2p;
+          }
+        }
+      }
+    }
+ok: [probe] => 
+  msg: |-
+    ospf configuration for probe
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.2
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! probe -> dut
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    ! OSPFv3 FRR configuration
+    !
+    interface lo
+    !
+     ipv6 ospf6 area 0.0.0.0
+    !
+    interface eth1
+    ! probe -> dut
+     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 network point-to-point
+    !
+    !
+    router ospf6
+     ospf6 router-id 10.0.0.2
+     timers lsa min-arrival 100
+     timers throttle spf 10 50 500
+  
+  
+    exit
+  
+    !
+    do write
+
+TASK [Deploy ospf configuration] ***********************************************
+skipping: [x1]
+skipping: [x2]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for probe
+
+TASK [junos_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/junos.j2] ***
+changed: [dut]
+
+TASK [template] ****************************************************************
+changed: [probe]
+
+TASK [set_fact] ****************************************************************
+ok: [probe]
+
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
+skipping: [probe]
+
+TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
+changed: [probe]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [probe]
 ok: [x1]
-ok: [x2]
 ok: [dut]
+ok: [x2]
 
 TASK [Find configuration template for bgp] *************************************
 ok: [probe]
-ok: [dut]
-ok: [x1]
 ok: [x2]
+ok: [x1]
+ok: [dut]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -692,65 +848,58 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
-ok: [x2]
 ok: [probe]
 ok: [dut]
 ok: [x1]
+ok: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [probe] => 
+ok: [x1] => 
   msg: |-
-    bgp configuration for probe
+    bgp configuration for x1
     =========================================
     !
-    router bgp 65000
+    router bgp 65100
       no bgp ebgp-requires-policy
       no bgp default ipv4-unicast
       bgp default show-hostname
       bgp default show-nexthop-hostname
-  
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
-      bgp router-id 10.0.0.2
+      bgp router-id 172.42.42.1
     !
-      neighbor 10.0.0.1 remote-as 65000
-      neighbor 10.0.0.1 description dut
-      neighbor 10.0.0.1 update-source lo
+      neighbor 10.1.0.1 remote-as 65000
+      neighbor 10.1.0.1 description dut
     !
-      neighbor 2001:db8:1:1::1 remote-as 65000
-      neighbor 2001:db8:1:1::1 description dut
-      neighbor 2001:db8:1:1::1 update-source lo
+      neighbor 2001:db8:3::1 remote-as 65000
+      neighbor 2001:db8:3::1 description dut
     !
      address-family ipv4 unicast
     !
   
     !
-      network 10.0.0.2/32
+      network 172.42.42.0/24
     !
     !
     !
-      neighbor 10.0.0.1 activate
-      neighbor 10.0.0.1 next-hop-self
-      no neighbor 10.0.0.1 send-community all
-      neighbor 10.0.0.1 send-community standard
-      neighbor 10.0.0.1 send-community large
-      neighbor 10.0.0.1 send-community extended
+      neighbor 10.1.0.1 activate
+      no neighbor 10.1.0.1 send-community all
+      neighbor 10.1.0.1 send-community standard
+      neighbor 10.1.0.1 send-community large
     !
      address-family ipv6 unicast
     !
   
     !
-      network 2001:db8:1:2::/64
+      network 2001:db8:cafe:42::/64
     !
     !
     !
-      neighbor 2001:db8:1:1::1 activate
-      neighbor 2001:db8:1:1::1 next-hop-self
-      no neighbor 2001:db8:1:1::1 send-community all
-      neighbor 2001:db8:1:1::1 send-community standard
-      neighbor 2001:db8:1:1::1 send-community large
-      neighbor 2001:db8:1:1::1 send-community extended
+      neighbor 2001:db8:3::1 activate
+      no neighbor 2001:db8:3::1 send-community all
+      neighbor 2001:db8:3::1 send-community standard
+      neighbor 2001:db8:3::1 send-community large
     !
     !
     !
@@ -931,53 +1080,58 @@ ok: [dut] =>
         }
       }
     }
-ok: [x1] => 
+ok: [probe] => 
   msg: |-
-    bgp configuration for x1
+    bgp configuration for probe
     =========================================
     !
-    router bgp 65100
+    router bgp 65000
       no bgp ebgp-requires-policy
       no bgp default ipv4-unicast
       bgp default show-hostname
       bgp default show-nexthop-hostname
-  
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
-      bgp router-id 172.42.42.1
+      bgp router-id 10.0.0.2
     !
-      neighbor 10.1.0.1 remote-as 65000
-      neighbor 10.1.0.1 description dut
+      neighbor 10.0.0.1 remote-as 65000
+      neighbor 10.0.0.1 description dut
+      neighbor 10.0.0.1 update-source lo
     !
-      neighbor 2001:db8:3::1 remote-as 65000
-      neighbor 2001:db8:3::1 description dut
+      neighbor 2001:db8:1:1::1 remote-as 65000
+      neighbor 2001:db8:1:1::1 description dut
+      neighbor 2001:db8:1:1::1 update-source lo
     !
      address-family ipv4 unicast
     !
   
     !
-      network 172.42.42.0/24
+      network 10.0.0.2/32
     !
     !
     !
-      neighbor 10.1.0.1 activate
-      no neighbor 10.1.0.1 send-community all
-      neighbor 10.1.0.1 send-community standard
-      neighbor 10.1.0.1 send-community large
+      neighbor 10.0.0.1 activate
+      neighbor 10.0.0.1 next-hop-self
+      no neighbor 10.0.0.1 send-community all
+      neighbor 10.0.0.1 send-community standard
+      neighbor 10.0.0.1 send-community large
+      neighbor 10.0.0.1 send-community extended
     !
      address-family ipv6 unicast
     !
   
     !
-      network 2001:db8:cafe:42::/64
+      network 2001:db8:1:2::/64
     !
     !
     !
-      neighbor 2001:db8:3::1 activate
-      no neighbor 2001:db8:3::1 send-community all
-      neighbor 2001:db8:3::1 send-community standard
-      neighbor 2001:db8:3::1 send-community large
+      neighbor 2001:db8:1:1::1 activate
+      neighbor 2001:db8:1:1::1 next-hop-self
+      no neighbor 2001:db8:1:1::1 send-community all
+      neighbor 2001:db8:1:1::1 send-community standard
+      neighbor 2001:db8:1:1::1 send-community large
+      neighbor 2001:db8:1:1::1 send-community extended
     !
     !
     !
@@ -992,7 +1146,6 @@ ok: [x2] =>
       no bgp default ipv4-unicast
       bgp default show-hostname
       bgp default show-nexthop-hostname
-  
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
@@ -1035,10 +1188,10 @@ ok: [x2] =>
     do write
 
 TASK [Deploy bgp configuration] ************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for probe, x1, x2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for probe, x1, x2
 
-TASK [junos_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/junos.j2] ***
+TASK [junos_config: deploying bgp from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/junos.j2] ***
 changed: [dut]
 
 TASK [template] ****************************************************************
@@ -1048,163 +1201,23 @@ changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [probe]
-ok: [x1]
 ok: [x2]
+ok: [x1]
 
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [probe]
 skipping: [x1]
 skipping: [x2]
 
-TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [probe]
 changed: [x1]
 changed: [x2]
-
-TASK [Figure out whether to deploy the module ospf on current device] **********
-ok: [probe]
-ok: [x1]
-ok: [dut]
-ok: [x2]
-
-TASK [Find configuration template for ospf] ************************************
-skipping: [x1]
-skipping: [x2]
-ok: [probe]
-ok: [dut]
-
-TASK [fail] ********************************************************************
-skipping: [dut]
-skipping: [probe]
-skipping: [x1]
-skipping: [x2]
-
-TASK [Find configuration deployment deploy_script for ospf] ********************
-skipping: [x1]
-skipping: [x2]
-ok: [probe]
-ok: [dut]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [x1]
-skipping: [x2]
-ok: [dut] => 
-  msg: |-
-    ospf configuration for dut
-    =========================================
-    routing-options {
-      router-id 10.0.0.1
-    }
-    protocols {
-      delete: ospf;
-    }
-  
-    protocols {
-      ospf {
-        area 0.0.0.0 {
-          interface lo0.0 {
-          }
-        }
-        area 0.0.0.0 {
-          interface ge-0/0/2.0 {
-            interface-type p2p;
-          }
-        }
-      }
-    }
-  
-    protocols {
-      delete: ospf3;
-    }
-  
-    protocols {
-      ospf3 {
-        area 0.0.0.0 {
-          interface lo0.0 {
-          }
-        }
-        area 0.0.0.0 {
-          interface ge-0/0/2.0 {
-            interface-type p2p;
-          }
-        }
-      }
-    }
-ok: [probe] => 
-  msg: |-
-    ospf configuration for probe
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.2
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! probe -> dut
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    ! OSPFv3 FRR configuration
-    !
-    interface lo
-    !
-     ipv6 ospf6 area 0.0.0.0
-    !
-    interface eth1
-    ! probe -> dut
-     ipv6 ospf6 area 0.0.0.0
-     ipv6 ospf6 network point-to-point
-    !
-    !
-    router ospf6
-     ospf6 router-id 10.0.0.2
-     timers lsa min-arrival 100
-     timers throttle spf 10 50 500
-  
-  
-    exit
-  
-    !
-    do write
-
-TASK [Deploy ospf configuration] ***********************************************
-skipping: [x1]
-skipping: [x2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for probe
-
-TASK [junos_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/junos.j2] ***
-changed: [dut]
-
-TASK [template] ****************************************************************
-changed: [probe]
-
-TASK [set_fact] ****************************************************************
-ok: [probe]
-
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-skipping: [probe]
-
-TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [probe]
 
 PLAY [Deploy custom deployment templates] **************************************
 
 TASK [Run custom configuration deployment scripts] *****************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-custom-config.yml for dut => (item=bgp.policy)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-custom-config.yml for dut => (item=bgp.policy)
 
 TASK [Find configuration template] *********************************************
 ok: [dut]
@@ -1218,16 +1231,16 @@ ok: [dut -> localhost]
 TASK [fail] ********************************************************************
 skipping: [dut]
 
-TASK [Process template /home/pipi/net101/tools/netsim/extra/bgp.policy/junos.j2 for dut] ***
+TASK [Process template /home/pipi/netlab_gh/netsim/extra/bgp.policy/junos.j2 for dut] ***
 skipping: [dut]
 
 TASK [Find custom configuration deployment script] *****************************
 ok: [dut]
 
 TASK [Run the configuration deployment script] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
 
-TASK [junos_config: deploying bgp.policy from /home/pipi/net101/tools/netsim/extra/bgp.policy/junos.j2] ***
+TASK [junos_config: deploying bgp.policy from /home/pipi/netlab_gh/netsim/extra/bgp.policy/junos.j2] ***
 ok: [dut]
 
 PLAY RECAP *********************************************************************

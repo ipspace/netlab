@@ -1,3 +1,7 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -19,7 +23,7 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [dut]
@@ -52,7 +56,7 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
@@ -162,6 +166,9 @@ ok: [dut] =>
     cat >/tmp/config <<CONFIG
     hostname dut
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -185,6 +192,7 @@ ok: [dut] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [x1] => 
   msg: |-
@@ -273,6 +281,9 @@ ok: [x1] =>
     cat >/tmp/config <<CONFIG
     hostname x1
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -296,6 +307,7 @@ ok: [x1] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [x2] => 
   msg: |-
@@ -384,6 +396,9 @@ ok: [x2] =>
     cat >/tmp/config <<CONFIG
     hostname x2
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -407,10 +422,11 @@ ok: [x2] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for dut, x1, x2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for dut, x1, x2
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [dut -> localhost]
@@ -421,24 +437,24 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for dut, x1, x2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for dut, x1, x2
 
 TASK [template] ****************************************************************
 changed: [dut]
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
 ok: [x1]
 ok: [x2]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+changed: [x1]
 changed: [dut]
 changed: [x2]
-changed: [x1]
 
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [dut]
 skipping: [x1]
 skipping: [x2]
@@ -451,8 +467,8 @@ ok: [x1]
 ok: [x2]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=ospf)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=vrf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=vrf)
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [dut]
@@ -471,10 +487,38 @@ skipping: [x2]
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 ok: [dut]
-ok: [x1]
 ok: [x2]
+ok: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => 
+  msg: |-
+    ospf configuration for dut
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.1
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! dut -> [x1,x2]
+     ip ospf area 0.0.0.0
+     ip ospf priority 200
+    !
+  
+    !
+    do write
 ok: [x1] => 
   msg: |-
     ospf configuration for x1
@@ -502,34 +546,6 @@ ok: [x1] =>
     interface eth2
     ! x1 -> [dut,x2]
      ip ospf area 0.0.0.0
-    !
-  
-    !
-    do write
-ok: [dut] => 
-  msg: |-
-    ospf configuration for dut
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.1
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! dut -> [x1,x2]
-     ip ospf area 0.0.0.0
-     ip ospf priority 200
     !
   
     !
@@ -567,11 +583,11 @@ ok: [x2] =>
     do write
 
 TASK [Deploy ospf configuration] ***********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for dut, x1, x2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for dut, x1, x2
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [dut]
+changed: [x1]
 changed: [x2]
 
 TASK [set_fact] ****************************************************************
@@ -579,15 +595,15 @@ ok: [dut]
 ok: [x1]
 ok: [x2]
 
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
 skipping: [dut]
 skipping: [x1]
 skipping: [x2]
 
-TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
+changed: [x2]
 changed: [x1]
 changed: [dut]
-changed: [x2]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [dut]
@@ -667,7 +683,7 @@ ok: [dut] =>
 TASK [Deploy vrf configuration] ************************************************
 skipping: [x1]
 skipping: [x2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for dut
 
 TASK [template] ****************************************************************
 changed: [dut]
@@ -675,10 +691,10 @@ changed: [dut]
 TASK [set_fact] ****************************************************************
 ok: [dut]
 
-TASK [run /tmp/config.sh to deploy vrf config from /home/pipi/net101/tools/netsim/ansible/templates/vrf/frr.j2] ***
+TASK [run /tmp/config.sh to deploy vrf config from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/frr.j2] ***
 changed: [dut]
 
-TASK [run vtysh to import vrf config from /home/pipi/net101/tools/netsim/ansible/templates/vrf/frr.j2] ***
+TASK [run vtysh to import vrf config from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/frr.j2] ***
 skipping: [dut]
 
 PLAY [Deploy custom deployment templates] **************************************

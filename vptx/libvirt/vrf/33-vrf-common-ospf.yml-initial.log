@@ -1,3 +1,7 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -19,13 +23,13 @@ TASK [Wait for device to become ready] *****************************************
 skipping: [r1]
 skipping: [r2]
 skipping: [srv]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vptx.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/vptx.yml for dut
 
 TASK [Wait for et-0/0/0 to appear] *********************************************
 ok: [dut]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for r1, r2, srv, dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, srv
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [r1]
@@ -35,15 +39,15 @@ ok: [dut]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [r1]
-ok: [srv]
 ok: [r2]
+ok: [srv]
 ok: [dut]
 
 TASK [fail] ********************************************************************
+skipping: [dut]
 skipping: [r1]
 skipping: [r2]
 skipping: [srv]
-skipping: [dut]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [r1]
@@ -52,19 +56,19 @@ ok: [srv]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [dut]
 skipping: [r1]
 skipping: [r2]
 skipping: [srv]
-skipping: [dut]
 
 TASK [Deploy normalize configuration] ******************************************
+skipping: [dut]
 skipping: [r1]
 skipping: [r2]
 skipping: [srv]
-skipping: [dut]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for r1, r2, srv, dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, srv
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [r1]
@@ -79,10 +83,10 @@ ok: [srv]
 ok: [dut]
 
 TASK [fail] ********************************************************************
+skipping: [dut]
 skipping: [r1]
 skipping: [r2]
 skipping: [srv]
-skipping: [dut]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [r1]
@@ -424,14 +428,35 @@ ok: [dut] =>
   
   
     policy-options {
-      community tg_65000_2 members target:65000:2;
-      community tg_65000_3 members target:65000:3;
       community tg_65000_1 members target:65000:1;
+      community tg_65000_3 members target:65000:3;
+      community tg_65000_2 members target:65000:2;
     }
   
   
   
     policy-options {
+      policy-statement vrf-red-rt-export {
+        term 1 {
+          then {
+            community add tg_65000_1;
+            accept;
+          }
+        }
+      }
+  
+  
+  
+  
+      policy-statement vrf-red-rt-import {
+        term 1 {
+          from community [ tg_65000_1 tg_65000_3 ];
+          then accept;
+        }
+        term default {
+          then reject;
+        }
+      }
       policy-statement vrf-blue-rt-export {
         term 1 {
           then {
@@ -475,30 +500,25 @@ ok: [dut] =>
           then reject;
         }
       }
-      policy-statement vrf-red-rt-export {
-        term 1 {
-          then {
-            community add tg_65000_1;
-            accept;
-          }
-        }
-      }
-  
-  
-  
-  
-      policy-statement vrf-red-rt-import {
-        term 1 {
-          from community [ tg_65000_1 tg_65000_3 ];
-          then accept;
-        }
-        term default {
-          then reject;
-        }
-      }
     }
   
     routing-instances {
+  
+      red {
+        instance-type vrf;
+        route-distinguisher 65000:1;
+  
+        vrf-import vrf-red-rt-import;
+        vrf-export vrf-red-rt-export;
+  
+        routing-options {
+          auto-export;
+        }
+  
+        interface et-0/0/0.0;
+  
+      }
+  
   
       blue {
         instance-type vrf;
@@ -528,22 +548,6 @@ ok: [dut] =>
         }
   
         interface et-0/0/2.0;
-  
-      }
-  
-  
-      red {
-        instance-type vrf;
-        route-distinguisher 65000:1;
-  
-        vrf-import vrf-red-rt-import;
-        vrf-export vrf-red-rt-export;
-  
-        routing-options {
-          auto-export;
-        }
-  
-        interface et-0/0/0.0;
   
       }
   
@@ -601,8 +605,11 @@ ok: [dut] =>
     }
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for r1, r2, srv
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for r1, r2, srv
+
+TASK [junos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/junos.j2] ***
+changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [r1 -> localhost]
@@ -613,11 +620,11 @@ skipping: [r2]
 skipping: [srv]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, srv
+included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, srv
 
 TASK [template] ****************************************************************
-changed: [r2]
 changed: [srv]
+changed: [r2]
 changed: [r1]
 
 TASK [set_fact] ****************************************************************
@@ -625,18 +632,15 @@ ok: [r1]
 ok: [r2]
 ok: [srv]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [r1]
 changed: [r2]
 changed: [srv]
 
-TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r1]
 skipping: [r2]
 skipping: [srv]
-
-TASK [junos_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/junos.j2] ***
-changed: [dut]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -647,8 +651,8 @@ ok: [srv]
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, srv => (item=ospf)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, srv => (item=vrf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, srv => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, srv => (item=vrf)
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [r1]
@@ -657,10 +661,10 @@ ok: [srv]
 ok: [dut]
 
 TASK [Find configuration template for ospf] ************************************
-ok: [r2]
 ok: [r1]
-ok: [srv]
+ok: [r2]
 ok: [dut]
+ok: [srv]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -765,31 +769,31 @@ ok: [r2] =>
     do write
 
 TASK [Deploy ospf configuration] ***********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2, srv
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2, srv
 
-TASK [junos_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/junos.j2] ***
+TASK [junos_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/junos.j2] ***
 ok: [dut]
 
 TASK [template] ****************************************************************
-changed: [r2]
-changed: [srv]
 changed: [r1]
+changed: [srv]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
-ok: [r2]
 ok: [srv]
+ok: [r2]
 
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 skipping: [r1]
 skipping: [r2]
 skipping: [srv]
 
-TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [r1]
-changed: [r2]
+TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [srv]
+changed: [r2]
+changed: [r1]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [r1]
@@ -827,6 +831,46 @@ ok: [dut] =>
   
     policy-options {
       community x-route-permit-mark members large:65535:0:65536;
+  
+      policy-statement vrf-red-bgp-export {
+        term redis_bgp {
+          from {
+            protocol bgp;
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+        term redis_direct {
+          from {
+            protocol direct;
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+        term redis_ospf {
+          from {
+            protocol ospf;
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+        term redis_ospf3 {
+          from {
+            protocol ospf3;
+          }
+          then {
+            community add x-route-permit-mark;
+            next policy;
+          }
+        }
+      }
+  
   
       policy-statement vrf-blue-bgp-export {
         term redis_bgp {
@@ -907,50 +951,28 @@ ok: [dut] =>
         }
       }
   
-  
-      policy-statement vrf-red-bgp-export {
-        term redis_bgp {
-          from {
-            protocol bgp;
-          }
-          then {
-            community add x-route-permit-mark;
-            next policy;
-          }
-        }
-        term redis_direct {
-          from {
-            protocol direct;
-          }
-          then {
-            community add x-route-permit-mark;
-            next policy;
-          }
-        }
-        term redis_ospf {
-          from {
-            protocol ospf;
-          }
-          then {
-            community add x-route-permit-mark;
-            next policy;
-          }
-        }
-        term redis_ospf3 {
-          from {
-            protocol ospf3;
-          }
-          then {
-            community add x-route-permit-mark;
-            next policy;
-          }
-        }
-      }
-  
     }
   
   
     routing-instances {
+  
+      red {
+        routing-options {
+          autonomous-system 65000;
+          router-id 10.0.0.1
+        }
+  
+        protocols {
+          bgp {
+  
+            group ebgp-peers {
+              export [  ];
+              advertise-inactive;
+            }
+          }
+        }
+      }
+  
   
       blue {
         routing-options {
@@ -987,25 +1009,55 @@ ok: [dut] =>
         }
       }
   
-  
+    }
+    routing-instances {
       red {
         routing-options {
-          autonomous-system 65000;
-          router-id 10.0.0.1
+          router-id 10.100.0.100
         }
+      }
+    }
   
-        protocols {
-          bgp {
   
-            group ebgp-peers {
-              export [  ];
-              advertise-inactive;
-            }
+  
+    policy-options {
+      policy-statement vrf-red-ospf-export {
+        term redis_direct {
+          from {
+            protocol direct;
+          }
+          then accept;
+        }
+        term redis_bgp {
+          from protocol bgp;
+          then {
+            accept;
+          }
+        }
+        term redis_local_target {
+          from community [ tg_65000_1 tg_65000_3 ];
+          then accept;
+        }
+      }
+    }
+    routing-instances {
+      red {
+    protocols {
+      delete: ospf;
+    }
+  
+    protocols {
+      ospf {
+        export vrf-red-ospf-export;
+        area 0.0.0.0 {
+          interface et-0/0/0.0 {
+            interface-type p2p;
           }
         }
       }
-  
     }
+    } }
+  
     routing-instances {
       blue {
         routing-options {
@@ -1102,62 +1154,14 @@ ok: [dut] =>
       }
     }
     } }
-  
-    routing-instances {
-      red {
-        routing-options {
-          router-id 10.100.0.100
-        }
-      }
-    }
-  
-  
-  
-    policy-options {
-      policy-statement vrf-red-ospf-export {
-        term redis_direct {
-          from {
-            protocol direct;
-          }
-          then accept;
-        }
-        term redis_bgp {
-          from protocol bgp;
-          then {
-            accept;
-          }
-        }
-        term redis_local_target {
-          from community [ tg_65000_1 tg_65000_3 ];
-          then accept;
-        }
-      }
-    }
-    routing-instances {
-      red {
-    protocols {
-      delete: ospf;
-    }
-  
-    protocols {
-      ospf {
-        export vrf-red-ospf-export;
-        area 0.0.0.0 {
-          interface et-0/0/0.0 {
-            interface-type p2p;
-          }
-        }
-      }
-    }
-    } }
 
 TASK [Deploy vrf configuration] ************************************************
 skipping: [r1]
 skipping: [r2]
 skipping: [srv]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for dut
 
-TASK [junos_config: deploying vrf from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/junos.j2] ***
+TASK [junos_config: deploying vrf from /home/pipi/net101/tools/netsim/ansible/templates/vrf/junos.j2] ***
 [WARNING]:  statement not found
 changed: [dut]
 

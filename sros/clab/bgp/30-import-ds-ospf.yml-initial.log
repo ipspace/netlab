@@ -1,3 +1,7 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -305,6 +309,7 @@ ok: [dut] =>
   
   
   
+  
     updates:
   
     - path: configure/router[router-name=Base]
@@ -448,8 +453,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, r2
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [r2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -467,48 +472,182 @@ PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
-ok: [r2]
 ok: [x1]
+ok: [r2]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, x1 => (item=routing)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, x1 => (item=bgp)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r2, x1 => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, r2 => (item=routing)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, r2 => (item=ospf)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, r2 => (item=bgp)
 
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [dut]
-ok: [r2]
 ok: [x1]
+ok: [r2]
 
 TASK [Find configuration template for routing] *********************************
 skipping: [dut]
-skipping: [r2]
 skipping: [x1]
+skipping: [r2]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
-skipping: [r2]
 skipping: [x1]
+skipping: [r2]
 
 TASK [Find configuration deployment deploy_script for routing] *****************
 skipping: [dut]
-skipping: [r2]
 skipping: [x1]
+skipping: [r2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
-skipping: [r2]
 skipping: [x1]
+skipping: [r2]
 
 TASK [Deploy routing configuration] ********************************************
 skipping: [dut]
-skipping: [r2]
 skipping: [x1]
+skipping: [r2]
+
+TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [dut]
+ok: [x1]
+ok: [r2]
+
+TASK [Find configuration template for ospf] ************************************
+skipping: [x1]
+ok: [dut]
+ok: [r2]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [r2]
+
+TASK [Find configuration deployment deploy_script for ospf] ********************
+skipping: [x1]
+ok: [dut]
+ok: [r2]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [x1]
+ok: [r2] => 
+  msg: |-
+    ospf configuration for r2
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.3
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! r2 -> dut
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    ! OSPFv3 FRR configuration
+    !
+    interface lo
+    !
+     ipv6 ospf6 area 0.0.0.0
+    !
+    interface eth1
+    ! r2 -> dut
+     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 network point-to-point
+    !
+    !
+    router ospf6
+     ospf6 router-id 10.0.0.3
+     timers lsa min-arrival 100
+     timers throttle spf 10 50 500
+  
+  
+    exit
+  
+    !
+    do write
+ok: [dut] => 
+  msg: |-
+    ospf configuration for dut
+    =========================================
+  
+  
+  
+  
+    updates:
+  
+  
+    - path: configure/router[router-name=Base]/ospf[ospf-instance=0]
+  
+      val:
+        admin-state: enable
+        router-id: 10.0.0.1
+        area:
+        - area-id: "0.0.0.0"
+          interface:
+          - interface-name: "system"
+          - interface-name: "eth-1/1/c2"
+            interface-type: "point-to-point"
+  
+  
+  
+    - path: configure/router[router-name=Base]/ospf3[ospf-instance=0]
+  
+      val:
+        admin-state: enable
+        router-id: 10.0.0.1
+        area:
+        - area-id: "0.0.0.0"
+          interface:
+          - interface-name: "system"
+          - interface-name: "eth-1/1/c2"
+            interface-type: "point-to-point"
+
+TASK [Deploy ospf configuration] ***********************************************
+skipping: [x1]
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for dut
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r2
+
+TASK [Generate gNMI YAML configuration] ****************************************
+ok: [dut]
+
+TASK [Update ospf node configuration from gNMI template /home/pipi/net101/tools/netsim/ansible/templates/ospf/sros.j2] ***
+changed: [dut]
+
+TASK [debug] *******************************************************************
+skipping: [dut]
+
+TASK [template] ****************************************************************
+changed: [r2]
+
+TASK [set_fact] ****************************************************************
+ok: [r2]
+
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+skipping: [r2]
+
+TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+changed: [r2]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [dut]
-ok: [r2]
 ok: [x1]
+ok: [r2]
 
 TASK [Find configuration template for bgp] *************************************
 skipping: [r2]
@@ -517,8 +656,8 @@ ok: [x1]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
-skipping: [r2]
 skipping: [x1]
+skipping: [r2]
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
 skipping: [r2]
@@ -688,7 +827,6 @@ ok: [x1] =>
       no bgp default ipv4-unicast
       bgp default show-hostname
       bgp default show-nexthop-hostname
-  
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
@@ -755,164 +893,6 @@ skipping: [x1]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [x1]
-
-TASK [Figure out whether to deploy the module ospf on current device] **********
-ok: [dut]
-ok: [r2]
-ok: [x1]
-
-TASK [Find configuration template for ospf] ************************************
-skipping: [x1]
-ok: [dut]
-ok: [r2]
-
-TASK [fail] ********************************************************************
-skipping: [dut]
-skipping: [r2]
-skipping: [x1]
-
-TASK [Find configuration deployment deploy_script for ospf] ********************
-skipping: [x1]
-ok: [dut]
-ok: [r2]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [x1]
-ok: [r2] => 
-  msg: |-
-    ospf configuration for r2
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.3
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! r2 -> dut
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    ! OSPFv3 FRR configuration
-    !
-    interface lo
-    !
-     ipv6 ospf6 area 0.0.0.0
-    !
-    interface eth1
-    ! r2 -> dut
-     ipv6 ospf6 area 0.0.0.0
-     ipv6 ospf6 network point-to-point
-    !
-    !
-    router ospf6
-     ospf6 router-id 10.0.0.3
-     timers lsa min-arrival 100
-     timers throttle spf 10 50 500
-  
-  
-    exit
-  
-    !
-    do write
-ok: [dut] => 
-  msg: |-
-    ospf configuration for dut
-    =========================================
-  
-  
-  
-    updates:
-  
-  
-  
-  
-  
-    - path: configure/router[router-name=Base]/ospf[ospf-instance=0]
-      val:
-        admin-state: enable
-        router-id: 10.0.0.1
-        area:
-        - area-id: "0.0.0.0"
-          interface:
-          - interface-name: "system"
-  
-  
-  
-    - path: configure/router[router-name=Base]/ospf[ospf-instance=0]
-      val:
-        admin-state: enable
-        router-id: 10.0.0.1
-        area:
-        - area-id: "0.0.0.0"
-          interface:
-          - interface-name: "eth-1/1/c2"
-            interface-type: "point-to-point"
-  
-  
-  
-  
-  
-  
-  
-    - path: configure/router[router-name=Base]/ospf3[ospf-instance=0]
-      val:
-        admin-state: enable
-        router-id: 10.0.0.1
-        area:
-        - area-id: "0.0.0.0"
-          interface:
-          - interface-name: "system"
-  
-  
-  
-    - path: configure/router[router-name=Base]/ospf3[ospf-instance=0]
-      val:
-        admin-state: enable
-        router-id: 10.0.0.1
-        area:
-        - area-id: "0.0.0.0"
-          interface:
-          - interface-name: "eth-1/1/c2"
-            interface-type: "point-to-point"
-
-TASK [Deploy ospf configuration] ***********************************************
-skipping: [x1]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/sros.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r2
-
-TASK [Generate gNMI YAML configuration] ****************************************
-ok: [dut]
-
-TASK [Update ospf node configuration from gNMI template /home/pipi/net101/tools/netsim/ansible/templates/ospf/sros.j2] ***
-changed: [dut]
-
-TASK [debug] *******************************************************************
-skipping: [dut]
-
-TASK [template] ****************************************************************
-changed: [r2]
-
-TASK [set_fact] ****************************************************************
-ok: [r2]
-
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-skipping: [r2]
-
-TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [r2]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched

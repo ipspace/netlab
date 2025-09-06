@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 #
+import typing
 from pathlib import Path
 from box import Box
 
@@ -28,23 +29,29 @@ def sum_results(data: Box) -> None:
   for k in list(data.keys()):
     if k.startswith('_'):
       continue
-    if not data[k] or data[k].get('create',None) is False:
+    create_status = data[k].get('create',None)
+    if not data[k] or create_status is False:
       increase_counter(data,'unsupported')
       data[k].supported = False
+    elif isinstance(create_status,Box) and 'warning' in create_status:
+      data[k].supported = create_status
     OK = True
 
     if isinstance(data[k].get('caveat',None),str):                    # Make sure caveat is a list
       data[k].caveat = [ data[k].caveat ]
 
     if '_warning' in data[k]:                                         # Add warnings to caveats
-      data[k].caveat = data[k].get('caveat',[]) + data[k]._warning
+      if data[k].validate == 'warning':
+        data[k].validate = { 'warning': data[k]._warning }            # Migrate "old-style" warnings into boxes
     
     if data[k].get('validate',None) is True:                          # But pop caveats if the validation succeeded
       data[k].pop('caveat',None)
 
-    for step in data[k].keys():
-      if step == 'validate' and data[k][step] == 'warning':
-        increase_counter(data,'warning')
+    for step in list(data[k].keys()):
+      if isinstance(data[k][step],Box) and 'warning' in data[k][step]:
+        increase_counter(data,'warning_'+step)
+        if step in ['create','validate']:
+          data[k].caveat = data[k].get('caveat',[]) + data[k][step].warning
         OK = True
         continue
 
@@ -119,7 +126,28 @@ def read_topology() -> Box:
 def read_setup() -> Box:
   return Box.from_yaml(filename=f'setup.yml',default_box=True,box_dots=True)
 
+def get_min_max_version(r: Box) -> typing.Tuple[str,str]:
+  min_version = '99.99'
+  max_version = ''
+
+  if not isinstance(r,Box):
+    return (min_version,max_version)
+  for k,v in r.items():
+    if not isinstance(v,Box):
+      continue
+    if '_version' in v:
+      sub_min = v._version
+      sub_max = v._version
+    else:
+      (sub_min,sub_max) = get_min_max_version(v)
+    min_version = min(sub_min,min_version)
+    max_version = max(sub_max,max_version)
+
+  return (min_version,max_version)
+
 def read_results(setup: Box) -> Box:
   results = get_empty_box()
   fetch_results('.',results,skip=setup.skip)
+  for t_elem,t_data in results.items():
+    (t_data._min_version,t_data._max_version) = get_min_max_version(results[t_elem])
   return results

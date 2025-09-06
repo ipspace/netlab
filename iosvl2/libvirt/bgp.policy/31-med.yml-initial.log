@@ -1,4 +1,9 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
+[WARNING]: Found variable using reserved name: hosts
 
 PLAY [Deploy initial device configuration] *************************************
 
@@ -29,6 +34,10 @@ TASK [fail] ********************************************************************
 skipping: [dut]
 skipping: [probe]
 
+TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [probe]
+ok: [dut]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [probe]
 ok: [dut] => 
@@ -37,12 +46,8 @@ ok: [dut] =>
     =========================================
     !
     interface GigabitEthernet0/1
-     no switchport
+     shutdown
      mac-address 52dc.cafe.0101
-
-TASK [Find configuration deployment deploy_script for normalize] ***************
-skipping: [probe]
-ok: [dut]
 
 TASK [Deploy normalize configuration] ******************************************
 skipping: [probe]
@@ -69,6 +74,10 @@ TASK [fail] ********************************************************************
 skipping: [dut]
 skipping: [probe]
 
+TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [probe]
+ok: [dut]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [probe] => 
   msg: |-
@@ -89,6 +98,14 @@ ok: [probe] =>
     echo "Use vtysh to connect to FRR daemon"
     echo
     SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
     #
     # Get the current next hop for the default route
     #
@@ -112,6 +129,12 @@ ok: [probe] =>
     # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
     #
   
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
     #
     # Create loopbacks, stub and lag/bond devices
     #
@@ -124,17 +147,15 @@ ok: [probe] =>
   
     # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
     #
+    ip link set eth1 down
     sysctl -qw net.ipv6.conf.eth1.autoconf=0
     sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set eth1 down
+    ip link set dev eth1 mtu 1500
     ip link set eth1 up
   
     #
     # Add vtysh.conf file
     echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-    #
-    # Set Ethernet interface MTU
-    ip link set dev eth1 mtu 1500
   
     #
     # Rest of initial configuration done through VTYSH
@@ -142,10 +163,11 @@ ok: [probe] =>
     cat >/tmp/config <<CONFIG
     hostname probe
     !
+    ip forwarding
+    ipv6 forwarding
     vrf mgmt
      exit-vrf
     !
-    ipv6 forwarding
     frr defaults datacenter
     !
     interface lo
@@ -183,8 +205,8 @@ ok: [dut] =>
     !
     !
     interface Loopback0
-     ip address 10.0.0.1 255.255.255.255
-     ipv6 address 2001:DB8:1:1::1/64
+     ip address 10.0.0.42 255.255.255.255
+     ipv6 address 2001:DB8:42:1::1/128
     !
     interface GigabitEthernet0/0
      no lldp transmit
@@ -204,10 +226,6 @@ ok: [dut] =>
     no banner exec
     no banner login
     no banner incoming
-
-TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [probe]
-ok: [dut]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
@@ -259,6 +277,10 @@ TASK [fail] ********************************************************************
 skipping: [dut]
 skipping: [probe]
 
+TASK [Find configuration deployment deploy_script for routing] *****************
+skipping: [probe]
+ok: [dut]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [probe]
 ok: [dut] => 
@@ -266,12 +288,6 @@ ok: [dut] =>
     routing configuration for dut
     =========================================
     !
-    !
-    route-map bp-probe-1-in-ipv4 permit 10
-      set local-preference 17
-    !
-    route-map bp-probe-1-in-ipv6 permit 10
-      set local-preference 17
     !
     route-map bp-probe-1-out-ipv4 permit 10
       set metric 42
@@ -285,10 +301,6 @@ ok: [dut] =>
     !
     ! Static routes
     !
-
-TASK [Find configuration deployment deploy_script for routing] *****************
-skipping: [probe]
-ok: [dut]
 
 TASK [Deploy routing configuration] ********************************************
 skipping: [probe]
@@ -309,6 +321,10 @@ TASK [fail] ********************************************************************
 skipping: [dut]
 skipping: [probe]
 
+TASK [Find configuration deployment deploy_script for bgp] *********************
+ok: [probe]
+ok: [dut]
+
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [probe] => 
   msg: |-
@@ -320,7 +336,6 @@ ok: [probe] =>
       no bgp default ipv4-unicast
       bgp default show-hostname
       bgp default show-nexthop-hostname
-  
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
@@ -373,7 +388,7 @@ ok: [dut] =>
      bgp update-delay 5
      bgp nopeerup-delay cold-boot 1
      bgp nopeerup-delay user-initiated 1
-     bgp router-id 10.0.0.1
+     bgp router-id 10.0.0.42
       neighbor 10.1.0.2 remote-as 65100
       neighbor 10.1.0.2 description probe
   
@@ -385,7 +400,7 @@ ok: [dut] =>
       bgp scan-time 5
   
     !
-      network 10.0.0.1 mask 255.255.255.255
+      network 10.0.0.42 mask 255.255.255.255
   
     !
     !
@@ -397,7 +412,7 @@ ok: [dut] =>
       bgp scan-time 5
   
     !
-      network 2001:db8:1:1::/64
+      network 2001:db8:42:1::1/128
   
     !
     !
@@ -406,10 +421,6 @@ ok: [dut] =>
       neighbor 2001:db8:3::2 send-community standard
   
     !
-
-TASK [Find configuration deployment deploy_script for bgp] *********************
-ok: [probe]
-ok: [dut]
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
@@ -461,7 +472,7 @@ changed: [dut]
 
 PLAY RECAP *********************************************************************
 dut                        : ok=37   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-probe                      : ok=28   changed=5    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+probe                      : ok=29   changed=5    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
 
 
 

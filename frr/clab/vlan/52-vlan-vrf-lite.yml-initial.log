@@ -1,3 +1,7 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -7,8 +11,8 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [r1]
 ok: [r2]
 ok: [r3]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 ok: [h3]
 ok: [h4]
 ok: [h5]
@@ -34,7 +38,7 @@ skipping: [h4]
 skipping: [h5]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for r1, r2, r3, h1, h2, h3, h4, h5
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for r1, r2, r3, h1, h2, h3, h4, h5
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [r1]
@@ -50,8 +54,8 @@ TASK [Find configuration template for normalize] *******************************
 ok: [r1]
 ok: [r2]
 ok: [r3]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 ok: [h3]
 ok: [h4]
 ok: [h5]
@@ -73,8 +77,8 @@ ok: [r3]
 ok: [h1]
 ok: [h2]
 ok: [h4]
-ok: [h5]
 ok: [h3]
+ok: [h5]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r1]
@@ -97,7 +101,7 @@ skipping: [h4]
 skipping: [h5]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for r1, r2, r3, h1, h2, h3, h4, h5
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for r1, r2, r3, h1, h2, h3, h4, h5
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [r1]
@@ -133,13 +137,48 @@ TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [r1]
 ok: [r2]
 ok: [r3]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 ok: [h3]
 ok: [h4]
 ok: [h5]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [h4] => 
+  msg: |-
+    initial configuration for h4
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+  
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.4.7/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.4.7/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
 ok: [h1] => 
   msg: |-
     initial configuration for h1
@@ -175,9 +214,9 @@ ok: [h1] =>
     ip addr add 172.16.0.4/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
-ok: [h4] => 
+ok: [h2] => 
   msg: |-
-    initial configuration for h4
+    initial configuration for h2
     =========================================
     #!/bin/bash
     #
@@ -205,9 +244,44 @@ ok: [h4] =>
     #
     ip link set dev eth1 up
     set +e
-    ip addr del 172.16.4.7/24 dev eth1 2>/dev/null
+    ip addr del 172.16.1.5/24 dev eth1 2>/dev/null
     set -e
-    ip addr add 172.16.4.7/24 dev eth1
+    ip addr add 172.16.1.5/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+ok: [h3] => 
+  msg: |-
+    initial configuration for h3
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+  
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.3.6/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.3.6/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
 ok: [r1] => 
@@ -305,6 +379,9 @@ ok: [r1] =>
     cat >/tmp/config <<CONFIG
     hostname r1
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -348,10 +425,11 @@ ok: [r1] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
-ok: [h2] => 
+ok: [h5] => 
   msg: |-
-    initial configuration for h2
+    initial configuration for h5
     =========================================
     #!/bin/bash
     #
@@ -379,9 +457,9 @@ ok: [h2] =>
     #
     ip link set dev eth1 up
     set +e
-    ip addr del 172.16.1.5/24 dev eth1 2>/dev/null
+    ip addr del 172.16.2.8/24 dev eth1 2>/dev/null
     set -e
-    ip addr add 172.16.1.5/24 dev eth1
+    ip addr add 172.16.2.8/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
 ok: [r2] => 
@@ -471,6 +549,9 @@ ok: [r2] =>
     cat >/tmp/config <<CONFIG
     hostname r2
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -514,42 +595,8 @@ ok: [r2] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
-ok: [h3] => 
-  msg: |-
-    initial configuration for h3
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Send ARP requests from a sane source IP address
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-  
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.3.6/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.3.6/24 dev eth1
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
 ok: [r3] => 
   msg: |-
     initial configuration for r3
@@ -641,6 +688,9 @@ ok: [r3] =>
     cat >/tmp/config <<CONFIG
     hostname r3
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -679,46 +729,12 @@ ok: [r3] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
-ok: [h5] => 
-  msg: |-
-    initial configuration for h5
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Send ARP requests from a sane source IP address
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-  
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.2.8/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.2.8/24 dev eth1
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for r1, r2, r3
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2, h3, h4, h5
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for r1, r2, r3
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2, h3, h4, h5
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [r1 -> localhost]
@@ -729,11 +745,11 @@ skipping: [r2]
 skipping: [r3]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, r3
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, r3
 
 TASK [template] ****************************************************************
-changed: [r3]
 changed: [r1]
+changed: [r3]
 changed: [r2]
 
 TASK [set_fact] ****************************************************************
@@ -741,12 +757,12 @@ ok: [r1]
 ok: [r2]
 ok: [r3]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [r2]
 changed: [r1]
 changed: [r3]
 
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r1]
 skipping: [r2]
 skipping: [r3]
@@ -759,18 +775,18 @@ ok: [h4]
 ok: [h5]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h3 -> localhost]
+changed: [h1 -> localhost]
 changed: [h4 -> localhost]
 changed: [h5 -> localhost]
-changed: [h1 -> localhost]
+changed: [h3 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
-changed: [h2 -> localhost]
+changed: [h4 -> localhost]
 changed: [h3 -> localhost]
 changed: [h5 -> localhost]
-changed: [h4 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -779,91 +795,89 @@ skipping: [h3]
 skipping: [h4]
 skipping: [h5]
 
-TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
 skipping: [h5]
 
-TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
+TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [h1 -> localhost]
 changed: [h3 -> localhost]
-changed: [h4 -> localhost]
-changed: [h5 -> localhost]
 changed: [h2 -> localhost]
-
-TASK [Remove temporary file /tmp/h1_initial-5vww7vnd.sh] ***********************
-changed: [h3 -> localhost]
+changed: [h4 -> localhost]
 changed: [h5 -> localhost]
+
+TASK [Remove temporary file /tmp/h1_initial-rpy1mgej.sh] ***********************
 changed: [h4 -> localhost]
 changed: [h1 -> localhost]
+changed: [h3 -> localhost]
+changed: [h5 -> localhost]
 changed: [h2 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
+ok: [r1]
+ok: [r2]
+ok: [r3]
 ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
 ok: [h5]
-ok: [r1]
-ok: [r2]
-ok: [r3]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, h3, h4, h5, r1, r2, r3 => (item=vlan)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, h3, h4, h5, r1, r2, r3 => (item=routing)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, h3, h4, h5, r1, r2, r3 => (item=ospf)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, h3, h4, h5, r1, r2, r3 => (item=vrf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for r1, r2, r3, h1, h2, h3, h4, h5 => (item=vlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for r1, r2, r3, h1, h2, h3, h4, h5 => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for r1, r2, r3, h1, h2, h3, h4, h5 => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for r1, r2, r3, h1, h2, h3, h4, h5 => (item=vrf)
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
+ok: [r1]
+ok: [r2]
+ok: [r3]
 ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
 ok: [h5]
-ok: [r1]
-ok: [r2]
-ok: [r3]
 
 TASK [Find configuration template for vlan] ************************************
 skipping: [h1]
+ok: [r1]
+ok: [r2]
 skipping: [h2]
+ok: [r3]
 skipping: [h3]
 skipping: [h4]
 skipping: [h5]
-ok: [r1]
-ok: [r2]
-ok: [r3]
 
 TASK [fail] ********************************************************************
+skipping: [r1]
+skipping: [r2]
+skipping: [r3]
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
 skipping: [h5]
-skipping: [r1]
-skipping: [r2]
-skipping: [r3]
 
 TASK [Find configuration deployment deploy_script for vlan] ********************
 skipping: [h1]
 skipping: [h2]
-skipping: [h3]
-skipping: [h4]
-skipping: [h5]
 ok: [r1]
+skipping: [h3]
 ok: [r2]
 ok: [r3]
+skipping: [h4]
+skipping: [h5]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
-skipping: [h4]
-skipping: [h5]
 ok: [r1] => 
   msg: |-
     vlan configuration for r1
@@ -880,6 +894,7 @@ ok: [r1] =>
       ip link add link eth1 name eth1.700 type vlan id 700
       ip link set dev eth1.700 up
     fi
+skipping: [h4]
 ok: [r2] => 
   msg: |-
     vlan configuration for r2
@@ -904,6 +919,7 @@ ok: [r2] =>
       ip link add link eth2 name eth2.700 type vlan id 700
       ip link set dev eth2.700 up
     fi
+skipping: [h5]
 ok: [r3] => 
   msg: |-
     vlan configuration for r3
@@ -927,7 +943,7 @@ skipping: [h2]
 skipping: [h3]
 skipping: [h4]
 skipping: [h5]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2, r3
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2, r3
 
 TASK [template] ****************************************************************
 changed: [r3]
@@ -939,57 +955,60 @@ ok: [r1]
 ok: [r2]
 ok: [r3]
 
-TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
+TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/frr.j2] ***
+changed: [r2]
 changed: [r1]
 changed: [r3]
-changed: [r2]
 
-TASK [run vtysh to import vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
+TASK [run vtysh to import vlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/frr.j2] ***
 skipping: [r1]
 skipping: [r2]
 skipping: [r3]
 
 TASK [Figure out whether to deploy the module routing on current device] *******
-ok: [h1]
-ok: [h2]
-ok: [h3]
-ok: [h4]
-ok: [h5]
 ok: [r1]
 ok: [r2]
 ok: [r3]
-
-TASK [Find configuration template for routing] *********************************
 ok: [h1]
 ok: [h2]
 ok: [h3]
+ok: [h4]
+ok: [h5]
+
+TASK [Find configuration template for routing] *********************************
 skipping: [r1]
 skipping: [r2]
-ok: [h5]
 skipping: [r3]
+ok: [h1]
+ok: [h2]
+ok: [h3]
 ok: [h4]
+ok: [h5]
 
 TASK [fail] ********************************************************************
+skipping: [r1]
+skipping: [r2]
+skipping: [r3]
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
 skipping: [h5]
-skipping: [r1]
-skipping: [r2]
-skipping: [r3]
 
 TASK [Find configuration deployment deploy_script for routing] *****************
-ok: [h1]
-ok: [h2]
 skipping: [r1]
-ok: [h3]
 skipping: [r2]
 skipping: [r3]
+ok: [h1]
+ok: [h2]
+ok: [h3]
 ok: [h4]
 ok: [h5]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [r1]
+skipping: [r2]
+skipping: [r3]
 ok: [h1] => 
   msg: |-
     routing configuration for h1
@@ -1019,7 +1038,6 @@ ok: [h1] =>
     #
     # Print the final routing table
     ip route
-skipping: [r1]
 ok: [h2] => 
   msg: |-
     routing configuration for h2
@@ -1049,7 +1067,6 @@ ok: [h2] =>
     #
     # Print the final routing table
     ip route
-skipping: [r2]
 ok: [h3] => 
   msg: |-
     routing configuration for h3
@@ -1076,36 +1093,6 @@ ok: [h3] =>
     ip route add 10.0.0.0/24 via 172.16.3.1 dev eth1 protocol static
     ip route add 10.1.0.0/16 via 172.16.3.1 dev eth1 protocol static
     ip route add 10.2.0.0/24 via 172.16.3.1 dev eth1 protocol static
-    #
-    # Print the final routing table
-    ip route
-skipping: [r3]
-ok: [h4] => 
-  msg: |-
-    routing configuration for h4
-    =========================================
-    #!/bin/bash
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.2.0.0/24 2>/dev/null; do
-      : ; done
-    #
-    #
-    #
-    echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.4.3 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.4.3 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.4.3 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.4.3 dev eth1 protocol static
     #
     # Print the final routing table
     ip route
@@ -1138,12 +1125,41 @@ ok: [h5] =>
     #
     # Print the final routing table
     ip route
+ok: [h4] => 
+  msg: |-
+    routing configuration for h4
+    =========================================
+    #!/bin/bash
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.4.3 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.4.3 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.4.3 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.4.3 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
 
 TASK [Deploy routing configuration] ********************************************
 skipping: [r1]
 skipping: [r2]
 skipping: [r3]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2, h3, h4, h5
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2, h3, h4, h5
 
 TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
@@ -1154,17 +1170,17 @@ ok: [h5]
 
 TASK [Create a temporary file for the rendered script] *************************
 changed: [h1 -> localhost]
-changed: [h2 -> localhost]
-changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 changed: [h5 -> localhost]
+changed: [h2 -> localhost]
+changed: [h3 -> localhost]
 
-TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
+TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
 changed: [h1 -> localhost]
-changed: [h2 -> localhost]
+changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 changed: [h5 -> localhost]
-changed: [h3 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
 skipping: [h1]
@@ -1173,21 +1189,21 @@ skipping: [h3]
 skipping: [h4]
 skipping: [h5]
 
-TASK [Execute /tmp/config-h1_routing.sh to deploy routing config based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
+TASK [Execute /tmp/config-h1_routing.sh to deploy routing config based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
 skipping: [h5]
 
-TASK [Container configuration for routing based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
+TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
-changed: [h4 -> localhost]
 changed: [h3 -> localhost]
+changed: [h4 -> localhost]
 changed: [h5 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-k1fsuvkh.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-4g9zq9q7.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
@@ -1195,44 +1211,44 @@ changed: [h4 -> localhost]
 changed: [h5 -> localhost]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
+ok: [r1]
+ok: [r2]
+ok: [r3]
 ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
 ok: [h5]
-ok: [r1]
-ok: [r2]
-ok: [r3]
 
 TASK [Find configuration template for ospf] ************************************
+ok: [r1]
 skipping: [h1]
+ok: [r2]
 skipping: [h2]
+ok: [r3]
 skipping: [h3]
 skipping: [h4]
 skipping: [h5]
-ok: [r1]
-ok: [r2]
-ok: [r3]
 
 TASK [fail] ********************************************************************
-skipping: [h1]
-skipping: [h2]
-skipping: [h3]
-skipping: [h4]
-skipping: [h5]
 skipping: [r1]
 skipping: [r2]
 skipping: [r3]
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+skipping: [h5]
 
 TASK [Find configuration deployment deploy_script for ospf] ********************
 skipping: [h1]
 skipping: [h2]
-skipping: [h3]
-skipping: [h4]
-skipping: [h5]
 ok: [r1]
+skipping: [h3]
 ok: [r2]
 ok: [r3]
+skipping: [h4]
+skipping: [h5]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
@@ -1265,67 +1281,67 @@ skipping: [h2]
 skipping: [h3]
 skipping: [h4]
 skipping: [h5]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2, r3
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2, r3
 
 TASK [template] ****************************************************************
-changed: [r1]
 changed: [r3]
+changed: [r1]
 changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
-ok: [r3]
 ok: [r2]
+ok: [r3]
 
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
 skipping: [r1]
 skipping: [r2]
 skipping: [r3]
 
-TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [r1]
-changed: [r2]
+TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [r3]
+changed: [r2]
+changed: [r1]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
+ok: [r1]
+ok: [r2]
+ok: [r3]
 ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
 ok: [h5]
-ok: [r1]
-ok: [r2]
-ok: [r3]
 
 TASK [Find configuration template for vrf] *************************************
+ok: [r1]
 skipping: [h1]
+ok: [r2]
 skipping: [h2]
+ok: [r3]
 skipping: [h3]
 skipping: [h4]
 skipping: [h5]
-ok: [r1]
-ok: [r2]
-ok: [r3]
 
 TASK [fail] ********************************************************************
-skipping: [h1]
-skipping: [h2]
-skipping: [h3]
-skipping: [h4]
-skipping: [h5]
 skipping: [r1]
 skipping: [r2]
 skipping: [r3]
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+skipping: [h5]
 
 TASK [Find configuration deployment deploy_script for vrf] *********************
 skipping: [h1]
 skipping: [h2]
-skipping: [h3]
-skipping: [h4]
-skipping: [h5]
 ok: [r1]
 ok: [r2]
+skipping: [h3]
 ok: [r3]
+skipping: [h4]
+skipping: [h5]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
@@ -1343,14 +1359,14 @@ ok: [r1] =>
     #
   
     # Create VRF tables
-    if [ ! -e /sys/devices/virtual/net/blue ]; then
-    ip link add blue type vrf table 101
-    fi
-    ip link set blue up
     if [ ! -e /sys/devices/virtual/net/red ]; then
     ip link add red type vrf table 100
     fi
     ip link set red up
+    if [ ! -e /sys/devices/virtual/net/blue ]; then
+    ip link add blue type vrf table 101
+    fi
+    ip link set blue up
   
     # Move interfaces and loopbacks to vrfs
     sysctl -qw net.ipv6.conf.eth2.keep_addr_on_down=1
@@ -1365,39 +1381,13 @@ ok: [r1] =>
     ip link set eth1.700 master red
   
     cat >/tmp/vrf_config <<CONFIG
-    vrf blue
-     exit-vrf
     vrf red
+     exit-vrf
+    vrf blue
      exit-vrf
     !
     router bgp 65000
     !
-    !
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf vrf blue
-     ospf router-id 10.0.0.1
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-     redistribute connected
-  
-    exit
-    !
-    interface eth4
-    ! r1 -> h3
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-     ip ospf passive
-    !
-    interface eth1.701
-    ! r1 -> r2
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
     !
     !
     ! OSPFv2 FRR configuration
@@ -1425,6 +1415,32 @@ ok: [r1] =>
      ip ospf passive
     !
     interface eth1.700
+    ! r1 -> r2
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf vrf blue
+     ospf router-id 10.0.0.1
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+     redistribute connected
+  
+    exit
+    !
+    interface eth4
+    ! r1 -> h3
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+     ip ospf passive
+    !
+    interface eth1.701
     ! r1 -> r2
      ip ospf area 0.0.0.0
      ip ospf network point-to-point
@@ -1539,14 +1555,14 @@ ok: [r3] =>
     #
   
     # Create VRF tables
-    if [ ! -e /sys/devices/virtual/net/blue ]; then
-    ip link add blue type vrf table 101
-    fi
-    ip link set blue up
     if [ ! -e /sys/devices/virtual/net/red ]; then
     ip link add red type vrf table 100
     fi
     ip link set red up
+    if [ ! -e /sys/devices/virtual/net/blue ]; then
+    ip link add blue type vrf table 101
+    fi
+    ip link set blue up
   
     # Move interfaces and loopbacks to vrfs
     sysctl -qw net.ipv6.conf.eth2.keep_addr_on_down=1
@@ -1559,39 +1575,13 @@ ok: [r3] =>
     ip link set eth1.700 master red
   
     cat >/tmp/vrf_config <<CONFIG
-    vrf blue
-     exit-vrf
     vrf red
+     exit-vrf
+    vrf blue
      exit-vrf
     !
     router bgp 65000
     !
-    !
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf vrf blue
-     ospf router-id 10.0.0.3
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-     redistribute connected
-  
-    exit
-    !
-    interface eth3
-    ! r3 -> h4
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-     ip ospf passive
-    !
-    interface eth1.701
-    ! r3 -> r2
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
     !
     !
     ! OSPFv2 FRR configuration
@@ -1619,6 +1609,32 @@ ok: [r3] =>
     !
   
     !
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf vrf blue
+     ospf router-id 10.0.0.3
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+     redistribute connected
+  
+    exit
+    !
+    interface eth3
+    ! r3 -> h4
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+     ip ospf passive
+    !
+    interface eth1.701
+    ! r3 -> r2
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
     do write
     !
     CONFIG
@@ -1631,24 +1647,24 @@ skipping: [h2]
 skipping: [h3]
 skipping: [h4]
 skipping: [h5]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2, r3
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2, r3
 
 TASK [template] ****************************************************************
-changed: [r3]
-changed: [r1]
 changed: [r2]
+changed: [r1]
+changed: [r3]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
 ok: [r2]
 ok: [r3]
 
-TASK [run /tmp/config.sh to deploy vrf config from /home/pipi/net101/tools/netsim/ansible/templates/vrf/frr.j2] ***
-changed: [r1]
-changed: [r3]
+TASK [run /tmp/config.sh to deploy vrf config from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/frr.j2] ***
 changed: [r2]
+changed: [r3]
+changed: [r1]
 
-TASK [run vtysh to import vrf config from /home/pipi/net101/tools/netsim/ansible/templates/vrf/frr.j2] ***
+TASK [run vtysh to import vrf config from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/frr.j2] ***
 skipping: [r1]
 skipping: [r2]
 skipping: [r3]

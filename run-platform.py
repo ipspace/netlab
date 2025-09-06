@@ -129,6 +129,11 @@ def main() -> None:
   setup = _read.load('setup.yml')
   build_test_list(setup)
   prune_setup(setup,args)
+  for n_env in ['NETLAB_DEVICE','NETLAB_PROVIDER']:
+    if n_env in os.environ:
+      _strings.print_colored_text('[CLEANUP]    ',color='green')
+      print(f'Removing environment variable {n_env}')
+      os.environ.pop(n_env,None)                      # Remove environment variables that could impact the tests
 
   try:
     run_tests(setup,args.limit,args.dryrun)
