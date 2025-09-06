@@ -2,6 +2,7 @@ defaults.device: frr
 defaults.provider: clab
 
 module: [ ospf, bgp, vrf, vlan, vxlan, evpn ]
+plugin: [ files ]
 defaults.vrf.warnings.inactive: False
 
 bgp.as_list:
@@ -34,3 +35,32 @@ links:
 - r4-r5
 - r5-r6
 - r4-r6
+
+files:
+  make_dot.sh: |
+    graph() {
+      echo -n "graph $3 from $1 into $2 "
+      netlab graph -t bgp -f $1 && dot graph.dot -Tsvg -o $2
+    }
+
+    NETLAB_GRAPH_TITLE="BGP route reflector sessions" graph rr dot-bgp-rr.svg
+    NETLAB_GRAPH_TITLE="Dashed VRF BGP sessions" graph vrf dot-bgp-vrf.svg
+    NETLAB_GRAPH_TITLE="Global BGP sessions (no VRF sessions)" graph novrf dot-bgp-novrf.svg
+    NETLAB_GRAPH_TITLE="EVPN BGP sessions" graph evpn,rr dot-bgp-evpn.svg
+  make_d2.sh: |
+    unset D2_LAYOUT
+    unset D2_SKETCH
+    if [[ "$*" == *"elk"* ]]; then
+      echo "Using ELK layout engine"
+      export D2_LAYOUT=elk
+    fi
+    if [[ "$*" == *"sketch"* ]]; then
+      echo "Using sketch mode"
+      export D2_SKETCH=true
+    fi
+
+    NETLAB_GRAPH_TITLE="Default BGP graph" netlab graph -e d2 -t bgp && d2 graph.d2 d2-bgp-default.svg
+    NETLAB_GRAPH_TITLE="BGP graph with no arrows on sessions" \
+    NETLAB_OUTPUTS_D2_BGP_RR=False netlab graph -e d2 -t bgp && d2 graph.d2 d2-bgp-no-rr.svg
+    NETLAB_GRAPH_TITLE="VRF BGP sessions" netlab graph -e d2 -t bgp -f vrf && d2 graph.d2 d2-bgp-vrf.svg
+    NETLAB_GRAPH_TITLE="BGP sessions with EVPN AF" netlab graph -e d2 -t bgp -f evpn && d2 graph.d2 d2-bgp-evpn.svg

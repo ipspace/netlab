@@ -1,4 +1,5 @@
 provider: clab
+plugin: [ files ]
 
 groups:
   _auto_create: True
@@ -32,3 +33,34 @@ links:
 - interfaces: [ l2, h3 ]
 - interfaces: [ l2, h4 ]
   graph.type: lan
+
+files:
+  make_dot.sh: |
+    graph() {
+      echo -n "graph into $1 "
+      NETLAB_GRAPH_TITLE="$2" netlab graph && dot graph.dot -Tsvg -o $2
+    }
+
+    NETLAB_OUTPUTS_GRAPH_NODE__ADDRESS__LABEL=False graph dot-topo-no-labels.svg "Topology graph, no labels"
+    NETLAB_OUTPUTS_GRAPH_AS__CLUSTERS=False graph dot-topo-no-clusters.svg "Topology graph, no AS clusters"
+    NETLAB_OUTPUTS_GRAPH_INTERFACE__LABELS=True graph dot-topo-intf-labels.svg "Topology graph, interface labels"
+    NETLAB_OUTPUTS_GRAPH_GROUPS=[fabric,host] graph dot-topo-groups.svg "Topology graph, custom groups"
+  make_d2.sh: |
+    graph() {
+      NETLAB_GRAPH_TITLE="$2" netlab graph -e d2 && d2 graph.d2 $1
+    }
+
+    unset D2_LAYOUT
+    unset D2_SKETCH
+    if [[ "$*" == *"elk"* ]]; then
+      echo "Using ELK layout engine"
+      export D2_LAYOUT=elk
+    fi
+    if [[ "$*" == *"sketch"* ]]; then
+      echo "Using sketch mode"
+      export D2_SKETCH=true
+    fi
+    NETLAB_OUTPUTS_D2_NODE__ADDRESS__LABEL=False graph d2-topo-no-labels.svg "Topology graph, no labels"
+    NETLAB_OUTPUTS_D2_AS__CLUSTERS=False graph d2-topo-no-clusters.svg "Topology graph, no AS clusters"
+    NETLAB_OUTPUTS_D2_INTERFACE__LABELS=True graph d2-topo-intf-labels.svg "Topology graph, interface labels"
+    NETLAB_OUTPUTS_D2_GROUPS=[fabric,host] graph d2-topo-groups.svg "Topology graph, custom groups"
