@@ -24,6 +24,10 @@ def graph_parse(args: typing.List[str]) -> argparse.Namespace:
     choices=['topology','bgp'],
     help='Graph type')
   parser.add_argument(
+    '-f','--format',
+    dest='g_format', action='store',
+    help='Graph formatting parameters separated by commas')
+  parser.add_argument(
     '-e','--engine',
     dest='engine', action='store',
     default='graphviz',
@@ -42,6 +46,8 @@ def run(cli_args: typing.List[str]) -> None:
   topology = load_snapshot(args)
   o_module = 'graph' if args.engine == 'graphviz' else 'd2'
   o_param  = f'{o_module}:{args.g_type or "topology"}'
+  if args.g_format:
+    o_param += ':'+args.g_format.replace(',',':')
   if args.output:
     o_param += f'={args.output}'
 
