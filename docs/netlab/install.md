@@ -33,7 +33,8 @@ Run "netlab install" with no arguments to get install script descriptions
 * The *libvirt* script installs *libvirt* and supporting libraries/packages, *vagrant*, *vagrant-libvirt* plugin, and creates the *vagrant-libvirt* virtual network.
 * The *containerlab* script installs Docker Engine and *containerlab*.
 * The *ansible* script uses **pip3** to install the latest version of Ansible, networking libraries (*netaddr, paramiko, netmiko*), text parsing libraries (*testfsm, ttp, ntc-templates*), and a few other utility libraries (*jmespath, yamllint, yq*)
-* The *grpc* installs gRPC Python libraries needed to configure Nokia SR Linux and Nokia SR OS.
+* The *graph* script installs GraphViz and D2 software needed to generate graphs from _netlab_ topologies
+* The *grpc* script installs gRPC Python libraries needed to configure Nokia SR Linux and Nokia SR OS.
 
 [^U20]: Tested on Ubuntu 20.04, 22.04, and 24.04
 
@@ -51,6 +52,7 @@ $ netlab install
 │ containerlab │ Docker and containerlab                           │
 │ ansible      │ Ansible and prerequisite Python libraries         │
 │ grpc         │ GRPC libraries and Nokia GRPC Ansible collection  │
+│ graph        │ GraphViz and D2 software                          │
 └──────────────┴───────────────────────────────────────────────────┘
 ```
 
