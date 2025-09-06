@@ -10,6 +10,7 @@ A single formatting modifier can be used to specify the graph type:
 
 * **topology** (default) -- Display inter-node links, multi-access- and stub subnets. When the network topology contains BGP information, the graph groups nodes into autonomous systems. Alternatively, you could set **defaults.outputs.graph.groups** attribute to use topology **[groups](topo-groups)** to group graph nodes.
 * **bgp** -- Include autonomous systems, nodes, and BGP sessions. The formatting modifier can include [BGP formatting parameters](outputs-graph-bgp-parameters). For example, `netlab create -o graph:bgp:rr` draws RR-client sessions as directed arrows.
+* **isis** -- Create a diagram of IS-IS routing, including areas, color-coded circuit types, and edge subnets
 
 (outputs-graph-link-node-attributes)=
 ## Modifying Global, Link, and Node Attributes

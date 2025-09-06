@@ -10,7 +10,7 @@ You will have to install [Graphviz](https://graphviz.org/download/) or [D2](http
 ## Usage
 
 ```text
-usage: netlab graph [-h] [-t {topology,bgp}] [-f G_FORMAT] [-e {graphviz,d2}]
+usage: netlab graph [-h] [-t {topology,bgp,isis}] [-f G_FORMAT] [-e {graphviz,d2}]
                     [-i INSTANCE] [--snapshot [SNAPSHOT]] [output]
 
 Create a graph description in Graphviz or D2 format
@@ -20,7 +20,7 @@ positional arguments:
 
 options:
   -h, --help            show this help message and exit
-  -t {topology,bgp}, --type {topology,bgp}
+  -t {topology,bgp,isis}, --type {topology,bgp,isis}
                         Graph type
   -f, --format G_FORMAT
                         Graph formatting parameters separated by commas

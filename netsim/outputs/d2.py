@@ -9,7 +9,7 @@ from ..data import get_box
 from ..utils import files as _files
 from ..utils import log
 from . import _TopologyOutput
-from ._graph import bgp_graph, map_style, parse_bgp_params, topology_graph
+from ._graph import bgp_graph, isis_graph, map_style, parse_bgp_params, topology_graph
 
 '''
 Copy default settings into a D2 map converting Python dictionaries into
@@ -127,9 +127,12 @@ Create graph containers
 '''
 def d2_clusters(f: typing.TextIO, graph: Box, topology: Box, settings: Box) -> None:
   for c_name,c_data in graph.clusters.items():
-    d2_cluster_start(f,asn=c_name,label=c_data.get('name',None),settings=settings)
+    d2_cluster_start(f,asn=c_name,label=c_data.get('name',None),title=c_data.get('title',None),settings=settings)
     for n in c_data.nodes.values():
-      node_with_label(f,n,settings,'  ')          # Create a node within a cluster
+      if 'prefix' in n:
+        network_with_label(f,n,settings)
+      else:
+        node_with_label(f,n,settings)
       n_data = graph.nodes[n.name]                # Get pointer to graph node data
       n_data.d2.name = f'{c_name}.{n.name}'       # Change the D2 node name that will be used in connections
       n_data.d2.cluster = c_name                  # ... and mark it's part of a cluster
@@ -167,10 +170,8 @@ def d2_links(f: typing.TextIO, graph: Box, topology: Box, settings: Box) -> None
         intf.d2.name = graph.nodes[intf.node].d2.name
     edge_p2p(f,fake_link,settings.interface_labels)
 
-def graph_topology(topology: Box, fname: str, settings: Box,g_format: typing.Optional[list]) -> bool:
-  graph = topology_graph(topology,settings,'d2')
+def draw_graph(topology: Box, settings: Box, graph: Box, fname: str) -> None:
   f = _files.open_output_file(fname)
-
   d2_graph(f,topology,settings)
   d2_clusters(f,graph,topology,settings)
   d2_nodes(f,graph,topology,settings)
@@ -178,6 +179,18 @@ def graph_topology(topology: Box, fname: str, settings: Box,g_format: typing.Opt
 
   if fname != '-':
     f.close()
+
+def set_edge_attributes(topology: Box, settings: Box, graph: Box) -> None:
+  for edge in graph.edges:
+    for e_node in edge.nodes:
+      if 'type' in e_node and e_node.type in settings.styles:
+        edge.attr.format = settings.styles[e_node.type] + edge.attr.format
+      if 'vrf' in e_node:
+        edge.attr.format = settings.styles.vrf + edge.attr.format
+
+def graph_topology(topology: Box, fname: str, settings: Box,g_format: typing.Optional[list]) -> bool:
+  graph = topology_graph(topology,settings,'d2')
+  draw_graph(topology,settings,graph,fname)
   return True
 
 def graph_bgp(topology: Box, fname: str, settings: Box, g_format: typing.Optional[list]) -> bool:
@@ -186,27 +199,24 @@ def graph_bgp(topology: Box, fname: str, settings: Box, g_format: typing.Optiona
   if graph is None:
     return False
 
-  f = _files.open_output_file(fname)
+  set_edge_attributes(topology,settings,graph)
+  draw_graph(topology,settings,graph,fname)
+  return True
 
-  d2_graph(f,topology,settings)
-  d2_clusters(f,graph,topology,settings)
-  d2_nodes(f,graph,topology,settings)
+def graph_isis(topology: Box, fname: str, settings: Box, g_format: typing.Optional[list]) -> bool:
+  parse_bgp_params(settings,g_format)
+  graph = isis_graph(topology,settings,'d2')
+  if graph is None:
+    return False
 
-  for edge in graph.edges:
-    if edge.nodes[0].type in settings.styles:
-      edge.attr.format = settings.styles[edge.nodes[0].type] + edge.attr.format
-    if 'vrf' in edge.nodes[0] or 'vrf' in edge.nodes[1]:
-      edge.attr.format = settings.styles.vrf + edge.attr.format
-
-  d2_links(f,graph,topology,settings)
-
-  if fname != '-':
-    f.close()
+  set_edge_attributes(topology,settings,graph)
+  draw_graph(topology,settings,graph,fname)
   return True
 
 graph_dispatch = {
   'topology': graph_topology,
-  'bgp': graph_bgp
+  'bgp': graph_bgp,
+  'isis': graph_isis
 }
 
 '''

@@ -1,5 +1,5 @@
 #!/bin/bash
-OPTS=${*:-bgp topo}
+OPTS=${*:-bgp topo isis}
 rm *svg
 if [[ "$OPTS" == *"elk"* ]]; then
   export D2_LAYOUT=elk
@@ -16,4 +16,7 @@ if [[ "$OPTS" == *"bgp"* ]]; then
   NETLAB_OUTPUTS_D2_BGP_RR=False netlab create -o d2:bgp bgp.yml && d2 graph.d2 d2-bgp-no-rr.svg
   NETLAB_GRAPH_TITLE="VRF BGP sessions" netlab create -o d2:bgp:vrf bgp.yml && d2 graph.d2 d2-bgp-vrf.svg
   NETLAB_GRAPH_TITLE="BGP sessions with EVPN AF" netlab create -o d2:bgp:evpn bgp.yml && d2 graph.d2 d2-bgp-evpn.svg
+fi
+if [[ "$OPTS" == *"isis"* ]]; then
+  NETLAB_GRAPH_TITLE="IS-IS routing" netlab create -o d2:isis isis.yml && d2 graph.d2 d2-isis.svg
 fi

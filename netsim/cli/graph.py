@@ -22,7 +22,7 @@ def graph_parse(args: typing.List[str]) -> argparse.Namespace:
   parser.add_argument(
     '-t','--type',
     dest='g_type', action='store',
-    choices=['topology','bgp'],
+    choices=['topology','bgp','isis'],
     help='Graph type')
   parser.add_argument(
     '-f','--format',

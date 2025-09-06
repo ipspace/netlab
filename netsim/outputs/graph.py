@@ -8,7 +8,7 @@ from box import Box
 from ..utils import files as _files
 from ..utils import log
 from . import _TopologyOutput
-from ._graph import bgp_graph, map_style, parse_bgp_params, topology_graph
+from ._graph import bgp_graph, isis_graph, map_style, parse_bgp_params, topology_graph
 
 
 def edge_label(f : typing.TextIO, direction: str, data: Box, subnet: bool = True) -> None:
@@ -122,10 +122,14 @@ def gv_clusters(f : typing.TextIO, graph: Box, topology: Box, settings: Box) -> 
 
     get_gv_attr(c_data,'as',settings)
     label = c_data.get('name',None)
-    c_data.graph.format.label = f"{label} ({c_name}" if label else c_name
+    title = c_data.get('title',None) or (f"{label} ({c_name}" if label else c_name)
+    c_data.graph.format.label = title
     gv_multiline_attr(f,c_data,indent=4)
     for n in c_data.nodes.values():
-      gv_node(f,n,settings,indent=4)              # Create a node within a cluster
+      if 'prefix' in n:
+        gv_network(f,n,settings,indent=4)
+      else:
+        gv_node(f,n,settings,indent=4)
       n_data = graph.nodes[n.name]                # Get pointer to graph node data
       n_data.graph.cluster = c_name
     f.write('  }\n')
@@ -183,8 +187,7 @@ def gv_migrate_styles(settings: Box) -> None:
   for c_obj,c_val in settings.margins.items():
     settings.styles[c_obj].margin = c_val
 
-def graph_topology(topology: Box, fname: str, settings: Box,g_format: typing.Optional[list]) -> bool:
-  graph = topology_graph(topology,settings,'graph')
+def draw_graph(topology: Box, settings: Box, graph: Box, fname: str) -> None:
   f = _files.open_output_file(fname)
   gv_migrate_styles(settings)
   gv_start(f,settings,topology)
@@ -194,6 +197,10 @@ def graph_topology(topology: Box, fname: str, settings: Box,g_format: typing.Opt
   gv_links(f,graph,topology,settings)
 
   gv_end(f,fname)
+
+def graph_topology(topology: Box, fname: str, settings: Box,g_format: typing.Optional[list]) -> bool:
+  graph = topology_graph(topology,settings,'graph')
+  draw_graph(topology,settings,graph,fname)
   return True
 
 def graph_bgp(topology: Box, fname: str, settings: Box,g_format: typing.Optional[list]) -> bool:
@@ -202,20 +209,21 @@ def graph_bgp(topology: Box, fname: str, settings: Box,g_format: typing.Optional
   if graph is None:
     return False
 
-  f = _files.open_output_file(fname)
-  gv_migrate_styles(settings)
-  gv_start(f,settings,topology)
+  draw_graph(topology,settings,graph,fname)
+  return True
 
-  gv_clusters(f,graph,topology,settings)
-  gv_nodes(f,graph,topology,settings)
-  gv_links(f,graph,topology,settings)
+def graph_isis(topology: Box, fname: str, settings: Box,g_format: typing.Optional[list]) -> bool:
+  graph = isis_graph(topology,settings,'graph')
+  if graph is None:
+    return False
 
-  gv_end(f,fname)
+  draw_graph(topology,settings,graph,fname)
   return True
 
 graph_dispatch = {
   'topology': graph_topology,
-  'bgp': graph_bgp
+  'bgp': graph_bgp,
+  'isis': graph_isis,
 }
 
 class Graph(_TopologyOutput):
