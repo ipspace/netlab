@@ -1,7 +1,6 @@
 %YAML 1.1
 ---
-message: This scenario tests basic interface, IPv4, and IPv6 configuration, 
-  including generation of IPv6 Router Advertisements
+message: This scenario tests IPv6 RA behavior
 defaults:
   provider: libvirt
   providers:
@@ -5779,6 +5778,7 @@ defaults:
         subnet:
           ipv4: bool
           ipv6: bool
+      node_copy: {}
     features:
       client:
         ipv4: IPv4 DHCP client
@@ -6871,7 +6871,6 @@ defaults:
         - prefix
         - nexthop
         - aspath
-      node_copy: {}
     features:
       policy:
         set: Route map SET attributes
@@ -7406,14 +7405,15 @@ defaults:
     - vxlan
   name: ml_17
   module:
-  - routing
+  - dhcp
+  links:
+    warnings:
+      ra_useless: {}
 addressing:
   lan:
-    ipv4: 172.16.0.0/16
     prefix: 24
     ipv6: 2001:db8:1::/48
   loopback:
-    ipv4: 10.0.0.0/24
     prefix: 32
     ipv6: 2001:db8::/48
   p2p:
@@ -7436,25 +7436,23 @@ addressing:
 groups:
   hosts:
     members:
+    - h0
     - h1
     - h2
-    device: linux
-    module:
-    - routing
+    - h3
+    - h4
+    device: frr
     node_data:
+      role: host
       provider: clab
-      routing:
-        static:
-        - pool: loopback
-          nexthop:
-            node: r
   all:
     vars:
       netlab_show_config: true
     members: []
     _default_group: true
 nodes:
-  r:
+  dut:
+    module: []
     id: 132
     loopback:
       type: loopback
@@ -7462,177 +7460,359 @@ nodes:
       virtual_interface: true
       ifindex: 0
       ifname: lo
-      ipv4: 10.0.0.132/32
       ipv6: 2001:db8:0:84::1/64
-    name: r
+    name: dut
     interfaces:
-    - ipv4: 172.16.0.132/24
-      ipv6: 2001:db8:1::84/64
-      bandwidth: 1000
+    - ipv6: 2001:db8:1::84/64
+      name: Regular link (default RA behavior)
       linkindex: 1
       type: lan
       bridge: ml_17_1
       role: stub
-      name: r -> h1
       ifindex: 1
       ifname: eth1
       neighbors:
-      - ipv4: 172.16.0.1/24
-        ipv6: 2001:db8:1::1/64
+      - ipv6: true
         ifname: eth1
-        node: h1
-    - ipv4: 172.16.1.132/24
-      ipv6: 2001:db8:1:1::84/64
-      bandwidth: 2000
+        node: h0
+    - ipv6: 2001:db8:1:1::84/64
+      name: no RA
+      ra:
+        disable: true
       linkindex: 2
       type: lan
       bridge: ml_17_2
       role: stub
-      name: r -> h2
       ifindex: 2
       ifname: eth2
       neighbors:
-      - ipv4: 172.16.1.2/24
-        ipv6: 2001:db8:1:1::2/64
+      - ipv6: true
+        ifname: eth1
+        node: h1
+    - ipv6: 2001:db8:1:2::84/64
+      name: No SLAAC
+      ra:
+        slaac: false
+      linkindex: 3
+      type: lan
+      bridge: ml_17_3
+      role: stub
+      ifindex: 3
+      ifname: eth3
+      neighbors:
+      - ipv6: true
         ifname: eth1
         node: h2
+    - ipv6: 2001:db8:1:3::84/64
+      name: No onlink
+      ra:
+        onlink: false
+      linkindex: 4
+      type: lan
+      bridge: ml_17_4
+      role: stub
+      ifindex: 4
+      ifname: eth4
+      neighbors:
+      - ipv6: true
+        ifname: eth1
+        node: h3
+    - ipv6: 2001:db8:1:4::84/64
+      name: DHCPv6 managed config
+      ra:
+        dhcp: all
+        slaac: false
+      linkindex: 5
+      type: lan
+      bridge: ml_17_5
+      role: stub
+      ifindex: 5
+      ifname: eth5
+      neighbors:
+      - dhcp:
+          client:
+            ipv6: true
+        ipv6: 2001:db8:1:4::1/64
+        ifname: eth1
+        node: h4
+      - ipv6: 2001:db8:1:4::2/64
+        ifname: eth1
+        node: dhsrv
     device: linux
     box: bento/ubuntu-24.04
     role: host
     provider: libvirt
     af:
-      ipv4: true
       ipv6: true
     mgmt:
       ifname: eth0
       mac: 08:4f:a9:84:00:00
       ipv4: 192.168.17.232
-    routing:
-      static: []
-    module:
-    - routing
-  h1:
-    provider: clab
-    routing:
-      static:
-      - ipv4: 10.0.0.0/24
-        nexthop:
-          ipv4: 172.16.0.132
-          intf: eth1
-          ipv6: 2001:db8:1::84
-          idx: 0
-      - ipv6: 2001:db8::/48
-        nexthop:
-          ipv4: 172.16.0.132
-          intf: eth1
-          ipv6: 2001:db8:1::84
-          idx: 0
-    name: h1
+  h4:
+    role: host
+    device: linux
+    name: h4
     interfaces:
-    - ipv4: 172.16.0.1/24
-      ipv6: 2001:db8:1::1/64
-      bandwidth: 1000
-      linkindex: 1
+    - dhcp:
+        client:
+          ipv6: true
+      name: DHCPv6 managed config
+      ra:
+        dhcp: all
+        slaac: false
+      linkindex: 5
       type: lan
-      bridge: ml_17_1
+      bridge: ml_17_5
       role: stub
-      name: h1 -> r
       ifindex: 1
       ifname: eth1
-      mtu: 1500
       neighbors:
-      - ipv4: 172.16.0.132/24
-        ipv6: 2001:db8:1::84/64
+      - ipv6: 2001:db8:1:4::84/64
+        ifname: eth5
+        node: dut
+      - ipv6: 2001:db8:1:4::2/64
         ifname: eth1
-        node: r
-    device: linux
+        node: dhsrv
+    box: bento/ubuntu-24.04
     module:
-    - routing
-    clab:
-      kind: linux
-      config_templates:
-      - hosts:/etc/hosts:shared
-      binds:
-      - clab_files/-shared-hosts:/etc/hosts:ro
-    box: python:3.13-alpine
+    - dhcp
     id: 1
-    role: host
-    mtu: 1500
+    provider: libvirt
     af:
-      ipv4: true
       ipv6: true
     mgmt:
       ifname: eth0
       mac: 08:4f:a9:01:00:00
       ipv4: 192.168.17.101
-    hostname: clab-ml_17-h1
-  h2:
+  dhsrv:
+    module:
+    - dhcp
+    device: dnsmasq
+    dhcp:
+      server: true
+      pools:
+      - name: DHCPv6 managed config
+        ipv6: 2001:db8:1:4::/64
+        excluded:
+          ipv6:
+          - 2001:db8:1:4::84
+          - 2001:db8:1:4::2
+        clean_name: DHCPv6_managed_config
     provider: clab
-    routing:
-      static:
-      - ipv4: 10.0.0.0/24
-        nexthop:
-          ipv4: 172.16.1.132
-          intf: eth1
-          ipv6: 2001:db8:1:1::84
-          idx: 0
-      - ipv6: 2001:db8::/48
-        nexthop:
-          ipv4: 172.16.1.132
-          intf: eth1
-          ipv6: 2001:db8:1:1::84
-          idx: 0
-    name: h2
+    name: dhsrv
     interfaces:
-    - ipv4: 172.16.1.2/24
-      ipv6: 2001:db8:1:1::2/64
-      bandwidth: 2000
-      linkindex: 2
+    - ipv6: 2001:db8:1:4::2/64
+      name: DHCPv6 managed config
+      ra:
+        dhcp: all
+        slaac: false
+      linkindex: 5
       type: lan
-      bridge: ml_17_2
+      bridge: ml_17_5
       role: stub
-      name: h2 -> r
       ifindex: 1
       ifname: eth1
       mtu: 1500
       neighbors:
-      - ipv4: 172.16.1.132/24
-        ipv6: 2001:db8:1:1::84/64
-        ifname: eth2
-        node: r
-    device: linux
-    module:
-    - routing
+      - ipv6: 2001:db8:1:4::84/64
+        ifname: eth5
+        node: dut
+      - dhcp:
+          client:
+            ipv6: true
+        ipv6: 2001:db8:1:4::1/64
+        ifname: eth1
+        node: h4
     clab:
       kind: linux
       config_templates:
       - hosts:/etc/hosts:shared
+      - dnsmasq:/etc/dnsmasq.conf
+      - dhcp:/etc/dhcp.ignore
       binds:
       - clab_files/-shared-hosts:/etc/hosts:ro
-    box: python:3.13-alpine
+      - clab_files/dhsrv/dnsmasq:/etc/dnsmasq.conf
+      - clab_files/dhsrv/dhcp:/etc/dhcp.ignore
+    box: netlab/dnsmasq:latest
     id: 2
     role: host
     mtu: 1500
+    _daemon: true
+    _daemon_parent: linux
+    _daemon_config:
+      dnsmasq: /etc/dnsmasq.conf
+      dhcp: /etc/dhcp.ignore
     af:
-      ipv4: true
       ipv6: true
     mgmt:
       ifname: eth0
       mac: 08:4f:a9:02:00:00
       ipv4: 192.168.17.102
+    hostname: clab-ml_17-dhsrv
+  h0:
+    role: host
+    provider: clab
+    name: h0
+    interfaces:
+    - ipv6: true
+      name: Regular link (default RA behavior)
+      linkindex: 1
+      type: lan
+      bridge: ml_17_1
+      role: stub
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv6: 2001:db8:1::84/64
+        ifname: eth1
+        node: dut
+    device: frr
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts:shared
+      binds:
+      - clab_files/h0/daemons:/etc/frr/daemons
+      - clab_files/-shared-hosts:/etc/hosts:ro
+    box: quay.io/frrouting/frr:10.4.1
+    id: 3
+    mtu: 1500
+    af:
+      ipv6: true
+    mgmt:
+      ifname: eth0
+      mac: 08:4f:a9:03:00:00
+      ipv4: 192.168.17.103
+    hostname: clab-ml_17-h0
+  h1:
+    role: host
+    provider: clab
+    name: h1
+    interfaces:
+    - ipv6: true
+      name: no RA
+      ra:
+        disable: true
+      linkindex: 2
+      type: lan
+      bridge: ml_17_2
+      role: stub
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv6: 2001:db8:1:1::84/64
+        ifname: eth2
+        node: dut
+    device: frr
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts:shared
+      binds:
+      - clab_files/h1/daemons:/etc/frr/daemons
+      - clab_files/-shared-hosts:/etc/hosts:ro
+    box: quay.io/frrouting/frr:10.4.1
+    id: 4
+    mtu: 1500
+    af:
+      ipv6: true
+    mgmt:
+      ifname: eth0
+      mac: 08:4f:a9:04:00:00
+      ipv4: 192.168.17.104
+    hostname: clab-ml_17-h1
+  h2:
+    role: host
+    provider: clab
+    name: h2
+    interfaces:
+    - ipv6: true
+      name: No SLAAC
+      ra:
+        slaac: false
+      linkindex: 3
+      type: lan
+      bridge: ml_17_3
+      role: stub
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv6: 2001:db8:1:2::84/64
+        ifname: eth3
+        node: dut
+    device: frr
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts:shared
+      binds:
+      - clab_files/h2/daemons:/etc/frr/daemons
+      - clab_files/-shared-hosts:/etc/hosts:ro
+    box: quay.io/frrouting/frr:10.4.1
+    id: 5
+    mtu: 1500
+    af:
+      ipv6: true
+    mgmt:
+      ifname: eth0
+      mac: 08:4f:a9:05:00:00
+      ipv4: 192.168.17.105
     hostname: clab-ml_17-h2
+  h3:
+    role: host
+    provider: clab
+    name: h3
+    interfaces:
+    - ipv6: true
+      name: No onlink
+      ra:
+        onlink: false
+      linkindex: 4
+      type: lan
+      bridge: ml_17_4
+      role: stub
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv6: 2001:db8:1:3::84/64
+        ifname: eth4
+        node: dut
+    device: frr
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts:shared
+      binds:
+      - clab_files/h3/daemons:/etc/frr/daemons
+      - clab_files/-shared-hosts:/etc/hosts:ro
+    box: quay.io/frrouting/frr:10.4.1
+    id: 6
+    mtu: 1500
+    af:
+      ipv6: true
+    mgmt:
+      ifname: eth0
+      mac: 08:4f:a9:06:00:00
+      ipv4: 192.168.17.106
+    hostname: clab-ml_17-h3
 links:
 - _linkname: links[1]
-  bandwidth: 1000
+  name: Regular link (default RA behavior)
   interfaces:
-  - node: r
-    ipv4: 172.16.0.132/24
+  - node: dut
     ipv6: 2001:db8:1::84/64
     ifindex: 1
     ifname: eth1
-  - node: h1
-    ipv4: 172.16.0.1/24
-    ipv6: 2001:db8:1::1/64
+  - ipv6: true
+    node: h0
     ifindex: 1
     ifname: eth1
   linkindex: 1
@@ -7644,19 +7824,18 @@ links:
   node_count: 2
   role: stub
   prefix:
-    ipv4: 172.16.0.0/24
     ipv6: 2001:db8:1::/64
 - _linkname: links[2]
-  bandwidth: 2000
+  name: no RA
+  ra:
+    disable: true
   interfaces:
-  - node: r
-    ipv4: 172.16.1.132/24
+  - node: dut
     ipv6: 2001:db8:1:1::84/64
     ifindex: 2
     ifname: eth2
-  - node: h2
-    ipv4: 172.16.1.2/24
-    ipv6: 2001:db8:1:1::2/64
+  - ipv6: true
+    node: h1
     ifindex: 1
     ifname: eth1
   linkindex: 2
@@ -7668,27 +7847,167 @@ links:
   node_count: 2
   role: stub
   prefix:
-    ipv4: 172.16.1.0/24
     ipv6: 2001:db8:1:1::/64
+- _linkname: links[3]
+  name: No SLAAC
+  ra:
+    slaac: false
+  interfaces:
+  - node: dut
+    ipv6: 2001:db8:1:2::84/64
+    ifindex: 3
+    ifname: eth3
+  - ipv6: true
+    node: h2
+    ifindex: 1
+    ifname: eth1
+  linkindex: 3
+  libvirt:
+    provider:
+      clab: true
+  type: lan
+  bridge: ml_17_3
+  node_count: 2
+  role: stub
+  prefix:
+    ipv6: 2001:db8:1:2::/64
+- _linkname: links[4]
+  name: No onlink
+  ra:
+    onlink: false
+  interfaces:
+  - node: dut
+    ipv6: 2001:db8:1:3::84/64
+    ifindex: 4
+    ifname: eth4
+  - ipv6: true
+    node: h3
+    ifindex: 1
+    ifname: eth1
+  linkindex: 4
+  libvirt:
+    provider:
+      clab: true
+  type: lan
+  bridge: ml_17_4
+  node_count: 2
+  role: stub
+  prefix:
+    ipv6: 2001:db8:1:3::/64
+- _linkname: links[5]
+  name: DHCPv6 managed config
+  ra:
+    dhcp: all
+    slaac: false
+  interfaces:
+  - node: dut
+    ipv6: 2001:db8:1:4::84/64
+    ifindex: 5
+    ifname: eth5
+  - node: h4
+    dhcp:
+      client:
+        ipv6: true
+    ipv6: 2001:db8:1:4::1/64
+    ifindex: 1
+    ifname: eth1
+  - node: dhsrv
+    ipv6: 2001:db8:1:4::2/64
+    ifindex: 1
+    ifname: eth1
+  linkindex: 5
+  dhcp:
+    subnet:
+      ipv6: true
+  libvirt:
+    provider:
+      clab: true
+  type: lan
+  bridge: ml_17_5
+  node_count: 3
+  role: stub
+  prefix:
+    ipv6: 2001:db8:1:4::/64
 validate:
-- description: IPv4 ping H1,H2 => R
-  wait: 5
-  wait_msg: Wait for IPv4 interfaces to become operational
+- description: Check RA-generated default route
+  wait: 30
+  wait_msg: Waiting for RA message to generate the default route
+  nodes:
+  - h0
+  - h2
+  - h3
+  - h4
+  plugin: default6()
+  stop_on_error: true
+  name: ra
+- description: Check for SLAAC IPv6 address
+  wait: 30
+  devices:
+  - linux
+  nodes:
+  - h0
+  - h3
+  - h4
+  exec: ip addr show dev {{ interfaces[0].ifname }}
+  valid: >-
+    '2001:db8' in stdout
+  name: slaac
+- description: Check for onlink prefix
+  wait: 30
+  devices:
+  - linux
+  nodes:
+  - h0
+  - h2
+  - h4
+  exec: ip -6 route
+  valid: >-
+    '2001:db8' in stdout
+  name: onlink
+- description: Check for DHCPv6 IPv6 address
+  wait: 30
+  devices:
+  - linux
+  nodes:
+  - h4
+  exec: ip addr show dev {{ interfaces[0].ifname }}
+  valid: >-
+    '2001:db8' in stdout and '/128' in stdout
+  name: dhcpv6
+- description: Waiting a few seconds just in case...
+  wait: 3
+  name: w3
+- description: Check for lack of SLAAC address
+  devices:
+  - linux
   nodes:
   - h1
   - h2
-  plugin: ping(nodes.r.loopback.ipv4)
-  name: ping
-- description: IPv6 ping H1,H2 => R
-  wait: 5
-  wait_msg: Wait for IPv6 interfaces to become operational
+  exec: ip addr show dev {{ interfaces[0].ifname }}
+  valid: >-
+    '2001:db8' not in stdout
+  name: no_slaac
+- description: Check for lack of onlink prefix
+  devices:
+  - linux
   nodes:
   - h1
-  - h2
-  plugin: ping(nodes.r.loopback.ipv6)
-  name: ping6
+  - h3
+  exec: ip -6 route
+  valid: >-
+    '2001:db8' not in stdout
+  name: no_link
+- description: Check for lack of IPv6 default route
+  devices:
+  - linux
+  nodes:
+  - h1
+  exec: ip -6 route
+  valid: >-
+    'default' not in stdout
+  name: no_def
 input:
-- /home/pipi/net101/tools/tests/integration/initial/01-interfaces.yml
+- /home/pipi/net101/tools/tests/integration/initial/08-ra.yml
 - /home/pipi/net101/tools/tests/integration/wait_times.yml
 - /home/pipi/net101/tools/tests/integration/warnings.yml
 - /home/pipi/.netlab.yml
@@ -7701,9 +8020,14 @@ libvirt:
   providers:
     clab: true
 module:
-- routing
-prefix:
-  any:
-    ipv4: 0.0.0.0/0
-    ipv6: ::/0
+- dhcp
+dhcp:
+  pools:
+  - name: DHCPv6 managed config
+    ipv6: 2001:db8:1:4::/64
+    excluded:
+      ipv6:
+      - 2001:db8:1:4::84
+      - 2001:db8:1:4::2
+    clean_name: DHCPv6_managed_config
 _netlab_version: '25.07'
