@@ -1,6 +1,16 @@
 Release Notes
 =============
 
+**Release 25.09 (2025-09-07)**
+
+* Link impairment (implemented with Linux *netem* queuing discipline) can be defined in [lab topology](links-netem) or configured/controlled with the **[netlab tc](netlab-tc)** command
+* Configurable [IPv6 Router Advertisement](links-ra) parameters
+* The [**files** plugin](plugin-files) allows you to store the content of short files (including custom configuration templates) directly in the lab topology
+* New device: Nokia SR-SIM
+* [Graphing](release-25.09-graph), [reporting](release-25.09-reports), and [performance/scalability](release-25.09-performance) improvements
+
+[More details...](release-25.09)
+
 **Release 25.07 (2025-07-14)**
 
 * The [ospf.areas plugin](plugin-ospf-areas) supports OSPFv2 and OSPFv3 stub areas, NSSA areas, and area ranges.
@@ -127,6 +137,7 @@ For older releases, check the [release notes archive](release-archive.md).
    :caption: Individual release notes
    :maxdepth: 1
 
+   release/25.09.md
    release/25.07.md
    release/25.06.md
    release/2.0.md

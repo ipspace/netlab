@@ -20,12 +20,13 @@ Based on your lab topology the **[netlab up](netlab/up.md)** command will:
 * Configure static routes, prefix lists, AS-path filters, BGP community filters, route maps, route redistribution, and default route origination.
 * Start external network management tools specified in lab topology like Graphite, SuzieQ, or Cisco NSO.
 
-When the lab is fully configured, you can use the:
+When the lab is fully configured, you can use:
 
 * **[netlab connect](netlab-connect)** command to connect to network devices via SSH or **docker exec**
 * **[netlab config](netlab-config)** command to deploy custom configuration snippets
 * **[netlab capture](netlab-capture)** command to capture packets on VM- or container interfaces
 * **[netlab exec](netlab-exec)** command to execute arbitrary commands on one or more network devices
+* **[netlab tc](netlab-tc)** to disable, enable, display, or modify [link impairment](links-netem) parameters
 
 Before shutting down your lab with the **[netlab down](netlab/down.md)** command, you might want to run the **[netlab collect](netlab/collect.md)** command to save the configuration changes you made.
 
@@ -36,8 +37,8 @@ Before shutting down your lab with the **[netlab down](netlab/down.md)** command
 * Choose the virtualization method you'd like to use to build your lab
 * Follow the [instructions in the installation guide](lab) to build your lab environment
 
-More information
-----------------
+## More information
+
 * After installing *netlab* you might want to [follow the tutorials](tutorials.md)
 * Read the [blog posts](https://blog.ipspace.net/tag/netlab.html)_ describing *netlab* features and use cases
 * Explore [BGP configuration labs](https://bgplabs.net) built with *netlab*

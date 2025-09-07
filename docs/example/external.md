@@ -37,6 +37,7 @@ Alternatively, you could use Ansible inventory to find the same information:
 
 Finally, you could display node information in YAML format with the **[netlab inspect --node _nodename_](../netlab/inspect.md)** command, or analyze the  **nodes** dictionary in the `netlab.snapshot.yml` file with `yq` or a custom script.
 
+(external-ssh-forwarding)=
 ### Using SSH Port Forwarding
 
 _netlab_ can also create an SSH configuration file that you can add to your `.ssh` directory to access lab devices directly through SSH sessions using the _netlab_ host as a proxy host[^SSHDIY].
