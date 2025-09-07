@@ -4,13 +4,13 @@
 **netlab graph** command creates a graph description in [Graphviz](https://graphviz.org/) or [D2](https://d2lang.com/) format from the transformed lab topology data (usually stored in `netlab.snapshot.pickle`) created by **netlab create** command. It's replicating the functionality of **netlab create -o graph:_name_** command with a more convenient user interface. 
 
 ```{note}
-You will have to install [Graphviz](https://graphviz.org/download/) or [D2](https://d2lang.com/tour/install) and use them to create the actual graphs in PNG/JPEG/PDF format.
+_netlab_ generates the graph description files. You will have to install [Graphviz](https://graphviz.org/download/) or [D2](https://d2lang.com/tour/install) and use them to create the actual graphs in SVG/PNG/JPEG/PDF format.
 ```
 
 ## Usage
 
 ```text
-usage: netlab graph [-h] [-t {topology,bgp}] [-f G_FORMAT] [-e {graphviz,d2}]
+usage: netlab graph [-h] [-t {topology,bgp,isis}] [-f G_FORMAT] [-e {graphviz,d2}]
                     [-i INSTANCE] [--snapshot [SNAPSHOT]] [output]
 
 Create a graph description in Graphviz or D2 format
@@ -20,7 +20,7 @@ positional arguments:
 
 options:
   -h, --help            show this help message and exit
-  -t {topology,bgp}, --type {topology,bgp}
+  -t {topology,bgp,isis}, --type {topology,bgp,isis}
                         Graph type
   -f, --format G_FORMAT
                         Graph formatting parameters separated by commas
@@ -33,6 +33,7 @@ options:
 ```
 
 ```{tip}
+* For more graph type- and graph formatting details, read the [GraphViz](outputs-graphviz) and [D2](outputs-d2) output module documentation.
 * When executed with the `--instance` option, **‌netlab graph** creates the graph description file in the lab directory.
 * You can use [_netlab_ environment variables](defaults-env) to change the graph appearance ([graphviz](outputs-graph-appearance), [d2](outputs-d2-graph-appearance))
 ```
