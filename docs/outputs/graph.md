@@ -1,3 +1,4 @@
+(outputs-graphviz)=
 # Topology Graph (graphviz) Output Module
 
 *graph* output module create a description of network topology in [*graphviz* DOT format](https://graphviz.org/doc/info/lang.html). You can use that description with *graphviz* commands to create topology diagrams in [numerous output formats](https://graphviz.org/docs/outputs/).
@@ -10,7 +11,7 @@ A single formatting modifier can be used to specify the graph type:
 
 * **topology** (default) -- Display inter-node links, multi-access- and stub subnets. When the network topology contains BGP information, the graph groups nodes into autonomous systems. Alternatively, you could set **defaults.outputs.graph.groups** attribute to use topology **[groups](topo-groups)** to group graph nodes.
 * **bgp** -- Include autonomous systems, nodes, and BGP sessions. The formatting modifier can include [BGP formatting parameters](outputs-graph-bgp-parameters). For example, `netlab create -o graph:bgp:rr` draws RR-client sessions as directed arrows.
-* **isis** -- Create a diagram of IS-IS routing, including areas, color-coded circuit types, and edge subnets
+* **isis** -- Create a diagram of IS-IS routing, including areas, color-coded circuit types, and edge subnets (does not work with IS-IS running over VLANs)
 
 (outputs-graph-link-node-attributes)=
 ## Modifying Global, Link, and Node Attributes
