@@ -109,3 +109,22 @@ updates:
 
 {% endfor %}
 {% endif %}
+
+
+{# 
+Add Host Entries
+----------------
+Clab already adds management IPs to SR Linux nodes' /etc/hosts file with the node names
+which take precedence, so here we append .netlab to differentiate the inband addresses.
+#}
+{% for hname,hdata in hosts.items() if 'ipv4' in hdata and hname != inventory_hostname %}
+- path: /system/dns/host-entry[name={{ hname|replace('_','') }}.netlab]
+  value:
+    ipv4-address: {{ hdata.ipv4[0] }}
+{% endfor %}
+
+{% for hname,hdata in hosts.items() if 'ipv6' in hdata and hname != inventory_hostname %}
+- path: /system/dns/host-entry[name={{ hname|replace('_','') }}.netlab]
+  value:
+    ipv6-address: {{ hdata.ipv6[0] }}
+{% endfor %}
