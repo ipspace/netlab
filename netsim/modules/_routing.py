@@ -25,38 +25,38 @@ from .routing import check_routing_policy, import_routing_policy
 # * If the address families are not set, calculate them based on interface address families
 # * Otherwise parse and validate the AF attribute
 #
-def routing_af(node: Box, proto: str, features: typing.Optional[Box] = None) -> None:
-  if 'af' in node[proto]:               # Is the AF attribute set for the routing protocol?
-    if isinstance(node[proto].af,list): # Turn a list of address families into a dictionary
-      node[proto].af = { af: True for af in node[proto].af }
+# Please note that this function could be called with node data (for global routing instance)
+# or VRF data (acting as node data) for VRF routing instances
+#
+def routing_af(
+      node: Box,                                      # Could also be VRF data
+      proto: str,                                     # IGP we're checking
+      n_name: typing.Optional[str] = None,            # Name of the object (default: node name)
+      is_vrf: bool = False,                           # Are we dealing with a VRF?
+      features: typing.Optional[Box] = None) -> None: # And finally, the device features
 
-    if node[proto].af is None:
-      node[proto].pop('af',None)
-    else:
-      if not isinstance(node[proto].af,dict):
-        log.error(
-          f'af attribute for {proto} on node {node.name} has to be a list or a dictionary',
-          log.IncorrectValue,
-          proto)
-        return
-
-      for proto_af in node[proto].af.keys():
-        if not proto_af in ('ipv4','ipv6'):
-          log.error(
-            f'Routing protocol address family has to be ipv4 and/or ipv6: {proto} on {node.name}',
-            log.IncorrectValue,
-            proto)
+  if n_name is None:
+    n_name = 'node {node.name}'
+  if 'af' in node[proto] and node[proto].af is None:
+    node[proto].pop('af',None)
 
   if not 'af' in node[proto]:                         # No configured AF attribute, calculate it
-    for af in ['ipv4','ipv6']:
-      if af in node.get('loopback',{}):               # Address family enabled on loopback?
-        node[proto].af[af] = True                     # ... we need it in the routing protocol
-        continue
+    for af in ['ipv4','ipv6']:                        # Process the loopback interface
+      lb_data = node.get('loopback',{})               # Fetch the loopback interface info
+      if isinstance(lb_data,Box):                     # ... watch out for bool values
+        if af in lb_data:                             # Address family enabled on loopback?
+          node[proto].af[af] = True                   # ... we need it in the routing protocol
+          continue
 
-      for l in node.get('interfaces',[]):             # Scan all interfaces
-        if proto in l and (af in l or af in l.get('dhcp.client',{})) \
-           and not 'vrf' in l:                        # Do we have AF enabled on any global interface?
-          node[proto].af[af] = True                   # Found it - we need it the module
+      # Scan all interfaces -- they could be in node.interfaces or vrf_data.proto.interfaces
+      if_list = node[proto].get('interfaces',[]) if is_vrf else node.get('interfaces',[])
+      for l in if_list:
+        if 'vrf' in l and not is_vrf:                 # Skip VRF interfaces when processing global routing instance
+          continue                                    # VRF instances will only have correct VRF interfaces anyway
+
+        # Do we have AF enabled on the global- or VRF interface
+        if proto in l and (af in l or af in l.get('dhcp.client',{})):
+          node[proto].af[af] = True                   # Found the AF - we need it in the routing protocol
           continue
 
   p_features = features.get(proto,{}) if features else {}
@@ -68,7 +68,7 @@ def routing_af(node: Box, proto: str, features: typing.Optional[Box] = None) -> 
 
     if af in p_features and p_features[af] is False:
       log.error(
-        f'Device {node.device} (node {node.name}) cannot run {proto} on {af}',
+        f'{n_name} cannot run {proto} on {af}',
         log.IncorrectValue,
         proto)
 
@@ -297,6 +297,7 @@ def build_vrf_interface_list(
       vrf_unnumbered_check: bool = True) -> None:                     # Check the source IP VRF for IPv4 unnumbereds
   
   unnum_err_list = data.get_empty_box()
+  features = devices.get_device_features(node,topology.defaults)
 
   for l in node.interfaces:
     if proto not in l:                                                # Not running the protocol on the interface?
@@ -346,7 +347,9 @@ def build_vrf_interface_list(
         f"VRF {vname} on {node.name} has unnumbered interface(s) running {proto} without a VRF loopback",
         category=log.MissingDependency,
         module="vrf",
-        more_data=f"Used on interface(s) {','.join(unnum_err_list[vname])}")      
+        more_data=f"Used on interface(s) {','.join(unnum_err_list[vname])}")
+
+    routing_af(vdata,proto,f'VRF {vname} on {node.name}',is_vrf=True,features=features)
 
 #
 # remove_unaddressed_intf -- remove all interfaces without IPv4 or IPv6 address from IGP
@@ -431,6 +434,7 @@ def check_vrf_protocol_support(
     if not proto in v_data:                       # Are we running the target protocol in the VRF?
       continue
     if af and not af in v_data.af:                # Does the VRF use the target address family?
+      v_data[proto].af.pop(af,None)               # Make sure the AF is not set in VRF routing protocol data
       continue
 
     # We found the protocol to check in the current VRF, time to check device features
@@ -442,9 +446,6 @@ def check_vrf_protocol_support(
         category=log.IncorrectValue,
         module=proto)
       return
-
-    if af:
-      v_data[proto].af[af] = True                 # Add the AF to VRF routing protocol data
 
 """
 check_intf_support -- check device support for optional interface parameters
@@ -821,7 +822,7 @@ def igp_post_transform(
   else:
     remove_vrf_interfaces(node,proto)
 
-  routing_af(node,proto,features)
+  routing_af(node,proto,f'node {node.name}',features=features)
   if vrf_aware:
     remove_vrf_routing_blocks(node,proto)
   

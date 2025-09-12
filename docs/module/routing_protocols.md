@@ -37,9 +37,13 @@ nodes:
 (routing_af)=
 ## Address Families
 
-Configuration modules for all IGP routing protocols that support multiple address families (IS-IS, EIGRP) or multiple protocol instances (OSPFv2, OSPFv3) support **_protocol_.af** global- or node-level module parameter. The **af** parameter can be a list- or a dictionary of address families.
+Configuration modules for all IGP routing protocols that support multiple address families (IS-IS, EIGRP) or multiple protocol instances (OSPFv2, OSPFv3) support **_protocol_.af** global-, node-, or VRF-level module parameter. The **af** parameter can be a list or a dictionary of address families.
 
 The default value of the **af** parameter is set based on address families configured on loopback- or physical interfaces -- an address family is enabled within an IGP configuration on a device if at least one interface on that device has an IP address from that address family.
+
+```{warning}
+If you decide to set a **‌_protocol_.af** parameter, you MUST specify which address families should be active. Using the **af** parameter just to set an unwanted address family to *False* without enabling any other address family will result in no address families being used.
+```
 
 **Example:**
 
@@ -61,7 +65,7 @@ nodes:
   r5:
 ```
 
-* IS-IS address families are enabled based on configured **isis.af** parameters
+* IS-IS address families are enabled based on the configured **isis.af** parameters
 * **ospf.af** parameter is not set -- OSPFv2 or OSPFv3 are enabled based on address families used on individual nodes
 
 The following IS-IS address families are configured on individual routers:
