@@ -447,9 +447,6 @@ def check_vrf_protocol_support(
         module=proto)
       return
 
-    if af and not 'af' in v_data[proto]:
-      v_data[proto].af[af] = True                 # Add the AF to VRF routing protocol data
-
 """
 check_intf_support -- check device support for optional interface parameters
 """
