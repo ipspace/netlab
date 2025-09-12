@@ -107,6 +107,8 @@ You can also set these parameters to influence routing protocols within a VRF.
 * **ospf.area** -- the default OSPF area for the VRF OSPF process (default: node **ospf.area**). It is configured on the VRF loopback interfaces.
 * **bgp.router_id** -- per-VRF BGP router ID. You have to set this parameter if you want to configure inter-VRF EBGP sessions between interfaces of the same device.[^ELB]
 * **ospf.router_id** -- per-VRF OSPF router ID. You can use this parameter for the same reasons as **bgp.router_id** or if you want consistent OSPF router IDs on Cisco IOS.
+* **_igp_.af** -- specify the [address families](routing_af) you want to use with **isis**, **ospf**, or **rip** VRF instance.
+* You can also specify OSPF route redistribution (**import**), **default** route origination, and default OSPF **password** and **timers**.
 
 [^ELB]: That's how some people implement inter-VRF route leaking. You don't want to know the details ;)
 
