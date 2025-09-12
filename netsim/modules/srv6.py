@@ -107,7 +107,7 @@ class SRV6(_Module):
        node.srv6.locator = locator
     locator_net = ipaddress.IPv6Network(locator)
     if node.get('srv6.allocate_loopback'):                   # Auto-assign a loopback from locator range
-      first_host = next(locator_net.hosts())                 # Use first usable address
+      first_host = next(iter(locator_net.hosts()))           # Use first usable address
       prefix6 = topology.pools['loopback'].get('prefix6',64) # Use loopback.prefix6, default /64
       node.loopback.ipv6 = ipaddress.IPv6Interface((first_host, prefix6)).with_prefixlen
 
