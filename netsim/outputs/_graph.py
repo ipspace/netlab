@@ -44,13 +44,15 @@ def build_nodes(topology: Box, g_type: str) -> Box:
     for name,n in topology.nodes.items():
       bgp_as = n.get('bgp.as',None)
       if bgp_as:
-        bgp_as = f'AS_{bgp_as}'
-        maps.bgp[bgp_as].nodes[n.name] = n
+        map_asn = f'AS_{bgp_as}'
+        maps.bgp[map_asn].nodes[n.name] = n
+        maps.bgp[map_asn].title = f'AS {bgp_as}'
 
-  if 'bgp' in topology and 'as_list' in topology.bgp:
+  if topology.get('bgp.as_list'):
     for (asn,asdata) in topology.bgp.as_list.items():
-      if 'name' in asdata and asn in maps.bgp:
-        maps.bgp[asn].name = asdata.name
+      map_asn = f'AS_{asn}'
+      if 'name' in asdata and map_asn in maps.bgp:
+        maps.bgp[map_asn].title = f'{asdata.name} (AS {asn})'
 
   return maps
 

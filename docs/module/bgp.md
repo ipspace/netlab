@@ -138,10 +138,11 @@ bgp:
   rr_list: [ s1, s2 ]
 ```
 
-When building a more complex lab with multiple autonomous systems, you might want to use **bgp.as_list** -- a global parameter that specifies a dictionary of autonomous systems. Every autonomous system in the **bgp.as_list** should have two elements:
+When building a more complex lab with multiple autonomous systems, you might want to use **bgp.as_list** -- a global parameter that specifies a dictionary of autonomous systems. Every autonomous system in the **bgp.as_list** could have these elements:
 
-* **members** -- list of nodes within the autonomous system
-* **rr** -- list of route reflectors within the autonomous system.
+* **members** (mandatory) -- list of nodes within the autonomous system.
+* **rr** (optional) -- list of route reflectors within the autonomous system.
+* **name** (optional) -- a name for the autonomous system that will be used in topology and BGP graphs.
 
 ```{tip}
 You can override the **‌bgp.as_list** settings with the node attributes.
@@ -155,6 +156,7 @@ bgp:
     65000:
       members: [ rr1, rr2, pe1, pe2 ]
       rr: [ rr1, rr2 ]
+      name: core
     65001:
       members: [ e1 ]
     65002:
