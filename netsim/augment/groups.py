@@ -5,6 +5,7 @@ top-level element. That dictionary is merged from global- and node-level paramet
 '''
 
 import copy
+import fnmatch
 import re
 import typing
 
@@ -103,10 +104,89 @@ def check_group_data_sanity(
 
   return True
 
+def group_re_match(m_expr: str, names: list) -> list:
+  pattern = re.compile(m_expr[1:])
+  return [ member for member in names if pattern.fullmatch(member) ]
+
+"""
+Expand the regular expressions or globs in the list of group members
+
+Most of the function is just error checking and reporting, there's very little
+actual work done here
+"""
+def expand_group_members(
+      g_members: list,                # Members of the current group that have to be checked/expanded
+      g_objects: Box,                 # Parent objects (nodes, VLANs, VRFs)
+      g_list: list,                   # List of group names (to check hierarchical groups)
+      g_name: str,                    # The name of the current group (needed for error messages)
+      g_type: str,                    # Group type (node/vlan/vrf)
+      g_prune: bool = False) -> list: # Prune non-existent group members (used in default groups)
+
+  members: typing.List[str] = []
+  g_names: typing.List[str] = []
+  for m_id in g_members:
+    if not isinstance(m_id,str):
+      log.error(f'Member {m_id} of {g_type} group {g_name} is not a string',log.IncorrectType,module='groups')
+      continue
+
+    # Simple case: the member belongs to the group objects
+    if m_id in g_objects or m_id in g_list:
+      members.append(m_id)
+
+    # Regular expression, identified by a string starting with ~
+    elif m_id.startswith('~'):
+      if not g_names:                             # Caching group object names just in case we're dealing
+        g_names = list(g_objects)                 # ... with a humongous topology
+      try:
+        g_match = group_re_match(m_id,g_names)
+      except Exception as ex:
+        log.error(                                # Regex matching failed for some reason
+          f'Invalid regular expression {m_id} used in {g_type} group {g_name}',
+          more_data=str(ex),
+          category=log.IncorrectValue,
+          module='groups')
+        continue
+      if not g_match:                             # ... or we had no matches
+        log.error(
+          f'Regular expression {m_id} used in {g_type} group {g_name} does not match anything',
+          category=log.IncorrectType,
+          module='groups')
+        continue
+      members.extend(g_match)                     # All good, add re-matched members
+      continue
+
+    elif re.search('[\\[\\].*?!]',m_id):            # Using regexp to identify a potential glob pattern
+      if not g_names:                             # Again: get a list of object names when first needed
+        g_names = list(g_objects)
+      try:
+        g_match = fnmatch.filter(g_names,m_id)
+      except Exception as ex:
+        log.error(                                # Regex matching failed for some reason
+          f'Invalid wildcard expression {m_id} used in {g_type} group {g_name}',
+          more_data=str(ex),
+          category=log.IncorrectValue,
+          module='groups')
+        continue
+      if not g_match:
+        log.error(
+          f'Wildcard expression {m_id} used in {g_type} group {g_name} does not match anything',
+          category=log.IncorrectType,
+          module='groups')
+        continue
+      members.extend(g_match)
+
+    elif not g_prune:
+      log.error(
+        f'Member {m_id} of group {g_name} is not a valid {g_type} or group name',
+        category=log.IncorrectValue,
+        module='groups')
+
+  return members
+
 def check_group_data_structure(
       topology: Box,
       parent_path: typing.Optional[str] = '',
-      prune_members: typing.Optional[bool] = False) -> None:
+      prune_members: bool = False) -> None:
 
   parent = topology.get(parent_path) if parent_path else topology
   grp_namespace = f'{parent_path} ' if parent_path else ''
@@ -116,6 +196,7 @@ def check_group_data_structure(
   '''
 
   list_of_modules = modules.list_of_modules(topology)
+  group_names = list(parent.groups)
 
   for grp,gdata in parent.groups.items():
     if grp.startswith('_'):                       # Skip stuff starting with underscore
@@ -157,15 +238,13 @@ def check_group_data_structure(
     if must_be_list(gdata,'members',gpath,create_empty=False,module='groups') is None:
       continue
 
-    if prune_members:
-      gdata.members = [ n for n in gdata.members if n in g_objects or n in parent.groups ]
-    else:
-      for n in gdata.members:
-        if not n in g_objects and not n in parent.groups:
-          log.error(
-            text=f'Member {n} of {grp_namespace}group {grp} is not a valid {g_type} or group name',
-            category=log.IncorrectValue,
-            module='groups')
+    gdata.members = expand_group_members(
+                      g_members=gdata.members,
+                      g_objects=g_objects,
+                      g_list=group_names,
+                      g_name=grp,
+                      g_type=g_type,
+                      g_prune=prune_members)
 
 def validate_group_data(
       topology: Box,
