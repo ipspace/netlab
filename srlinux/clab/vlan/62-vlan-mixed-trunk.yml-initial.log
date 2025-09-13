@@ -46,8 +46,8 @@ TASK [Find configuration template for normalize] *******************************
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [h4]
 ok: [s1]
+ok: [h4]
 ok: [s2]
 
 TASK [fail] ********************************************************************
@@ -97,8 +97,8 @@ TASK [Find configuration template for initial] *********************************
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [h4]
 ok: [s1]
+ok: [h4]
 ok: [s2]
 
 TASK [fail] ********************************************************************
@@ -258,6 +258,28 @@ ok: [h4] =>
     ip addr add 172.16.2.4/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+ok: [s1] => 
+  msg: |-
+    initial configuration for s1
+    =========================================
+  
+    updates:
+  
+    - path: /interface[name=system0]/subinterface[index=0]
+      value:
+       description: "No description"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "10.0.0.5/32"
+  
+  
+  
+    - path: /network-instance[name=default]
+      value:
+       type: default
+       interface:
+       - name: system0.0
 ok: [s2] => 
   msg: |-
     initial configuration for s2
@@ -349,6 +371,7 @@ ok: [s2] =>
     cat >/tmp/config <<CONFIG
     hostname s2
     !
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -392,29 +415,8 @@ ok: [s2] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
-ok: [s1] => 
-  msg: |-
-    initial configuration for s1
-    =========================================
-  
-    updates:
-  
-    - path: /interface[name=system0]/subinterface[index=0]
-      value:
-       description: "No description"
-       ipv4:
-        admin-state: enable
-        address:
-        - ip-prefix: "10.0.0.5/32"
-  
-  
-  
-    - path: /network-instance[name=default]
-      value:
-       type: default
-       interface:
-       - name: system0.0
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2, h3, h4
@@ -428,16 +430,16 @@ ok: [h3]
 ok: [h4]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h4 -> localhost]
 changed: [h1 -> localhost]
 changed: [h3 -> localhost]
 changed: [h2 -> localhost]
+changed: [h4 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h4 -> localhost]
-changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h1 -> localhost]
+changed: [h4 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -452,16 +454,16 @@ skipping: [h3]
 skipping: [h4]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h4 -> localhost]
-changed: [h1 -> localhost]
-changed: [h3 -> localhost]
 changed: [h2 -> localhost]
+changed: [h3 -> localhost]
+changed: [h1 -> localhost]
+changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-ije1xkr1.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-wdjf7px2.sh] ***********************
 changed: [h4 -> localhost]
+changed: [h3 -> localhost]
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
-changed: [h3 -> localhost]
 
 TASK [Generate JSON-RPC YAML configuration] ************************************
 ok: [s1]
@@ -499,8 +501,8 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [h4]
 ok: [s1]
+ok: [h4]
 ok: [s2]
 
 TASK [Deploy individual configuration modules] *********************************
@@ -511,9 +513,9 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1,
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [h1]
 ok: [h2]
+ok: [h4]
 ok: [h3]
 ok: [s1]
-ok: [h4]
 ok: [s2]
 
 TASK [Find configuration template for vlan] ************************************
@@ -714,8 +716,8 @@ TASK [Find configuration template for routing] *********************************
 ok: [h1]
 skipping: [s1]
 ok: [h2]
-ok: [h3]
 skipping: [s2]
+ok: [h3]
 ok: [h4]
 
 TASK [fail] ********************************************************************
@@ -735,7 +737,6 @@ ok: [h3]
 ok: [h4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [s1]
 ok: [h1] => 
   msg: |-
     routing configuration for h1
@@ -751,6 +752,7 @@ ok: [h1] =>
     #
     # Print the final routing table
     ip route
+skipping: [s1]
 skipping: [s2]
 ok: [h2] => 
   msg: |-
@@ -764,35 +766,6 @@ ok: [h2] =>
     #
     #
     #
-    #
-    # Print the final routing table
-    ip route
-ok: [h3] => 
-  msg: |-
-    routing configuration for h3
-    =========================================
-    #!/bin/bash
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.2.0.0/24 2>/dev/null; do
-      : ; done
-    #
-    #
-    #
-    echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.1.5 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.1.5 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.1.5 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.1.5 dev eth1 protocol static
     #
     # Print the final routing table
     ip route
@@ -825,6 +798,35 @@ ok: [h4] =>
     #
     # Print the final routing table
     ip route
+ok: [h3] => 
+  msg: |-
+    routing configuration for h3
+    =========================================
+    #!/bin/bash
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.1.5 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.1.5 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.1.5 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.1.5 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
 
 TASK [Deploy routing configuration] ********************************************
 skipping: [s1]
@@ -845,9 +847,9 @@ changed: [h4 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
 changed: [h1 -> localhost]
-changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
 skipping: [h1]
@@ -867,7 +869,7 @@ changed: [h2 -> localhost]
 changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-_h89wlq1.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-nr4p74_w.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]

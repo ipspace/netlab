@@ -18,8 +18,8 @@ TASK [Find device readiness script] ********************************************
 ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [spine]
@@ -35,8 +35,8 @@ TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [spine]
@@ -56,8 +56,8 @@ TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [h2]
 ok: [h1]
+ok: [h2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [spine]
@@ -87,8 +87,8 @@ TASK [Find configuration template for initial] *********************************
 ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 
 TASK [fail] ********************************************************************
 skipping: [spine]
@@ -101,8 +101,8 @@ TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [h1] => 
@@ -414,6 +414,7 @@ ok: [l2] =>
     cat >/tmp/config <<CONFIG
     hostname l2
     !
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -444,6 +445,7 @@ ok: [l2] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 
 TASK [Deploy initial configuration] ********************************************
@@ -456,8 +458,8 @@ ok: [spine]
 ok: [l1]
 
 TASK [Update SRL initial node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/initial/srlinux.j2)] ***
-changed: [spine]
 changed: [l1]
+changed: [spine]
 
 TASK [debug] *******************************************************************
 skipping: [spine]
@@ -489,12 +491,12 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -505,10 +507,10 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-x954zc3b.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-489_sl0_.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -539,8 +541,8 @@ TASK [Find configuration template for vlan] ************************************
 skipping: [spine]
 skipping: [h1]
 skipping: [h2]
-ok: [l1]
 ok: [l2]
+ok: [l1]
 
 TASK [fail] ********************************************************************
 skipping: [spine]
@@ -707,12 +709,12 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
 skipping: [h1]
@@ -726,7 +728,7 @@ TASK [Container configuration for routing based on /home/pipi/net101/tools/netsi
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-jr2fyqy3.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-9ldlrfys.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -761,6 +763,41 @@ ok: [l2]
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
 skipping: [h2]
+ok: [l2] => 
+  msg: |-
+    bgp configuration for l2
+    =========================================
+    !
+    router bgp 65202
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.3
+    !
+      neighbor eth1 interface remote-as 65100
+      neighbor eth1 description spine
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.3/32
+    !
+    !
+    !
+      neighbor eth1 activate
+      no neighbor eth1 send-community all
+      neighbor eth1 send-community standard
+      neighbor eth1 send-community large
+      neighbor eth1 send-community extended
+    !
+    !
+    !
+    do write
 ok: [spine] => 
   msg: |-
     bgp configuration for spine
@@ -922,41 +959,6 @@ ok: [spine] =>
       value:
         peer-group: "intf-ethernet-1/2"
         allowed-peer-as: [ 65202..65202 ]
-ok: [l2] => 
-  msg: |-
-    bgp configuration for l2
-    =========================================
-    !
-    router bgp 65202
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.3
-    !
-      neighbor eth1 interface remote-as 65100
-      neighbor eth1 description spine
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-      network 10.0.0.3/32
-    !
-    !
-    !
-      neighbor eth1 activate
-      no neighbor eth1 send-community all
-      neighbor eth1 send-community standard
-      neighbor eth1 send-community large
-      neighbor eth1 send-community extended
-    !
-    !
-    !
-    do write
 ok: [l1] => 
   msg: |-
     bgp configuration for l1
@@ -1115,8 +1117,8 @@ ok: [h2]
 
 TASK [Find configuration template for vxlan] ***********************************
 skipping: [spine]
-ok: [l1]
 skipping: [h1]
+ok: [l1]
 skipping: [h2]
 ok: [l2]
 
@@ -1358,8 +1360,8 @@ ok: [spine]
 ok: [l1]
 
 TASK [Update SRL evpn node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/evpn/srlinux.j2)] ***
-changed: [l1]
 changed: [spine]
+changed: [l1]
 
 TASK [debug] *******************************************************************
 skipping: [spine]

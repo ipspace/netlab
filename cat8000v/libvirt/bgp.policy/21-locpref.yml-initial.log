@@ -1,7 +1,3 @@
-/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
-  "cipher": algorithms.TripleDES,
-/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
-  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -26,7 +22,7 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1, x2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1, x2
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [probe]
@@ -48,8 +44,8 @@ skipping: [x2]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [probe]
-ok: [x2]
 ok: [x1]
+ok: [x2]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -65,7 +61,7 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1, x2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1, x2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [probe]
@@ -92,6 +88,118 @@ ok: [x2]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [probe] => 
+  msg: |-
+    initial configuration for probe
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=1
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.autoconf=0
+    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname probe
+    !
+    log file /tmp/logging
+  
+    !
+    ip forwarding
+    ipv6 forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.2/32
+     ipv6 address 2001:db8:1:2::1/64
+    !
+    interface eth1
+     no shutdown
+     description probe -> dut
+     ip address 10.1.0.10/30
+     ipv6 address 2001:db8:3:2::2/64
+     ipv6 nd ra-interval 5
+     no ipv6 nd suppress-ra
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    !
+    exit 0
 ok: [x1] => 
   msg: |-
     initial configuration for x1
@@ -176,6 +284,9 @@ ok: [x1] =>
     cat >/tmp/config <<CONFIG
     hostname x1
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     ipv6 forwarding
     vrf mgmt
@@ -199,6 +310,7 @@ ok: [x1] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [x2] => 
   msg: |-
@@ -284,6 +396,9 @@ ok: [x2] =>
     cat >/tmp/config <<CONFIG
     hostname x2
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     ipv6 forwarding
     vrf mgmt
@@ -307,6 +422,7 @@ ok: [x2] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [dut] => 
   msg: |-
@@ -315,6 +431,8 @@ ok: [dut] =>
     hostname dut
     !
     no ip domain lookup
+    logging buffered 256000
+  
     !
     lldp run
     !
@@ -338,18 +456,21 @@ ok: [dut] =>
     interface GigabitEthernet2
      description dut -> x1 [external]
      ip address 10.1.0.1 255.255.255.252
+     ipv6 nd ra interval 5
      ipv6 address 2001:DB8:3::1/64
      no shutdown
     !
     interface GigabitEthernet3
      description dut -> x2 [external]
      ip address 10.1.0.5 255.255.255.252
+     ipv6 nd ra interval 5
      ipv6 address 2001:DB8:3:1::1/64
      no shutdown
     !
     interface GigabitEthernet4
      description dut -> probe
      ip address 10.1.0.9 255.255.255.252
+     ipv6 nd ra interval 5
      ipv6 address 2001:DB8:3:2::1/64
      no shutdown
     !
@@ -360,120 +481,12 @@ ok: [dut] =>
     no banner exec
     no banner login
     no banner incoming
-ok: [probe] => 
-  msg: |-
-    initial configuration for probe
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)# "
-    echo
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
-    #
-    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
-    #
-    sysctl -w net.ipv4.ip_forward=1
-    sysctl -w net.ipv6.conf.all.forwarding=1
-    #
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    # Set system defaults
-    #
-    # Send ARP requests from a sane source IP address
-    #
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Create loopbacks, stub and lag/bond devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    ip link set eth1 down
-    sysctl -qw net.ipv6.conf.eth1.autoconf=0
-    sysctl -qw net.ipv6.conf.eth1.accept_ra=0
-    ip link set dev eth1 mtu 1500
-    ip link set eth1 up
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-  
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname probe
-    !
-    ip forwarding
-    ipv6 forwarding
-    vrf mgmt
-     exit-vrf
-    !
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ip address 10.0.0.2/32
-     ipv6 address 2001:db8:1:2::1/64
-    !
-    interface eth1
-     no shutdown
-     description probe -> dut
-     ip address 10.1.0.10/30
-     ipv6 address 2001:db8:3:2::2/64
-     ipv6 nd ra-interval 5
-     no ipv6 nd suppress-ra
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for probe, x1, x2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for probe, x1, x2
 
-TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
+TASK [ios_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/ios.j2] ***
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
 should be similar to how they appear if present in the running configuration on
 device including the indentation
@@ -488,24 +501,24 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for probe, x1, x2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for probe, x1, x2
 
 TASK [template] ****************************************************************
+changed: [x2]
 changed: [x1]
 changed: [probe]
-changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [probe]
 ok: [x1]
 ok: [x2]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [probe]
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [probe]
 skipping: [x1]
 skipping: [x2]
@@ -519,9 +532,9 @@ ok: [x2]
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1, x2 => (item=routing)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1, x2 => (item=ospf)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1, x2 => (item=bgp)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1, x2 => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1, x2 => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, probe, x1, x2 => (item=bgp)
 
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [probe]
@@ -574,9 +587,9 @@ TASK [Deploy routing configuration] ********************************************
 skipping: [probe]
 skipping: [x1]
 skipping: [x2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
 
-TASK [ios_config: deploying routing from /home/pipi/net101/tools/netsim/ansible/templates/routing/ios.j2] ***
+TASK [ios_config: deploying routing from /home/pipi/netlab_gh/netsim/ansible/templates/routing/ios.j2] ***
 changed: [dut]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
@@ -693,10 +706,10 @@ ok: [dut] =>
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [x1]
 skipping: [x2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for probe
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for probe
 
-TASK [ios_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/ios.j2] ***
+TASK [ios_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/ios.j2] ***
 changed: [dut]
 
 TASK [template] ****************************************************************
@@ -705,10 +718,10 @@ changed: [probe]
 TASK [set_fact] ****************************************************************
 ok: [probe]
 
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
 skipping: [probe]
 
-TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [probe]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
@@ -842,85 +855,6 @@ ok: [x1] =>
     !
     !
     do write
-ok: [dut] => 
-  msg: |-
-    bgp configuration for dut
-    =========================================
-    !
-    ip bgp-community new-format
-    !
-    router bgp 65000
-     no bgp default ipv4-unicast
-     bgp update-delay 5
-     bgp nopeerup-delay cold-boot 1
-     bgp nopeerup-delay user-initiated 1
-     bgp router-id 10.0.0.1
-      neighbor 10.0.0.2 remote-as 65000
-      neighbor 10.0.0.2 description probe
-      neighbor 10.0.0.2 update-source Loopback0
-  
-      neighbor 2001:db8:1:2::1 remote-as 65000
-      neighbor 2001:db8:1:2::1 description probe
-      neighbor 2001:db8:1:2::1 update-source Loopback0
-  
-      neighbor 10.1.0.2 remote-as 65100
-      neighbor 10.1.0.2 description x1
-  
-      neighbor 2001:db8:3::3 remote-as 65100
-      neighbor 2001:db8:3::3 description x1
-  
-      neighbor 10.1.0.6 remote-as 65101
-      neighbor 10.1.0.6 description x2
-  
-      neighbor 2001:db8:3:1::4 remote-as 65101
-      neighbor 2001:db8:3:1::4 description x2
-  
-    !
-     address-family ipv4
-      bgp scan-time 5
-  
-    !
-      network 10.0.0.1 mask 255.255.255.255
-  
-    !
-    !
-      neighbor 10.0.0.2 activate
-      neighbor 10.0.0.2 advertisement-interval 0
-      neighbor 10.0.0.2 next-hop-self
-      neighbor 10.0.0.2 send-community standard
-      neighbor 10.0.0.2 send-community extended
-  
-      neighbor 10.1.0.2 activate
-      neighbor 10.1.0.2 advertisement-interval 0
-      neighbor 10.1.0.2 send-community standard
-  
-      neighbor 10.1.0.6 activate
-      neighbor 10.1.0.6 advertisement-interval 0
-      neighbor 10.1.0.6 send-community standard
-  
-     address-family ipv6
-      bgp scan-time 5
-  
-    !
-      network 2001:db8:1:1::/64
-  
-    !
-    !
-      neighbor 2001:db8:1:2::1 activate
-      neighbor 2001:db8:1:2::1 advertisement-interval 0
-      neighbor 2001:db8:1:2::1 next-hop-self
-      neighbor 2001:db8:1:2::1 send-community standard
-      neighbor 2001:db8:1:2::1 send-community extended
-  
-      neighbor 2001:db8:3::3 activate
-      neighbor 2001:db8:3::3 advertisement-interval 0
-      neighbor 2001:db8:3::3 send-community standard
-  
-      neighbor 2001:db8:3:1::4 activate
-      neighbor 2001:db8:3:1::4 advertisement-interval 0
-      neighbor 2001:db8:3:1::4 send-community standard
-  
-    !
 ok: [x2] => 
   msg: |-
     bgp configuration for x2
@@ -971,38 +905,115 @@ ok: [x2] =>
     !
     !
     do write
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+    !
+    ip bgp-community new-format
+    !
+    router bgp 65000
+     no bgp default ipv4-unicast
+     bgp update-delay 5
+     bgp nopeerup-delay cold-boot 1
+     bgp nopeerup-delay user-initiated 1
+     bgp router-id 10.0.0.1
+      neighbor 10.0.0.2 remote-as 65000
+      neighbor 10.0.0.2 description probe
+      neighbor 10.0.0.2 update-source Loopback0
+  
+      neighbor 2001:db8:1:2::1 remote-as 65000
+      neighbor 2001:db8:1:2::1 description probe
+      neighbor 2001:db8:1:2::1 update-source Loopback0
+  
+      neighbor 10.1.0.2 remote-as 65100
+      neighbor 10.1.0.2 description x1
+  
+      neighbor 2001:db8:3::3 remote-as 65100
+      neighbor 2001:db8:3::3 description x1
+  
+      neighbor 10.1.0.6 remote-as 65101
+      neighbor 10.1.0.6 description x2
+  
+      neighbor 2001:db8:3:1::4 remote-as 65101
+      neighbor 2001:db8:3:1::4 description x2
+  
+    !
+     address-family ipv4
+      bgp scan-time 5
+  
+    !
+      network 10.0.0.1 mask 255.255.255.255
+  
+    !
+    !
+      neighbor 10.0.0.2 activate
+      neighbor 10.0.0.2 advertisement-interval 0
+      neighbor 10.0.0.2 next-hop-self
+      neighbor 10.0.0.2 send-community both
+  
+      neighbor 10.1.0.2 activate
+      neighbor 10.1.0.2 advertisement-interval 0
+      neighbor 10.1.0.2 send-community standard
+  
+      neighbor 10.1.0.6 activate
+      neighbor 10.1.0.6 advertisement-interval 0
+      neighbor 10.1.0.6 send-community standard
+  
+     address-family ipv6
+      bgp scan-time 5
+  
+    !
+      network 2001:db8:1:1::/64
+  
+    !
+    !
+      neighbor 2001:db8:1:2::1 activate
+      neighbor 2001:db8:1:2::1 advertisement-interval 0
+      neighbor 2001:db8:1:2::1 next-hop-self
+      neighbor 2001:db8:1:2::1 send-community both
+  
+      neighbor 2001:db8:3::3 activate
+      neighbor 2001:db8:3::3 advertisement-interval 0
+      neighbor 2001:db8:3::3 send-community standard
+  
+      neighbor 2001:db8:3:1::4 activate
+      neighbor 2001:db8:3:1::4 advertisement-interval 0
+      neighbor 2001:db8:3:1::4 send-community standard
+  
+    !
 
 TASK [Deploy bgp configuration] ************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for probe, x1, x2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for probe, x1, x2
 
-TASK [ios_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/ios.j2] ***
+TASK [ios_config: deploying bgp from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/ios.j2] ***
 changed: [dut]
 
 TASK [template] ****************************************************************
 changed: [x2]
-changed: [x1]
 changed: [probe]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [probe]
 ok: [x1]
 ok: [x2]
 
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [probe]
 skipping: [x1]
 skipping: [x2]
 
-TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [x1]
+TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [x2]
+changed: [x1]
 changed: [probe]
 
 PLAY [Deploy custom deployment templates] **************************************
 
 TASK [Run custom configuration deployment scripts] *****************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-custom-config.yml for dut => (item=bgp.policy)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-custom-config.yml for dut => (item=bgp.policy)
 
 TASK [Find configuration template] *********************************************
 ok: [dut]
@@ -1016,16 +1027,16 @@ ok: [dut -> localhost]
 TASK [fail] ********************************************************************
 skipping: [dut]
 
-TASK [Process template /home/pipi/net101/tools/netsim/extra/bgp.policy/ios.j2 for dut] ***
+TASK [Process template /home/pipi/netlab_gh/netsim/extra/bgp.policy/ios.j2 for dut] ***
 skipping: [dut]
 
 TASK [Find custom configuration deployment script] *****************************
 ok: [dut]
 
 TASK [Run the configuration deployment script] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
 
-TASK [ios_config: deploying bgp.policy from /home/pipi/net101/tools/netsim/extra/bgp.policy/ios.j2] ***
+TASK [ios_config: deploying bgp.policy from /home/pipi/netlab_gh/netsim/extra/bgp.policy/ios.j2] ***
 changed: [dut]
 
 PLAY RECAP *********************************************************************

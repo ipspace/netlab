@@ -9,617 +9,6 @@ message: |
   * r1 and r2 should be able to ping each other and rtr VRF loopback
   * r3 and r4 should be able to ping each other and rtr VRF loopback
   * r1 should not be able to reach r3
-groups:
-  ce:
-    members:
-    - r1
-    - r2
-    - r3
-    - r4
-    module:
-    - bgp
-    device: frr
-    node_data:
-      provider: clab
-  pe:
-    members:
-    - dut
-    module:
-    - vrf
-    - bgp
-    node_data:
-      bgp:
-        as: 65000
-  external:
-    device: frr
-    members: []
-    _default_group: true
-  all:
-    vars:
-      netlab_show_config: true
-    members: []
-    _default_group: true
-  as65000:
-    members:
-    - dut
-  as65101:
-    members:
-    - r1
-  as65102:
-    members:
-    - r2
-  as65103:
-    members:
-    - r3
-  as65104:
-    members:
-    - r4
-vrfs:
-  red:
-    id: 1
-    rd: '65000:1'
-    import:
-    - '65000:1'
-    export:
-    - '65000:1'
-  blue:
-    id: 2
-    rd: '65000:2'
-    import:
-    - '65000:2'
-    export:
-    - '65000:2'
-nodes:
-  dut:
-    bgp:
-      advertise_loopback: true
-      community:
-        ibgp:
-        - standard
-        - large
-        - extended
-        ebgp:
-        - standard
-        - large
-        localas_ibgp:
-        - standard
-        - large
-        - extended
-      next_hop_self: true
-      as: 65000
-      router_id: 10.0.0.1
-      neighbors: []
-      ipv4: true
-    vrfs:
-      red:
-        id: 1
-        rd: '65000:1'
-        import:
-        - '65000:1'
-        export:
-        - '65000:1'
-        bgp:
-          router_id: 10.42.0.1
-          neighbors:
-          - ifindex: 1
-            name: r1
-            as: 65101
-            type: ebgp
-            ipv4: 10.1.0.2
-            activate:
-              ipv4: true
-            _src_vrf: red
-          - ifindex: 2
-            name: r2
-            as: 65102
-            type: ebgp
-            ipv4: 10.1.0.6
-            activate:
-              ipv4: true
-            _src_vrf: red
-          import:
-            connected:
-              auto: true
-        loopback:
-          ipv4: 10.0.0.42/32
-        af:
-          ipv4: true
-        networks:
-        - ipv4: 10.0.0.42/32
-        loopback_address:
-          ipv4: 10.0.0.42/32
-        vrfidx: 100
-      blue:
-        id: 2
-        rd: '65000:2'
-        import:
-        - '65000:2'
-        export:
-        - '65000:2'
-        loopback:
-          ipv4: 10.0.0.43/32
-        af:
-          ipv4: true
-        networks:
-        - ipv4: 10.0.0.43/32
-        loopback_address:
-          ipv4: 10.0.0.43/32
-        bgp:
-          neighbors:
-          - ifindex: 3
-            name: r3
-            as: 65103
-            type: ebgp
-            ipv4: 10.1.0.10
-            activate:
-              ipv4: true
-            _src_vrf: blue
-          - ifindex: 4
-            name: r4
-            as: 65104
-            type: ebgp
-            ipv4: 10.1.0.14
-            activate:
-              ipv4: true
-            _src_vrf: blue
-          import:
-            connected:
-              auto: true
-        vrfidx: 101
-    name: dut
-    interfaces:
-    - ipv4: 10.1.0.1/30
-      vrf: red
-      linkindex: 1
-      role: external
-      type: p2p
-      name: dut -> r1
-      ifindex: 1
-      ifname: ethernet-1/1
-      clab:
-        name: e1-1
-      neighbors:
-      - ipv4: 10.1.0.2/30
-        ifname: eth1
-        node: r1
-    - ipv4: 10.1.0.5/30
-      vrf: red
-      linkindex: 2
-      role: external
-      type: p2p
-      name: dut -> r2
-      ifindex: 2
-      ifname: ethernet-1/2
-      clab:
-        name: e1-2
-      neighbors:
-      - ipv4: 10.1.0.6/30
-        ifname: eth1
-        node: r2
-    - ipv4: 10.1.0.9/30
-      vrf: blue
-      linkindex: 3
-      role: external
-      type: p2p
-      name: dut -> r3
-      ifindex: 3
-      ifname: ethernet-1/3
-      clab:
-        name: e1-3
-      neighbors:
-      - ipv4: 10.1.0.10/30
-        ifname: eth1
-        node: r3
-    - ipv4: 10.1.0.13/30
-      vrf: blue
-      linkindex: 4
-      role: external
-      type: p2p
-      name: dut -> r4
-      ifindex: 4
-      ifname: ethernet-1/4
-      clab:
-        name: e1-4
-      neighbors:
-      - ipv4: 10.1.0.14/30
-        ifname: eth1
-        node: r4
-    - type: loopback
-      name: VRF Loopback red
-      neighbors: []
-      vrf: red
-      virtual_interface: true
-      ifindex: 10001
-      ifname: lo0.1
-      ipv4: 10.0.0.42/32
-      bgp:
-        advertise: true
-    - type: loopback
-      name: VRF Loopback blue
-      neighbors: []
-      vrf: blue
-      virtual_interface: true
-      ifindex: 10002
-      ifname: lo0.2
-      ipv4: 10.0.0.43/32
-      bgp:
-        advertise: true
-    module:
-    - bgp
-    - vrf
-    device: srlinux
-    clab:
-      kind: srl
-      type: ixrd2
-    box: ghcr.io/nokia/srlinux:25.3.3
-    vrf:
-      as: 65000
-    id: 1
-    provider: clab
-    af:
-      ipv4: true
-      vpnv4: true
-    mgmt:
-      ifname: mgmt0
-      mac: 08:4f:a9:01:00:00
-      ipv4: 192.168.17.101
-    hostname: clab-ml_17-dut
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo0.0
-      ipv4: 10.0.0.1/32
-    _srl_version: 25.3
-  r1:
-    bgp:
-      advertise_loopback: true
-      community:
-        ibgp:
-        - standard
-        - large
-        - extended
-        ebgp:
-        - standard
-        - large
-        localas_ibgp:
-        - standard
-        - large
-        - extended
-      next_hop_self: true
-      as: 65101
-      router_id: 10.0.0.2
-      neighbors:
-      - ifindex: 1
-        name: dut
-        as: 65000
-        type: ebgp
-        ipv4: 10.1.0.1
-        activate:
-          ipv4: true
-      ipv4: true
-    name: r1
-    interfaces:
-    - ipv4: 10.1.0.2/30
-      linkindex: 1
-      role: external
-      type: p2p
-      name: r1 -> dut
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 10.1.0.1/30
-        vrf: red
-        ifname: ethernet-1/1
-        node: dut
-    device: frr
-    module:
-    - bgp
-    clab:
-      kind: linux
-      config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts
-      binds:
-      - clab_files/r1/daemons:/etc/frr/daemons
-      - clab_files/r1/hosts:/etc/hosts
-    box: quay.io/frrouting/frr:10.3.1
-    id: 2
-    role: router
-    mtu: 1500
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: 08:4f:a9:02:00:00
-      ipv4: 192.168.17.102
-    hostname: clab-ml_17-r1
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.2/32
-  r2:
-    bgp:
-      advertise_loopback: true
-      community:
-        ibgp:
-        - standard
-        - large
-        - extended
-        ebgp:
-        - standard
-        - large
-        localas_ibgp:
-        - standard
-        - large
-        - extended
-      next_hop_self: true
-      as: 65102
-      router_id: 10.0.0.3
-      neighbors:
-      - ifindex: 1
-        name: dut
-        as: 65000
-        type: ebgp
-        ipv4: 10.1.0.5
-        activate:
-          ipv4: true
-      ipv4: true
-    name: r2
-    interfaces:
-    - ipv4: 10.1.0.6/30
-      linkindex: 2
-      role: external
-      type: p2p
-      name: r2 -> dut
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 10.1.0.5/30
-        vrf: red
-        ifname: ethernet-1/2
-        node: dut
-    device: frr
-    module:
-    - bgp
-    clab:
-      kind: linux
-      config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts
-      binds:
-      - clab_files/r2/daemons:/etc/frr/daemons
-      - clab_files/r2/hosts:/etc/hosts
-    box: quay.io/frrouting/frr:10.3.1
-    id: 3
-    role: router
-    mtu: 1500
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: 08:4f:a9:03:00:00
-      ipv4: 192.168.17.103
-    hostname: clab-ml_17-r2
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.3/32
-  r3:
-    bgp:
-      advertise_loopback: true
-      community:
-        ibgp:
-        - standard
-        - large
-        - extended
-        ebgp:
-        - standard
-        - large
-        localas_ibgp:
-        - standard
-        - large
-        - extended
-      next_hop_self: true
-      as: 65103
-      router_id: 10.0.0.4
-      neighbors:
-      - ifindex: 1
-        name: dut
-        as: 65000
-        type: ebgp
-        ipv4: 10.1.0.9
-        activate:
-          ipv4: true
-      ipv4: true
-    name: r3
-    interfaces:
-    - ipv4: 10.1.0.10/30
-      linkindex: 3
-      role: external
-      type: p2p
-      name: r3 -> dut
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 10.1.0.9/30
-        vrf: blue
-        ifname: ethernet-1/3
-        node: dut
-    device: frr
-    module:
-    - bgp
-    clab:
-      kind: linux
-      config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts
-      binds:
-      - clab_files/r3/daemons:/etc/frr/daemons
-      - clab_files/r3/hosts:/etc/hosts
-    box: quay.io/frrouting/frr:10.3.1
-    id: 4
-    role: router
-    mtu: 1500
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: 08:4f:a9:04:00:00
-      ipv4: 192.168.17.104
-    hostname: clab-ml_17-r3
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.4/32
-  r4:
-    bgp:
-      advertise_loopback: true
-      community:
-        ibgp:
-        - standard
-        - large
-        - extended
-        ebgp:
-        - standard
-        - large
-        localas_ibgp:
-        - standard
-        - large
-        - extended
-      next_hop_self: true
-      as: 65104
-      router_id: 10.0.0.5
-      neighbors:
-      - ifindex: 1
-        name: dut
-        as: 65000
-        type: ebgp
-        ipv4: 10.1.0.13
-        activate:
-          ipv4: true
-      ipv4: true
-    name: r4
-    interfaces:
-    - ipv4: 10.1.0.14/30
-      linkindex: 4
-      role: external
-      type: p2p
-      name: r4 -> dut
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 10.1.0.13/30
-        vrf: blue
-        ifname: ethernet-1/4
-        node: dut
-    device: frr
-    module:
-    - bgp
-    clab:
-      kind: linux
-      config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts
-      binds:
-      - clab_files/r4/daemons:/etc/frr/daemons
-      - clab_files/r4/hosts:/etc/hosts
-    box: quay.io/frrouting/frr:10.3.1
-    id: 5
-    role: router
-    mtu: 1500
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: 08:4f:a9:05:00:00
-      ipv4: 192.168.17.105
-    hostname: clab-ml_17-r4
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.5/32
-validate:
-- description: Check EBGP sessions with DUT
-  wait: 20
-  wait_msg: Waiting for BGP sessions to start
-  nodes:
-  - r1
-  - r2
-  - r3
-  - r4
-  plugin: bgp_neighbor(node.bgp.neighbors,'dut')
-  stop_on_error: true
-  name: session
-- description: Check DUT loopback BGP prefix in red VRF
-  wait: 15
-  wait_msg: Waiting for BGP convergence
-  nodes:
-  - r1
-  - r2
-  plugin: bgp_prefix(nodes.dut.vrfs.red.loopback_address.ipv4)
-  name: pfx_red
-- description: Check the router ID on the DUT loopback BGP prefix in red VRF
-  nodes:
-  - r1
-  - r2
-  plugin: 
-    bgp_prefix(nodes.dut.vrfs.red.loopback_address.ipv4,peer=nodes.dut.vrfs.red.bgp.router_id)
-  level: warning
-  name: pfx_red_id
-- description: Check DUT loopback BGP prefix in blue VRF
-  wait: 5
-  wait_msg: Waiting for BGP convergence
-  nodes:
-  - r3
-  - r4
-  plugin: bgp_prefix(nodes.dut.vrfs.blue.loopback_address.ipv4)
-  name: pfx_blue
-- description: Ping-based reachability test in VRF red
-  wait: 5
-  nodes:
-  - r1
-  plugin: ping('r2')
-  name: red
-- description: Ping-based reachability test in VRF blue
-  wait: 5
-  nodes:
-  - r3
-  plugin: ping('r4')
-  name: ping
-- description: Pinging red VRF loopback
-  nodes:
-  - r1
-  - r2
-  plugin: ping('10.0.0.42')
-  name: red_lb
-- description: Pinging blue VRF loopback
-  nodes:
-  - r3
-  - r4
-  plugin: ping('10.0.0.43')
-  name: blue_lb
-input:
-- /home/pipi/net101/tools/tests/integration/vrf/13-multi-vrf-bgp-loopback.yml
-- /home/pipi/.netlab.yml
-- package:topology-defaults.yml
 defaults:
   provider: clab
   providers:
@@ -731,7 +120,6 @@ defaults:
       act_title: KVM/libvirt domains (virtual machines)
       cleanup:
       - Vagrantfile
-      - .vagrant
       tunnel_id: '17'
       vifprefix: vgif_17
       clab:
@@ -899,6 +287,8 @@ defaults:
         icon: switch
     asav:
       description: Cisco ASAv
+      support:
+        level: minimal
       interface_name: GigabitEthernet0/{ifindex}
       ifindex_offset: 0
       mgmt_if: Management0/0
@@ -923,6 +313,7 @@ defaults:
         create_iso: asav
     cat8000v:
       description: Cisco CSR 1000v
+      _meta_device: true
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
       group_vars:
@@ -1096,6 +487,7 @@ defaults:
         create_iso: cat8000v
     csr:
       description: Cisco CSR 1000v
+      _meta_device: true
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
       group_vars:
@@ -1269,6 +661,10 @@ defaults:
           --import
     cumulus:
       description: Cumulus VX 4.x or 5.x configured without NVUE
+      support:
+        level: obsolete
+        caveats:
+        - The last Cumulus 4.x image was released in September 2022
       interface_name: swp{ifindex}
       loopback_interface_name: lo{ifindex if ifindex else ""}
       tunnel_interface_name: tun{ifindex}
@@ -1288,6 +684,8 @@ defaults:
             interfaces: /etc/network/interfaces
             hosts: /etc/hosts
         image: networkop/cx:4.4.0
+        caveats:
+        - Cumulus 4.x containers are out-of-date and not supported
         group_vars:
           ansible_connection: docker
           ansible_user: root
@@ -1419,6 +817,11 @@ defaults:
         icon: switch
     cumulus_nvue:
       description: Cumulus VX 5.x configured with NVUE
+      support:
+        level: minimal
+        caveats:
+        - The new Cumulus 5.x releases run only on NVIDIA air. The last public 
+          release was 5.10.0 from September 2024
       interface_name: swp{ifindex}
       lag_interface_name: bond{lag.ifindex}
       loopback_interface_name: lo{ifindex if ifindex else ""}
@@ -1426,6 +829,11 @@ defaults:
       mtu: 1500
       libvirt:
         image: CumulusCommunity/cumulus-vx:5.10.0
+        caveats:
+        - >-
+          The Vagrant account on public Cumulus 5.x Vagrant boxes has expired password
+          (details in https://netlab.tools/labs/cumulus_nvue/#changing-the-password-expiration-policy)
+        - Newer Cumulus 5.x releases run only on NVIDIA Air
       virtualbox:
         image: CumulusCommunity/cumulus-vx:5.10.0
       group_vars:
@@ -1509,6 +917,8 @@ defaults:
           kind: cvx
           runtime: docker
         image: networkop/cx:5.3.0
+        caveats:
+        - Cumulus 5.x containers are out-of-date and not supported
         group_vars:
           ansible_connection: docker
           ansible_user: root
@@ -1836,8 +1246,15 @@ defaults:
           eos:
             serialnumber: str
             systemmacaddr: mac
+      warnings:
+        ospf_stub: false
     fortios:
       description: Fortinet FortiOS firewall
+      support:
+        level: minimal
+        caveats:
+        - We don't test Fortinet configurations due to their ridiculous 
+          temporary licensing policy
       interface_name: port{ifindex}
       loopback_interface_name: loopback{ifindex}
       loopback: false
@@ -2079,6 +1496,7 @@ defaults:
         icon: router
     iol:
       description: Cisco IOL
+      _meta_device: true
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
       group_vars:
@@ -2236,6 +1654,7 @@ defaults:
           kind: cisco_iol
     ioll2:
       description: IOSv L2 image
+      _meta_device: true
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
       group_vars:
@@ -2381,6 +1800,9 @@ defaults:
           - pvrst
           enable_per_port: true
           port_type: true
+        lag:
+          mlag: false
+          passive: true
       external:
         image: none
       graphite:
@@ -2401,8 +1823,10 @@ defaults:
           kind: cisco_iol
           type: l2
         mtu: 1500
+      lag_interface_name: Port-channel{lag.ifindex}
     iosv:
       description: Cisco IOSv
+      _meta_device: true
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
       group_vars:
@@ -2567,6 +1991,7 @@ defaults:
         build: https://github.com/hellt/vrnetlab/tree/master/vios
     iosvl2:
       description: IOSv L2 image
+      _meta_device: true
       loopback_interface_name: Loopback{ifindex}
       tunnel_interface_name: Tunnel{ifindex}
       group_vars:
@@ -2716,6 +2141,9 @@ defaults:
           - pvrst
           enable_per_port: true
           port_type: true
+        lag:
+          mlag: false
+          passive: true
       external:
         image: none
       graphite:
@@ -2738,8 +2166,11 @@ defaults:
         interface:
           name: eth{ifindex}
         build: https://github.com/hellt/vrnetlab/tree/master/viosl2
+      lag_interface_name: Port-channel{lag.ifindex}
     iosxr:
       description: Cisco IOS XRv
+      support:
+        level: minimal
       mgmt_if: MgmtEth0/RP0/CPU0/0
       interface_name: GigabitEthernet0/0/0/{ifindex}
       loopback_interface_name: Loopback{ifindex}
@@ -2864,6 +2295,7 @@ defaults:
         icon: server
     none:
       description: Dummy device used to test topology transformation
+      _meta_device: true
       interface_name: eth{ifindex}
       lag_interface_name: bond{lag.ifindex}
       loopback_interface_name: Loopback{ifindex}
@@ -3039,6 +2471,8 @@ defaults:
           vtep6: true
     nxos:
       description: Cisco Nexus 9300v
+      support:
+        level: best-effort
       interface_name: Ethernet1/{ifindex}
       mgmt_if: mgmt0
       loopback_interface_name: loopback{ifindex}
@@ -3109,6 +2543,8 @@ defaults:
         icon: nexus5000
     openbsd:
       description: OpenBSD
+      support:
+        level: best-effort
       interface_name: vio{ifindex}
       loopback_interface_name: lo{ifindex}
       ifindex_offset: 1
@@ -3150,6 +2586,8 @@ defaults:
         icon: server
     routeros:
       description: Mikrotik RouterOS version 6
+      support:
+        level: obsolete
       interface_name: ether{ifindex}
       mgmt_if: ether1
       ifindex_offset: 2
@@ -3183,6 +2621,8 @@ defaults:
         icon: router
     routeros7:
       description: Mikrotik RouterOS version 7
+      support:
+        level: minimal
       interface_name: ether{ifindex}
       mgmt_if: ether1
       loopback_interface_name: loopback{ifindex}
@@ -3227,6 +2667,8 @@ defaults:
         icon: router
     sonic:
       description: Sonic VM
+      support:
+        level: minimal
       interface_name: Ethernet{ifindex * 4}
       ifindex_offset: 0
       mgmt_if: eth0
@@ -3304,7 +2746,7 @@ defaults:
         min_tx: 100
         min_rx: 100
       clab:
-        image: ghcr.io/nokia/srlinux:25.3.3
+        image: ghcr.io/nokia/srlinux:25.7.1
         node:
           kind: srl
           type: ixrd2
@@ -3524,8 +2966,11 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        loopback_ipv6: false
     unknown:
       description: Generic Unknown Device
+      _meta_device: true
       interface_name: eth{ifindex}
       mgmt_if: eth0
       graphite:
@@ -3548,6 +2993,7 @@ defaults:
         vxlan: {}
     vjunos-router:
       description: vJunos Router (similar to vMX)
+      _meta_device: true
       loopback_interface_name: lo0.{ifindex}
       ifindex_offset: 0
       interface_name: ge-0/0/{ifindex}
@@ -3641,6 +3087,7 @@ defaults:
         icon: router
     vjunos-switch:
       description: vJunos Switch
+      _meta_device: true
       loopback_interface_name: lo0.{ifindex}
       ifindex_offset: 0
       interface_name: ge-0/0/{ifindex}
@@ -3737,6 +3184,7 @@ defaults:
         icon: switch
     vmx:
       description: Juniper vMX container
+      _meta_device: true
       loopback_interface_name: lo0.{ifindex}
       ifindex_offset: 0
       interface_name: ge-0/0/{ifindex}
@@ -3813,6 +3261,10 @@ defaults:
           native_routed: true
       external:
         image: none
+      support:
+        level: best-effort
+        caveats:
+        - vMX gets all new Junos features, but we don't test them on vMX
       clab:
         image: vrnetlab/vr-vmx:18.2R1.9
         build: https://containerlab.dev/manual/kinds/vr-vmx/
@@ -3824,6 +3276,7 @@ defaults:
         icon: router
     vptx:
       description: Juniper vPTX
+      _meta_device: true
       loopback_interface_name: lo0.{ifindex}
       ifindex_offset: 0
       interface_name: et-0/0/{ifindex}
@@ -3919,6 +3372,7 @@ defaults:
         icon: switch
     vsrx:
       description: Juniper vSRX 3.0
+      _meta_device: true
       loopback_interface_name: lo0.{ifindex}
       ifindex_offset: 0
       interface_name: ge-0/0/{ifindex}
@@ -3992,6 +3446,10 @@ defaults:
           native_routed: true
       external:
         image: none
+      support:
+        level: best-effort
+        caveats:
+        - vSRX gets all new Junos features, but we don't test them on vSRX
       virtualbox:
         image: juniper/vsrx3
       libvirt:
@@ -4022,6 +3480,7 @@ defaults:
       description: VyOS VM/container
       interface_name: eth{ifindex}
       loopback_interface_name: dum{ifindex}
+      lag_interface_name: bond{lag.ifindex}
       mgmt_if: eth0
       libvirt:
         image: vyos/current
@@ -4056,6 +3515,8 @@ defaults:
           protocol:
           - vrrp
         isis: {}
+        lag:
+          passive: false
         mpls:
           ldp: true
           vpn:
@@ -4699,13 +4160,13 @@ defaults:
     suzieq:
       runtime: docker
       docker:
-        up: docker run --rm -itd --name '{name}_suzieq' {sys.docker_net} -v 
-          '{name}_suzieq':/parquet -v './suzieq':/suzieq netenglabs/suzieq-demo 
-          -c 'sq-poller -I /suzieq/suzieq-inventory.yml'
+        up: docker run -itd --name '{name}_suzieq' {sys.docker_net} -v 
+          '{name}_suzieq_data':/parquet -v './suzieq':/suzieq 
+          netenglabs/suzieq-demo -c 'sq-poller -I /suzieq/suzieq-inventory.yml'
         message: Use 'netlab connect suzieq' to start SuzieQ CLI
         connect: docker exec -it '{name}_suzieq' /usr/local/bin/suzieq-cli
-        down: docker kill '{name}_suzieq'
-        cleanup: docker volume rm '{name}_suzieq'
+        down: docker kill '{name}_suzieq'; docker rm '{name}_suzieq'
+        cleanup: docker volume rm '{name}_suzieq_data'
       config:
       - dest: suzieq-inventory.yml
         template: suzieq.inventory.j2
@@ -4860,6 +4321,9 @@ defaults:
         min_value: 1
         max_value: 150
       config: list
+      debug:
+        type: list
+        split_lines: true
       group: list
       role:
         type: str
@@ -5381,6 +4845,33 @@ defaults:
     ifname:
       neighbors: 5
       maxlength: 255
+    validate:
+      ping: 5
+      ping_long: 15
+      vxlan_ping: 20
+      ping_xx_long: 40
+      ra_send: 30
+      ospfv2_adj_p2p: 30
+      ospfv2_adj_lan: 50
+      ospfv2_spf: 10
+      ospfv3_adj_p2p: 30
+      ospfv3_adj_lan: 50
+      ospfv3_spf: 10
+      ospf_import: 20
+      ebgp_session: 30
+      ibgp_session: 30
+      bgp_scan_time: 5
+      bgp_scan_long: 15
+      bgp_ios_redist: 60
+      isis_adj_p2p: 20
+      isis_adj_lan: 50
+      isis_spf: 15
+      isis_spf_long: 45
+      rip_start: 60
+      rip_update: 20
+      ldp_adj: 30
+      stp_forwarding: 40
+      lacp_setup: 10
   hints:
     evpn:
       irb_group: >
@@ -5452,6 +4943,12 @@ defaults:
       unmanaged_device: Netlab uses the node device type for unmanaged nodes to 
         figure out what features the node supports. If you're using a device 
         that is not supported by netlab, set the device type to 'none'.
+    support:
+      best-effort: While a core contributor might still work on the platform, we
+        don't run integration tests
+      minimal: Don't expect too much (particularly new functionality)
+      obsolete: These platforms are still part of the netlab package because the
+        storage prices keep falling
   multilab:
     change:
       name: ml_17
@@ -5565,6 +5062,8 @@ defaults:
     netconf: 830
   warnings:
     duplicate_address: true
+    providers:
+      change: false
   bfd:
     min_echo_rx: 0
     multiplier: 3
@@ -6353,11 +5852,14 @@ defaults:
       dnsmasq: true
       eos: true
       frr: true
+      ioll2: true
+      iosvl2: true
       linux: true
       none: true
       vjunos-switch: true
       vptx: true
       vsrx: true
+      vyos: true
   mpls:
     config_after:
     - vlan
@@ -7421,22 +6923,20 @@ defaults:
       vjunos-switch: true
       vyos: true
   sources:
+    extra:
+    - ../wait_times.yml
+    - ../warnings.yml
     list: []
-    extra: []
     user: []
     system: []
+  workdir: /work/netlab_cicd
+  device: srlinux
   groups:
-    external:
-      device: frr
-      members: []
-      _default_group: true
     all:
       vars:
         netlab_show_config: true
       members: []
       _default_group: true
-  workdir: /work/netlab_cicd
-  device: srlinux
   plugin:
   - multilab
   _globals:
@@ -7463,6 +6963,615 @@ defaults:
   module:
   - bgp
   - vrf
+groups:
+  ce:
+    members:
+    - r1
+    - r2
+    - r3
+    - r4
+    module:
+    - bgp
+    device: frr
+    node_data:
+      provider: clab
+  pe:
+    members:
+    - dut
+    module:
+    - vrf
+    - bgp
+    node_data:
+      bgp:
+        as: 65000
+  all:
+    vars:
+      netlab_show_config: true
+    members: []
+    _default_group: true
+  as65000:
+    members:
+    - dut
+  as65101:
+    members:
+    - r1
+  as65102:
+    members:
+    - r2
+  as65103:
+    members:
+    - r3
+  as65104:
+    members:
+    - r4
+vrfs:
+  red:
+    id: 1
+    rd: '65000:1'
+    import:
+    - '65000:1'
+    export:
+    - '65000:1'
+  blue:
+    id: 2
+    rd: '65000:2'
+    import:
+    - '65000:2'
+    export:
+    - '65000:2'
+nodes:
+  dut:
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      next_hop_self: true
+      as: 65000
+      router_id: 10.0.0.1
+      neighbors: []
+      ipv4: true
+    vrfs:
+      red:
+        id: 1
+        rd: '65000:1'
+        import:
+        - '65000:1'
+        export:
+        - '65000:1'
+        bgp:
+          router_id: 10.42.0.1
+          neighbors:
+          - ifindex: 1
+            name: r1
+            as: 65101
+            type: ebgp
+            ipv4: 10.1.0.2
+            activate:
+              ipv4: true
+            _src_vrf: red
+          - ifindex: 2
+            name: r2
+            as: 65102
+            type: ebgp
+            ipv4: 10.1.0.6
+            activate:
+              ipv4: true
+            _src_vrf: red
+          import:
+            connected:
+              auto: true
+        loopback:
+          ipv4: 10.0.0.42/32
+        af:
+          ipv4: true
+        networks:
+        - ipv4: 10.0.0.42/32
+        loopback_address:
+          ipv4: 10.0.0.42/32
+        vrfidx: 100
+      blue:
+        id: 2
+        rd: '65000:2'
+        import:
+        - '65000:2'
+        export:
+        - '65000:2'
+        loopback:
+          ipv4: 10.0.0.43/32
+        af:
+          ipv4: true
+        networks:
+        - ipv4: 10.0.0.43/32
+        loopback_address:
+          ipv4: 10.0.0.43/32
+        bgp:
+          neighbors:
+          - ifindex: 3
+            name: r3
+            as: 65103
+            type: ebgp
+            ipv4: 10.1.0.10
+            activate:
+              ipv4: true
+            _src_vrf: blue
+          - ifindex: 4
+            name: r4
+            as: 65104
+            type: ebgp
+            ipv4: 10.1.0.14
+            activate:
+              ipv4: true
+            _src_vrf: blue
+          import:
+            connected:
+              auto: true
+        vrfidx: 101
+    name: dut
+    interfaces:
+    - ipv4: 10.1.0.1/30
+      vrf: red
+      linkindex: 1
+      role: external
+      type: p2p
+      name: dut -> r1
+      ifindex: 1
+      ifname: ethernet-1/1
+      clab:
+        name: e1-1
+      neighbors:
+      - ipv4: 10.1.0.2/30
+        ifname: eth1
+        node: r1
+    - ipv4: 10.1.0.5/30
+      vrf: red
+      linkindex: 2
+      role: external
+      type: p2p
+      name: dut -> r2
+      ifindex: 2
+      ifname: ethernet-1/2
+      clab:
+        name: e1-2
+      neighbors:
+      - ipv4: 10.1.0.6/30
+        ifname: eth1
+        node: r2
+    - ipv4: 10.1.0.9/30
+      vrf: blue
+      linkindex: 3
+      role: external
+      type: p2p
+      name: dut -> r3
+      ifindex: 3
+      ifname: ethernet-1/3
+      clab:
+        name: e1-3
+      neighbors:
+      - ipv4: 10.1.0.10/30
+        ifname: eth1
+        node: r3
+    - ipv4: 10.1.0.13/30
+      vrf: blue
+      linkindex: 4
+      role: external
+      type: p2p
+      name: dut -> r4
+      ifindex: 4
+      ifname: ethernet-1/4
+      clab:
+        name: e1-4
+      neighbors:
+      - ipv4: 10.1.0.14/30
+        ifname: eth1
+        node: r4
+    - type: loopback
+      name: VRF Loopback red
+      neighbors: []
+      vrf: red
+      virtual_interface: true
+      ifindex: 10001
+      ifname: lo0.1
+      ipv4: 10.0.0.42/32
+      bgp:
+        advertise: true
+    - type: loopback
+      name: VRF Loopback blue
+      neighbors: []
+      vrf: blue
+      virtual_interface: true
+      ifindex: 10002
+      ifname: lo0.2
+      ipv4: 10.0.0.43/32
+      bgp:
+        advertise: true
+    module:
+    - bgp
+    - vrf
+    device: srlinux
+    clab:
+      kind: srl
+      type: ixrd2
+    box: ghcr.io/nokia/srlinux:25.7.1
+    vrf:
+      as: 65000
+    id: 1
+    provider: clab
+    af:
+      ipv4: true
+      vpnv4: true
+    mgmt:
+      ifname: mgmt0
+      mac: 08:4f:a9:01:00:00
+      ipv4: 192.168.17.101
+    hostname: clab-ml_17-dut
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo0.0
+      ipv4: 10.0.0.1/32
+    _srl_version: 25.7
+  r1:
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      next_hop_self: true
+      as: 65101
+      router_id: 10.0.0.2
+      neighbors:
+      - ifindex: 1
+        name: dut
+        as: 65000
+        type: ebgp
+        ipv4: 10.1.0.1
+        activate:
+          ipv4: true
+      ipv4: true
+    name: r1
+    interfaces:
+    - ipv4: 10.1.0.2/30
+      linkindex: 1
+      role: external
+      type: p2p
+      name: r1 -> dut
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 10.1.0.1/30
+        vrf: red
+        ifname: ethernet-1/1
+        node: dut
+    device: frr
+    module:
+    - bgp
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts
+      binds:
+      - clab_files/r1/daemons:/etc/frr/daemons
+      - clab_files/r1/hosts:/etc/hosts
+    box: quay.io/frrouting/frr:10.3.1
+    id: 2
+    role: router
+    mtu: 1500
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: 08:4f:a9:02:00:00
+      ipv4: 192.168.17.102
+    hostname: clab-ml_17-r1
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.2/32
+  r2:
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      next_hop_self: true
+      as: 65102
+      router_id: 10.0.0.3
+      neighbors:
+      - ifindex: 1
+        name: dut
+        as: 65000
+        type: ebgp
+        ipv4: 10.1.0.5
+        activate:
+          ipv4: true
+      ipv4: true
+    name: r2
+    interfaces:
+    - ipv4: 10.1.0.6/30
+      linkindex: 2
+      role: external
+      type: p2p
+      name: r2 -> dut
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 10.1.0.5/30
+        vrf: red
+        ifname: ethernet-1/2
+        node: dut
+    device: frr
+    module:
+    - bgp
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts
+      binds:
+      - clab_files/r2/daemons:/etc/frr/daemons
+      - clab_files/r2/hosts:/etc/hosts
+    box: quay.io/frrouting/frr:10.3.1
+    id: 3
+    role: router
+    mtu: 1500
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: 08:4f:a9:03:00:00
+      ipv4: 192.168.17.103
+    hostname: clab-ml_17-r2
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.3/32
+  r3:
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      next_hop_self: true
+      as: 65103
+      router_id: 10.0.0.4
+      neighbors:
+      - ifindex: 1
+        name: dut
+        as: 65000
+        type: ebgp
+        ipv4: 10.1.0.9
+        activate:
+          ipv4: true
+      ipv4: true
+    name: r3
+    interfaces:
+    - ipv4: 10.1.0.10/30
+      linkindex: 3
+      role: external
+      type: p2p
+      name: r3 -> dut
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 10.1.0.9/30
+        vrf: blue
+        ifname: ethernet-1/3
+        node: dut
+    device: frr
+    module:
+    - bgp
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts
+      binds:
+      - clab_files/r3/daemons:/etc/frr/daemons
+      - clab_files/r3/hosts:/etc/hosts
+    box: quay.io/frrouting/frr:10.3.1
+    id: 4
+    role: router
+    mtu: 1500
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: 08:4f:a9:04:00:00
+      ipv4: 192.168.17.104
+    hostname: clab-ml_17-r3
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.4/32
+  r4:
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      next_hop_self: true
+      as: 65104
+      router_id: 10.0.0.5
+      neighbors:
+      - ifindex: 1
+        name: dut
+        as: 65000
+        type: ebgp
+        ipv4: 10.1.0.13
+        activate:
+          ipv4: true
+      ipv4: true
+    name: r4
+    interfaces:
+    - ipv4: 10.1.0.14/30
+      linkindex: 4
+      role: external
+      type: p2p
+      name: r4 -> dut
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 10.1.0.13/30
+        vrf: blue
+        ifname: ethernet-1/4
+        node: dut
+    device: frr
+    module:
+    - bgp
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts
+      binds:
+      - clab_files/r4/daemons:/etc/frr/daemons
+      - clab_files/r4/hosts:/etc/hosts
+    box: quay.io/frrouting/frr:10.3.1
+    id: 5
+    role: router
+    mtu: 1500
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: 08:4f:a9:05:00:00
+      ipv4: 192.168.17.105
+    hostname: clab-ml_17-r4
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.5/32
+validate:
+- description: Check EBGP sessions with DUT
+  wait: 30
+  wait_msg: Waiting for BGP sessions to start
+  nodes:
+  - r1
+  - r2
+  - r3
+  - r4
+  plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+  stop_on_error: true
+  name: session
+- description: Check DUT loopback BGP prefix in red VRF
+  wait: 15
+  wait_msg: Waiting for BGP convergence
+  nodes:
+  - r1
+  - r2
+  plugin: bgp_prefix(nodes.dut.vrfs.red.loopback_address.ipv4)
+  name: pfx_red
+- description: Check the router ID on the DUT loopback BGP prefix in red VRF
+  nodes:
+  - r1
+  - r2
+  plugin: 
+    bgp_prefix(nodes.dut.vrfs.red.loopback_address.ipv4,peer=nodes.dut.vrfs.red.bgp.router_id)
+  level: warning
+  name: pfx_red_id
+- description: Check DUT loopback BGP prefix in blue VRF
+  wait: 5
+  wait_msg: Waiting for BGP convergence
+  nodes:
+  - r3
+  - r4
+  plugin: bgp_prefix(nodes.dut.vrfs.blue.loopback_address.ipv4)
+  name: pfx_blue
+- description: Ping-based reachability test in VRF red
+  wait: 5
+  nodes:
+  - r1
+  plugin: ping('r2')
+  name: red
+- description: Ping-based reachability test in VRF blue
+  wait: 5
+  nodes:
+  - r3
+  plugin: ping('r4')
+  name: ping
+- description: Pinging red VRF loopback
+  nodes:
+  - r1
+  - r2
+  plugin: ping('10.0.0.42')
+  name: red_lb
+- description: Pinging blue VRF loopback
+  nodes:
+  - r3
+  - r4
+  plugin: ping('10.0.0.43')
+  name: blue_lb
+input:
+- /home/pipi/net101/tools/tests/integration/vrf/13-multi-vrf-bgp-loopback.yml
+- /home/pipi/net101/tools/tests/integration/wait_times.yml
+- /home/pipi/net101/tools/tests/integration/warnings.yml
+- /home/pipi/.netlab.yml
+- package:topology-defaults.yml
 plugin:
 - multilab
 name: ml_17

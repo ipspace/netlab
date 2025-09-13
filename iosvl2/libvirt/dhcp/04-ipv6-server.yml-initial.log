@@ -1,7 +1,3 @@
-/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
-  "cipher": algorithms.TripleDES,
-/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
-  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -19,7 +15,7 @@ ok: [server]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [server]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/iol-clab.yml for c1, c2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/iol-clab.yml for c1, c2
 
 TASK [Check if 'sshpass' is installed] *****************************************
 ok: [c1 -> localhost]
@@ -31,10 +27,10 @@ ok: [c2 -> localhost]
 TASK [Execute local ssh command to check iol readiness] ************************
 FAILED - RETRYING: [c1 -> localhost]: Execute local ssh command to check iol readiness (20 retries left).
 FAILED - RETRYING: [c2 -> localhost]: Execute local ssh command to check iol readiness (20 retries left).
-FAILED - RETRYING: [c2 -> localhost]: Execute local ssh command to check iol readiness (19 retries left).
 FAILED - RETRYING: [c1 -> localhost]: Execute local ssh command to check iol readiness (19 retries left).
-ok: [c1 -> localhost]
+FAILED - RETRYING: [c2 -> localhost]: Execute local ssh command to check iol readiness (19 retries left).
 ok: [c2 -> localhost]
+ok: [c1 -> localhost]
 
 TASK [Confirm c1 SSH server works] *********************************************
 ok: [c1] => 
@@ -43,7 +39,7 @@ ok: [c2] =>
   msg: Node c2 is ready.
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for c1, c2, server
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for c1, c2, server
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [c1]
@@ -80,16 +76,16 @@ ok: [server] =>
 TASK [Deploy normalize configuration] ******************************************
 skipping: [c1]
 skipping: [c2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for server
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for server
 
-TASK [ios_config: deploying normalize from /home/pipi/net101/tools/netsim/ansible/templates/normalize/iosvl2.j2] ***
+TASK [ios_config: deploying normalize from /home/pipi/netlab_gh/netsim/ansible/templates/normalize/iosvl2.j2] ***
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
 should be similar to how they appear if present in the running configuration on
 device including the indentation
 changed: [server]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for c1, c2, server
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for c1, c2, server
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [c1]
@@ -107,47 +103,11 @@ skipping: [c2]
 skipping: [server]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [c1]
 ok: [c2]
+ok: [c1]
 ok: [server]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [c1] => 
-  msg: |-
-    initial configuration for c1
-    =========================================
-    hostname c1
-    !
-    no ip domain lookup
-    !
-    lldp run
-    !
-    ip host c2 10.0.0.2
-    ip host server 10.0.0.3 2001:db8:cafe::3
-    !
-    ip routing
-    !
-    ipv6 unicast-routing
-    !
-    !
-    interface Loopback0
-     ip address 10.0.0.1 255.255.255.255
-    !
-    interface Ethernet0/0
-     no lldp transmit
-     no lldp receive
-    !
-    interface Ethernet0/1
-     description c1 -> [c2,server]
-     no shutdown
-    !
-    !
-    line vty 0 4
-     exec-timeout 0 0
-    !
-    no banner exec
-    no banner login
-    no banner incoming
 ok: [c2] => 
   msg: |-
     initial configuration for c2
@@ -155,6 +115,8 @@ ok: [c2] =>
     hostname c2
     !
     no ip domain lookup
+    logging buffered 256000
+  
     !
     lldp run
     !
@@ -184,6 +146,44 @@ ok: [c2] =>
     no banner exec
     no banner login
     no banner incoming
+ok: [c1] => 
+  msg: |-
+    initial configuration for c1
+    =========================================
+    hostname c1
+    !
+    no ip domain lookup
+    logging buffered 256000
+  
+    !
+    lldp run
+    !
+    ip host c2 10.0.0.2
+    ip host server 10.0.0.3 2001:db8:cafe::3
+    !
+    ip routing
+    !
+    ipv6 unicast-routing
+    !
+    !
+    interface Loopback0
+     ip address 10.0.0.1 255.255.255.255
+    !
+    interface Ethernet0/0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Ethernet0/1
+     description c1 -> [c2,server]
+     no shutdown
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
+    !
+    no banner exec
+    no banner login
+    no banner incoming
 ok: [server] => 
   msg: |-
     initial configuration for server
@@ -191,6 +191,8 @@ ok: [server] =>
     hostname server
     !
     no ip domain lookup
+    logging buffered 256000
+  
     !
     lldp run
     !
@@ -212,6 +214,7 @@ ok: [server] =>
     interface GigabitEthernet0/1
      no switchport
      description server -> [c1,c2]
+     ipv6 nd ra interval 5
      ipv6 address 2001:DB8:CAFE::3/64
      no shutdown
     !
@@ -224,9 +227,9 @@ ok: [server] =>
     no banner incoming
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for c1, c2, server
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for c1, c2, server
 
-TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
+TASK [ios_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/ios.j2] ***
 changed: [server]
 changed: [c1]
 changed: [c2]
@@ -239,7 +242,7 @@ ok: [c2]
 ok: [server]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for c1, c2, server => (item=dhcp)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for c1, c2, server => (item=dhcp)
 
 TASK [Figure out whether to deploy the module dhcp on current device] **********
 ok: [c1]
@@ -248,8 +251,8 @@ ok: [server]
 
 TASK [Find configuration template for dhcp] ************************************
 ok: [c1]
-ok: [c2]
 ok: [server]
+ok: [c2]
 
 TASK [fail] ********************************************************************
 skipping: [c1]
@@ -289,9 +292,9 @@ ok: [server] =>
     !
 
 TASK [Deploy dhcp configuration] ***********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for c1, c2, server
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for c1, c2, server
 
-TASK [ios_config: deploying dhcp from /home/pipi/net101/tools/netsim/ansible/templates/dhcp/ios.j2] ***
+TASK [ios_config: deploying dhcp from /home/pipi/netlab_gh/netsim/ansible/templates/dhcp/ios.j2] ***
 changed: [server]
 changed: [c2]
 changed: [c1]

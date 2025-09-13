@@ -86,8 +86,8 @@ ok: [r4]
 TASK [Find configuration template for initial] *********************************
 ok: [dut]
 ok: [r1]
-ok: [r3]
 ok: [r2]
+ok: [r3]
 ok: [r4]
 
 TASK [fail] ********************************************************************
@@ -101,8 +101,8 @@ TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [dut]
 ok: [r1]
 ok: [r2]
-ok: [r3]
 ok: [r4]
+ok: [r3]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -212,6 +212,9 @@ ok: [dut] =>
     cat >/tmp/config <<CONFIG
     hostname dut
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -255,6 +258,7 @@ ok: [dut] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [r1] => 
   msg: |-
@@ -339,6 +343,9 @@ ok: [r1] =>
     cat >/tmp/config <<CONFIG
     hostname r1
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -357,6 +364,7 @@ ok: [r1] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [r2] => 
   msg: |-
@@ -441,6 +449,9 @@ ok: [r2] =>
     cat >/tmp/config <<CONFIG
     hostname r2
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -459,6 +470,7 @@ ok: [r2] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [r4] => 
   msg: |-
@@ -543,6 +555,9 @@ ok: [r4] =>
     cat >/tmp/config <<CONFIG
     hostname r4
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -561,6 +576,7 @@ ok: [r4] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [r3] => 
   msg: |-
@@ -645,6 +661,9 @@ ok: [r3] =>
     cat >/tmp/config <<CONFIG
     hostname r3
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -663,6 +682,7 @@ ok: [r3] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 
 TASK [Deploy initial configuration] ********************************************
@@ -683,23 +703,23 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for
 
 TASK [template] ****************************************************************
 changed: [r2]
-changed: [r3]
 changed: [dut]
 changed: [r4]
+changed: [r3]
 changed: [r1]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
-ok: [r1]
 ok: [r2]
-ok: [r4]
 ok: [r3]
+ok: [r4]
+ok: [r1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [r1]
-changed: [dut]
-changed: [r4]
 changed: [r3]
+changed: [r4]
+changed: [dut]
 changed: [r2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -715,8 +735,8 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
 ok: [r1]
 ok: [r2]
-ok: [r3]
 ok: [r4]
+ok: [r3]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4 => (item=ospf)
@@ -726,8 +746,8 @@ TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [dut]
 ok: [r1]
 ok: [r2]
-ok: [r3]
 ok: [r4]
+ok: [r3]
 
 TASK [Find configuration template for ospf] ************************************
 ok: [dut]
@@ -813,34 +833,6 @@ ok: [r2] =>
   
     !
     do write
-ok: [r4] => 
-  msg: |-
-    ospf configuration for r4
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.5
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.4
-    !
-    interface eth1
-    ! r4 -> dut
-     ip ospf area 0.0.0.4
-     ip ospf network point-to-point
-    !
-  
-    !
-    do write
 ok: [r3] => 
   msg: |-
     ospf configuration for r3
@@ -869,16 +861,44 @@ ok: [r3] =>
   
     !
     do write
+ok: [r4] => 
+  msg: |-
+    ospf configuration for r4
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.5
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.4
+    !
+    interface eth1
+    ! r4 -> dut
+     ip ospf area 0.0.0.4
+     ip ospf network point-to-point
+    !
+  
+    !
+    do write
 
 TASK [Deploy ospf configuration] ***********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for dut, r1, r2, r3, r4
 
 TASK [template] ****************************************************************
+changed: [dut]
+changed: [r1]
+changed: [r4]
 changed: [r3]
 changed: [r2]
-changed: [r4]
-changed: [r1]
-changed: [dut]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
@@ -895,11 +915,11 @@ skipping: [r3]
 skipping: [r4]
 
 TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [dut]
 changed: [r1]
-changed: [r4]
 changed: [r2]
+changed: [dut]
 changed: [r3]
+changed: [r4]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [dut]
