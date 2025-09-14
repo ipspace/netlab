@@ -38,6 +38,12 @@ groups:
     members: [ d,e,f ]
 ```
 
+The elements in the **members** list can be:
+
+* node/VLAN/VRF names
+* wildcard expressions, for example, `h*` to match all nodes starting with `h` or `h?` to match all nodes starting with `h` and having one more character in their name
+* regular expressions (strings starting with `~`), for example, `~h.` to match all nodes starting with `h` and having one more character in their name.
+
 The custom groups are assumed to contain nodes. To create a VLAN or a VRF group, set the group **type** to **vlan** or **vrf**, for example:
 
 ```
