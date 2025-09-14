@@ -244,18 +244,16 @@ class Graph(_TopologyOutput):
         log.info(f'Attribute defaults.outputs.d2.{kw} is deprecated, use defaults.outputs.d2.styles.{kw}')
         self.settings.styles[kw] += self.settings[kw]
 
-    graphfile = self.settings.filename or 'graph.d2'
+    graphfile = self.select_output_file('graph.d2')
+    if graphfile is None:
+      return
+
     output_format = 'topology'
+    if self.format:
+      output_format = self.format[0]
 
     topology = get_box(topology)                       # Create a local copy of the topology
     set_d2_attr(topology)
-    if hasattr(self,'filenames'):
-      graphfile = self.filenames[0]
-      if len(self.filenames) > 1:
-        log.error('Extra output filename(s) ignored: %s' % str(self.filenames[1:]),log.IncorrectValue,'d2')
-
-    if self.format:
-      output_format = self.format[0]
 
     if output_format in graph_dispatch:
       if graph_dispatch[output_format](topology,graphfile,self.settings,self.format):

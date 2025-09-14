@@ -17,6 +17,9 @@ class YAML(_TopologyOutput):
 
   def write(self, topo: Box) -> None:
     outfile = self.select_output_file('netlab.snapshot.pickle',writeable=True)
+    if outfile is None:
+      return
+
     if outfile == '-':
       log.fatal('Cannot write pickled data to stdout',module='pickle')
 

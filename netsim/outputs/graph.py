@@ -234,14 +234,11 @@ class Graph(_TopologyOutput):
     global STYLE_MAP
     STYLE_MAP = topology.defaults.outputs.graph.style_map
 
-    graphfile = self.settings.filename or 'graph.dot'
+    graphfile = self.select_output_file('graph.dot')
+    if graphfile is None:
+      return
+
     output_format = 'topology'
-
-    if hasattr(self,'filenames'):
-      graphfile = self.filenames[0]
-      if len(self.filenames) > 1:
-        log.error('Extra output filename(s) ignored: %s' % str(self.filenames[1:]),log.IncorrectValue,'graph')
-
     if self.format:
       output_format = self.format[0]
 

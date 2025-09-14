@@ -22,14 +22,9 @@ class ProviderConfiguration(_TopologyOutput):
 
   def write(self, topology: Box) -> None:
     check_writeable('provider configuration')
-    filename = None
-    if hasattr(self,'filenames'):
-      filename = self.filenames[0]
-      if len(self.filenames) > 1:
-        log.error('Extra output filename(s) ignored: %s' % str(self.filenames[1:]),log.IncorrectValue,'provider')
-
+    filename = self.select_output_file(missing_OK=True)
     if self.format:
-      log.error('Specified output format(s) %s ignored' % self.format,log.IncorrectValue,'provider')
+      log.error(f'Specified output format(s) {self.format} ignored',log.IncorrectValue,'provider')
 
     # Creates a "ghost clean" topology after transformation
     # (AKA, remove unmanaged devices)

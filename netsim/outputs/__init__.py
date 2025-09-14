@@ -69,17 +69,23 @@ class _TopologyOutput(Callback):
 
     return None
 
-  def select_output_file(self, defname: typing.Optional[str] = None, writeable: bool = False) -> str:
+  def select_output_file(
+        self,
+        defname: typing.Optional[str] = None,
+        writeable: bool = False,
+        missing_OK: bool = False) -> typing.Optional[str]:
     modname = type(self).__name__
     outfile = self.settings.get('filename',None) or defname
 
     if hasattr(self,'filenames'):
       outfile = self.filenames[0]
       if len(self.filenames) > 1:
-        log.fatal(f'Extra output filename(s) ignored: {self.filenames[1:]}',module=modname)
+        log.fatal(f'Extra output parameters ignored: {self.filenames[1:]}',module=modname)
 
     if not outfile or outfile is None:
-      log.fatal('No output file specified',module=modname)
+      if not missing_OK:
+        log.fatal('No output file specified',module=modname)
+      return None
 
     if defname and outfile == defname and writeable:
       check_writeable(outfile)
