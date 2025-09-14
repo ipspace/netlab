@@ -38,6 +38,7 @@ groups:
     members: [ d,e,f ]
 ```
 
+(groups-members)=
 The elements in the **members** list can be:
 
 * node/VLAN/VRF names
