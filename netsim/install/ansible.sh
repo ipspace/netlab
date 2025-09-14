@@ -27,7 +27,7 @@ $SUDO python3 -m pip install $REPLACE $FLAG_PIP yamllint yq
 # Install latest Ansible version with pip
 #
 echo "Installing Ansible"
-$SUDO python3 -m pip install $REPLACE $FLAG_PIP ansible
+$SUDO python3 -m pip install $REPLACE $FLAG_PIP 'ansible<=11.10'
 #
 echo
 echo "Installation complete. Let's test Ansible version"

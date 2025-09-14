@@ -1,6 +1,10 @@
 Release Notes
 =============
 
+**Release 25.09-post1 (2025-09-14)**
+
+[Release 25.09-post1](release-25.09-post1) fixes the _netlab_ templating crash caused by breaking changes in Ansible core release 12.9.
+
 **Release 25.09 (2025-09-07)**
 
 * Link impairment (implemented with Linux *netem* queuing discipline) can be defined in [lab topology](links-netem) or configured/controlled with the **[netlab tc](netlab-tc)** command
