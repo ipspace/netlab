@@ -2,6 +2,7 @@
 # Utility routines to augment configuration files
 #
 
+import textwrap
 import typing
 
 from box import Box, BoxList
@@ -180,7 +181,7 @@ Recursive function that traverses the 'paths' tree and converts every list into
 a list of absolute paths... unless the key starts with 'files' or 'tasks' in
 which case the list is a list of potential file names and should not be changed.
 '''
-def make_paths_absolute(p_top: Box) -> None:
+def make_paths_absolute(p_top: Box, parents: str = 'defaults.paths') -> None:
   for k in list(p_top.keys()):
     if k.startswith('files') or k.startswith('tasks'):
       p_top[k] = [ fn.replace('\n','') for fn in p_top[k] ]
@@ -188,7 +189,11 @@ def make_paths_absolute(p_top: Box) -> None:
     v = p_top[k]
     if isinstance(v,str):
       v = [ v ]
-    if isinstance(v,list):
+    if isinstance(v,BoxList):
+      if log.debug_active('paths'):
+        log.info(f'Paths: transforming/pruning {parents}.{k}',more_data=textwrap.indent(v.to_yaml(),'  '))
       p_top[k] = _files.absolute_search_path(v,skip_missing=True)
+      if log.debug_active('paths'):
+        log.info(f'Active path for {parents}.{k}',more_data=textwrap.indent(p_top[k].to_yaml(),'  '))
     elif isinstance(v,Box):
-      make_paths_absolute(v)
+      make_paths_absolute(v,f'{parents}.{k}')

@@ -7,6 +7,7 @@ import importlib.util
 import os
 import pathlib
 import sys
+import textwrap
 import typing
 
 from ..data import global_vars
@@ -121,7 +122,13 @@ def find_file(path: str, search_path: typing.List[str]) -> typing.Optional[str]:
   for dirname in search_path:
     candidate = os.path.join(dirname, path)
     if os.path.exists(candidate):
+      if log.debug_active('paths'):
+        log.info(f'Searching for {path} in:',more_data=textwrap.indent('\n'.join(search_path),'  - '))
+        log.info(f'Found {candidate}')
       return candidate
+
+  if log.debug_active('paths'):
+    log.info(f'Failed to find {path} in:',more_data=textwrap.indent('\n'.join(search_path),'  - '))
 
   return None
 

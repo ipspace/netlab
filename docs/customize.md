@@ -23,6 +23,12 @@ If you want to change the provisioning- or device configuration templates, you c
 
 [^MIN]: Initial device configurations are stored in **templates/initial** directory.
 
+```{tip}
+Use the **‌netlab create --debug paths** command to display the components of individual search paths and the directories _netlab_ uses when searching those paths (non-existent directories are removed from the search paths).
+
+You can use the same command to troubleshoot template errors; the debugging printouts display every template file _netlab_ searched for and the search path it used for the search.
+```
+
 Finally, you might want to use external tools or devices not yet supported by _netlab_:
 
 * [Adding external tools](dev/extools.md) is relatively easy.
