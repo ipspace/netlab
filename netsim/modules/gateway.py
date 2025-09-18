@@ -64,6 +64,26 @@ def cleanup_unicast_ip(node: Box) -> None:
       intf.pop('ipv4',None)                                 # No unicast with anycast ==> pop the address
 
 #
+# Compute VRRP MAC and LLA addresses for an interface. This helps remove duplicate code
+# from various device configuration modules
+#
+
+def compute_vrrp_addresses(intf: Box) -> None:
+  grp = intf.get('gateway.vrrp.group',None)
+  if not grp:
+    return
+
+  gw_data = intf.gateway.vrrp
+  grp_hex = "%02x" % gw_data.group
+  for af in log.AF_LIST:
+    if af in intf.gateway:
+      gw_data.mac[af] = f'00:00:5e:00:0{ 2 if af == "ipv6" else 1 }:{ grp_hex }'
+
+  if 'ipv6' in intf.gateway:
+    gw_data.lla = f'fe80::200:5eff:fe00:02{ grp_hex }'
+    pass
+
+#
 # Default settings copied onto individual links have parameters for every known FHRP protocol.
 # We don't need those parameters on every interface -- this function cleans up unused gateway protocol
 # parameters from interfaces and returns a list of active protocols so we know what to clean on the
@@ -88,6 +108,9 @@ def cleanup_intf_protocol_parameters(node: Box, topology: Box) -> list:
         intf.gateway.pop(k,None)                                      # ... useless, pop it
       elif k in node.get('gateway'):                                  # Do we have node-level parameters for this protocol?
         intf.gateway[k] = node.gateway[k] + intf.gateway[k]           # ... copy them to all interfaces
+
+    if gw_proto == 'vrrp':                                            # Are we running VRRP on this interface?
+      compute_vrrp_addresses(intf)
 
   return active_proto
 
