@@ -32,6 +32,7 @@ TASK [Check for 'timeout' command] *********************************************
 ok: [dut -> localhost]
 
 TASK [Execute local ssh command to check iol readiness] ************************
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check iol readiness (20 retries left).
 ok: [dut -> localhost]
 
 TASK [Confirm dut SSH server works] ********************************************
@@ -113,8 +114,8 @@ ok: [r2]
 TASK [Find configuration template for initial] *********************************
 ok: [h1]
 ok: [h2]
-ok: [dut]
 ok: [r2]
+ok: [dut]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -207,63 +208,6 @@ ok: [h2] =>
     set -e
     ip -6 addr add 2001:db8:cafe:44::4/64 dev eth1
     ip link set dev eth1 mtu 1500
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    hostname dut
-    !
-    no ip domain lookup
-    !
-    lldp run
-    !
-    ip host r2 10.0.0.2 172.16.44.2 172.16.33.2 2001:db8:cafe:44::2 2001:db8:cafe:33::2
-    ip host h1 172.16.33.3 2001:db8:cafe:33::3
-    ip host h2 172.16.44.4 2001:db8:cafe:44::4
-    !
-    ip routing
-    !
-    ipv6 unicast-routing
-    !
-    !
-    bridge irb
-    !
-    bridge 1 protocol vlan-bridge
-    bridge 1 route ip
-    !
-  
-    !
-    !
-    interface Loopback0
-     ip address 10.0.0.1 255.255.255.255
-    !
-    interface Ethernet0/0
-     no lldp transmit
-     no lldp receive
-    !
-    interface Ethernet0/1
-     description dut -> r2
-     no shutdown
-    !
-    interface Ethernet0/2
-     description dut -> [r2,h2]
-     ip address 172.16.44.1 255.255.255.0
-     ipv6 address 2001:DB8:CAFE:44::1/64
-     no shutdown
-    !
-    interface BDI1000
-     description VLAN access (1000) -> [r2,h1]
-     ip address 172.16.33.1 255.255.255.0
-     ipv6 address 2001:DB8:CAFE:33::1/64
-     no shutdown
-    !
-    !
-    line vty 0 4
-     exec-timeout 0 0
-    !
-    no banner exec
-    no banner login
-    no banner incoming
 ok: [r2] => 
   msg: |-
     initial configuration for r2
@@ -322,6 +266,67 @@ ok: [r2] =>
      ipv6 nd ra interval 5
      ipv6 address 2001:db8:cafe:33::2/64
     !
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    hostname dut
+    !
+    no ip domain lookup
+    logging buffered 256000
+  
+    !
+    lldp run
+    !
+    ip host r2 10.0.0.2 172.16.44.2 172.16.33.2 2001:db8:cafe:44::2 2001:db8:cafe:33::2
+    ip host h1 172.16.33.3 2001:db8:cafe:33::3
+    ip host h2 172.16.44.4 2001:db8:cafe:44::4
+    !
+    ip routing
+    !
+    ipv6 unicast-routing
+    !
+    !
+    bridge irb
+    !
+    bridge 1 protocol vlan-bridge
+    bridge 1 route ip
+    !
+  
+    !
+    !
+    interface Loopback0
+     ip address 10.0.0.1 255.255.255.255
+    !
+    interface Ethernet0/0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Ethernet0/1
+     description dut -> r2
+     no shutdown
+    !
+    interface Ethernet0/2
+     description dut -> [r2,h2]
+     ip address 172.16.44.1 255.255.255.0
+     ipv6 nd ra interval 5
+     ipv6 address 2001:DB8:CAFE:44::1/64
+     no shutdown
+    !
+    interface BDI1000
+     description VLAN access (1000) -> [r2,h1]
+     ip address 172.16.33.1 255.255.255.0
+     ipv6 nd ra interval 5
+     ipv6 address 2001:DB8:CAFE:33::1/64
+     no shutdown
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
+    !
+    no banner exec
+    no banner login
+    no banner incoming
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
@@ -343,8 +348,8 @@ changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -355,10 +360,10 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-e0iwbvq_.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-ogrta8mr.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -402,19 +407,6 @@ ok: [r2]
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
 skipping: [h2]
-ok: [dut] => 
-  msg: |-
-    vlan configuration for dut
-    =========================================
-    !
-    bridge-domain 1000
-     member Ethernet0/1 service-instance 1000
-    !
-    interface Ethernet0/1
-     service instance 1000 ethernet
-      encapsulation dot1q 1000
-      rewrite ingress tag pop 1
-      rewrite egress tag push dot1q 1000
 ok: [r2] => 
   msg: |-
     vlan configuration for r2
@@ -435,6 +427,19 @@ ok: [r2] =>
      switchport access vlan 1000
     !
     interface Vlan1000
+ok: [dut] => 
+  msg: |-
+    vlan configuration for dut
+    =========================================
+    !
+    bridge-domain 1000
+     member Ethernet0/1 service-instance 1000
+    !
+    interface Ethernet0/1
+     service instance 1000 ethernet
+      encapsulation dot1q 1000
+      rewrite ingress tag pop 1
+      rewrite egress tag push dot1q 1000
 
 TASK [Deploy vlan configuration] ***********************************************
 skipping: [h1]
@@ -605,8 +610,8 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
 changed: [h1 -> localhost]
@@ -624,7 +629,7 @@ TASK [Container configuration for routing based on /home/pipi/net101/tools/netsi
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-k96c0g9y.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-0qp2m3gg.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 

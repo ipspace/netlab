@@ -10,16 +10,16 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [r2]
 ok: [h1]
-ok: [dut]
 ok: [h2]
 ok: [br_a]
+ok: [dut]
 
 TASK [Find device readiness script] ********************************************
 ok: [r2]
 ok: [h1]
-ok: [br_a]
 ok: [h2]
 ok: [dut]
+ok: [br_a]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [dut]
@@ -34,15 +34,15 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [r2]
 ok: [h1]
-ok: [br_a]
 ok: [h2]
 ok: [dut]
+ok: [br_a]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [r2]
 ok: [h1]
-ok: [br_a]
 ok: [h2]
+ok: [br_a]
 ok: [dut]
 
 TASK [fail] ********************************************************************
@@ -55,9 +55,9 @@ skipping: [br_a]
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [r2]
 ok: [h1]
-ok: [h2]
 ok: [dut]
 ok: [br_a]
+ok: [h2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
@@ -80,15 +80,15 @@ TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [r2]
 ok: [h1]
 ok: [h2]
-ok: [dut]
 ok: [br_a]
+ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
 ok: [r2]
 ok: [h1]
-ok: [br_a]
 ok: [h2]
 ok: [dut]
+ok: [br_a]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -100,9 +100,9 @@ skipping: [br_a]
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [r2]
 ok: [h1]
-ok: [br_a]
 ok: [h2]
 ok: [dut]
+ok: [br_a]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [h1] => 
@@ -144,45 +144,6 @@ ok: [h1] =>
     set -e
     ip -6 addr add 2001:db8:cafe:33::3/64 dev eth1
     ip link set dev eth1 mtu 1500
-ok: [h2] => 
-  msg: |-
-    initial configuration for h2
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Send ARP requests from a sane source IP address
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-  
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.44.4/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.44.4/24 dev eth1
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
-    set +e
-    ip -6 addr del 2001:db8:cafe:44::4/64 dev eth1 2>/dev/null
-    set -e
-    ip -6 addr add 2001:db8:cafe:44::4/64 dev eth1
-    ip link set dev eth1 mtu 1500
 ok: [br_a] => 
   msg: |-
     initial configuration for br_a
@@ -222,6 +183,90 @@ ok: [br_a] =>
     ip link set dev eth3 up
     sysctl -w net.ipv6.conf.eth3.disable_ipv6=1
     ip link set dev eth3 mtu 1500
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+  
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.44.4/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.44.4/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=0
+    set +e
+    ip -6 addr del 2001:db8:cafe:44::4/64 dev eth1 2>/dev/null
+    set -e
+    ip -6 addr add 2001:db8:cafe:44::4/64 dev eth1
+    ip link set dev eth1 mtu 1500
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    hostname dut
+    !
+    lldp
+    !
+  
+  
+  
+    interface mgmt
+        no lldp transmit
+        no lldp receive
+    !
+  
+  
+    interface loopback 0
+        ip address 10.0.0.1/32
+    !
+  
+    interface 1/1/1
+        shutdown
+        mtu 9198
+        description dut -> [r2,h2]
+        ip address 172.16.44.1/24
+        ipv6 address 2001:db8:cafe:44::1/64
+        no ipv6 nd suppress-ra
+        ipv6 nd ra min-interval 3
+        ipv6 nd ra max-interval 4
+        no shutdown
+    !
+  
+    interface 1/1/2
+        shutdown
+        mtu 9198
+        description dut -> [h1,br_a,r2]
+        ip address 172.16.33.1/24
+        ipv6 address 2001:db8:cafe:33::1/64
+        no ipv6 nd suppress-ra
+        ipv6 nd ra min-interval 3
+        ipv6 nd ra max-interval 4
+        no shutdown
+    !
+    !
 ok: [r2] => 
   msg: |-
     initial configuration for r2
@@ -311,6 +356,9 @@ ok: [r2] =>
     cat >/tmp/config <<CONFIG
     hostname r2
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     ipv6 forwarding
     vrf mgmt
@@ -341,52 +389,8 @@ ok: [r2] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    hostname dut
-    !
-    lldp
-    !
-  
-  
-  
-    interface mgmt
-        no lldp transmit
-        no lldp receive
-    !
-  
-  
-    interface loopback 0
-        ip address 10.0.0.1/32
-    !
-  
-    interface 1/1/1
-        shutdown
-        mtu 9198
-        description dut -> [r2,h2]
-        ip address 172.16.44.1/24
-        ipv6 address 2001:db8:cafe:44::1/64
-        no ipv6 nd suppress-ra
-        ipv6 nd ra min-interval 3
-        ipv6 nd ra max-interval 4
-        no shutdown
-    !
-  
-    interface 1/1/2
-        shutdown
-        mtu 9198
-        description dut -> [h1,br_a,r2]
-        ip address 172.16.33.1/24
-        ipv6 address 2001:db8:cafe:33::1/64
-        no ipv6 nd suppress-ra
-        ipv6 nd ra min-interval 3
-        ipv6 nd ra max-interval 4
-        no shutdown
-    !
-    !
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for dut
@@ -438,8 +442,8 @@ changed: [br_a -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
-changed: [br_a -> localhost]
 changed: [h2 -> localhost]
+changed: [br_a -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -452,11 +456,11 @@ skipping: [h2]
 skipping: [br_a]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
+changed: [br_a -> localhost]
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
-changed: [br_a -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-at8lxq4n.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-3kitlxc9.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [br_a -> localhost]
@@ -556,21 +560,21 @@ skipping: [br_a]
 TASK [Container configuration for vlan based on /home/pipi/net101/tools/netsim/ansible/templates/vlan/linux-clab.j2 executed in netns] ***
 changed: [br_a -> localhost]
 
-TASK [Remove temporary file /tmp/br_a_vlan-wdxbvmib.sh] ************************
+TASK [Remove temporary file /tmp/br_a_vlan-a2b9z90m.sh] ************************
 changed: [br_a -> localhost]
 
 TASK [Figure out whether to deploy the module gateway on current device] *******
 ok: [r2]
 ok: [h1]
 ok: [h2]
-ok: [dut]
 ok: [br_a]
+ok: [dut]
 
 TASK [Find configuration template for gateway] *********************************
 skipping: [h1]
 skipping: [h2]
-ok: [r2]
 skipping: [br_a]
+ok: [r2]
 ok: [dut]
 
 TASK [fail] ********************************************************************
@@ -623,7 +627,7 @@ ok: [r2] =>
       no vrrp 217 checksum-with-ipv4-pseudoheader
       vrrp 217 priority 20
       vrrp 217 preempt
-      vrrp 217 ipv6 fe80::200:5eff:fe00:2d9
+      vrrp 217 ipv6 fe80::200:5eff:fe00:02d9
       vrrp 217 ip 172.16.33.42
       vrrp 217 ipv6 2001:db8:cafe:33::2a
       no vrrp 217 shutdown
@@ -694,10 +698,10 @@ skipping: [r2]
 
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [r2]
-ok: [h2]
 ok: [h1]
-ok: [dut]
+ok: [h2]
 ok: [br_a]
+ok: [dut]
 
 TASK [Find configuration template for routing] *********************************
 skipping: [dut]
@@ -786,8 +790,8 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
 changed: [h2 -> localhost]
@@ -802,12 +806,12 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Container configuration for routing based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-7mrem3c2.sh] ***********************
-changed: [h1 -> localhost]
+TASK [Remove temporary file /tmp/h1_routing-k563bkgw.sh] ***********************
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched

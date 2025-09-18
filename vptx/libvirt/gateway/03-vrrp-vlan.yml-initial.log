@@ -8,15 +8,15 @@
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [h2]
 ok: [h1]
+ok: [h2]
 ok: [dut]
 ok: [r2]
 
 TASK [Find device readiness script] ********************************************
 ok: [h2]
-ok: [h1]
 ok: [dut]
+ok: [h1]
 ok: [r2]
 
 TASK [Wait for device to become ready] *****************************************
@@ -54,8 +54,8 @@ skipping: [h2]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [h1]
-ok: [h2]
 ok: [dut]
+ok: [h2]
 ok: [r2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -102,8 +102,8 @@ ok: [r2]
 
 TASK [Find configuration template for initial] *********************************
 ok: [h1]
-ok: [dut]
 ok: [h2]
+ok: [dut]
 ok: [r2]
 
 TASK [fail] ********************************************************************
@@ -197,6 +197,64 @@ ok: [h2] =>
     set -e
     ip -6 addr add 2001:db8:cafe:44::4/64 dev eth1
     ip link set dev eth1 mtu 1500
+ok: [r2] => 
+  msg: |-
+    initial configuration for r2
+    =========================================
+    hostname r2
+    !
+    logging monitor debugging
+    aaa authorization exec default local
+    !
+    lldp run
+    ip routing
+    ipv6 unicast-routing
+    !
+    !
+    ip host dut 10.0.0.1 172.16.44.1 172.16.33.1
+    ip host h1 172.16.33.3
+    ip host h2 172.16.44.4
+    ipv6 host dut 2001:db8:cafe:44::1
+    ipv6 host h1 2001:db8:cafe:33::3
+    ipv6 host h2 2001:db8:cafe:44::4
+    !
+    interface Management0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     ip address 10.0.0.2/32
+    !
+    interface Ethernet1
+     no switchport
+     description r2 -> dut
+    !
+     mac-address 52dc.cafe.0201
+     no shutdown
+    !
+    interface Ethernet2
+     no switchport
+     description r2 -> [dut,h2]
+     ip address 172.16.44.2/24
+     ipv6 nd ra interval 5
+     ipv6 address 2001:db8:cafe:44::2/64
+    !
+     mac-address 52dc.cafe.0202
+     no shutdown
+    !
+    interface Ethernet3
+     no switchport
+     description [Access VLAN access] r2 -> h1
+    !
+     mac-address 52dc.cafe.0203
+     no shutdown
+    !
+    interface Vlan1000
+     description VLAN access (1000) -> [dut,h1]
+     ip address 172.16.33.2/24
+     ipv6 nd ra interval 5
+     ipv6 address 2001:db8:cafe:33::2/64
+    !
 ok: [dut] => 
   msg: |-
     initial configuration for dut
@@ -276,64 +334,6 @@ ok: [dut] =>
         interface irb.1000;
       }
     }
-ok: [r2] => 
-  msg: |-
-    initial configuration for r2
-    =========================================
-    hostname r2
-    !
-    logging monitor debugging
-    aaa authorization exec default local
-    !
-    lldp run
-    ip routing
-    ipv6 unicast-routing
-    !
-    !
-    ip host dut 10.0.0.1 172.16.44.1 172.16.33.1
-    ip host h1 172.16.33.3
-    ip host h2 172.16.44.4
-    ipv6 host dut 2001:db8:cafe:44::1
-    ipv6 host h1 2001:db8:cafe:33::3
-    ipv6 host h2 2001:db8:cafe:44::4
-    !
-    interface Management0
-     no lldp transmit
-     no lldp receive
-    !
-    interface Loopback0
-     ip address 10.0.0.2/32
-    !
-    interface Ethernet1
-     no switchport
-     description r2 -> dut
-    !
-     mac-address 52dc.cafe.0201
-     no shutdown
-    !
-    interface Ethernet2
-     no switchport
-     description r2 -> [dut,h2]
-     ip address 172.16.44.2/24
-     ipv6 nd ra interval 5
-     ipv6 address 2001:db8:cafe:44::2/64
-    !
-     mac-address 52dc.cafe.0202
-     no shutdown
-    !
-    interface Ethernet3
-     no switchport
-     description [Access VLAN access] r2 -> h1
-    !
-     mac-address 52dc.cafe.0203
-     no shutdown
-    !
-    interface Vlan1000
-     description VLAN access (1000) -> [dut,h1]
-     ip address 172.16.33.2/24
-     ipv6 nd ra interval 5
-     ipv6 address 2001:db8:cafe:33::2/64
-    !
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for dut
@@ -352,12 +352,12 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -371,7 +371,7 @@ TASK [Container configuration for initial based on /home/pipi/net101/tools/netsi
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-8ddikq4s.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-rxbkihlk.sh] ***********************
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
@@ -390,8 +390,8 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [h1]
-ok: [h2]
 ok: [dut]
+ok: [h2]
 ok: [r2]
 
 TASK [Find configuration template for vlan] ************************************
@@ -665,10 +665,10 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Container configuration for routing based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-9ad79kxh.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-buli3l6y.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
