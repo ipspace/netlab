@@ -29,7 +29,7 @@ def parser_add_debug(parser: argparse.ArgumentParser) -> None:
   parser.add_argument('--debug', dest='debug', action='store',nargs='*',
                   choices=sorted([
                     'all','addr','cli','links','libvirt','clab','modules','plugin','template',
-                    'vlan','vrf','quirks','validate','addressing','groups','status',
+                    'vlan','vrf','quirks','validate','addressing','groups','status','paths',
                     'external','defaults','lag']),
                   help=argparse.SUPPRESS)
   parser.add_argument('--test', dest='test', action='store',nargs='*',

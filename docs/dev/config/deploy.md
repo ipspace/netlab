@@ -41,6 +41,10 @@ After finding the Jinja2 template, the initial configuration deployment playbook
 | **paths.deploy.dirs** | Directory search paths for configuration deployment task lists |
 | **paths.deploy.files** | Filename search patterns for module configuration deployment task lists |
 
+```{tip}
+Use the **‌netlab create --debug paths** command to display the components of individual search paths and the directories _netlab_ uses when searching those paths (non-existent directories are removed from the search paths)
+```
+
 (dev-find-custom)=
 ## Finding Custom Configuration Templates
 
