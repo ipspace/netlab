@@ -18,8 +18,8 @@ TASK [Find device readiness script] ********************************************
 ok: [h1]
 ok: [h2]
 ok: [s1]
-ok: [s2]
 ok: [rr]
+ok: [s2]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [h1]
@@ -35,8 +35,8 @@ TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [h1]
 ok: [h2]
 ok: [s1]
-ok: [rr]
 ok: [s2]
+ok: [rr]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [h1]
@@ -80,8 +80,8 @@ TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [h1]
 ok: [h2]
 ok: [s1]
-ok: [s2]
 ok: [rr]
+ok: [s2]
 
 TASK [Find configuration template for initial] *********************************
 ok: [h1]
@@ -175,6 +175,79 @@ ok: [h2] =>
     ip addr add 172.31.1.2/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+ok: [rr] => 
+  msg: |-
+    initial configuration for rr
+    =========================================
+  
+    updates:
+  
+    - path: /interface[name=system0]/subinterface[index=0]
+      value:
+       description: "No description"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "10.0.0.5/32"
+  
+    - path: /interface[name=ethernet-1/1]
+      value:
+       description: "rr ~ s1"
+     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
+       mtu: 1614
+       subinterface:
+     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
+        ip-mtu: 1600
+        index: 0
+        description: "rr ~ s1"
+  
+    - path: /interface[name=ethernet-1/1]/subinterface[index=0]
+      value:
+       description: "rr ~ s1"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "10.1.0.1/30"
+          primary: [null]
+  
+    - path: /interface[name=ethernet-1/2]
+      value:
+       description: "rr ~ s2"
+     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
+       mtu: 1614
+       subinterface:
+     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
+        ip-mtu: 1600
+        index: 0
+        description: "rr ~ s2"
+  
+    - path: /interface[name=ethernet-1/2]/subinterface[index=0]
+      value:
+       description: "rr ~ s2"
+       ipv4:
+        admin-state: enable
+        address:
+        - ip-prefix: "10.1.0.5/30"
+          primary: [null]
+  
+  
+  
+    - path: /network-instance[name=default]
+      value:
+       type: default
+       interface:
+       - name: system0.0
+  
+    - path: /network-instance[name=default]
+      value:
+       type: default
+       interface:
+       - name: ethernet-1/1.0
+    - path: /network-instance[name=default]
+      value:
+       type: default
+       interface:
+       - name: ethernet-1/2.0
 ok: [s1] => 
   msg: |-
     initial configuration for s1
@@ -262,6 +335,8 @@ ok: [s1] =>
     cat >/tmp/config <<CONFIG
     hostname s1
     !
+    log file /tmp/logging
+  
     !
     ip forwarding
     vrf mgmt
@@ -380,6 +455,8 @@ ok: [s2] =>
     cat >/tmp/config <<CONFIG
     hostname s2
     !
+    log file /tmp/logging
+  
     !
     ip forwarding
     vrf mgmt
@@ -411,79 +488,6 @@ ok: [s2] =>
     vtysh -f /tmp/config
     !
     exit 0
-ok: [rr] => 
-  msg: |-
-    initial configuration for rr
-    =========================================
-  
-    updates:
-  
-    - path: /interface[name=system0]/subinterface[index=0]
-      value:
-       description: "No description"
-       ipv4:
-        admin-state: enable
-        address:
-        - ip-prefix: "10.0.0.5/32"
-  
-    - path: /interface[name=ethernet-1/1]
-      value:
-       description: "rr ~ s1"
-     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
-       mtu: 1614
-       subinterface:
-     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
-        ip-mtu: 1600
-        index: 0
-        description: "rr ~ s1"
-  
-    - path: /interface[name=ethernet-1/1]/subinterface[index=0]
-      value:
-       description: "rr ~ s1"
-       ipv4:
-        admin-state: enable
-        address:
-        - ip-prefix: "10.1.0.1/30"
-          primary: [null]
-  
-    - path: /interface[name=ethernet-1/2]
-      value:
-       description: "rr ~ s2"
-     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
-       mtu: 1614
-       subinterface:
-     # min 1500; max 9412 for 7220, 9500 for 7250 platforms
-        ip-mtu: 1600
-        index: 0
-        description: "rr ~ s2"
-  
-    - path: /interface[name=ethernet-1/2]/subinterface[index=0]
-      value:
-       description: "rr ~ s2"
-       ipv4:
-        admin-state: enable
-        address:
-        - ip-prefix: "10.1.0.5/30"
-          primary: [null]
-  
-  
-  
-    - path: /network-instance[name=default]
-      value:
-       type: default
-       interface:
-       - name: system0.0
-  
-    - path: /network-instance[name=default]
-      value:
-       type: default
-       interface:
-       - name: ethernet-1/1.0
-    - path: /network-instance[name=default]
-      value:
-       type: default
-       interface:
-       - name: ethernet-1/2.0
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
@@ -495,12 +499,12 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -511,10 +515,10 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-du1_c_zq.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-dqjz_gqk.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -537,8 +541,8 @@ ok: [s1]
 ok: [s2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [s1]
@@ -612,7 +616,7 @@ ok: [s1] =>
     #
     if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
       ip link add vlan1000 type bridge
-      ip link set dev vlan1000 address 52:dc:ca:fd:03:00
+      ip link set dev vlan1000 address ca:f4:00:03:00:00
   
       ip addr flush dev vlan1000
     fi
@@ -630,7 +634,7 @@ ok: [s2] =>
     #
     if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
       ip link add vlan1000 type bridge
-      ip link set dev vlan1000 address 52:dc:ca:fd:04:00
+      ip link set dev vlan1000 address ca:f4:00:04:00:00
   
       ip addr flush dev vlan1000
     fi
@@ -665,8 +669,8 @@ TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [h1]
 ok: [h2]
 ok: [s1]
-ok: [rr]
 ok: [s2]
+ok: [rr]
 
 TASK [Find configuration template for routing] *********************************
 skipping: [s1]
@@ -751,10 +755,10 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Container configuration for routing based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-5oglpolh.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-c29ge6tg.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -1127,7 +1131,7 @@ ok: [rr] =>
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
       value:
         admin-state: enable
-    # neighbor: {'name': 's1', 'as': 65000, 'type': 'ibgp', 'ipv4': '10.0.0.3', '_source_intf': {'type': 'loopback', 'neighbors': [], 'virtual_interface': True, 'ifindex': 0, 'ifname': 'lo0.0', 'ipv4': '10.0.0.5/32', 'ospf': {'area': '0.0.0.0', 'passive': False}}, 'activate': {'ipv4': True}, 'evpn': True}
+    # neighbor: {'name': 's1', 'as': 65000, 'type': 'ibgp', 'ipv4': '10.0.0.3', '_source_intf': {'type': 'loopback', 'neighbors': [], 'virtual_interface': True, 'ifindex': 0, 'ifname': 'lo0.0', 'ipv4': '10.0.0.5/32', 'ospf': {'area': '0.0.0.0', 'passive': False}}, 'next_hop_self': 'ebgp', 'rr_client': True, 'activate': {'ipv4': True}, 'evpn': True}
     # ipv4: True
     # ipv6: True
         afi-safi:
@@ -1166,7 +1170,7 @@ ok: [rr] =>
         - peer-address: "10.0.0.3"
           description: s1
           peer-group: ibgp-ipv4
-      # neighbor: {'name': 's1', 'as': 65000, 'type': 'ibgp', 'ipv4': '10.0.0.3', '_source_intf': {'type': 'loopback', 'neighbors': [], 'virtual_interface': True, 'ifindex': 0, 'ifname': 'lo0.0', 'ipv4': '10.0.0.5/32', 'ospf': {'area': '0.0.0.0', 'passive': False}}, 'activate': {'ipv4': True}, 'evpn': True}
+      # neighbor: {'name': 's1', 'as': 65000, 'type': 'ibgp', 'ipv4': '10.0.0.3', '_source_intf': {'type': 'loopback', 'neighbors': [], 'virtual_interface': True, 'ifindex': 0, 'ifname': 'lo0.0', 'ipv4': '10.0.0.5/32', 'ospf': {'area': '0.0.0.0', 'passive': False}}, 'next_hop_self': 'ebgp', 'rr_client': True, 'activate': {'ipv4': True}, 'evpn': True}
       # ipv4: True
       # ipv6: False
           afi-safi:
@@ -1185,7 +1189,7 @@ ok: [rr] =>
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
       value:
         admin-state: enable
-    # neighbor: {'name': 's2', 'as': 65000, 'type': 'ibgp', 'ipv4': '10.0.0.4', '_source_intf': {'type': 'loopback', 'neighbors': [], 'virtual_interface': True, 'ifindex': 0, 'ifname': 'lo0.0', 'ipv4': '10.0.0.5/32', 'ospf': {'area': '0.0.0.0', 'passive': False}}, 'activate': {'ipv4': True}, 'evpn': True}
+    # neighbor: {'name': 's2', 'as': 65000, 'type': 'ibgp', 'ipv4': '10.0.0.4', '_source_intf': {'type': 'loopback', 'neighbors': [], 'virtual_interface': True, 'ifindex': 0, 'ifname': 'lo0.0', 'ipv4': '10.0.0.5/32', 'ospf': {'area': '0.0.0.0', 'passive': False}}, 'next_hop_self': 'ebgp', 'rr_client': True, 'activate': {'ipv4': True}, 'evpn': True}
     # ipv4: True
     # ipv6: True
         afi-safi:
@@ -1224,7 +1228,7 @@ ok: [rr] =>
         - peer-address: "10.0.0.4"
           description: s2
           peer-group: ibgp-ipv4
-      # neighbor: {'name': 's2', 'as': 65000, 'type': 'ibgp', 'ipv4': '10.0.0.4', '_source_intf': {'type': 'loopback', 'neighbors': [], 'virtual_interface': True, 'ifindex': 0, 'ifname': 'lo0.0', 'ipv4': '10.0.0.5/32', 'ospf': {'area': '0.0.0.0', 'passive': False}}, 'activate': {'ipv4': True}, 'evpn': True}
+      # neighbor: {'name': 's2', 'as': 65000, 'type': 'ibgp', 'ipv4': '10.0.0.4', '_source_intf': {'type': 'loopback', 'neighbors': [], 'virtual_interface': True, 'ifindex': 0, 'ifname': 'lo0.0', 'ipv4': '10.0.0.5/32', 'ospf': {'area': '0.0.0.0', 'passive': False}}, 'next_hop_self': 'ebgp', 'rr_client': True, 'activate': {'ipv4': True}, 'evpn': True}
       # ipv4: True
       # ipv6: False
           afi-safi:
@@ -1273,8 +1277,8 @@ TASK [Figure out whether to deploy the module vxlan on current device] *********
 ok: [h1]
 ok: [h2]
 ok: [s1]
-ok: [rr]
 ok: [s2]
+ok: [rr]
 
 TASK [Find configuration template for vxlan] ***********************************
 skipping: [h1]
@@ -1379,8 +1383,8 @@ skipping: [rr]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s1, s2
 
 TASK [template] ****************************************************************
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [set_fact] ****************************************************************
 ok: [s1]
@@ -1397,8 +1401,8 @@ skipping: [s2]
 TASK [Figure out whether to deploy the module evpn on current device] **********
 ok: [h1]
 ok: [h2]
-ok: [s1]
 ok: [s2]
+ok: [s1]
 ok: [rr]
 
 TASK [Find configuration template for evpn] ************************************
@@ -1523,16 +1527,16 @@ included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/srlinux.yml for rr
 
 TASK [template] ****************************************************************
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [set_fact] ****************************************************************
 ok: [s1]
 ok: [s2]
 
 TASK [run /tmp/config.sh to deploy evpn config from /home/pipi/net101/tools/netsim/ansible/templates/evpn/frr.j2] ***
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [run vtysh to import evpn config from /home/pipi/net101/tools/netsim/ansible/templates/evpn/frr.j2] ***
 skipping: [s1]
