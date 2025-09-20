@@ -122,11 +122,19 @@ get_gateway_data: Fetch the IPv4 default gateway data from vlan/link or
 call the routing module "get me default gateway of last resort" function
 '''
 def get_gateway_data(link: Box, topology: Box) -> Box:
-  if isinstance(link.get('gateway',None),Box):
-    return link.gateway
+  if isinstance(link.get('gateway',None),Box):    # Do we have on-link gateway data
+    return link.gateway                           # Cool, return that
   
-  ifdata = data.get_box({'neighbors': link.get('neighbors',[] )})
-  (gw_data,u_flag) = routing.create_gateway_last_resort(ifdata,data.get_box({'ipv4': True}),topology)
+  link_ngb = link.get('neighbors',[])             # Get link neighbors
+  for ngb in link_ngb:                            # Fix DHCP relays that also have DHCP client information
+    if ngb.get('dhcp.server'):                    # ... because that attribute will get removed from the
+      ngb.dhcp.pop('client',None)                 # ... interface data anyway and just throws off the next function
+
+  ifdata = data.get_box({'neighbors': link_ngb }) # Now create a fake interface data structure
+
+  # Try to get the gateway-of-last-resort from the fake "interface" neighbors
+  #
+  (gw_data,_) = routing.create_gateway_last_resort(ifdata,data.get_box({'ipv4': True}),topology)
   return gw_data
 
 '''
@@ -169,7 +177,7 @@ def build_topology_dhcp_pools(topology: Box) -> None:
 
   # Phase 2: Iterate over node interfaces, find SVIs, and build excluded IP list
   #
-  for node,ndata in topology.get('nodes',{}).items():
+  for _,ndata in topology.get('nodes',{}).items():
     for intf in ndata.get('interfaces',[]):
       vname = intf.get('vlan.name')
       if not vname:

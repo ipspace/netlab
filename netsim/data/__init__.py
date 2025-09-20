@@ -70,9 +70,11 @@ def removed_attributes(data: Box, path: str) -> bool:
 """
 Merge two dictionaries considering removed attributes
 """
-def merge_with_removed_attributes(d_to: Box, d_with: Box) -> Box:
+def merge_with_removed_attributes(d_to: Box, d_with: Box, m_scope: typing.Optional[list] = None) -> Box:
   for k in d_with.keys():
     if k in d_to.get('_removed_attr',[]):
+      continue
+    if m_scope is not None and k not in m_scope:
       continue
     if not k in d_to:
       d_to[k] = d_with[k]
