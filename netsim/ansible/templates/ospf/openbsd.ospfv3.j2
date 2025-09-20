@@ -1,0 +1,47 @@
+{% macro config(ospf_vrf,ospf_data,intf_data) %}
+{%- set areas = intf_data|selectattr('ipv6', 'defined')|map(attribute='ospf.area', default='')|reject('eq', '')|sort|unique %}
+#!/bin/sh
+
+cat <<OSPFD_CONF >/etc/ospf6d.conf
+{% if ospf_data.router_id is defined %}
+router-id {{ ospf_data.router_id }}
+{% endif %}
+spf-delay 1
+spf-holdtime 1
+{% if ospf_data.default is defined %}
+{%   set dfd = ospf_data.default %}
+redistribute default set {{ '{' }} metric {{ dfd.cost or '100' }} type {{ dfd.type.replace('e','') or '1' }} {{ '}' }}
+{% endif %}
+
+{% for a in areas %}
+area {{ a }} {{ '{' }}
+{%   for l in intf_data if l.ospf.area is defined and l.ospf.area is eq a and 'ipv6' in l %}
+    interface {{ l.ifname }} {{ '{ '}} 
+{%     if l.ospf.network_type is defined and l.ospf.network_type == 'point-to-point' %}
+        type p2p
+{%     endif %}
+{%     if l.ospf.passive|default(False) %}
+        passive
+{%     endif %}
+{%     if l.ospf.cost is defined %}
+        metric {{ l.ospf.cost }}
+{%     endif %}
+{%     if l.ospf.timers.hello is defined %}
+        hello-interval {{ l.ospf.timers.hello }}
+{%     endif %}
+{%     if l.ospf.timers.dead is defined %}
+        router-dead-time {{ l.ospf.timers.dead }}
+{%     endif %}
+{%     if l.ospf.priority is defined %}
+        router-priority {{ l.ospf.priority }}
+{%     endif %}
+    {{ '}' }}
+{%   endfor -%} 
+{{ '}' }}
+{% endfor %} 
+OSPFD_CONF
+
+chmod 640 /etc/ospf6d.conf
+rcctl enable ospf6d
+rcctl restart ospf6d
+{% endmacro %}
