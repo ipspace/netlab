@@ -131,7 +131,8 @@ def expand_group_members(
 
     # Simple case: the member belongs to the group objects
     if m_id in g_objects or m_id in g_list:
-      members.append(m_id)
+      if m_id not in members:
+        members.append(m_id)
 
     # Regular expression, identified by a string starting with ~
     elif m_id.startswith('~'):
@@ -152,7 +153,9 @@ def expand_group_members(
           category=log.IncorrectType,
           module='groups')
         continue
-      members.extend(g_match)                     # All good, add re-matched members
+
+      # All good, add new re-matched members
+      members += [ m for m in g_match if m not in members ]
       continue
 
     elif re.search('[\\[\\].*?!]',m_id):            # Using regexp to identify a potential glob pattern
@@ -173,7 +176,9 @@ def expand_group_members(
           category=log.IncorrectType,
           module='groups')
         continue
-      members.extend(g_match)
+
+      # All good, add new wildcard-matched members
+      members += [ m for m in g_match if m not in members ]
 
     elif not g_prune:
       log.error(

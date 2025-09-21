@@ -6,7 +6,7 @@ import typing
 from box import Box
 
 from .. import data
-from ..augment import devices
+from ..augment import devices, groups
 from ..data import global_vars
 from ..data.types import must_be_asn, must_be_list
 from ..data.validate import validate_item
@@ -597,7 +597,7 @@ def process_as_list(topology: Box) -> None:
   if not topology.get('bgp.as_list'):       # Do we have global bgp.as_list setting?
     return                                  # ... nope, no work for me ;))
 
-  if not validate_item(
+  if not validate_item(                     # Do data validation on bgp.as_list
             parent=topology.bgp,
             key='as_list',
             data_type=topology.defaults.bgp.attributes.as_list,
@@ -611,11 +611,23 @@ def process_as_list(topology: Box) -> None:
             enabled_modules=[]):
     return
 
-  if log.pending_errors():
+  if log.pending_errors():                  # Stop processing on validation errors
     return
+
+  # Utility function: expand an as_list element using regexp or wildcard expressions
+  #
+  def expand_element(as_data: Box, asn: str, e_name: str) -> list:
+    return groups.expand_group_members(
+              g_members=as_data[e_name],
+              g_objects=topology.nodes,
+              g_list=[],
+              g_name=e_name,
+              g_type=f'bgp.as_list.{asn}',
+              g_prune=False)
 
   node_data = data.get_empty_box()
   for asn,as_data in topology.bgp.as_list.items():
+    as_data.members = expand_element(as_data,asn,'members')
     for n in as_data.members:
       if 'as' in node_data[n]:
         log.error(
@@ -625,8 +637,11 @@ def process_as_list(topology: Box) -> None:
         continue
       node_data[n]["as"] = asn
 
-    for n in as_data.get('rr',{}):
-      if node_data[n]["as"] != asn:
+    if 'rr' in as_data:
+      as_data.rr = expand_element(as_data,asn,'rr')
+
+    for n in as_data.get('rr',[]):
+      if node_data.get(f'{n}.as',None) != asn:
         log.error(
           text=f"Node {n} is specified as route reflector in AS {asn} but is not in member list",
           category=log.IncorrectValue,

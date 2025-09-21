@@ -138,6 +138,7 @@ bgp:
   rr_list: [ s1, s2 ]
 ```
 
+(bgp-aslist)=
 When building a more complex lab with multiple autonomous systems, you might want to use **bgp.as_list** -- a global parameter that specifies a dictionary of autonomous systems. Every autonomous system in the **bgp.as_list** could have these elements:
 
 * **members** (mandatory) -- list of nodes within the autonomous system.
@@ -145,7 +146,8 @@ When building a more complex lab with multiple autonomous systems, you might wan
 * **name** (optional) -- a name for the autonomous system that will be used in topology and BGP graphs.
 
 ```{tip}
-You can override the **‌bgp.as_list** settings with the node attributes.
+* The elements of the **‌members** and **‌rr** lists can be wildcard- or regular expressions (see [group members](groups-members) for more details)
+* You can override the **‌bgp.as_list** settings with the node attributes.
 ```
 
 For example, use the following configuration to build a core network connected to two external autonomous systems:
@@ -154,13 +156,15 @@ For example, use the following configuration to build a core network connected t
 bgp:
   as_list:
     65000:
-      members: [ rr1, rr2, pe1, pe2 ]
-      rr: [ rr1, rr2 ]
+      members: [ rr*, pe* ]
+      rr: [ rr* ]
       name: core
     65001:
       members: [ e1 ]
     65002:
       members: [ e2 ]
+
+nodes: [ rr1, rr2, pe1, pe2, e1, e2 ]
 ``` 
 
 ## Advanced Global Configuration Parameters
