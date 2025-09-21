@@ -59,13 +59,9 @@ class REPORT(_TopologyOutput):
   def write(self, topo: Box) -> None:
     global EXTRA_PATH
     EXTRA_PATH = _files.get_search_path("reports")
-    outfile = self.settings.filename or '-'
-    modname = type(self).__name__
-
-    if hasattr(self,'filenames'):
-      outfile = self.filenames[0]
-      if len(self.filenames) > 1:
-        log.error('Extra output filename(s) ignored: %s' % str(self.filenames[1:]),log.IncorrectValue,modname)
+    outfile = self.select_output_file('-')
+    if outfile is None:
+      return
 
     r_collect = ""
     for fmt in self.format:

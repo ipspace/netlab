@@ -17,14 +17,11 @@ class YAML(_TopologyOutput):
   DESCRIPTION :str = 'Inspect transformed data in YAML format'
 
   def write(self, topo: Box) -> None:
-    outfile = self.settings.get('filename',None) or '-'
+    outfile = self.select_output_file('-')
+    if outfile is None:
+      return
+
     modname = type(self).__name__
-
-    if hasattr(self,'filenames'):
-      outfile = self.filenames[0]
-      if len(self.filenames) > 1:
-        log.error('Extra output filename(s) ignored: %s' % str(self.filenames[1:]),log.IncorrectValue,modname)
-
     cleantopo: typing.Any = topology.cleanup_topology(topo)
     cleantopo._netlab_version = __version__
     if outfile == 'netlab.snapshot.yml':
