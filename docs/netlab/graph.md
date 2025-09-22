@@ -1,7 +1,9 @@
 (netlab-graph)=
-# Creating Physical or BGP Topology Graphs
+# Creating Topology, BGP, or IS-IS Graphs
 
-**netlab graph** command creates a graph description in [Graphviz](https://graphviz.org/) or [D2](https://d2lang.com/) format from the transformed lab topology data (usually stored in `netlab.snapshot.pickle`) created by **netlab create** command. It's replicating the functionality of **netlab create -o graph:_name_** command with a more convenient user interface. 
+**netlab graph** command creates a graph description in [Graphviz](https://graphviz.org/) or [D2](https://d2lang.com/) format from the transformed lab topology data (usually stored in `netlab.snapshot.pickle`) created by **netlab create** command. 
+
+It replicates the functionality of the **netlab create -o graph:_name_** command with a more convenient user interface. 
 
 ```{note}
 _netlab_ generates the graph description files. You will have to install [Graphviz](https://graphviz.org/download/) or [D2](https://d2lang.com/tour/install) and use them to create the actual graphs in SVG/PNG/JPEG/PDF format.
