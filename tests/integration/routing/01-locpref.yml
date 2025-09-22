@@ -4,7 +4,7 @@ message: |
   has to set node-wide local preference on prefixes received from X1 and
   neighbor-specific local preference on prefixes received from X2.
 
-plugin: [ bgp.policy ]
+plugin: [ bgp.policy, test.vrf_check ]
 module: [ bgp, ospf, routing ]
 
 defaults.sources.extra: [ defaults-ds.yml, ../wait_times.yml, ../warnings.yml ]
@@ -13,30 +13,47 @@ groups:
   probes:
     device: frr
     provider: clab
-    members: [ x1, x2, probe ]
+    members: [ x1, x2, probe, v1, v2, vp ]
+  ebgp:
+    members: [ x1, x2, v1, v2, vp ]
+    module: [ bgp, routing ]
 
 routing.policy:
   lp_17:
     locpref: 17
   lp_42:
     locpref: 42
+  prepend:
+    prepend.count: 1
+
+vrfs:
+  customer:
 
 nodes:
   dut:
+    module: [ bgp, ospf, routing, vrf ]
     bgp.as: 65000
     id: 1
   probe:
     bgp.as: 65000
   x1:
     bgp.as: 65100
-    module: [ bgp ]
     loopback.ipv4: 172.42.42.1/24
     loopback.ipv6: 2001:db8:cafe:42::1/64
   x2:
     bgp.as: 65101
-    module: [ bgp ]
     loopback.ipv4: 172.42.43.1/24
     loopback.ipv6: 2001:db8:cafe:43::1/64
+  v1:
+    bgp.as: 65200
+    bgp.router_id: 10.0.0.200
+    loopback.ipv4: 172.42.29.1/24
+  v2:
+    bgp.as: 65201
+    bgp.router_id: 10.0.0.201
+    loopback.ipv4: 172.42.29.1/24
+  vp:
+    bgp.as: 65202
 
 links:
 - dut:
@@ -47,11 +64,24 @@ links:
   x2:
 - dut-probe
 
+- dut:                                    # The VRF locpref test cannot use IBGP, so we'll
+    vrf: customer                         # ... accept the same prefix from two VRF EBGP neighbors
+    bgp.policy.in: lp_17                  # ... set low local preference on one with shorter AS path
+  v1:
+- dut:
+    vrf: customer
+    bgp.policy.in: lp_42                  # ... and high local preference on one with longer AS path
+  v2:
+    bgp.policy.out: prepend               # ... caused by the prepending on V2
+- dut:
+    vrf: customer
+  vp:                                     # ... and hoping VP gets the prefix advertised by V1
+
 validate:
   ebgp_v4:
     description: Check IPv4 EBGP sessions with DUT
     wait: ebgp_session
-    nodes: [ x1, x2 ]
+    nodes: [ x1, x2, v1, v2, vp ]
     plugin: bgp_neighbor(node.bgp.neighbors,'dut')
 
   ibgp_v4:
@@ -119,3 +149,14 @@ validate:
     wait: bgp_scan_time
     nodes: [ probe ]
     plugin: bgp_prefix(nodes.x2.loopback.ipv6,af='ipv6',locpref=42)
+
+  vrf_v4_pfx:
+    description: Check for VRF prefix originated by V1/V2 on VP
+    wait: bgp_scan_time
+    nodes: [ vp ]
+    plugin: bgp_prefix(nodes.v1.loopback.ipv4)
+
+  vrf_v4_aspath:
+    description: Check for the AS path of the V1/V2 prefix preferred by DUT
+    nodes: [ vp ]
+    plugin: bgp_prefix(nodes.v1.loopback.ipv4,aspath='65000 65201 65201')
