@@ -25,12 +25,12 @@
 {% macro suite_result(t_data,cnt,txt,wcnt_name = '',show_final = False) %}
 {%   set warning = ('warning_' + (wcnt_name or cnt)) in t_data._count %}
 {%   set pass_mark = 
-       cnt not in t_data.count and not show_final or
+       cnt not in t_data.count|default('') and not show_final or
        show_final and 'pass' in t_data._count and cnt not in t_data._count and 'caveat' not in t_data._count %}
 {%   set caveat = show_final and 'caveat' in t_data._count %}
 <td class="{{ 'center' if pass_mark else 'left' }}">{%
   if cnt in t_data._count or caveat
-  %}{% set has_data = t_data._count[cnt] %}{% 
+  %}{% set has_data = cnt in t_data._count and t_data._count[cnt] %}{% 
     if has_data %}{{ t_data._count[cnt] }} {{ txt }}{% endif %}{% 
     if show_final and 'caveat' in t_data._count 
   %}{% if has_data %}, {% endif %}{{ t_data._count.caveat }} caveat(s){% endif %}{%
@@ -109,10 +109,10 @@
     <td class='center'>{{ t_data._version or '1.9.4' }}</td>
 {%       endif %}
 {%       for kw in ['timestamp','image'] if kw in _columns %}
-    <td>{{ t_data['_'+kw] or '' }}</td>
+    <td>{{ t_data['_'+kw]|default('') }}</td>
 {%       endfor %}
 {%     endif %}
-{%     if 'caveat' in t_data or t_data.validate == 'warning' %}
+{%     if 'caveat' in t_data or t_data['validate']|default('') == 'warning' %}
   </tr>
   <tr>
     <td colspan='5' class='caveat'>

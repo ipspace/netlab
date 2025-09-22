@@ -56,16 +56,22 @@ def remap_summary(results: Box, remap: Box, path: str) -> None:
         continue
 
       data = data[path]
+      supported = False
       for test,test_data in data.items():
         if test in remap.tests:
           dev_key = f'{device}/{platform}'
           log_path = f"{dev_key}/{path.replace('.','/').replace('#','.')}/{test}.yml"
           summary = summary_results(test_data,log_path)
           remap.results[dev_key][test] = summary
+          if summary.result != 'unsupported':
+            supported = True
           if 'passed' in summary:
             increase_counter(remap,'pass')
           else:
             increase_counter(remap,summary.result)
+
+      if not supported:
+        remap.results.pop(dev_key)
 
 def remap_batches(remap: Box) -> None:
   test_keys = list(remap.tests.keys())
