@@ -44,7 +44,7 @@ def set_format_tags(data: dict) -> None:
 def create_html_page(
       args: argparse.Namespace,
       j2: str,
-      data: Box,
+      data: dict,
       output_fname: str,
       output_dir: str = '_html' ) -> None:
   j2_path = os.path.abspath(os.path.dirname('__file__')) + '/_reports'
@@ -58,8 +58,8 @@ def create_html_page(
 
 def create_recursive_html(
       args: argparse.Namespace,
-      results: Box,
-      topology: Box,
+      results: dict,
+      topology: dict,
       template: str = 'results',
       recursive: bool = True,
       limit: typing.Optional[str] = None) -> None:
@@ -70,7 +70,7 @@ def create_recursive_html(
       continue
     if limit and item not in limit and limit != '*':
       continue
-    path = i_data._path.replace('/','-').replace('#','.')
+    path = i_data['_path'].replace('/','-').replace('#','.')
     topology['results'] = i_data
     create_html_page(args,f'{template}.html.j2',topology,path+".html")
     if recursive:
@@ -99,7 +99,9 @@ def create(
       topology.no_tests[d_name].description = d_data.description
 
   topo_dict = topology.to_dict()
-  topo_dict['results'] = results.to_dict()
+  results_dict = results.to_dict()
+  coverage_dict = coverage.to_dict()
+  topo_dict['results'] = results_dict
   create_html_page(
     args,
     'index.html.j2',
@@ -107,7 +109,7 @@ def create(
     'index.html',
     output_dir='.')
   if not args.coverage:
-    create_recursive_html(args,results,topo_dict,limit=args.device)
+    create_recursive_html(args,results_dict,topo_dict,limit=args.device)
   
   if not args.device:
-    create_recursive_html(args,coverage,topo_dict,template='coverage',recursive=False,limit=args.coverage)
+    create_recursive_html(args,coverage_dict,topo_dict,template='coverage',recursive=False,limit=args.coverage)
