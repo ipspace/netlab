@@ -6,11 +6,13 @@ message: |
   neighbor-specific local preference on prefixes received from X2.
 plugin:
 - bgp.policy
+- test.vrf_check
 - multilab
 module:
 - routing
 - ospf
 - bgp
+- vrf
 defaults:
   devices:
     eos:
@@ -62,6 +64,8 @@ defaults:
           - router
           - bridge
           mgmt_vrf: true
+          generate_mac:
+          - ethernet
         bfd: {}
         dhcp:
           client:
@@ -195,7 +199,7 @@ defaults:
             INTFTYPE: et
             CLAB_MGMT_VRF: management
         mgmt_if: Management0
-        image: ceos:4.33.1F
+        image: ceos:4.34.2F
         group_vars:
           ansible_user: admin
           ansible_ssh_pass: admin
@@ -268,6 +272,8 @@ defaults:
           roles:
           - host
           - router
+          generate_mac:
+          - svi
         bfd: {}
         evpn:
           irb: true
@@ -1370,6 +1376,18 @@ defaults:
         ansible_user: vagrant
         ansible_ssh_pass: vagrant
         ansible_become_password: vagrant
+      clab:
+        group_vars:
+          ansible_ssh_pass: admin
+          ansible_user: admin
+          ansible_become_password: admin
+          netlab_check_retries: 50
+        image: vrnetlab/cisco_c8000v:17.13.01a
+        node:
+          kind: cisco_c8000v
+        interface:
+          name: eth{ifindex-1}
+        build: https://containerlab.dev/manual/kinds/vr-c8000v/
       role: router
       routing:
         _rm_per_af: true
@@ -1380,17 +1398,6 @@ defaults:
       interface_name: GigabitEthernet{ifindex}
       ifindex_offset: 2
       virtualbox: {}
-      clab:
-        group_vars:
-          ansible_ssh_pass: admin
-          ansible_user: admin
-          netlab_check_retries: 50
-        image: vrnetlab/vr-c8000v:17.13.01a
-        node:
-          kind: cisco_c8000v
-        interface:
-          name: eth{ifindex-1}
-        build: https://containerlab.dev/manual/kinds/vr-c8000v/
       node:
         min_mtu: 1500
       libvirt:
@@ -1566,6 +1573,18 @@ defaults:
         ansible_user: vagrant
         ansible_ssh_pass: vagrant
         ansible_become_password: vagrant
+      clab:
+        group_vars:
+          ansible_ssh_pass: admin
+          ansible_user: admin
+          ansible_become_password: admin
+          netlab_check_retries: 50
+        image: vrnetlab/cisco_csr1000v:17.03.08
+        node:
+          kind: cisco_csr1000v
+        interface:
+          name: eth{ifindex-1}
+        build: https://containerlab.dev/manual/kinds/vr-csr/
       role: router
       routing:
         _rm_per_af: true
@@ -1577,17 +1596,6 @@ defaults:
       ifindex_offset: 2
       virtualbox:
         image: cisco/csr1000v
-      clab:
-        group_vars:
-          ansible_ssh_pass: admin
-          ansible_user: admin
-          netlab_check_retries: 50
-        image: vrnetlab/cisco_csr1000v:17.03.08
-        node:
-          kind: cisco_csr1000v
-        interface:
-          name: eth{ifindex-1}
-        build: https://containerlab.dev/manual/kinds/vr-csr/
       node:
         min_mtu: 1500
       libvirt:
@@ -1912,6 +1920,19 @@ defaults:
         netlab_initial: always
         netlab_ssh_args: -o KexAlgorithms=+diffie-hellman-group-exchange-sha1 -o
           PubkeyAcceptedKeyTypes=ssh-rsa -o HostKeyAlgorithms=+ssh-rsa
+      clab:
+        group_vars:
+          ansible_ssh_pass: admin
+          ansible_user: admin
+          ansible_become_password: admin
+          netlab_check_retries: 20
+          netlab_device_type: iol
+        interface:
+          name: Ethernet{ifindex // 4}/{ifindex % 4}
+        build: https://containerlab.dev/manual/kinds/cisco_iol/
+        image: vrnetlab/cisco_iol:17.16.01a
+        node:
+          kind: cisco_iol
       role: router
       routing:
         _rm_per_af: true
@@ -1920,19 +1941,6 @@ defaults:
       graphite:
         icon: router
       interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
-      clab:
-        group_vars:
-          ansible_user: admin
-          ansible_ssh_pass: admin
-          ansible_become_password: admin
-          netlab_device_type: iol
-          netlab_check_retries: 20
-        interface:
-          name: Ethernet{ifindex // 4}/{ifindex % 4}
-        build: https://containerlab.dev/manual/kinds/cisco_iol/
-        image: vrnetlab/cisco_iol:17.16.01a
-        node:
-          kind: cisco_iol
     ioll2:
       features:
         bgp:
@@ -1986,6 +1994,9 @@ defaults:
           min_mtu: 68
           min_phy_mtu: 1501
           max_mtu: 1500
+          generate_mac:
+          - ethernet
+          - svi
         isis:
           circuit_type: true
           import:
@@ -2102,21 +2113,13 @@ defaults:
         netlab_initial: always
         netlab_ssh_args: -o KexAlgorithms=+diffie-hellman-group-exchange-sha1 -o
           PubkeyAcceptedKeyTypes=ssh-rsa -o HostKeyAlgorithms=+ssh-rsa
-      role: router
-      routing:
-        _rm_per_af: true
-      external:
-        image: none
-      graphite:
-        icon: router
-      interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
       clab:
         group_vars:
-          ansible_user: admin
           ansible_ssh_pass: admin
+          ansible_user: admin
           ansible_become_password: admin
-          netlab_device_type: ioll2
           netlab_check_retries: 20
+          netlab_device_type: ioll2
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         build: https://containerlab.dev/manual/kinds/cisco_iol/
@@ -2125,6 +2128,14 @@ defaults:
           kind: cisco_iol
           type: l2
         mtu: 1500
+      role: router
+      routing:
+        _rm_per_af: true
+      external:
+        image: none
+      graphite:
+        icon: router
+      interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
       lag_interface_name: Port-channel{lag.ifindex}
     iosv:
       features:
@@ -2287,6 +2298,18 @@ defaults:
         ansible_user: vagrant
         ansible_ssh_pass: vagrant
         ansible_become_password: vagrant
+      clab:
+        group_vars:
+          ansible_ssh_pass: admin
+          ansible_user: admin
+          ansible_become_password: admin
+          netlab_check_retries: 50
+        image: vrnetlab/cisco_vios:15.9.3
+        node:
+          kind: linux
+        interface:
+          name: eth{ifindex}
+        build: https://github.com/srl-labs/vrnetlab/tree/master/vios
       role: router
       routing:
         _rm_per_af: true
@@ -2301,17 +2324,6 @@ defaults:
         create_template: iosv.xml.j2
       virtualbox:
         image: cisco/iosv
-      clab:
-        group_vars:
-          ansible_ssh_pass: admin
-          ansible_user: admin
-          netlab_check_retries: 50
-        image: vrnetlab/cisco_vios:15.9.3
-        node:
-          kind: linux
-        interface:
-          name: eth{ifindex}
-        build: https://github.com/srl-labs/vrnetlab/tree/master/vios
     iosvl2:
       features:
         bgp:
@@ -2366,6 +2378,9 @@ defaults:
           min_mtu: 68
           max_mtu: 4700
           min_phy_mtu: 1500
+          generate_mac:
+          - ethernet
+          - svi
         isis:
           circuit_type: true
           import:
@@ -2485,6 +2500,18 @@ defaults:
         ansible_user: vagrant
         ansible_ssh_pass: vagrant
         ansible_become_password: vagrant
+      clab:
+        group_vars:
+          ansible_ssh_pass: admin
+          ansible_user: admin
+          ansible_become_password: admin
+          netlab_check_retries: 50
+        image: vrnetlab/cisco_viosl2:15.2
+        node:
+          kind: linux
+        interface:
+          name: eth{ifindex}
+        build: https://github.com/srl-labs/vrnetlab/tree/master/viosl2
       role: router
       routing:
         _rm_per_af: true
@@ -2499,17 +2526,6 @@ defaults:
         create_template: iosv.xml.j2
       virtualbox:
         image: cisco/iosv
-      clab:
-        group_vars:
-          ansible_ssh_pass: admin
-          ansible_user: admin
-          netlab_check_retries: 50
-        image: vrnetlab/cisco_viosl2:15.2.2020
-        node:
-          kind: linux
-        interface:
-          name: eth{ifindex}
-        build: https://github.com/srl-labs/vrnetlab/tree/master/viosl2
       lag_interface_name: Port-channel{lag.ifindex}
     iosxr:
       description: Cisco IOS XRv
@@ -2677,6 +2693,8 @@ defaults:
             unnumbered: true
           ipv6:
             lla: true
+          generate_mac:
+          - ethernet
         bfd: {}
         bgp: {}
         eigrp: {}
@@ -2917,10 +2935,12 @@ defaults:
         min_tx: 100
         min_rx: 100
       clab:
-        image: ghcr.io/nokia/srlinux:25.3.3
+        image: ghcr.io/nokia/srlinux:25.7.2
         node:
           kind: srl
-          type: ixrd2
+          type: ixr-d2
+          config_templates:
+            hosts: /etc/hosts
         interface:
           name: e1-{ifindex}
         group_vars:
@@ -4228,6 +4248,7 @@ defaults:
         type: dict
         _keytype: int
         _subtype:
+          name: str
           members:
             type: list
             _subtype: node_id
@@ -4235,6 +4256,7 @@ defaults:
           rr:
             type: list
             _subtype: node_id
+      vrf_aware: {}
     ebgp_role: external
     advertise_roles:
     - stub
@@ -4599,6 +4621,10 @@ defaults:
           style:
             border-radius: 8
             font-size: 20
+        container:
+          style:
+            fill: '#e8e8e8'
+            stroke: '#c0c0c0'
         ibgp:
           style:
             stroke: '#613913'
@@ -4631,6 +4657,24 @@ defaults:
             shape: arrow
           target-arrowhead:
             shape: arrow
+        level-1:
+          style:
+            stroke: '#fba002'
+            stroke-width: 3
+        level-2:
+          style:
+            stroke: '#9b652f'
+            stroke-width: 4
+        level-1-2:
+          style:
+            stroke: '#d26400'
+            stroke-width: 4
+        title:
+          shape: text
+          near: top-center
+          style:
+            bold: true
+            font-size: 36
         vrf:
           style:
             stroke-dash: 3
@@ -4665,6 +4709,7 @@ defaults:
           bgcolor: '#e8e8e8'
           color: '#c0c0c0'
           fontname: Verdana
+          fontsize: 12
           margin: 16
         stub:
           bgcolor: '#d1bfab'
@@ -4685,6 +4730,15 @@ defaults:
           penwidth: 2
         vrf:
           style: dashed
+        level-1:
+          color: '#fba002'
+          penwidth: 1
+        level-2:
+          color: '#9b652f'
+          penwidth: 1.5
+        level-1-2:
+          color: '#d26400'
+          penwidth: 1.5
         graph:
           bgcolor: transparent
           nodesep: 0.5
@@ -4696,15 +4750,23 @@ defaults:
           shape: box
           style: rounded,filled
           fontname: Verdana
+          fontsize: 11
         edge:
           fontname: Verdana
           labelfontsize: 8
           labeldistance: 1.5
+        title:
+          fontname: Verdana
+          fontsize: 16
+          labelloc: t
+          labeljust: l
       style_map:
         color: color
         width: penwidth
         fill: fillcolor
       attributes:
+        global:
+          title: str
         node:
           color: str
           fill: str
@@ -4947,7 +5009,7 @@ defaults:
     mgmt:
       ipv4: 192.168.121.0/24
       start: 100
-      mac: 08-4F-A9-00-00-00
+      mac: CA-FE-00-00-00-00
     l2only:
     vrf_loopback:
       ipv4: 10.2.0.0/24
@@ -5803,18 +5865,18 @@ defaults:
     create: {}
   paths:
     validate:
-    - /home/pipi/netlab_gh/netsim/validate
+    - /home/pipi/net101/tools/netsim/validate
     plugin:
     - /work/netlab_cicd
     - /home/pipi/net101/tools/tests/integration/routing
     - /home/pipi/.netlab
-    - /home/pipi/netlab_gh/netsim/extra
+    - /home/pipi/net101/tools/netsim/extra
     custom:
       dirs:
       - /home/pipi/net101/tools/tests/integration/routing
       - /work/netlab_cicd
       - /home/pipi/.netlab
-      - /home/pipi/netlab_gh/netsim/extra
+      - /home/pipi/net101/tools/netsim/extra
       files:
       - "{{ custom_config + '/' + inventory_hostname + '.' + netlab_device_type +
         '-' + node_provider + '.j2' }}"
@@ -5845,7 +5907,7 @@ defaults:
       - '{{ custom_config }}/deploy.yml'
     deploy:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks
+      - /home/pipi/net101/tools/netsim/ansible/tasks
       tasks_generic:
       - deploy-config/{{ netlab_device_type }}-{{ node_provider }}.yml
       - deploy-config/{{ netlab_device_type }}.yml
@@ -5866,8 +5928,8 @@ defaults:
       - deploy-config/{{ ansible_network_os }}.yml
     templates:
       dirs:
-      - /home/pipi/netlab_gh/netsim/daemons
-      - /home/pipi/netlab_gh/netsim/ansible/templates
+      - /home/pipi/net101/tools/netsim/daemons
+      - /home/pipi/net101/tools/netsim/ansible/templates
     t_files:
       files:
       - '{{config_module}}/{{netlab_device_type}}-{{provider|default(netlab_provider)}}.j2'
@@ -5879,7 +5941,7 @@ defaults:
       - '{{netlab_device_type}}/{{config_module}}.j2'
     ready:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check
+      - /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check
       files:
       - '{{netlab_device_type}}-{{provider|default(netlab_provider)}}.yml'
       - '{{netlab_device_type}}.yml'
@@ -5887,7 +5949,7 @@ defaults:
       - '{{ansible_network_os}}.yml'
     collect:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks/fetch-config
+      - /home/pipi/net101/tools/netsim/ansible/tasks/fetch-config
   ports:
     ssh: 22
     http: 80
@@ -6324,6 +6386,14 @@ defaults:
           - level-1
           - level-2
           - level-1-2
+      vrf:
+        active: bool
+        af:
+          _list_to_dict: true
+          _alt_types:
+          - NoneType
+          ipv4: bool
+          ipv6: bool
       link:
         metric:
           type: int
@@ -6759,6 +6829,12 @@ defaults:
       - reference_bandwidth
       vrf:
         active: bool
+        af:
+          _list_to_dict: true
+          _alt_types:
+          - NoneType
+          ipv4: bool
+          ipv6: bool
         area:
           type: ipv4
           use: id
@@ -6948,6 +7024,12 @@ defaults:
             min_value: 5
             max_value: 600
       vrf:
+        af:
+          _list_to_dict: true
+          _alt_types:
+          - NoneType
+          ipv4: bool
+          ipv6: bool
         active: bool
         timers:
           update:
@@ -7496,6 +7578,7 @@ defaults:
       - mgmt
       - management
       - mgmt_junos
+      node_copy: {}
     warnings:
       inactive: true
     features:
@@ -7596,14 +7679,18 @@ defaults:
     list: []
     user: []
     system: []
-  workdir: /work/netlab_cicd
-  device: frr
   groups:
+    external:
+      device: frr
+      members: []
+      _default_group: true
     all:
       vars:
         netlab_show_config: true
       members: []
       _default_group: true
+  workdir: /work/netlab_cicd
+  device: frr
   plugin:
   - multilab
   _globals:
@@ -7630,6 +7717,7 @@ defaults:
   - routing
   - ospf
   - bgp
+  - vrf
   name: ml_17
 groups:
   probes:
@@ -7638,8 +7726,25 @@ groups:
     - x1
     - x2
     - probe
+    - v1
+    - v2
+    - vp
     node_data:
       provider: clab
+  ebgp:
+    members:
+    - x1
+    - x2
+    - v1
+    - v2
+    - vp
+    module:
+    - bgp
+    - routing
+  external:
+    device: frr
+    members: []
+    _default_group: true
   all:
     vars:
       netlab_show_config: true
@@ -7655,6 +7760,15 @@ groups:
   as65101:
     members:
     - x2
+  as65200:
+    members:
+    - v1
+  as65201:
+    members:
+    - v2
+  as65202:
+    members:
+    - vp
 routing:
   policy:
     lp_17:
@@ -7667,8 +7781,27 @@ routing:
         locpref: 42
       action: permit
       sequence: 10
+    prepend:
+    - set:
+        prepend:
+          count: 1
+      action: permit
+      sequence: 10
+vrfs:
+  customer:
+    id: 1
+    rd: '65000:1'
+    import:
+    - '65000:1'
+    export:
+    - '65000:1'
 nodes:
   dut:
+    module:
+    - routing
+    - ospf
+    - bgp
+    - vrf
     bgp:
       advertise_loopback: true
       community:
@@ -7787,6 +7920,60 @@ nodes:
         area: 0.0.0.0
         passive: false
         network_type: point-to-point
+    - vrf: customer
+      bgp:
+        policy:
+          in: lp_17
+      ipv4: 10.1.0.13/30
+      ipv6: 2001:db8:3:3::1/64
+      linkindex: 4
+      role: external
+      type: p2p
+      name: dut -> v1
+      ifindex: 4
+      ifname: eth4
+      mtu: 1500
+      neighbors:
+      - ipv4: 10.1.0.14/30
+        ipv6: 2001:db8:3:3::2/64
+        ifname: eth1
+        node: v1
+    - vrf: customer
+      bgp:
+        policy:
+          in: lp_42
+      ipv4: 10.1.0.17/30
+      ipv6: 2001:db8:3:4::1/64
+      linkindex: 5
+      role: external
+      type: p2p
+      name: dut -> v2
+      ifindex: 5
+      ifname: eth5
+      mtu: 1500
+      neighbors:
+      - bgp:
+          policy:
+            out: prepend
+        ipv4: 10.1.0.18/30
+        ipv6: 2001:db8:3:4::2/64
+        ifname: eth1
+        node: v2
+    - vrf: customer
+      ipv4: 10.1.0.21/30
+      ipv6: 2001:db8:3:5::1/64
+      linkindex: 6
+      role: external
+      type: p2p
+      name: dut -> vp
+      ifindex: 6
+      ifname: eth6
+      mtu: 1500
+      neighbors:
+      - ipv4: 10.1.0.22/30
+        ipv6: 2001:db8:3:5::2/64
+        ifname: eth1
+        node: vp
     device: frr
     clab:
       kind: linux
@@ -7797,10 +7984,6 @@ nodes:
       - clab_files/dut/daemons:/etc/frr/daemons
       - clab_files/-shared-hosts:/etc/hosts:ro
     box: quay.io/frrouting/frr:10.4.1
-    module:
-    - routing
-    - ospf
-    - bgp
     ospf:
       area: 0.0.0.0
       router_id: 10.0.0.1
@@ -7820,15 +8003,19 @@ nodes:
             locpref: 42
           action: permit
           sequence: 10
+    vrf:
+      as: 65000
     role: router
     mtu: 1500
     provider: clab
     af:
       ipv4: true
       ipv6: true
+      vpnv4: true
+      vpnv6: true
     mgmt:
       ifname: eth0
-      mac: 08:4f:a9:01:00:00
+      mac: ca:fe:00:01:00:00
       ipv4: 192.168.17.101
     hostname: clab-ml_17-dut
     loopback:
@@ -7842,6 +8029,62 @@ nodes:
       ospf:
         area: 0.0.0.0
         passive: false
+    vrfs:
+      customer:
+        id: 1
+        rd: '65000:1'
+        import:
+        - '65000:1'
+        export:
+        - '65000:1'
+        bgp:
+          neighbors:
+          - ifindex: 4
+            name: v1
+            as: 65200
+            type: ebgp
+            ipv4: 10.1.0.14
+            ipv6: 2001:db8:3:3::2
+            activate:
+              ipv4: true
+              ipv6: true
+            _src_vrf: customer
+            policy:
+              in: lp_17
+          - ifindex: 5
+            name: v2
+            as: 65201
+            type: ebgp
+            ipv4: 10.1.0.18
+            ipv6: 2001:db8:3:4::2
+            activate:
+              ipv4: true
+              ipv6: true
+            _src_vrf: customer
+            policy:
+              in: lp_42
+          - ifindex: 6
+            name: vp
+            as: 65202
+            type: ebgp
+            ipv4: 10.1.0.22
+            ipv6: 2001:db8:3:5::2
+            activate:
+              ipv4: true
+              ipv6: true
+            _src_vrf: customer
+          import:
+            connected:
+              auto: true
+          _session_clear:
+          - 10.1.0.14
+          - 2001:db8:3:3::2
+          - 10.1.0.18
+          - 2001:db8:3:4::2
+        af:
+          ipv4: true
+          ipv6: true
+        vrfidx: 100
     config:
     - bgp.policy
   probe:
@@ -7932,7 +8175,7 @@ nodes:
       ipv6: true
     mgmt:
       ifname: eth0
-      mac: 08:4f:a9:02:00:00
+      mac: ca:fe:00:02:00:00
       ipv4: 192.168.17.102
     hostname: clab-ml_17-probe
     loopback:
@@ -7976,8 +8219,6 @@ nodes:
           ipv6: true
       ipv4: true
       ipv6: true
-    module:
-    - bgp
     loopback:
       ipv4: 172.42.42.1/24
       ipv6: 2001:db8:cafe:42::1/64
@@ -8005,6 +8246,9 @@ nodes:
         ipv6: 2001:db8:3::1/64
         ifname: eth1
         node: dut
+    module:
+    - routing
+    - bgp
     device: frr
     clab:
       kind: linux
@@ -8015,6 +8259,8 @@ nodes:
       - clab_files/x1/daemons:/etc/frr/daemons
       - clab_files/-shared-hosts:/etc/hosts:ro
     box: quay.io/frrouting/frr:10.4.1
+    routing:
+      _rm_per_af: true
     id: 3
     role: router
     mtu: 1500
@@ -8024,7 +8270,7 @@ nodes:
       ipv6: true
     mgmt:
       ifname: eth0
-      mac: 08:4f:a9:03:00:00
+      mac: ca:fe:00:03:00:00
       ipv4: 192.168.17.103
     hostname: clab-ml_17-x1
   x2:
@@ -8057,8 +8303,6 @@ nodes:
           ipv6: true
       ipv4: true
       ipv6: true
-    module:
-    - bgp
     loopback:
       ipv4: 172.42.43.1/24
       ipv6: 2001:db8:cafe:43::1/64
@@ -8086,6 +8330,9 @@ nodes:
         ipv6: 2001:db8:3:1::1/64
         ifname: eth2
         node: dut
+    module:
+    - routing
+    - bgp
     device: frr
     clab:
       kind: linux
@@ -8096,6 +8343,8 @@ nodes:
       - clab_files/x2/daemons:/etc/frr/daemons
       - clab_files/-shared-hosts:/etc/hosts:ro
     box: quay.io/frrouting/frr:10.4.1
+    routing:
+      _rm_per_af: true
     id: 4
     role: router
     mtu: 1500
@@ -8105,9 +8354,281 @@ nodes:
       ipv6: true
     mgmt:
       ifname: eth0
-      mac: 08:4f:a9:04:00:00
+      mac: ca:fe:00:04:00:00
       ipv4: 192.168.17.104
     hostname: clab-ml_17-x2
+  v1:
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      next_hop_self: true
+      as: 65200
+      router_id: 10.0.0.200
+      neighbors:
+      - ifindex: 1
+        _vrf: customer
+        name: dut
+        as: 65000
+        type: ebgp
+        ipv4: 10.1.0.13
+        ipv6: 2001:db8:3:3::1
+        activate:
+          ipv4: true
+          ipv6: true
+      ipv4: true
+      ipv6: true
+    loopback:
+      ipv4: 172.42.29.1/24
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv6: 2001:db8:1:5::1/64
+    name: v1
+    interfaces:
+    - ipv4: 10.1.0.14/30
+      ipv6: 2001:db8:3:3::2/64
+      linkindex: 4
+      role: external
+      type: p2p
+      name: v1 -> dut
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - vrf: customer
+        bgp:
+          policy:
+            in: lp_17
+        ipv4: 10.1.0.13/30
+        ipv6: 2001:db8:3:3::1/64
+        ifname: eth4
+        node: dut
+    module:
+    - routing
+    - bgp
+    device: frr
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts:shared
+      binds:
+      - clab_files/v1/daemons:/etc/frr/daemons
+      - clab_files/-shared-hosts:/etc/hosts:ro
+    box: quay.io/frrouting/frr:10.4.1
+    routing:
+      _rm_per_af: true
+    id: 5
+    role: router
+    mtu: 1500
+    provider: clab
+    af:
+      ipv4: true
+      ipv6: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:05:00:00
+      ipv4: 192.168.17.105
+    hostname: clab-ml_17-v1
+  v2:
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      next_hop_self: true
+      as: 65201
+      router_id: 10.0.0.201
+      neighbors:
+      - ifindex: 1
+        _vrf: customer
+        name: dut
+        as: 65000
+        type: ebgp
+        ipv4: 10.1.0.17
+        ipv6: 2001:db8:3:4::1
+        activate:
+          ipv4: true
+          ipv6: true
+        policy:
+          out: prepend
+      ipv4: true
+      ipv6: true
+      _session_clear:
+      - 10.1.0.17
+      - 2001:db8:3:4::1
+    loopback:
+      ipv4: 172.42.29.1/24
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv6: 2001:db8:1:6::1/64
+    name: v2
+    interfaces:
+    - bgp:
+        policy:
+          out: prepend
+      ipv4: 10.1.0.18/30
+      ipv6: 2001:db8:3:4::2/64
+      linkindex: 5
+      role: external
+      type: p2p
+      name: v2 -> dut
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - vrf: customer
+        bgp:
+          policy:
+            in: lp_42
+        ipv4: 10.1.0.17/30
+        ipv6: 2001:db8:3:4::1/64
+        ifname: eth5
+        node: dut
+    module:
+    - routing
+    - bgp
+    device: frr
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts:shared
+      binds:
+      - clab_files/v2/daemons:/etc/frr/daemons
+      - clab_files/-shared-hosts:/etc/hosts:ro
+    box: quay.io/frrouting/frr:10.4.1
+    routing:
+      _rm_per_af: true
+      policy:
+        prepend:
+        - set:
+            prepend:
+              count: 1
+          action: permit
+          sequence: 10
+    id: 6
+    role: router
+    mtu: 1500
+    provider: clab
+    af:
+      ipv4: true
+      ipv6: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:06:00:00
+      ipv4: 192.168.17.106
+    hostname: clab-ml_17-v2
+    config:
+    - bgp.policy
+  vp:
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      next_hop_self: true
+      as: 65202
+      router_id: 10.0.0.7
+      neighbors:
+      - ifindex: 1
+        _vrf: customer
+        name: dut
+        as: 65000
+        type: ebgp
+        ipv4: 10.1.0.21
+        ipv6: 2001:db8:3:5::1
+        activate:
+          ipv4: true
+          ipv6: true
+      ipv4: true
+      ipv6: true
+    name: vp
+    interfaces:
+    - ipv4: 10.1.0.22/30
+      ipv6: 2001:db8:3:5::2/64
+      linkindex: 6
+      role: external
+      type: p2p
+      name: vp -> dut
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - vrf: customer
+        ipv4: 10.1.0.21/30
+        ipv6: 2001:db8:3:5::1/64
+        ifname: eth6
+        node: dut
+    module:
+    - routing
+    - bgp
+    device: frr
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts:shared
+      binds:
+      - clab_files/vp/daemons:/etc/frr/daemons
+      - clab_files/-shared-hosts:/etc/hosts:ro
+    box: quay.io/frrouting/frr:10.4.1
+    routing:
+      _rm_per_af: true
+    id: 7
+    role: router
+    mtu: 1500
+    provider: clab
+    af:
+      ipv4: true
+      ipv6: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:07:00:00
+      ipv4: 192.168.17.107
+    hostname: clab-ml_17-vp
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.7/32
+      ipv6: 2001:db8:1:7::1/64
 links:
 - _linkname: links[1]
   interfaces:
@@ -8171,12 +8692,84 @@ links:
   prefix:
     ipv4: 10.1.0.8/30
     ipv6: 2001:db8:3:2::/64
+- _linkname: links[4]
+  interfaces:
+  - vrf: customer
+    bgp:
+      policy:
+        in: lp_17
+    node: dut
+    ipv4: 10.1.0.13/30
+    ipv6: 2001:db8:3:3::1/64
+    ifindex: 4
+    ifname: eth4
+  - node: v1
+    ipv4: 10.1.0.14/30
+    ipv6: 2001:db8:3:3::2/64
+    ifindex: 1
+    ifname: eth1
+  linkindex: 4
+  role: external
+  node_count: 2
+  type: p2p
+  prefix:
+    ipv4: 10.1.0.12/30
+    ipv6: 2001:db8:3:3::/64
+- _linkname: links[5]
+  interfaces:
+  - vrf: customer
+    bgp:
+      policy:
+        in: lp_42
+    node: dut
+    ipv4: 10.1.0.17/30
+    ipv6: 2001:db8:3:4::1/64
+    ifindex: 5
+    ifname: eth5
+  - bgp:
+      policy:
+        out: prepend
+    node: v2
+    ipv4: 10.1.0.18/30
+    ipv6: 2001:db8:3:4::2/64
+    ifindex: 1
+    ifname: eth1
+  linkindex: 5
+  role: external
+  node_count: 2
+  type: p2p
+  prefix:
+    ipv4: 10.1.0.16/30
+    ipv6: 2001:db8:3:4::/64
+- _linkname: links[6]
+  interfaces:
+  - vrf: customer
+    node: dut
+    ipv4: 10.1.0.21/30
+    ipv6: 2001:db8:3:5::1/64
+    ifindex: 6
+    ifname: eth6
+  - node: vp
+    ipv4: 10.1.0.22/30
+    ipv6: 2001:db8:3:5::2/64
+    ifindex: 1
+    ifname: eth1
+  linkindex: 6
+  role: external
+  node_count: 2
+  type: p2p
+  prefix:
+    ipv4: 10.1.0.20/30
+    ipv6: 2001:db8:3:5::/64
 validate:
 - description: Check IPv4 EBGP sessions with DUT
   wait: 30
   nodes:
   - x1
   - x2
+  - v1
+  - v2
+  - vp
   plugin: bgp_neighbor(node.bgp.neighbors,'dut')
   name: ebgp_v4
 - description: Check IPv4 IBGP sessions with DUT
@@ -8246,6 +8839,17 @@ validate:
   - probe
   plugin: bgp_prefix(nodes.x2.loopback.ipv6,af='ipv6',locpref=42)
   name: locpref_x2_v6
+- description: Check for VRF prefix originated by V1/V2 on VP
+  wait: 5
+  nodes:
+  - vp
+  plugin: bgp_prefix(nodes.v1.loopback.ipv4)
+  name: vrf_v4_pfx
+- description: Check for the AS path of the V1/V2 prefix preferred by DUT
+  nodes:
+  - vp
+  plugin: bgp_prefix(nodes.v1.loopback.ipv4,aspath='65000 65201 65201')
+  name: vrf_v4_aspath
 input:
 - /home/pipi/net101/tools/tests/integration/routing/01-locpref.yml
 - /home/pipi/net101/tools/tests/integration/routing/defaults-ds.yml
@@ -8275,7 +8879,7 @@ addressing:
   mgmt:
     ipv4: 192.168.17.0/24
     start: 100
-    mac: 08-4F-A9-00-00-00
+    mac: CA-FE-00-00-00-00
     _network: nl_mgmt_17
     _bridge: nl_mgmt_17
     prefix: 24
@@ -8296,8 +8900,10 @@ bgp:
   next_hop_self: true
 ospf:
   area: 0.0.0.0
+vrf:
+  as: 65000
 prefix:
   any:
     ipv4: 0.0.0.0/0
     ipv6: ::/0
-_netlab_version: '25.07'
+_netlab_version: 25.09-post1

@@ -6,11 +6,13 @@ message: |
   neighbor-specific local preference on prefixes received from X2.
 plugin:
 - bgp.policy
+- test.vrf_check
 - multilab
 module:
 - routing
 - ospf
 - bgp
+- vrf
 defaults:
   devices:
     eos:
@@ -4254,6 +4256,7 @@ defaults:
           rr:
             type: list
             _subtype: node_id
+      vrf_aware: {}
     ebgp_role: external
     advertise_roles:
     - stub
@@ -7575,6 +7578,7 @@ defaults:
       - mgmt
       - management
       - mgmt_junos
+      node_copy: {}
     warnings:
       inactive: true
     features:
@@ -7675,14 +7679,18 @@ defaults:
     list: []
     user: []
     system: []
-  workdir: /work/netlab_cicd
-  device: srlinux
   groups:
+    external:
+      device: frr
+      members: []
+      _default_group: true
     all:
       vars:
         netlab_show_config: true
       members: []
       _default_group: true
+  workdir: /work/netlab_cicd
+  device: srlinux
   plugin:
   - multilab
   _globals:
@@ -7709,6 +7717,7 @@ defaults:
   - routing
   - ospf
   - bgp
+  - vrf
   name: ml_17
 groups:
   probes:
@@ -7717,8 +7726,25 @@ groups:
     - x1
     - x2
     - probe
+    - v1
+    - v2
+    - vp
     node_data:
       provider: clab
+  ebgp:
+    members:
+    - x1
+    - x2
+    - v1
+    - v2
+    - vp
+    module:
+    - bgp
+    - routing
+  external:
+    device: frr
+    members: []
+    _default_group: true
   all:
     vars:
       netlab_show_config: true
@@ -7734,6 +7760,15 @@ groups:
   as65101:
     members:
     - x2
+  as65200:
+    members:
+    - v1
+  as65201:
+    members:
+    - v2
+  as65202:
+    members:
+    - vp
 routing:
   policy:
     lp_17:
@@ -7746,8 +7781,27 @@ routing:
         locpref: 42
       action: permit
       sequence: 10
+    prepend:
+    - set:
+        prepend:
+          count: 1
+      action: permit
+      sequence: 10
+vrfs:
+  customer:
+    id: 1
+    rd: '65000:1'
+    import:
+    - '65000:1'
+    export:
+    - '65000:1'
 nodes:
   dut:
+    module:
+    - routing
+    - ospf
+    - bgp
+    - vrf
     bgp:
       advertise_loopback: true
       community:
@@ -7869,6 +7923,63 @@ nodes:
         area: 0.0.0.0
         passive: false
         network_type: point-to-point
+    - vrf: customer
+      bgp:
+        policy:
+          in: lp_17
+      ipv4: 10.1.0.13/30
+      ipv6: 2001:db8:3:3::1/64
+      linkindex: 4
+      role: external
+      type: p2p
+      name: dut -> v1
+      ifindex: 4
+      ifname: ethernet-1/4
+      clab:
+        name: e1-4
+      neighbors:
+      - ipv4: 10.1.0.14/30
+        ipv6: 2001:db8:3:3::2/64
+        ifname: eth1
+        node: v1
+    - vrf: customer
+      bgp:
+        policy:
+          in: lp_42
+      ipv4: 10.1.0.17/30
+      ipv6: 2001:db8:3:4::1/64
+      linkindex: 5
+      role: external
+      type: p2p
+      name: dut -> v2
+      ifindex: 5
+      ifname: ethernet-1/5
+      clab:
+        name: e1-5
+      neighbors:
+      - bgp:
+          policy:
+            out: prepend
+        ipv4: 10.1.0.18/30
+        ipv6: 2001:db8:3:4::2/64
+        ifname: eth1
+        node: v2
+    - vrf: customer
+      ipv4: 10.1.0.21/30
+      ipv6: 2001:db8:3:5::1/64
+      linkindex: 6
+      role: external
+      type: p2p
+      name: dut -> vp
+      ifindex: 6
+      ifname: ethernet-1/6
+      clab:
+        name: e1-6
+      neighbors:
+      - ipv4: 10.1.0.22/30
+        ipv6: 2001:db8:3:5::2/64
+        ifname: eth1
+        node: vp
     device: srlinux
     clab:
       kind: srl
@@ -7878,20 +7989,20 @@ nodes:
       binds:
       - clab_files/dut/hosts:/etc/hosts
     box: ghcr.io/nokia/srlinux:25.7.2
-    module:
-    - routing
-    - ospf
-    - bgp
     ospf:
       area: 0.0.0.0
       router_id: 10.0.0.1
       af:
         ipv4: true
         ipv6: true
+    vrf:
+      as: 65000
     provider: clab
     af:
       ipv4: true
       ipv6: true
+      vpnv4: true
+      vpnv6: true
     mgmt:
       ifname: mgmt0
       mac: ca:fe:00:01:00:00
@@ -7908,6 +8019,62 @@ nodes:
       ospf:
         area: 0.0.0.0
         passive: false
+    vrfs:
+      customer:
+        id: 1
+        rd: '65000:1'
+        import:
+        - '65000:1'
+        export:
+        - '65000:1'
+        bgp:
+          neighbors:
+          - ifindex: 4
+            name: v1
+            as: 65200
+            type: ebgp
+            ipv4: 10.1.0.14
+            ipv6: 2001:db8:3:3::2
+            activate:
+              ipv4: true
+              ipv6: true
+            _src_vrf: customer
+            policy:
+              in: lp_17
+          - ifindex: 5
+            name: v2
+            as: 65201
+            type: ebgp
+            ipv4: 10.1.0.18
+            ipv6: 2001:db8:3:4::2
+            activate:
+              ipv4: true
+              ipv6: true
+            _src_vrf: customer
+            policy:
+              in: lp_42
+          - ifindex: 6
+            name: vp
+            as: 65202
+            type: ebgp
+            ipv4: 10.1.0.22
+            ipv6: 2001:db8:3:5::2
+            activate:
+              ipv4: true
+              ipv6: true
+            _src_vrf: customer
+          import:
+            connected:
+              auto: true
+          _session_clear:
+          - 10.1.0.14
+          - 2001:db8:3:3::2
+          - 10.1.0.18
+          - 2001:db8:3:4::2
+        af:
+          ipv4: true
+          ipv6: true
+        vrfidx: 100
     routing:
       policy:
         lp_17:
@@ -8054,8 +8221,6 @@ nodes:
           ipv6: true
       ipv4: true
       ipv6: true
-    module:
-    - bgp
     loopback:
       ipv4: 172.42.42.1/24
       ipv6: 2001:db8:cafe:42::1/64
@@ -8083,6 +8248,9 @@ nodes:
         ipv6: 2001:db8:3::1/64
         ifname: ethernet-1/1
         node: dut
+    module:
+    - routing
+    - bgp
     device: frr
     clab:
       kind: linux
@@ -8093,6 +8261,8 @@ nodes:
       - clab_files/x1/daemons:/etc/frr/daemons
       - clab_files/-shared-hosts:/etc/hosts:ro
     box: quay.io/frrouting/frr:10.4.1
+    routing:
+      _rm_per_af: true
     id: 3
     role: router
     mtu: 1500
@@ -8134,8 +8304,6 @@ nodes:
           ipv6: true
       ipv4: true
       ipv6: true
-    module:
-    - bgp
     loopback:
       ipv4: 172.42.43.1/24
       ipv6: 2001:db8:cafe:43::1/64
@@ -8163,6 +8331,9 @@ nodes:
         ipv6: 2001:db8:3:1::1/64
         ifname: ethernet-1/2
         node: dut
+    module:
+    - routing
+    - bgp
     device: frr
     clab:
       kind: linux
@@ -8173,6 +8344,8 @@ nodes:
       - clab_files/x2/daemons:/etc/frr/daemons
       - clab_files/-shared-hosts:/etc/hosts:ro
     box: quay.io/frrouting/frr:10.4.1
+    routing:
+      _rm_per_af: true
     id: 4
     role: router
     mtu: 1500
@@ -8184,6 +8357,275 @@ nodes:
       mac: ca:fe:00:04:00:00
       ipv4: 192.168.17.104
     hostname: clab-ml_17-x2
+  v1:
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      next_hop_self: true
+      as: 65200
+      router_id: 10.0.0.200
+      neighbors:
+      - ifindex: 1
+        _vrf: customer
+        name: dut
+        as: 65000
+        type: ebgp
+        ipv4: 10.1.0.13
+        ipv6: 2001:db8:3:3::1
+        activate:
+          ipv4: true
+          ipv6: true
+      ipv4: true
+      ipv6: true
+    loopback:
+      ipv4: 172.42.29.1/24
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv6: 2001:db8:1:5::1/64
+    name: v1
+    interfaces:
+    - ipv4: 10.1.0.14/30
+      ipv6: 2001:db8:3:3::2/64
+      linkindex: 4
+      role: external
+      type: p2p
+      name: v1 -> dut
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - vrf: customer
+        bgp:
+          policy:
+            in: lp_17
+        ipv4: 10.1.0.13/30
+        ipv6: 2001:db8:3:3::1/64
+        ifname: ethernet-1/4
+        node: dut
+    module:
+    - routing
+    - bgp
+    device: frr
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts:shared
+      binds:
+      - clab_files/v1/daemons:/etc/frr/daemons
+      - clab_files/-shared-hosts:/etc/hosts:ro
+    box: quay.io/frrouting/frr:10.4.1
+    routing:
+      _rm_per_af: true
+    id: 5
+    role: router
+    mtu: 1500
+    af:
+      ipv4: true
+      ipv6: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:05:00:00
+      ipv4: 192.168.17.105
+    hostname: clab-ml_17-v1
+  v2:
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      next_hop_self: true
+      as: 65201
+      router_id: 10.0.0.201
+      neighbors:
+      - ifindex: 1
+        _vrf: customer
+        name: dut
+        as: 65000
+        type: ebgp
+        ipv4: 10.1.0.17
+        ipv6: 2001:db8:3:4::1
+        activate:
+          ipv4: true
+          ipv6: true
+        policy:
+          out: prepend
+      ipv4: true
+      ipv6: true
+      _session_clear:
+      - 10.1.0.17
+      - 2001:db8:3:4::1
+    loopback:
+      ipv4: 172.42.29.1/24
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv6: 2001:db8:1:6::1/64
+    name: v2
+    interfaces:
+    - bgp:
+        policy:
+          out: prepend
+      ipv4: 10.1.0.18/30
+      ipv6: 2001:db8:3:4::2/64
+      linkindex: 5
+      role: external
+      type: p2p
+      name: v2 -> dut
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - vrf: customer
+        bgp:
+          policy:
+            in: lp_42
+        ipv4: 10.1.0.17/30
+        ipv6: 2001:db8:3:4::1/64
+        ifname: ethernet-1/5
+        node: dut
+    module:
+    - routing
+    - bgp
+    device: frr
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts:shared
+      binds:
+      - clab_files/v2/daemons:/etc/frr/daemons
+      - clab_files/-shared-hosts:/etc/hosts:ro
+    box: quay.io/frrouting/frr:10.4.1
+    routing:
+      _rm_per_af: true
+      policy:
+        prepend:
+        - set:
+            prepend:
+              count: 1
+          action: permit
+          sequence: 10
+    id: 6
+    role: router
+    mtu: 1500
+    af:
+      ipv4: true
+      ipv6: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:06:00:00
+      ipv4: 192.168.17.106
+    hostname: clab-ml_17-v2
+    config:
+    - bgp.policy
+  vp:
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      next_hop_self: true
+      as: 65202
+      router_id: 10.0.0.7
+      neighbors:
+      - ifindex: 1
+        _vrf: customer
+        name: dut
+        as: 65000
+        type: ebgp
+        ipv4: 10.1.0.21
+        ipv6: 2001:db8:3:5::1
+        activate:
+          ipv4: true
+          ipv6: true
+      ipv4: true
+      ipv6: true
+    name: vp
+    interfaces:
+    - ipv4: 10.1.0.22/30
+      ipv6: 2001:db8:3:5::2/64
+      linkindex: 6
+      role: external
+      type: p2p
+      name: vp -> dut
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - vrf: customer
+        ipv4: 10.1.0.21/30
+        ipv6: 2001:db8:3:5::1/64
+        ifname: ethernet-1/6
+        node: dut
+    module:
+    - routing
+    - bgp
+    device: frr
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts:shared
+      binds:
+      - clab_files/vp/daemons:/etc/frr/daemons
+      - clab_files/-shared-hosts:/etc/hosts:ro
+    box: quay.io/frrouting/frr:10.4.1
+    routing:
+      _rm_per_af: true
+    id: 7
+    role: router
+    mtu: 1500
+    af:
+      ipv4: true
+      ipv6: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:07:00:00
+      ipv4: 192.168.17.107
+    hostname: clab-ml_17-vp
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.7/32
+      ipv6: 2001:db8:1:7::1/64
 links:
 - _linkname: links[1]
   interfaces:
@@ -8247,12 +8689,84 @@ links:
   prefix:
     ipv4: 10.1.0.8/30
     ipv6: 2001:db8:3:2::/64
+- _linkname: links[4]
+  interfaces:
+  - vrf: customer
+    bgp:
+      policy:
+        in: lp_17
+    node: dut
+    ipv4: 10.1.0.13/30
+    ipv6: 2001:db8:3:3::1/64
+    ifindex: 4
+    ifname: ethernet-1/4
+  - node: v1
+    ipv4: 10.1.0.14/30
+    ipv6: 2001:db8:3:3::2/64
+    ifindex: 1
+    ifname: eth1
+  linkindex: 4
+  role: external
+  node_count: 2
+  type: p2p
+  prefix:
+    ipv4: 10.1.0.12/30
+    ipv6: 2001:db8:3:3::/64
+- _linkname: links[5]
+  interfaces:
+  - vrf: customer
+    bgp:
+      policy:
+        in: lp_42
+    node: dut
+    ipv4: 10.1.0.17/30
+    ipv6: 2001:db8:3:4::1/64
+    ifindex: 5
+    ifname: ethernet-1/5
+  - bgp:
+      policy:
+        out: prepend
+    node: v2
+    ipv4: 10.1.0.18/30
+    ipv6: 2001:db8:3:4::2/64
+    ifindex: 1
+    ifname: eth1
+  linkindex: 5
+  role: external
+  node_count: 2
+  type: p2p
+  prefix:
+    ipv4: 10.1.0.16/30
+    ipv6: 2001:db8:3:4::/64
+- _linkname: links[6]
+  interfaces:
+  - vrf: customer
+    node: dut
+    ipv4: 10.1.0.21/30
+    ipv6: 2001:db8:3:5::1/64
+    ifindex: 6
+    ifname: ethernet-1/6
+  - node: vp
+    ipv4: 10.1.0.22/30
+    ipv6: 2001:db8:3:5::2/64
+    ifindex: 1
+    ifname: eth1
+  linkindex: 6
+  role: external
+  node_count: 2
+  type: p2p
+  prefix:
+    ipv4: 10.1.0.20/30
+    ipv6: 2001:db8:3:5::/64
 validate:
 - description: Check IPv4 EBGP sessions with DUT
   wait: 30
   nodes:
   - x1
   - x2
+  - v1
+  - v2
+  - vp
   plugin: bgp_neighbor(node.bgp.neighbors,'dut')
   name: ebgp_v4
 - description: Check IPv4 IBGP sessions with DUT
@@ -8322,6 +8836,17 @@ validate:
   - probe
   plugin: bgp_prefix(nodes.x2.loopback.ipv6,af='ipv6',locpref=42)
   name: locpref_x2_v6
+- description: Check for VRF prefix originated by V1/V2 on VP
+  wait: 5
+  nodes:
+  - vp
+  plugin: bgp_prefix(nodes.v1.loopback.ipv4)
+  name: vrf_v4_pfx
+- description: Check for the AS path of the V1/V2 prefix preferred by DUT
+  nodes:
+  - vp
+  plugin: bgp_prefix(nodes.v1.loopback.ipv4,aspath='65000 65201 65201')
+  name: vrf_v4_aspath
 input:
 - /home/pipi/net101/tools/tests/integration/routing/01-locpref.yml
 - /home/pipi/net101/tools/tests/integration/routing/defaults-ds.yml
@@ -8372,6 +8897,8 @@ bgp:
   next_hop_self: true
 ospf:
   area: 0.0.0.0
+vrf:
+  as: 65000
 prefix:
   any:
     ipv4: 0.0.0.0/0
