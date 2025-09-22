@@ -9,430 +9,6 @@ plugin:
 - multilab
 module:
 - bgp
-groups:
-  probes:
-    device: frr
-    members:
-    - rs
-    - r2
-    - r3
-    node_data:
-      provider: clab
-  all:
-    vars:
-      netlab_show_config: true
-    members: []
-    _default_group: true
-  as65000:
-    members:
-    - dut
-  as65001:
-    members:
-    - r2
-  as65002:
-    members:
-    - r3
-  as65100:
-    members:
-    - rs
-nodes:
-  dut:
-    bgp:
-      advertise_loopback: true
-      community:
-        ibgp:
-        - standard
-        - large
-        - extended
-        ebgp:
-        - standard
-        - large
-        localas_ibgp:
-        - standard
-        - large
-        - extended
-      next_hop_self: true
-      as: 65000
-      router_id: 10.0.0.1
-      neighbors:
-      - ifindex: 1
-        name: rs
-        as: 65100
-        type: ebgp
-        ipv4: 172.16.0.3
-        activate:
-          ipv4: true
-        rs_client: true
-      - ifindex: 2
-        name: r3
-        as: 65002
-        type: ebgp
-        ipv4: 10.1.0.2
-        activate:
-          ipv4: true
-      ipv4: true
-      _session_clear:
-      - 172.16.0.3
-      rs_client: true
-    name: dut
-    interfaces:
-    - ipv4: 172.16.0.1/24
-      linkindex: 1
-      role: external
-      type: lan
-      bridge: ml_17_1
-      name: dut -> [r2,rs]
-      ifindex: 1
-      ifname: ethernet-1/1
-      clab:
-        name: e1-1
-      neighbors:
-      - ipv4: 172.16.0.10/24
-        ifname: eth1
-        node: r2
-      - ipv4: 172.16.0.3/24
-        ifname: eth1
-        node: rs
-    - ipv4: 10.1.0.1/30
-      linkindex: 2
-      role: external
-      type: p2p
-      name: dut -> r3
-      ifindex: 2
-      ifname: ethernet-1/2
-      clab:
-        name: e1-2
-      neighbors:
-      - ipv4: 10.1.0.2/30
-        ifname: eth1
-        node: r3
-    device: srlinux
-    clab:
-      kind: srl
-      type: ixr-d2
-      config_templates:
-      - hosts:/etc/hosts
-      binds:
-      - clab_files/dut/hosts:/etc/hosts
-    box: ghcr.io/nokia/srlinux:25.7.2
-    module:
-    - bgp
-    id: 1
-    provider: clab
-    af:
-      ipv4: true
-    mgmt:
-      ifname: mgmt0
-      mac: ca:fe:00:01:00:00
-      ipv4: 192.168.17.101
-    hostname: clab-ml_17-dut
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo0.0
-      ipv4: 10.0.0.1/32
-    config:
-    - bgp.session
-    _srl_version: 25.7
-  r2:
-    bgp:
-      advertise_loopback: true
-      community:
-        ibgp:
-        - standard
-        - large
-        - extended
-        ebgp:
-        - standard
-        - large
-        localas_ibgp:
-        - standard
-        - large
-        - extended
-      next_hop_self: true
-      as: 65001
-      router_id: 10.0.0.10
-      neighbors:
-      - ifindex: 1
-        name: rs
-        as: 65100
-        type: ebgp
-        ipv4: 172.16.0.3
-        activate:
-          ipv4: true
-        rs_client: true
-      ipv4: true
-      _session_clear:
-      - 172.16.0.3
-      rs_client: true
-    id: 10
-    name: r2
-    interfaces:
-    - ipv4: 172.16.0.10/24
-      linkindex: 1
-      role: external
-      type: lan
-      bridge: ml_17_1
-      name: r2 -> [dut,rs]
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 172.16.0.1/24
-        ifname: ethernet-1/1
-        node: dut
-      - ipv4: 172.16.0.3/24
-        ifname: eth1
-        node: rs
-    device: frr
-    clab:
-      kind: linux
-      config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts:shared
-      binds:
-      - clab_files/r2/daemons:/etc/frr/daemons
-      - clab_files/-shared-hosts:/etc/hosts:ro
-    box: quay.io/frrouting/frr:10.4.1
-    module:
-    - bgp
-    role: router
-    mtu: 1500
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:0a:00:00
-      ipv4: 192.168.17.110
-    hostname: clab-ml_17-r2
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.10/32
-    config:
-    - bgp.session
-  r3:
-    bgp:
-      advertise_loopback: true
-      community:
-        ibgp:
-        - standard
-        - large
-        - extended
-        ebgp:
-        - standard
-        - large
-        localas_ibgp:
-        - standard
-        - large
-        - extended
-      next_hop_self: true
-      as: 65002
-      router_id: 10.0.0.2
-      neighbors:
-      - ifindex: 1
-        name: dut
-        as: 65000
-        type: ebgp
-        ipv4: 10.1.0.1
-        activate:
-          ipv4: true
-      ipv4: true
-    name: r3
-    interfaces:
-    - ipv4: 10.1.0.2/30
-      linkindex: 2
-      role: external
-      type: p2p
-      name: r3 -> dut
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 10.1.0.1/30
-        ifname: ethernet-1/2
-        node: dut
-    device: frr
-    clab:
-      kind: linux
-      config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts:shared
-      binds:
-      - clab_files/r3/daemons:/etc/frr/daemons
-      - clab_files/-shared-hosts:/etc/hosts:ro
-    box: quay.io/frrouting/frr:10.4.1
-    module:
-    - bgp
-    id: 2
-    role: router
-    mtu: 1500
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:02:00:00
-      ipv4: 192.168.17.102
-    hostname: clab-ml_17-r3
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.2/32
-  rs:
-    bgp:
-      advertise_loopback: true
-      community:
-        ibgp:
-        - standard
-        - large
-        - extended
-        ebgp:
-        - standard
-        - large
-        localas_ibgp:
-        - standard
-        - large
-        - extended
-      next_hop_self: true
-      as: 65100
-      rs: true
-      router_id: 10.0.0.3
-      neighbors:
-      - ifindex: 1
-        name: dut
-        as: 65000
-        type: ebgp
-        ipv4: 172.16.0.1
-        activate:
-          ipv4: true
-        rs: true
-      - ifindex: 1
-        name: r2
-        as: 65001
-        type: ebgp
-        ipv4: 172.16.0.10
-        activate:
-          ipv4: true
-        rs: true
-      ipv4: true
-      _session_clear:
-      - 172.16.0.1
-      - 172.16.0.10
-    name: rs
-    interfaces:
-    - ipv4: 172.16.0.3/24
-      linkindex: 1
-      role: external
-      type: lan
-      bridge: ml_17_1
-      name: rs -> [dut,r2]
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 172.16.0.1/24
-        ifname: ethernet-1/1
-        node: dut
-      - ipv4: 172.16.0.10/24
-        ifname: eth1
-        node: r2
-    device: frr
-    clab:
-      kind: linux
-      config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts:shared
-      binds:
-      - clab_files/rs/daemons:/etc/frr/daemons
-      - clab_files/-shared-hosts:/etc/hosts:ro
-    box: quay.io/frrouting/frr:10.4.1
-    module:
-    - bgp
-    id: 3
-    role: router
-    mtu: 1500
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:03:00:00
-      ipv4: 192.168.17.103
-    hostname: clab-ml_17-rs
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.3/32
-    config:
-    - bgp.session
-links:
-- interfaces:
-  - node: dut
-    ipv4: 172.16.0.1/24
-    ifindex: 1
-    ifname: ethernet-1/1
-  - node: r2
-    ipv4: 172.16.0.10/24
-    ifindex: 1
-    ifname: eth1
-  - node: rs
-    ipv4: 172.16.0.3/24
-    ifindex: 1
-    ifname: eth1
-  _linkname: links[1]
-  linkindex: 1
-  role: external
-  node_count: 3
-  type: lan
-  bridge: ml_17_1
-  prefix:
-    ipv4: 172.16.0.0/24
-- interfaces:
-  - node: dut
-    ipv4: 10.1.0.1/30
-    ifindex: 2
-    ifname: ethernet-1/2
-  - node: r3
-    ipv4: 10.1.0.2/30
-    ifindex: 1
-    ifname: eth1
-  _linkname: links[2]
-  linkindex: 2
-  role: external
-  node_count: 2
-  type: p2p
-  prefix:
-    ipv4: 10.1.0.0/30
-validate:
-- description: Check IPv4 EBGP sessions with DUT
-  wait_msg: Waiting for EBGP session establishment
-  wait: 10
-  nodes:
-  - rs
-  - r3
-  plugin: bgp_neighbor(node.bgp.neighbors,'dut')
-  name: session
-- description: Check that DUT propagates the R2 loopback to R3
-  wait_msg: Waiting for EBGP update propagation
-  wait: 10
-  nodes:
-  - r3
-  plugin: bgp_prefix(nodes.r2.loopback.ipv4)
-  name: pfx
-input:
-- /home/pipi/net101/tools/tests/integration/bgp.session/11-rs-client.yml
-- /home/pipi/.netlab.yml
-- package:topology-defaults.yml
 defaults:
   daemons:
     bird:
@@ -902,6 +478,8 @@ defaults:
           eos:
             serialnumber: str
             systemmacaddr: mac
+      warnings:
+        ospf_stub: false
     frr:
       features:
         bgp:
@@ -2184,6 +1762,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        loopback_ipv6: false
     vyos:
       features:
         bgp:
@@ -3869,6 +3449,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        loopback_ipv6: false
     unknown:
       description: Generic Unknown Device
       _meta_device: true
@@ -6300,6 +5882,33 @@ defaults:
       neighbors: 5
       maxlength: 255
     MAX_NODE_ID: 150
+    validate:
+      ping: 5
+      ping_long: 15
+      vxlan_ping: 20
+      ping_xx_long: 40
+      ra_send: 30
+      ospfv2_adj_p2p: 30
+      ospfv2_adj_lan: 50
+      ospfv2_spf: 10
+      ospfv3_adj_p2p: 30
+      ospfv3_adj_lan: 50
+      ospfv3_spf: 10
+      ospf_import: 20
+      ebgp_session: 30
+      ibgp_session: 30
+      bgp_scan_time: 5
+      bgp_scan_long: 15
+      bgp_ios_redist: 60
+      isis_adj_p2p: 20
+      isis_adj_lan: 50
+      isis_spf: 15
+      isis_spf_long: 45
+      rip_start: 60
+      rip_update: 20
+      ldp_adj: 30
+      stp_forwarding: 40
+      lacp_setup: 10
   hints:
     evpn:
       irb_group: >
@@ -6491,6 +6100,8 @@ defaults:
     netconf: 830
   warnings:
     duplicate_address: true
+    providers:
+      change: false
   bfd:
     min_echo_rx: 0
     multiplier: 3
@@ -8202,8 +7813,10 @@ defaults:
       vjunos-switch: true
       vyos: true
   sources:
+    extra:
+    - ../wait_times.yml
+    - ../warnings.yml
     list: []
-    extra: []
     user: []
     system: []
   workdir: /work/netlab_cicd
@@ -8239,6 +7852,432 @@ defaults:
   module:
   - bgp
   name: ml_17
+groups:
+  probes:
+    device: frr
+    members:
+    - rs
+    - r2
+    - r3
+    node_data:
+      provider: clab
+  all:
+    vars:
+      netlab_show_config: true
+    members: []
+    _default_group: true
+  as65000:
+    members:
+    - dut
+  as65001:
+    members:
+    - r2
+  as65002:
+    members:
+    - r3
+  as65100:
+    members:
+    - rs
+nodes:
+  dut:
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      next_hop_self: true
+      as: 65000
+      router_id: 10.0.0.1
+      neighbors:
+      - ifindex: 1
+        name: rs
+        as: 65100
+        type: ebgp
+        ipv4: 172.16.0.3
+        activate:
+          ipv4: true
+        rs_client: true
+      - ifindex: 2
+        name: r3
+        as: 65002
+        type: ebgp
+        ipv4: 10.1.0.2
+        activate:
+          ipv4: true
+      ipv4: true
+      _session_clear:
+      - 172.16.0.3
+      rs_client: true
+    name: dut
+    interfaces:
+    - ipv4: 172.16.0.1/24
+      linkindex: 1
+      role: external
+      type: lan
+      bridge: ml_17_1
+      name: dut -> [r2,rs]
+      ifindex: 1
+      ifname: ethernet-1/1
+      clab:
+        name: e1-1
+      neighbors:
+      - ipv4: 172.16.0.10/24
+        ifname: eth1
+        node: r2
+      - ipv4: 172.16.0.3/24
+        ifname: eth1
+        node: rs
+    - ipv4: 10.1.0.1/30
+      linkindex: 2
+      role: external
+      type: p2p
+      name: dut -> r3
+      ifindex: 2
+      ifname: ethernet-1/2
+      clab:
+        name: e1-2
+      neighbors:
+      - ipv4: 10.1.0.2/30
+        ifname: eth1
+        node: r3
+    device: srlinux
+    clab:
+      kind: srl
+      type: ixr-d2
+      config_templates:
+      - hosts:/etc/hosts
+      binds:
+      - clab_files/dut/hosts:/etc/hosts
+    box: ghcr.io/nokia/srlinux:25.7.2
+    module:
+    - bgp
+    id: 1
+    provider: clab
+    af:
+      ipv4: true
+    mgmt:
+      ifname: mgmt0
+      mac: ca:fe:00:01:00:00
+      ipv4: 192.168.17.101
+    hostname: clab-ml_17-dut
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo0.0
+      ipv4: 10.0.0.1/32
+    config:
+    - bgp.session
+    _srl_version: 25.7
+  r2:
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      next_hop_self: true
+      as: 65001
+      router_id: 10.0.0.10
+      neighbors:
+      - ifindex: 1
+        name: rs
+        as: 65100
+        type: ebgp
+        ipv4: 172.16.0.3
+        activate:
+          ipv4: true
+        rs_client: true
+      ipv4: true
+      _session_clear:
+      - 172.16.0.3
+      rs_client: true
+    id: 10
+    name: r2
+    interfaces:
+    - ipv4: 172.16.0.10/24
+      linkindex: 1
+      role: external
+      type: lan
+      bridge: ml_17_1
+      name: r2 -> [dut,rs]
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.0.1/24
+        ifname: ethernet-1/1
+        node: dut
+      - ipv4: 172.16.0.3/24
+        ifname: eth1
+        node: rs
+    device: frr
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts:shared
+      binds:
+      - clab_files/r2/daemons:/etc/frr/daemons
+      - clab_files/-shared-hosts:/etc/hosts:ro
+    box: quay.io/frrouting/frr:10.4.1
+    module:
+    - bgp
+    role: router
+    mtu: 1500
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:0a:00:00
+      ipv4: 192.168.17.110
+    hostname: clab-ml_17-r2
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.10/32
+    config:
+    - bgp.session
+  r3:
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      next_hop_self: true
+      as: 65002
+      router_id: 10.0.0.2
+      neighbors:
+      - ifindex: 1
+        name: dut
+        as: 65000
+        type: ebgp
+        ipv4: 10.1.0.1
+        activate:
+          ipv4: true
+      ipv4: true
+    name: r3
+    interfaces:
+    - ipv4: 10.1.0.2/30
+      linkindex: 2
+      role: external
+      type: p2p
+      name: r3 -> dut
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 10.1.0.1/30
+        ifname: ethernet-1/2
+        node: dut
+    device: frr
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts:shared
+      binds:
+      - clab_files/r3/daemons:/etc/frr/daemons
+      - clab_files/-shared-hosts:/etc/hosts:ro
+    box: quay.io/frrouting/frr:10.4.1
+    module:
+    - bgp
+    id: 2
+    role: router
+    mtu: 1500
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:02:00:00
+      ipv4: 192.168.17.102
+    hostname: clab-ml_17-r3
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.2/32
+  rs:
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      next_hop_self: true
+      as: 65100
+      rs: true
+      router_id: 10.0.0.3
+      neighbors:
+      - ifindex: 1
+        name: dut
+        as: 65000
+        type: ebgp
+        ipv4: 172.16.0.1
+        activate:
+          ipv4: true
+        rs: true
+      - ifindex: 1
+        name: r2
+        as: 65001
+        type: ebgp
+        ipv4: 172.16.0.10
+        activate:
+          ipv4: true
+        rs: true
+      ipv4: true
+      _session_clear:
+      - 172.16.0.1
+      - 172.16.0.10
+    name: rs
+    interfaces:
+    - ipv4: 172.16.0.3/24
+      linkindex: 1
+      role: external
+      type: lan
+      bridge: ml_17_1
+      name: rs -> [dut,r2]
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.16.0.1/24
+        ifname: ethernet-1/1
+        node: dut
+      - ipv4: 172.16.0.10/24
+        ifname: eth1
+        node: r2
+    device: frr
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts:shared
+      binds:
+      - clab_files/rs/daemons:/etc/frr/daemons
+      - clab_files/-shared-hosts:/etc/hosts:ro
+    box: quay.io/frrouting/frr:10.4.1
+    module:
+    - bgp
+    id: 3
+    role: router
+    mtu: 1500
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:03:00:00
+      ipv4: 192.168.17.103
+    hostname: clab-ml_17-rs
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.3/32
+    config:
+    - bgp.session
+links:
+- interfaces:
+  - node: dut
+    ipv4: 172.16.0.1/24
+    ifindex: 1
+    ifname: ethernet-1/1
+  - node: r2
+    ipv4: 172.16.0.10/24
+    ifindex: 1
+    ifname: eth1
+  - node: rs
+    ipv4: 172.16.0.3/24
+    ifindex: 1
+    ifname: eth1
+  _linkname: links[1]
+  linkindex: 1
+  role: external
+  node_count: 3
+  type: lan
+  bridge: ml_17_1
+  prefix:
+    ipv4: 172.16.0.0/24
+- interfaces:
+  - node: dut
+    ipv4: 10.1.0.1/30
+    ifindex: 2
+    ifname: ethernet-1/2
+  - node: r3
+    ipv4: 10.1.0.2/30
+    ifindex: 1
+    ifname: eth1
+  _linkname: links[2]
+  linkindex: 2
+  role: external
+  node_count: 2
+  type: p2p
+  prefix:
+    ipv4: 10.1.0.0/30
+validate:
+- description: Check IPv4 EBGP sessions with DUT
+  wait_msg: Waiting for EBGP session establishment
+  wait: 30
+  nodes:
+  - rs
+  - r3
+  plugin: bgp_neighbor(node.bgp.neighbors,'dut')
+  name: session
+- description: Check that DUT propagates the R2 loopback to R3
+  wait_msg: Waiting for EBGP update propagation
+  wait: 5
+  nodes:
+  - r3
+  plugin: bgp_prefix(nodes.r2.loopback.ipv4)
+  name: pfx
+input:
+- /home/pipi/net101/tools/tests/integration/bgp.session/11-rs-client.yml
+- /home/pipi/net101/tools/tests/integration/wait_times.yml
+- /home/pipi/net101/tools/tests/integration/warnings.yml
+- /home/pipi/.netlab.yml
+- package:topology-defaults.yml
 name: ml_17
 addressing:
   lan:
