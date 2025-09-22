@@ -20,13 +20,15 @@ Module-specific parameters can be added to:
 
 ## Specifying Configuration Modules
 
-* The default configuration modules used in a network topology are specified in **module** top-level element, for example:
+* The default configuration modules used in a network topology are specified in the **module** top-level attribute. For example, if all routers in your lab topology run OSPF, use:
 
 ```
 module: [ ospf ]
 ```
 
-* The global list of configuration modules is inherited by all nodes in the network topology. You could change per-node list of configuration modules with the node-specific **module** element.
+* The global list of configuration modules is inherited by all **[router](node-role-router)**, **[bridge](node-role-bridge)**, or **[daemon](platform-daemons)** nodes in the network topology.
+* **[Host](node-role-host)** nodes do not inherit the global configuration modules. If you want to use configuration modules on hosts, you have to define them in the node **module** attribute.
+* You could change the per-node list of configuration modules with the node-specific **module** element. The per-node definition of configuration modules overrides the global one; they are not merged.
 
 ### Example
 
@@ -43,9 +45,13 @@ nodes:
 - name: j_vsrx
   device: vsrx
   module: []
+- name: h1
+  device: linux
 ```
 
-... OSPF and BGP will be configured on **c_nxos**, OSPF will be configured on **c_csr** and no extra configuration will be performed on **j_vsrx**.
+* OSPF and BGP will be configured on **c_nxos**
+* OSPF will be configured on **c_csr** (inherited from the topology **module** attribute)
+* No extra configuration will be performed on **j_vsrx** (because the node **module** attribute is set to an empty list) or **h1** (because hosts don't inherit topology modules).
 
 ## Module-Specific Node and Link Attributes
 
