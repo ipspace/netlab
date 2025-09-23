@@ -84,7 +84,7 @@ def check_bgp_parameters(node: Box, topology: Box) -> None:
           parent=node.bgp.community,
           path=f'nodes.{node.name}.bgp.community',
           key=k,
-          valid_values=topology['defaults.bgp.attributes.global.community.ibgp'],
+          valid_values=topology['defaults.attributes.global.bgp_community_type.valid_values'],
           module='bgp')
 
 def validate_bgp_sessions(node: Box, sessions: Box, attribute: str) -> bool:
