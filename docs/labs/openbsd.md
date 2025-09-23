@@ -1,9 +1,9 @@
 (build-openbsd)=
 # Building an OpenBSD Libvirt Box
 
-You can use the **netlab libvirt package** command to build a OpenBSD Vagrant box:
+You can use the **netlab libvirt package** command to build an OpenBSD Vagrant box:
 
-* Download the OpenBSD **qcow2** image from https://bsd-cloud-image.org/ into an empty directory
+* Download the OpenBSD **qcow2** image from [https://bsd-cloud-image.org/](https://bsd-cloud-image.org/) into an empty directory
 * Execute **netlab libvirt package openbsd _img-file-name_** and follow the instructions
 
 ```{warning}

@@ -1,0 +1,55 @@
+{% macro config(ospf_vrf,ospf_data,intf_data) %}
+{%- set areas = intf_data|selectattr('ipv4', 'defined')|map(attribute='ospf.area', default='')|reject('eq', '')|sort|unique %}
+#!/bin/sh
+
+cat <<OSPFD_CONF >/etc/ospfd.conf
+{% if ospf_data.router_id|ipv4 %}
+router-id {{ ospf_data.router_id }}
+{% endif %}
+spf-delay msec 100
+spf-holdtime msec 200
+{% if ospf_data.default is defined %}
+{%   set dfd = ospf_data.default %}
+redistribute default set { metric {{ dfd.cost|default(100) }} type {{ dfd.type|default('e1')|replace('e','') }} }
+{% endif %}
+
+{% for a in areas %}
+area {{ a }} {
+{%   for l in intf_data if l.ospf.area is defined and l.ospf.area is eq a and 'ipv4' in l %}
+{%     if l.ifname == "lo0" %}
+    interface {{ l.ifname }}:{{ l.ipv4 | ipaddr('address') }} {
+{%     else %}
+    interface {{ l.ifname }} {
+{%     endif %}
+{%     if l.ospf.network_type is defined and l.ospf.network_type == 'point-to-point' %}
+        type p2p
+{%     endif %}
+{%     if l.ospf.passive|default(False) %}
+        passive
+{%     endif %}
+{%     if l.ospf.cost is defined %}
+        metric {{ l.ospf.cost }}
+{%     endif %}
+{%     if l.ospf.timers.hello is defined %}
+        hello-interval {{ l.ospf.timers.hello }}
+{%     endif %}
+{%     if l.ospf.timers.dead is defined %}
+        router-dead-time {{ l.ospf.timers.dead }}
+{%     endif %}
+{%     if l.ospf.priority is defined %}
+        router-priority {{ l.ospf.priority }}
+{%     endif %}
+{%     if l.ospf.password is defined %}
+        auth-key {{ l.ospf.password }}
+        auth-type simple
+{%     endif %}
+    }
+{%   endfor -%} 
+}
+{% endfor %} 
+OSPFD_CONF
+
+chmod 640 /etc/ospfd.conf
+rcctl enable ospfd
+rcctl restart ospfd
+{% endmacro %}
