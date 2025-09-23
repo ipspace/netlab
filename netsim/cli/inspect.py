@@ -90,7 +90,7 @@ def inspect_node(topology: Box, node_list: list, args: argparse.Namespace) -> No
       hdr_row.append(node)
       data_row.append(value)
 
-  strings.print_table(hdr_row,[ data_row ])
+  strings.print_table(hdr_row,[ data_row ],markup=False)    # Print the resulting table, disabling Rich markup in cells
 
 def run(cli_args: typing.List[str]) -> None:
   args = inspect_parse(cli_args)
