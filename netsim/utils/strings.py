@@ -165,11 +165,22 @@ def confirm(prompt: str,blank_line: bool = False) -> bool:
 
 """
 print text table
+
+    heading:        list of headings
+    rows:           list of row values. Each row value has N columns
+    inter_row_line: do we want to have lines between individual rows?
+    markup:         do cells contain Rich markup?
+
+The default Rich behavior is to interpret cell values as having Rich markup,
+which works well unless you print YAML stuff that can contain things like [b].
+The 'markup' parameter was added to solve #2698; the default value is "we want
+markup" just in case some other caller expects the default Rich behavior.
 """
 def print_table(
       heading: typing.List[str],
       rows: typing.List[typing.List[str]],
-      inter_row_line: bool = True) -> None:
+      inter_row_line: bool = True,
+      markup: bool = True) -> None:
 
   global rich_console
 
@@ -192,7 +203,7 @@ def print_table(
   for r in rows:
     table.add_row(*r)
 
-  rich_console.print(table)
+  rich_console.print(table,markup=markup)
 
 """
 colored_text: Print colored text using rich library
