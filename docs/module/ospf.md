@@ -68,6 +68,7 @@ The following table describes the per-platform support of individual router-leve
 | Mikrotik RouterOS 7      | ✅| ❌ | ✅| ❌ | ❌ |
 | Nokia SR Linux           | ✅| ✅| ✅| ✅ [❗](caveats-srlinux) | ✅ [❗](caveats-srlinux) |
 | Nokia SR OS[^SROS]       | ✅| ✅| ✅| ✅ [❗](caveats-sros) | ❌ |
+| OpenBSD                  | ✅| ❌ | ✅ [❗](caveats-openbsd) | ✅| ✅|
 | VyOS                     | ✅| ✅| ✅| ✅| ✅|
 
 
@@ -132,6 +133,7 @@ The following table documents the common interface-level OSPF features:
 | Mikrotik RouterOS 7      | ✅ | ✅ | ❌  | ✅ |
 | Nokia SR Linux           | ✅ | ✅ | ✅ | ✅ |
 | Nokia SR OS[^SROS]       | ✅ | ✅ | ✅ | ✅ |
+| OpenBSD                  | ✅ | ✅ | ✅ | ✅ [❗](caveats-openbsd) |
 | VyOS                     | ✅ | ✅ | ✅ | ✅ |
 
 **Notes:**
@@ -162,6 +164,7 @@ These devices also support optional OSPF interface attributes:
 | Cumulus Linux 5.x (NVUE) | ✅ | ✅ | ❌  | ❌  |
 | Dell OS10                | ✅ | ✅ | ✅ | ❌  |
 | FRR                      | ✅ | ✅ | ✅ | ❌  |
+| OpenBSD                  | ✅ | ✅ | ✅ | ❌  |
 
 OSPF routing daemons support these optional OSPF interface attributes:
 
