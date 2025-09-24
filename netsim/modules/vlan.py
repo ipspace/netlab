@@ -879,6 +879,8 @@ def create_svi_interfaces(node: Box, topology: Box) -> dict:
       vlan_ifdata.vlan.name = access_vlan
       vlan_ifdata.type = "svi"
       vlan_ifdata.ifindex = links.get_unique_ifindex(node,iftype='svi',start=SVI_IFINDEX_OFFSET)
+      if 'svi' in features.get('initial.generate_mac',[]):
+        vlan_ifdata.mac_address = links.generate_interface_mac(node,vlan_ifdata,topology.defaults)
       vlan_ifdata.ifname = strings.eval_format_args(
                               fmt=svi_name,
                               vlan=vlan_data.id,

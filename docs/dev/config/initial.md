@@ -132,6 +132,7 @@ It might also have these (optional) parameters:
 
 * **virtual_interface** -- the interface is a virtual interface (loopback, VLAN interface, subinterface...). Use this parameter to skip physical interface configuration (for example, bandwidth)
 * **role** -- link role (as set by **role** link attribute)
+* **mac** -- interface MAC address when requested by the **features.initial.generate_mac** device setting
 * **mtu** -- interface MTU
 * **_use_ip_mtu** -- a hint that the interface MTU is lower than the **min_phy_mtu** accepted by your device and that you should configure IPv4/IPv6 MTU instead of interface MTU.
 * **bandwidth** -- interface bandwidth

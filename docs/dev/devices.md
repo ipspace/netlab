@@ -106,6 +106,7 @@ After creating the device parameters file, you'll be able to use your device in 
 Device parameters file can also include numerous *features*. The following features control the initial device configuration; additional features are described in the developer documentation for individual modules.
 
 * **features.initial.system_mtu** -- The device supports system MTU settings
+* **features.initial.generate_mac** -- Optional list of interface types that need configured MAC addresses. Recognized values are **ethernet** and **svi**. See Cisco IOSvL2 and EOS device definitions and configuration templates for more details.
 * **features.initial.min_mtu** -- The minimum IPv4 MTU supported by your device (the minimum IPv6 MTU cannot be lower than 1280)
 * **features.initial.max_mtu** -- The maximum MTU supported by your device (the maximum MTU cannot be higher than 9216)
 * **features.initial.min_phy_mtu** -- The minimum physical MTU that can be configured on your device (many devices won't accept the physical MTU lower than 1500 bytes).

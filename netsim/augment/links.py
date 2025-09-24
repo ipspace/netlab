@@ -5,6 +5,7 @@
 import ipaddress
 import typing
 
+import netaddr
 from box import Box
 
 from .. import data
@@ -243,6 +244,19 @@ def get_unique_ifindex(
   return start + len(node.interfaces) + 1         # Return something just to keep going (we'll fail anyway)
 
 """
+Create a MAC address for an interface. Inputs:
+
+* Node data (node) -- needed to get node ID
+* Interface data (ifdata) -- needed to get ifindex
+* System defaults (defaults) -- needed to get the MAC OUI from the management pool
+"""
+def generate_interface_mac(node: Box, ifdata: Box, defaults: Box) -> str:
+  mac_pool = netaddr.EUI(defaults.addressing.mgmt.get('mac','CA-FE-00-00-00-00'))
+  mac_pool[1] = (mac_pool[1] & 240) + int(ifdata.ifindex / 10000)       # Second byte: mgmt MAC OUI adjusted for interface type
+  intf_mac = netaddr.EUI(int(mac_pool) + node.id * 65536 + ifdata.ifindex % 10000)
+  return intf_mac.format(netaddr.mac_cisco)
+
+"""
 Add interface data structure to a node:
 
 * Add node-specific interface index
@@ -275,6 +289,10 @@ def create_regular_interface(node: Box, ifdata: Box, defaults: Box) -> None:
   if ifname_format:
     ifn_field = 'ifname' if 'ifname' not in ifdata else 'netlab_ifname'
     ifdata[ifn_field] = strings.eval_format(ifname_format,ifdata)
+
+  features = devices.get_device_features(node,defaults)
+  if 'ethernet' in features.get('initial.generate_mac',[]):
+    ifdata.mac_address = generate_interface_mac(node,ifdata,defaults)
 
   pdata = devices.get_provider_data(node,defaults).get('interface',{})
   pdata = data.get_box(pdata)                     # Create a copy of the provider interface data
