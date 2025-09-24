@@ -10,7 +10,7 @@ links:
     ipv4: 172.16.0.2/24
     node: h1
   - ifindex: 1
-    ifname: swp1
+    ifname: eth1
     ipv4: 172.16.0.1/24
     node: rtr
   linkindex: 1
@@ -27,7 +27,7 @@ links:
     ipv4: 172.16.1.3/24
     node: h2
   - ifindex: 2
-    ifname: swp2
+    ifname: eth2
     ipv4: 172.16.1.1/24
     node: rtr
   linkindex: 2
@@ -65,7 +65,7 @@ nodes:
       mtu: 1500
       name: h1 -> rtr
       neighbors:
-      - ifname: swp1
+      - ifname: eth1
         ipv4: 172.16.0.1/24
         node: rtr
       role: stub
@@ -125,7 +125,7 @@ nodes:
       mtu: 1500
       name: h2 -> rtr
       neighbors:
-      - ifname: swp2
+      - ifname: eth2
         ipv4: 172.16.1.1/24
         node: rtr
       role: stub
@@ -164,25 +164,26 @@ nodes:
   rtr:
     af:
       ipv4: true
-    box: networkop/cx:4.4.0
+    box: quay.io/frrouting/frr:10.4.1
     clab:
       binds:
-      - clab_files/rtr/interfaces:/etc/network/interfaces
+      - clab_files/rtr/daemons:/etc/frr/daemons
       - clab_files/-shared-hosts:/etc/hosts:ro
       config_templates:
-      - interfaces:/etc/network/interfaces
+      - daemons:/etc/frr/daemons
       - hosts:/etc/hosts:shared
-      kind: cvx
-      runtime: docker
-    device: cumulus
+      image: none
+      kind: linux
+    device: frr
     hostname: clab-input-rtr
     id: 1
     interfaces:
     - bridge: input_1
       ifindex: 1
-      ifname: swp1
+      ifname: eth1
       ipv4: 172.16.0.1/24
       linkindex: 1
+      mtu: 1500
       name: rtr -> h1
       neighbors:
       - ifname: eth1
@@ -196,9 +197,10 @@ nodes:
       type: lan
     - bridge: input_2
       ifindex: 2
-      ifname: swp2
+      ifname: eth2
       ipv4: 172.16.1.1/24
       linkindex: 2
+      mtu: 1500
       name: rtr -> h2
       neighbors:
       - ifname: eth1
@@ -210,8 +212,6 @@ nodes:
         passive: true
       role: stub
       type: lan
-    libvirt:
-      image: CumulusCommunity/cumulus-vx:5.2.0
     loopback:
       ifindex: 0
       ifname: lo
@@ -235,6 +235,7 @@ nodes:
         ipv4: true
       area: 0.0.0.0
       router_id: 10.0.0.1
+    role: router
 ospf:
   area: 0.0.0.0
 provider: clab
