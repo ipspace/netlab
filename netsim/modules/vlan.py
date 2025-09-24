@@ -640,11 +640,38 @@ def create_vlan_member_interface(
 """
 create_vlan_links: Create virtual links for every VLAN in the VLAN trunk
 """
+
+TRUNK_ATTR: list = []
+
 def create_vlan_links(link: Box, v_attr: Box, topology: Box) -> None:
+  global TRUNK_ATTR
+
   if log.debug_active('vlan'):
     print(f'create VLAN links: link {link}')
     print(f'... v_attr {v_attr}')
   native_vlan = v_attr.native.list[0] if 'native' in v_attr else None
+
+  if not TRUNK_ATTR:
+    TRUNK_ATTR  = list(topology.defaults.vlan.attributes.phy_ifattr) + \
+                  list(topology.defaults.attributes.link_no_propagate) + ['name','node']
+
+  xtra_attr = [ k for k in link.keys() if not k.startswith('_') and k not in TRUNK_ATTR ]
+  if xtra_attr:
+    log.warning(
+      text=f'Do not use attribute(s) {",".join(xtra_attr)} on VLAN trunk link {link._linkname}',
+      hint='trunk_attr',
+      module='vlan',
+      flag='trunk_attribute')
+
+  for intf in link.interfaces:
+    if intf.get('vlan.trunk'):
+      xtra_attr = [ k for k in intf.keys() if not k.startswith('_') and k not in TRUNK_ATTR ]
+      if xtra_attr:
+        log.warning(
+          text=f'Do not use attribute(s) {",".join(xtra_attr)} on VLAN trunk interface (link {link._linkname}/node {intf.node})',
+          hint='trunk_attr',
+          module='vlan',
+          flag='trunk_attribute')
 
   for vname in sorted(v_attr.trunk.set):
     if vname != native_vlan:           # Skip native VLAN
