@@ -27,6 +27,10 @@ options:
 Run "netlab install" with no arguments to get install script descriptions
 ```
 
+```{tip}
+Running multiple installation scripts with **‌netlab install** or **netlab install --all** might fail on some Ubuntu distributions due to background processes locking the APT repository directory. If you experience that problem, execute multiple **‌netlab install** commands (one per installation script).
+```
+
 ## Installation Scripts
 
 * The *ubuntu* script installs Python3 development components that might be needed for Ansible installation, common tools like **git** and **sshpass**, and XML libraries.
