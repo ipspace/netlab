@@ -316,6 +316,8 @@ def warning(*,
   if flag_value is False:
     return
 
+  if flag_value == 'error':
+    kwargs['category'] = ErrorAbort
   if 'category' not in kwargs:
     kwargs['category'] = Warning
 
