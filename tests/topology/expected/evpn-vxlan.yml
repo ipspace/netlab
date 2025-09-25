@@ -11,6 +11,7 @@ bgp:
 evpn:
   session:
   - ibgp
+  - ebgp
   vlans:
   - red
   - blue
@@ -19,6 +20,8 @@ groups:
     members:
     - s1
     - s2
+  as65001:
+    members:
     - s3
   switch:
     device: eos
@@ -37,11 +40,42 @@ input:
 - package:topology-defaults.yml
 links:
 - _linkname: links[1]
-  bridge: input_1
+  interfaces:
+  - ifindex: 1
+    ifname: Ethernet1
+    ipv4: 10.1.0.1/30
+    node: s1
+  - ifindex: 1
+    ifname: Ethernet1
+    ipv4: 10.1.0.2/30
+    node: s2
+  linkindex: 1
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.0/30
+  type: p2p
+- _linkname: links[2]
+  interfaces:
+  - ifindex: 2
+    ifname: Ethernet2
+    ipv4: 10.1.0.5/30
+    node: s2
+  - ifindex: 1
+    ifname: Ethernet1
+    ipv4: 10.1.0.6/30
+    node: s3
+  linkindex: 2
+  node_count: 2
+  prefix:
+    ipv4: 10.1.0.4/30
+  role: external
+  type: p2p
+- _linkname: vlans.red.links[1]
+  bridge: input_3
   interfaces:
   - _vlan_mode: irb
-    ifindex: 1
-    ifname: Ethernet1
+    ifindex: 2
+    ifname: Ethernet2
     ipv4: 172.16.0.1/24
     node: s1
     vlan:
@@ -50,38 +84,20 @@ links:
     ifname: eth1
     ipv4: 172.16.0.4/24
     node: h1
-  linkindex: 1
+  linkindex: 3
   node_count: 2
   prefix:
     allocation: id_based
     ipv4: 172.16.0.0/24
   type: lan
-- _linkname: links[2]
-  bridge: input_2
+  vlan:
+    access: red
+- _linkname: vlans.red.links[2]
+  bridge: input_4
   interfaces:
   - _vlan_mode: irb
-    ifindex: 2
-    ifname: Ethernet2
-    ipv4: 172.16.1.1/24
-    node: s1
-    vlan:
-      access: blue
-  - ifindex: 1
-    ifname: eth1
-    ipv4: 172.16.1.5/24
-    node: h2
-  linkindex: 2
-  node_count: 2
-  prefix:
-    allocation: id_based
-    ipv4: 172.16.1.0/24
-  type: lan
-- _linkname: links[3]
-  bridge: input_3
-  interfaces:
-  - _vlan_mode: irb
-    ifindex: 1
-    ifname: Ethernet1
+    ifindex: 3
+    ifname: Ethernet3
     ipv4: 172.16.0.2/24
     node: s2
     vlan:
@@ -90,18 +106,42 @@ links:
     ifname: eth1
     ipv4: 172.16.0.6/24
     node: h3
-  linkindex: 3
+  linkindex: 4
   node_count: 2
   prefix:
     allocation: id_based
     ipv4: 172.16.0.0/24
   type: lan
-- _linkname: links[4]
-  bridge: input_4
+  vlan:
+    access: red
+- _linkname: vlans.blue.links[1]
+  bridge: input_5
   interfaces:
   - _vlan_mode: irb
-    ifindex: 1
-    ifname: Ethernet1
+    ifindex: 3
+    ifname: Ethernet3
+    ipv4: 172.16.1.1/24
+    node: s1
+    vlan:
+      access: blue
+  - ifindex: 1
+    ifname: eth1
+    ipv4: 172.16.1.5/24
+    node: h2
+  linkindex: 5
+  node_count: 2
+  prefix:
+    allocation: id_based
+    ipv4: 172.16.1.0/24
+  type: lan
+  vlan:
+    access: blue
+- _linkname: vlans.blue.links[2]
+  bridge: input_6
+  interfaces:
+  - _vlan_mode: irb
+    ifindex: 2
+    ifname: Ethernet2
     ipv4: 172.16.1.3/24
     node: s3
     vlan:
@@ -110,12 +150,14 @@ links:
     ifname: eth1
     ipv4: 172.16.1.7/24
     node: h4
-  linkindex: 4
+  linkindex: 6
   node_count: 2
   prefix:
     allocation: id_based
     ipv4: 172.16.1.0/24
   type: lan
+  vlan:
+    access: blue
 module:
 - vlan
 - routing
@@ -132,13 +174,13 @@ nodes:
     device: linux
     id: 4
     interfaces:
-    - bridge: input_1
+    - bridge: input_3
       gateway:
         ipv4: 172.16.0.1/24
       ifindex: 1
       ifname: eth1
       ipv4: 172.16.0.4/24
-      linkindex: 1
+      linkindex: 3
       name: h1 -> [s1,h3,s2]
       neighbors:
       - ifname: Vlan1000
@@ -194,13 +236,13 @@ nodes:
     device: linux
     id: 5
     interfaces:
-    - bridge: input_2
+    - bridge: input_5
       gateway:
         ipv4: 172.16.1.1/24
       ifindex: 1
       ifname: eth1
       ipv4: 172.16.1.5/24
-      linkindex: 2
+      linkindex: 5
       name: h2 -> [s1,h4,s3]
       neighbors:
       - ifname: Vlan1001
@@ -256,13 +298,13 @@ nodes:
     device: linux
     id: 6
     interfaces:
-    - bridge: input_3
+    - bridge: input_4
       gateway:
         ipv4: 172.16.0.1/24
       ifindex: 1
       ifname: eth1
       ipv4: 172.16.0.6/24
-      linkindex: 3
+      linkindex: 4
       name: h3 -> [h1,s1,s2]
       neighbors:
       - ifname: eth1
@@ -318,13 +360,13 @@ nodes:
     device: linux
     id: 7
     interfaces:
-    - bridge: input_4
+    - bridge: input_6
       gateway:
         ipv4: 172.16.1.1/24
       ifindex: 1
       ifname: eth1
       ipv4: 172.16.1.7/24
-      linkindex: 4
+      linkindex: 6
       name: h4 -> [h2,s1,s3]
       neighbors:
       - ifname: eth1
@@ -416,24 +458,6 @@ nodes:
         name: s2
         next_hop_self: ebgp
         type: ibgp
-      - _source_intf:
-          ifindex: 0
-          ifname: Loopback0
-          ipv4: 10.0.0.1/32
-          neighbors: []
-          ospf:
-            area: 0.0.0.0
-            passive: false
-          type: loopback
-          virtual_interface: true
-        activate:
-          ipv4: true
-        as: 65000
-        evpn: true
-        ipv4: 10.0.0.3
-        name: s3
-        next_hop_self: ebgp
-        type: ibgp
       next_hop_self: true
       router_id: 10.0.0.1
     box: arista/veos
@@ -441,15 +465,31 @@ nodes:
     evpn:
       session:
       - ibgp
+      - ebgp
       vlans:
       - red
       - blue
     id: 1
     interfaces:
-    - bridge: input_1
-      ifindex: 1
+    - ifindex: 1
       ifname: Ethernet1
+      ipv4: 10.1.0.1/30
       linkindex: 1
+      mac_address: caf0.0001.0001
+      name: s1 -> s2
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 10.1.0.2/30
+        node: s2
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
+      type: p2p
+    - bridge: input_3
+      ifindex: 2
+      ifname: Ethernet2
+      linkindex: 3
       name: '[Access VLAN red] s1 -> h1'
       neighbors:
       - ifname: eth1
@@ -459,10 +499,10 @@ nodes:
       vlan:
         access: red
         access_id: 1000
-    - bridge: input_2
-      ifindex: 2
-      ifname: Ethernet2
-      linkindex: 2
+    - bridge: input_5
+      ifindex: 3
+      ifname: Ethernet3
+      linkindex: 5
       name: '[Access VLAN blue] s1 -> h2'
       neighbors:
       - ifname: eth1
@@ -516,9 +556,7 @@ nodes:
         vlan:
           mode: irb
           name: blue
-      ospf:
-        area: 0.0.0.0
-        passive: false
+      role: external
       type: svi
       virtual_interface: true
       vlan:
@@ -568,6 +606,7 @@ nodes:
         prefix:
           allocation: id_based
           ipv4: 172.16.1.0/24
+        role: external
         vni: 101001
       red:
         bridge_group: 1
@@ -635,24 +674,14 @@ nodes:
         name: s1
         next_hop_self: ebgp
         type: ibgp
-      - _source_intf:
-          ifindex: 0
-          ifname: Loopback0
-          ipv4: 10.0.0.2/32
-          neighbors: []
-          ospf:
-            area: 0.0.0.0
-            passive: false
-          type: loopback
-          virtual_interface: true
-        activate:
+      - activate:
           ipv4: true
-        as: 65000
+        as: 65001
         evpn: true
-        ipv4: 10.0.0.3
+        ifindex: 2
+        ipv4: 10.1.0.6
         name: s3
-        next_hop_self: ebgp
-        type: ibgp
+        type: ebgp
       next_hop_self: true
       router_id: 10.0.0.2
     box: arista/veos
@@ -660,14 +689,42 @@ nodes:
     evpn:
       session:
       - ibgp
+      - ebgp
       vlans:
       - red
     id: 2
     interfaces:
-    - bridge: input_3
-      ifindex: 1
+    - ifindex: 1
       ifname: Ethernet1
-      linkindex: 3
+      ipv4: 10.1.0.2/30
+      linkindex: 1
+      mac_address: caf0.0002.0001
+      name: s2 -> s1
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 10.1.0.1/30
+        node: s1
+      ospf:
+        area: 0.0.0.0
+        network_type: point-to-point
+        passive: false
+      type: p2p
+    - ifindex: 2
+      ifname: Ethernet2
+      ipv4: 10.1.0.5/30
+      linkindex: 2
+      mac_address: caf0.0002.0002
+      name: s2 -> s3
+      neighbors:
+      - ifname: Ethernet1
+        ipv4: 10.1.0.6/30
+        node: s3
+      role: external
+      type: p2p
+    - bridge: input_4
+      ifindex: 3
+      ifname: Ethernet3
+      linkindex: 4
       name: '[Access VLAN red] s2 -> h3'
       neighbors:
       - ifname: eth1
@@ -765,7 +822,7 @@ nodes:
       - large
       - link-bandwidth
       advertise_loopback: true
-      as: 65000
+      as: 65001
       community:
         ebgp:
         - standard
@@ -780,42 +837,14 @@ nodes:
         - extended
       ipv4: true
       neighbors:
-      - _source_intf:
-          ifindex: 0
-          ifname: Loopback0
-          ipv4: 10.0.0.3/32
-          neighbors: []
-          ospf:
-            area: 0.0.0.0
-            passive: false
-          type: loopback
-          virtual_interface: true
-        activate:
+      - activate:
           ipv4: true
         as: 65000
         evpn: true
-        ipv4: 10.0.0.1
-        name: s1
-        next_hop_self: ebgp
-        type: ibgp
-      - _source_intf:
-          ifindex: 0
-          ifname: Loopback0
-          ipv4: 10.0.0.3/32
-          neighbors: []
-          ospf:
-            area: 0.0.0.0
-            passive: false
-          type: loopback
-          virtual_interface: true
-        activate:
-          ipv4: true
-        as: 65000
-        evpn: true
-        ipv4: 10.0.0.2
+        ifindex: 1
+        ipv4: 10.1.0.5
         name: s2
-        next_hop_self: ebgp
-        type: ibgp
+        type: ebgp
       next_hop_self: true
       router_id: 10.0.0.3
     box: arista/veos
@@ -823,14 +852,27 @@ nodes:
     evpn:
       session:
       - ibgp
+      - ebgp
       vlans:
       - blue
     id: 3
     interfaces:
-    - bridge: input_4
-      ifindex: 1
+    - ifindex: 1
       ifname: Ethernet1
-      linkindex: 4
+      ipv4: 10.1.0.6/30
+      linkindex: 2
+      mac_address: caf0.0003.0001
+      name: s3 -> s2
+      neighbors:
+      - ifname: Ethernet2
+        ipv4: 10.1.0.5/30
+        node: s2
+      role: external
+      type: p2p
+    - bridge: input_6
+      ifindex: 2
+      ifname: Ethernet2
+      linkindex: 6
       name: '[Access VLAN blue] s3 -> h4'
       neighbors:
       - ifname: eth1
@@ -858,9 +900,7 @@ nodes:
       - ifname: eth1
         ipv4: 172.16.1.7/24
         node: h4
-      ospf:
-        area: 0.0.0.0
-        passive: false
+      role: external
       type: svi
       virtual_interface: true
       vlan:
@@ -871,9 +911,6 @@ nodes:
       ifname: Loopback0
       ipv4: 10.0.0.3/32
       neighbors: []
-      ospf:
-        area: 0.0.0.0
-        passive: false
       type: loopback
       virtual_interface: true
     mgmt:
@@ -882,16 +919,10 @@ nodes:
       mac: ca:fe:00:03:00:00
     module:
     - vlan
-    - ospf
     - bgp
     - vxlan
     - evpn
     name: s3
-    ospf:
-      af:
-        ipv4: true
-      area: 0.0.0.0
-      router_id: 10.0.0.3
     role: router
     vlan:
       max_bridge_group: 1
@@ -910,6 +941,7 @@ nodes:
         prefix:
           allocation: id_based
           ipv4: 172.16.1.0/24
+        role: external
         vni: 101001
     vxlan:
       domain: global
@@ -953,6 +985,7 @@ vlans:
     prefix:
       allocation: id_based
       ipv4: 172.16.1.0/24
+    role: external
     vni: 101001
   red:
     evpn:

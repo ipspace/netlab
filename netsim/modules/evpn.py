@@ -6,6 +6,7 @@ from .. import data
 from ..augment import devices
 from ..data.types import must_be_dict, must_be_int, must_be_string
 from ..utils import log
+from ..utils import routing as _rp_utils
 from . import _dataplane, _Module, _routing
 
 VALID_TRANSPORTS = [ 'vxlan', 'mpls' ] # In order of preference
@@ -447,6 +448,50 @@ def check_vlan_rt_values(node: Box, topology: Box) -> None:
         category=log.IncorrectValue,
         module='evpn')
 
+"""
+Remove unneeded in-VRF EBGP sessions between EVPN routers
+
+In designs using "EBGP as a better IGP", we might get in-VRF EBGP sessions between PE-routers
+over IRB VLANs. This function removes those EBGP sessions if:
+
+* Both BGP routers are also running EVPN
+* Both BGP neighbors are in the same VRF
+* The "evpn.domain" attribute (when set) is the same
+"""
+def remove_vlan_ebgp_neighbors(node: Box,topology: Box) -> None:
+  cleanup_needed = False
+  for ngb in _rp_utils.neighbors(node, vrf=True,select=['ebgp']):
+    if ngb.get('_vrf','default') != ngb.get('_src_vrf','default'):
+      continue                                              # Not a VRF-to-VRF session?
+    ngb_data = topology.nodes[ngb.name]                     # Get neighbor data
+    if 'evpn' not in ngb_data.get('module',[]):             # Is the neighbor running EVPN?
+      continue
+    if node.get('evpn.domain','default') != ngb_data.get('evpn.domain','default'):
+      continue                                              # EVPN PE-devices in different EVPN domains, probably OK
+
+    iflist = [ intf for intf in node.interfaces if intf.ifindex == ngb.ifindex ]
+    if len(iflist) < 1:                                     # Neighbor has incorrect ifindex. Weird.
+      continue                                              # we don't know what's going on, so keep it intact
+
+    ngb_intf = iflist[0]
+    if ngb_intf.type != 'svi':                              # We have to remove EVPN EBGP neighbors only over SVI interfaces
+      continue
+
+    ngb_vlan = ngb_intf.get('vlan.name')                    # Get the VLAN associated with the SVI interface
+    if not ngb_vlan:                                        # Can't get it? Weird, but let's move on
+      continue
+
+    if ngb_vlan not in node.get('evpn.vlans',[]):           # Is this an EVPN-enabled VLAN
+      continue                                              # No? We may need the EBGP session
+
+    ngb._must_remove = True
+    cleanup_needed = True
+
+  if cleanup_needed:                                        # Finally, remove neighbors with '_must_remove' flag
+    for (bgp,_,_) in _rp_utils.rp_data(node,proto='bgp'):   # ... iterating over global and VRF BGP instances
+      if 'neighbors' in bgp:
+        bgp.neighbors = [ ngb for ngb in bgp.neighbors if '_must_remove' not in ngb ]
+
 class EVPN(_Module):
 
   def module_init(self, topology: Box) -> None:
@@ -488,3 +533,6 @@ class EVPN(_Module):
     check_vlan_rt_values(node,topology)
     trim_node_evpn_lists(node)
     set_local_evpn_rd(node)
+
+  def node_cleanup(self, node: Box, topology: Box) -> None:
+    remove_vlan_ebgp_neighbors(node,topology)

@@ -118,6 +118,7 @@ EVPN module supports these default/global/node parameters:
 * **evpn.as** (global parameter): Autonomous system number for VLAN and VRF route targets. Default value: **bgp.as** (when set globally) or **vrf.as**.
 * **evpn.start_transit_vni** (system default parameter) -- the first symmetric IRB transit VNI, range 4096..16777215
 * **evpn.start_transit_vlan** (device-dependent node parameter) -- the starting VLAN ID for VLANs used to map VXLAN transit VNIs
+* **evpn.domain** (node parameter) -- EVPN domain (site) name. This parameter might have to be used in multi-site designs when you want to have an in-VRF inter-site EBGP session across an EVPN-controlled VLAN (see [](evpn-rp) for more details).
 
 (evpn-vlan-service)=
 ### VLAN-Based Service Parameters
@@ -217,7 +218,15 @@ If you're using EVPN to implement symmetrical IRB (**evpn.transit_vni** is set i
 
 If you want to implement an EVPN L3VPN with CE-routers, use separate segments (not VXLAN-backed VLANs) for PE-CE connectivity. There is no way to block the establishment of PE-to-PE in-VRF IGP adjacencies if you expect to have the PE-CE IGP adjacencies on a VXLAN-backed VLAN.
 
-Finally, if you use EBGP with EVPN (simple EBGP, IBGP-over-EBGP, or EBGP-over-EBGP design), the PE devices have different AS numbers, and _netlab_ tries to establish VRF EBGP sessions between them whenever they share a VLAN. To prevent the formation of VRF EBGP sessions between the PE devices:
+Finally, if you use EBGP with EVPN (simple EBGP, IBGP-over-EBGP, or EBGP-over-EBGP design), the PE devices have different AS numbers. _netlab_ thus tries to establish VRF EBGP sessions between them whenever they share a VLAN. However, the EVPN module removes such PE-to-PE intra-VRF EBGP sessions when:
+
+* Both devices use the EVPN module
+* The EBGP session is established across an EVPN-controlled VLAN
+* The two devices use the same VRF name
+
+This algorithm might remove an inter-site PE-to-PE EBGP session when you use Inter-AS Option A (EBGP sessions in VRFs) over EVPN-controlled VLANs. If that happens, use a different value of the **evpn.domain** parameter on nodes belonging to different sites (all nodes within a site must have the same **evpn.domain** value).
+
+It might be even better to prevent the formation of VRF EBGP sessions between the PE devices:
 
 * Use EVPN as a pure L3VPN (no stretched VLAN-over-VXLAN segments);
 * Disable BGP in the EVPN-controlled VRFs with a setting similar to **vrfs._tenant_vrf_.bgp: False**;
