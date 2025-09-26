@@ -9,7 +9,7 @@ The *graph* output module is invoked with the **[netlab graph](netlab-graph)** c
 
 A single formatting modifier can be used to specify the graph type:
 
-* **topology** (default) -- Display inter-node links, multi-access- and stub subnets. When the network topology contains BGP information, the graph groups nodes into autonomous systems. Alternatively, you could set **defaults.outputs.graph.groups** attribute to use topology **[groups](topo-groups)** to group graph nodes.
+* **topology** (default) -- Display inter-node links, multi-access-, and stub subnets. When the network topology contains BGP information, the graph groups nodes into autonomous systems. Alternatively, you could set **defaults.outputs.graph.groups** attribute to use topology **[groups](topo-groups)** to group graph nodes.
 * **bgp** -- Include autonomous systems, nodes, and BGP sessions. The formatting modifier can include [BGP formatting parameters](outputs-graph-bgp-parameters). For example, `netlab create -o graph:bgp:rr` draws RR-client sessions as directed arrows.
 * **isis** -- Create a diagram of IS-IS routing, including areas, color-coded circuit types, and edge subnets (does not work with IS-IS running over VLANs)
 
@@ -24,9 +24,21 @@ You can use the **graph** link and node attributes to change the style of indivi
 * **graph.fill** -- fill color (*fillcolor* GraphViz attribute)
 * **graph.width** -- line width (*penwidth* GraphViz attribute)
 
-You can also use the **graph.linkorder** link attribute to change the order of links in the D2 graph description file, which can sometimes improve the diagrams' appearance. Links with lower **graph.linkorder** values (default: 100) appear earlier in the list of links.
-
 [^XS]: You can extend the GraphViz styling capabilities and add new **graph** attributes. See [](outputs-d2-styles) for details.
+
+(outputs-graph-layout)=
+## Influencing the Graph Layout
+
+_netlab_ uses the node **graph.rank** attribute to:
+
+1. Tell GraphViz that nodes with the same **graph.rank** should be at the same rank (vertical position) in the graph
+2. Sort nodes in link definitions to ensure the graph edges are always defined as going from nodes with a lower rank to nodes with a higher rank. The order of nodes in the graph edges influences the GraphViz layout engine.
+
+The default value of the **graph.rank** attribute is 100, allowing you to push some nodes (with rank below 100) toward the top of the graph and others (with rank above 100) toward the bottom.
+
+You can also use the **graph.rank** on links to influence how GraphViz draws multi-access links.
+
+Finally, the link/interface **graph.linkorder** attribute allows you to specify the node order in individual links. The default **graph.linkorder** value is 50 for interfaces and 100 for subnets (multi-access links), resulting in subnets being "below" nodes unless you change the link- or interface **graph.linkorder** value.
 
 (outputs-graph-appearance)=
 ## Modifying Graph Appearance

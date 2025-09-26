@@ -153,9 +153,16 @@ def append_edge(graph: Box, if_a: Box, if_b: Box, g_type: str) -> None:
 """
 Append a LAN segment to the graph
 """
-def append_segment(graph: Box,link: Box, g_type: str) -> None:
+LINK_DEFAULTS: dict = { 'graph.rank': 100, 'graph.linkorder': 100 }
+
+def append_segment(graph: Box,link: Box, g_type: str, topology: Box) -> None:
   link.node = link.get('bridge',f'{link.type}_{link.linkindex}')
   link.name = link.node
+  link.device = 'link'
+  for dk,dv in LINK_DEFAULTS.items():
+    if dk not in link:
+      link[dk] = dv
+
   graph.nodes[link.node] = link
   for af in ['ipv4','ipv6']:
     if af in link.prefix:
@@ -164,8 +171,8 @@ def append_segment(graph: Box,link: Box, g_type: str) -> None:
 
   for intf in link.interfaces:
     e_data = [ intf, link ]
-    if get_attr(intf,g_type,'linkorder',100) > get_attr(link,g_type,'linkorder',101):
-      e_data = [ link, intf ]
+    e_data.sort(key = lambda x: x.get('graph.rank',topology.nodes[intf.node].get('graph.rank',100)))
+    e_data.sort(key = lambda x: get_attr(x,g_type,'linkorder',50))
     append_edge(graph,e_data[0],e_data[1],g_type)
 
 def topo_edges(graph: Box, topology: Box, settings: Box,g_type: str) -> None:
@@ -174,9 +181,11 @@ def topo_edges(graph: Box, topology: Box, settings: Box,g_type: str) -> None:
     propagate_link_attributes(link,g_type,['linkorder','type'])
 
     if len(link.interfaces) == 2 and link.get('graph.type','') != 'lan':
-      append_edge(graph,link.interfaces[0],link.interfaces[1],g_type)
+      intf_list = sorted(link.interfaces,key=lambda intf: topology.nodes[intf.node].get('graph.rank',100))
+      intf_list.sort(key = lambda x: get_attr(x,g_type,'linkorder',50))
+      append_edge(graph,intf_list[0],intf_list[1],g_type)
     else:
-      append_segment(graph,link,g_type)
+      append_segment(graph,link,g_type,topology)
 
 def topology_graph(topology: Box, settings: Box,g_type: str) -> Box:
   set_shared_attributes(topology)
@@ -217,6 +226,8 @@ def bgp_sessions(graph: Box, topology: Box, settings: Box, g_type: str) -> None:
         elif neighbor.get('rr',False) and not n_data.get('rr',False):
           dir = '->'
           e_1, e_2 = e_2, e_1
+        else:
+          (e_1, e_2) = sorted([e_1, e_2],key=lambda x: topology.nodes[x.node].get('graph.rank',100))
 
       if rr_sessions:
         e_1[g_type].dir = dir
@@ -289,7 +300,7 @@ def isis_edges(topology: Box, graph: Box, g_type: str) -> None:
       append_edge(graph,link.interfaces[0],link.interfaces[1],g_type)
       continue
 
-    append_segment(graph,link,g_type)
+    append_segment(graph,link,g_type,topology)
     isis_areas = set([ topology.nodes[node].get('isis.area') for node in isis_nodes ])
     if len(isis_areas) == 1:
       area_id = isis_areas.pop().replace('.','_')
