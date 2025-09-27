@@ -36,70 +36,74 @@ input:
 - package:topology-defaults.yml
 links:
 - _linkname: links[1]
+  bridge: input_1
   interfaces:
-  - bgp:
+  - _vlan_mode: irb
+    bgp:
       local_as: 65002
     ifindex: 1
     ifname: eth1
-    ipv4: 10.1.0.1/30
+    ipv4: 172.16.0.1/24
     node: dut
+    vlan:
+      access: red
   - ifindex: 1
     ifname: eth1
-    ipv4: 10.1.0.2/30
+    ipv4: 172.16.0.2/24
     node: x1
   linkindex: 1
   node_count: 2
   prefix:
-    ipv4: 10.1.0.0/30
-  role: external
-  type: p2p
+    allocation: id_based
+    ipv4: 172.16.0.0/24
+  type: lan
 - _linkname: links[2]
   interfaces:
   - bgp:
       local_as: 65101
     ifindex: 2
     ifname: eth2
-    ipv4: 10.1.0.5/30
+    ipv4: 10.1.0.1/30
     node: dut
   - ifindex: 1
     ifname: eth1
-    ipv4: 10.1.0.6/30
+    ipv4: 10.1.0.2/30
     node: x2
   linkindex: 2
   node_count: 2
   prefix:
-    ipv4: 10.1.0.4/30
+    ipv4: 10.1.0.0/30
   role: external
   type: p2p
 - _linkname: links[3]
   interfaces:
   - ifindex: 3
     ifname: eth3
-    ipv4: 10.1.0.9/30
+    ipv4: 10.1.0.5/30
     node: dut
   - ifindex: 1
     ifname: eth1
-    ipv4: 10.1.0.10/30
+    ipv4: 10.1.0.6/30
     node: x3
   linkindex: 3
   node_count: 2
   prefix:
-    ipv4: 10.1.0.8/30
+    ipv4: 10.1.0.4/30
   type: p2p
 - _linkname: links[4]
   interfaces:
   - ifindex: 2
     ifname: eth2
-    ipv4: 10.1.0.13/30
+    ipv4: 10.1.0.9/30
     node: x2
   - ifindex: 1
     ifname: eth1
-    ipv4: 10.1.0.14/30
+    ipv4: 10.1.0.10/30
     node: x4
   linkindex: 4
   node_count: 2
   prefix:
-    ipv4: 10.1.0.12/30
+    ipv4: 10.1.0.8/30
   type: p2p
 message: 'Use this topology to test the ''local_as'' functionality on IBGP sessions.
   The
@@ -121,6 +125,7 @@ message: 'Use this topology to test the ''local_as'' functionality on IBGP sessi
 
   '
 module:
+- vlan
 - ospf
 - bgp
 name: input
@@ -158,22 +163,22 @@ nodes:
         type: ibgp
       - activate:
           ipv4: true
-        as: 65100
-        ifindex: 1
-        ipv4: 10.1.0.2
-        local_as: 65002
-        name: x1
-        type: ebgp
-      - activate:
-          ipv4: true
         as: 65101
         ifindex: 2
-        ipv4: 10.1.0.6
+        ipv4: 10.1.0.2
         local_as: 65101
         name: x2
         next_hop_self: all
         rr_client: true
         type: localas_ibgp
+      - activate:
+          ipv4: true
+        as: 65100
+        ifindex: 40000
+        ipv4: 172.16.0.2
+        local_as: 65002
+        name: x1
+        type: ebgp
       next_hop_self: true
       originate:
       - 172.42.42.0/24
@@ -182,49 +187,67 @@ nodes:
     device: none
     id: 1
     interfaces:
-    - bgp:
-        local_as: 65002
+    - bridge: input_1
       ifindex: 1
       ifname: eth1
-      ipv4: 10.1.0.1/30
       linkindex: 1
       mtu: 1500
-      name: dut -> x1
+      name: '[Access VLAN red] dut -> x1'
       neighbors:
       - ifname: eth1
-        ipv4: 10.1.0.2/30
+        ipv4: 172.16.0.2/24
         node: x1
-      role: external
-      type: p2p
+      type: lan
+      vlan:
+        access: red
+        access_id: 1000
     - bgp:
         local_as: 65101
       ifindex: 2
       ifname: eth2
-      ipv4: 10.1.0.5/30
+      ipv4: 10.1.0.1/30
       linkindex: 2
       mtu: 1500
       name: dut -> x2
       neighbors:
       - ifname: eth1
-        ipv4: 10.1.0.6/30
+        ipv4: 10.1.0.2/30
         node: x2
       role: external
       type: p2p
     - ifindex: 3
       ifname: eth3
-      ipv4: 10.1.0.9/30
+      ipv4: 10.1.0.5/30
       linkindex: 3
       mtu: 1500
       name: dut -> x3
       neighbors:
       - ifname: eth1
-        ipv4: 10.1.0.10/30
+        ipv4: 10.1.0.6/30
         node: x3
       ospf:
         area: 0.0.0.0
         network_type: point-to-point
         passive: false
       type: p2p
+    - bgp:
+        local_as: 65002
+      bridge_group: 1
+      ifindex: 40000
+      ifname: Vlan1000
+      ipv4: 172.16.0.1/24
+      mtu: 1500
+      name: VLAN red (1000) -> [x1]
+      neighbors:
+      - ifname: eth1
+        ipv4: 172.16.0.2/24
+        node: x1
+      role: external
+      type: svi
+      virtual_interface: true
+      vlan:
+        mode: irb
+        name: red
     loopback:
       ifindex: 0
       ifname: Loopback0
@@ -240,6 +263,7 @@ nodes:
       ipv4: 192.168.121.101
       mac: ca:fe:00:01:00:00
     module:
+    - vlan
     - ospf
     - bgp
     mtu: 1500
@@ -249,6 +273,19 @@ nodes:
         ipv4: true
       area: 0.0.0.0
       router_id: 10.0.0.1
+    vlan:
+      max_bridge_group: 1
+    vlans:
+      red:
+        bgp:
+          local_as: 65002
+        bridge_group: 1
+        id: 1000
+        mode: irb
+        prefix:
+          allocation: id_based
+          ipv4: 172.16.0.0/24
+        role: external
   x1:
     af:
       ipv4: true
@@ -270,7 +307,7 @@ nodes:
           ipv4: true
         as: 65002
         ifindex: 1
-        ipv4: 10.1.0.1
+        ipv4: 172.16.0.1
         name: dut
         type: ebgp
       next_hop_self: true
@@ -279,20 +316,23 @@ nodes:
     device: none
     id: 2
     interfaces:
-    - ifindex: 1
+    - bridge: input_1
+      ifindex: 1
       ifname: eth1
-      ipv4: 10.1.0.2/30
+      ipv4: 172.16.0.2/24
       linkindex: 1
       mtu: 1500
-      name: x1 -> dut
+      name: x1 -> [dut]
       neighbors:
       - bgp:
           local_as: 65002
-        ifname: eth1
-        ipv4: 10.1.0.1/30
+        ifname: Vlan1000
+        ipv4: 172.16.0.1/24
         node: dut
-      role: external
-      type: p2p
+        vlan:
+          mode: irb
+          name: red
+      type: lan
     loopback:
       ifindex: 0
       ifname: Loopback0
@@ -343,7 +383,7 @@ nodes:
           ipv4: true
         as: 65101
         ifindex: 1
-        ipv4: 10.1.0.5
+        ipv4: 10.1.0.1
         name: dut
         next_hop_self: all
         rr_client: true
@@ -356,7 +396,7 @@ nodes:
     interfaces:
     - ifindex: 1
       ifname: eth1
-      ipv4: 10.1.0.6/30
+      ipv4: 10.1.0.2/30
       linkindex: 2
       mtu: 1500
       name: x2 -> dut
@@ -364,19 +404,19 @@ nodes:
       - bgp:
           local_as: 65101
         ifname: eth2
-        ipv4: 10.1.0.5/30
+        ipv4: 10.1.0.1/30
         node: dut
       role: external
       type: p2p
     - ifindex: 2
       ifname: eth2
-      ipv4: 10.1.0.13/30
+      ipv4: 10.1.0.9/30
       linkindex: 4
       mtu: 1500
       name: x2 -> x4
       neighbors:
       - ifname: eth1
-        ipv4: 10.1.0.14/30
+        ipv4: 10.1.0.10/30
         node: x4
       ospf:
         area: 0.0.0.0
@@ -448,13 +488,13 @@ nodes:
     interfaces:
     - ifindex: 1
       ifname: eth1
-      ipv4: 10.1.0.10/30
+      ipv4: 10.1.0.6/30
       linkindex: 3
       mtu: 1500
       name: x3 -> dut
       neighbors:
       - ifname: eth3
-        ipv4: 10.1.0.9/30
+        ipv4: 10.1.0.5/30
         node: dut
       ospf:
         area: 0.0.0.0
@@ -524,13 +564,13 @@ nodes:
     interfaces:
     - ifindex: 1
       ifname: eth1
-      ipv4: 10.1.0.14/30
+      ipv4: 10.1.0.10/30
       linkindex: 4
       mtu: 1500
       name: x4 -> x2
       neighbors:
       - ifname: eth2
-        ipv4: 10.1.0.13/30
+        ipv4: 10.1.0.9/30
         node: x2
       ospf:
         area: 0.0.0.0
@@ -564,3 +604,23 @@ nodes:
 ospf:
   area: 0.0.0.0
 provider: libvirt
+vlans:
+  red:
+    host_count: 0
+    id: 1000
+    neighbors:
+    - ifname: eth1
+      ipv4: 172.16.0.2/24
+      node: x1
+    - bgp:
+        local_as: 65002
+      ifname: Vlan1000
+      ipv4: 172.16.0.1/24
+      node: dut
+      vlan:
+        mode: irb
+        name: red
+    prefix:
+      allocation: id_based
+      ipv4: 172.16.0.0/24
+    role: external

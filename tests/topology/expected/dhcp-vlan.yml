@@ -77,6 +77,9 @@ links:
       group: 1
   interfaces:
   - _vlan_mode: irb
+    dhcp:
+      server:
+      - dhs
     gateway:
       id: 1
       ipv6: 2001:db8:cafe:1::1/64
@@ -123,6 +126,11 @@ links:
       ipv4: true
   interfaces:
   - _vlan_mode: irb
+    dhcp:
+      client:
+        ipv4: true
+      server:
+      - dhs
     ifindex: 3
     ifname: eth3
     ipv4: 172.16.0.2/24
@@ -153,6 +161,11 @@ links:
       ipv4: true
   interfaces:
   - _vlan_mode: irb
+    dhcp:
+      client:
+        ipv4: true
+      server:
+      - dhs
     ifindex: 4
     ifname: eth4
     ipv4: 172.16.0.2/24
@@ -191,6 +204,9 @@ links:
       group: 1
   interfaces:
   - _vlan_mode: irb
+    dhcp:
+      server:
+      - dhs
     gateway:
       id: 1
       ipv6: 2001:db8:cafe:1::1/64
@@ -336,17 +352,25 @@ nodes:
       ifindex: 1
       ifname: eth1
       linkindex: 3
-      name: h1 -> [s1,h2]
+      name: h1 -> [h2,s1]
       neighbors:
-      - ifname: Vlan1000
-        ipv4: 172.16.0.2/24
-        node: s1
       - dhcp:
           client:
             ipv4: true
         ifname: eth1
         ipv4: 172.16.0.4/24
         node: h2
+      - dhcp:
+          client:
+            ipv4: true
+          server:
+          - dhs
+        ifname: Vlan1000
+        ipv4: 172.16.0.2/24
+        node: s1
+        vlan:
+          mode: irb
+          name: red
       role: stub
       type: lan
     loopback:
@@ -386,9 +410,17 @@ nodes:
         ifname: eth1
         ipv4: 172.16.0.3/24
         node: h1
-      - ifname: Vlan1000
+      - dhcp:
+          client:
+            ipv4: true
+          server:
+          - dhs
+        ifname: Vlan1000
         ipv4: 172.16.0.2/24
         node: s1
+        vlan:
+          mode: irb
+          name: red
       role: stub
       type: lan
     loopback:
@@ -430,11 +462,8 @@ nodes:
       ifindex: 1
       ifname: eth1
       linkindex: 2
-      name: h3 -> [s1,r1]
+      name: h3 -> [r1,s1]
       neighbors:
-      - ifname: Vlan1001
-        ipv6: 2001:db8:cafe:1::2/64
-        node: s1
       - dhcp:
           client:
             ipv4: true
@@ -442,6 +471,24 @@ nodes:
         ifname: eth1
         ipv6: 2001:db8:cafe:1::6/64
         node: r1
+      - dhcp:
+          server:
+          - dhs
+        gateway:
+          anycast:
+            mac: 0200.cafe.00ff
+            unicast: true
+          id: 1
+          ipv6: 2001:db8:cafe:1::1/64
+          protocol: anycast
+          vrrp:
+            group: 1
+        ifname: Vlan1001
+        ipv6: 2001:db8:cafe:1::2/64
+        node: s1
+        vlan:
+          mode: irb
+          name: blue
       type: lan
     mgmt:
       ifname: eth0
@@ -476,9 +523,24 @@ nodes:
         ifname: eth1
         ipv6: 2001:db8:cafe:1::5/64
         node: h3
-      - ifname: Vlan1001
+      - dhcp:
+          server:
+          - dhs
+        gateway:
+          anycast:
+            mac: 0200.cafe.00ff
+            unicast: true
+          id: 1
+          ipv6: 2001:db8:cafe:1::1/64
+          protocol: anycast
+          vrrp:
+            group: 1
+        ifname: Vlan1001
         ipv6: 2001:db8:cafe:1::2/64
         node: s1
+        vlan:
+          mode: irb
+          name: blue
       ospf:
         area: 0.0.0.0
         passive: false
@@ -736,9 +798,6 @@ vlans:
       ifname: eth1
       ipv6: 2001:db8:cafe:1::5/64
       node: h3
-    - ifname: Vlan1001
-      ipv6: 2001:db8:cafe:1::2/64
-      node: s1
     - dhcp:
         client:
           ipv4: true
@@ -746,6 +805,24 @@ vlans:
       ifname: eth1
       ipv6: 2001:db8:cafe:1::6/64
       node: r1
+    - dhcp:
+        server:
+        - dhs
+      gateway:
+        anycast:
+          mac: 0200.cafe.00ff
+          unicast: true
+        id: 1
+        ipv6: 2001:db8:cafe:1::1/64
+        protocol: anycast
+        vrrp:
+          group: 1
+      ifname: Vlan1001
+      ipv6: 2001:db8:cafe:1::2/64
+      node: s1
+      vlan:
+        mode: irb
+        name: blue
     prefix:
       allocation: id_based
       ipv6: 2001:db8:cafe:1::/64
@@ -762,15 +839,21 @@ vlans:
       ifname: eth1
       ipv4: 172.16.0.3/24
       node: h1
-    - ifname: Vlan1000
-      ipv4: 172.16.0.2/24
-      node: s1
     - dhcp:
         client:
           ipv4: true
       ifname: eth1
       ipv4: 172.16.0.4/24
       node: h2
+    - dhcp:
+        server:
+        - dhs
+      ifname: Vlan1000
+      ipv4: 172.16.0.2/24
+      node: s1
+      vlan:
+        mode: irb
+        name: red
     prefix:
       allocation: id_based
       ipv4: 172.16.0.0/24

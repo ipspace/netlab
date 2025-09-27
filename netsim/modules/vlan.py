@@ -759,21 +759,19 @@ def update_vlan_neighbor_list(vlan: str, phy_if: Box, svi_if: Box, node: Box,top
   phy_n_list = phy_if.get('neighbors',[])                               # ... add interface neighbors not yet in the list
   vlan_data.neighbors.extend([n_data for n_data in phy_n_list if n_data.node not in n_map])
 
-  if node.name in n_map:                                                # Is the current node in the list?
-    n_map[node.name].ifname = svi_if.ifname                             # ... it is, fix the interface name
-    for af in ('ipv4','ipv6'):
-      if af in svi_if:
-        n_map[node.name][af] = svi_if[af]
-      else:
-        n_map[node.name].pop(af,None)
+  svi_info = node.get('module',[]) + list(log.AF_LIST)                  # Include SVI module and address information
+  svi_ifdata = get_box({ 'ifname': svi_if.ifname, 'node': node.name })  # Prepare SVI interface data for neighbor list
+  svi_ifdata += { k:v for k,v in svi_if.items() if k in svi_info }      # Copy relevant SVI info into neighbor entry
+
+  if node.name in n_map:
+    # The current node data must be based on physical interfaces
+    # Remove the current node from the neighbor list and add the SVI information
+    #
+    vlan_data.neighbors = [ n for n in vlan_data.neighbors if n.node != node.name ] + [ svi_ifdata ]
   else:
-    n_data = data.get_box({
-               'ifname': svi_if.ifname,
-               'node': node.name })                                     # ... not yet, create neighbor data
-    for af in ('ipv4','ipv6'):
-      if af in svi_if:                                                  # ... copy SVI interface addresses to neighbor data
-        n_data[af] = svi_if[af]
-    vlan_data.neighbors.append(n_data)                                  # Add current node as a neighbor to VLAN neighbor list
+    # The current node is not yet in the VLAN neighbor list, add the SVI information
+    #
+    vlan_data.neighbors.append(svi_ifdata)
 
 """
 create_node_vlan: Create a local (node) copy of a VLAN used on an interface
@@ -1389,6 +1387,12 @@ class VLAN(_Module):
       for attr in topology.defaults.vlan.attributes.copy_vlan_to_intf:
         if attr in vdata:
           intf[attr] = vdata[attr]
+      
+      # Finally, copy module attributes from node VLAN data to access interface data
+      # These attributes will be used to populate neighbor's "neighbor" list in VLANs
+      # with mode = route. We have to fix the IRB neighbors when rebuilding neighbor list.
+      #
+      data.merge_with_removed_attributes(intf,vdata,topology.nodes[intf.node].get('module',[]))
 
   """
   We're almost done, but there's still some hard work to do:
