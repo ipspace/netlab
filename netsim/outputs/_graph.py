@@ -200,6 +200,7 @@ def bgp_sessions(graph: Box, topology: Box, settings: Box, g_type: str) -> None:
   no_vrf = settings.get('bgp.novrf',None)
   add_vrf = settings.get('bgp.vrf',None)
   bgp_af = settings.get('bgp.af')
+  node_order = list(topology.nodes.keys())
   for n_name,n_data in topology.nodes.items():
     if 'bgp' not in n_data:
       continue
@@ -227,6 +228,7 @@ def bgp_sessions(graph: Box, topology: Box, settings: Box, g_type: str) -> None:
           dir = '->'
           e_1, e_2 = e_2, e_1
         else:
+          (e_1, e_2) = sorted([e_1, e_2],key=lambda x: node_order.index(x.node))
           (e_1, e_2) = sorted([e_1, e_2],key=lambda x: topology.nodes[x.node].get('graph.rank',100))
 
       if rr_sessions:
