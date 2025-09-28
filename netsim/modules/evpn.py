@@ -461,8 +461,9 @@ over IRB VLANs. This function removes those EBGP sessions if:
 def remove_vlan_ebgp_neighbors(node: Box,topology: Box) -> None:
   cleanup_needed = False
   for ngb in _rp_utils.neighbors(node, vrf=True,select=['ebgp']):
-    if ngb.get('_vrf','default') != ngb.get('_src_vrf','default'):
-      continue                                              # Not a VRF-to-VRF session?
+    vrf = ngb.get('_src_vrf','default')
+    if ngb.get('_vrf','default') != vrf:                    # Are both neighbors in the same VRF?
+      continue                                              # ... if not, this could be a valid inter-VRF session
     ngb_data = topology.nodes[ngb.name]                     # Get neighbor data
     if 'evpn' not in ngb_data.get('module',[]):             # Is the neighbor running EVPN?
       continue
@@ -485,6 +486,11 @@ def remove_vlan_ebgp_neighbors(node: Box,topology: Box) -> None:
       continue                                              # No? We may need the EBGP session
 
     ngb._must_remove = True
+    log.warning(
+      text=f'Removing an EBGP session between {node.name} and {ngb.name} running over an EVPN-enabled VLAN {ngb_vlan}',
+      flag='ebgp_vlan',
+      hint='ebgp_vlan')
+
     cleanup_needed = True
 
   if cleanup_needed:                                        # Finally, remove neighbors with '_must_remove' flag
