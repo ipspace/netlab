@@ -70,7 +70,7 @@ def gv_line_attr(
   if newline:
     f.write("\n")
 
-def gv_start(f : typing.TextIO, settings: Box, topology: Box) -> None:
+def gv_start(f : typing.TextIO, graph: Box, topology: Box, settings: Box) -> None:
   title = topology.get('graph.title') or topology.get('defaults.graph.title')
   f.write('graph {\n')
   gv_multiline_attr(f,attr=settings.styles.graph,indent=2)
@@ -82,6 +82,16 @@ def gv_start(f : typing.TextIO, settings: Box, topology: Box) -> None:
   gv_line_attr(f,attr=settings.styles.node,newline=True)
   f.write('  edge')
   gv_line_attr(f,attr=settings.styles.edge,newline=True)
+  rank = { node.graph.rank 
+              for node in graph.nodes.values()
+                if 'graph.rank' in node and node.device != 'link' }
+  if rank:
+    f.write ('  newrank=true;\n')
+    for r_val in sorted(list(rank)):
+      r_nodes = [ node.name +"; "
+                    for node in graph.nodes.values()
+                      if node.get('graph.rank',None) == r_val and node.device != 'link' ]
+      f.write(f'  {{ rank=same; {"".join(r_nodes)}}}\n')
 
 def gv_end(f : typing.TextIO, fname: str) -> None:
   f.write('}\n')
@@ -135,7 +145,7 @@ def gv_clusters(f : typing.TextIO, graph: Box, topology: Box, settings: Box) -> 
     f.write('  }\n')
 
 def gv_nodes(f: typing.TextIO, graph: Box, topology: Box, settings: Box) -> None:
-  for n_name,n_data in graph.nodes.items():
+  for _,n_data in graph.nodes.items():
     if 'graph.cluster' not in n_data:
       if 'prefix' in n_data:
         gv_network(f,n_data,settings,indent=2)
@@ -190,7 +200,7 @@ def gv_migrate_styles(settings: Box) -> None:
 def draw_graph(topology: Box, settings: Box, graph: Box, fname: str) -> None:
   f = _files.open_output_file(fname)
   gv_migrate_styles(settings)
-  gv_start(f,settings,topology)
+  gv_start(f,graph,topology,settings)
 
   gv_clusters(f,graph,topology,settings)
   gv_nodes(f,graph,topology,settings)

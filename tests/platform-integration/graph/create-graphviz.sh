@@ -13,7 +13,7 @@ if [[ "$OPTS" == *"topo"* ]]; then
   NETLAB_OUTPUTS_GRAPH_GROUPS=[fabric,host] graph topo.yml dot-topo-groups.svg ""
 fi
 if [[ "$OPTS" == *"bgp"* ]]; then
-  graph bgp.yml dot-bgp-default.svg :bgp "Default BGP graph"
+  NETLAB_GROUPS_CORE_GRAPH_RANK=1 graph bgp.yml dot-bgp-default.svg :bgp "Default BGP graph"
   graph bgp.yml dot-bgp-rr.svg :bgp:rr "BGP graph with RR sessions"
   graph bgp.yml dot-bgp-vrf.svg :bgp:vrf "BGP graph with VRF sessions"
   graph bgp.yml dot-bgp-novrf.svg :bgp:novrf "No VRF sessions in the BGP graph"
