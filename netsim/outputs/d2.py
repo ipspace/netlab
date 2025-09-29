@@ -34,27 +34,19 @@ def copy_d2_attr(f : typing.TextIO, dt: str, settings: Box, indent: str = '') ->
   dump_d2_dict(f,settings.styles[dt],indent)
 
 '''
-Find D2-specific device type for a given node and copy device-specific attributes
-into D2 object. Another convenience wrapper around copy_d2_attr and dump_d2_dict
-'''
-def d2_node_attr(f : typing.TextIO, n: Box, settings: Box, indent: str = '') -> None:
-  d2_type = n.d2.type or ''
-  copy_d2_attr(f,d2_type,settings,indent)
-
-'''
 Add D2 styling information from d2.* link/node attributes
 '''
 STYLE_MAP: Box
 IGNORE_KW: list = ['dir', 'type', 'name']
 
-def d2_style(f : typing.TextIO, obj: Box, indent: str) -> None:
-  if 'd2' not in obj:
-    return
-  d2_style = map_style(obj.d2,STYLE_MAP)
-  d2_extra = obj.get('d2.format',{})
-
-  if d2_style or d2_extra:
-    dump_d2_dict(f,d2_extra + { 'style': d2_style },indent)
+def d2_style(f : typing.TextIO, obj: Box, indent: str, settings: Box) -> None:
+  d2_type  = obj.get('d2.type','')
+  obj_style = get_box(settings.styles.get(d2_type,{}))
+  if 'd2' in obj:
+    obj_style.style += map_style(obj.d2,STYLE_MAP)
+    obj_style += obj.get('d2.format',{})
+  if obj_style:
+    dump_d2_dict(f,obj_style,indent)
 
 '''
 Create a node in D2 graph and add a label and styling attributes to it
@@ -63,7 +55,7 @@ indent parameter is used to create indented definitions within containers
 '''
 def node_with_label(f : typing.TextIO, n: Box, settings: Box, indent: str = '') -> None:
   f.write(f'{indent}{n.d2.name} {{\n')
-  d2_style(f,n,indent + '  ')
+  d2_style(f,n,indent + '  ',settings)
   node_ip_str = ""
   node_ip = n.loopback.ipv4 or n.loopback.ipv6
   if settings.node_address_label:
@@ -72,7 +64,6 @@ def node_with_label(f : typing.TextIO, n: Box, settings: Box, indent: str = '') 
     if node_ip:
       node_ip_str = f'\\n{node_ip}'
   f.write(f"  {indent}label: \"{n.name} [{n.device}]{node_ip_str}\"\n")
-  d2_node_attr(f,n,settings,indent+'  ')
   f.write(f'{indent}}}\n')
 
 '''
@@ -82,7 +73,11 @@ the LAN bridge name, node label is its IPv4 or IPv6 prefix.
 def network_with_label(f : typing.TextIO, n: Box, settings: Box, indent: str = '') -> None:
   f.write(f'{indent}{n.name} {{\n')
   f.write(f'{indent}  label: {n.prefix.ipv4 or n.prefix.ipv6 or n.bridge}\n')
-  copy_d2_attr(f,'lan',settings,'  '+indent)
+  if 'type' not in n:
+    n.type = 'lan'
+  if 'd2.type' not in n:
+    n.d2.type = n.type
+  d2_style(f,n,indent + '  ',settings)
   f.write(f'{indent}}}\n')
 #  f.write('style=filled fillcolor="%s" fontsize=11' % (settings.colors.get("stub","#d1bfab")))
 
@@ -95,11 +90,11 @@ def edge_label(f : typing.TextIO, direction: str, data: Box, subnet: bool = True
 '''
 Create a P2P connection between two nodes
 '''
-def edge_p2p(f : typing.TextIO, l: Box, labels: typing.Optional[bool] = False) -> None:
+def edge_p2p(f : typing.TextIO, l: Box, settings: Box, labels: typing.Optional[bool] = False) -> None:
   e_direction = ('source','target')
   dir = l.interfaces[0].get('attr.dir','--')
   f.write(f"{l.interfaces[0].d2.name} {dir} {l.interfaces[1].d2.name} {{\n")
-  d2_style(f,l,'  ')
+  d2_style(f,l,'  ',settings)
   if labels:
     for e_idx,intf in enumerate(l.interfaces):
       if '_subnet' not in intf:
@@ -168,7 +163,7 @@ def d2_links(f: typing.TextIO, graph: Box, topology: Box, settings: Box) -> None
       intf.d2.name = intf.node
       if intf.node in graph.nodes:
         intf.d2.name = graph.nodes[intf.node].d2.name
-    edge_p2p(f,fake_link,settings.interface_labels)
+    edge_p2p(f,fake_link,settings,settings.interface_labels)
 
 def draw_graph(topology: Box, settings: Box, graph: Box, fname: str) -> None:
   f = _files.open_output_file(fname)
