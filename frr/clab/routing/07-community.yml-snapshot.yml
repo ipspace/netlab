@@ -59,6 +59,8 @@ defaults:
           - router
           - bridge
           mgmt_vrf: true
+          generate_mac:
+          - ethernet
         bfd: {}
         dhcp:
           client:
@@ -192,7 +194,7 @@ defaults:
             INTFTYPE: et
             CLAB_MGMT_VRF: management
         mgmt_if: Management0
-        image: ceos:4.33.1F
+        image: ceos:4.34.2F
         group_vars:
           ansible_user: admin
           ansible_ssh_pass: admin
@@ -265,6 +267,8 @@ defaults:
           roles:
           - host
           - router
+          generate_mac:
+          - svi
         bfd: {}
         evpn:
           irb: true
@@ -826,6 +830,11 @@ defaults:
           bgp: true
         vxlan: {}
       description: Nokia SR OS VM in container
+      support:
+        level: minimal
+        caveats:
+        - We're testing the new Nokia SR-SIM container instead of the SR OS 
+          VM-in-container
       mgmt_if: A/1
       interface_name: eth-1/1/c{ifindex}
       loopback_interface_name: >-
@@ -1367,6 +1376,18 @@ defaults:
         ansible_user: vagrant
         ansible_ssh_pass: vagrant
         ansible_become_password: vagrant
+      clab:
+        group_vars:
+          ansible_ssh_pass: admin
+          ansible_user: admin
+          ansible_become_password: admin
+          netlab_check_retries: 50
+        image: vrnetlab/cisco_c8000v:17.13.01a
+        node:
+          kind: cisco_c8000v
+        interface:
+          name: eth{ifindex-1}
+        build: https://containerlab.dev/manual/kinds/vr-c8000v/
       role: router
       routing:
         _rm_per_af: true
@@ -1377,17 +1398,6 @@ defaults:
       interface_name: GigabitEthernet{ifindex}
       ifindex_offset: 2
       virtualbox: {}
-      clab:
-        group_vars:
-          ansible_ssh_pass: admin
-          ansible_user: admin
-          netlab_check_retries: 50
-        image: vrnetlab/vr-c8000v:17.13.01a
-        node:
-          kind: cisco_c8000v
-        interface:
-          name: eth{ifindex-1}
-        build: https://containerlab.dev/manual/kinds/vr-c8000v/
       node:
         min_mtu: 1500
       libvirt:
@@ -1563,6 +1573,18 @@ defaults:
         ansible_user: vagrant
         ansible_ssh_pass: vagrant
         ansible_become_password: vagrant
+      clab:
+        group_vars:
+          ansible_ssh_pass: admin
+          ansible_user: admin
+          ansible_become_password: admin
+          netlab_check_retries: 50
+        image: vrnetlab/cisco_csr1000v:17.03.08
+        node:
+          kind: cisco_csr1000v
+        interface:
+          name: eth{ifindex-1}
+        build: https://containerlab.dev/manual/kinds/vr-csr/
       role: router
       routing:
         _rm_per_af: true
@@ -1574,17 +1596,6 @@ defaults:
       ifindex_offset: 2
       virtualbox:
         image: cisco/csr1000v
-      clab:
-        group_vars:
-          ansible_ssh_pass: admin
-          ansible_user: admin
-          netlab_check_retries: 50
-        image: vrnetlab/cisco_csr1000v:17.03.08
-        node:
-          kind: cisco_csr1000v
-        interface:
-          name: eth{ifindex-1}
-        build: https://containerlab.dev/manual/kinds/vr-csr/
       node:
         min_mtu: 1500
       libvirt:
@@ -1909,6 +1920,19 @@ defaults:
         netlab_initial: always
         netlab_ssh_args: -o KexAlgorithms=+diffie-hellman-group-exchange-sha1 -o
           PubkeyAcceptedKeyTypes=ssh-rsa -o HostKeyAlgorithms=+ssh-rsa
+      clab:
+        group_vars:
+          ansible_ssh_pass: admin
+          ansible_user: admin
+          ansible_become_password: admin
+          netlab_check_retries: 20
+          netlab_device_type: iol
+        interface:
+          name: Ethernet{ifindex // 4}/{ifindex % 4}
+        build: https://containerlab.dev/manual/kinds/cisco_iol/
+        image: vrnetlab/cisco_iol:17.16.01a
+        node:
+          kind: cisco_iol
       role: router
       routing:
         _rm_per_af: true
@@ -1917,19 +1941,6 @@ defaults:
       graphite:
         icon: router
       interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
-      clab:
-        group_vars:
-          ansible_user: admin
-          ansible_ssh_pass: admin
-          ansible_become_password: admin
-          netlab_device_type: iol
-          netlab_check_retries: 20
-        interface:
-          name: Ethernet{ifindex // 4}/{ifindex % 4}
-        build: https://containerlab.dev/manual/kinds/cisco_iol/
-        image: vrnetlab/cisco_iol:17.16.01a
-        node:
-          kind: cisco_iol
     ioll2:
       features:
         bgp:
@@ -1983,6 +1994,9 @@ defaults:
           min_mtu: 68
           min_phy_mtu: 1501
           max_mtu: 1500
+          generate_mac:
+          - ethernet
+          - svi
         isis:
           circuit_type: true
           import:
@@ -2099,21 +2113,13 @@ defaults:
         netlab_initial: always
         netlab_ssh_args: -o KexAlgorithms=+diffie-hellman-group-exchange-sha1 -o
           PubkeyAcceptedKeyTypes=ssh-rsa -o HostKeyAlgorithms=+ssh-rsa
-      role: router
-      routing:
-        _rm_per_af: true
-      external:
-        image: none
-      graphite:
-        icon: router
-      interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
       clab:
         group_vars:
-          ansible_user: admin
           ansible_ssh_pass: admin
+          ansible_user: admin
           ansible_become_password: admin
-          netlab_device_type: ioll2
           netlab_check_retries: 20
+          netlab_device_type: ioll2
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         build: https://containerlab.dev/manual/kinds/cisco_iol/
@@ -2122,6 +2128,14 @@ defaults:
           kind: cisco_iol
           type: l2
         mtu: 1500
+      role: router
+      routing:
+        _rm_per_af: true
+      external:
+        image: none
+      graphite:
+        icon: router
+      interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
       lag_interface_name: Port-channel{lag.ifindex}
     iosv:
       features:
@@ -2284,6 +2298,18 @@ defaults:
         ansible_user: vagrant
         ansible_ssh_pass: vagrant
         ansible_become_password: vagrant
+      clab:
+        group_vars:
+          ansible_ssh_pass: admin
+          ansible_user: admin
+          ansible_become_password: admin
+          netlab_check_retries: 50
+        image: vrnetlab/cisco_vios:15.9.3
+        node:
+          kind: linux
+        interface:
+          name: eth{ifindex}
+        build: https://github.com/srl-labs/vrnetlab/tree/master/vios
       role: router
       routing:
         _rm_per_af: true
@@ -2298,17 +2324,6 @@ defaults:
         create_template: iosv.xml.j2
       virtualbox:
         image: cisco/iosv
-      clab:
-        group_vars:
-          ansible_ssh_pass: admin
-          ansible_user: admin
-          netlab_check_retries: 50
-        image: vrnetlab/cisco_vios:15.9.3
-        node:
-          kind: linux
-        interface:
-          name: eth{ifindex}
-        build: https://github.com/srl-labs/vrnetlab/tree/master/vios
     iosvl2:
       features:
         bgp:
@@ -2363,6 +2378,9 @@ defaults:
           min_mtu: 68
           max_mtu: 4700
           min_phy_mtu: 1500
+          generate_mac:
+          - ethernet
+          - svi
         isis:
           circuit_type: true
           import:
@@ -2482,6 +2500,18 @@ defaults:
         ansible_user: vagrant
         ansible_ssh_pass: vagrant
         ansible_become_password: vagrant
+      clab:
+        group_vars:
+          ansible_ssh_pass: admin
+          ansible_user: admin
+          ansible_become_password: admin
+          netlab_check_retries: 50
+        image: vrnetlab/cisco_viosl2:15.2
+        node:
+          kind: linux
+        interface:
+          name: eth{ifindex}
+        build: https://github.com/srl-labs/vrnetlab/tree/master/viosl2
       role: router
       routing:
         _rm_per_af: true
@@ -2496,17 +2526,6 @@ defaults:
         create_template: iosv.xml.j2
       virtualbox:
         image: cisco/iosv
-      clab:
-        group_vars:
-          ansible_ssh_pass: admin
-          ansible_user: admin
-          netlab_check_retries: 50
-        image: vrnetlab/cisco_viosl2:15.2.2020
-        node:
-          kind: linux
-        interface:
-          name: eth{ifindex}
-        build: https://github.com/srl-labs/vrnetlab/tree/master/viosl2
       lag_interface_name: Port-channel{lag.ifindex}
     iosxr:
       description: Cisco IOS XRv
@@ -2674,6 +2693,8 @@ defaults:
             unnumbered: true
           ipv6:
             lla: true
+          generate_mac:
+          - ethernet
         bfd: {}
         bgp: {}
         eigrp: {}
@@ -2717,7 +2738,7 @@ defaults:
       loopback_interface_name: lo{ifindex}
       ifindex_offset: 1
       mgmt_if: vio0
-      role: host
+      role: router
       features:
         routing:
           static: true
@@ -2728,6 +2749,15 @@ defaults:
           ipv6:
             use_ra: true
             lla: true
+        ospf:
+          unnumbered: false
+          import:
+          - connected
+          - static
+          default: true
+          password: true
+          priority: true
+          timers: true
       libvirt:
         create_template: openbsd.xml.j2
         image: netlab/openbsd
@@ -2914,10 +2944,12 @@ defaults:
         min_tx: 100
         min_rx: 100
       clab:
-        image: ghcr.io/nokia/srlinux:25.3.3
+        image: ghcr.io/nokia/srlinux:25.7.2
         node:
           kind: srl
-          type: ixrd2
+          type: ixr-d2
+          config_templates:
+            hosts: /etc/hosts
         interface:
           name: e1-{ifindex}
         group_vars:
@@ -4116,15 +4148,11 @@ defaults:
             _subtype: bgp_session_type
         community:
           ibgp:
-          - standard
-          - extended
-          - large
-          - 2octet
+            type: list
+            _subtype: bgp_community_type
           ebgp:
-          - standard
-          - extended
-          - large
-          - 2octet
+            type: list
+            _subtype: bgp_community_type
           _alt_types:
           - str
           - BoxList
@@ -4184,15 +4212,11 @@ defaults:
         advertise_roles: list
         community:
           ibgp:
-          - standard
-          - extended
-          - large
-          - 2octet
+            type: list
+            _subtype: bgp_community_type
           ebgp:
-          - standard
-          - extended
-          - large
-          - 2octet
+            type: list
+            _subtype: bgp_community_type
           _alt_types:
           - str
           - BoxList
@@ -4225,13 +4249,14 @@ defaults:
         type: dict
         _keytype: int
         _subtype:
+          name: str
           members:
             type: list
-            _subtype: node_id
+            _subtype: str
             _required: true
           rr:
             type: list
-            _subtype: node_id
+            _subtype: str
     ebgp_role: external
     advertise_roles:
     - stub
@@ -4596,6 +4621,10 @@ defaults:
           style:
             border-radius: 8
             font-size: 20
+        container:
+          style:
+            fill: '#e8e8e8'
+            stroke: '#c0c0c0'
         ibgp:
           style:
             stroke: '#613913'
@@ -4628,6 +4657,24 @@ defaults:
             shape: arrow
           target-arrowhead:
             shape: arrow
+        level-1:
+          style:
+            stroke: '#fba002'
+            stroke-width: 3
+        level-2:
+          style:
+            stroke: '#9b652f'
+            stroke-width: 4
+        level-1-2:
+          style:
+            stroke: '#d26400'
+            stroke-width: 4
+        title:
+          shape: text
+          near: top-center
+          style:
+            bold: true
+            font-size: 36
         vrf:
           style:
             stroke-dash: 3
@@ -4662,6 +4709,7 @@ defaults:
           bgcolor: '#e8e8e8'
           color: '#c0c0c0'
           fontname: Verdana
+          fontsize: 12
           margin: 16
         stub:
           bgcolor: '#d1bfab'
@@ -4682,6 +4730,15 @@ defaults:
           penwidth: 2
         vrf:
           style: dashed
+        level-1:
+          color: '#fba002'
+          penwidth: 1
+        level-2:
+          color: '#9b652f'
+          penwidth: 1.5
+        level-1-2:
+          color: '#d26400'
+          penwidth: 1.5
         graph:
           bgcolor: transparent
           nodesep: 0.5
@@ -4693,15 +4750,23 @@ defaults:
           shape: box
           style: rounded,filled
           fontname: Verdana
+          fontsize: 11
         edge:
           fontname: Verdana
           labelfontsize: 8
           labeldistance: 1.5
+        title:
+          fontname: Verdana
+          fontsize: 16
+          labelloc: t
+          labeljust: l
       style_map:
         color: color
         width: penwidth
         fill: fillcolor
       attributes:
+        global:
+          title: str
         node:
           color: str
           fill: str
@@ -4709,6 +4774,10 @@ defaults:
             type: int
             min_value: 1
             max_value: 32
+          rank:
+            type: int
+            min_value: 1
+            max_value: 200
         link:
           type: dict
           _keys:
@@ -4725,6 +4794,10 @@ defaults:
               type: int
               min_value: 1
               max_value: 32
+            rank:
+              type: int
+              min_value: 1
+              max_value: 200
         shared:
         - linkorder
         - color
@@ -4941,7 +5014,7 @@ defaults:
     mgmt:
       ipv4: 192.168.121.0/24
       start: 100
-      mac: 08-4F-A9-00-00-00
+      mac: CA-FE-00-00-00-00
     l2only:
     vrf_loopback:
       ipv4: 10.2.0.0/24
@@ -5000,6 +5073,8 @@ defaults:
         debug:
           type: list
           split_lines: true
+      bgp_community_type:
+        valid_values: {}
     internal:
       input:
       pools: dict
@@ -5368,6 +5443,14 @@ defaults:
         ibgp:
         ebgp:
         localas_ibgp:
+    bgp_community_type:
+      _description: BGP community types
+      type: str
+      valid_values:
+        standard:
+        extended:
+        large:
+        2octet:
     rp_entry:
       _description: Routing policy entry
       action:
@@ -5713,6 +5796,10 @@ defaults:
         You
         can also specify the global AS used by EVPN in 'vrf.as' parameter if you use
         VRFs, or in 'evpn.as' parameter if you use EVPN in bridging-only scenarios.
+      ebgp_vlan: >
+        In most scenarios, you don't need EBGP sessions between PE-devices across
+        an
+        EVPN-controlled VLAN. See https://netlab.tools/module/evpn/#evpn-rp for details.
     report:
       source: >
         A report can be specified in a file with .j2 suffix within 'reports' subdirectory
@@ -5729,6 +5816,11 @@ defaults:
         but then
         you might get the same IP prefix assigned to multiple segments of the routed
         VLAN.
+      trunk_attr: >
+        You should not use layer-3 attributes on VLAN trunks. Specify them in global-
+        or node
+        'vlans' dictionary. See https://netlab.tools/module/vlan/#vlan-interface-parameters
+        for details.
     vrf:
       inactive: >
         A globally-defined VRF is not used on a node unless that node is attached
@@ -6103,6 +6195,7 @@ defaults:
         - ebgp
         vlans: list
         vrfs: list
+        domain: str
       vlan:
         evi: rd
         rd: rd
@@ -6317,6 +6410,14 @@ defaults:
           - level-1
           - level-2
           - level-1-2
+      vrf:
+        active: bool
+        af:
+          _list_to_dict: true
+          _alt_types:
+          - NoneType
+          ipv4: bool
+          ipv6: bool
       link:
         metric:
           type: int
@@ -6752,6 +6853,12 @@ defaults:
       - reference_bandwidth
       vrf:
         active: bool
+        af:
+          _list_to_dict: true
+          _alt_types:
+          - NoneType
+          ipv4: bool
+          ipv6: bool
         area:
           type: ipv4
           use: id
@@ -6864,6 +6971,7 @@ defaults:
       junos: true
       none: true
       nxos: true
+      openbsd: true
       routeros: true
       routeros7: true
       srlinux: true
@@ -6941,6 +7049,12 @@ defaults:
             min_value: 5
             max_value: 600
       vrf:
+        af:
+          _list_to_dict: true
+          _alt_types:
+          - NoneType
+          ipv4: bool
+          ipv6: bool
         active: bool
         timers:
           update:
@@ -7720,7 +7834,7 @@ nodes:
       ipv4: true
     mgmt:
       ifname: eth0
-      mac: 08:4f:a9:01:00:00
+      mac: ca:fe:00:01:00:00
       ipv4: 192.168.17.101
     hostname: clab-ml_17-dut
     loopback:
@@ -7799,7 +7913,7 @@ nodes:
       ipv4: true
     mgmt:
       ifname: eth0
-      mac: 08:4f:a9:02:00:00
+      mac: ca:fe:00:02:00:00
       ipv4: 192.168.17.102
     hostname: clab-ml_17-probe
     loopback:
@@ -7874,7 +7988,7 @@ addressing:
   mgmt:
     ipv4: 192.168.17.0/24
     start: 100
-    mac: 08-4F-A9-00-00-00
+    mac: CA-FE-00-00-00-00
     _network: nl_mgmt_17
     _bridge: nl_mgmt_17
     prefix: 24
@@ -7896,4 +8010,4 @@ prefix:
   any:
     ipv4: 0.0.0.0/0
     ipv6: ::/0
-_netlab_version: '25.07'
+_netlab_version: 25.09-post1

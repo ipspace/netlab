@@ -835,6 +835,11 @@ defaults:
           bgp: true
         vxlan: {}
       description: Nokia SR OS VM in container
+      support:
+        level: minimal
+        caveats:
+        - We're testing the new Nokia SR-SIM container instead of the SR OS 
+          VM-in-container
       mgmt_if: A/1
       interface_name: eth-1/1/c{ifindex}
       loopback_interface_name: >-
@@ -2738,7 +2743,7 @@ defaults:
       loopback_interface_name: lo{ifindex}
       ifindex_offset: 1
       mgmt_if: vio0
-      role: host
+      role: router
       features:
         routing:
           static: true
@@ -2749,6 +2754,15 @@ defaults:
           ipv6:
             use_ra: true
             lla: true
+        ospf:
+          unnumbered: false
+          import:
+          - connected
+          - static
+          default: true
+          password: true
+          priority: true
+          timers: true
       libvirt:
         create_template: openbsd.xml.j2
         image: netlab/openbsd
@@ -4139,15 +4153,11 @@ defaults:
             _subtype: bgp_session_type
         community:
           ibgp:
-          - standard
-          - extended
-          - large
-          - 2octet
+            type: list
+            _subtype: bgp_community_type
           ebgp:
-          - standard
-          - extended
-          - large
-          - 2octet
+            type: list
+            _subtype: bgp_community_type
           _alt_types:
           - str
           - BoxList
@@ -4207,15 +4217,11 @@ defaults:
         advertise_roles: list
         community:
           ibgp:
-          - standard
-          - extended
-          - large
-          - 2octet
+            type: list
+            _subtype: bgp_community_type
           ebgp:
-          - standard
-          - extended
-          - large
-          - 2octet
+            type: list
+            _subtype: bgp_community_type
           _alt_types:
           - str
           - BoxList
@@ -4251,11 +4257,11 @@ defaults:
           name: str
           members:
             type: list
-            _subtype: node_id
+            _subtype: str
             _required: true
           rr:
             type: list
-            _subtype: node_id
+            _subtype: str
       vrf_aware: {}
     ebgp_role: external
     advertise_roles:
@@ -4774,6 +4780,10 @@ defaults:
             type: int
             min_value: 1
             max_value: 32
+          rank:
+            type: int
+            min_value: 1
+            max_value: 200
         link:
           type: dict
           _keys:
@@ -4790,6 +4800,10 @@ defaults:
               type: int
               min_value: 1
               max_value: 32
+            rank:
+              type: int
+              min_value: 1
+              max_value: 200
         shared:
         - linkorder
         - color
@@ -5069,6 +5083,8 @@ defaults:
         debug:
           type: list
           split_lines: true
+      bgp_community_type:
+        valid_values: {}
     internal:
       input:
       pools: dict
@@ -5437,6 +5453,14 @@ defaults:
         ibgp:
         ebgp:
         localas_ibgp:
+    bgp_community_type:
+      _description: BGP community types
+      type: str
+      valid_values:
+        standard:
+        extended:
+        large:
+        2octet:
     rp_entry:
       _description: Routing policy entry
       action:
@@ -5782,6 +5806,10 @@ defaults:
         You
         can also specify the global AS used by EVPN in 'vrf.as' parameter if you use
         VRFs, or in 'evpn.as' parameter if you use EVPN in bridging-only scenarios.
+      ebgp_vlan: >
+        In most scenarios, you don't need EBGP sessions between PE-devices across
+        an
+        EVPN-controlled VLAN. See https://netlab.tools/module/evpn/#evpn-rp for details.
     report:
       source: >
         A report can be specified in a file with .j2 suffix within 'reports' subdirectory
@@ -5798,6 +5826,11 @@ defaults:
         but then
         you might get the same IP prefix assigned to multiple segments of the routed
         VLAN.
+      trunk_attr: >
+        You should not use layer-3 attributes on VLAN trunks. Specify them in global-
+        or node
+        'vlans' dictionary. See https://netlab.tools/module/vlan/#vlan-interface-parameters
+        for details.
     vrf:
       inactive: >
         A globally-defined VRF is not used on a node unless that node is attached
@@ -5865,18 +5898,18 @@ defaults:
     create: {}
   paths:
     validate:
-    - /home/pipi/net101/tools/netsim/validate
+    - /home/pipi/netlab_gh/netsim/validate
     plugin:
     - /work/netlab_cicd
     - /home/pipi/net101/tools/tests/integration/routing
     - /home/pipi/.netlab
-    - /home/pipi/net101/tools/netsim/extra
+    - /home/pipi/netlab_gh/netsim/extra
     custom:
       dirs:
       - /home/pipi/net101/tools/tests/integration/routing
       - /work/netlab_cicd
       - /home/pipi/.netlab
-      - /home/pipi/net101/tools/netsim/extra
+      - /home/pipi/netlab_gh/netsim/extra
       files:
       - "{{ custom_config + '/' + inventory_hostname + '.' + netlab_device_type +
         '-' + node_provider + '.j2' }}"
@@ -5907,7 +5940,7 @@ defaults:
       - '{{ custom_config }}/deploy.yml'
     deploy:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks
+      - /home/pipi/netlab_gh/netsim/ansible/tasks
       tasks_generic:
       - deploy-config/{{ netlab_device_type }}-{{ node_provider }}.yml
       - deploy-config/{{ netlab_device_type }}.yml
@@ -5928,8 +5961,8 @@ defaults:
       - deploy-config/{{ ansible_network_os }}.yml
     templates:
       dirs:
-      - /home/pipi/net101/tools/netsim/daemons
-      - /home/pipi/net101/tools/netsim/ansible/templates
+      - /home/pipi/netlab_gh/netsim/daemons
+      - /home/pipi/netlab_gh/netsim/ansible/templates
     t_files:
       files:
       - '{{config_module}}/{{netlab_device_type}}-{{provider|default(netlab_provider)}}.j2'
@@ -5941,7 +5974,7 @@ defaults:
       - '{{netlab_device_type}}/{{config_module}}.j2'
     ready:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check
+      - /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check
       files:
       - '{{netlab_device_type}}-{{provider|default(netlab_provider)}}.yml'
       - '{{netlab_device_type}}.yml'
@@ -5949,7 +5982,7 @@ defaults:
       - '{{ansible_network_os}}.yml'
     collect:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks/fetch-config
+      - /home/pipi/netlab_gh/netsim/ansible/tasks/fetch-config
   ports:
     ssh: 22
     http: 80
@@ -6172,6 +6205,7 @@ defaults:
         - ebgp
         vlans: list
         vrfs: list
+        domain: str
       vlan:
         evi: rd
         rd: rd
@@ -6947,6 +6981,7 @@ defaults:
       junos: true
       none: true
       nxos: true
+      openbsd: true
       routeros: true
       routeros7: true
       srlinux: true
@@ -7679,18 +7714,14 @@ defaults:
     list: []
     user: []
     system: []
+  workdir: /work/netlab_cicd
+  device: frr
   groups:
-    external:
-      device: frr
-      members: []
-      _default_group: true
     all:
       vars:
         netlab_show_config: true
       members: []
       _default_group: true
-  workdir: /work/netlab_cicd
-  device: frr
   plugin:
   - multilab
   _globals:
@@ -7741,10 +7772,6 @@ groups:
     module:
     - bgp
     - routing
-  external:
-    device: frr
-    members: []
-    _default_group: true
   all:
     vars:
       netlab_show_config: true
