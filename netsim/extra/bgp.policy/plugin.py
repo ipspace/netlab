@@ -5,7 +5,7 @@ from box import Box
 from netsim import api, data
 from netsim.augment import devices
 from netsim.data import types
-from netsim.modules.routing import check_routing_policy, import_routing_policy
+from netsim.modules.routing.policy import check_routing_policy, import_routing_policy
 from netsim.utils import log
 from netsim.utils import routing as _bgp
 

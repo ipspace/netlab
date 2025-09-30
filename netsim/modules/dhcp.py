@@ -7,7 +7,8 @@ from .. import data
 from ..augment import devices
 from ..utils import log, strings
 from ..utils import routing as _rp_utils
-from . import _Module, _routing, routing
+from . import _Module, _routing
+from .routing import static
 
 '''
 Do sanity checks on DHCP data:
@@ -134,7 +135,7 @@ def get_gateway_data(link: Box, topology: Box) -> Box:
 
   # Try to get the gateway-of-last-resort from the fake "interface" neighbors
   #
-  (gw_data,_) = routing.create_gateway_last_resort(ifdata,data.get_box({'ipv4': True}),topology)
+  (gw_data,_) = static.create_gateway_last_resort(ifdata,data.get_box({'ipv4': True}),topology)
   return gw_data
 
 '''
