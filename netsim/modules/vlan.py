@@ -638,16 +638,53 @@ def create_vlan_member_interface(
   return intf_data
 
 """
+Generate a warning about extra attributes on a VLAN trunk
+"""
+def xtra_warning(xtra_attr: list, obj: Box, obj_name: str) -> None:
+  #
+  # Display 'attr' if its value is not a box else 'attr.*'
+  #
+  xtra_map = map(lambda k: k if not isinstance(obj[k],Box) else f'{k}.*',xtra_attr)
+  log.warning(
+    text=f'Do not use attribute(s) {",".join(xtra_map)} on {obj_name}',
+    hint='trunk_attr',
+    module='vlan',
+    flag='trunk_attribute')
+
+"""
 create_vlan_links: Create virtual links for every VLAN in the VLAN trunk
 """
+
+TRUNK_ATTR: list = []
+
 def create_vlan_links(link: Box, v_attr: Box, topology: Box) -> None:
+  global TRUNK_ATTR
+
   if log.debug_active('vlan'):
     print(f'create VLAN links: link {link}')
     print(f'... v_attr {v_attr}')
   native_vlan = v_attr.native.list[0] if 'native' in v_attr else None
 
+  if not TRUNK_ATTR:
+    TRUNK_ATTR  = list(topology.defaults.vlan.attributes.phy_ifattr) + \
+                  list(topology.defaults.attributes.link_no_propagate) + ['name','node']
+
+  # Check for extra (ignored) attributes on VLAN trunks
+  #
+  xtra_attr = [ k for k in link.keys() if not k.startswith('_') and k not in TRUNK_ATTR ]
+  if xtra_attr:
+    xtra_warning(xtra_attr,link,f'VLAN trunk link {link._linkname}')
+
+  # Check for extra (ignored) attributes on interfaces connected to VLAN trunks
+  #
+  for intf in link.interfaces:
+    if intf.get('vlan.trunk'):                              # ... but only on trunk interfaces
+      xtra_attr = [ k for k in intf.keys() if not k.startswith('_') and k not in TRUNK_ATTR ]
+      if xtra_attr:
+        xtra_warning(xtra_attr,intf,f'VLAN trunk interface (link {link._linkname}/node {intf.node})')
+
   for vname in sorted(v_attr.trunk.set):
-    if vname != native_vlan:           # Skip native VLAN
+    if vname != native_vlan:                                # Skip native VLAN
       link_data = link.vlan.trunk[vname] or {}
       link_data['_linkname'] = f'{link._linkname}.{vname}'
       link_data = create_vlan_link_data(link_data,vname,link.linkindex,topology)
