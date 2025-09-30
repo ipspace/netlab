@@ -127,6 +127,8 @@ A loopback interface is created for a VRF whenever you set the **vrfs.*name*.loo
 * A string specifying the IPv4- or IPv6 prefix of the loopback interface (host bits are set to 1 for IPv4 prefixes larger than /32 or IPv6 prefixes larger than /128).
 * A dictionary of address families specifying IPv4 and/or IPv6 prefixes to be used on the loopback interface
 
+Global and node VRF definitions can also include a subset of OSPF (area, cost), IS-IS (type, metric/cost), and BGP (advertise) parameters.
+
 To disable a VRF loopback, set the **loopback** parameter to *False* or *None* (no value).
 
 ### RD and RT Values
