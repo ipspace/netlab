@@ -108,8 +108,8 @@ ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
 ok: [x1]
-ok: [x3]
 ok: [x2]
+ok: [x3]
 ok: [dut]
 
 TASK [fail] ********************************************************************
@@ -120,8 +120,8 @@ skipping: [x3]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [x1]
-ok: [x2]
 ok: [x3]
+ok: [x2]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -349,6 +349,50 @@ ok: [x2] =>
     vtysh -f /tmp/config
     !
     exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    hostname dut
+    !
+    domain lookup disable
+    !
+    lldp
+     no management enable
+    !
+    domain ipv4 host x1 10.0.0.2
+    domain ipv4 host x2 10.0.0.3
+    domain ipv4 host x3 10.0.0.4
+    domain ipv6 host x1 2001:db8:1:2::1
+    domain ipv6 host x2 2001:db8:1:3::1
+    domain ipv6 host x3 2001:db8:1:4::1
+    !
+    interface Loopback0
+     no shutdown
+     ipv4 address 10.0.0.1 255.255.255.255
+     ipv6 address 2001:db8:1:1::1/64
+    !
+    interface FourHundredGigE0/0/0/0
+     no shutdown
+     description dut -> x1
+     mtu 1514
+     ipv4 address 10.1.0.1 255.255.255.252
+     ipv6 address 2001:db8:3::1/64
+    !
+    interface FourHundredGigE0/0/0/1
+     no shutdown
+     description dut -> x2
+     mtu 1514
+     ipv4 address 10.1.0.5 255.255.255.252
+     ipv6 address 2001:db8:3:1::1/64
+    !
+    interface FourHundredGigE0/0/0/2
+     no shutdown
+     description dut -> x3
+     mtu 1514
+     ipv4 address 10.1.0.9 255.255.255.252
+     ipv6 address 2001:db8:3:2::1/64
+    !
 ok: [x3] => 
   msg: |-
     initial configuration for x3
@@ -461,62 +505,16 @@ ok: [x3] =>
     vtysh -f /tmp/config
     !
     exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    hostname dut
-    !
-    domain lookup disable
-    !
-    lldp
-     no management enable
-    !
-    domain ipv4 host x1 10.0.0.2
-    domain ipv4 host x2 10.0.0.3
-    domain ipv4 host x3 10.0.0.4
-    domain ipv6 host x1 2001:db8:1:2::1
-    domain ipv6 host x2 2001:db8:1:3::1
-    domain ipv6 host x3 2001:db8:1:4::1
-    !
-    interface Loopback0
-     no shutdown
-     ipv4 address 10.0.0.1 255.255.255.255
-     ipv6 address 2001:db8:1:1::1/64
-    !
-    interface FourHundredGigE0/0/0/0
-     no shutdown
-     description dut -> x1
-     mtu 1500
-     ipv4 address 10.1.0.1 255.255.255.252
-     ipv6 address 2001:db8:3::1/64
-    !
-    interface FourHundredGigE0/0/0/1
-     no shutdown
-     description dut -> x2
-     mtu 1500
-     ipv4 address 10.1.0.5 255.255.255.252
-     ipv6 address 2001:db8:3:1::1/64
-    !
-    interface FourHundredGigE0/0/0/2
-     no shutdown
-     description dut -> x3
-     mtu 1500
-     ipv4 address 10.1.0.9 255.255.255.252
-     ipv6 address 2001:db8:3:2::1/64
-    !
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/iosxr.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for x1, x2, x3
 
 TASK [iosxr_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/iosxr.j2] ***
-fatal: [dut]: FAILED! => changed=false 
-  msg: |-
-    commit comment configured by iosxr_config
-  
-    % Failed to commit one or more configuration items during a pseudo-atomic operation. All changes made have been reverted. Please issue 'show configuration failed [inheritance]' from this session to view the errors
-    RP/0/RP0/CPU0:dut(config-if)#
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [x1 -> localhost]
@@ -530,18 +528,18 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2, x3
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x3]
+changed: [x1]
 changed: [x2]
 
 TASK [set_fact] ****************************************************************
-ok: [x2]
 ok: [x1]
+ok: [x2]
 ok: [x3]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 changed: [x3]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
@@ -555,21 +553,25 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [x1]
 ok: [x2]
 ok: [x3]
+ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for x1, x2, x3 => (item=isis)
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2, x3 => (item=isis)
 
 TASK [Figure out whether to deploy the module isis on current device] **********
 ok: [x1]
 ok: [x2]
 ok: [x3]
+ok: [dut]
 
 TASK [Find configuration template for isis] ************************************
 ok: [x1]
-ok: [x2]
 ok: [x3]
+ok: [x2]
+ok: [dut]
 
 TASK [fail] ********************************************************************
+skipping: [dut]
 skipping: [x1]
 skipping: [x2]
 skipping: [x3]
@@ -578,6 +580,7 @@ TASK [Find configuration deployment deploy_script for isis] ********************
 ok: [x1]
 ok: [x2]
 ok: [x3]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [x1] => 
@@ -685,14 +688,57 @@ ok: [x3] =>
   
     !
     do write
+ok: [dut] => 
+  msg: |-
+    isis configuration for dut
+    =========================================
+    router isis Gandalf
+     log adjacency changes
+     lsp-gen-interval initial-wait 50 secondary-wait 100 maximum-wait 500
+     is-type level-1-2
+     net 49.0001.0000.0000.0001.00
+    !
+     address-family ipv4 unicast
+      metric-style wide
+      spf-interval initial-wait 50 secondary-wait 100 maximum-wait 500
+    !
+     address-family ipv6 unicast
+      metric-style wide
+      spf-interval initial-wait 50 secondary-wait 100 maximum-wait 500
+      no single-topology
+    !
+    !
+     interface Loopback0
+      address-family ipv4
+      address-family ipv6
+    !
+     interface FourHundredGigE0/0/0/0
+      point-to-point
+      address-family ipv4
+      address-family ipv6
+    !
+     interface FourHundredGigE0/0/0/1
+      point-to-point
+      address-family ipv4
+      address-family ipv6
+    !
+     interface FourHundredGigE0/0/0/2
+      point-to-point
+      circuit-type level-1
+      address-family ipv4
+      address-family ipv6
 
 TASK [Deploy isis configuration] ***********************************************
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/iosxr.yml for dut
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2, x3
 
+TASK [iosxr_config: deploying isis from /home/pipi/net101/tools/netsim/ansible/templates/isis/iosxr.j2] ***
+changed: [dut]
+
 TASK [template] ****************************************************************
+changed: [x2]
 changed: [x3]
 changed: [x1]
-changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -713,11 +759,14 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=17   changed=0    unreachable=0    failed=1    skipped=4    rescued=0    ignored=0   
+dut                        : ok=26   changed=2    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
 x1                         : ok=27   changed=5    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
 x2                         : ok=26   changed=4    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
 x3                         : ok=26   changed=4    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
 
-Fatal error in netlab: Executing Ansible playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible failed
-Error executing ansible-playbook /home/pipi/net101/tools/netsim/ansible/initial-config.ansible:
-  Command '['ansible-playbook', '/home/pipi/net101/tools/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.
+
+
+This lab tests IS-IS in dual-stack deployment. The device under test is a
+level-1-2 IS-IS router with two LAN interfaces connected to adjacent IS-IS
+routers.
+
