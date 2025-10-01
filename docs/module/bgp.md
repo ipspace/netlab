@@ -64,7 +64,7 @@ The following features are only supported on a subset of platforms:
 | Aruba AOS-CX             |  ✅ |  ❌  |  ✅ |  ✅ |
 | BIRD                     |  ✅ |  ❌  |  ❌  |  ❌  |
 | Cisco IOS/IOS XE[^18v]   |  ✅ | ✅ |  ✅ |  ✅ |
-| Cisco IOS XRv            |  ✅ |  ❌  |  ❌  |  ❌  |
+| Cisco IOS XR[^XR]        |  ✅ |  ❌  |  ❌  |  ❌  |
 | Cumulus Linux 4.x        |  ✅ |  ❌  |  ✅ |  ✅ |
 | Cumulus Linux 5.x (NVUE) |  ✅ |  ❌  |  ✅ |  ❌ |
 | Dell OS10                |  ✅ | ✅ |  ✅ |  ✅ |
@@ -76,6 +76,8 @@ The following features are only supported on a subset of platforms:
 | VyOS                     |  ✅ |  ❌  |  ✅ |  ✅ |
 
 [^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
+
+[^XR]: Includes IOS XRv, IOS XRd, and Cisco 8000v
 
 These devices support EBGP sessions between IPv6 LLA or IPv4 AF on IPv6 EBGP sessions:
 

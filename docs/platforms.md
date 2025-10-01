@@ -16,6 +16,7 @@
 | -----------------------| ------------------ | ------------- |
 | Arista vEOS/cEOS [❗](caveats-eos) | eos    | full          |
 | Aruba AOS-CX [❗](caveats-aruba) | arubacx  | full          |
+| Cisco 8000v [❗](caveats-cisco8000v) | cisco8000v | minimal |
 | Cisco ASAv [❗](caveats-asav)    | asav     | minimal       |
 | Cisco Catalyst 8000v [❗](caveats-cat8000v) | cat8000v | full |
 | Cisco CSR 1000v [❗](caveats-csr) | csr     | full          |
@@ -105,6 +106,7 @@ You cannot use all supported network devices with all virtualization providers. 
 | ------------------ | :-: | :-: | :-: |
 | Arista vEOS        | [✅](build-eos)  | ✅  | [✅](build-ceos)  |
 | Aruba AOS-CX       | [✅](build-arubacx)  |  ❌  |  ✅[❗](clab-vrnetlab)  |
+| Cisco 8000v        |  ❌  |  ❌  | ✅ |
 | Cisco ASAv         | [✅](build-asav)  |  ❌  |  ❌  |
 | Cisco Catalyst 8000v | [✅](build-cat8000v) |  ❌  |  ✅[❗](clab-vrnetlab)  |
 | Cisco CSR 1000v    | [✅](build-csr)  | ✅  |  ✅[❗](clab-vrnetlab) |
@@ -179,7 +181,7 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 | Aruba AOS-CX          | ✅ | ✅ |
 | Cisco ASAv            | ✅ | ✅ |
 | Cisco IOS/IOS XE[^18v]| ✅ | ✅ |
-| Cisco IOS XRv         | ✅ | ✅ |
+| Cisco IOS XR[^XR]     | ✅ | ✅ |
 | Cisco Nexus OS        | ✅ | ✅ |
 | Cumulus Linux         | ✅ | ✅ |
 | Dell OS10             | ✅ | ✅ | ✅ |
@@ -201,6 +203,8 @@ Ansible playbooks included with **netlab** can deploy and collect device configu
 
 [^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
 
+[^XR]: Includes IOS XRv, IOS XRd, and Cisco 8000v
+
 ## Initial Device Configurations
 
 The following system-wide features are configured on supported network operating systems as part of the initial device configuration:
@@ -212,7 +216,7 @@ The following system-wide features are configured on supported network operating
 | Aruba AOS-CX             | ✅  |  ❌  | ✅  | ✅  | ✅  |
 | Cisco ASAv               | ✅  | ✅  |  ❌  |  ❌  |  ❌  |
 | Cisco IOS/IOS XE[^18v]   | ✅  | ✅  | ✅  | ✅  | ✅  |
-| Cisco IOS XRv            | ✅  | ✅  | ✅  | ✅  | ✅  |
+| Cisco IOS XR[^XR]        | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Cisco Nexus OS           | ✅  | ✅  | ✅  | ✅  | ✅  |
 | Cumulus Linux            | ✅  | ✅[^HIF]  | ✅  | ✅  | ✅  |
 | Cumulus Linux 5.x (NVUE) | ✅  | ✅  | ✅  | ✅  | ✅  |
@@ -240,7 +244,7 @@ The following interface parameters are configured on supported network operating
 | Aruba AOS-CX          | ✅  |  ❌  | ✅  | ✅  |
 | Cisco ASAv            | ✅  |  ❌  | ✅  |  ❌  |
 | Cisco IOS/IOS XE[^18v]| ✅  | ✅  | ✅[❗](caveats-iosv) | ✅  |
-| Cisco IOS XRv         | ✅  | ✅ [❗](caveats-iosxr) | ✅ | ✅ |
+| Cisco IOS XR[^XR]     | ✅  | ✅ [❗](caveats-iosxr) | ✅ | ✅ |
 | Cisco Nexus OS        | ✅  | ✅  | ✅  | ✅  |
 | Cumulus Linux         | ✅  | ✅  | ✅  | ✅  |
 | Cumulus Linux 5.x (NVUE) | ✅ | ❌ | ✅  | ✅  |
@@ -267,7 +271,7 @@ The following interface addresses are supported on various platforms:
 | Cisco ASAv            | ✅  | ✅  |  ❌  |  ❌  |
 | Cisco IOSv/IOSvL2     | ✅  | ✅  |  ❌  | ✅  |
 | Cisco IOS XE[^18v]    | ✅  | ✅  | ✅  | ✅  |
-| Cisco IOS XRv         | ✅  | ✅  | ✅  |  ❌  |
+| Cisco IOS XR[^XR]     | ✅  | ✅  | ✅  |  ❌  |
 | Cisco Nexus OS        | ✅  | ✅  | ✅  |  ❌  |
 | Cumulus Linux         | ✅  | ✅  | ✅  |  ❌  |
 | Cumulus Linux 5.x (NVUE) | ✅ | ✅ | ✅ |  ❌  |
@@ -313,7 +317,7 @@ Routing protocol [configuration modules](module-reference.md) are supported on t
 | Cisco ASAv            | ❌    |  ✅  |   ❌  |  ✅  |   ❌  |
 | Cisco IOSv/IOSvL2     | ✅   |  ✅  |  ✅  |  ✅  |  ✅  |
 | Cisco IOS XE[^18v]    | ✅   |  ✅  |  ✅  |  ✅  |  ✅  |
-| Cisco IOS XRv         | ✅   |  ✅  |   ❌  |  ✅  |   ❌  |
+| Cisco IOS XR[^XR]     | ✅   |  ✅  |   ❌  |  ✅  |   ❌  |
 | Cisco Nexus OS        | ✅   |  ✅  |  ✅  |  ✅  |   ❌  |
 | Cumulus Linux         | ✅   |   ❌  |   ❌  |  ✅  |  ✅  |
 | Cumulus Linux 5.x (NVUE) | ✅ |  ❌  |   ❌   | ✅ [❗](caveats-cumulus-nvue)  |  ❌  |
