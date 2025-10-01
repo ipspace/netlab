@@ -31,6 +31,7 @@ Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab creat
 | Arista cEOS            | ceos:4.31.2F                 |
 | Aruba CX               | vrnetlab/aruba_arubaos-cx:20240731173624 |
 | BIRD                   | netlab/bird:latest           |
+| Cisco 8000v            | cisco/cisco-8201-32fh:24.4.1 |
 | Cisco Catalyst 8000v   | vrnetlab/vr-c8000v:17.13.01a |
 | Cisco CSR 1000v        | vrnetlab/vr-csr:17.03.04     |
 | Cisco IOL [❗](caveats-iol)    | vrnetlab/cisco_iol:17.12.01 |
@@ -58,8 +59,9 @@ Lab topology file created by **[netlab up](../netlab/up.md)** or **[netlab creat
 * Cumulus VX, FRR, Linux, Nokia SR Linux, and VyOS images are automatically downloaded from public container registries.
 * Build the BIRD and dnsmasq images with the **netlab clab build** command.
 * Arista cEOS image has to be [downloaded and installed manually](ceos.md).
-* Nokia SR OS container image requires a license; see also [vrnetlab instructions](https://containerlab.srlinux.dev/manual/vrnetlab/).
+* Nokia SR OS and SR-SIM container images require a license; see also [vrnetlab instructions](https://containerlab.srlinux.dev/manual/vrnetlab/).
 * Follow Cisco's documentation to install the IOS XRd container, making sure the container image name matches the one _netlab_ uses (alternatively, [change the default image name](default-device-image) for the IOS XRd container).
+* Cisco 8000v containerlab image (once you manage to get it) has to be  [installed](https://containerlab.dev/manual/kinds/c8000/#getting-cisco-8000-containerlab-docker-images) with the **docker image load** command.
 
 You can also use [vrnetlab](https://github.com/srl-labs/vrnetlab) to build VM-in-container images for Catalyst 8000v, Cisco CSR 1000v, Cisco IOSv, Cisco IOS on Linux (including layer-2 image), Nexus 9300v, IOS XR, Mikrotik RouterOS, Arista vEOS, Juniper vMX, vPTX, vQFX, and a few other devices.
 

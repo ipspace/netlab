@@ -191,6 +191,13 @@ ansible-galaxy collection install git+https://github.com/jmussmann/ansible_colle
 
 * The IOS XRd container seems to be a resource hog. If you experience errors during the initial device configuration, reduce the number of parallel configuration processes -- set the ANSIBLE_FORKS environment variable to one with `export ANSIBLE_FORKS=1`.
 
+(caveats-cisco8000v)=
+## Cisco 8000v
+
+Cisco 8000v is a VM-in-container emulator of the Cisco 8000 platform. It's running IOS XR and is a completely different device from the [Catalyst 8000v](caveats-cat8000v).
+
+* Cisco 8000v container uses Open vSwitch ([more details](https://containerlab.dev/manual/kinds/c8000/#host-server-requirements)). _netlab_ tries to load the Open vSwitch kernel module when starting a Cisco 8000v device, but does not install the Open vSwitch package. You have to install that package on your Linux server before using the Cisco 8000v device.
+
 (caveats-nxos)=
 ## Cisco Nexus OS
 

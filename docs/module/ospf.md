@@ -55,7 +55,7 @@ The following table describes the per-platform support of individual router-leve
 | Arista EOS               | ✅| ✅| ✅| ✅| ✅|
 | Aruba AOS-CX             | ✅| ✅| ✅| ✅| ✅|
 | Cisco IOSv/IOSvL2        | ✅| ✅| ✅| ✅| ✅|
-| Cisco IOS XRv            | ✅| ✅| ✅| ❌ | ❌ |
+| Cisco IOS XR[^XR]        | ✅| ✅| ✅| ❌ | ❌ |
 | Cisco IOS XE[^18v]       | ✅| ✅| ✅| ✅| ✅|
 | Cisco Nexus OS           | ✅| ✅| ✅| ❌ | ❌ |
 | Cumulus Linux            | ✅| ✅| ✅| ✅| ✅|
@@ -81,6 +81,8 @@ The following table describes the per-platform support of individual router-leve
 [^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
 
 [^Junos]: Includes vMX, vSRX, vPTX, vJunos-switch, and vJunos-router
+
+[^XR]: Includes IOS XRv, IOS XRd, and Cisco 8000v
 
 The following devices support BFD with OSPF:
 
@@ -121,7 +123,7 @@ The following table documents the common interface-level OSPF features:
 | Aruba AOS-CX             | ✅ | ✅ | ✅  | ✅ |
 | Cisco IOS                | ✅ | ✅ | ❌  | ✅ |
 | Cisco IOS XE[^18v]       | ✅ | ✅ | ✅ | ✅ |
-| Cisco IOS XRv            | ✅ | ✅ | ✅ | ✅ |
+| Cisco IOS XR[^XR]        | ✅ | ✅ | ✅ | ✅ |
 | Cisco Nexus OS           | ✅ | ✅ | ✅ | ✅ |
 | Cumulus Linux            | ✅ | ✅ | ✅ | ✅ |
 | Cumulus Linux 5.x (NVUE) | ✅ | ✅ | ✅ | ✅ |

@@ -27,9 +27,19 @@ interface {{ l.ifname }}
 {%   if l.bandwidth is defined %}
  bandwidth {{ l.bandwidth  }}
 {%   endif %}
-{%   if l.mtu is defined %}
- mtu {{ l.mtu }}
+{% if l.mtu is defined %}
+{%   if l._use_ip_mtu|default(False) %}
+{%     for afm in ['ipv4','ipv6'] if afm in l %}
+ {{ 'ip' if afm == 'ipv4' else afm }} mtu {{ l.mtu }}
+{%     endfor %}
+{%   else %}
+{# 
+    WARNING: IOS XR uses layer-2 MTU in the MTU command. Adding 14 bytes is a kludge
+    that needs to be fixed if we ever implement VLANs on IOS XR
+#}
+ mtu {{ l.mtu + 14 }}
 {%   endif %}
+{% endif %}
 {% endif %}
 {#
     Set interface addresses: IPv4
