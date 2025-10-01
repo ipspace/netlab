@@ -203,7 +203,8 @@ def process_child_device(dname: str, devices: Box) -> None:
 
   process_child_device(p_device,devices)                    # Process inheritance in parent device
   p_data = Box(devices[p_device])                           # Build a copy of parent device data
-  p_data.pop("template",None)                               # ... remove the template flag
+  for kw in ("template","_meta_device"):                    # ... remove the template/meta device flags
+    p_data.pop(kw,None)
   devices[dname] = p_data + devices[dname]                  # ... and merge parent settings with the child device
 
   data.remove_null_values(devices[dname])                   # Finally, remove null values from the resulting dictionary
