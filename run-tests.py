@@ -214,6 +214,8 @@ def run_single_test(
 def run_tests(setup: Box, limit: typing.Optional[str], dry_run: bool = False) -> None:
   for device in setup.devices:
     for provider in setup.devices[device]:
+      if provider.startswith('_'):
+        continue
       for test in setup.tests:
         if not include_test(setup.devices[device][provider],test):
           continue
