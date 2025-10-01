@@ -1,5 +1,14 @@
+{% if bgp.originate|default([]) %}
+router static
+ address-family ipv4 unicast
+{%   for pfx in bgp.originate|default([]) %}
+  {{ pfx|ipaddr('0') }} Null0
+{%   endfor %}
+{% endif %}
+!
 router bgp {{ bgp.as }}
  bgp unsafe-ebgp-policy
+ bgp scan-time 5
 {% if bgp.router_id|ipv4 %}
  bgp router-id {{ bgp.router_id }}
 {% endif %}
@@ -9,6 +18,7 @@ router bgp {{ bgp.as }}
 {% for af in ['ipv4','ipv6'] if bgp [af] is defined %}
 !
  address-family {{ af }} unicast
+  bgp scan-time 5
 !
 {%   if loopback[af] is defined and bgp.advertise_loopback %}
   network {{ loopback[af]|ipaddr(0) }}
@@ -54,11 +64,3 @@ router bgp {{ bgp.as }}
 !
 {%  endfor %}
 {% endfor %}
-!
-{% if bgp.originate|default([]) %}
-router static
- address-family ipv4 unicast
-{%   for pfx in bgp.originate|default([]) %}
-  {{ pfx|ipaddr('0') }} Null0
-{%   endfor %}
-{% endif %}
