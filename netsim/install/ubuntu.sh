@@ -29,5 +29,5 @@ $SUDO apt-get -y $FLAG_APT install libxslt1-dev libssl-dev
 EXTRA="linux-modules-extra-$(uname -r)"
 if [ -n "$(apt-cache search $EXTRA)" ]; then
   echo "Installing additional Linux kernel modules"
-  sudo apt-get -y $FLAG_APT install $EXTRA
+  $SUDO apt-get -y $FLAG_APT install $EXTRA
 fi
