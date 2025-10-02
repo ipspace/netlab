@@ -18,16 +18,29 @@ def lookup_wait_time(v_entry: Box, topology: Box) -> None:
   if isinstance(v_entry.wait,int):
     return
 
-  w_time = get_const(f'validate.{v_entry.wait}')
+  w_const = v_entry.wait
+  v_entry.wait = -1
+  w_time = get_const(f'validate.{w_const}')
   if isinstance(w_time,int):
     v_entry.wait = w_time
-    return
 
-  log.error(
-    f'Wait time {v_entry.wait} specified in validation entry {v_entry.name} is not a validation constant',
-    more_hints='Define validation constants in defaults.const.validate',
-    category=log.IncorrectValue,
-    module='validation')
+  d_set = { node.device for node in topology.nodes.values() }
+  d_set = d_set.union({ p_device for device in d_set
+                          for p_device in topology.defaults.devices[device].get('_parents',[]) })
+  for device in d_set:
+    dw_time = get_const(f'validate.{device}.{w_const}')
+    if isinstance(dw_time,int) and dw_time > v_entry.wait:
+      log.info(
+        f"Adjusted wait time in '{v_entry.name}' validation test to {dw_time}",
+        module=device)
+      v_entry.wait = dw_time
+
+  if v_entry.wait < 0:
+    log.error(
+      f'Wait time {v_entry.wait} specified in validation entry {v_entry.name} is not a validation constant',
+      more_hints='Define validation constants in defaults.const.validate',
+      category=log.IncorrectValue,
+      module='validation')
 
 '''
 validate_test_entry: Check if the test makes sense

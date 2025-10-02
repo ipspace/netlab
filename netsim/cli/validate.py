@@ -95,12 +95,13 @@ def increase_pass_count(v_entry: Box) -> None:
 list_tests: display validation tests defined for the current lab topology
 '''
 def list_tests(topology: Box) -> None:
-  heading = [ 'Test','Description','Nodes','Devices' ]
+  heading = [ 'Test','Description','Nodes','Devices','Wait' ]
   rows = [
     [ v_entry.name,
       v_entry.description or '',
       ",".join(v_entry.nodes),
-      ",".join(v_entry.devices) ]
+      ",".join(v_entry.devices),
+      str(v_entry.get('wait','')) ]
     for v_entry in topology.validate ]
   strings.print_table(heading,rows)
 
@@ -1111,22 +1112,22 @@ def run(cli_args: typing.List[str]) -> None:
     else:
       log.fatal('No validation tests defined for the current lab, exiting')
 
-  if args.list:
-    list_tests(topology)
-    return
-
   filter_by_tests(args,topology)
   filter_by_nodes(args,topology)
   log.exit_on_error()
+  topology._v_len = max([ len(v_entry.name) for v_entry in topology.validate ] + [ 7 ])
+  extend_first_wait_time(args,topology)
+
+  if args.list:
+    list_tests(topology)
+    return
 
   templates.load_ansible_filters()
 
   ERROR_ONLY = args.error_only
   cnt = 0
-  topology._v_len = max([ len(v_entry.name) for v_entry in topology.validate ] + [ 7 ])
   start_time = _status.lock_timestamp() or time.time()
   log.init_log_system(header=False)
-  extend_first_wait_time(args,topology)
 
   for v_entry in topology.validate:
     extend_device_wait_time(v_entry,topology)
