@@ -501,10 +501,11 @@ defaults:
           --import
         create_template: cat8000v.xml.j2
         create_iso: cat8000v
+      _parents:
+      - ios
+      - csr
     cisco8000v:
       description: Cisco 8000v
-      support:
-        level: minimal
       mgmt_if: MgmtEth0/RP0/CPU0/0
       interface_name: FourHundredGigE0/0/0/{ifindex}
       loopback_interface_name: Loopback{ifindex}
@@ -523,8 +524,14 @@ defaults:
             unnumbered: true
           ipv6:
             lla: true
+          min_mtu: 68
+          min_phy_mtu: 1500
+          max_mtu: 9216
         ospf:
           unnumbered: true
+          password: true
+          priority: true
+          timers: true
         isis:
           circuit_type: true
           unnumbered:
@@ -535,6 +542,10 @@ defaults:
           activate_af: true
       external:
         image: none
+      support:
+        level: minimal
+      node:
+        min_mtu: 1500
       clab:
         group_vars:
           netlab_check_retries: 50
@@ -548,6 +559,8 @@ defaults:
         image: cisco/cisco-8201-32fh:24.4.1
         build: https://containerlab.dev/manual/kinds/c8000/
       provider: clab
+      _parents:
+      - xr
     csr:
       description: Cisco CSR 1000v
       attributes:
@@ -735,6 +748,8 @@ defaults:
           --ram=4096 --disk path=vm.qcow2,bus=ide,format=qcow2 
           --network=network:vagrant-libvirt,model=virtio --graphics none 
           --import
+      _parents:
+      - ios
     cumulus:
       description: Cumulus VX 4.x or 5.x configured without NVUE
       support:
@@ -1762,6 +1777,8 @@ defaults:
       graphite:
         icon: router
       interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
+      _parents:
+      - ios
     ioll2:
       description: IOSv L2 image
       attributes:
@@ -1948,6 +1965,9 @@ defaults:
       graphite:
         icon: router
       interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
+      _parents:
+      - ios
+      - iol
       lag_interface_name: Port-channel{lag.ifindex}
     iosv:
       description: Cisco IOSv
@@ -2127,6 +2147,8 @@ defaults:
         create_template: iosv.xml.j2
       virtualbox:
         image: cisco/iosv
+      _parents:
+      - ios
     iosvl2:
       description: IOSv L2 image
       attributes:
@@ -2320,11 +2342,12 @@ defaults:
         create_template: iosv.xml.j2
       virtualbox:
         image: cisco/iosv
+      _parents:
+      - ios
+      - iosv
       lag_interface_name: Port-channel{lag.ifindex}
     iosxr:
       description: Cisco IOS XRv
-      support:
-        level: minimal
       mgmt_if: MgmtEth0/RP0/CPU0/0
       interface_name: GigabitEthernet0/0/0/{ifindex}
       loopback_interface_name: Loopback{ifindex}
@@ -2342,8 +2365,14 @@ defaults:
             unnumbered: true
           ipv6:
             lla: true
+          min_mtu: 68
+          min_phy_mtu: 1500
+          max_mtu: 9216
         ospf:
           unnumbered: true
+          password: true
+          priority: true
+          timers: true
         isis:
           circuit_type: true
           unnumbered:
@@ -2354,6 +2383,11 @@ defaults:
           activate_af: true
       external:
         image: none
+      support:
+        level: minimal
+        caveats:
+        - We're testing IOS XR templates with Cisco 8000v. They should work on 
+          IOS XRv as well.
       libvirt:
         image: cisco/iosxr
         build: https://netlab.tools/labs/iosxr/
@@ -2375,6 +2409,8 @@ defaults:
           ansible_user: clab
           ansible_ssh_pass: clab@123
           ansible_become_password: clab@123
+      _parents:
+      - xr
     linux:
       description: Generic Linux host
       interface_name: eth{ifindex}
@@ -3285,6 +3321,8 @@ defaults:
         icon: router
       warnings:
         loopback_ipv6: false
+      _parents:
+      - sros
     unknown:
       description: Generic Unknown Device
       _meta_device: true
@@ -3402,6 +3440,9 @@ defaults:
           netlab_check_delay: 10
       graphite:
         icon: router
+      _parents:
+      - junos
+      - vmx
     vjunos-switch:
       description: vJunos Switch
       loopback_interface_name: lo0.{ifindex}
@@ -3501,6 +3542,8 @@ defaults:
           netlab_check_delay: 10
       graphite:
         icon: switch
+      _parents:
+      - junos
     vmx:
       description: Juniper vMX container
       loopback_interface_name: lo0.{ifindex}
@@ -3593,6 +3636,8 @@ defaults:
           name: eth{ifindex+1}
       graphite:
         icon: router
+      _parents:
+      - junos
     vptx:
       description: Juniper vPTX
       loopback_interface_name: lo0.{ifindex}
@@ -3689,6 +3734,8 @@ defaults:
           netlab_check_delay: 10
       graphite:
         icon: switch
+      _parents:
+      - junos
     vsrx:
       description: Juniper vSRX 3.0
       loopback_interface_name: lo0.{ifindex}
@@ -3795,6 +3842,8 @@ defaults:
           netlab_check_delay: 10
       graphite:
         icon: firewall
+      _parents:
+      - junos
     vyos:
       description: VyOS VM/container
       interface_name: eth{ifindex}
@@ -4030,6 +4079,8 @@ defaults:
         routing: /etc/bird/routing.mod.conf
       daemon: true
       daemon_parent: linux
+      _parents:
+      - linux
     dnsmasq:
       description: DNSmasq - DNS and DHCP server
       interface_name: eth{ifindex}
@@ -4119,6 +4170,8 @@ defaults:
       - dhcp
       daemon: true
       daemon_parent: linux
+      _parents:
+      - linux
   daemons:
     bird:
       description: BIRD Internet Routing Daemon
@@ -5396,7 +5449,10 @@ defaults:
       ibgp_session: 30
       bgp_scan_time: 5
       bgp_scan_long: 15
-      bgp_ios_redist: 60
+      bgp_v4_originate: 15
+      bgp_v6_originate: 15
+      bgp_v4_redist: 15
+      bgp_v6_redist: 15
       isis_adj_p2p: 20
       isis_adj_lan: 50
       isis_spf: 15
@@ -5406,6 +5462,11 @@ defaults:
       ldp_adj: 30
       stp_forwarding: 40
       lacp_setup: 10
+      xr:
+        bgp_v4_originate: 80
+        bgp_v6_originate: 80
+      ios:
+        bgp_v6_redist: 60
   hints:
     evpn:
       irb_group: >
@@ -7627,6 +7688,7 @@ nodes:
         ipv4: true
     id: 1
     provider: clab
+    min_mtu: 1500
     af:
       ipv4: true
     mgmt:
