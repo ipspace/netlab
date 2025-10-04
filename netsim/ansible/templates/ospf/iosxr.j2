@@ -1,7 +1,51 @@
+{#
+    Shared OSPFv2/OSPFv3 configuration macro. Takes the AF (ipv4/ipv6),
+    OSPF process ID, OSPF protocol data, and interface list.
+
+    Can be used to configure global or VRF OSPF
+#}
+{% macro ospf_config(igp_af, pid, ospf, interfaces) %}
+router ospf{{ 'v3' if igp_af == 'ipv6' else '' }} {{ pid }}
+{% if ospf.router_id|ipv4 %}
+ router-id {{ ospf.router_id }}
+{% endif %}
+{% if ospf.reference_bandwidth is defined %}
+ auto-cost reference-bandwidth {{ ospf.reference_bandwidth }}
+{% endif %}
+{% if igp_af == 'ipv4' %}
+ loopback stub-network enable
+{% endif %}
+{% for area in interfaces|json_query('[*].ospf.area')|unique|sort %}
+ area {{ area }}
+{%   for intf in interfaces if igp_af in intf and intf.ospf.area|default('') == area %}
+  interface {{ intf.ifname }}
+{%     if intf.ospf.passive|default(False) %}
+   passive{{ ' enable' if igp_af == 'ipv4' else '' }}
+{%     endif %}
+{%     if intf.ospf.network_type is defined %}
+   network {{ intf.ospf.network_type }}
+{%     endif %}
+{%     if intf.ospf.cost is defined %}
+   cost {{ intf.ospf.cost }}
+{%     endif %}
+{%     if intf.ospf.timers.hello is defined %}
+   hello-interval {{ intf.ospf.timers.hello }}
+{%     endif %}
+{%     if intf.ospf.timers.dead is defined %}
+   dead-interval {{ intf.ospf.timers.dead }}
+{%     endif %}
+{%     if intf.ospf.priority is defined %}
+   priority {{ intf.ospf.priority }}
+{%     endif %}
+{%     if intf.ospf.password is defined and igp_af == 'ipv4' %}
+   authentication-key {{ intf.ospf.password }}
+   authentication
+{%     endif %}
+{%   endfor %}
+{% endfor %}
+{% endmacro %}
+!
 {% set pid = ospf.process|default(1) %}
-{% if ospf.af.ipv4 is defined %}
-{% include 'iosxr.ospfv2.j2' %}
-{% endif %}
-{% if ospf.af.ipv6 is defined %}
-{% include 'iosxr.ospfv3.j2' %}
-{% endif %}
+{% for igp_af in ['ipv4','ipv6'] if ospf.af[igp_af] is defined %}
+{{   ospf_config(igp_af,pid,ospf,netlab_interfaces) }}
+{% endfor %}
