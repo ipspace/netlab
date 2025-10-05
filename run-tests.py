@@ -225,7 +225,7 @@ def run_tests(setup: Box, limit: typing.Optional[str], dry_run: bool = False) ->
         device_limit = limit or setup.limits[test] or None
         if isinstance(dp_data,Box) and 'include' in dp_data and isinstance(dp_data.include,Box):
           dt_data = dp_data.include[test]
-          if 'limit' in dt_data:
+          if dt_data and 'limit' in dt_data:
             if device_limit and device_limit != dt_data.limit:
               print(f'Device {device} provider {provider} test {test} limited to {dt_data.limit}, skipping')
             else:
