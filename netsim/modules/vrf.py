@@ -6,10 +6,10 @@ import typing
 
 from box import Box
 
-from .. import data
 from ..augment import addressing, devices, groups, links
-from ..data import global_vars
+from ..data import get_box, global_vars
 from ..data.types import must_be_list
+from ..data.validate import validate_attributes
 from ..utils import log
 from . import _dataplane, _Module, _routing, get_effective_module_attribute, remove_module
 
@@ -94,16 +94,44 @@ def get_next_vrf_id(asn: str) -> typing.Tuple[int,str]:
   id_set.add(vrf_id)
   return (vrf_id,rd)
 
-#
-# Normalize VRF IDs -- give a set of VRFs, change integer values of RDs into N:N strings
-#
-# The data type sanity checks have been done by topology/node validation module:
-#
-# * the 'vrfs' attribute is a dictionary of VRF definitions (dictionaries)
-# * the keys (VRF names) are valid identifiers
-#
-# This function performs semantic validation
-#
+"""
+Validate VRF loopback data:
+
+* Skip the validation check if the loopback instance is not a box (must be bool)
+* Check against 'loopback' data type
+* Global VRF loopback definition MUST NOT have ipv4/ipv6 values
+"""
+def validate_vrf_loopback(vname: str,vdata: Box,obj: Box,topology: Box) -> None:
+  lb = vdata.loopback
+  if not isinstance(lb,Box):
+    return
+  if obj is topology and ('ipv4' in lb or 'ipv6' in lb):
+    log.error(f'IP prefix for VRF loopbacks can only be specified in node VRF data (found in global VRF {vname})',
+    more_hints=[ 'Use pool attribute or specify the VRF loopback ipv4/ipv6 address in the node VRF data'],
+    category=log.IncorrectAttr,
+    module='vrf')
+
+  obj_path = f'vrfs.{vname}' if obj is topology else f'nodes.{obj.name}.vrfs.{vname}'
+  validate_attributes(
+    data=lb,                                      # Validate loopback data
+    topology=topology,
+    data_path=f'{obj_path}.loopback',             # Topology path to VRF loopback
+    data_name=f'loopback',
+    attr_list=['loopback','link','interface'],    # We're checking loopback attributes
+    modules=obj.get('module',[]),                 # ... against topology/node modules
+    module_source=f'topology' if obj is topology else f'nodes.{obj.name}',
+    module='vrf')                                 # Function is called from 'vrf' module
+
+"""
+Normalize and further validate VRF dictionaries (the initial data type sanity
+checks have been done by topology/node validation module):
+
+* Replace None values with empty dictionaries
+* Check for reserved VRF names
+* Validate VRF loopback data
+* Set the RD value
+"""
+
 def normalize_vrf_dict(obj: Box, topology: Box) -> None:
   if not 'vrfs' in obj:
     return
@@ -126,13 +154,8 @@ def normalize_vrf_dict(obj: Box, topology: Box) -> None:
         category=log.IncorrectValue,
         module='vrf')
 
-    if obj is topology and 'loopback' in vdata:
-      lb = vdata.loopback
-      if isinstance(lb,Box) and ('ipv4' in lb or 'ipv6' in lb):
-        log.error(f'The "loopback" attribute in the global VRF "{vname}" cannot specify IPv4/IPv6 prefixes',
-        more_hints=[ 'Use pool attribute or specify specific IP address for a VRF loopback interface in the node VRF data'],
-        category=log.IncorrectType,
-        module='vrf')
+    if 'loopback' in vdata:
+      validate_vrf_loopback(vname,vdata,obj,topology)
 
     if 'rd' in vdata:
       if vdata.rd is None:      # RD set to None can be used to auto-generate RD while preventing RD inheritance
@@ -316,6 +339,7 @@ def fix_vrf_unnumbered(node: Box, vrfname: str, lbdata: Box) -> None:
 
 def vrf_loopbacks(node : Box, topology: Box) -> None:
   loopback_name = devices.get_device_attribute(node,'loopback_interface_name',topology.defaults)
+  loopback_global_attr = list(topology.defaults.attributes.loopback)
 
   if not loopback_name:                                                        # pragma: no cover -- hope we got device settings right ;)
     log.print_verbose(f'Device {node.device} used by {node.name} does not support VRF loopback interfaces - skipping assignment.')
@@ -332,7 +356,7 @@ def vrf_loopbacks(node : Box, topology: Box) -> None:
 
     # Note: set interface ifindex to v.vrfidx if you want to have VRF-numbered loopbacks
     #
-    ifdata = data.get_box({                                           # Create interface data structure
+    ifdata = get_box({                                                # Create interface data structure
       'type': "loopback",
       'name': f'VRF Loopback {vrfname}',
       'neighbors': [],
@@ -343,25 +367,24 @@ def vrf_loopbacks(node : Box, topology: Box) -> None:
     lb_path = f'nodes.{node.name}.vrfs.{vrfname}.loopback'
     lb_pool: typing.Optional[str] = 'vrf_loopback'
     if isinstance(vrf_loopback,Box):
+      ifdata += { k:v for k,v in vrf_loopback.items() if k not in loopback_global_attr }
       if 'ipv4' in vrf_loopback or 'ipv6' in vrf_loopback:
         vrfaddr = addressing.parse_prefix(vrf_loopback,path=lb_path)
         lb_pool = None
       elif 'pool' in vrf_loopback:
         lb_pool = vrf_loopback.pool
-
     if lb_pool:
       vrfaddr = addressing.get(topology.pools, [ lb_pool ])
 
     if not vrfaddr:
       continue
 
-    ospf_area = get_effective_module_attribute(
-                  path = 'ospf.area',
-                  link = v,
-                  node = node,
-                  topology = topology)
-
-    if ospf_area:
+    if 'ospf' in node.get('module',[]) and 'ospf.area' not in ifdata:
+      ospf_area = get_effective_module_attribute(
+                    path = 'ospf.area',
+                    link = v,
+                    node = node,
+                    topology = topology)
       ifdata.ospf.area = ospf_area
 
     for af in vrfaddr:
