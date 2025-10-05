@@ -290,8 +290,11 @@ def create_regular_interface(node: Box, ifdata: Box, defaults: Box) -> None:
     ifn_field = 'ifname' if 'ifname' not in ifdata else 'netlab_ifname'
     ifdata[ifn_field] = strings.eval_format(ifname_format,ifdata)
 
+  # Assign MAC addresses to physical (but not VLAN member) interfaces if
+  # the device features include initial.generate_mac
+  #
   features = devices.get_device_features(node,defaults)
-  if 'ethernet' in features.get('initial.generate_mac',[]):
+  if 'ethernet' in features.get('initial.generate_mac',[]) and ifdata.get('type','') != 'vlan_member':
     ifdata.mac_address = generate_interface_mac(node,ifdata,defaults)
 
   pdata = devices.get_provider_data(node,defaults).get('interface',{})
