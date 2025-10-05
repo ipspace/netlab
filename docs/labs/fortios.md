@@ -18,11 +18,13 @@ FortiOS (FortiGate) is supported by the **netlab libvirt package** command. To b
 
 ## Initial Device Configuration
 
-You'll have to copy-paste initial device configuration during the box-building process. **netlab libvirt config fortios** command displays the build recipe:
+The initial device configuration is prepared on a CD-ROM image that is read by the device during the initial boot process. All you have to do is check the applied configuration and shut down the device.
+
+**netlab libvirt config fortios** command displays the build recipe:
 
 ```{eval-rst}
-.. include:: fortios.txt
-   :literal:
+.. literalinclude:: fortios.txt
+   :language: text
 ```
 
 ```{tip}
