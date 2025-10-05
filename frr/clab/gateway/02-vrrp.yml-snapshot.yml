@@ -34,10 +34,6 @@ groups:
     node_data:
       role: host
       provider: clab
-  external:
-    device: frr
-    members: []
-    _default_group: true
   all:
     vars:
       netlab_show_config: true
@@ -104,7 +100,7 @@ nodes:
       linkindex: 4
       type: lan
       bridge: ml_17_4
-      name: dut -> [h1,br_a,r2]
+      name: dut -> [h1,r2,br_a]
       ifindex: 2
       ifname: eth2
       mtu: 1500
@@ -113,8 +109,6 @@ nodes:
         ipv6: 2001:db8:cafe:33::3/64
         ifname: eth1
         node: h1
-      - ifname: vlan100
-        node: br_a
       - gateway:
           vrrp:
             priority: 20
@@ -130,6 +124,11 @@ nodes:
         ipv6: 2001:db8:cafe:33::2/64
         ifname: eth2
         node: r2
+      - ifname: vlan100
+        node: br_a
+        vlan:
+          mode: bridge
+          name: br_vlan_100
     device: frr
     clab:
       kind: linux
@@ -204,7 +203,7 @@ nodes:
       linkindex: 5
       type: lan
       bridge: ml_17_5
-      name: r2 -> [h1,br_a,dut]
+      name: r2 -> [h1,dut,br_a]
       ifindex: 2
       ifname: eth2
       mtu: 1500
@@ -213,8 +212,6 @@ nodes:
         ipv6: 2001:db8:cafe:33::3/64
         ifname: eth1
         node: h1
-      - ifname: vlan100
-        node: br_a
       - gateway:
           vrrp:
             priority: 30
@@ -230,6 +227,11 @@ nodes:
         ipv6: 2001:db8:cafe:33::1/64
         ifname: eth2
         node: dut
+      - ifname: vlan100
+        node: br_a
+        vlan:
+          mode: bridge
+          name: br_vlan_100
     device: frr
     clab:
       kind: linux
@@ -285,13 +287,11 @@ nodes:
       linkindex: 3
       type: lan
       bridge: ml_17_3
-      name: h1 -> [br_a,dut,r2]
+      name: h1 -> [dut,r2,br_a]
       ifindex: 1
       ifname: eth1
       mtu: 1500
       neighbors:
-      - ifname: vlan100
-        node: br_a
       - gateway:
           vrrp:
             priority: 30
@@ -322,6 +322,11 @@ nodes:
         ipv6: 2001:db8:cafe:33::2/64
         ifname: eth2
         node: r2
+      - ifname: vlan100
+        node: br_a
+        vlan:
+          mode: bridge
+          name: br_vlan_100
     device: linux
     module:
     - routing
@@ -476,6 +481,7 @@ nodes:
         name: br_vlan_100
       type: svi
       ifindex: 40000
+      mac_address: caf4.0005.0000
       ifname: vlan100
       name: VLAN br_vlan_100 (100) -> [h1,dut,r2]
       virtual_interface: true
@@ -1168,7 +1174,6 @@ defaults:
         create_iso: asav
     cat8000v:
       description: Cisco CSR 1000v
-      _meta_device: true
       attributes:
         global:
           ios:
@@ -1354,9 +1359,67 @@ defaults:
           --import
         create_template: cat8000v.xml.j2
         create_iso: cat8000v
+      _parents:
+      - ios
+      - csr
+    cisco8000v:
+      description: Cisco 8000v
+      mgmt_if: MgmtEth0/RP0/CPU0/0
+      interface_name: FourHundredGigE0/0/0/{ifindex}
+      loopback_interface_name: Loopback{ifindex}
+      ifindex_offset: 0
+      group_vars:
+        ansible_become_method: enable
+        ansible_network_os: iosxr
+        ansible_connection: network_cli
+        ansible_user: cisco
+        ansible_ssh_pass: cisco123
+        ansible_become_password: cisco123
+        netlab_device_type: cisco8000v
+      features:
+        initial:
+          ipv4:
+            unnumbered: true
+          ipv6:
+            lla: true
+          min_mtu: 68
+          min_phy_mtu: 1500
+          max_mtu: 9216
+        ospf:
+          unnumbered: true
+          password: true
+          priority: true
+          timers: true
+        isis:
+          circuit_type: true
+          unnumbered:
+            ipv4: true
+            ipv6: true
+            network: true
+        bgp:
+          activate_af: true
+      external:
+        image: none
+      support:
+        level: minimal
+      node:
+        min_mtu: 1500
+      clab:
+        group_vars:
+          netlab_check_retries: 50
+        kmods:
+          initial:
+          - openvswitch
+        node:
+          kind: cisco_c8000
+        interface:
+          name: FH0_0_0_{ifindex}
+        image: cisco/cisco-8201-32fh:24.4.1
+        build: https://containerlab.dev/manual/kinds/c8000/
+      _parents:
+      - xr
     csr:
       description: Cisco CSR 1000v
-      _meta_device: true
       attributes:
         global:
           ios:
@@ -1542,6 +1605,8 @@ defaults:
           --ram=4096 --disk path=vm.qcow2,bus=ide,format=qcow2 
           --network=network:vagrant-libvirt,model=virtio --graphics none 
           --import
+      _parents:
+      - ios
     cumulus:
       description: Cumulus VX 4.x or 5.x configured without NVUE
       support:
@@ -1969,6 +2034,8 @@ defaults:
           - router
           - bridge
           mgmt_vrf: true
+          generate_mac:
+          - ethernet
         bfd: {}
         bgp:
           activate_af: true
@@ -2150,6 +2217,7 @@ defaults:
         image: fortinet/fortios
         build: https://netlab.tools/labs/fortios/
         create_template: fortios.xml.j2
+        create_iso: fortios
       clab:
         node:
           kind: fortinet_fortigate
@@ -2251,6 +2319,8 @@ defaults:
           roles:
           - host
           - router
+          generate_mac:
+          - svi
         bfd: {}
         bgp:
           activate_af: true
@@ -2396,7 +2466,6 @@ defaults:
       provider: clab
     iol:
       description: Cisco IOL
-      _meta_device: true
       attributes:
         global:
           ios:
@@ -2427,7 +2496,7 @@ defaults:
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         build: https://containerlab.dev/manual/kinds/cisco_iol/
-        image: vrnetlab/cisco_iol:17.16.01a
+        image: vrnetlab/cisco_iol:17.12.01
         node:
           kind: cisco_iol
       role: router
@@ -2565,9 +2634,10 @@ defaults:
       graphite:
         icon: router
       interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
+      _parents:
+      - ios
     ioll2:
       description: IOSv L2 image
-      _meta_device: true
       attributes:
         global:
           ios:
@@ -2598,7 +2668,7 @@ defaults:
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         build: https://containerlab.dev/manual/kinds/cisco_iol/
-        image: vrnetlab/cisco_iol:L2-17.16.01a
+        image: vrnetlab/cisco_iol:L2-17.12.01
         node:
           kind: cisco_iol
           type: l2
@@ -2650,6 +2720,9 @@ defaults:
           min_mtu: 68
           min_phy_mtu: 1501
           max_mtu: 1500
+          generate_mac:
+          - ethernet
+          - svi
         isis:
           circuit_type: true
           import:
@@ -2749,10 +2822,12 @@ defaults:
       graphite:
         icon: router
       interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
+      _parents:
+      - ios
+      - iol
       lag_interface_name: Port-channel{lag.ifindex}
     iosv:
       description: Cisco IOSv
-      _meta_device: true
       attributes:
         global:
           ios:
@@ -2929,9 +3004,10 @@ defaults:
         create_template: iosv.xml.j2
       virtualbox:
         image: cisco/iosv
+      _parents:
+      - ios
     iosvl2:
       description: IOSv L2 image
-      _meta_device: true
       attributes:
         global:
           ios:
@@ -3016,6 +3092,9 @@ defaults:
           min_mtu: 68
           max_mtu: 4700
           min_phy_mtu: 1500
+          generate_mac:
+          - ethernet
+          - svi
         isis:
           circuit_type: true
           import:
@@ -3120,30 +3199,37 @@ defaults:
         create_template: iosv.xml.j2
       virtualbox:
         image: cisco/iosv
+      _parents:
+      - ios
+      - iosv
       lag_interface_name: Port-channel{lag.ifindex}
     iosxr:
       description: Cisco IOS XRv
-      support:
-        level: minimal
       mgmt_if: MgmtEth0/RP0/CPU0/0
       interface_name: GigabitEthernet0/0/0/{ifindex}
       loopback_interface_name: Loopback{ifindex}
       ifindex_offset: 0
       group_vars:
-        ansible_user: vagrant
-        ansible_ssh_pass: vagrant
         ansible_become_method: enable
-        ansible_become_password: vagrant
         ansible_network_os: iosxr
         ansible_connection: network_cli
+        ansible_user: vagrant
+        ansible_ssh_pass: vagrant
+        ansible_become_password: vagrant
       features:
         initial:
           ipv4:
             unnumbered: true
           ipv6:
             lla: true
+          min_mtu: 68
+          min_phy_mtu: 1500
+          max_mtu: 9216
         ospf:
           unnumbered: true
+          password: true
+          priority: true
+          timers: true
         isis:
           circuit_type: true
           unnumbered:
@@ -3154,6 +3240,11 @@ defaults:
           activate_af: true
       external:
         image: none
+      support:
+        level: minimal
+        caveats:
+        - We're testing IOS XR templates with Cisco 8000v. They should work on 
+          IOS XRv as well.
       libvirt:
         image: cisco/iosxr
         build: https://netlab.tools/labs/iosxr/
@@ -3175,6 +3266,8 @@ defaults:
           ansible_user: clab
           ansible_ssh_pass: clab@123
           ansible_become_password: clab@123
+      _parents:
+      - xr
     linux:
       description: Generic Linux host
       interface_name: eth{ifindex}
@@ -3227,6 +3320,8 @@ defaults:
             roles:
             - host
             - bridge
+            generate_mac:
+            - svi
           vlan:
             mixed_trunk: true
             model: router
@@ -3464,6 +3559,8 @@ defaults:
             unnumbered: true
           ipv6:
             lla: true
+          generate_mac:
+          - ethernet
         bfd: {}
         bgp: {}
         eigrp: {}
@@ -3507,7 +3604,7 @@ defaults:
       loopback_interface_name: lo{ifindex}
       ifindex_offset: 1
       mgmt_if: vio0
-      role: host
+      role: router
       features:
         routing:
           static: true
@@ -3518,6 +3615,15 @@ defaults:
           ipv6:
             use_ra: true
             lla: true
+        ospf:
+          unnumbered: false
+          import:
+          - connected
+          - static
+          default: true
+          password: true
+          priority: true
+          timers: true
       libvirt:
         create_template: openbsd.xml.j2
         image: netlab/openbsd
@@ -3704,7 +3810,7 @@ defaults:
         min_tx: 100
         min_rx: 100
       clab:
-        image: ghcr.io/nokia/srlinux:25.3.3
+        image: ghcr.io/nokia/srlinux:25.3.2
         node:
           kind: srl
           type: ixr-d2
@@ -3804,6 +3910,11 @@ defaults:
         icon: router
     sros:
       description: Nokia SR OS VM in container
+      support:
+        level: minimal
+        caveats:
+        - We're testing the new Nokia SR-SIM container instead of the SR OS 
+          VM-in-container
       mgmt_if: A/1
       interface_name: eth-1/1/c{ifindex}
       loopback_interface_name: >-
@@ -4053,7 +4164,7 @@ defaults:
         node:
           kind: nokia_srsim
           type: sr-1
-          license: ~/.netlab/license_srsim25.txt
+          license: /Projects/SR_OS_SR-SIM_license.txt
           env:
             NOKIA_SROS_MDA_1: me12-100gb-qsfp28
             NOKIA_SROS_MDA_2: me12-100gb-qsfp28
@@ -4065,6 +4176,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      _parents:
+      - sros
     unknown:
       description: Generic Unknown Device
       _meta_device: true
@@ -4090,7 +4203,6 @@ defaults:
         vxlan: {}
     vjunos-router:
       description: vJunos Router (similar to vMX)
-      _meta_device: true
       loopback_interface_name: lo0.{ifindex}
       ifindex_offset: 0
       interface_name: ge-0/0/{ifindex}
@@ -4183,9 +4295,11 @@ defaults:
           netlab_check_delay: 10
       graphite:
         icon: router
+      _parents:
+      - junos
+      - vmx
     vjunos-switch:
       description: vJunos Switch
-      _meta_device: true
       loopback_interface_name: lo0.{ifindex}
       ifindex_offset: 0
       interface_name: ge-0/0/{ifindex}
@@ -4283,9 +4397,10 @@ defaults:
           netlab_check_delay: 10
       graphite:
         icon: switch
+      _parents:
+      - junos
     vmx:
       description: Juniper vMX container
-      _meta_device: true
       loopback_interface_name: lo0.{ifindex}
       ifindex_offset: 0
       interface_name: ge-0/0/{ifindex}
@@ -4376,9 +4491,10 @@ defaults:
           name: eth{ifindex+1}
       graphite:
         icon: router
+      _parents:
+      - junos
     vptx:
       description: Juniper vPTX
-      _meta_device: true
       loopback_interface_name: lo0.{ifindex}
       ifindex_offset: 0
       interface_name: et-0/0/{ifindex}
@@ -4459,7 +4575,7 @@ defaults:
         pre_install: vptx
         create_template: vptx.xml.j2
       clab:
-        image: vrnetlab/juniper_vjunosevolved:23.2R2.21-EVO
+        image: vrnetlab/juniper_vjunosevolved:25.2R1.8-EVO
         build: https://containerlab.dev/manual/kinds/vr-vjunosevolved/
         mtu: 1500
         node:
@@ -4473,9 +4589,10 @@ defaults:
           netlab_check_delay: 10
       graphite:
         icon: switch
+      _parents:
+      - junos
     vsrx:
       description: Juniper vSRX 3.0
-      _meta_device: true
       loopback_interface_name: lo0.{ifindex}
       ifindex_offset: 0
       interface_name: ge-0/0/{ifindex}
@@ -4580,6 +4697,8 @@ defaults:
           netlab_check_delay: 10
       graphite:
         icon: firewall
+      _parents:
+      - junos
     vyos:
       description: VyOS VM/container
       interface_name: eth{ifindex}
@@ -4780,6 +4899,8 @@ defaults:
             roles:
             - host
             - router
+            generate_mac:
+            - svi
           vlan:
             mixed_trunk: true
             model: router
@@ -4815,6 +4936,8 @@ defaults:
         routing: /etc/bird/routing.mod.conf
       daemon: true
       daemon_parent: linux
+      _parents:
+      - linux
     dnsmasq:
       description: DNSmasq - DNS and DHCP server
       interface_name: eth{ifindex}
@@ -4867,6 +4990,8 @@ defaults:
           initial:
             roles:
             - host
+            generate_mac:
+            - svi
           vlan:
             mixed_trunk: true
             model: router
@@ -4904,6 +5029,8 @@ defaults:
       - dhcp
       daemon: true
       daemon_parent: linux
+      _parents:
+      - linux
   daemons:
     bird:
       description: BIRD Internet Routing Daemon
@@ -5187,6 +5314,10 @@ defaults:
             type: int
             min_value: 1
             max_value: 32
+          rank:
+            type: int
+            min_value: 1
+            max_value: 200
         link:
           type: dict
           _keys:
@@ -5203,6 +5334,10 @@ defaults:
               type: int
               min_value: 1
               max_value: 32
+            rank:
+              type: int
+              min_value: 1
+              max_value: 200
         shared:
         - linkorder
         - color
@@ -5846,6 +5981,14 @@ defaults:
         ibgp:
         ebgp:
         localas_ibgp:
+    bgp_community_type:
+      _description: BGP community types
+      type: str
+      valid_values:
+        standard:
+        extended:
+        large:
+        2octet:
     rp_entry:
       _description: Routing policy entry
       action:
@@ -6106,13 +6249,7 @@ defaults:
         min_value: 1
       links: list
       loopback:
-        ipv4:
-          type: ipv4
-          use: host_prefix
-        ipv6:
-          type: ipv6
-          use: host_prefix
-        pool: addr_pool
+        type: dict
         _alt_types:
         - bool
         - prefix_str
@@ -6164,6 +6301,10 @@ defaults:
         You
         can also specify the global AS used by EVPN in 'vrf.as' parameter if you use
         VRFs, or in 'evpn.as' parameter if you use EVPN in bridging-only scenarios.
+      ebgp_vlan: >
+        In most scenarios, you don't need EBGP sessions between PE-devices across
+        an
+        EVPN-controlled VLAN. See https://netlab.tools/module/evpn/#evpn-rp for details.
     report:
       source: >
         A report can be specified in a file with .j2 suffix within 'reports' subdirectory
@@ -6180,6 +6321,11 @@ defaults:
         but then
         you might get the same IP prefix assigned to multiple segments of the routed
         VLAN.
+      trunk_attr: >
+        You should not use layer-3 attributes on VLAN trunks. Specify them in global-
+        or node
+        'vlans' dictionary. See https://netlab.tools/module/vlan/#vlan-interface-parameters
+        for details.
     vrf:
       inactive: >
         A globally-defined VRF is not used on a node unless that node is attached
@@ -6247,18 +6393,18 @@ defaults:
     create: {}
   paths:
     validate:
-    - /home/pipi/net101/tools/netsim/validate
+    - /home/pipi/netlab_gh/netsim/validate
     plugin:
     - /work/netlab_cicd
     - /home/pipi/net101/tools/tests/integration/gateway
     - /home/pipi/.netlab
-    - /home/pipi/net101/tools/netsim/extra
+    - /home/pipi/netlab_gh/netsim/extra
     custom:
       dirs:
       - /home/pipi/net101/tools/tests/integration/gateway
       - /work/netlab_cicd
       - /home/pipi/.netlab
-      - /home/pipi/net101/tools/netsim/extra
+      - /home/pipi/netlab_gh/netsim/extra
       files:
       - "{{ custom_config + '/' + inventory_hostname + '.' + netlab_device_type +
         '-' + node_provider + '.j2' }}"
@@ -6289,7 +6435,7 @@ defaults:
       - '{{ custom_config }}/deploy.yml'
     deploy:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks
+      - /home/pipi/netlab_gh/netsim/ansible/tasks
       tasks_generic:
       - deploy-config/{{ netlab_device_type }}-{{ node_provider }}.yml
       - deploy-config/{{ netlab_device_type }}.yml
@@ -6310,8 +6456,8 @@ defaults:
       - deploy-config/{{ ansible_network_os }}.yml
     templates:
       dirs:
-      - /home/pipi/net101/tools/netsim/daemons
-      - /home/pipi/net101/tools/netsim/ansible/templates
+      - /home/pipi/netlab_gh/netsim/daemons
+      - /home/pipi/netlab_gh/netsim/ansible/templates
     t_files:
       files:
       - '{{config_module}}/{{netlab_device_type}}-{{provider|default(netlab_provider)}}.j2'
@@ -6323,7 +6469,7 @@ defaults:
       - '{{netlab_device_type}}/{{config_module}}.j2'
     ready:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check
+      - /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check
       files:
       - '{{netlab_device_type}}-{{provider|default(netlab_provider)}}.yml'
       - '{{netlab_device_type}}.yml'
@@ -6331,7 +6477,7 @@ defaults:
       - '{{ansible_network_os}}.yml'
     collect:
       dirs:
-      - /home/pipi/net101/tools/netsim/ansible/tasks/fetch-config
+      - /home/pipi/netlab_gh/netsim/ansible/tasks/fetch-config
   ports:
     ssh: 22
     http: 80
@@ -6465,15 +6611,11 @@ defaults:
         advertise_roles: list
         community:
           ibgp:
-          - standard
-          - extended
-          - large
-          - 2octet
+            type: list
+            _subtype: bgp_community_type
           ebgp:
-          - standard
-          - extended
-          - large
-          - 2octet
+            type: list
+            _subtype: bgp_community_type
           _alt_types:
           - str
           - BoxList
@@ -6519,15 +6661,11 @@ defaults:
             _subtype: bgp_session_type
         community:
           ibgp:
-          - standard
-          - extended
-          - large
-          - 2octet
+            type: list
+            _subtype: bgp_community_type
           ebgp:
-          - standard
-          - extended
-          - large
-          - 2octet
+            type: list
+            _subtype: bgp_community_type
           _alt_types:
           - str
           - BoxList
@@ -6552,6 +6690,8 @@ defaults:
       interface:
         local_as: asn
         replace_global_as: bool
+      loopback:
+        advertise: bool
       as_list:
         type: dict
         _keytype: int
@@ -6586,6 +6726,7 @@ defaults:
       asav: true
       bird: true
       cat8000v: true
+      cisco8000v: true
       csr: true
       cumulus: true
       cumulus_nvue: true
@@ -6614,6 +6755,7 @@ defaults:
       vptx: true
       vsrx: true
       vyos: true
+      xr: true
   dhcp:
     transform_after:
     - vlan
@@ -6757,6 +6899,7 @@ defaults:
         - ebgp
         vlans: list
         vrfs: list
+        domain: str
       vlan:
         evi: rd
         rd: rd
@@ -7034,6 +7177,7 @@ defaults:
     supported_on:
       asav: true
       cat8000v: true
+      cisco8000v: true
       csr: true
       eos: true
       frr: true
@@ -7056,6 +7200,7 @@ defaults:
       vptx: true
       vsrx: true
       vyos: true
+      xr: true
   lag:
     no_propagate:
     - start_lag_id
@@ -7517,6 +7662,7 @@ defaults:
       arubacx: true
       bird: true
       cat8000v: true
+      cisco8000v: true
       csr: true
       cumulus: true
       cumulus_nvue: true
@@ -7533,6 +7679,7 @@ defaults:
       junos: true
       none: true
       nxos: true
+      openbsd: true
       routeros: true
       routeros7: true
       srlinux: true
@@ -7545,6 +7692,7 @@ defaults:
       vptx: true
       vsrx: true
       vyos: true
+      xr: true
   ripv2:
     version: 2
     transform_after:
@@ -8263,18 +8411,14 @@ defaults:
     extra: []
     user: []
     system: []
+  workdir: /work/netlab_cicd
+  device: frr
   groups:
-    external:
-      device: frr
-      members: []
-      _default_group: true
     all:
       vars:
         netlab_show_config: true
       members: []
       _default_group: true
-  workdir: /work/netlab_cicd
-  device: frr
   plugin:
   - multilab
   _globals:
