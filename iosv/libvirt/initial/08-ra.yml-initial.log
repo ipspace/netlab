@@ -4,126 +4,126 @@
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
+ok: [h4]
 ok: [dhsrv]
 ok: [h0]
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [h4]
 ok: [dut]
 
 TASK [Find device readiness script] ********************************************
+ok: [h4]
 ok: [dhsrv]
 ok: [h0]
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [h4]
 ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
+skipping: [h4]
 skipping: [dhsrv]
+skipping: [dut]
 skipping: [h0]
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
-skipping: [h4]
-skipping: [dut]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dhsrv, h0, h1, h2, h3, h4, dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h4, dhsrv, dut, h0, h1, h2, h3
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
+ok: [h4]
 ok: [dhsrv]
 ok: [h0]
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [h4]
 ok: [dut]
 
 TASK [Find configuration template for normalize] *******************************
+ok: [h4]
 ok: [dhsrv]
 ok: [h0]
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [h4]
 ok: [dut]
 
 TASK [fail] ********************************************************************
+skipping: [h4]
 skipping: [dhsrv]
+skipping: [dut]
 skipping: [h0]
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
-skipping: [h4]
-skipping: [dut]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
+ok: [h4]
 ok: [dhsrv]
 ok: [h0]
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [h4]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [h4]
 skipping: [dhsrv]
+skipping: [dut]
 skipping: [h0]
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
-skipping: [h4]
-skipping: [dut]
 
 TASK [Deploy normalize configuration] ******************************************
+skipping: [h4]
 skipping: [dhsrv]
+skipping: [dut]
 skipping: [h0]
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
-skipping: [h4]
-skipping: [dut]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dhsrv, h0, h1, h2, h3, h4, dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h4, dhsrv, dut, h0, h1, h2, h3
 
 TASK [Figure out whether to deploy the module initial on current device] *******
+ok: [h4]
 ok: [dhsrv]
 ok: [h0]
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [h4]
 ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
+ok: [h4]
 ok: [dhsrv]
 ok: [h0]
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [h4]
 ok: [dut]
 
 TASK [fail] ********************************************************************
+skipping: [h4]
 skipping: [dhsrv]
+skipping: [dut]
 skipping: [h0]
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
-skipping: [h4]
-skipping: [dut]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
+ok: [h4]
 ok: [dhsrv]
 ok: [h0]
 ok: [h1]
 ok: [h2]
 ok: [h3]
-ok: [h4]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -162,6 +162,121 @@ ok: [dhsrv] =>
     set -e
     ip -6 addr add 2001:db8:1:4::2/64 dev eth1
     ip link set dev eth1 mtu 1500
+ok: [h4] => 
+  msg: |-
+    initial configuration for h4
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)$ "
+    SCRIPT
+    hostname h4
+    #
+    # Build hosts file
+    #
+    #
+    cat <<SCRIPT >/tmp/hosts
+    #
+    # Created by netlab initial
+    #
+    2001:db8:1:4::2 dhsrv eth1.dhsrv
+    2001:db8:0:84::1 dut
+    2001:db8:1::84 GigabitEthernet0-1.dut
+    2001:db8:1:1::84 GigabitEthernet0-2.dut
+    2001:db8:1:2::84 GigabitEthernet0-3.dut
+    2001:db8:1:3::84 GigabitEthernet0-4.dut
+    2001:db8:1:4::84 GigabitEthernet0-5.dut
+    SCRIPT
+    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
+    # It seems on the Vagrant box for ubuntu 20.04, DNS Servers are hardcoded as 4.2.2.1 & Co.
+    # This is annoying on a network with filtered DNS.
+    # DNSMasq server used for giving out DHCP addresses on the management network is able to act as a DNS Server.
+    # Let's use that.
+    #
+    # (Overwrite netplan config to remove DNS stuff)
+    echo -n 'Starting initial config ' && date
+    cat <<SCRIPT >/etc/netplan/01-netcfg.yaml
+    network:
+      version: 2
+      renderer: networkd
+      ethernets:
+        eth0:
+          dhcp4: true
+          dhcp6: false
+          optional: true
+    SCRIPT
+    netplan apply
+  
+    # (Overwrite resolved config to remove DNS stuff)
+    cat <<SCRIPT > /etc/systemd/resolved.conf
+    [Resolve]
+    DNS=
+    FallbackDNS=
+    Domains=
+    DNSOverTLS=no
+    Cache=yes
+    DNSStubListener=yes
+    SCRIPT
+  
+    systemctl restart systemd-resolved
+  
+    # Set persistent hostname
+    hostnamectl set-hostname h4
+  
+    NEED_APT_UPDATE=YES
+  
+    # Loopback addressing
+  
+    # Interface addressing and bonds, including any static routes
+    cat <<SCRIPT > /etc/netplan/03-eth-eth1.yaml
+    network:
+      version: 2
+      renderer: networkd
+      ethernets:
+        eth1:
+          dhcp6: true
+          accept-ra: true
+    SCRIPT
+  
+    # Disable auto-negotiation on Ethernet interfaces, needed to make LACP work correctly
+    cat <<SCRIPT > /etc/systemd/network/98-eth.link
+  
+    [Match]
+    OriginalName=eth*
+  
+    [Link]
+    BitsPerSecond=1G
+    AutoNegotiation=no
+    Duplex=full
+    SCRIPT
+  
+    chmod 400 /etc/netplan/*
+  
+    echo -n 'Starting netplan generate ' && date
+    netplan generate
+    echo -n 'Starting netplan apply ' && date
+    netplan apply
+  
+    #
+    # Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA
+    # Do this after 'netplan apply', e.g. bond devices won't exist before that
+    #
+    cat <<SCRIPT > /etc/sysctl.d/10-netsim.conf
+    net.ipv4.conf.all.arp_announce=2
+    net.ipv4.ip_forward=0
+    net.ipv6.conf.all.forwarding=0
+  
+    net.ipv6.conf.eth1.disable_ipv6=1
+  
+    SCRIPT
+    sysctl -p /etc/sysctl.d/10-netsim.conf
 ok: [h0] => 
   msg: |-
     initial configuration for h0
@@ -554,121 +669,6 @@ ok: [h3] =>
     vtysh -f /tmp/config
     !
     exit 0
-ok: [h4] => 
-  msg: |-
-    initial configuration for h4
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)$ "
-    SCRIPT
-    hostname h4
-    #
-    # Build hosts file
-    #
-    #
-    cat <<SCRIPT >/tmp/hosts
-    #
-    # Created by netlab initial
-    #
-    2001:db8:1:4::2 dhsrv eth1.dhsrv
-    2001:db8:0:84::1 dut
-    2001:db8:1::84 GigabitEthernet0-1.dut
-    2001:db8:1:1::84 GigabitEthernet0-2.dut
-    2001:db8:1:2::84 GigabitEthernet0-3.dut
-    2001:db8:1:3::84 GigabitEthernet0-4.dut
-    2001:db8:1:4::84 GigabitEthernet0-5.dut
-    SCRIPT
-    grep "Created by netlab" /etc/hosts || uniq /tmp/hosts >>/etc/hosts
-    # It seems on the Vagrant box for ubuntu 20.04, DNS Servers are hardcoded as 4.2.2.1 & Co.
-    # This is annoying on a network with filtered DNS.
-    # DNSMasq server used for giving out DHCP addresses on the management network is able to act as a DNS Server.
-    # Let's use that.
-    #
-    # (Overwrite netplan config to remove DNS stuff)
-    echo -n 'Starting initial config ' && date
-    cat <<SCRIPT >/etc/netplan/01-netcfg.yaml
-    network:
-      version: 2
-      renderer: networkd
-      ethernets:
-        eth0:
-          dhcp4: true
-          dhcp6: false
-          optional: true
-    SCRIPT
-    netplan apply
-  
-    # (Overwrite resolved config to remove DNS stuff)
-    cat <<SCRIPT > /etc/systemd/resolved.conf
-    [Resolve]
-    DNS=
-    FallbackDNS=
-    Domains=
-    DNSOverTLS=no
-    Cache=yes
-    DNSStubListener=yes
-    SCRIPT
-  
-    systemctl restart systemd-resolved
-  
-    # Set persistent hostname
-    hostnamectl set-hostname h4
-  
-    NEED_APT_UPDATE=YES
-  
-    # Loopback addressing
-  
-    # Interface addressing and bonds, including any static routes
-    cat <<SCRIPT > /etc/netplan/03-eth-eth1.yaml
-    network:
-      version: 2
-      renderer: networkd
-      ethernets:
-        eth1:
-          dhcp6: true
-          accept-ra: true
-    SCRIPT
-  
-    # Disable auto-negotiation on Ethernet interfaces, needed to make LACP work correctly
-    cat <<SCRIPT > /etc/systemd/network/98-eth.link
-  
-    [Match]
-    OriginalName=eth*
-  
-    [Link]
-    BitsPerSecond=1G
-    AutoNegotiation=no
-    Duplex=full
-    SCRIPT
-  
-    chmod 400 /etc/netplan/*
-  
-    echo -n 'Starting netplan generate ' && date
-    netplan generate
-    echo -n 'Starting netplan apply ' && date
-    netplan apply
-  
-    #
-    # Sysctl settings: IPv4/IPv6 forwarding, IPv6 LLA
-    # Do this after 'netplan apply', e.g. bond devices won't exist before that
-    #
-    cat <<SCRIPT > /etc/sysctl.d/10-netsim.conf
-    net.ipv4.conf.all.arp_announce=2
-    net.ipv4.ip_forward=0
-    net.ipv6.conf.all.forwarding=0
-  
-    net.ipv6.conf.eth1.disable_ipv6=1
-  
-    SCRIPT
-    sysctl -p /etc/sysctl.d/10-netsim.conf
 ok: [dut] => 
   msg: |-
     initial configuration for dut
@@ -738,10 +738,16 @@ ok: [dut] =>
     no banner incoming
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for dhsrv
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for h0, h1, h2, h3
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux.yml for h4
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for dhsrv
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for h0, h1, h2, h3
+
+TASK [template] ****************************************************************
+changed: [h4]
+
+TASK [Execute /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux.j2] ***
+changed: [h4]
 
 TASK [Define script filename and determine whether to execute in netns] ********
 ok: [dhsrv]
@@ -761,8 +767,14 @@ skipping: [dhsrv]
 TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [dhsrv -> localhost]
 
-TASK [Remove temporary file /tmp/dhsrv_initial-_1bg6msh.sh] ********************
+TASK [Remove temporary file /tmp/dhsrv_initial-39yudzev.sh] ********************
 changed: [dhsrv -> localhost]
+
+TASK [ios_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/ios.j2] ***
+[WARNING]: To ensure idempotency and correct diff the input configuration lines
+should be similar to how they appear if present in the running configuration on
+device including the indentation
+changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
 changed: [h0 -> localhost]
@@ -777,22 +789,22 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for h0, h1, h2, h3
 
 TASK [template] ****************************************************************
-changed: [h0]
 changed: [h3]
+changed: [h0]
 changed: [h2]
 changed: [h1]
 
 TASK [set_fact] ****************************************************************
 ok: [h0]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 ok: [h3]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [h0]
 changed: [h2]
-changed: [h1]
 changed: [h3]
+changed: [h1]
+changed: [h0]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [h0]
@@ -800,38 +812,26 @@ skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 
-TASK [template] ****************************************************************
-changed: [h4]
-
-TASK [Execute /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux.j2] ***
-changed: [h4]
-
-TASK [ios_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/ios.j2] ***
-[WARNING]: To ensure idempotency and correct diff the input configuration lines
-should be similar to how they appear if present in the running configuration on
-device including the indentation
-changed: [dut]
-
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [dhsrv]
 ok: [h4]
+ok: [dhsrv]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dhsrv, h4 => (item=dhcp)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h4, dhsrv => (item=dhcp)
 
 TASK [Figure out whether to deploy the module dhcp on current device] **********
-ok: [dhsrv]
 ok: [h4]
+ok: [dhsrv]
 
 TASK [Find configuration template for dhcp] ************************************
 skipping: [dhsrv]
 ok: [h4]
 
 TASK [fail] ********************************************************************
-skipping: [dhsrv]
 skipping: [h4]
+skipping: [dhsrv]
 
 TASK [Find configuration deployment deploy_script for dhcp] ********************
 skipping: [dhsrv]
