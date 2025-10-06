@@ -22,3 +22,6 @@ fi
 if [[ "$OPTS" == *"isis"* ]]; then
   graph isis.yml dot-isis.svg :isis "IS-IS routing"
 fi
+if [[ "$OPTS" == *"vlan"* ]]; then
+  graph vlan.yml dot-vlan.svg :topology:vlan "VLAN Access and Trunk Links"
+fi

@@ -34,6 +34,24 @@ options:
                         Transformed topology snapshot file
 ```
 
+The graph type parameter can take one of these values:
+
+* **topology** -- draw "physical" lab topology (nodes and links)
+* **bgp** -- draw BGP sessions
+* **isis** -- draw IS-IS routing adjacencies
+
+These formatting parameters can be applied to a **topology** graph:
+
+* **vlan** -- draw VLAN links in a different color. Use wider lines for VLAN trunk links.
+
+These formatting parameters can be applied to a **bgp** graph:
+
+* **all** -- show all lab devices in the BGP graph. By default, the BGP graphs include only lab devices running BGP
+* **rr** -- draw arrows on BGP sessions to indicate peer-to-peer versus reflector-client sessions
+* **vrf** -- draw VRF BGP sessions as dotted lines
+* **ipv4**, **ipv6**, **vpnv4**, **vpnv6**, **6pe**, or **evpn** -- draw the BGP sessions with the specified address families
+* **novrf** -- do not include VRF BGP sessions in the graph
+
 ```{tip}
 * For more graph type- and graph formatting details, read the [GraphViz](outputs-graphviz) and [D2](outputs-d2) output module documentation.
 * When executed with the `--instance` option, **‌netlab graph** creates the graph description file in the lab directory.

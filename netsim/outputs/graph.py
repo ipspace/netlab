@@ -8,7 +8,7 @@ from box import Box
 from ..utils import files as _files
 from ..utils import log
 from . import _TopologyOutput
-from ._graph import bgp_graph, isis_graph, map_style, parse_bgp_params, topology_graph
+from ._graph import bgp_graph, isis_graph, map_style, parse_bgp_params, parse_topology_params, topology_graph
 
 
 def edge_label(f : typing.TextIO, direction: str, data: Box, subnet: bool = True) -> None:
@@ -209,6 +209,7 @@ def draw_graph(topology: Box, settings: Box, graph: Box, fname: str) -> None:
   gv_end(f,fname)
 
 def graph_topology(topology: Box, fname: str, settings: Box,g_format: typing.Optional[list]) -> bool:
+  parse_topology_params(settings,g_format)
   graph = topology_graph(topology,settings,'graph')
   draw_graph(topology,settings,graph,fname)
   return True
