@@ -40,6 +40,7 @@ The graph type parameter can take one of these values:
 * **bgp** -- draw BGP sessions
 * **isis** -- draw IS-IS routing adjacencies
 
+(netlab-graph-topo-format)=
 These formatting parameters can be applied to a **topology** graph:
 
 * **vlan** -- draw VLAN links in a different color. Use wider lines for VLAN trunk links.

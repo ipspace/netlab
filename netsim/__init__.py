@@ -2,7 +2,7 @@
 
 import sys
 
-__version__ = "25.09-post1"
+__version__ = "25.10"
 
 abort = False
 

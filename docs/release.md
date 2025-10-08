@@ -1,6 +1,17 @@
 Release Notes
 =============
 
+**Release 25.10 (2025-10-08)**
+
+* You can use [wildcards or regular expressions](groups-members) to specify group- or **[as_list](bgp-aslist)** ASN/RR members.
+* New device: container version of Cisco 8000v emulator (running IOS XR)
+* [Graphing improvements](release-25.10-graph)
+* Support for vJunosEVO release 24/25
+* OSPFv2/v3 on OpenBSD
+* OSPFv2/v3 interface parameters on IOS XR
+
+[More details...](release-25.10)
+
 **Release 25.09-post1 (2025-09-14)**
 
 [Release 25.09-post1](release-25.09-post1) fixes the _netlab_ templating crash caused by breaking changes in Ansible core release 12.9.
@@ -141,6 +152,7 @@ For older releases, check the [release notes archive](release-archive.md).
    :caption: Individual release notes
    :maxdepth: 1
 
+   release/25.10.md
    release/25.09.md
    release/25.07.md
    release/25.06.md
