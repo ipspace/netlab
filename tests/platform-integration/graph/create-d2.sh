@@ -20,3 +20,6 @@ fi
 if [[ "$OPTS" == *"isis"* ]]; then
   NETLAB_GRAPH_TITLE="IS-IS routing" netlab create -o d2:isis isis.yml && d2 graph.d2 d2-isis.svg
 fi
+if [[ "$OPTS" == *"vlan"* ]]; then
+  NETLAB_GRAPH_TITLE="VLAN Access and Trunk Links"  netlab create -o d2:topology:vlan vlan.yml && d2 graph.d2 d2-vlan.svg
+fi

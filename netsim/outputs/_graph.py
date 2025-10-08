@@ -151,6 +151,15 @@ def append_edge(graph: Box, if_a: Box, if_b: Box, g_type: str) -> None:
   graph.edges.append({'nodes': nodes, 'attr': e_attr})
 
 """
+Set interface 'type' based on VLAN attributes
+"""
+def set_vlan_type(intf: Box) -> None:
+  if 'vlan.trunk' in intf:
+    intf.type = 'vlan_trunk'
+  elif 'vlan.access' in intf:
+    intf.type = 'vlan_access'
+
+"""
 Append a LAN segment to the graph
 """
 LINK_DEFAULTS: dict = { 'graph.rank': 100, 'graph.linkorder': 100 }
@@ -179,6 +188,10 @@ def topo_edges(graph: Box, topology: Box, settings: Box,g_type: str) -> None:
   graph.edges = []
   for link in sorted(topology.links,key=lambda x: get_attr(x,g_type,'linkorder',100)):
     propagate_link_attributes(link,g_type,['linkorder','type'])
+
+    if settings.get('topology.vlan',False):
+      for intf in link.interfaces:
+        set_vlan_type(intf)
 
     if len(link.interfaces) == 2 and link.get('graph.type','') != 'lan':
       intf_list = sorted(link.interfaces,key=lambda intf: topology.nodes[intf.node].get('graph.rank',100))
@@ -327,6 +340,24 @@ def isis_graph(topology: Box, settings: Box, g_type: str) -> typing.Optional[Box
   log.exit_on_error()
   return graph
 
+def parse_topology_params(settings: Box, format: typing.Optional[list]) -> None:
+  if not format:
+    return
+
+  for kw in format[1:]:
+    if kw in ('vlan'):
+      settings.topology[kw] = True
+    else:
+      log.error(
+        'Invalid topology graph formatting parameter {kw}',
+        category=log.IncorrectValue,
+        module='graph',
+        skip_header=True)
+
+  if log.VERBOSE:
+    log.info('topology graph parameters',more_data=settings.topology.to_yaml().split('\n'))
+  log.exit_on_error()
+
 def parse_bgp_params(settings: Box, format: typing.Optional[list]) -> None:
   if 'rr_sessions' in settings and settings.get('bgp.rr',None) is None:
     settings.bgp.rr = settings.rr_sessions
@@ -341,7 +372,7 @@ def parse_bgp_params(settings: Box, format: typing.Optional[list]) -> None:
       settings.bgp.af[kw] = True
     else:
       log.error(
-        'Invalid BGP graph parameter {kw}',
+        'Invalid BGP graph formatting parameter {kw}',
         category=log.IncorrectValue,
         module='graph',
         skip_header=True)

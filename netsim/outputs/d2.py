@@ -9,7 +9,7 @@ from ..data import get_box
 from ..utils import files as _files
 from ..utils import log
 from . import _TopologyOutput
-from ._graph import bgp_graph, isis_graph, map_style, parse_bgp_params, topology_graph
+from ._graph import bgp_graph, isis_graph, map_style, parse_bgp_params, parse_topology_params, topology_graph
 
 '''
 Copy default settings into a D2 map converting Python dictionaries into
@@ -187,7 +187,9 @@ def set_edge_attributes(topology: Box, settings: Box, graph: Box) -> None:
         edge.attr.format = settings.styles.vrf + edge.attr.format
 
 def graph_topology(topology: Box, fname: str, settings: Box,g_format: typing.Optional[list]) -> bool:
+  parse_topology_params(settings,g_format)
   graph = topology_graph(topology,settings,'d2')
+  set_edge_attributes(topology,settings,graph)
   draw_graph(topology,settings,graph,fname)
   return True
 

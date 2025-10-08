@@ -87,6 +87,15 @@ Graphing routines use **[defaults](topo-defaults)** topology settings to modify 
 * **outputs.graph.interface_labels** -- Add IP addresses to links in **topology** graph. Results in a cluttered image (but feel free to fix that and submit a pull request).
 * **outputs.graphs.node_address_label** (default: *True*) -- add node loopback IP addresses or IP addresses of the first interface (for hosts) to node labels.
 
+(outputs-graph-topo-parameters)=
+These default settings modify how the topology graphs look:
+
+* **outputs.graph.topology.vlan** (default: False) -- draw VLAN links in a different color. Use wider lines for VLAN trunk links.
+
+```{tip}
+You can specify the above formatting parameter in the *graph format* CLI argument, for example, `netlab create -o graph:topology:vlan` or `netlab graph -t topology -f vlan`.
+```
+
 (outputs-graph-bgp-parameters)=
 These default settings modify how the BGP graphs look:
 
@@ -96,7 +105,9 @@ These default settings modify how the BGP graphs look:
 * **outputs.graph.bgp.af._af_** (default: all address families) -- when one or more **af** parameters (valid keys: **ipv4**, **ipv6**, **vpnv4**, **vpnv6**, **6pe**, **evpn**) are set to *True*, the graph is limited to BGP sessions of the specified address families.
 * **outputs.graph.bgp.novrf** (default: False) -- do not include VRF BGP sessions in the graph
 
+```{tip}
 You can specify the above BGP parameters in the *graph format* CLI argument, for example, `netlab create -o graph:bgp:vrf` or `netlab graph -t bgp -f vrf`.
+```
 
 (outputs-graph-styles)=
 ## Graph Object Styles
@@ -119,6 +130,8 @@ Finally, you can also change the formatting of individual graph objects with the
 | level-1 | IS-IS level-1-only link |
 | level-2 | IS-IS level-2-only link |
 | level-1-2 | IS-IS level-1-2 link |
+| vlan_access | VLAN access link |
+| vlan_trunk  | VLAN trunk link |
 
 Each **styles** parameter is a dictionary of *Graphviz* attributes and their values.
 
