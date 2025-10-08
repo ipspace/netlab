@@ -214,13 +214,25 @@ def run_single_test(
 def run_tests(setup: Box, limit: typing.Optional[str], dry_run: bool = False) -> None:
   for device in setup.devices:
     for provider in setup.devices[device]:
+      if provider.startswith('_'):
+        continue
       for test in setup.tests:
         if not include_test(setup.devices[device][provider],test):
           continue
         if not device_supports_test(device,provider,setup.tests[test],setup):
           continue
+        dp_data = setup.devices[device][provider]
+        device_limit = limit or setup.limits[test] or None
+        if isinstance(dp_data,Box) and 'include' in dp_data and isinstance(dp_data.include,Box):
+          dt_data = dp_data.include[test]
+          if dt_data and 'limit' in dt_data:
+            if device_limit and device_limit != dt_data.limit:
+              print(f'Device {device} provider {provider} test {test} limited to {dt_data.limit}, skipping')
+            else:
+              device_limit = dt_data.limit
+
         run_single_test(device,provider,setup.tests[test].path,
-          limit=limit or setup.limits[test] or None,
+          limit=device_limit,
           setup=setup,
           dry_run=dry_run)
 

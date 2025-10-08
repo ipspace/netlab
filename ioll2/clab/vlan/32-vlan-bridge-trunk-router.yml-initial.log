@@ -25,7 +25,7 @@ TASK [Wait for device to become ready] *****************************************
 skipping: [h1]
 skipping: [h2]
 skipping: [r1]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/ioll2-clab.yml for s1, s2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/ioll2-clab.yml for s1, s2
 
 TASK [Check if 'sshpass' is installed] *****************************************
 ok: [s1 -> localhost]
@@ -35,9 +35,9 @@ ok: [s2 -> localhost]
 ok: [s1 -> localhost]
 
 TASK [Execute local ssh command to check ioll2 readiness] **********************
-FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check ioll2 readiness (20 retries left).
-ok: [s2 -> localhost]
 ok: [s1 -> localhost]
+FAILED - RETRYING: [s2 -> localhost]: Execute local ssh command to check ioll2 readiness (20 retries left).
+ok: [s2 -> localhost]
 
 TASK [Confirm s1 SSH server works] *********************************************
 ok: [s1] => 
@@ -46,7 +46,7 @@ ok: [s2] =>
   msg: Node s2 is ready.
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1, s2, r1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1, s2, r1
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [h1]
@@ -87,15 +87,12 @@ ok: [s1] =>
     !
     interface Ethernet0/1
      shutdown
-     mac-address 52dc.cafe.0301
     !
     interface Ethernet0/2
      shutdown
-     mac-address 52dc.cafe.0302
     !
     interface Ethernet0/3
      shutdown
-     mac-address 52dc.cafe.0303
 ok: [s2] => 
   msg: |-
     normalize configuration for s2
@@ -103,31 +100,28 @@ ok: [s2] =>
     !
     interface Ethernet0/1
      shutdown
-     mac-address 52dc.cafe.0401
     !
     interface Ethernet0/2
      shutdown
-     mac-address 52dc.cafe.0402
     !
     interface Ethernet0/3
      shutdown
-     mac-address 52dc.cafe.0403
 
 TASK [Deploy normalize configuration] ******************************************
 skipping: [h1]
 skipping: [h2]
 skipping: [r1]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for s1, s2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for s1, s2
 
-TASK [ios_config: deploying normalize from /home/pipi/net101/tools/netsim/ansible/templates/normalize/ioll2.j2] ***
+TASK [ios_config: deploying normalize from /home/pipi/netlab_gh/netsim/ansible/templates/normalize/ioll2.j2] ***
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
 should be similar to how they appear if present in the running configuration on
 device including the indentation
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1, s2, r1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1, s2, r1
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [h1]
@@ -315,6 +309,9 @@ ok: [r1] =>
     cat >/tmp/config <<CONFIG
     hostname r1
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -338,6 +335,7 @@ ok: [r1] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [s1] => 
   msg: |-
@@ -346,6 +344,8 @@ ok: [s1] =>
     hostname s1
     !
     no ip domain lookup
+    logging buffered 256000
+  
     !
     lldp run
     !
@@ -377,6 +377,7 @@ ok: [s1] =>
     interface Ethernet0/1
      no switchport
      description s1 -> s2
+     mac-address caf0.0003.0001
      no shutdown
     !
     interface Ethernet0/2
@@ -390,13 +391,13 @@ ok: [s1] =>
      no shutdown
     !
     interface Vlan700
-     description VLAN red (700) -> [h1,s2,r1]
-     mac-address 4001.cafe.0300
+     description VLAN red (700) -> [h1,r1,s2]
+     mac-address caf4.0003.0000
      no shutdown
     !
     interface Vlan701
-     description VLAN blue (701) -> [h2,s2,r1]
-     mac-address 4001.cafe.0301
+     description VLAN blue (701) -> [h2,r1,s2]
+     mac-address caf4.0003.0001
      no shutdown
     !
     !
@@ -413,6 +414,8 @@ ok: [s2] =>
     hostname s2
     !
     no ip domain lookup
+    logging buffered 256000
+  
     !
     lldp run
     !
@@ -444,6 +447,7 @@ ok: [s2] =>
     interface Ethernet0/1
      no switchport
      description s2 -> s1
+     mac-address caf0.0004.0001
      no shutdown
     !
     interface Ethernet0/2
@@ -458,12 +462,12 @@ ok: [s2] =>
     !
     interface Vlan700
      description VLAN red (700) -> [h1,s1,r1]
-     mac-address 4001.cafe.0400
+     mac-address caf4.0004.0000
      no shutdown
     !
     interface Vlan701
      description VLAN blue (701) -> [h2,s1,r1]
-     mac-address 4001.cafe.0401
+     mac-address caf4.0004.0001
      no shutdown
     !
     !
@@ -475,9 +479,9 @@ ok: [s2] =>
     no banner incoming
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for s1, s2
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for r1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for s1, s2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for r1
 
 TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
@@ -487,27 +491,27 @@ TASK [Create a temporary file for the rendered script] *************************
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
-TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
+TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
 skipping: [h2]
 
-TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 skipping: [h1]
 skipping: [h2]
 
-TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
+TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-cm__vzdl.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-n_0mfqh4.sh] ***********************
 changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
-TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
+TASK [ios_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/ios.j2] ***
 changed: [s1]
 changed: [s2]
 
@@ -518,7 +522,7 @@ TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [r1]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for r1
 
 TASK [template] ****************************************************************
 changed: [r1]
@@ -526,10 +530,10 @@ changed: [r1]
 TASK [set_fact] ****************************************************************
 ok: [r1]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [r1]
 
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r1]
 
 PLAY [Deploy module-specific configurations] ***********************************
@@ -541,14 +545,14 @@ ok: [s1]
 ok: [s2]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1, s2 => (item=vlan)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1, s2 => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1, s2 => (item=vlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1, s2 => (item=routing)
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [h1]
 ok: [h2]
-ok: [s2]
 ok: [s1]
+ok: [s2]
 
 TASK [Find configuration template for vlan] ************************************
 skipping: [h1]
@@ -635,11 +639,11 @@ ok: [s2] =>
 TASK [Deploy vlan configuration] ***********************************************
 skipping: [h1]
 skipping: [h2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for s1, s2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for s1, s2
 
-TASK [ios_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/ioll2.j2] ***
-changed: [s1]
+TASK [ios_config: deploying vlan from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/ioll2.j2] ***
 changed: [s2]
+changed: [s1]
 
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [h1]
@@ -730,7 +734,7 @@ ok: [h2] =>
 TASK [Deploy routing configuration] ********************************************
 skipping: [s1]
 skipping: [s2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
 
 TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
@@ -740,23 +744,23 @@ TASK [Create a temporary file for the rendered script] *************************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
-changed: [h1 -> localhost]
+TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
 skipping: [h1]
 skipping: [h2]
 
-TASK [Execute /tmp/config-h1_routing.sh to deploy routing config based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
+TASK [Execute /tmp/config-h1_routing.sh to deploy routing config based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
 skipping: [h1]
 skipping: [h2]
 
-TASK [Container configuration for routing based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
-changed: [h2 -> localhost]
+TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-txhh4m7_.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-49qiia52.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 

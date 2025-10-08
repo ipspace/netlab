@@ -1,7 +1,3 @@
-/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
-  "cipher": algorithms.TripleDES,
-/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
-  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -29,7 +25,7 @@ skipping: [r3]
 skipping: [r4]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [r1]
@@ -55,8 +51,8 @@ skipping: [r4]
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [r1]
 ok: [r2]
-ok: [r4]
 ok: [r3]
+ok: [r4]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -74,7 +70,7 @@ skipping: [r3]
 skipping: [r4]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [r1]
@@ -100,8 +96,8 @@ skipping: [r4]
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [r1]
 ok: [r2]
-ok: [r4]
 ok: [r3]
+ok: [r4]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -189,6 +185,9 @@ ok: [r1] =>
     cat >/tmp/config <<CONFIG
     hostname r1
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     ipv6 forwarding
     vrf mgmt
@@ -212,6 +211,7 @@ ok: [r1] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [r2] => 
   msg: |-
@@ -297,6 +297,9 @@ ok: [r2] =>
     cat >/tmp/config <<CONFIG
     hostname r2
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     ipv6 forwarding
     vrf mgmt
@@ -320,6 +323,7 @@ ok: [r2] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [r3] => 
   msg: |-
@@ -405,6 +409,9 @@ ok: [r3] =>
     cat >/tmp/config <<CONFIG
     hostname r3
     !
+    log file /tmp/logging
+  
+    !
     ipv6 forwarding
     vrf mgmt
      exit-vrf
@@ -427,6 +434,7 @@ ok: [r3] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [r4] => 
   msg: |-
@@ -512,6 +520,9 @@ ok: [r4] =>
     cat >/tmp/config <<CONFIG
     hostname r4
     !
+    log file /tmp/logging
+  
+    !
     ipv6 forwarding
     vrf mgmt
      exit-vrf
@@ -534,6 +545,7 @@ ok: [r4] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [dut] => 
   msg: |-
@@ -542,6 +554,8 @@ ok: [dut] =>
     hostname dut
     !
     no ip domain lookup
+    logging buffered 256000
+  
     !
     lldp run
     !
@@ -591,6 +605,7 @@ ok: [dut] =>
      description dut -> r1
      mtu 1500
      ip address 10.1.0.1 255.255.255.252
+     ipv6 nd ra interval 5
      ipv6 address 2001:DB8:3::1/64
      no shutdown
     !
@@ -599,6 +614,7 @@ ok: [dut] =>
      description dut -> r2
      mtu 1500
      ip address 10.1.0.5 255.255.255.252
+     ipv6 nd ra interval 5
      ipv6 address 2001:DB8:3:1::1/64
      no shutdown
     !
@@ -606,6 +622,7 @@ ok: [dut] =>
      vrf forwarding blue
      description dut -> r3
      mtu 1500
+     ipv6 nd ra interval 5
      ipv6 address 2001:DB8:13::1/64
      no shutdown
     !
@@ -613,12 +630,14 @@ ok: [dut] =>
      vrf forwarding blue
      description dut -> r4
      mtu 1500
+     ipv6 nd ra interval 5
      ipv6 address 2001:DB8:13:1::1/64
      no shutdown
     !
     interface Loopback1
      vrf forwarding blue
      description VRF Loopback blue
+     ipv6 nd ra interval 5
      ipv6 address 2001:DB8:CAFE:2001::1/64
      no shutdown
     !
@@ -626,6 +645,7 @@ ok: [dut] =>
      vrf forwarding red
      description VRF Loopback red
      ip address 10.2.0.1 255.255.255.255
+     ipv6 nd ra interval 5
      ipv6 address 2001:DB8:CAFE::1/64
      no shutdown
     !
@@ -638,10 +658,10 @@ ok: [dut] =>
     no banner incoming
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for r1, r2, r3, r4
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for r1, r2, r3, r4
 
-TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
+TASK [ios_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/ios.j2] ***
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
 should be similar to how they appear if present in the running configuration on
 device including the indentation
@@ -657,13 +677,13 @@ skipping: [r3]
 skipping: [r4]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, r3, r4
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, r3, r4
 
 TASK [template] ****************************************************************
 changed: [r3]
-changed: [r1]
 changed: [r4]
 changed: [r2]
+changed: [r1]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -671,13 +691,13 @@ ok: [r2]
 ok: [r3]
 ok: [r4]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [r2]
-changed: [r1]
 changed: [r3]
 changed: [r4]
+changed: [r1]
 
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r1]
 skipping: [r2]
 skipping: [r3]
@@ -693,8 +713,8 @@ ok: [r4]
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4 => (item=ospf)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4 => (item=vrf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4 => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4 => (item=vrf)
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [r1]
@@ -823,6 +843,33 @@ ok: [r2] =>
   
     !
     do write
+ok: [r3] => 
+  msg: |-
+    ospf configuration for r3
+    =========================================
+    !
+    ! OSPFv3 FRR configuration
+    !
+    interface lo
+    !
+     ipv6 ospf6 area 0.0.0.3
+    !
+    interface eth1
+    ! r3 -> dut
+     ipv6 ospf6 area 0.0.0.3
+     ipv6 ospf6 network point-to-point
+    !
+    !
+    router ospf6
+     ospf6 router-id 10.0.0.4
+     timers lsa min-arrival 100
+     timers throttle spf 10 50 500
+  
+  
+    exit
+  
+    !
+    do write
 ok: [r4] => 
   msg: |-
     ospf configuration for r4
@@ -854,46 +901,19 @@ ok: [dut] =>
   msg: |-
     ospf configuration for dut
     =========================================
-ok: [r3] => 
-  msg: |-
-    ospf configuration for r3
-    =========================================
-    !
-    ! OSPFv3 FRR configuration
-    !
-    interface lo
-    !
-     ipv6 ospf6 area 0.0.0.3
-    !
-    interface eth1
-    ! r3 -> dut
-     ipv6 ospf6 area 0.0.0.3
-     ipv6 ospf6 network point-to-point
-    !
-    !
-    router ospf6
-     ospf6 router-id 10.0.0.4
-     timers lsa min-arrival 100
-     timers throttle spf 10 50 500
-  
-  
-    exit
-  
-    !
-    do write
 
 TASK [Deploy ospf configuration] ***********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2, r3, r4
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2, r3, r4
 
-TASK [ios_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/ios.j2] ***
+TASK [ios_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/ios.j2] ***
 ok: [dut]
 
 TASK [template] ****************************************************************
 changed: [r1]
-changed: [r2]
 changed: [r4]
 changed: [r3]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -901,23 +921,23 @@ ok: [r2]
 ok: [r3]
 ok: [r4]
 
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
 skipping: [r1]
 skipping: [r2]
 skipping: [r3]
 skipping: [r4]
 
-TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [r2]
-changed: [r3]
+TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [r1]
 changed: [r4]
+changed: [r3]
+changed: [r2]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [r1]
 ok: [r2]
-ok: [r4]
 ok: [r3]
+ok: [r4]
 ok: [dut]
 
 TASK [Find configuration template for vrf] *************************************
@@ -1020,9 +1040,9 @@ skipping: [r1]
 skipping: [r2]
 skipping: [r3]
 skipping: [r4]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
 
-TASK [ios_config: deploying vrf from /home/pipi/net101/tools/netsim/ansible/templates/vrf/ios.j2] ***
+TASK [ios_config: deploying vrf from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/ios.j2] ***
 changed: [dut]
 
 PLAY [Deploy custom deployment templates] **************************************

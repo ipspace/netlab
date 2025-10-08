@@ -55,6 +55,8 @@ defaults:
           - router
           - bridge
           mgmt_vrf: true
+          generate_mac:
+          - ethernet
         bfd: {}
         dhcp:
           client:
@@ -188,7 +190,7 @@ defaults:
             INTFTYPE: et
             CLAB_MGMT_VRF: management
         mgmt_if: Management0
-        image: ceos:4.33.1F
+        image: ceos:4.34.2F
         group_vars:
           ansible_user: admin
           ansible_ssh_pass: admin
@@ -261,6 +263,8 @@ defaults:
           roles:
           - host
           - router
+          generate_mac:
+          - svi
         bfd: {}
         evpn:
           irb: true
@@ -398,7 +402,7 @@ defaults:
           kind: linux
           config_templates:
             daemons: /etc/frr/daemons
-            hosts: /etc/hosts
+            hosts: /etc/hosts:shared
       libvirt:
         image: debian/bookworm64
         group_vars:
@@ -579,7 +583,7 @@ defaults:
           runtime: docker
           config_templates:
             interfaces: /etc/network/interfaces
-            hosts: /etc/hosts
+            hosts: /etc/hosts:shared
         image: networkop/cx:4.4.0
         caveats:
         - Cumulus 4.x containers are out-of-date and not supported
@@ -1362,6 +1366,18 @@ defaults:
         ansible_user: vagrant
         ansible_ssh_pass: vagrant
         ansible_become_password: vagrant
+      clab:
+        group_vars:
+          ansible_ssh_pass: admin
+          ansible_user: admin
+          ansible_become_password: admin
+          netlab_check_retries: 50
+        image: vrnetlab/cisco_c8000v:17.13.01a
+        node:
+          kind: cisco_c8000v
+        interface:
+          name: eth{ifindex-1}
+        build: https://containerlab.dev/manual/kinds/vr-c8000v/
       role: router
       routing:
         _rm_per_af: true
@@ -1372,17 +1388,6 @@ defaults:
       interface_name: GigabitEthernet{ifindex}
       ifindex_offset: 2
       virtualbox: {}
-      clab:
-        group_vars:
-          ansible_ssh_pass: admin
-          ansible_user: admin
-          netlab_check_retries: 50
-        image: vrnetlab/vr-c8000v:17.13.01a
-        node:
-          kind: cisco_c8000v
-        interface:
-          name: eth{ifindex-1}
-        build: https://containerlab.dev/manual/kinds/vr-c8000v/
       node:
         min_mtu: 1500
       libvirt:
@@ -1558,6 +1563,18 @@ defaults:
         ansible_user: vagrant
         ansible_ssh_pass: vagrant
         ansible_become_password: vagrant
+      clab:
+        group_vars:
+          ansible_ssh_pass: admin
+          ansible_user: admin
+          ansible_become_password: admin
+          netlab_check_retries: 50
+        image: vrnetlab/cisco_csr1000v:17.03.08
+        node:
+          kind: cisco_csr1000v
+        interface:
+          name: eth{ifindex-1}
+        build: https://containerlab.dev/manual/kinds/vr-csr/
       role: router
       routing:
         _rm_per_af: true
@@ -1569,17 +1586,6 @@ defaults:
       ifindex_offset: 2
       virtualbox:
         image: cisco/csr1000v
-      clab:
-        group_vars:
-          ansible_ssh_pass: admin
-          ansible_user: admin
-          netlab_check_retries: 50
-        image: vrnetlab/cisco_csr1000v:17.03.08
-        node:
-          kind: cisco_csr1000v
-        interface:
-          name: eth{ifindex-1}
-        build: https://containerlab.dev/manual/kinds/vr-csr/
       node:
         min_mtu: 1500
       libvirt:
@@ -1904,6 +1910,19 @@ defaults:
         netlab_initial: always
         netlab_ssh_args: -o KexAlgorithms=+diffie-hellman-group-exchange-sha1 -o
           PubkeyAcceptedKeyTypes=ssh-rsa -o HostKeyAlgorithms=+ssh-rsa
+      clab:
+        group_vars:
+          ansible_ssh_pass: admin
+          ansible_user: admin
+          ansible_become_password: admin
+          netlab_check_retries: 20
+          netlab_device_type: iol
+        interface:
+          name: Ethernet{ifindex // 4}/{ifindex % 4}
+        build: https://containerlab.dev/manual/kinds/cisco_iol/
+        image: vrnetlab/cisco_iol:17.16.01a
+        node:
+          kind: cisco_iol
       role: router
       routing:
         _rm_per_af: true
@@ -1912,19 +1931,6 @@ defaults:
       graphite:
         icon: router
       interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
-      clab:
-        group_vars:
-          ansible_user: admin
-          ansible_ssh_pass: admin
-          ansible_become_password: admin
-          netlab_device_type: iol
-          netlab_check_retries: 20
-        interface:
-          name: Ethernet{ifindex // 4}/{ifindex % 4}
-        build: https://containerlab.dev/manual/kinds/cisco_iol/
-        image: vrnetlab/cisco_iol:17.16.01a
-        node:
-          kind: cisco_iol
     ioll2:
       features:
         bgp:
@@ -1978,6 +1984,9 @@ defaults:
           min_mtu: 68
           min_phy_mtu: 1501
           max_mtu: 1500
+          generate_mac:
+          - ethernet
+          - svi
         isis:
           circuit_type: true
           import:
@@ -2094,21 +2103,13 @@ defaults:
         netlab_initial: always
         netlab_ssh_args: -o KexAlgorithms=+diffie-hellman-group-exchange-sha1 -o
           PubkeyAcceptedKeyTypes=ssh-rsa -o HostKeyAlgorithms=+ssh-rsa
-      role: router
-      routing:
-        _rm_per_af: true
-      external:
-        image: none
-      graphite:
-        icon: router
-      interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
       clab:
         group_vars:
-          ansible_user: admin
           ansible_ssh_pass: admin
+          ansible_user: admin
           ansible_become_password: admin
-          netlab_device_type: ioll2
           netlab_check_retries: 20
+          netlab_device_type: ioll2
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         build: https://containerlab.dev/manual/kinds/cisco_iol/
@@ -2117,6 +2118,14 @@ defaults:
           kind: cisco_iol
           type: l2
         mtu: 1500
+      role: router
+      routing:
+        _rm_per_af: true
+      external:
+        image: none
+      graphite:
+        icon: router
+      interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
       lag_interface_name: Port-channel{lag.ifindex}
     iosv:
       features:
@@ -2279,6 +2288,18 @@ defaults:
         ansible_user: vagrant
         ansible_ssh_pass: vagrant
         ansible_become_password: vagrant
+      clab:
+        group_vars:
+          ansible_ssh_pass: admin
+          ansible_user: admin
+          ansible_become_password: admin
+          netlab_check_retries: 50
+        image: vrnetlab/cisco_vios:15.9.3
+        node:
+          kind: linux
+        interface:
+          name: eth{ifindex}
+        build: https://github.com/srl-labs/vrnetlab/tree/master/vios
       role: router
       routing:
         _rm_per_af: true
@@ -2293,17 +2314,6 @@ defaults:
         create_template: iosv.xml.j2
       virtualbox:
         image: cisco/iosv
-      clab:
-        group_vars:
-          ansible_ssh_pass: admin
-          ansible_user: admin
-          netlab_check_retries: 50
-        image: vrnetlab/cisco_vios:15.9.3
-        node:
-          kind: linux
-        interface:
-          name: eth{ifindex}
-        build: https://github.com/srl-labs/vrnetlab/tree/master/vios
     iosvl2:
       features:
         bgp:
@@ -2358,6 +2368,9 @@ defaults:
           min_mtu: 68
           max_mtu: 4700
           min_phy_mtu: 1500
+          generate_mac:
+          - ethernet
+          - svi
         isis:
           circuit_type: true
           import:
@@ -2477,6 +2490,18 @@ defaults:
         ansible_user: vagrant
         ansible_ssh_pass: vagrant
         ansible_become_password: vagrant
+      clab:
+        group_vars:
+          ansible_ssh_pass: admin
+          ansible_user: admin
+          ansible_become_password: admin
+          netlab_check_retries: 50
+        image: vrnetlab/cisco_viosl2:15.2
+        node:
+          kind: linux
+        interface:
+          name: eth{ifindex}
+        build: https://github.com/srl-labs/vrnetlab/tree/master/viosl2
       role: router
       routing:
         _rm_per_af: true
@@ -2491,17 +2516,6 @@ defaults:
         create_template: iosv.xml.j2
       virtualbox:
         image: cisco/iosv
-      clab:
-        group_vars:
-          ansible_ssh_pass: admin
-          ansible_user: admin
-          netlab_check_retries: 50
-        image: vrnetlab/cisco_viosl2:15.2.2020
-        node:
-          kind: linux
-        interface:
-          name: eth{ifindex}
-        build: https://github.com/srl-labs/vrnetlab/tree/master/viosl2
       lag_interface_name: Port-channel{lag.ifindex}
     iosxr:
       description: Cisco IOS XRv
@@ -2622,7 +2636,7 @@ defaults:
         node:
           kind: linux
           config_templates:
-            hosts: /etc/hosts
+            hosts: /etc/hosts:shared
         group_vars:
           ansible_connection: docker
           ansible_user: root
@@ -2669,6 +2683,8 @@ defaults:
             unnumbered: true
           ipv6:
             lla: true
+          generate_mac:
+          - ethernet
         bfd: {}
         bgp: {}
         eigrp: {}
@@ -2909,10 +2925,12 @@ defaults:
         min_tx: 100
         min_rx: 100
       clab:
-        image: ghcr.io/nokia/srlinux:25.3.3
+        image: ghcr.io/nokia/srlinux:25.7.2
         node:
           kind: srl
-          type: ixrd2
+          type: ixr-d2
+          config_templates:
+            hosts: /etc/hosts
         interface:
           name: e1-{ifindex}
         group_vars:
@@ -3903,7 +3921,7 @@ defaults:
         node:
           kind: linux
           config_templates:
-            hosts: /etc/hosts
+            hosts: /etc/hosts:shared
         group_vars:
           ansible_connection: docker
           ansible_user: root
@@ -3990,7 +4008,7 @@ defaults:
         node:
           kind: linux
           config_templates:
-            hosts: /etc/hosts
+            hosts: /etc/hosts:shared
         group_vars:
           ansible_connection: docker
           ansible_user: root
@@ -4221,6 +4239,7 @@ defaults:
         type: dict
         _keytype: int
         _subtype:
+          name: str
           members:
             type: list
             _subtype: node_id
@@ -4321,7 +4340,7 @@ defaults:
       - startup-delay
       - restart-policy
       template: clab.j2
-      version: 0.68.0
+      version: 0.69.3
       start: sudo -E containerlab deploy --reconfigure -t clab.yml
       stop: sudo -E containerlab destroy --cleanup -t clab.yml
       act_probe: docker ps
@@ -4332,9 +4351,9 @@ defaults:
       - cmd:
         - bash
         - -c
-        - "[[ `containerlab version|awk '/version/ {print $2}'` > '0.62.1' ]] && echo
+        - "[[ `containerlab version|awk '/version/ {print $2}'` > '0.69.2' ]] && echo
           OK"
-        err: Containerlab version is too old, please upgrade to 0.62.2 or later 
+        err: Containerlab version is too old, please upgrade to 0.69.3 or later 
           with 'sudo containerlab version upgrade'
       cleanup:
       - clab.yml
@@ -4576,52 +4595,79 @@ defaults:
       node_address_label: true
       interface_labels: false
       as_clusters: true
-      rr_sessions: true
-      router:
-        shape: oval
-        style:
-          font-size: 20
-      switch:
-        shape: hexagon
-        style:
-          font-size: 20
-      lan:
-        shape: rectangle
-        style:
-          border-radius: 8
-          font-size: 20
-      ibgp:
-        style:
-          stroke: '#613913'
-          stroke-width: 4
-        source-arrowhead:
-          shape: arrow
-        target-arrowhead:
-          shape: arrow
-      localas_ibgp:
-        style:
-          stroke: '#9b652f'
-          stroke-width: 4
-        source-arrowhead:
-          shape: arrow
-        target-arrowhead:
-          shape: arrow
-      ebgp:
-        style:
-          stroke: '#b21a1a'
-          stroke-width: 4
-        source-arrowhead:
-          shape: arrow
-        target-arrowhead:
-          shape: arrow
-      confed_ebgp:
-        style:
-          stroke: '#d26400'
-          stroke-width: 4
-        source-arrowhead:
-          shape: arrow
-        target-arrowhead:
-          shape: arrow
+      bgp:
+        rr: true
+      styles:
+        router:
+          shape: oval
+          style:
+            font-size: 20
+        switch:
+          shape: hexagon
+          style:
+            font-size: 20
+        lan:
+          shape: rectangle
+          style:
+            border-radius: 8
+            font-size: 20
+        container:
+          style:
+            fill: '#e8e8e8'
+            stroke: '#c0c0c0'
+        ibgp:
+          style:
+            stroke: '#613913'
+            stroke-width: 4
+          source-arrowhead:
+            shape: arrow
+          target-arrowhead:
+            shape: arrow
+        localas_ibgp:
+          style:
+            stroke: '#9b652f'
+            stroke-width: 4
+          source-arrowhead:
+            shape: arrow
+          target-arrowhead:
+            shape: arrow
+        ebgp:
+          style:
+            stroke: '#b21a1a'
+            stroke-width: 4
+          source-arrowhead:
+            shape: arrow
+          target-arrowhead:
+            shape: arrow
+        confed_ebgp:
+          style:
+            stroke: '#d26400'
+            stroke-width: 4
+          source-arrowhead:
+            shape: arrow
+          target-arrowhead:
+            shape: arrow
+        level-1:
+          style:
+            stroke: '#fba002'
+            stroke-width: 3
+        level-2:
+          style:
+            stroke: '#9b652f'
+            stroke-width: 4
+        level-1-2:
+          style:
+            stroke: '#d26400'
+            stroke-width: 4
+        title:
+          shape: text
+          near: top-center
+          style:
+            bold: true
+            font-size: 36
+        vrf:
+          style:
+            stroke-dash: 3
       style_map:
         color: stroke
         width: stroke-width
@@ -4653,6 +4699,7 @@ defaults:
           bgcolor: '#e8e8e8'
           color: '#c0c0c0'
           fontname: Verdana
+          fontsize: 12
           margin: 16
         stub:
           bgcolor: '#d1bfab'
@@ -4671,6 +4718,17 @@ defaults:
         confed_ebgp:
           color: '#d26400'
           penwidth: 2
+        vrf:
+          style: dashed
+        level-1:
+          color: '#fba002'
+          penwidth: 1
+        level-2:
+          color: '#9b652f'
+          penwidth: 1.5
+        level-1-2:
+          color: '#d26400'
+          penwidth: 1.5
         graph:
           bgcolor: transparent
           nodesep: 0.5
@@ -4682,15 +4740,23 @@ defaults:
           shape: box
           style: rounded,filled
           fontname: Verdana
+          fontsize: 11
         edge:
           fontname: Verdana
           labelfontsize: 8
           labeldistance: 1.5
+        title:
+          fontname: Verdana
+          fontsize: 16
+          labelloc: t
+          labeljust: l
       style_map:
         color: color
         width: penwidth
         fill: fillcolor
       attributes:
+        global:
+          title: str
         node:
           color: str
           fill: str
@@ -4933,7 +4999,7 @@ defaults:
     mgmt:
       ipv4: 192.168.121.0/24
       start: 100
-      mac: 08-4F-A9-00-00-00
+      mac: CA-FE-00-00-00-00
     l2only:
     vrf_loopback:
       ipv4: 10.2.0.0/24
@@ -4998,9 +5064,13 @@ defaults:
       Provider:
       Plugin:
       message: str
+    global_extra_ns:
+    - providers
+    - outputs
     can_be_false:
     - link
     - interface
+    - loopback
     link:
       bandwidth: int
       bridge: id
@@ -5037,6 +5107,28 @@ defaults:
         onlink: bool
       role: id
       pool: id
+      tc:
+        delay: time
+        jitter: time
+        loss:
+          type: float
+          min_value: 0
+          max_value: 100
+        corrupt:
+          type: float
+          min_value: 0
+          max_value: 100
+        duplicate:
+          type: float
+          min_value: 0
+          max_value: 100
+        reorder:
+          type: float
+          min_value: 0
+          max_value: 100
+        rate:
+          type: int
+          min_value: 1
       type:
         type: str
         valid_values:
@@ -5119,17 +5211,7 @@ defaults:
         min_value: 64
         max_value: 9216
       loopback:
-        ipv4:
-          type: ipv4
-          use: host_prefix
-          _alt_types:
-          - bool
-        ipv6:
-          type: ipv6
-          use: host_prefix
-          _alt_types:
-          - bool
-        pool: addr_pool
+        type: dict
         _alt_types:
         - bool
       provider: id
@@ -5159,6 +5241,18 @@ defaults:
         debug:
           type: list
           split_lines: true
+    loopback:
+      ipv4:
+        type: ipv4
+        use: host_prefix
+        _alt_types:
+        - bool
+      ipv6:
+        type: ipv6
+        use: host_prefix
+        _alt_types:
+        - bool
+      pool: addr_pool
     pool:
       ipv4:
         type: ipv4
@@ -5760,18 +5854,18 @@ defaults:
     create: {}
   paths:
     validate:
-    - /home/pipi/netlab_gh/netsim/validate
+    - /home/pipi/net101/tools/netsim/validate
     plugin:
     - /work/netlab_cicd
     - /home/pipi/net101/tools/tests/integration/bgp.policy
     - /home/pipi/.netlab
-    - /home/pipi/netlab_gh/netsim/extra
+    - /home/pipi/net101/tools/netsim/extra
     custom:
       dirs:
       - /home/pipi/net101/tools/tests/integration/bgp.policy
       - /work/netlab_cicd
       - /home/pipi/.netlab
-      - /home/pipi/netlab_gh/netsim/extra
+      - /home/pipi/net101/tools/netsim/extra
       files:
       - "{{ custom_config + '/' + inventory_hostname + '.' + netlab_device_type +
         '-' + node_provider + '.j2' }}"
@@ -5802,7 +5896,7 @@ defaults:
       - '{{ custom_config }}/deploy.yml'
     deploy:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks
+      - /home/pipi/net101/tools/netsim/ansible/tasks
       tasks_generic:
       - deploy-config/{{ netlab_device_type }}-{{ node_provider }}.yml
       - deploy-config/{{ netlab_device_type }}.yml
@@ -5823,8 +5917,8 @@ defaults:
       - deploy-config/{{ ansible_network_os }}.yml
     templates:
       dirs:
-      - /home/pipi/netlab_gh/netsim/daemons
-      - /home/pipi/netlab_gh/netsim/ansible/templates
+      - /home/pipi/net101/tools/netsim/daemons
+      - /home/pipi/net101/tools/netsim/ansible/templates
     t_files:
       files:
       - '{{config_module}}/{{netlab_device_type}}-{{provider|default(netlab_provider)}}.j2'
@@ -5836,7 +5930,7 @@ defaults:
       - '{{netlab_device_type}}/{{config_module}}.j2'
     ready:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check
+      - /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check
       files:
       - '{{netlab_device_type}}-{{provider|default(netlab_provider)}}.yml'
       - '{{netlab_device_type}}.yml'
@@ -5844,7 +5938,7 @@ defaults:
       - '{{ansible_network_os}}.yml'
     collect:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks/fetch-config
+      - /home/pipi/net101/tools/netsim/ansible/tasks/fetch-config
   ports:
     ssh: 22
     http: 80
@@ -6281,6 +6375,14 @@ defaults:
           - level-1
           - level-2
           - level-1-2
+      vrf:
+        active: bool
+        af:
+          _list_to_dict: true
+          _alt_types:
+          - NoneType
+          ipv4: bool
+          ipv6: bool
       link:
         metric:
           type: int
@@ -6308,6 +6410,21 @@ defaults:
           _alt_types:
           - bool
         passive: bool
+      loopback:
+        type:
+          type: str
+          valid_values:
+          - level-1
+          - level-2
+          - level-1-2
+        metric:
+          type: int
+          min_value: 1
+          max_value: 16777215
+        cost:
+          type: int
+          min_value: 1
+          max_value: 16777215
     features:
       unnumbered:
         ipv4: IPv4 unnumbered interfaces
@@ -6701,6 +6818,12 @@ defaults:
       - reference_bandwidth
       vrf:
         active: bool
+        af:
+          _list_to_dict: true
+          _alt_types:
+          - NoneType
+          ipv4: bool
+          ipv6: bool
         area:
           type: ipv4
           use: id
@@ -6774,6 +6897,14 @@ defaults:
           type: int
           min_value: 0
           max_value: 255
+      loopback:
+        area:
+          type: ipv4
+          use: id
+        cost:
+          type: int
+          min_value: 1
+          max_value: 65534
     features:
       default: Originate external default route
       digest: MD5 authentication
@@ -6882,6 +7013,12 @@ defaults:
             min_value: 5
             max_value: 600
       vrf:
+        af:
+          _list_to_dict: true
+          _alt_types:
+          - NoneType
+          ipv4: bool
+          ipv6: bool
         active: bool
         timers:
           update:
@@ -7722,8 +7859,12 @@ nodes:
     device: srlinux
     clab:
       kind: srl
-      type: ixrd2
-    box: ghcr.io/nokia/srlinux:25.3.3
+      type: ixr-d2
+      config_templates:
+      - hosts:/etc/hosts
+      binds:
+      - clab_files/dut/hosts:/etc/hosts
+    box: ghcr.io/nokia/srlinux:25.7.2
     module:
     - ospf
     - bgp
@@ -7740,7 +7881,7 @@ nodes:
       ipv6: true
     mgmt:
       ifname: mgmt0
-      mac: 08:4f:a9:01:00:00
+      mac: ca:fe:00:01:00:00
       ipv4: 192.168.17.101
     hostname: clab-ml_17-dut
     loopback:
@@ -7768,7 +7909,7 @@ nodes:
             locpref: 42
           sequence: 10
           action: permit
-    _srl_version: 25.3
+    _srl_version: 25.7
   probe:
     bgp:
       advertise_loopback: true
@@ -7831,10 +7972,10 @@ nodes:
       kind: linux
       config_templates:
       - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts
+      - hosts:/etc/hosts:shared
       binds:
       - clab_files/probe/daemons:/etc/frr/daemons
-      - clab_files/probe/hosts:/etc/hosts
+      - clab_files/-shared-hosts:/etc/hosts:ro
     box: quay.io/frrouting/frr:10.4.1
     module:
     - ospf
@@ -7853,7 +7994,7 @@ nodes:
       ipv6: true
     mgmt:
       ifname: eth0
-      mac: 08:4f:a9:02:00:00
+      mac: ca:fe:00:02:00:00
       ipv4: 192.168.17.102
     hostname: clab-ml_17-probe
     loopback:
@@ -7928,10 +8069,10 @@ nodes:
       kind: linux
       config_templates:
       - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts
+      - hosts:/etc/hosts:shared
       binds:
       - clab_files/x1/daemons:/etc/frr/daemons
-      - clab_files/x1/hosts:/etc/hosts
+      - clab_files/-shared-hosts:/etc/hosts:ro
     box: quay.io/frrouting/frr:10.4.1
     id: 3
     role: router
@@ -7941,7 +8082,7 @@ nodes:
       ipv6: true
     mgmt:
       ifname: eth0
-      mac: 08:4f:a9:03:00:00
+      mac: ca:fe:00:03:00:00
       ipv4: 192.168.17.103
     hostname: clab-ml_17-x1
   x2:
@@ -8007,10 +8148,10 @@ nodes:
       kind: linux
       config_templates:
       - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts
+      - hosts:/etc/hosts:shared
       binds:
       - clab_files/x2/daemons:/etc/frr/daemons
-      - clab_files/x2/hosts:/etc/hosts
+      - clab_files/-shared-hosts:/etc/hosts:ro
     box: quay.io/frrouting/frr:10.4.1
     id: 4
     role: router
@@ -8020,7 +8161,7 @@ nodes:
       ipv6: true
     mgmt:
       ifname: eth0
-      mac: 08:4f:a9:04:00:00
+      mac: ca:fe:00:04:00:00
       ipv4: 192.168.17.104
     hostname: clab-ml_17-x2
 links:
@@ -8186,7 +8327,7 @@ addressing:
   mgmt:
     ipv4: 192.168.17.0/24
     start: 100
-    mac: 08-4F-A9-00-00-00
+    mac: CA-FE-00-00-00-00
     _network: nl_mgmt_17
     _bridge: nl_mgmt_17
     prefix: 24
@@ -8210,3 +8351,4 @@ prefix:
   any:
     ipv4: 0.0.0.0/0
     ipv6: ::/0
+_netlab_version: 25.09-post1

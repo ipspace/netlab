@@ -4176,6 +4176,10 @@ defaults:
           style:
             border-radius: 8
             font-size: 20
+        container:
+          style:
+            fill: '#e8e8e8'
+            stroke: '#c0c0c0'
         ibgp:
           style:
             stroke: '#613913'
@@ -4208,6 +4212,24 @@ defaults:
             shape: arrow
           target-arrowhead:
             shape: arrow
+        level-1:
+          style:
+            stroke: '#fba002'
+            stroke-width: 3
+        level-2:
+          style:
+            stroke: '#9b652f'
+            stroke-width: 4
+        level-1-2:
+          style:
+            stroke: '#d26400'
+            stroke-width: 4
+        title:
+          shape: text
+          near: top-center
+          style:
+            bold: true
+            font-size: 36
         vrf:
           style:
             stroke-dash: 3
@@ -4242,6 +4264,7 @@ defaults:
           bgcolor: '#e8e8e8'
           color: '#c0c0c0'
           fontname: Verdana
+          fontsize: 12
           margin: 16
         stub:
           bgcolor: '#d1bfab'
@@ -4262,6 +4285,15 @@ defaults:
           penwidth: 2
         vrf:
           style: dashed
+        level-1:
+          color: '#fba002'
+          penwidth: 1
+        level-2:
+          color: '#9b652f'
+          penwidth: 1.5
+        level-1-2:
+          color: '#d26400'
+          penwidth: 1.5
         graph:
           bgcolor: transparent
           nodesep: 0.5
@@ -4273,15 +4305,23 @@ defaults:
           shape: box
           style: rounded,filled
           fontname: Verdana
+          fontsize: 11
         edge:
           fontname: Verdana
           labelfontsize: 8
           labeldistance: 1.5
+        title:
+          fontname: Verdana
+          fontsize: 16
+          labelloc: t
+          labeljust: l
       style_map:
         color: color
         width: penwidth
         fill: fillcolor
       attributes:
+        global:
+          title: str
         node:
           color: str
           fill: str
@@ -4521,7 +4561,7 @@ defaults:
     mgmt:
       ipv4: 192.168.121.0/24
       start: 100
-      mac: 08-4F-A9-00-00-00
+      mac: CA-FE-00-00-00-00
     l2only:
     vrf_loopback:
       ipv4: 10.2.0.0/24
@@ -5376,18 +5416,18 @@ defaults:
     create: {}
   paths:
     validate:
-    - /home/pipi/netlab_gh/netsim/validate
+    - /home/pipi/net101/tools/netsim/validate
     plugin:
     - /work/netlab_cicd
     - /home/pipi/net101/tools/tests/integration/initial
     - /home/pipi/.netlab
-    - /home/pipi/netlab_gh/netsim/extra
+    - /home/pipi/net101/tools/netsim/extra
     custom:
       dirs:
       - /home/pipi/net101/tools/tests/integration/initial
       - /work/netlab_cicd
       - /home/pipi/.netlab
-      - /home/pipi/netlab_gh/netsim/extra
+      - /home/pipi/net101/tools/netsim/extra
       files:
       - "{{ custom_config + '/' + inventory_hostname + '.' + netlab_device_type +
         '-' + node_provider + '.j2' }}"
@@ -5418,7 +5458,7 @@ defaults:
       - '{{ custom_config }}/deploy.yml'
     deploy:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks
+      - /home/pipi/net101/tools/netsim/ansible/tasks
       tasks_generic:
       - deploy-config/{{ netlab_device_type }}-{{ node_provider }}.yml
       - deploy-config/{{ netlab_device_type }}.yml
@@ -5439,8 +5479,8 @@ defaults:
       - deploy-config/{{ ansible_network_os }}.yml
     templates:
       dirs:
-      - /home/pipi/netlab_gh/netsim/daemons
-      - /home/pipi/netlab_gh/netsim/ansible/templates
+      - /home/pipi/net101/tools/netsim/daemons
+      - /home/pipi/net101/tools/netsim/ansible/templates
     t_files:
       files:
       - '{{config_module}}/{{netlab_device_type}}-{{provider|default(netlab_provider)}}.j2'
@@ -5452,7 +5492,7 @@ defaults:
       - '{{netlab_device_type}}/{{config_module}}.j2'
     ready:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check
+      - /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check
       files:
       - '{{netlab_device_type}}-{{provider|default(netlab_provider)}}.yml'
       - '{{netlab_device_type}}.yml'
@@ -5460,7 +5500,7 @@ defaults:
       - '{{ansible_network_os}}.yml'
     collect:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks/fetch-config
+      - /home/pipi/net101/tools/netsim/ansible/tasks/fetch-config
   ports:
     ssh: 22
     http: 80
@@ -6101,6 +6141,14 @@ defaults:
           - level-1
           - level-2
           - level-1-2
+      vrf:
+        active: bool
+        af:
+          _list_to_dict: true
+          _alt_types:
+          - NoneType
+          ipv4: bool
+          ipv6: bool
       link:
         metric:
           type: int
@@ -6536,6 +6584,12 @@ defaults:
       - reference_bandwidth
       vrf:
         active: bool
+        af:
+          _list_to_dict: true
+          _alt_types:
+          - NoneType
+          ipv4: bool
+          ipv6: bool
         area:
           type: ipv4
           use: id
@@ -6725,6 +6779,12 @@ defaults:
             min_value: 5
             max_value: 600
       vrf:
+        af:
+          _list_to_dict: true
+          _alt_types:
+          - NoneType
+          ipv4: bool
+          ipv6: bool
         active: bool
         timers:
           update:
@@ -7372,14 +7432,18 @@ defaults:
     list: []
     user: []
     system: []
-  workdir: /work/netlab_cicd
-  device: srsim
   groups:
+    external:
+      device: eos
+      members: []
+      _default_group: true
     all:
       vars:
         netlab_show_config: true
       members: []
       _default_group: true
+  workdir: /work/netlab_cicd
+  device: srsim
   plugin:
   - multilab
   _globals:
@@ -7423,7 +7487,7 @@ addressing:
   mgmt:
     ipv4: 192.168.17.0/24
     start: 100
-    mac: 08-4F-A9-00-00-00
+    mac: CA-FE-00-00-00-00
     _network: nl_mgmt_17
     _bridge: nl_mgmt_17
     prefix: 24
@@ -7446,6 +7510,10 @@ groups:
         - pool: loopback
           nexthop:
             node: r
+  external:
+    device: eos
+    members: []
+    _default_group: true
   all:
     vars:
       netlab_show_config: true
@@ -7518,7 +7586,7 @@ nodes:
       ipv6: true
     mgmt:
       ifname: A/1
-      mac: 08:4f:a9:84:00:00
+      mac: ca:fe:00:84:00:00
       ipv4: 192.168.17.232
     hostname: clab-ml_17-r
   h1:
@@ -7572,7 +7640,7 @@ nodes:
       ipv6: true
     mgmt:
       ifname: eth0
-      mac: 08:4f:a9:01:00:00
+      mac: ca:fe:00:01:00:00
       ipv4: 192.168.17.101
     hostname: clab-ml_17-h1
   h2:
@@ -7626,7 +7694,7 @@ nodes:
       ipv6: true
     mgmt:
       ifname: eth0
-      mac: 08:4f:a9:02:00:00
+      mac: ca:fe:00:02:00:00
       ipv4: 192.168.17.102
     hostname: clab-ml_17-h2
 links:
@@ -7705,4 +7773,4 @@ prefix:
   any:
     ipv4: 0.0.0.0/0
     ipv6: ::/0
-_netlab_version: '25.07'
+_netlab_version: '25.09'

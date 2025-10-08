@@ -10,8 +10,8 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [s1]
 ok: [s2]
-ok: [r1]
 ok: [r2]
+ok: [r1]
 ok: [ros]
 
 TASK [Find device readiness script] ********************************************
@@ -26,7 +26,7 @@ skipping: [s1]
 skipping: [s2]
 skipping: [r1]
 skipping: [r2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/iol-clab.yml for ros
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/iol-clab.yml for ros
 
 TASK [Check if 'sshpass' is installed] *****************************************
 ok: [ros -> localhost]
@@ -44,7 +44,7 @@ ok: [ros] =>
   msg: Node ros is ready.
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ros, s1, s2, r1, r2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ros, s1, s2, r1, r2
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [s1]
@@ -70,8 +70,8 @@ skipping: [r2]
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [s1]
 ok: [s2]
-ok: [r1]
 ok: [r2]
+ok: [r1]
 ok: [ros]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -89,7 +89,7 @@ skipping: [r1]
 skipping: [r2]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ros, s1, s2, r1, r2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ros, s1, s2, r1, r2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [s1]
@@ -115,8 +115,8 @@ skipping: [r2]
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [s1]
 ok: [s2]
-ok: [r1]
 ok: [r2]
+ok: [r1]
 ok: [ros]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -211,6 +211,9 @@ ok: [s1] =>
     cat >/tmp/config <<CONFIG
     hostname s1
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -248,7 +251,7 @@ ok: [s1] =>
     !
     interface vlan700
      no shutdown
-     description VLAN red (700) -> [r1,s2,ros]
+     description VLAN red (700) -> [r1,ros,s2]
      ip address 172.16.0.2/24
     !
     interface vlan701
@@ -259,6 +262,7 @@ ok: [s1] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [s2] => 
   msg: |-
@@ -347,6 +351,9 @@ ok: [s2] =>
     cat >/tmp/config <<CONFIG
     hostname s2
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -395,6 +402,7 @@ ok: [s2] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [r1] => 
   msg: |-
@@ -479,6 +487,9 @@ ok: [r1] =>
     cat >/tmp/config <<CONFIG
     hostname r1
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -491,12 +502,13 @@ ok: [r1] =>
     !
     interface eth1
      no shutdown
-     description r1 -> [s1,s2,ros]
+     description r1 -> [s1,ros,s2]
      ip address 172.16.0.4/24
     !
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [r2] => 
   msg: |-
@@ -581,6 +593,9 @@ ok: [r2] =>
     cat >/tmp/config <<CONFIG
     hostname r2
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -599,6 +614,7 @@ ok: [r2] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [ros] => 
   msg: |-
@@ -607,6 +623,8 @@ ok: [ros] =>
     hostname ros
     !
     no ip domain lookup
+    logging buffered 256000
+  
     !
     lldp run
     !
@@ -658,10 +676,10 @@ ok: [ros] =>
     no banner incoming
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for ros
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for s1, s2, r1, r2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for ros
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for s1, s2, r1, r2
 
-TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
+TASK [ios_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/ios.j2] ***
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
 should be similar to how they appear if present in the running configuration on
 device including the indentation
@@ -677,13 +695,13 @@ skipping: [r1]
 skipping: [r2]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for s1, s2, r1, r2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for s1, s2, r1, r2
 
 TASK [template] ****************************************************************
 changed: [s2]
-changed: [s1]
 changed: [r2]
 changed: [r1]
+changed: [s1]
 
 TASK [set_fact] ****************************************************************
 ok: [s1]
@@ -691,13 +709,13 @@ ok: [s2]
 ok: [r1]
 ok: [r2]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [s1]
 changed: [s2]
 changed: [r1]
 changed: [r2]
 
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [s1]
 skipping: [s2]
 skipping: [r1]
@@ -713,14 +731,14 @@ ok: [r2]
 ok: [ros]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ros, s1, s2, r1, r2 => (item=vlan)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for ros, s1, s2, r1, r2 => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ros, s1, s2, r1, r2 => (item=vlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ros, s1, s2, r1, r2 => (item=ospf)
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [s1]
 ok: [s2]
-ok: [r1]
 ok: [r2]
+ok: [r1]
 ok: [ros]
 
 TASK [Find configuration template for vlan] ************************************
@@ -747,6 +765,17 @@ ok: [ros]
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r1]
 skipping: [r2]
+ok: [ros] => 
+  msg: |-
+    vlan configuration for ros
+    =========================================
+    !
+    bridge-domain 700
+    !
+    bridge-domain 701
+    !
+    interface Ethernet0/1.1
+     encapsulation dot1Q 701
 ok: [s1] => 
   msg: |-
     vlan configuration for s1
@@ -765,7 +794,7 @@ ok: [s1] =>
     fi
     if [ ! -e /sys/devices/virtual/net/vlan700 ]; then
       ip link add vlan700 type bridge
-      ip link set dev vlan700 address 52:dc:ca:fd:02:00
+      ip link set dev vlan700 address ca:f4:00:02:00:00
   
       ip link set dev vlan700 mtu 1500
       ip addr flush dev vlan700
@@ -773,7 +802,7 @@ ok: [s1] =>
     fi
     if [ ! -e /sys/devices/virtual/net/vlan701 ]; then
       ip link add vlan701 type bridge
-      ip link set dev vlan701 address 52:dc:ca:fd:02:01
+      ip link set dev vlan701 address ca:f4:00:02:00:01
   
       ip link set dev vlan701 mtu 1500
       ip addr flush dev vlan701
@@ -809,7 +838,7 @@ ok: [s2] =>
     fi
     if [ ! -e /sys/devices/virtual/net/vlan700 ]; then
       ip link add vlan700 type bridge
-      ip link set dev vlan700 address 52:dc:ca:fd:03:00
+      ip link set dev vlan700 address ca:f4:00:03:00:00
   
       ip link set dev vlan700 mtu 1500
       ip addr flush dev vlan700
@@ -817,7 +846,7 @@ ok: [s2] =>
     fi
     if [ ! -e /sys/devices/virtual/net/vlan701 ]; then
       ip link add vlan701 type bridge
-      ip link set dev vlan701 address 52:dc:ca:fd:03:01
+      ip link set dev vlan701 address ca:f4:00:03:00:01
   
       ip link set dev vlan701 mtu 1500
       ip addr flush dev vlan701
@@ -831,25 +860,14 @@ ok: [s2] =>
   
     ip link set dev vlan700 up
     ip link set dev vlan701 up
-ok: [ros] => 
-  msg: |-
-    vlan configuration for ros
-    =========================================
-    !
-    bridge-domain 700
-    !
-    bridge-domain 701
-    !
-    interface Ethernet0/1.1
-     encapsulation dot1Q 701
 
 TASK [Deploy vlan configuration] ***********************************************
 skipping: [r1]
 skipping: [r2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for ros
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for s1, s2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for ros
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for s1, s2
 
-TASK [ios_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/iol.j2] ***
+TASK [ios_config: deploying vlan from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/iol.j2] ***
 changed: [ros]
 
 TASK [template] ****************************************************************
@@ -860,11 +878,11 @@ TASK [set_fact] ****************************************************************
 ok: [s1]
 ok: [s2]
 
-TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
+TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/frr.j2] ***
 changed: [s2]
 changed: [s1]
 
-TASK [run vtysh to import vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
+TASK [run vtysh to import vlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/frr.j2] ***
 skipping: [s1]
 skipping: [s2]
 
@@ -920,7 +938,7 @@ ok: [r1] =>
      ip ospf area 0.0.0.0
     !
     interface eth1
-    ! r1 -> [s1,s2,ros]
+    ! r1 -> [s1,ros,s2]
      ip ospf area 0.0.0.0
     !
   
@@ -978,27 +996,27 @@ ok: [ros] =>
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [s1]
 skipping: [s2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for ros
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for ros
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r1, r2
 
-TASK [ios_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/ios.j2] ***
+TASK [ios_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/ios.j2] ***
 changed: [ros]
 
 TASK [template] ****************************************************************
-changed: [r2]
 changed: [r1]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
 ok: [r2]
 
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
 skipping: [r1]
 skipping: [r2]
 
-TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [r2]
+TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [r1]
+changed: [r2]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched

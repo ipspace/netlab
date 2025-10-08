@@ -19,9 +19,9 @@ TASK [Find device readiness script] ********************************************
 ok: [s1]
 ok: [s2]
 ok: [h1]
+ok: [h4]
 ok: [h2]
 ok: [h3]
-ok: [h4]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [s1]
@@ -39,8 +39,8 @@ ok: [s1]
 ok: [s2]
 ok: [h1]
 ok: [h2]
-ok: [h3]
 ok: [h4]
+ok: [h3]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [s1]
@@ -62,9 +62,9 @@ TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [s1]
 ok: [s2]
 ok: [h1]
+ok: [h2]
 ok: [h4]
 ok: [h3]
-ok: [h2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [s1]
@@ -113,9 +113,9 @@ TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [s1]
 ok: [s2]
 ok: [h1]
+ok: [h2]
 ok: [h3]
 ok: [h4]
-ok: [h2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [h1] => 
@@ -153,6 +153,41 @@ ok: [h1] =>
     ip addr add 172.16.0.3/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
+ok: [h4] => 
+  msg: |-
+    initial configuration for h4
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+  
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.3.6/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.3.6/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
 ok: [h2] => 
   msg: |-
     initial configuration for h2
@@ -186,41 +221,6 @@ ok: [h2] =>
     ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.1.4/24 dev eth1
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
-ok: [h3] => 
-  msg: |-
-    initial configuration for h3
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Send ARP requests from a sane source IP address
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-  
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.2.5/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.2.5/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
 ok: [s1] => 
@@ -275,9 +275,9 @@ ok: [s1] =>
   
   
     # TODO: vdata.rd, vdata.import/export, vdata.af
-ok: [h4] => 
+ok: [h3] => 
   msg: |-
-    initial configuration for h4
+    initial configuration for h3
     =========================================
     #!/bin/bash
     #
@@ -305,9 +305,9 @@ ok: [h4] =>
     #
     ip link set dev eth1 up
     set +e
-    ip addr del 172.16.3.6/24 dev eth1 2>/dev/null
+    ip addr del 172.16.2.5/24 dev eth1 2>/dev/null
     set -e
-    ip addr add 172.16.3.6/24 dev eth1
+    ip addr add 172.16.2.5/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
 ok: [s2] => 
@@ -386,15 +386,15 @@ ok: [h3]
 ok: [h4]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h3 -> localhost]
-changed: [h2 -> localhost]
 changed: [h4 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+changed: [h3 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h3 -> localhost]
-changed: [h2 -> localhost]
 changed: [h4 -> localhost]
+changed: [h2 -> localhost]
+changed: [h3 -> localhost]
 changed: [h1 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
@@ -410,15 +410,15 @@ skipping: [h3]
 skipping: [h4]
 
 TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h3 -> localhost]
-changed: [h1 -> localhost]
 changed: [h4 -> localhost]
-changed: [h2 -> localhost]
-
-TASK [Remove temporary file /tmp/h1_initial-h0d2zwcl.sh] ***********************
-changed: [h3 -> localhost]
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+changed: [h3 -> localhost]
+
+TASK [Remove temporary file /tmp/h1_initial-lid753ym.sh] ***********************
+changed: [h1 -> localhost]
+changed: [h2 -> localhost]
+changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
@@ -449,8 +449,8 @@ ok: [h3]
 ok: [h4]
 
 TASK [Find configuration template for vlan] ************************************
-skipping: [h1]
 ok: [s1]
+skipping: [h1]
 skipping: [h2]
 ok: [s2]
 skipping: [h3]
@@ -469,8 +469,8 @@ skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 ok: [s1]
-skipping: [h4]
 ok: [s2]
+skipping: [h4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
@@ -732,8 +732,8 @@ ok: [s1]
 ok: [s2]
 
 TASK [Update SRL vlan node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/vlan/srlinux.j2)] ***
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [debug] *******************************************************************
 skipping: [s1]
@@ -903,16 +903,16 @@ ok: [h3]
 ok: [h4]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
+changed: [h1 -> localhost]
 changed: [h4 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
-changed: [h4 -> localhost]
 changed: [h3 -> localhost]
+changed: [h4 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
 skipping: [h1]
@@ -928,15 +928,15 @@ skipping: [h4]
 
 TASK [Container configuration for routing based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
 changed: [h2 -> localhost]
-changed: [h1 -> localhost]
 changed: [h3 -> localhost]
+changed: [h1 -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-63jyi0pe.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-ce84rw34.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
-changed: [h4 -> localhost]
 changed: [h3 -> localhost]
+changed: [h4 -> localhost]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [s1]
@@ -1054,8 +1054,8 @@ ok: [s1]
 ok: [s2]
 
 TASK [Update SRL ospf node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/ospf/srlinux.j2)] ***
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [debug] *******************************************************************
 skipping: [s1]
@@ -1072,8 +1072,8 @@ ok: [h4]
 TASK [Find configuration template for bgp] *************************************
 skipping: [h1]
 ok: [s1]
-ok: [s2]
 skipping: [h2]
+ok: [s2]
 skipping: [h3]
 skipping: [h4]
 
@@ -1090,8 +1090,8 @@ skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 ok: [s1]
-skipping: [h4]
 ok: [s2]
+skipping: [h4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
@@ -1177,7 +1177,7 @@ ok: [s1] =>
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
       value:
         admin-state: enable
-    # neighbor: {'name': 's2', 'as': 65000, 'type': 'ibgp', 'ipv4': '10.0.0.2', '_source_intf': {'type': 'loopback', 'neighbors': [], 'virtual_interface': True, 'ifindex': 0, 'ifname': 'lo0.0', 'ipv4': '10.0.0.1/32'}, 'activate': {'ipv4': True}, 'evpn': True}
+    # neighbor: {'name': 's2', 'as': 65000, 'type': 'ibgp', 'ipv4': '10.0.0.2', '_source_intf': {'type': 'loopback', 'neighbors': [], 'virtual_interface': True, 'ifindex': 0, 'ifname': 'lo0.0', 'ipv4': '10.0.0.1/32'}, 'next_hop_self': 'ebgp', 'activate': {'ipv4': True}, 'evpn': True}
     # ipv4: True
     # ipv6: True
         afi-safi:
@@ -1214,7 +1214,7 @@ ok: [s1] =>
         - peer-address: "10.0.0.2"
           description: s2
           peer-group: ibgp-ipv4
-      # neighbor: {'name': 's2', 'as': 65000, 'type': 'ibgp', 'ipv4': '10.0.0.2', '_source_intf': {'type': 'loopback', 'neighbors': [], 'virtual_interface': True, 'ifindex': 0, 'ifname': 'lo0.0', 'ipv4': '10.0.0.1/32'}, 'activate': {'ipv4': True}, 'evpn': True}
+      # neighbor: {'name': 's2', 'as': 65000, 'type': 'ibgp', 'ipv4': '10.0.0.2', '_source_intf': {'type': 'loopback', 'neighbors': [], 'virtual_interface': True, 'ifindex': 0, 'ifname': 'lo0.0', 'ipv4': '10.0.0.1/32'}, 'next_hop_self': 'ebgp', 'activate': {'ipv4': True}, 'evpn': True}
       # ipv4: True
       # ipv6: False
           afi-safi:
@@ -1306,7 +1306,7 @@ ok: [s2] =>
     - path: /network-instance[name=default]/protocols/bgp/group[group-name=ibgp-ipv4]
       value:
         admin-state: enable
-    # neighbor: {'name': 's1', 'as': 65000, 'type': 'ibgp', 'ipv4': '10.0.0.1', '_source_intf': {'type': 'loopback', 'neighbors': [], 'virtual_interface': True, 'ifindex': 0, 'ifname': 'lo0.0', 'ipv4': '10.0.0.2/32'}, 'activate': {'ipv4': True}, 'evpn': True}
+    # neighbor: {'name': 's1', 'as': 65000, 'type': 'ibgp', 'ipv4': '10.0.0.1', '_source_intf': {'type': 'loopback', 'neighbors': [], 'virtual_interface': True, 'ifindex': 0, 'ifname': 'lo0.0', 'ipv4': '10.0.0.2/32'}, 'next_hop_self': 'ebgp', 'activate': {'ipv4': True}, 'evpn': True}
     # ipv4: True
     # ipv6: True
         afi-safi:
@@ -1343,7 +1343,7 @@ ok: [s2] =>
         - peer-address: "10.0.0.1"
           description: s1
           peer-group: ibgp-ipv4
-      # neighbor: {'name': 's1', 'as': 65000, 'type': 'ibgp', 'ipv4': '10.0.0.1', '_source_intf': {'type': 'loopback', 'neighbors': [], 'virtual_interface': True, 'ifindex': 0, 'ifname': 'lo0.0', 'ipv4': '10.0.0.2/32'}, 'activate': {'ipv4': True}, 'evpn': True}
+      # neighbor: {'name': 's1', 'as': 65000, 'type': 'ibgp', 'ipv4': '10.0.0.1', '_source_intf': {'type': 'loopback', 'neighbors': [], 'virtual_interface': True, 'ifindex': 0, 'ifname': 'lo0.0', 'ipv4': '10.0.0.2/32'}, 'next_hop_self': 'ebgp', 'activate': {'ipv4': True}, 'evpn': True}
       # ipv4: True
       # ipv6: False
           afi-safi:
@@ -1369,8 +1369,8 @@ ok: [s1]
 ok: [s2]
 
 TASK [Update SRL bgp node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/bgp/srlinux.j2)] ***
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [debug] *******************************************************************
 skipping: [s1]
@@ -1394,8 +1394,8 @@ skipping: [h4]
 
 TASK [fail] ********************************************************************
 skipping: [s1]
-skipping: [h1]
 skipping: [s2]
+skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
@@ -1405,8 +1405,8 @@ skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 ok: [s1]
-ok: [s2]
 skipping: [h4]
+ok: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
@@ -1993,8 +1993,8 @@ skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 ok: [s1]
-skipping: [h4]
 ok: [s2]
+skipping: [h4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
@@ -2130,8 +2130,8 @@ ok: [s1]
 ok: [s2]
 
 TASK [Update SRL evpn node configuration (template=/home/pipi/net101/tools/netsim/ansible/templates/evpn/srlinux.j2)] ***
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [debug] *******************************************************************
 skipping: [s1]

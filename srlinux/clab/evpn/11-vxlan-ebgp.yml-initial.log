@@ -18,8 +18,8 @@ TASK [Find device readiness script] ********************************************
 ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [spine]
@@ -42,8 +42,8 @@ TASK [Find configuration template for normalize] *******************************
 ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 
 TASK [fail] ********************************************************************
 skipping: [spine]
@@ -101,45 +101,10 @@ TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [spine]
 ok: [l1]
 ok: [l2]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [h2] => 
-  msg: |-
-    initial configuration for h2
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Send ARP requests from a sane source IP address
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-  
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.31.1.5/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.31.1.5/24 dev eth1
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
 ok: [h1] => 
   msg: |-
     initial configuration for h1
@@ -248,6 +213,41 @@ ok: [spine] =>
        type: default
        interface:
        - name: ethernet-1/2.0
+ok: [h2] => 
+  msg: |-
+    initial configuration for h2
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+  
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.31.1.5/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.31.1.5/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
 ok: [l1] => 
   msg: |-
     initial configuration for l1
@@ -335,6 +335,8 @@ ok: [l1] =>
     cat >/tmp/config <<CONFIG
     hostname l1
     !
+    log file /tmp/logging
+  
     !
     ip forwarding
     vrf mgmt
@@ -453,6 +455,8 @@ ok: [l2] =>
     cat >/tmp/config <<CONFIG
     hostname l2
     !
+    log file /tmp/logging
+  
     !
     ip forwarding
     vrf mgmt
@@ -518,8 +522,8 @@ ok: [l1]
 ok: [l2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [l2]
 changed: [l1]
+changed: [l2]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [l1]
@@ -534,8 +538,8 @@ changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
 TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -549,7 +553,7 @@ TASK [Container configuration for initial based on /home/pipi/net101/tools/netsi
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-35iutdx2.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-k0qb8mn7.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -579,9 +583,9 @@ ok: [h2]
 TASK [Find configuration template for vlan] ************************************
 skipping: [spine]
 skipping: [h1]
-skipping: [h2]
-ok: [l2]
 ok: [l1]
+ok: [l2]
+skipping: [h2]
 
 TASK [fail] ********************************************************************
 skipping: [spine]
@@ -611,7 +615,7 @@ ok: [l1] =>
     #
     if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
       ip link add vlan1000 type bridge
-      ip link set dev vlan1000 address 52:dc:ca:fd:02:00
+      ip link set dev vlan1000 address ca:f4:00:02:00:00
   
       ip addr flush dev vlan1000
     fi
@@ -629,7 +633,7 @@ ok: [l2] =>
     #
     if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
       ip link add vlan1000 type bridge
-      ip link set dev vlan1000 address 52:dc:ca:fd:03:00
+      ip link set dev vlan1000 address ca:f4:00:03:00:00
   
       ip addr flush dev vlan1000
     fi
@@ -645,8 +649,8 @@ skipping: [h2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l1, l2
 
 TASK [template] ****************************************************************
-changed: [l2]
 changed: [l1]
+changed: [l2]
 
 TASK [set_fact] ****************************************************************
 ok: [l1]
@@ -750,12 +754,12 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Container configuration for routing based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-nd9y4uiz.sh] ***********************
-changed: [h1 -> localhost]
+TASK [Remove temporary file /tmp/h1_routing-xd7kcyjb.sh] ***********************
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [spine]
@@ -1056,8 +1060,8 @@ TASK [debug] *******************************************************************
 skipping: [spine]
 
 TASK [template] ****************************************************************
-changed: [l1]
 changed: [l2]
+changed: [l1]
 
 TASK [set_fact] ****************************************************************
 ok: [l1]
@@ -1181,8 +1185,8 @@ skipping: [h2]
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for l1, l2
 
 TASK [template] ****************************************************************
-changed: [l1]
 changed: [l2]
+changed: [l1]
 
 TASK [set_fact] ****************************************************************
 ok: [l1]
@@ -1219,8 +1223,8 @@ skipping: [h2]
 
 TASK [Find configuration deployment deploy_script for evpn] ********************
 skipping: [h1]
-skipping: [h2]
 ok: [spine]
+skipping: [h2]
 ok: [l1]
 ok: [l2]
 
