@@ -39,9 +39,12 @@ Add D2 styling information from d2.* link/node attributes
 STYLE_MAP: Box
 IGNORE_KW: list = ['dir', 'type', 'name']
 
-def d2_style(f : typing.TextIO, obj: Box, indent: str, settings: Box) -> None:
+def d2_style(f : typing.TextIO, obj: Box, indent: str, settings: Box, *, def_style: typing.Optional[str] = None) -> None:
   d2_type  = obj.get('d2.type','')
-  obj_style = get_box(settings.styles.get(d2_type,{}))
+  if d2_type in settings.styles or def_style is None:
+    obj_style = get_box(settings.styles.get(d2_type,{}))
+  else:
+    obj_style = get_box(settings.styles.get(def_style,{}))
   if 'd2' in obj:
     obj_style.style += map_style(obj.d2,STYLE_MAP)
     obj_style += obj.get('d2.format',{})
@@ -55,7 +58,7 @@ indent parameter is used to create indented definitions within containers
 '''
 def node_with_label(f : typing.TextIO, n: Box, settings: Box, indent: str = '') -> None:
   f.write(f'{indent}{n.d2.name} {{\n')
-  d2_style(f,n,indent + '  ',settings)
+  d2_style(f,n,indent + '  ',settings,def_style='node')
   node_ip_str = ""
   node_ip = n.loopback.ipv4 or n.loopback.ipv6
   if settings.node_address_label:
@@ -94,7 +97,7 @@ def edge_p2p(f : typing.TextIO, l: Box, settings: Box, labels: typing.Optional[b
   e_direction = ('source','target')
   dir = l.interfaces[0].get('attr.dir','--')
   f.write(f"{l.interfaces[0].d2.name} {dir} {l.interfaces[1].d2.name} {{\n")
-  d2_style(f,l,'  ',settings)
+  d2_style(f,l,'  ',settings,def_style='edge')
   if labels:
     for e_idx,intf in enumerate(l.interfaces):
       if '_subnet' not in intf:
