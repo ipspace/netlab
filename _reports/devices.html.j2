@@ -1,0 +1,24 @@
+{# description: device test results #}
+{% import "results.html.j2" as _tr with context %}
+{% set github_url = "https://github.com/ipspace/netlab/blob/dev/tests/integration/" %}
+{% set data_path = results._path.split('/',2) %}
+<h2>
+  Integration Test Results: {{ results._description|default(data_path[0]) }}
+  {% if results._description is defined %}({{ data_path[0] }}){% endif %}
+  {% if _version|default(False) %}(Release {{ _version }}){% endif %}
+</h2>
+<p class='breadcrumbs'>
+  <a href="../index.html">Test results</a> » {{ data_path[0] }}
+</p>
+{% set plist = [] %}
+{% for p_key, p_item in results.items() if not p_key.startswith('_') %}
+{%   if p_item._count.pass is not defined %}
+{%     set _ = p_item.count.__setitem__('pass',0) %}
+{%   endif %}
+{%   set _ = plist.append((p_key, p_item)) %}
+{% endfor %}
+{% for provider,p_data in plist|sort(attribute='1._count.pass',reverse=True) %}
+<h3>Provider: {{ provider }}</h3>
+{{   _tr.show_results(results[provider]) -}}
+{% endfor %}
+{{   _tr.show_notes(results) -}}

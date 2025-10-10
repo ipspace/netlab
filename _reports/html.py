@@ -91,6 +91,7 @@ def create(
   for d_name in sorted(list(devices)):
     d_data = devices[d_name]
     if d_name in results:
+      results[d_name]._description = d_data.get('description',d_name)
       if 'support.level' in d_data:
         topology.partial_results[d_name] = results[d_name]
       else:
@@ -109,7 +110,7 @@ def create(
     'index.html',
     output_dir='.')
   if not args.coverage:
-    create_recursive_html(args,results_dict,topo_dict,limit=args.device)
+    create_recursive_html(args,results_dict,topo_dict,template='devices',limit=args.device)
   
   if not args.device:
     create_recursive_html(args,coverage_dict,topo_dict,template='coverage',recursive=False,limit=args.coverage)
