@@ -104,6 +104,8 @@ def validate(topology: Box) -> None:
 Sets missing management interface names and MAC, IPv4, and IPv6 addresses from the mgmt pool
 """
 def augment_mgmt_if(node: Box, defaults: Box, addrs: typing.Optional[Box]) -> None:
+  if not node.mgmt:
+    return
   if 'ifname' not in node.mgmt:
     mgmt_if = devices.get_device_attribute(node,'mgmt_if',defaults)
     if not mgmt_if:

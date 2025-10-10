@@ -471,7 +471,8 @@ def validate_mgmt_ip(
       mgmt: Box,
       required: bool = False,
       v4only: bool = False) -> None:
-
+  if not node.mgmt:
+    return
   valid_af = ['ipv4'] if v4only else ['ipv4','ipv6']
   n_mgmt = node.mgmt
   node_af = [ n_af for n_af in n_mgmt.keys() if n_af in valid_af ]
