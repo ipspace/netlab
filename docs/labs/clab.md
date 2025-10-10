@@ -364,6 +364,7 @@ You can also change these *containerlab* parameters:
 * **clab.cmd** to [change the command of a container image](https://containerlab.dev/manual/nodes/#cmd).
 * **clab.startup-delay** to make certain node(s) [boot/start later than others](https://containerlab.dev/manual/nodes/#startup-delay) (amount in seconds)
 * **clab.restart-policy** to set the [container restart policy](https://containerlab.dev/manual/nodes/#restart-policy)
+* **clab.network-mode** to set the [network-mode](https://containerlab.dev/manual/nodes/#network-mode)
 
 ```{warning}
 String values (for example, the command to execute specified in **clab.cmd**) are put into single quotes when written into the `clab.yml` containerlab configuration file. Ensure you're not using single quotes in your command line.
