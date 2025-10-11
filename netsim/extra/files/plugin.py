@@ -33,6 +33,8 @@ def restructure_configlets(topology: Box) -> None:
       else:
         k_path = path
       if isinstance(v,str):                           # Did we get to the end of the tree?
+        if k_path.endswith('/'):                      # Are we dealing with the 'template/base' edge case?
+          k_path = k_path[:-1]                        # If so, remove '/' to create a .j2 file in lab directory
         append_to_list(                               # Add a new file to the list of files
           topology,                                   # ... file path is created from the dictionary structure
           'files',                                    # ... with '.j2' suffix because it's a template
