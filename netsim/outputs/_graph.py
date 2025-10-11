@@ -224,7 +224,11 @@ def bgp_sessions(graph: Box, topology: Box, settings: Box, g_type: str) -> None:
       if neighbor.name < n_name:
         continue
       if bgp_af:
-        if not [ neighbor[af] for af in bgp_af if af in neighbor ]:
+        bgp_active = [ af for af in bgp_af                        # Service AF
+                            if af in neighbor and af not in log.AF_LIST ] + \
+                     [ af for af in bgp_af
+                            if af in neighbor.activate ]          # Transport AF
+        if not bgp_active:
           continue
 
       e_1 = get_box({ 'node': n_name, 'type': neighbor.type })
