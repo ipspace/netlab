@@ -283,10 +283,15 @@ def build_ebgp_sessions(node: Box, sessions: Box, topology: Box) -> None:
       ngb_name = ngb_ifdata.node
       neighbor = topology.nodes[ngb_name]
       neighbor_real_as = neighbor.get('bgp.as',None)
+
+      #
+      # Check for confederations; use confederation AS towards outside peers
+      #
       neighbor_c_as    = neighbor.get('bgp.confederation.as',None)
       neighbor_c_peers = neighbor.get('bgp.confederation.peers',[])
-      if neighbor_c_as and node_local_as not in neighbor_c_peers:
+      if neighbor_c_as and neighbor_real_as!=node_local_as and node_local_as not in neighbor_c_peers:
         neighbor_real_as = neighbor_c_as
+
       try:                                                            # Try to get neighbor local_as
         neighbor_local_as = ( ngb_ifdata.get('bgp.local_as',None) or
                               neighbor.get('bgp.local_as',None) or
