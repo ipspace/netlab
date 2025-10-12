@@ -1,11 +1,15 @@
 message: |
   Tests containers with custom management IP addresses and checks that netlab
-  can successfully configure them.
+  can successfully configure them. It also checks the configuration of containers
+  disconnected from the management network.
 
 provider: clab
 defaults.device: eos
 module: [ ospf ]
-ospf.timers.hello: 1
+ospf.timers:
+  hello: 1
+  dead: 4
+
 defaults.multilab.change.addressing.mgmt.ipv4: '192.42.42.0/24'
 addressing.mgmt.ipv4: '192.42.42.0/24'
 
@@ -18,11 +22,14 @@ nodes:
     mgmt:
       mac: 0A:4F:A9:02:00:01
       ipv4: 192.42.42.207
+  r3:
+    device: frr
+    clab.network-mode: none
 
-links: [ r1-r2 ]
+links: [ r1-r2, r2-r3 ]
 
 validate:
   adj:
     plugin: ospf_neighbor(nodes.r2.ospf.router_id)
     wait: 15
-    nodes: [ r1 ]
+    nodes: [ r1, r3 ]

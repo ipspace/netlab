@@ -145,6 +145,8 @@ In multi-provider topologies, set the **uplink** parameter only for the primary 
 
 You can change a device management interface's IPv4/IPv6 address with the **mgmt.ipv4**/**mgmt.ipv6** node parameter *as long as the specified IPv4/IPv6 address is within the subnet specified in the **addressing.mgmt** pool*. However, it is recommended to use the **addressing.mgmt** pool **ipv4**/**ipv6**/**start** parameters to adjust the address range used for management IP addresses and rely on *netlab* to assign management IP addresses to containers based on [device node ID](node-augment).
 
+You can also set the **clab.network-mode** node parameter to *none* to disconnect a container from the management network. Use this setting in very large topologies (more than 1000 devices) to disconnect devices that don't run an SSH server from the management Linux bridge as a workaround for the *no more than 1024 interfaces per Linux bridge* limitation of the Linux kernel.
+
 (clab-port-forwarding)=
 ### Port Forwarding
 
@@ -364,6 +366,7 @@ You can also change these *containerlab* parameters:
 * **clab.cmd** to [change the command of a container image](https://containerlab.dev/manual/nodes/#cmd).
 * **clab.startup-delay** to make certain node(s) [boot/start later than others](https://containerlab.dev/manual/nodes/#startup-delay) (amount in seconds)
 * **clab.restart-policy** to set the [container restart policy](https://containerlab.dev/manual/nodes/#restart-policy)
+* **clab.network-mode** to set the [network-mode](https://containerlab.dev/manual/nodes/#network-mode)
 
 ```{warning}
 String values (for example, the command to execute specified in **clab.cmd**) are put into single quotes when written into the `clab.yml` containerlab configuration file. Ensure you're not using single quotes in your command line.
