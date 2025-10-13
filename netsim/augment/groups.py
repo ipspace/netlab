@@ -195,6 +195,7 @@ def check_group_data_structure(
 
   parent = topology.get(parent_path) if parent_path else topology
   grp_namespace = f'{parent_path} ' if parent_path else ''
+  reserved_names = list(topology.defaults.devices) + ['all']
 
   '''
   Sanity checks on global group data
@@ -229,9 +230,10 @@ def check_group_data_structure(
     if not 'members' in gdata:
       gdata.members = []
 
-    if grp == 'all' and gdata.members:
+    if grp in reserved_names and gdata.members:
       log.error(
-        text=f'{grp_namespace}group "all" should not have explicit members',
+        text=f'{grp_namespace}group "{grp}" should not have explicit members',
+        more_hints='Device names or "all" cannot be used as names for user-defined groups',
         category=log.IncorrectValue,
         module='groups')
 
