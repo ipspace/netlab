@@ -15,8 +15,20 @@ from .. import data, modules
 from ..data import get_box
 from ..data.types import must_be_dict, must_be_id, must_be_list, transform_asdot
 from ..data.validate import get_object_attributes, validate_attributes
-from ..modules import bgp
+from ..modules import bgp, propagate_global_modules
 from ..utils import log
+
+'''
+Return computed members of special-purpose node group ('all' or device)
+'''
+def special_node_group_members(group: str, topology: Box) -> typing.Optional[list]:
+  if group == 'all':
+    return list(topology.nodes)
+
+  if group in topology.defaults.devices:
+    return [ node for node,ndata in topology.nodes.items() if ndata.get('device',None) == group ]
+
+  return None
 
 '''
 Return members of the specified group. Recurse through child groups if needed
@@ -37,10 +49,16 @@ def group_members(topology: Box, group: str, grp_type: str = 'node', count: int 
       header=True)
 
   gdata = topology.groups[group]
-  if gdata.get('type','node') != grp_type:
+  g_type = gdata.get('type','node')
+  if g_type != grp_type:
     return []
 
-  for m in gdata.members:
+  if g_type == 'node':
+    sg_members = special_node_group_members(group,topology)
+    if not sg_members is None:
+      return sg_members
+
+  for m in gdata.get('members',[]):
     m_ns = grp_type + 's'
     if m in topology[m_ns]:
       members = members + [ m ]
@@ -235,6 +253,11 @@ def check_group_data_structure(
         text=f'{grp_namespace}group "{grp}" should not have explicit members',
         more_hints='Device names or "all" cannot be used as names for user-defined groups',
         category=log.IncorrectValue,
+        module='groups')
+    if grp in topology.defaults.devices and 'device' in gdata:
+      log.error(
+        text=f'Trying to change the device to {gdata.device} in device group {grp} is ridiculous',
+        category=log.IncorrectAttr,
         module='groups')
 
     must_be_list(gdata,'module',gpath,create_empty=False,module='groups',valid_values=sorted(list_of_modules))
@@ -452,39 +475,64 @@ def reverse_topsort(topology: Box) -> list:
 Copy group-level module or device setting into node data
 '''
 def copy_group_device_module(topology: Box) -> None:
-  for grp in reverse_topsort(topology):
+  sorted_groups = reverse_topsort(topology)
+  for grp in sorted_groups:                                 # First, set the device type
     gdata = topology.groups[grp]
-    if not 'device' in gdata and not 'module' in gdata:
-      continue                                                        # This group is not interesting, move on
+    if not 'device' in gdata:
+      continue                                              # This group is not interesting, move on
 
     if log.debug_active('groups'):
-      print(f'Setting device/module for group {grp}')
+      print(f'Setting device for group {grp}: {gdata.device}')
     g_members = group_members(topology,grp)
     if not g_members and not gdata.get('_default_group',False):
       log.error(
-        f'Cannot use "module" or "device" attribute on in group {grp} that has no direct or indirect members',
+        f'Cannot use "device" attribute in group {grp} that has no direct or indirect members',
         log.IncorrectValue,
         'groups')
       continue
 
-    for name in g_members:                                            # Iterate over group members
-      if not name in topology.nodes:                                  # Member not a node? Move on...
+    for name in g_members:                                  # Iterate over group members
+      if not name in topology.nodes:                        # Member not a node? Weird, move on...
         continue
 
       ndata = topology.nodes[name]
-      if 'device' in gdata and not 'device' in ndata:                 # Copy device from group data to node data
+      if 'device' not in ndata:                             # Copy device from group data to node data
         ndata.device = gdata.device
         if log.debug_active('groups'):
           print(f'... setting {name}.device to {gdata.device}')
 
-      if 'module' in gdata:                                           # Merge group modules with device modules
-        ndata.module = ndata.module or []                             # Make sure node.module is a list
-        for m in gdata.module:                                        # Now iterate over group modules
-          if not m in ndata.module:                                   # ... and add missing modules to nodes
-            ndata.module.append(m)
+  for grp in sorted_groups:                                 # Next, augment device modules
+    gdata = topology.groups[grp]                            # We have to do this after augmenting devices
+                                                            # ... because modules could be specified on a device group
+    if 'module' not in gdata:                               # No module specified on this group
+      continue                                              # ... move on
 
-        if log.debug_active('groups'):
-          print(f'... adding module {gdata.module} to {name}. Node modules now {ndata.module}')
+    if log.debug_active('groups'):
+      print(f'Setting module for group {grp}: {gdata.module}')
+    g_members = group_members(topology,grp)
+    if not g_members and not gdata.get('_default_group',False):
+      log.error(
+        f'Cannot use "module" attribute in group {grp} that has no direct or indirect members',
+        log.IncorrectValue,
+        'groups')
+      continue
+
+    for name in g_members:                                  # Iterate over group members
+      if not name in topology.nodes:                        # Member not a node? Move on...
+        continue
+
+      ndata = topology.nodes[name]                          # Get node data
+      if 'module' not in ndata:                             # Group can set module(s) to empty, so we have to
+        ndata.module = []                                   # ... start with an empty list
+
+      if not isinstance(ndata.module,list):                 # We'll let someone else deal with incorrect
+        continue                                            # ... ndata.module data type
+
+      for m in gdata.module:                                # ... iterate over group modules
+        data.append_to_list(ndata,'module',m)               # ... and append group modules to node.module list
+
+      if log.debug_active('groups'):
+        print(f'... adding module {gdata.module} to {name}. Node modules now {ndata.module}')
 
 '''
 Copy node data from group into group members
@@ -587,7 +635,12 @@ def create_bgp_autogroups(topology: Box) -> None:
           'groups')
 
   for n_name,n_data in topology.nodes.items():                  # Now iterate over nodes
-    n_module = n_data.get('module',g_module)                    # Get node or global module (global modules haven't been propagated yet)
+    #
+    # Get node or global module (global modules haven't been propagated yet) taking into account
+    # whether the global modules will be propagated into the node
+    #
+    g_propagate = propagate_global_modules(n_data,topology)
+    n_module = n_data.get('module',g_module if g_propagate else [])
     if not isinstance(n_module,list):                           # Node list of modules is insane, someone else will complain
       continue
 

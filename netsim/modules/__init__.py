@@ -141,6 +141,28 @@ def remove_module(node: Box, module: str, extra: list = []) -> None:
 
   node.module = [ m for m in node.module if m != module ]   # Remove module from the list of node modules
 
+"""
+Should we propagate global modules to a node?
+
+This function is called during module initialization, but also very early in the
+transformation process during BGP group creation, so we cannot assume that
+node.device is set
+"""
+def propagate_global_modules(n: Box, topology: Box) -> bool:
+  if 'device' not in n:                                     # Device might not be set yet
+    if 'device' not in topology.defaults:                   # Do we have a default device?
+      return False                                          # ... we'll have a problem anyway, so we can return whatever
+
+    n = n + {'device': topology.defaults.device}            # Assume default device
+
+  if n.device not in topology.defaults.devices:             # Have to do one more check for valid device type
+    return False                                            # ... because we cannot assume it has been checked
+
+  daemon   = devices.get_device_attribute(n,'daemon',topology.defaults) or False
+  is_host  = devices.get_device_attribute(n,'role',topology.defaults) == 'host' or n.get('role') == 'host'
+
+  return not is_host or daemon
+
 # Set default list of modules for nodes without specific module list
 #
 def augment_node_module(topology: Box) -> None:
@@ -160,9 +182,7 @@ def augment_node_module(topology: Box) -> None:
       #
       # non-host nodes are nodes that do not have 'role' set to 'host' or have 'daemon' set to True
       #
-      daemon   = devices.get_device_attribute(n,'daemon',topology.defaults)
-      is_host  = devices.get_device_attribute(n,'role',topology.defaults) == 'host' or n.get('role') == 'host'
-      if g_module and (not is_host or daemon):
+      if g_module and propagate_global_modules(n,topology):
         n.module = g_module
 
 # Check whether the modules defined on individual nodes are valid module names
