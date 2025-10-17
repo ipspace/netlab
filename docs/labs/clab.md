@@ -410,5 +410,6 @@ server.
 
    ceos.md
    linux.md
+   netscaler.md
 ..
 ```

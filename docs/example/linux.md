@@ -41,9 +41,10 @@ Linux containers are configured with host commands executed within the container
 
 On Linux hosts, the _netlab_ initial configuration process adds the `/etc/hosts` file, configures IP addresses on management and lab interfaces, installs LLDP and `net-tools` on Ubuntu virtual machines, and creates static routes pointing to the first-hop gateway on the first lab interface ([more details](linux-forwarding)). The default route (managed by Vagrant or containerlab) always points to the management interface, allowing you to connect to the Internet and install additional software on Linux hosts.
 
+(tutorial-linux-custom)=
 ## Custom Containers or Virtual Machines
 
-*netlab* starts Ubuntu 20.04 Vagrant boxes when you add Linux virtual machines to a lab topology and Python/Alpine containers when you add Linux containers to a lab topology.
+*netlab* starts Ubuntu 24.04 Vagrant boxes when you add Linux virtual machines to a lab topology and Python/Alpine containers when you add Linux containers to a lab topology.
 
 ```{tip}
 The defaults might change in a future _netlab_ release. Use **‌netlab show images -d linux** to display the current default values.
@@ -67,13 +68,15 @@ nodes:
 links: [ rtr-h1, rtr-h2 ]
 ```
 
+It should be relatively easy to get a custom container running as a Linux node in _netlab_; we documented how to make these products work:
+
+* [Using wemulate with netlab](https://blog.ipspace.net/2024/04/netlab-wemulate/) 
+* [Testing bgpipe with netlab](https://blog.ipspace.net/2024/08/netlab-bgpipe/)
+* [](build-netscaler)
+
 ## Installing Custom Linux Software
 
-If you want to install custom Linux software into a Linux host after the lab has been started, start with a generic Linux distribution (for example, `generic/ubuntu2004` Vagrant box or `ubuntu:24.04` container).
-
-```{warning}
-Ubuntu Vagrant boxes after Ubuntu 20.04 are broken; they cannot find any interface apart from the management interface (`eth0`). If you want to work with a recent Ubuntu distribution, use Linux containers.
-```
+If you want to install custom Linux software into a Linux host after the lab has been started, start with a generic Linux distribution (for example, `bento/ubuntu-24.04` Vagrant box or `ubuntu:24.04` container).
 
 After the lab has been started, log into the Linux host and install the software, for example[^US]:
 
