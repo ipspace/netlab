@@ -13,6 +13,7 @@ The following implementation nodes for configuration deployment, initial device 
    gateway.md
    ospf.md
    ospf.areas.md
+   rip.md
    routing.md
    vlan.md
    vrf.md
