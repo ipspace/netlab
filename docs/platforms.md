@@ -56,6 +56,8 @@
 | BIRD Internet Routing Daemon [❗](caveats-bird) | bird               | full |
 | dnsmasq DHCP server [❗](caveats-dnsmasq) | dnsmasq | full |
 
+You can also run network management software and even some network services products (for example, NetScaler) as [custom Linux containers](tutorial-linux-custom).
+
 The support level of a platform is defined as:
 
 * **full** -- a core contributor is regularly implementing new features. We run a [full suite of integration tests](https://release.netlab.tools/) for every release that could impact the device behavior (for example, due to changes in configuration templates).
