@@ -13,7 +13,8 @@ _netlab_ generates the graph description files. You will have to install [Graphv
 
 ```text
 usage: netlab graph [-h] [-t {topology,bgp,isis}] [-f G_FORMAT] [-e {graphviz,d2}]
-                    [-i INSTANCE] [--snapshot [SNAPSHOT]] [output]
+                    [-i INSTANCE] [--snapshot [SNAPSHOT]]
+                    [output]
 
 Create a graph description in Graphviz or D2 format
 
@@ -22,16 +23,20 @@ positional arguments:
 
 options:
   -h, --help            show this help message and exit
-  -t {topology,bgp,isis}, --type {topology,bgp,isis}
+  -t, --type {topology,bgp,isis}
                         Graph type
   -f, --format G_FORMAT
                         Graph formatting parameters separated by commas
-  -e {graphviz,d2}, --engine {graphviz,d2}
+  -e, --engine {graphviz,d2}
                         Graphing engine
-  -i INSTANCE, --instance INSTANCE
+  -i, --instance INSTANCE
                         Specify lab instance to create a graph from
   --snapshot [SNAPSHOT]
                         Transformed topology snapshot file
+
+If you specify an image file as the output file (filename ending in png/svg/jpg), netlab
+graph command tries to run graphviz (dot) or d2 on the generated graph description file
+to create the image file you want.
 ```
 
 The graph type parameter can take one of these values:
@@ -59,8 +64,15 @@ These formatting parameters can be applied to a **bgp** graph:
 * You can use [_netlab_ environment variables](defaults-env) to change the graph appearance ([graphviz](outputs-graph-appearance), [d2](outputs-d2-graph-appearance))
 ```
 
+## Generating Image Files
+
+If you specify an image file name (for example, `graph.png`) as the output file, **netlab graph** tries to execute Graphviz (dot) or D2 after generating the graph description file to create the desired image file.
+
+**netlab graph** recognizes `gif`, `png`, `pdf`, `svg`, `jpg`, and `jpeg` as valid image file types. You can modify the **netlab.graph.types** [system default](topo-defaults) to extend that list (assuming the desired file types are recognized by Graphviz/D2).
+
 ## Examples
 
-* **netlab graph** creates lab topology graph in Graphviz format
+* **netlab graph** creates a lab topology graph in Graphviz format
+* **netlab graph graph.png** creates a lab topology graph in `graph.dot` Graphviz graph description file and executes `dot graph.dot -T png -o graph.png` to create `graph.png`.
 * **netlab graph -e d2 -t bgp** creates a graph of BGP sessions in D2 format.
 * **netlab graph -t bgp -f vrf** creates a graph of BGP sessions with VRF sessions show as dashed lines ([more details](outputs-graph-bgp-parameters))
