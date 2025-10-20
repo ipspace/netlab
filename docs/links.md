@@ -68,7 +68,7 @@ A dictionary describing an individual link contains *node names* and *additional
 * **bandwidth** -- link bandwidth. Used to configure interface bandwidth when supported by the connected device(s).
 * **bridge** -- the [name of a bridge node](node-bridge-lan) used to implement a multi-access link or the [name of the underlying OS network (bridge)](links-bridge) if supported by the virtualization environment
 * **disable** -- remove the link from the lab topology when set to `True`. You can use this attribute to simplify the topology when debugging it[^CIN].
-* **gateway** -- sets the default gateway for hosts attached to the link. See [Hosts and Default Gateways](#hosts-and-default-gateways) and [](module-gateway) for more details.
+* **gateway** -- sets the default gateway for hosts attached to the link. See [Hosts and Default Gateways](links-gateway) and [](module-gateway) for more details.
 * **group** -- [link group](link-groups) identifier
 * **linkindex** [R/O] -- link sequence number (starting with one), used to generate default bridge names in libvirt.
 * **members** -- list of links in a [link group](link-groups)
