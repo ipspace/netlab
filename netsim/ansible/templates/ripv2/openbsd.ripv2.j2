@@ -1,0 +1,18 @@
+{% macro config(rip) %}
+cat <<RIPD_CONF >/etc/ripd.conf
+triggered-updates yes
+{% if rip.import is defined %}
+{%   for proto in rip.import %}
+redistribute {{ proto }}
+{%   endfor %}
+{% endif %} 
+{% for intf in rip.interfaces|default(netlab_interfaces) if 'ripv2' in intf and 'ipv4' in intf %}
+interface {{ intf.ifname }} {
+}
+{% endfor %}
+RIPD_CONF
+
+chmod 640 /etc/ripd.conf
+rcctl enable ripd
+rcctl restart ripd
+{% endmacro %}
