@@ -118,7 +118,27 @@ def process_inline_config(topology: Box, o_type: str) -> None:
     o_data.config = c_templates                       # Finally, make node/group config element a list of templates
 
 """
-Restructure the 'files' and 'configlets'
+Check that all 'path' attributes point to destinations within the lab directory tree
+"""
+def check_output_paths(topology: Box) -> None:
+  lab_dir = Path('.').resolve()
+  for f_entry in topology.files:                      # Now iterate over the specified files
+    abs_path = Path(f_entry.path).resolve()           # Find the absolute path
+    try:                                              # Try to make it a path relative to the lab directory
+      abs_path.relative_to(lab_dir)
+    except ValueError:
+      log.error(
+        f"path {f_entry.path} specified in 'files' entry#{topology.files.index(f_entry) + 1} is outside of the lab directory",
+        more_hints='You cannot use the files plugin to create files outside of the lab directory',
+        module='files',
+        category=log.IncorrectValue)
+
+"""
+Plugin initialization:
+
+* restructure the inline configs on groups and nodes, 'files' dictionary,
+  'configlets', and validation entries
+* register an output hook
 """
 def init(topology: Box) -> None:
   output_hook = False
@@ -135,6 +155,16 @@ def init(topology: Box) -> None:
     output_hook = True
   if output_hook:
     append_to_list(topology.defaults.netlab.create,'output','files')
+
+"""
+Post-transform validation: check that all paths are within the current lab directory tree
+
+This check does not involve any data transformation and is thus best done after the
+structure of the "files" list has been checked
+"""
+def post_transform(topology: Box) -> None:
+  if 'files' in topology:
+    check_output_paths(topology)
 
 """
 Create the output files when called from 'netlab create'
