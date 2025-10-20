@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from box import Box, BoxList
+from box import Box
 
 from netsim.data import append_to_list, filemaps
 from netsim.data.types import must_be_dict
@@ -117,17 +117,12 @@ def process_inline_config(topology: Box, o_type: str) -> None:
 
     o_data.config = c_templates                       # Finally, make node/group config element a list of templates
 
+"""
+Check that all 'path' attributes point to destinations within the lab directory tree
+"""
 def check_output_paths(topology: Box) -> None:
-  if 'files' not in topology:                         # We shouldn't be called, but who knows...
-    return
-
   lab_dir = Path('.').resolve()
-  if not isinstance(topology.files,BoxList):          # Invalid data structure? No worries, data validation
-    return                                            # ... will thrown an error
-  
   for f_entry in topology.files:                      # Now iterate over the specified files
-    if 'path' not in f_entry:                         # No path specified? Data validation will have
-      return                                          # ... something to say about that
     abs_path = Path(f_entry.path).resolve()           # Find the absolute path
     try:                                              # Try to make it a path relative to the lab directory
       abs_path.relative_to(lab_dir)
@@ -143,7 +138,6 @@ Plugin initialization:
 
 * restructure the inline configs on groups and nodes, 'files' dictionary,
   'configlets', and validation entries
-* check that all paths are within the current lab directory tree
 * register an output hook
 """
 def init(topology: Box) -> None:
@@ -160,8 +154,17 @@ def init(topology: Box) -> None:
     restructure_configlets(topology)
     output_hook = True
   if output_hook:
-    check_output_paths(topology)
     append_to_list(topology.defaults.netlab.create,'output','files')
+
+"""
+Post-transform validation: check that all paths are within the current lab directory tree
+
+This check does not involve any data transformation and is thus best done after the
+structure of the "files" list has been checked
+"""
+def post_transform(topology: Box) -> None:
+  if 'files' in topology:
+    check_output_paths(topology)
 
 """
 Create the output files when called from 'netlab create'
