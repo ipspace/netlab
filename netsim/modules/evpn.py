@@ -47,7 +47,9 @@ def validate_evpn_lists(toponode: Box, obj_path: str, topology: Box, create: boo
     module='evpn')
 
 def enable_evpn_af(node: Box, topology: Box) -> None:
+  AF_WARNING = {}
   bgp_session = node.get('evpn.session',[])
+  bgp_community = node.get('bgp.community',{})
 
   # Enable EVPN AF on all BGP neighbors with the correct session type
   # that also use EVPN module
@@ -55,6 +57,20 @@ def enable_evpn_af(node: Box, topology: Box) -> None:
   for bn in node.bgp.get('neighbors',[]):
     if bn.type in bgp_session and 'evpn' in topology.nodes[bn.name].get('module'):
       bn.evpn = True
+
+      # Now check if the user enabled extended BGP communities on the BGP session type
+      # used for this BGP neighbor. Cache the per-node warning status to prevent multiple
+      # warnings generated for a single node. We still have to create warnings for individual
+      # nodes as the bgp.community could be set on a node.
+      #
+      s_type = bn.type
+      if s_type not in AF_WARNING and 'extended' not in bgp_community.get(s_type,[]):
+        log.warning(
+          text=f'Extended BGP communities are not enabled on {s_type} BGP sessions on {node.name}',
+          more_hints='EVPN needs extended BGP communities attached to EVPN routes',
+          module='evpn',
+          flag='extcommunity')
+        AF_WARNING[s_type] = True
 
 def get_usable_evpn_asn(topology: Box) -> int:
   asn = ( topology.get('evpn.as',None) or
