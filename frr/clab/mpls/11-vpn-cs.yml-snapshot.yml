@@ -1639,7 +1639,7 @@ defaults:
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         build: https://containerlab.dev/manual/kinds/cisco_iol/
-        image: vrnetlab/cisco_iol:17.12.01
+        image: vrnetlab/cisco_iol:17.16.01a
         node:
           kind: cisco_iol
       role: router
@@ -1811,7 +1811,7 @@ defaults:
         interface:
           name: Ethernet{ifindex // 4}/{ifindex % 4}
         build: https://containerlab.dev/manual/kinds/cisco_iol/
-        image: vrnetlab/cisco_iol:L2-17.12.01
+        image: vrnetlab/cisco_iol:L2-17.16.01a
         node:
           kind: cisco_iol
           type: l2
@@ -2953,7 +2953,7 @@ defaults:
         min_tx: 100
         min_rx: 100
       clab:
-        image: ghcr.io/nokia/srlinux:25.3.2
+        image: ghcr.io/nokia/srlinux:25.7.2
         node:
           kind: srl
           type: ixr-d2
@@ -3309,7 +3309,7 @@ defaults:
         node:
           kind: nokia_srsim
           type: sr-1
-          license: /Projects/SR_OS_SR-SIM_license.txt
+          license: ~/.netlab/license_srsim25.txt
           env:
             NOKIA_SROS_MDA_1: me12-100gb-qsfp28
             NOKIA_SROS_MDA_2: me12-100gb-qsfp28
@@ -3722,7 +3722,7 @@ defaults:
         pre_install: vptx
         create_template: vptx.xml.j2
       clab:
-        image: vrnetlab/juniper_vjunosevolved:25.2R1.8-EVO
+        image: vrnetlab/juniper_vjunosevolved:23.2R2.21-EVO
         build: https://containerlab.dev/manual/kinds/vr-vjunosevolved/
         mtu: 1500
         node:
@@ -4292,6 +4292,7 @@ defaults:
       - dhcp
   outputs:
     d2:
+      command: d2 {gfile} {gname}.{gtype}
       node_address_label: true
       interface_labels: false
       as_clusters: true
@@ -4302,19 +4303,43 @@ defaults:
           shape: oval
           style:
             font-size: 20
+            fill: '#ff9f01'
+            stroke: black
         switch:
           shape: hexagon
           style:
             font-size: 20
+            fill: '#ff9f01'
+            stroke: black
+        node:
+          shape: rectangle
+          style:
+            font-size: 20
+            fill: '#ff9f01'
+            stroke: black
+            border-radius: 4
+        edge:
+          style:
+            stroke: black
         lan:
           shape: rectangle
           style:
+            fill: '#d1bfab'
+            stroke: black
+            border-radius: 8
+            font-size: 20
+        stub:
+          shape: rectangle
+          style:
+            fill: '#d1bfab'
+            stroke: black
             border-radius: 8
             font-size: 20
         container:
           style:
             fill: '#e8e8e8'
             stroke: '#c0c0c0'
+            font-size: 24
         ibgp:
           style:
             stroke: '#613913'
@@ -4359,6 +4384,13 @@ defaults:
           style:
             stroke: '#d26400'
             stroke-width: 4
+        vlan_access:
+          style:
+            stroke: '#d26400'
+        vlan_trunk:
+          style:
+            stroke: '#d26400'
+            stroke-width: 4
         title:
           shape: text
           near: top-center
@@ -4380,6 +4412,7 @@ defaults:
             type: int
             min_value: 1
             max_value: 32
+          format: dict
         link:
           color: str
           width:
@@ -4390,7 +4423,9 @@ defaults:
             type: int
             min_value: 1
             max_value: 200
+          format: dict
     graph:
+      command: dot {gfile} -T {gtype} -o {gname}.{gtype}
       interface_labels: false
       node_address_label: true
       as_clusters: true
@@ -4429,6 +4464,11 @@ defaults:
         level-1-2:
           color: '#d26400'
           penwidth: 1.5
+        vlan_access:
+          color: '#d26400'
+        vlan_trunk:
+          color: '#d26400'
+          penwidth: 3
         graph:
           bgcolor: transparent
           nodesep: 0.5
@@ -4468,6 +4508,7 @@ defaults:
             type: int
             min_value: 1
             max_value: 200
+          format: dict
         link:
           type: dict
           _keys:
@@ -4488,6 +4529,7 @@ defaults:
               type: int
               min_value: 1
               max_value: 200
+            format: dict
         shared:
         - linkorder
         - color
@@ -5577,21 +5619,29 @@ defaults:
     capture:
       command: tcpdump -i {intf}
       command_args: --immediate-mode -l -vv
+    graph:
+      types:
+      - gif
+      - png
+      - pdf
+      - svg
+      - jpg
+      - jpeg
     create: {}
   paths:
     validate:
-    - /home/pipi/netlab_gh/netsim/validate
+    - /home/pipi/net101/tools/netsim/validate
     plugin:
     - /work/netlab_cicd
     - /home/pipi/net101/tools/tests/integration/mpls
     - /home/pipi/.netlab
-    - /home/pipi/netlab_gh/netsim/extra
+    - /home/pipi/net101/tools/netsim/extra
     custom:
       dirs:
       - /home/pipi/net101/tools/tests/integration/mpls
       - /work/netlab_cicd
       - /home/pipi/.netlab
-      - /home/pipi/netlab_gh/netsim/extra
+      - /home/pipi/net101/tools/netsim/extra
       files:
       - "{{ custom_config + '/' + inventory_hostname + '.' + netlab_device_type +
         '-' + node_provider + '.j2' }}"
@@ -5622,7 +5672,7 @@ defaults:
       - '{{ custom_config }}/deploy.yml'
     deploy:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks
+      - /home/pipi/net101/tools/netsim/ansible/tasks
       tasks_generic:
       - deploy-config/{{ netlab_device_type }}-{{ node_provider }}.yml
       - deploy-config/{{ netlab_device_type }}.yml
@@ -5643,8 +5693,8 @@ defaults:
       - deploy-config/{{ ansible_network_os }}.yml
     templates:
       dirs:
-      - /home/pipi/netlab_gh/netsim/daemons
-      - /home/pipi/netlab_gh/netsim/ansible/templates
+      - /home/pipi/net101/tools/netsim/daemons
+      - /home/pipi/net101/tools/netsim/ansible/templates
     t_files:
       files:
       - '{{config_module}}/{{netlab_device_type}}-{{provider|default(netlab_provider)}}.j2'
@@ -5656,7 +5706,7 @@ defaults:
       - '{{netlab_device_type}}/{{config_module}}.j2'
     ready:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check
+      - /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check
       files:
       - '{{netlab_device_type}}-{{provider|default(netlab_provider)}}.yml'
       - '{{netlab_device_type}}.yml'
@@ -5664,7 +5714,7 @@ defaults:
       - '{{ansible_network_os}}.yml'
     collect:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks/fetch-config
+      - /home/pipi/net101/tools/netsim/ansible/tasks/fetch-config
   ports:
     ssh: 22
     http: 80
@@ -7602,14 +7652,18 @@ defaults:
     list: []
     user: []
     system: []
-  workdir: /work/netlab_cicd
-  device: frr
   groups:
+    external:
+      device: frr
+      members: []
+      _default_group: true
     all:
       vars:
         netlab_show_config: true
       members: []
       _default_group: true
+  workdir: /work/netlab_cicd
+  device: frr
   plugin:
   - multilab
   _globals:
@@ -7682,6 +7736,10 @@ groups:
     device: frr
     node_data:
       provider: clab
+  external:
+    device: frr
+    members: []
+    _default_group: true
   all:
     vars:
       netlab_show_config: true
@@ -8408,12 +8466,12 @@ nodes:
         node: h3
       bgp:
         advertise: true
+    device: frr
     module:
     - ospf
     - bgp
     - mpls
     - vrf
-    device: frr
     clab:
       kind: linux
       config_templates:
@@ -8529,10 +8587,10 @@ nodes:
         network_type: point-to-point
       ldp:
         passive: false
+    device: frr
     module:
     - ospf
     - mpls
-    device: frr
     clab:
       kind: linux
       config_templates:
@@ -8610,10 +8668,10 @@ nodes:
         network_type: point-to-point
       ldp:
         passive: false
+    device: frr
     module:
     - ospf
     - mpls
-    device: frr
     clab:
       kind: linux
       config_templates:
@@ -8699,4 +8757,4 @@ ospf:
   area: 0.0.0.0
 vrf:
   as: 65000
-_netlab_version: 25.09-post1
+_netlab_version: '25.10'
