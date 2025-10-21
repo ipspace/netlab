@@ -177,10 +177,19 @@ def node_adjust_mplsvpn(node: Box, topology: Box, features: Box) -> None:
     prune_mplsvpn_af(node.mpls.vpn,node)
 
   for n in node.bgp.neighbors:
-    if 'ipv4' in n:
-      for af in AF_LIST:
-        if af in node.mpls.vpn and n.type in node.mpls.vpn[af]:
-          n['vpn'+af.replace('ip','')] = n.ipv4
+    if 'ipv4' not in n:
+      continue                                    # We only support L3VPN AF over IPv4 BGP sessions
+    ngb_node = topology.nodes[n.name]
+    if 'mpls' not in ngb_node.get('module'):
+      continue                                    # Skip neighbors that are not running MPLS
+
+    #
+    # Activate L3VPN AF with the neighbor only if the AF is specified in local and remote
+    # mpls.vpn dictionary and we run L3VPN AF over the session type with this neighbor
+    #
+    for af in AF_LIST:
+      if af in node.mpls.vpn and n.type in node.mpls.vpn[af] and af in ngb_node.get('mpls.vpn'):
+        n['vpn'+af.replace('ip','')] = n.ipv4     # Activate L3VPN AF with the neighbor
 
 '''
 check_node_features: Check if a node supports the requested MPLS features
