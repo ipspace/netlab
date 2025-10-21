@@ -176,6 +176,9 @@ def node_adjust_mplsvpn(node: Box, topology: Box, features: Box) -> None:
   if not node.bgp.get('rr',False):
     prune_mplsvpn_af(node.mpls.vpn,node)
 
+  AF_WARNING = {}
+  bgp_community = node.get('bgp.community',{})
+
   for n in node.bgp.neighbors:
     if 'ipv4' not in n:
       continue                                    # We only support L3VPN AF over IPv4 BGP sessions
@@ -183,6 +186,7 @@ def node_adjust_mplsvpn(node: Box, topology: Box, features: Box) -> None:
     if 'mpls' not in ngb_node.get('module'):
       continue                                    # Skip neighbors that are not running MPLS
 
+    l3vpn_af = False
     #
     # Activate L3VPN AF with the neighbor only if the AF is specified in local and remote
     # mpls.vpn dictionary and we run L3VPN AF over the session type with this neighbor
@@ -190,6 +194,24 @@ def node_adjust_mplsvpn(node: Box, topology: Box, features: Box) -> None:
     for af in AF_LIST:
       if af in node.mpls.vpn and n.type in node.mpls.vpn[af] and af in ngb_node.get('mpls.vpn'):
         n['vpn'+af.replace('ip','')] = n.ipv4     # Activate L3VPN AF with the neighbor
+        l3vpn_af = True
+
+    if not l3vpn_af:                              # No L3VPN AFs activated with this neighbor
+      return                                      # ... no need for further checks
+
+    # Finally, we have to check if the user enabled extended BGP communities on the BGP session type
+    # used for this BGP neighbor. Cache the per-node warning status to prevent multiple
+    # warnings generated for a single node. We still have to create warnings for individual
+    # nodes as the bgp.community could be set on a node.
+    #
+    s_type = n.type
+    if s_type not in AF_WARNING and 'extended' not in bgp_community.get(s_type,[]):
+      log.warning(
+        text=f'Extended BGP communities are not enabled on {s_type} BGP sessions on {node.name}',
+        more_hints='MPLS/VPN needs extended BGP communities attached to L3VPN routes',
+        module='mpls',
+        flag='extcommunity')
+      AF_WARNING[s_type] = True
 
 '''
 check_node_features: Check if a node supports the requested MPLS features
