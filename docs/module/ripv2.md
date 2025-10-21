@@ -26,6 +26,7 @@ The following table describes per-platform support of individual RIPv2/RIPng fea
 | Cumulus Linux      | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ |
 | FRR                | ✅  | ✅  | ✅  | ✅  | ✅  | ✅ |
 | Nokia SR OS[^SROS] | ✅  | ✅  | ✅  |  ❌  |  ❌  |  ❌  |
+| OpenBSD            | ✅  | ✅  |  ❌  | ✅ [❗](caveats-openbsd)  |  ❌  |  ❌  |
 | VyOS               | ✅  | ✅  | ✅  |  ❌  |  ❌  |  ❌  |
 
 ```{tip}
