@@ -510,6 +510,7 @@ See also [](caveats-sros) caveats for further details.
 * The virtual disk size of the `qcow2` image you can download from https://bsd-cloud-image.org/ is too small to survive the kernel reordering OpenBSD performs after every boot.
 * The kernel reordering is disabled in the Vagrant box, leaving you with approximately 170 MB of free disk space. You'll have a bit less than that in the *vrnetlab* container.
 * OpenBSD OSPFv3 implementation does not support ABR functionality. It also advertises passive interfaces with a very high cost.
+* _netlab_ RIPv2/RIPng template implements route redistribution, but only for static and connected prefixes
 * The device role on nodes with a loopback interface is automatically changed to **router** (contrary to most other network devices, OpenBSD does not allow you to reach non-connected IP addresses unless the IPv4/IPv6 forwarding is enabled).
 
 (caveats-sonic)=

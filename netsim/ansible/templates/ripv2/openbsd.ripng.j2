@@ -1,0 +1,10 @@
+{% macro config(rip) %}
+{% set no_rip_intf = rip.interfaces|default(netlab_interfaces)|selectattr('ipv6','defined')| rejectattr('ripv2','defined')|map(attribute='ifname')|join(',') -%}
+rcctl enable route6d
+rcctl set route6d flags
+{#- list IPv6 enabled interfaces where RIPng must not be active -#}
+{%- if no_rip_intf | length > 0 %} -N {{ no_rip_intf }}{% endif %}
+{%- if rip.import.static is defined %} -s{% endif %}
+
+rcctl restart route6d
+{% endmacro %}
