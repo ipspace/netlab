@@ -63,14 +63,14 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [h1]
 ok: [h2]
-ok: [s1]
 ok: [s2]
+ok: [s1]
 ok: [rr]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [h1]
-ok: [h2]
 ok: [s1]
+ok: [h2]
 ok: [s2]
 ok: [rr]
 
@@ -84,8 +84,8 @@ skipping: [rr]
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [h1]
 ok: [h2]
-ok: [s2]
 ok: [s1]
+ok: [s2]
 ok: [rr]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -114,8 +114,8 @@ ok: [rr]
 
 TASK [Find configuration template for initial] *********************************
 ok: [h1]
-ok: [h2]
 ok: [s1]
+ok: [h2]
 ok: [s2]
 ok: [rr]
 
@@ -204,126 +204,6 @@ ok: [h2] =>
     ip addr add 172.31.1.2/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
-ok: [s1] => 
-  msg: |-
-    initial configuration for s1
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)# "
-    echo
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
-    #
-    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
-    #
-    sysctl -w net.ipv4.ip_forward=1
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    # Set system defaults
-    #
-    # Send ARP requests from a sane source IP address
-    #
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Create loopbacks, stub and lag/bond devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    ip link set eth1 down
-    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1600
-    ip link set eth1 up
-    ip link set eth2 down
-    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
-    ip link set dev eth2 mtu 1500
-    ip link set eth2 up
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-  
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname s1
-    !
-    log file /tmp/logging
-  
-    !
-    ip forwarding
-    vrf mgmt
-     exit-vrf
-    !
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ip address 10.0.0.3/32
-    !
-    interface eth1
-     no shutdown
-     description s1 -> rr
-     ip address 10.1.0.2/30
-    !
-    interface eth2
-     no shutdown
-     description [Access VLAN red] s1 -> h1
-     ! no ip address
-    !
-    interface vlan1000
-     no shutdown
-     description VLAN red (1000) -> [h1,h2,s2]
-     ! no ip address
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    !
-    exit 0
 ok: [s2] => 
   msg: |-
     initial configuration for s2
@@ -444,6 +324,126 @@ ok: [s2] =>
     vtysh -f /tmp/config
     !
     exit 0
+ok: [s1] => 
+  msg: |-
+    initial configuration for s1
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1600
+    ip link set eth1 up
+    ip link set eth2 down
+    sysctl -qw net.ipv6.conf.eth2.disable_ipv6=1
+    ip link set dev eth2 mtu 1500
+    ip link set eth2 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname s1
+    !
+    log file /tmp/logging
+  
+    !
+    ip forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.3/32
+    !
+    interface eth1
+     no shutdown
+     description s1 -> rr
+     ip address 10.1.0.2/30
+    !
+    interface eth2
+     no shutdown
+     description [Access VLAN red] s1 -> h1
+     ! no ip address
+    !
+    interface vlan1000
+     no shutdown
+     description VLAN red (1000) -> [h1,h2,s2]
+     ! no ip address
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    !
+    exit 0
 ok: [rr] => 
   msg: |-
     initial configuration for rr
@@ -510,12 +510,12 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -529,7 +529,7 @@ TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/a
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-17guo_6h.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-4x77hsb3.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -544,8 +544,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for s1, s2
 
 TASK [template] ****************************************************************
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [set_fact] ****************************************************************
 ok: [s1]
@@ -572,12 +572,12 @@ ok: [s2]
 ok: [rr]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, s1, h2, s2, rr => (item=vlan)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, s1, h2, s2, rr => (item=routing)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, s1, h2, s2, rr => (item=ospf)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, s1, h2, s2, rr => (item=bgp)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, s1, h2, s2, rr => (item=vxlan)
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, s1, h2, s2, rr => (item=evpn)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1, s2, rr => (item=vlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1, s2, rr => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1, s2, rr => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1, s2, rr => (item=bgp)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1, s2, rr => (item=vxlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1, s2, rr => (item=evpn)
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [h2]
@@ -604,8 +604,8 @@ TASK [Find configuration deployment deploy_script for vlan] ********************
 skipping: [h1]
 skipping: [h2]
 skipping: [rr]
-ok: [s2]
 ok: [s1]
+ok: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
@@ -621,7 +621,7 @@ ok: [s1] =>
     #
     if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
       ip link add vlan1000 type bridge
-      ip link set dev vlan1000 address 52:dc:ca:fd:03:00
+      ip link set dev vlan1000 address ca:f4:00:03:00:00
   
       ip addr flush dev vlan1000
     fi
@@ -639,7 +639,7 @@ ok: [s2] =>
     #
     if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
       ip link add vlan1000 type bridge
-      ip link set dev vlan1000 address 52:dc:ca:fd:04:00
+      ip link set dev vlan1000 address ca:f4:00:04:00:00
   
       ip addr flush dev vlan1000
     fi
@@ -655,8 +655,8 @@ skipping: [rr]
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for s1, s2
 
 TASK [template] ****************************************************************
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [set_fact] ****************************************************************
 ok: [s1]
@@ -681,8 +681,8 @@ TASK [Find configuration template for routing] *********************************
 skipping: [s1]
 skipping: [s2]
 ok: [h1]
-ok: [h2]
 skipping: [rr]
+ok: [h2]
 
 TASK [fail] ********************************************************************
 skipping: [h1]
@@ -694,8 +694,8 @@ skipping: [rr]
 TASK [Find configuration deployment deploy_script for routing] *****************
 skipping: [s1]
 skipping: [s2]
-skipping: [rr]
 ok: [h1]
+skipping: [rr]
 ok: [h2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -763,7 +763,7 @@ TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/a
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-z5odkfae.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-3wtl46ux.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -913,8 +913,8 @@ changed: [rr]
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [h1]
 ok: [h2]
-ok: [s2]
 ok: [s1]
+ok: [s2]
 ok: [rr]
 
 TASK [Find configuration template for bgp] *************************************
@@ -1031,6 +1031,7 @@ ok: [rr] =>
     policy-options {
       delete: policy-statement bgp-advertise;
       delete: policy-statement bgp-redistribute;
+      delete: policy-statement next-hop-self;
       delete: route-filter-list bgp-announce;
     }
   
@@ -1040,8 +1041,18 @@ ok: [rr] =>
       }
   
       policy-statement next-hop-self {
-        term next-hop-self {
+        term next-hop-self-ipv4 {
           from {
+            family inet;
+            route-type external;
+          }
+          then {
+            next-hop self;
+          }
+        }
+        term next-hop-self-ipv6 {
+          from {
+            family inet6;
             route-type external;
           }
           then {
@@ -1284,8 +1295,8 @@ skipping: [rr]
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for s1, s2
 
 TASK [template] ****************************************************************
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [set_fact] ****************************************************************
 ok: [s1]
@@ -1433,16 +1444,16 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for s1
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for rr
 
 TASK [template] ****************************************************************
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [set_fact] ****************************************************************
 ok: [s1]
 ok: [s2]
 
 TASK [run /tmp/config.sh to deploy evpn config from /home/pipi/netlab_gh/netsim/ansible/templates/evpn/frr.j2] ***
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [run vtysh to import evpn config from /home/pipi/netlab_gh/netsim/ansible/templates/evpn/frr.j2] ***
 skipping: [s1]
