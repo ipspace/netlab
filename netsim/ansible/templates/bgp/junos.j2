@@ -1,4 +1,5 @@
 {% import "junos.macro.j2" as bgpcfg with context %}
+{% set JUNOS_AF = { 'ipv4': 'inet', 'ipv6': 'inet6' } %}
 
 routing-options {
   autonomous-system {{ bgp.as }};
@@ -14,7 +15,7 @@ routing-options {
 {% endif %}
 }
 
-{% include "junos.policy.j2" %}
+{% include "junos.policy.j2" with context %}
 
 protocols {
   delete: bgp;
@@ -43,7 +44,7 @@ protocols {
 {%     endif %}
         description {{ n.name }};
 {%     if n.activate[af]|default(false) %}
-        family {{ 'inet' if af == 'ipv4' else 'inet6' }} {
+        family {{ JUNOS_AF[af] }} {
           unicast;
         }
 {%     else %}
@@ -70,7 +71,7 @@ protocols {
         local-as {{ n.local_as }}{% if n.replace_global_as|default(True) %} no-prepend-global-as{% endif +%};
 {%     endif %}
 {%     if n.activate[af]|default(false) %}
-        family {{ 'inet' if af == 'ipv4' else 'inet6' }} {
+        family {{ JUNOS_AF[af] }} {
           unicast;
         }
 {%     else %}
