@@ -3,6 +3,7 @@
 # Print netlab usage
 #
 
+import importlib
 import typing
 
 import netsim
@@ -38,12 +39,12 @@ def run(args: typing.List[str]) -> None:
   print("\nRequired packages:")
   for module,package in MODULES.items():
     try:
-      exec(f'import {module}')
+      py_mod = importlib.import_module(module)
       try:
-        version = eval(f'{module}.__version__')
+        version = getattr(py_mod,'__version__')
         print(f'  {package}: {version}')
-      except:
-        print(f'  Cannot find {package} version')
+      except Exception as ex:
+        print(f'  Cannot find {package} version: {str(ex)}')
     except Exception as ex:
       if package not in MISSING_OK:
         print(f'  {package}: not installed {str(ex)}')
