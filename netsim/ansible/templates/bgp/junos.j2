@@ -26,10 +26,7 @@ protocols {
     group ibgp-peers-{{ af }} {
       type internal;
       export [ 
-{%   if bgp.next_hop_self|default(false) %}
-          next-hop-self
-{%   endif %}
-          {{ (bgp._junos_policy.export|default([]))|join(' ') }}
+          {{ (bgp._junos_policy.ibgp|default([]) + bgp._junos_policy.export|default([]))|join(' ') }}
         ];
       advertise-inactive;
 {% if bgp.rr|default(False) %}
@@ -69,6 +66,9 @@ protocols {
         description {{ n.name }};
 {%     if n.local_as is defined %}
         local-as {{ n.local_as }}{% if n.replace_global_as|default(True) %} no-prepend-global-as{% endif +%};
+{%     endif %}
+{%     if n.rr_client is defined %}
+        cluster {{ bgp.rr_cluster_id|default(False) or bgp.router_id }};
 {%     endif %}
 {%     if n.activate[af]|default(false) %}
         family {{ JUNOS_AF[af] }} {

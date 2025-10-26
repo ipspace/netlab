@@ -17,7 +17,11 @@ policy-options community x-route-permit-mark members large:65535:0:65536;
 policy-options {
   delete: policy-statement bgp-advertise;
   delete: policy-statement bgp-redistribute;
-  delete: policy-statement next-hop-self;
+{% for af in ['ipv4','ipv6'] %}
+{%   for nhs_type in ['ebgp','all'] %}
+  delete: policy-statement next-hop-{{ nhs_type }}-{{ af }};
+{%   endfor %}
+{% endfor %}
   delete: route-filter-list bgp-announce;
 }
 
@@ -29,19 +33,24 @@ policy-options {
 {% endfor %}
   }
 
-  policy-statement next-hop-self {
 {% for af in ('ipv4','ipv6') %}
+{%   for nh in ['ebgp','all'] %}
+  policy-statement next-hop-{{ nh }}-{{ af }} {
     term next-hop-self-{{ af }} {
       from {
         family {{ JUNOS_AF[af] }};
+{%     if nh == 'ebgp' %}
         route-type external;
+{%     endif %}
       }
       then {
         next-hop self;
       }
     }
-{% endfor %}
   }
+
+{%   endfor %}
+{% endfor %}
 
   policy-statement bgp-advertise {
     term advertise {

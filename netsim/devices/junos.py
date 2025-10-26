@@ -9,14 +9,14 @@ import copy
 
 from box import Box
 
-from ..utils import log
+from ..utils import log, strings
 from . import _Quirks, report_quirk
 
 JUNOS_MTU_DEFAULT_HEADER_LENGTH = 14
 JUNOS_MTU_FLEX_VLAN_HEADER_LENGTH = 22
 
 # constants used in BGP Policies
-JUNOS_POLICY_NHS = 'next-hop-self'
+JUNOS_POLICY_NHS = 'next-hop-{ next_hop_self }-{ af }'
 JUNOS_POLICY_DEFAULT_ORIGINATE = 'bgp-default-route'
 JUNOS_COMMON_BGP_POLICIES = [
   'bgp-advertise',
@@ -244,12 +244,15 @@ def _bgp_neigh_import_policy_chain_build(neigh: Box, node: Box, vrf_name: str) -
     neigh._junos_policy['import'] = copy.deepcopy(neigh_policy)
   return
 
-def _bgp_neigh_export_policy_chain_build(neigh: Box, node: Box, vrf_name: str) -> None:
-  ngb_type = neigh.get('type', '')
+def _bgp_neigh_export_policy_chain_build(neigh: Box, default: list, vrf_name: str) -> None:
   need_to_have_neigh_policy = False
   neigh_policy = []
-  if ngb_type == 'ibgp' and node.get('bgp.next_hop_self', False):
-    neigh_policy.append(JUNOS_POLICY_NHS)
+  if 'next_hop_self' in neigh:
+    for af in log.AF_LIST:
+      if af in neigh:
+        policy_name = strings.eval_format(JUNOS_POLICY_NHS,neigh + { 'af': af })
+        neigh_policy.append(policy_name)
+        need_to_have_neigh_policy = True
   
   if vrf_name:
     neigh_policy.append(JUNOS_POLICY_VRF_EXPORT.format(vrf_name))
@@ -265,9 +268,9 @@ def _bgp_neigh_export_policy_chain_build(neigh: Box, node: Box, vrf_name: str) -
     need_to_have_neigh_policy = True
   neigh_policy.append(JUNOS_POLICY_LAST)
   # define the data structure, if needed
-  if need_to_have_neigh_policy:
-    # copy the object neigh_policy - (Assignment statements in Python do not copy objects)
-    neigh._junos_policy['export'] = copy.deepcopy(neigh_policy)
+  if need_to_have_neigh_policy and neigh_policy != default:
+    neigh._junos_policy['export'] = neigh_policy
+
   return
 
 def build_bgp_import_export_policy_chain(node: Box, topology: Box) -> None:
@@ -302,12 +305,19 @@ def build_bgp_import_export_policy_chain(node: Box, topology: Box) -> None:
   # - default policy to be applied at bgp/group level
   #  (multi steps to use constants)
   node.bgp._junos_policy.export = []
+  node.bgp._junos_policy.ibgp = []
+  if node.bgp.get('next_hop_self',False):
+    for af in node.af:
+      policy_name = strings.eval_format(JUNOS_POLICY_NHS,{ 'next_hop_self': 'ebgp', 'af': af })
+      node.bgp._junos_policy.ibgp.append(policy_name)
+
   node.bgp._junos_policy.export.extend(JUNOS_COMMON_BGP_POLICIES)
   node.bgp._junos_policy.export.append(JUNOS_POLICY_LAST)
+  def_policy = node.bgp._junos_policy.ibgp + node.bgp._junos_policy.export
   # - per neighbor policies
   for ngb in node.get('bgp.neighbors',[]):
     # export policy
-    _bgp_neigh_export_policy_chain_build(ngb, node, '')
+    _bgp_neigh_export_policy_chain_build(ngb, def_policy, '')
     # import policy
     _bgp_neigh_import_policy_chain_build(ngb, node, '')
 
@@ -320,9 +330,10 @@ def build_bgp_import_export_policy_chain(node: Box, topology: Box) -> None:
       JUNOS_POLICY_VRF_EXPORT.format(vname),
       JUNOS_POLICY_LAST
     ]
+    def_policy = vdata.bgp._junos_policy.export
     for ngb in vdata.get('bgp.neighbors', []):
       # export policy
-      _bgp_neigh_export_policy_chain_build(ngb, node, vname)
+      _bgp_neigh_export_policy_chain_build(ngb, def_policy, vname)
       # import policy
       _bgp_neigh_import_policy_chain_build(ngb, node, vname)
 
