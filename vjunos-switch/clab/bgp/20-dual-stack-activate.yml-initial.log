@@ -38,7 +38,6 @@ FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos
 FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-switch readiness (39 retries left).
 FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-switch readiness (38 retries left).
 FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-switch readiness (37 retries left).
-FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-switch readiness (36 retries left).
 ok: [dut -> localhost]
 
 TASK [Confirm dut SSH server works] ********************************************
@@ -70,9 +69,9 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
-ok: [x2]
 ok: [x1]
 ok: [dut]
+ok: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
@@ -93,8 +92,8 @@ ok: [x1]
 ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
-ok: [x1]
 ok: [x2]
+ok: [x1]
 ok: [dut]
 
 TASK [fail] ********************************************************************
@@ -104,8 +103,8 @@ skipping: [x2]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [x1]
-ok: [dut]
 ok: [x2]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [dut] => 
@@ -417,8 +416,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -444,8 +443,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=bgp)
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
-ok: [x1]
 ok: [x2]
+ok: [x1]
 ok: [dut]
 
 TASK [Find configuration template for ospf] ************************************
@@ -580,8 +579,8 @@ changed: [x1]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [x1]
-ok: [dut]
 ok: [x2]
+ok: [dut]
 
 TASK [Find configuration template for bgp] *************************************
 ok: [x2]
@@ -599,6 +598,62 @@ ok: [x1]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [x1] => 
+  msg: |-
+    bgp configuration for x1
+    =========================================
+    !
+    router bgp 65000
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.2
+    !
+      neighbor 10.0.0.1 remote-as 65000
+      neighbor 10.0.0.1 description dut
+      neighbor 10.0.0.1 update-source lo
+    !
+      neighbor 2001:db8:1:1::1 remote-as 65000
+      neighbor 2001:db8:1:1::1 description dut
+      neighbor 2001:db8:1:1::1 update-source lo
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+      network 10.0.0.2/32
+    !
+    !
+    !
+      neighbor 10.0.0.1 activate
+      neighbor 10.0.0.1 next-hop-self
+      no neighbor 10.0.0.1 send-community all
+      neighbor 10.0.0.1 send-community standard
+      neighbor 10.0.0.1 send-community large
+      neighbor 10.0.0.1 send-community extended
+    !
+     address-family ipv6 unicast
+    !
+  
+    !
+      network 2001:db8:1:2::/64
+    !
+    !
+    !
+      neighbor 2001:db8:1:1::1 activate
+      neighbor 2001:db8:1:1::1 next-hop-self
+      no neighbor 2001:db8:1:1::1 send-community all
+      neighbor 2001:db8:1:1::1 send-community standard
+      neighbor 2001:db8:1:1::1 send-community large
+      neighbor 2001:db8:1:1::1 send-community extended
+    !
+    !
+    !
+    do write
 ok: [dut] => 
   msg: |-
     bgp configuration for dut
@@ -615,7 +670,10 @@ ok: [dut] =>
     policy-options {
       delete: policy-statement bgp-advertise;
       delete: policy-statement bgp-redistribute;
-      delete: policy-statement next-hop-self;
+      delete: policy-statement next-hop-ebgp-ipv4;
+      delete: policy-statement next-hop-all-ipv4;
+      delete: policy-statement next-hop-ebgp-ipv6;
+      delete: policy-statement next-hop-all-ipv6;
       delete: route-filter-list bgp-announce;
     }
   
@@ -624,7 +682,7 @@ ok: [dut] =>
       route-filter-list bgp-announce {
       }
   
-      policy-statement next-hop-self {
+      policy-statement next-hop-ebgp-ipv4 {
         term next-hop-self-ipv4 {
           from {
             family inet;
@@ -634,6 +692,20 @@ ok: [dut] =>
             next-hop self;
           }
         }
+      }
+  
+      policy-statement next-hop-all-ipv4 {
+        term next-hop-self-ipv4 {
+          from {
+            family inet;
+          }
+          then {
+            next-hop self;
+          }
+        }
+      }
+  
+      policy-statement next-hop-ebgp-ipv6 {
         term next-hop-self-ipv6 {
           from {
             family inet6;
@@ -644,6 +716,18 @@ ok: [dut] =>
           }
         }
       }
+  
+      policy-statement next-hop-all-ipv6 {
+        term next-hop-self-ipv6 {
+          from {
+            family inet6;
+          }
+          then {
+            next-hop self;
+          }
+        }
+      }
+  
   
       policy-statement bgp-advertise {
         term advertise {
@@ -713,8 +797,7 @@ ok: [dut] =>
         group ibgp-peers-ipv4 {
           type internal;
           export [
-              next-hop-self
-              bgp-advertise bgp-redistribute bgp-final
+              next-hop-ebgp-ipv4 next-hop-ebgp-ipv6 bgp-advertise bgp-redistribute bgp-final
             ];
           advertise-inactive;
           neighbor 10.0.0.2 {
@@ -727,8 +810,7 @@ ok: [dut] =>
         group ibgp-peers-ipv6 {
           type internal;
           export [
-              next-hop-self
-              bgp-advertise bgp-redistribute bgp-final
+              next-hop-ebgp-ipv4 next-hop-ebgp-ipv6 bgp-advertise bgp-redistribute bgp-final
             ];
           advertise-inactive;
           neighbor 2001:db8:1:2::1 {
@@ -812,62 +894,6 @@ ok: [x2] =>
     !
     !
     do write
-ok: [x1] => 
-  msg: |-
-    bgp configuration for x1
-    =========================================
-    !
-    router bgp 65000
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.2
-    !
-      neighbor 10.0.0.1 remote-as 65000
-      neighbor 10.0.0.1 description dut
-      neighbor 10.0.0.1 update-source lo
-    !
-      neighbor 2001:db8:1:1::1 remote-as 65000
-      neighbor 2001:db8:1:1::1 description dut
-      neighbor 2001:db8:1:1::1 update-source lo
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-      network 10.0.0.2/32
-    !
-    !
-    !
-      neighbor 10.0.0.1 activate
-      neighbor 10.0.0.1 next-hop-self
-      no neighbor 10.0.0.1 send-community all
-      neighbor 10.0.0.1 send-community standard
-      neighbor 10.0.0.1 send-community large
-      neighbor 10.0.0.1 send-community extended
-    !
-     address-family ipv6 unicast
-    !
-  
-    !
-      network 2001:db8:1:2::/64
-    !
-    !
-    !
-      neighbor 2001:db8:1:1::1 activate
-      neighbor 2001:db8:1:1::1 next-hop-self
-      no neighbor 2001:db8:1:1::1 send-community all
-      neighbor 2001:db8:1:1::1 send-community standard
-      neighbor 2001:db8:1:1::1 send-community large
-      neighbor 2001:db8:1:1::1 send-community extended
-    !
-    !
-    !
-    do write
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
@@ -906,8 +932,8 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [Check is the configuration template is a file] ***************************
-ok: [x2 -> localhost]
 ok: [x1 -> localhost]
+ok: [x2 -> localhost]
 
 TASK [fail] ********************************************************************
 skipping: [x1]
@@ -937,8 +963,8 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [run vtysh to import bgp-xact config from /home/pipi/net101/tools/tests/integration/bgp/bgp-xact.j2] ***
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 PLAY RECAP *********************************************************************
 dut                        : ok=36   changed=3    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   

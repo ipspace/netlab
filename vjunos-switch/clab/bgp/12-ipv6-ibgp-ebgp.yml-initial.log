@@ -38,7 +38,6 @@ FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos
 FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-switch readiness (39 retries left).
 FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-switch readiness (38 retries left).
 FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-switch readiness (37 retries left).
-FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-switch readiness (36 retries left).
 ok: [dut -> localhost]
 
 TASK [Confirm dut SSH server works] ********************************************
@@ -71,8 +70,8 @@ skipping: [x2]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [x1]
-ok: [dut]
 ok: [x2]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
@@ -405,16 +404,16 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
 ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
@@ -423,8 +422,8 @@ skipping: [x2]
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [x2]
 ok: [x1]
+ok: [x2]
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
@@ -432,8 +431,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=bgp)
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
-ok: [x2]
 ok: [x1]
+ok: [x2]
 ok: [dut]
 
 TASK [Find configuration template for ospf] ************************************
@@ -532,8 +531,8 @@ ok: [x2]
 ok: [dut]
 
 TASK [Find configuration template for bgp] *************************************
-ok: [x2]
 ok: [x1]
+ok: [x2]
 ok: [dut]
 
 TASK [fail] ********************************************************************
@@ -600,7 +599,10 @@ ok: [dut] =>
     policy-options {
       delete: policy-statement bgp-advertise;
       delete: policy-statement bgp-redistribute;
-      delete: policy-statement next-hop-self;
+      delete: policy-statement next-hop-ebgp-ipv4;
+      delete: policy-statement next-hop-all-ipv4;
+      delete: policy-statement next-hop-ebgp-ipv6;
+      delete: policy-statement next-hop-all-ipv6;
       delete: route-filter-list bgp-announce;
     }
   
@@ -609,7 +611,7 @@ ok: [dut] =>
       route-filter-list bgp-announce {
       }
   
-      policy-statement next-hop-self {
+      policy-statement next-hop-ebgp-ipv4 {
         term next-hop-self-ipv4 {
           from {
             family inet;
@@ -619,6 +621,20 @@ ok: [dut] =>
             next-hop self;
           }
         }
+      }
+  
+      policy-statement next-hop-all-ipv4 {
+        term next-hop-self-ipv4 {
+          from {
+            family inet;
+          }
+          then {
+            next-hop self;
+          }
+        }
+      }
+  
+      policy-statement next-hop-ebgp-ipv6 {
         term next-hop-self-ipv6 {
           from {
             family inet6;
@@ -629,6 +645,18 @@ ok: [dut] =>
           }
         }
       }
+  
+      policy-statement next-hop-all-ipv6 {
+        term next-hop-self-ipv6 {
+          from {
+            family inet6;
+          }
+          then {
+            next-hop self;
+          }
+        }
+      }
+  
   
       policy-statement bgp-advertise {
         term advertise {
@@ -698,8 +726,7 @@ ok: [dut] =>
         group ibgp-peers-ipv6 {
           type internal;
           export [
-              next-hop-self
-              bgp-advertise bgp-redistribute bgp-final
+              next-hop-ebgp-ipv6 bgp-advertise bgp-redistribute bgp-final
             ];
           advertise-inactive;
           neighbor 2001:db8:1::2 {
@@ -770,8 +797,8 @@ TASK [junos_config: deploying bgp from /home/pipi/netlab_gh/netsim/ansible/templ
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
