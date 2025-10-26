@@ -7,15 +7,17 @@ import typing
 
 from jinja2 import Environment, FileSystemLoader, StrictUndefined, make_logging_undefined
 
+from . import filters
 from .files import create_file_from_text, get_moddir
 from .log import debug_active, fatal
 
-ansible_filter_map: dict = {}
-ANSIBLE_DEBUG = False
 
-def add_ansible_filters(ENV: Environment) -> None:
-  for k,v in ansible_filter_map.items():
-    ENV.filters[k] = v
+def add_j2_filters(ENV: Environment) -> None:
+  for fname in dir(filters):                      # Get all attributes of the "filters" module
+    if not fname.startswith('j2_'):               # Filters have to start with 'j2_' prefix
+      continue
+    fcode = getattr(filters,fname)                # Get a pointer to filter function
+    ENV.filters[fname.replace('j2_','')] = fcode  # And define a new Jinja2 filter
 
 """
 Render a Jinja2 template
@@ -35,7 +37,7 @@ def get_jinja2_env_for_path(template_path: tuple) -> Environment:
   ENV = Environment(loader=FileSystemLoader(template_path), \
           trim_blocks=True,lstrip_blocks=True, \
           undefined=make_logging_undefined(base=StrictUndefined))
-  add_ansible_filters(ENV)
+  add_j2_filters(ENV)
   return ENV
 
 def render_template(
@@ -44,9 +46,6 @@ def render_template(
       j2_text: typing.Optional[str] = None,
       path: typing.Optional[str] = None,
       extra_path: typing.Optional[list] = None) -> str:
-
-  global ansible_filter_map
-  load_ansible_filters()
 
   template_path = []
   if path is not None:
@@ -81,87 +80,3 @@ def write_template(in_folder: str, j2: str, data: typing.Dict, out_folder: str, 
   pathlib.Path(out_folder).mkdir(parents=True, exist_ok=True)
   out_file = f"{out_folder}/{filename}"
   create_file_from_text(out_file,r_text)
-
-"""
-get_ansible_filter_map: Get a map of ansible filters to be used in jinja2 templates
-
-Based on the tentative Python module name, this function tries to:
-
-* Load the module
-* Find the FilterModule class in that module
-* Execute the filters function in that class
-* Append the resulting dict to the ansible_filter_map
-"""
-def get_ansible_module(module_name: str) -> typing.Any:
-  try:
-    module = __import__(module_name)
-    target = module
-    for hname in module_name.split('.')[1:]:
-      target = getattr(target, hname)
-
-    return target
-  except Exception as ex:
-    if debug_active('template') or ANSIBLE_DEBUG:
-      print(f"get_ansible_module failed to load {module_name}: {ex}")
-    return None
-
-def get_ansible_filter_map(module_name: str) -> dict:
-  try:
-    target = get_ansible_module(module_name)
-    filter_class = getattr(target, 'FilterModule')
-    filter_dict = filter_class().filters()
-    return filter_dict if isinstance(filter_dict,dict) else {}
-  except Exception as ex:
-    if debug_active('template') or ANSIBLE_DEBUG:
-      print(f"get_ansible_filter_map failed for {module_name}: {ex}")
-    return {}
-
-"""
-add_ansible_filter_directory: Get all filters from an Ansible plugins/filter directory
-"""
-def add_ansible_filter_directory(module: typing.Any) -> None:
-  try:
-    for fname in list(pathlib.Path(module.__path__[0]).glob('*.py')):
-      if fname.name == '__init__.py':
-        continue
-      filter_name = module.__package__ + '.' + fname.name.replace('.py','')
-      if debug_active('template') or ANSIBLE_DEBUG:
-        print(f"Trying to load filters from {filter_name}")
-      add_filters(get_ansible_filter_map(filter_name))
-  except Exception as ex:
-    if debug_active('template') or ANSIBLE_DEBUG:
-      print(f"get_ansible_filter_director failed for {module.__path__[0]}: {ex}")
-
-"""
-add_filters: add a dictionary of Jinja2 filter routines to the global filter map
-"""
-def add_filters(filters: dict) -> None:
-  global ansible_filter_map
-
-  for filter_name in filters:
-    ansible_filter_map[filter_name] = filters[filter_name]
-
-"""
-Main 'load ansible filters' routine:
-
-* If ansible_filter_map is already populated, return
-* Try to load netaddr-related filters from various places playing whack-a-mole with Ansible developers
-"""
-def load_ansible_filters() -> None:
-  global ansible_filter_map
-
-  if ansible_filter_map:
-    return
-
-  filters = get_ansible_module('ansible_collections.ansible.utils.plugins.filter')
-  if filters:
-    add_ansible_filter_directory(filters)
-
-  add_filters(get_ansible_filter_map('ansible_collections.ansible.netcommon.plugins.filter.ipaddr'))
-  add_filters(get_ansible_filter_map('ansible_collections.ansible.netlog.plugins.filter.ipaddr'))
-
-  # Add Ansible core filters like 'to_yaml'
-  add_filters(get_ansible_filter_map('ansible.plugins.filter.core'))
-
-  if debug_active('template'):
-    print(f'ansible filter map: {ansible_filter_map}')

@@ -7,7 +7,7 @@ _netlab_ is designed to be highly extensible and customizable. Starting with the
 * Change the [default device images](default-device-image) to run a specific software version in your lab.
 * Change [system addressing pools](addressing.md) or define your own.
 
-If you want to use _netlab_ to deploy additional device configuration you can:
+If you want to use _netlab_ to deploy additional device configuration, you can:
 
 * Use **[netlab config](netlab/config.md)** to add custom configuration to an already-provisioned lab.
 * List your own configuration templates in [node](node-attributes)- or [group **config** attribute](custom-config) to configure functionality not yet supported by *netlab* during **[netlab up](netlab/up.md)** or **[netlab initial](netlab/initial.md)** process.
@@ -16,7 +16,7 @@ If you want to use _netlab_ to deploy additional device configuration you can:
 You can also augment the _netlab_ data model transformation or add new functionality with [plugins](plugins.md).
 
 (customize-templates)=
-If you want to change the provisioning- or device configuration templates, you can:
+If you want to change the provisioning or device configuration templates, you can:
 
 * Create your own device configuration templates: copy a [system device configuration template](https://github.com/ipspace/netlab/tree/dev/netsim/ansible/templates) into **templates/_module_/_device_.j2** file[^MIN] and modify it. You can have custom device configuration templates in the current directory or in the `~/.netlab` directory.
 * Create your own device provisioning template: copy a [system template](https://github.com/ipspace/netlab/tree/dev/netsim/templates) into **_provider_/_device_-domain.j2** file and modify it.
@@ -27,6 +27,10 @@ If you want to change the provisioning- or device configuration templates, you c
 Use the **‌netlab create --debug paths** command to display the components of individual search paths and the directories _netlab_ uses when searching those paths (non-existent directories are removed from the search paths).
 
 You can use the same command to troubleshoot template errors; the debugging printouts display every template file _netlab_ searched for and the search path it used for the search.
+```
+
+```{warning}
+The device provisioning templates can use only built-in Jinja2 filters and a subset of **‌ipaddr** and **‌hwaddr** filter functionality.
 ```
 
 Finally, you might want to use external tools or devices not yet supported by _netlab_:
