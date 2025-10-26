@@ -307,7 +307,9 @@ def build_bgp_import_export_policy_chain(node: Box, topology: Box) -> None:
   node.bgp._junos_policy.export = []
   node.bgp._junos_policy.ibgp = []
   if node.bgp.get('next_hop_self',False):
-    for af in node.af:
+    for af in log.AF_LIST:
+      if af not in node.af:
+        continue
       policy_name = strings.eval_format(JUNOS_POLICY_NHS,{ 'next_hop_self': 'ebgp', 'af': af })
       node.bgp._junos_policy.ibgp.append(policy_name)
 
