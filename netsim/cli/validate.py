@@ -1122,8 +1122,6 @@ def run(cli_args: typing.List[str]) -> None:
     list_tests(topology)
     return
 
-  templates.load_ansible_filters()
-
   ERROR_ONLY = args.error_only
   cnt = 0
   start_time = _status.lock_timestamp() or time.time()

@@ -52,3 +52,15 @@ done
 ```{tip}
 [**netlab inspect** documentation](netlab-inspect-node) describes how to specify the nodes on which the command will be executed.
 ```
+
+## Custom Reports
+
+_netlab_ allows you to create custom reports. Store the Jinja2 template that will generate the report in the **reports** subdirectory of the current directory, user _netlab_ directory (`~/.netlab`), or system _netlab_ directory (`/etc/netlab`).
+
+The reports that create Markdown text should include `.md` in the file name (for example, `vlans.md.j2`); those that create HTML should include `.html` in the file name.
+
+```{warning}
+The custom reports can use only built-in Jinja2 filters and a subset of Ansible's **‌ipaddr** and **‌hwaddr** filter functionality (for example, selecting components from an IP prefix).
+```
+
+
