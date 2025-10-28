@@ -46,11 +46,13 @@ router isis {{ isis.instance }}
 {% for l in interfaces|default([]) if 'isis' in l and l.isis.passive %}
   passive-interface {{ l.ifname }}
 {% endfor %}
-{% if 'ipv4' in isis.af %}
+{% if 'ipv4' in isis.af and isis.import is defined %}
 {{   redistribute.config(isis,af='ipv4',ospf_pid=ospf.process|default(1))|indent(1,first=True) }}
 {% endif %}
 {% if isis.af.ipv6 is defined %}
   address-family ipv6
     multi-topology
-{{   redistribute.config(isis,af='ipv6',ospf_pid=ospf.process|default(1))|indent(3,first=True) }}
+{%   if isis.import is defined %}
+{{     redistribute.config(isis,af='ipv6',ospf_pid=ospf.process|default(1))|indent(3,first=True) }}
+{%   endif %}
 {% endif %}
