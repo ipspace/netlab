@@ -13,6 +13,24 @@ from ..utils import log
 from . import external_commands
 
 
+def check_version(fatal: bool = False) -> None:
+  try:
+    import ansible  # type: ignore
+    if ansible.__version__ >= '2.19':           # Ansible core 2.19 contains significant templating changes
+      log.warning(
+        text="You're using Ansible version 12.x or higher; netlab might not work correctly",
+        more_hints = [
+          "Ansible core version 2.19 introduced breaking changes in templates and playboks",
+          "We tested netlab core with Ansible version 12.x but not every device template",
+          "You might want to downgrade Ansible to version 11.10 or lower.",
+          "Use 'netlab install ansible' on Ubuntu to do that",
+          "Finally, please open a GitHub issue if you experience errors/crashes"],
+        module='ansible',
+        flag='ver12',
+        category=log.FatalError if fatal else Warning)
+  except Exception as ex:
+    log.warning(text=f"Cannot determine Ansible version: {str(ex)}",module='ansible')
+
 def find_playbook(name: str) -> typing.Union[str,None]:
   cwd = Path(os.getcwd()).resolve()
   scriptdir = Path(sys.argv[0]).resolve().parent
