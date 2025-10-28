@@ -3,24 +3,26 @@
 # Run automated integration tests for the specified device/provider combo
 #
 
-import typing
 import argparse
-import sys
-import os
-import subprocess
-import shutil
-import time
 import datetime
+import os
 import pathlib
+import shutil
+import subprocess
+import sys
+import time
+import typing
 
 from box import Box
 
 from netsim import __version__
-from netsim.utils import log,read as _read
-from netsim.cli import parser_add_verbose,external_commands
-from netsim.utils import files as _files, strings as _strings
+from netsim.cli import external_commands, parser_add_verbose
 from netsim.data import get_empty_box
-from netsim import providers
+from netsim.utils import files as _files
+from netsim.utils import log
+from netsim.utils import read as _read
+from netsim.utils import strings as _strings
+
 
 def test_parse(args: typing.List[str], topology: Box) -> argparse.Namespace:
   parser = argparse.ArgumentParser(
@@ -117,6 +119,10 @@ def check_device_provider(args: argparse.Namespace, topology: Box) -> None:
 
   if args.provider:
     os.environ['NETLAB_PROVIDER'] = args.provider
+
+  if 'NETLAB_TEST_STEPS' in os.environ:
+    args.steps = os.environ['NETLAB_TEST_STEPS']
+    print(f'Setting test steps to {args.steps}')
 
   if not 'NETLAB_DEVICE' in os.environ:
     log.error(
@@ -274,10 +280,8 @@ def run_test(test: str, args: argparse.Namespace,first: bool) -> None:
     return
 
   if 'up' not in args.steps:
-    print('"up" is not in steps, not starting the lab')
-    return
-
-  if execute(f"netlab up --snapshot --no-config",args,test=test,log="up",err="up").returncode == 0:
+    print("up(skip)",end=" ",flush=True)
+  elif execute(f"netlab up --snapshot --no-config",args,test=test,log="up",err="up").returncode == 0:
     print("up(ok)",end=" ",flush=True)
     log_result(test,'up',True,image=args.image)
   else:
@@ -287,20 +291,27 @@ def run_test(test: str, args: argparse.Namespace,first: bool) -> None:
     return
 
   if 'initial' not in args.steps:
-    print('"initial" not in steps, not configuring the lab')
+    print("config(skip)",end=" ",flush=True)
     return
-
-  if execute(f"netlab initial",args,test=test,log="initial",err="initial").returncode == 0:
-    print("config(ok)",end=" ",flush=True)
-    log_result(test,'config',True)
   else:
-    print_fail("config")
-    log_result(test,'config',False)
-    run_cleanup(args)
-    return
+    cmd  = "netlab initial" if 'up' in args.steps else "netlab initial -o config"
+    stat = "config(ok)" if 'up' in args.steps else "config(files)"
+    if execute(cmd,args,test=test,log="initial",err="initial").returncode == 0:
+      print(stat,end=" ",flush=True)
+      log_result(test,'config',True)
+    else:
+      print_fail("config")
+      log_result(test,'config',False)
+      run_cleanup(args)
+      return
 
   if 'validate' not in args.steps:
-    print('"validate" not in steps, skipping validation')
+    print("validate(skip)",end=" ",flush=True)
+    run_cleanup(args)
+    return
+  if 'up' not in args.steps or 'initial' not in args.steps:
+    print("validate(unavailable)",end=" ",flush=True)
+    run_cleanup(args)
     return
 
   valid_cmd = "netlab validate --skip-missing"
@@ -372,7 +383,7 @@ def main() -> None:
       try:
         run_test(test,args,first_test)
         first_test = False
-      except KeyboardInterrupt as ex:
+      except KeyboardInterrupt:
         print()
         run_cleanup(args)
         log.fatal('User interrupt, aborting')
