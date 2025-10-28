@@ -72,6 +72,7 @@ def run(cli_args: typing.List[str]) -> None:
     else:
       log.fatal(f'Cannot find specified Jinja2 template or configuration directory { args.template }','config')
 
+  ansible.check_version()
   if args.verbose:
     print(f'Ansible playbook args: { rest }')
   if args.reload:

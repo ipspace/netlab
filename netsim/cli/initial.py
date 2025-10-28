@@ -99,6 +99,7 @@ def run_initial(cli_args: typing.List[str]) -> None:
   if args.logging or args.verbose:
     print("Ansible playbook args: %s" % rest)
 
+  ansible.check_version()
   if args.output:
     ansible.playbook('create-config.ansible',rest)
     print("\nInitial configurations have been created in the %s directory" % args.output)
