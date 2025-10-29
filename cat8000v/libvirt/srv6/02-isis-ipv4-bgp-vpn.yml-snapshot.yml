@@ -2,10 +2,10 @@
 ---
 message: |
   The tested device (DUT) is a PE-router running IS-IS, BGP L3VPN and SRv6
-  across an IPv6-only network to interconnect two IPv6-only networks. The
-  validation test checks end-to-end L3VPN IPv6 connectivity across a SRv6 core.
+  across an IPv6-only network to interconnect two IPv4-only networks. The
+  validation test checks end-to-end L3VPN IPv4 connectivity across a SRv6 core.
 defaults:
-  provider: clab
+  provider: libvirt
   providers:
     clab:
       description: containerlab with Docker
@@ -479,6 +479,10 @@ defaults:
           protocol:
           - vrrp
         sr: {}
+        srv6:
+          bgp: false
+          isis: true
+          vpn: true
       external:
         image: none
       graphite:
@@ -501,6 +505,7 @@ defaults:
       _parents:
       - ios
       - csr
+      provider: libvirt
     cisco8000v:
       description: Cisco 8000v
       mgmt_if: MgmtEth0/RP0/CPU0/0
@@ -1602,7 +1607,6 @@ defaults:
             debug:
               type: list
               split_lines: true
-      provider: clab
     iol:
       description: Cisco IOL
       attributes:
@@ -7154,6 +7158,7 @@ defaults:
         - prefix
         - nexthop
         - aspath
+      node_copy: {}
     features:
       policy:
         set: Route map SET attributes
@@ -7330,6 +7335,7 @@ defaults:
       isis: Supports SRv6 with IS-IS
       ospf: Supports SRv6 with OSPFv3
     supported_on:
+      cat8000v: true
       frr: true
       iol: true
       ioll2: true
@@ -7670,7 +7676,7 @@ defaults:
       members: []
       _default_group: true
   workdir: /work/netlab_cicd
-  device: frr
+  device: cat8000v
   plugin:
   - multilab
   _globals:
@@ -7695,20 +7701,21 @@ defaults:
     - vxlan
   name: ml_17
   module:
+  - routing
   - isis
   - bgp
   - vrf
   - srv6
 addressing:
   lan:
+    ipv4: 172.16.0.0/16
     prefix: 24
-    ipv6: 2001:db8:3::/48
   loopback:
     prefix: 32
     ipv6: 2001:db8::/48
   p2p:
+    ipv4: 10.1.0.0/16
     prefix: 30
-    ipv6: 2001:db8:2::/48
   router_id:
     ipv4: 10.0.0.0/24
     prefix: 32
@@ -7728,13 +7735,16 @@ addressing:
     prefix6: 48
   core:
     ipv6: 2001:db8:1::/48
+  lb_ce:
+    ipv4: 192.168.0.0/24
+    prefix: 32
 srv6:
   allocate_loopback: false
   igp:
   - isis
   bgp: false
   vpn:
-    ipv6:
+    ipv4:
     - ibgp
 bgp:
   advertise_loopback: true
@@ -7768,8 +7778,6 @@ groups:
         import:
           connected: true
         advertise_loopback: false
-        activate:
-          ipv6: []
   core:
     members:
     - p
@@ -7781,6 +7789,9 @@ groups:
     - ce2
     module:
     - bgp
+    node_data:
+      loopback:
+        pool: lb_ce
   x_switches:
     members:
     - p
@@ -7824,21 +7835,16 @@ nodes:
       community:
         ibgp:
         - standard
-        - large
         - extended
         ebgp:
         - standard
-        - large
         localas_ibgp:
         - standard
-        - large
         - extended
       next_hop_self: true
       as: 65000
       import:
         connected: {}
-      activate:
-        ipv6: []
       router_id: 10.0.0.1
       neighbors:
       - name: pe2
@@ -7850,58 +7856,56 @@ nodes:
           neighbors: []
           virtual_interface: true
           ifindex: 0
-          ifname: lo
+          ifname: Loopback0
           ipv6: 2001:db8:0:1::1/64
         next_hop_self: ebgp
         activate:
-          ipv6: false
+          ipv6: true
+        extended_nexthop: true
       ipv6: true
     name: dut
     interfaces:
     - ipv6: 2001:db8:1::1/64
       pool: core
       linkindex: 1
-      type: p2p
+      type: lan
+      bridge: ml_17_1
       name: dut -> p
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
+      ifindex: 2
+      ifname: GigabitEthernet2
       neighbors:
-      - ipv6: 2001:db8:1::2/64
+      - ipv6: 2001:db8:1::7/64
         ifname: eth1
         node: p
       isis:
         passive: false
         network_type: point-to-point
-    - ra:
-        slaac: true
-      ipv6: 2001:db8:3::1/64
+    - ipv4: 172.16.0.1/24
       vrf: overlay
       linkindex: 3
-      role: stub
       type: lan
       bridge: ml_17_3
+      role: stub
       name: dut -> h1
-      ifindex: 2
-      ifname: eth2
-      mtu: 1500
+      ifindex: 3
+      ifname: GigabitEthernet3
       neighbors:
-      - ipv6: 2001:db8:3::5/64
+      - ipv4: 172.16.0.5/24
         ifname: eth1
         node: h1
       bgp:
         advertise: true
-    - ipv6: 2001:db8:2::2/64
+    - ipv4: 10.1.0.2/30
       vrf: overlay
       linkindex: 5
+      type: lan
+      bridge: ml_17_5
       role: external
-      type: p2p
       name: dut -> ce1
-      ifindex: 3
-      ifname: eth3
-      mtu: 1500
+      ifindex: 4
+      ifname: GigabitEthernet4
       neighbors:
-      - ipv6: 2001:db8:2::1/64
+      - ipv4: 10.1.0.1/30
         ifname: eth1
         node: ce1
     module:
@@ -7909,16 +7913,8 @@ nodes:
     - bgp
     - vrf
     - srv6
-    device: frr
-    clab:
-      kind: linux
-      config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts:shared
-      binds:
-      - clab_files/dut/daemons:/etc/frr/daemons
-      - clab_files/-shared-hosts:/etc/hosts:ro
-    box: quay.io/frrouting/frr:10.4.1
+    device: cat8000v
+    box: cisco/cat8000v
     isis:
       area: '49.0001'
       type: level-2
@@ -7932,29 +7928,29 @@ nodes:
       igp:
       - isis
       vpn:
-        ipv6:
+        ipv4:
         - ibgp
       locator: 5f00::/48
     vrf:
       as: 65000
     id: 1
     role: router
-    mtu: 1500
-    provider: clab
+    provider: libvirt
+    min_mtu: 1500
     af:
       ipv6: true
-      vpnv6: true
+      ipv4: true
+      vpnv4: true
     mgmt:
-      ifname: eth0
+      ifname: GigabitEthernet1
       mac: ca:fe:00:01:00:00
       ipv4: 192.168.17.101
-    hostname: clab-ml_17-dut
     loopback:
       type: loopback
       neighbors: []
       virtual_interface: true
       ifindex: 0
-      ifname: lo
+      ifname: Loopback0
       ipv6: 2001:db8:0:1::1/64
       isis:
         passive: false
@@ -7968,21 +7964,22 @@ nodes:
         - '65000:1'
         bgp:
           neighbors:
-          - ifindex: 3
+          - ifindex: 4
             name: ce1
             as: 65101
             type: ebgp
-            ipv6: 2001:db8:2::1
+            ipv4: 10.1.0.1
             activate:
-              ipv6: true
+              ipv4: true
           import:
             connected:
               auto: true
         af:
-          ipv6: true
+          ipv4: true
         vrfidx: 100
     router_id: 10.0.0.1
   pe2:
+    provider: clab
     bgp:
       advertise_loopback: false
       community:
@@ -8001,8 +7998,6 @@ nodes:
       as: 65000
       import:
         connected: {}
-      activate:
-        ipv6: []
       router_id: 10.0.0.2
       neighbors:
       - name: dut
@@ -8018,54 +8013,55 @@ nodes:
           ipv6: 2001:db8:0:2::1/64
         next_hop_self: ebgp
         activate:
-          ipv6: false
+          ipv6: true
+        extended_nexthop: true
       ipv6: true
     name: pe2
     interfaces:
     - ipv6: 2001:db8:1:1::2/64
       pool: core
       linkindex: 2
-      type: p2p
+      type: lan
+      bridge: ml_17_2
       name: pe2 -> p
       ifindex: 1
       ifname: eth1
       mtu: 1500
       neighbors:
-      - ipv6: 2001:db8:1:1::1/64
+      - ipv6: 2001:db8:1:1::7/64
         ifname: eth2
         node: p
       isis:
         passive: false
         network_type: point-to-point
-    - ra:
-        slaac: true
-      ipv6: 2001:db8:3:1::2/64
+    - ipv4: 172.16.1.2/24
       vrf: overlay
       linkindex: 4
-      role: stub
       type: lan
       bridge: ml_17_4
+      role: stub
       name: pe2 -> h2
       ifindex: 2
       ifname: eth2
       mtu: 1500
       neighbors:
-      - ipv6: 2001:db8:3:1::6/64
+      - ipv4: 172.16.1.6/24
         ifname: eth1
         node: h2
       bgp:
         advertise: true
-    - ipv6: 2001:db8:2:1::2/64
+    - ipv4: 10.1.0.6/30
       vrf: overlay
       linkindex: 6
+      type: lan
+      bridge: ml_17_6
       role: external
-      type: p2p
       name: pe2 -> ce2
       ifindex: 3
       ifname: eth3
       mtu: 1500
       neighbors:
-      - ipv6: 2001:db8:2:1::1/64
+      - ipv4: 10.1.0.5/30
         ifname: eth1
         node: ce2
     device: frr
@@ -8096,7 +8092,7 @@ nodes:
       igp:
       - isis
       vpn:
-        ipv6:
+        ipv4:
         - ibgp
       locator: 5f00:0:1::/48
     vrf:
@@ -8104,10 +8100,10 @@ nodes:
     id: 2
     role: router
     mtu: 1500
-    provider: clab
     af:
       ipv6: true
-      vpnv6: true
+      ipv4: true
+      vpnv4: true
     mgmt:
       ifname: eth0
       mac: ca:fe:00:02:00:00
@@ -8136,17 +8132,26 @@ nodes:
             name: ce2
             as: 65102
             type: ebgp
-            ipv6: 2001:db8:2:1::1
+            ipv4: 10.1.0.5
             activate:
-              ipv6: true
+              ipv4: true
           import:
             connected:
               auto: true
         af:
-          ipv6: true
+          ipv4: true
         vrfidx: 100
     router_id: 10.0.0.2
   ce1:
+    provider: clab
+    loopback:
+      pool: lb_ce
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 192.168.0.3/32
     bgp:
       advertise_loopback: true
       community:
@@ -8163,31 +8168,32 @@ nodes:
         - extended
       next_hop_self: true
       as: 65101
-      router_id: 10.0.0.3
+      router_id: 192.168.0.3
       neighbors:
       - ifindex: 1
         _vrf: overlay
         name: dut
         as: 65000
         type: ebgp
-        ipv6: 2001:db8:2::2
+        ipv4: 10.1.0.2
         activate:
-          ipv6: true
-      ipv6: true
+          ipv4: true
+      ipv4: true
     name: ce1
     interfaces:
-    - ipv6: 2001:db8:2::1/64
+    - ipv4: 10.1.0.1/30
       linkindex: 5
+      type: lan
+      bridge: ml_17_5
       role: external
-      type: p2p
       name: ce1 -> dut
       ifindex: 1
       ifname: eth1
       mtu: 1500
       neighbors:
-      - ipv6: 2001:db8:2::2/64
+      - ipv4: 10.1.0.2/30
         vrf: overlay
-        ifname: eth3
+        ifname: GigabitEthernet4
         node: dut
     device: frr
     module:
@@ -8204,23 +8210,23 @@ nodes:
     id: 3
     role: router
     mtu: 1500
-    provider: clab
     af:
-      ipv6: true
+      ipv4: true
     mgmt:
       ifname: eth0
       mac: ca:fe:00:03:00:00
       ipv4: 192.168.17.103
     hostname: clab-ml_17-ce1
+  ce2:
+    provider: clab
     loopback:
+      pool: lb_ce
       type: loopback
       neighbors: []
       virtual_interface: true
       ifindex: 0
       ifname: lo
-      ipv6: 2001:db8:0:3::1/64
-    router_id: 10.0.0.3
-  ce2:
+      ipv4: 192.168.0.4/32
     bgp:
       advertise_loopback: true
       community:
@@ -8237,29 +8243,30 @@ nodes:
         - extended
       next_hop_self: true
       as: 65102
-      router_id: 10.0.0.4
+      router_id: 192.168.0.4
       neighbors:
       - ifindex: 1
         _vrf: overlay
         name: pe2
         as: 65000
         type: ebgp
-        ipv6: 2001:db8:2:1::2
+        ipv4: 10.1.0.6
         activate:
-          ipv6: true
-      ipv6: true
+          ipv4: true
+      ipv4: true
     name: ce2
     interfaces:
-    - ipv6: 2001:db8:2:1::1/64
+    - ipv4: 10.1.0.5/30
       linkindex: 6
+      type: lan
+      bridge: ml_17_6
       role: external
-      type: p2p
       name: ce2 -> pe2
       ifindex: 1
       ifname: eth1
       mtu: 1500
       neighbors:
-      - ipv6: 2001:db8:2:1::2/64
+      - ipv4: 10.1.0.6/30
         vrf: overlay
         ifname: eth3
         node: pe2
@@ -8278,39 +8285,33 @@ nodes:
     id: 4
     role: router
     mtu: 1500
-    provider: clab
     af:
-      ipv6: true
+      ipv4: true
     mgmt:
       ifname: eth0
       mac: ca:fe:00:04:00:00
       ipv4: 192.168.17.104
     hostname: clab-ml_17-ce2
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv6: 2001:db8:0:4::1/64
-    router_id: 10.0.0.4
   h1:
+    provider: clab
     name: h1
     interfaces:
-    - ipv6: 2001:db8:3::5/64
+    - ipv4: 172.16.0.5/24
       linkindex: 3
-      role: stub
       type: lan
       bridge: ml_17_3
+      role: stub
       name: h1 -> dut
       ifindex: 1
       ifname: eth1
       mtu: 1500
       neighbors:
-      - ipv6: 2001:db8:3::1/64
+      - ipv4: 172.16.0.1/24
         vrf: overlay
-        ifname: eth2
+        ifname: GigabitEthernet3
         node: dut
+      gateway:
+        ipv4: 172.16.0.1/24
     device: linux
     clab:
       kind: linux
@@ -8323,29 +8324,56 @@ nodes:
     role: host
     mtu: 1500
     af:
-      ipv6: true
+      ipv4: true
     mgmt:
       ifname: eth0
       mac: ca:fe:00:05:00:00
       ipv4: 192.168.17.105
     hostname: clab-ml_17-h1
+    routing:
+      static:
+      - ipv4: 172.16.0.0/16
+        nexthop:
+          ipv4: 172.16.0.1
+          intf: eth1
+          idx: 0
+      - ipv4: 10.1.0.0/16
+        nexthop:
+          ipv4: 172.16.0.1
+          intf: eth1
+          idx: 0
+      - ipv4: 10.2.0.0/24
+        nexthop:
+          ipv4: 172.16.0.1
+          intf: eth1
+          idx: 0
+      - ipv4: 192.168.0.0/24
+        nexthop:
+          ipv4: 172.16.0.1
+          intf: eth1
+          idx: 0
+    module:
+    - routing
   h2:
+    provider: clab
     name: h2
     interfaces:
-    - ipv6: 2001:db8:3:1::6/64
+    - ipv4: 172.16.1.6/24
       linkindex: 4
-      role: stub
       type: lan
       bridge: ml_17_4
+      role: stub
       name: h2 -> pe2
       ifindex: 1
       ifname: eth1
       mtu: 1500
       neighbors:
-      - ipv6: 2001:db8:3:1::2/64
+      - ipv4: 172.16.1.2/24
         vrf: overlay
         ifname: eth2
         node: pe2
+      gateway:
+        ipv4: 172.16.1.2/24
     device: linux
     clab:
       kind: linux
@@ -8358,34 +8386,61 @@ nodes:
     role: host
     mtu: 1500
     af:
-      ipv6: true
+      ipv4: true
     mgmt:
       ifname: eth0
       mac: ca:fe:00:06:00:00
       ipv4: 192.168.17.106
     hostname: clab-ml_17-h2
+    routing:
+      static:
+      - ipv4: 172.16.0.0/16
+        nexthop:
+          ipv4: 172.16.1.2
+          intf: eth1
+          idx: 0
+      - ipv4: 10.1.0.0/16
+        nexthop:
+          ipv4: 172.16.1.2
+          intf: eth1
+          idx: 0
+      - ipv4: 10.2.0.0/24
+        nexthop:
+          ipv4: 172.16.1.2
+          intf: eth1
+          idx: 0
+      - ipv4: 192.168.0.0/24
+        nexthop:
+          ipv4: 172.16.1.2
+          intf: eth1
+          idx: 0
+    module:
+    - routing
   p:
+    provider: clab
     name: p
     interfaces:
-    - ipv6: 2001:db8:1::2/64
+    - ipv6: 2001:db8:1::7/64
       pool: core
       linkindex: 1
-      type: p2p
+      type: lan
+      bridge: ml_17_1
       name: p -> dut
       ifindex: 1
       ifname: eth1
       mtu: 1500
       neighbors:
       - ipv6: 2001:db8:1::1/64
-        ifname: eth1
+        ifname: GigabitEthernet2
         node: dut
       isis:
         passive: false
         network_type: point-to-point
-    - ipv6: 2001:db8:1:1::1/64
+    - ipv6: 2001:db8:1:1::7/64
       pool: core
       linkindex: 2
-      type: p2p
+      type: lan
+      bridge: ml_17_2
       name: p -> pe2
       ifindex: 2
       ifname: eth2
@@ -8420,7 +8475,6 @@ nodes:
     id: 7
     role: router
     mtu: 1500
-    provider: clab
     af:
       ipv6: true
     mgmt:
@@ -8442,22 +8496,26 @@ links:
   interfaces:
   - node: dut
     ipv6: 2001:db8:1::1/64
-    ifindex: 1
-    ifname: eth1
+    ifindex: 2
+    ifname: GigabitEthernet2
   - node: p
-    ipv6: 2001:db8:1::2/64
+    ipv6: 2001:db8:1::7/64
     ifindex: 1
     ifname: eth1
   _linkname: links[core][1]
   linkindex: 1
+  libvirt:
+    provider:
+      clab: true
+  type: lan
+  bridge: ml_17_1
   node_count: 2
-  type: p2p
   prefix:
     ipv6: 2001:db8:1::/64
 - pool: core
   interfaces:
   - node: p
-    ipv6: 2001:db8:1:1::1/64
+    ipv6: 2001:db8:1:1::7/64
     ifindex: 2
     ifname: eth2
   - node: pe2
@@ -8466,84 +8524,98 @@ links:
     ifname: eth1
   _linkname: links[core][2]
   linkindex: 2
+  libvirt:
+    provider:
+      clab: true
+  type: lan
+  bridge: ml_17_2
   node_count: 2
-  type: p2p
   prefix:
     ipv6: 2001:db8:1:1::/64
 - interfaces:
   - node: h1
-    ipv6: 2001:db8:3::5/64
+    ipv4: 172.16.0.5/24
     ifindex: 1
     ifname: eth1
   - node: dut
-    ra:
-      slaac: true
-    ipv6: 2001:db8:3::1/64
-    ifindex: 2
-    ifname: eth2
+    ipv4: 172.16.0.1/24
+    ifindex: 3
+    ifname: GigabitEthernet3
   _linkname: vrfs.overlay.links[1]
   vrf: overlay
   linkindex: 3
-  node_count: 2
-  role: stub
+  libvirt:
+    provider:
+      clab: true
   type: lan
   bridge: ml_17_3
+  node_count: 2
+  role: stub
   prefix:
-    ipv6: 2001:db8:3::/64
+    ipv4: 172.16.0.0/24
 - interfaces:
   - node: h2
-    ipv6: 2001:db8:3:1::6/64
+    ipv4: 172.16.1.6/24
     ifindex: 1
     ifname: eth1
   - node: pe2
-    ra:
-      slaac: true
-    ipv6: 2001:db8:3:1::2/64
+    ipv4: 172.16.1.2/24
     ifindex: 2
     ifname: eth2
   _linkname: vrfs.overlay.links[2]
   vrf: overlay
   linkindex: 4
-  node_count: 2
-  role: stub
+  libvirt:
+    provider:
+      clab: true
   type: lan
   bridge: ml_17_4
+  node_count: 2
+  role: stub
   prefix:
-    ipv6: 2001:db8:3:1::/64
+    ipv4: 172.16.1.0/24
 - interfaces:
   - node: ce1
-    ipv6: 2001:db8:2::1/64
+    ipv4: 10.1.0.1/30
     ifindex: 1
     ifname: eth1
   - node: dut
-    ipv6: 2001:db8:2::2/64
-    ifindex: 3
-    ifname: eth3
+    ipv4: 10.1.0.2/30
+    ifindex: 4
+    ifname: GigabitEthernet4
   _linkname: vrfs.overlay.links[3]
   vrf: overlay
   linkindex: 5
+  libvirt:
+    provider:
+      clab: true
+  type: lan
+  bridge: ml_17_5
   role: external
   node_count: 2
-  type: p2p
   prefix:
-    ipv6: 2001:db8:2::/64
+    ipv4: 10.1.0.0/30
 - interfaces:
   - node: ce2
-    ipv6: 2001:db8:2:1::1/64
+    ipv4: 10.1.0.5/30
     ifindex: 1
     ifname: eth1
   - node: pe2
-    ipv6: 2001:db8:2:1::2/64
+    ipv4: 10.1.0.6/30
     ifindex: 3
     ifname: eth3
   _linkname: vrfs.overlay.links[4]
   vrf: overlay
   linkindex: 6
+  libvirt:
+    provider:
+      clab: true
+  type: lan
+  bridge: ml_17_6
   role: external
   node_count: 2
-  type: p2p
   prefix:
-    ipv6: 2001:db8:2:1::/64
+    ipv4: 10.1.0.4/30
 validate:
 - description: Check ISIS sessions with DUT (wait up to 30 seconds)
   wait: 30
@@ -8566,7 +8638,7 @@ validate:
   wait_msg: Waiting for IBGP sessions to start
   nodes:
   - pe2
-  plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6',activate='vpnv6')
+  plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6',activate='vpnv4')
   stop_on_error: true
   name: ibgp
 - description: Check EBGP session DUT-CE1
@@ -8574,14 +8646,14 @@ validate:
   wait_msg: Waiting for EBGP session DUT-CE1
   nodes:
   - ce1
-  plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv6')
+  plugin: bgp_neighbor(node.bgp.neighbors,'dut',af='ipv4')
   name: ebgp_dut
 - description: Check EBGP session PE2-CE2
   wait: 30
   wait_msg: Waiting for EBGP session PE2-CE2
   nodes:
   - ce2
-  plugin: bgp_neighbor(node.bgp.neighbors,'pe2',af='ipv6')
+  plugin: bgp_neighbor(node.bgp.neighbors,'pe2',af='ipv4')
   name: ebgp_pe2
 - description: Ping-based host-to-host reachability test
   wait_msg: We might have to wait a bit longer
@@ -8603,18 +8675,22 @@ validate:
   wait: 10
   nodes:
   - ce1
-  plugin: ping(nodes.ce2.loopback.ipv6,src=nodes.ce1.loopback.ipv6)
+  plugin: ping(nodes.ce2.loopback.ipv4,src=nodes.ce1.loopback.ipv4)
   name: ping_ce_ce
 input:
-- /home/pipi/net101/tools/tests/integration/srv6/12-isis-ipv6-bgp-vpn.yml
+- /home/pipi/net101/tools/tests/integration/srv6/02-isis-ipv4-bgp-vpn.yml
 - /home/pipi/net101/tools/tests/integration/wait_times.yml
 - /home/pipi/.netlab.yml
 - package:topology-defaults.yml
 plugin:
 - multilab
 name: ml_17
-provider: clab
+provider: libvirt
+libvirt:
+  providers:
+    clab: true
 module:
+- routing
 - isis
 - bgp
 - vrf

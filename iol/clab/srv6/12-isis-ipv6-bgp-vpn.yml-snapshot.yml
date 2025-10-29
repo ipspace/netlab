@@ -1602,7 +1602,6 @@ defaults:
             debug:
               type: list
               split_lines: true
-      provider: clab
     iol:
       description: Cisco IOL
       attributes:
@@ -1777,6 +1776,7 @@ defaults:
       graphite:
         icon: router
       interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
+      provider: clab
       _parents:
       - ios
     ioll2:
@@ -1969,6 +1969,7 @@ defaults:
       graphite:
         icon: router
       interface_name: Ethernet{ifindex // 4}/{ifindex % 4}
+      provider: clab
       _parents:
       - ios
       - iol
@@ -7670,7 +7671,7 @@ defaults:
       members: []
       _default_group: true
   workdir: /work/netlab_cicd
-  device: frr
+  device: iol
   plugin:
   - multilab
   _globals:
@@ -7824,14 +7825,11 @@ nodes:
       community:
         ibgp:
         - standard
-        - large
         - extended
         ebgp:
         - standard
-        - large
         localas_ibgp:
         - standard
-        - large
         - extended
       next_hop_self: true
       as: 65000
@@ -7850,7 +7848,7 @@ nodes:
           neighbors: []
           virtual_interface: true
           ifindex: 0
-          ifname: lo
+          ifname: Loopback0
           ipv6: 2001:db8:0:1::1/64
         next_hop_self: ebgp
         activate:
@@ -7864,8 +7862,9 @@ nodes:
       type: p2p
       name: dut -> p
       ifindex: 1
-      ifname: eth1
-      mtu: 1500
+      ifname: Ethernet0/1
+      clab:
+        name: Ethernet0/1
       neighbors:
       - ipv6: 2001:db8:1::2/64
         ifname: eth1
@@ -7883,8 +7882,9 @@ nodes:
       bridge: ml_17_3
       name: dut -> h1
       ifindex: 2
-      ifname: eth2
-      mtu: 1500
+      ifname: Ethernet0/2
+      clab:
+        name: Ethernet0/2
       neighbors:
       - ipv6: 2001:db8:3::5/64
         ifname: eth1
@@ -7898,8 +7898,9 @@ nodes:
       type: p2p
       name: dut -> ce1
       ifindex: 3
-      ifname: eth3
-      mtu: 1500
+      ifname: Ethernet0/3
+      clab:
+        name: Ethernet0/3
       neighbors:
       - ipv6: 2001:db8:2::1/64
         ifname: eth1
@@ -7909,16 +7910,10 @@ nodes:
     - bgp
     - vrf
     - srv6
-    device: frr
+    device: iol
     clab:
-      kind: linux
-      config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts:shared
-      binds:
-      - clab_files/dut/daemons:/etc/frr/daemons
-      - clab_files/-shared-hosts:/etc/hosts:ro
-    box: quay.io/frrouting/frr:10.4.1
+      kind: cisco_iol
+    box: vrnetlab/cisco_iol:17.16.01a
     isis:
       area: '49.0001'
       type: level-2
@@ -7939,13 +7934,12 @@ nodes:
       as: 65000
     id: 1
     role: router
-    mtu: 1500
     provider: clab
     af:
       ipv6: true
       vpnv6: true
     mgmt:
-      ifname: eth0
+      ifname: Ethernet0/0
       mac: ca:fe:00:01:00:00
       ipv4: 192.168.17.101
     hostname: clab-ml_17-dut
@@ -7954,7 +7948,7 @@ nodes:
       neighbors: []
       virtual_interface: true
       ifindex: 0
-      ifname: lo
+      ifname: Loopback0
       ipv6: 2001:db8:0:1::1/64
       isis:
         passive: false
@@ -8104,7 +8098,6 @@ nodes:
     id: 2
     role: router
     mtu: 1500
-    provider: clab
     af:
       ipv6: true
       vpnv6: true
@@ -8187,7 +8180,7 @@ nodes:
       neighbors:
       - ipv6: 2001:db8:2::2/64
         vrf: overlay
-        ifname: eth3
+        ifname: Ethernet0/3
         node: dut
     device: frr
     module:
@@ -8204,7 +8197,6 @@ nodes:
     id: 3
     role: router
     mtu: 1500
-    provider: clab
     af:
       ipv6: true
     mgmt:
@@ -8278,7 +8270,6 @@ nodes:
     id: 4
     role: router
     mtu: 1500
-    provider: clab
     af:
       ipv6: true
     mgmt:
@@ -8309,7 +8300,7 @@ nodes:
       neighbors:
       - ipv6: 2001:db8:3::1/64
         vrf: overlay
-        ifname: eth2
+        ifname: Ethernet0/2
         node: dut
     device: linux
     clab:
@@ -8377,7 +8368,7 @@ nodes:
       mtu: 1500
       neighbors:
       - ipv6: 2001:db8:1::1/64
-        ifname: eth1
+        ifname: Ethernet0/1
         node: dut
       isis:
         passive: false
@@ -8420,7 +8411,6 @@ nodes:
     id: 7
     role: router
     mtu: 1500
-    provider: clab
     af:
       ipv6: true
     mgmt:
@@ -8443,7 +8433,7 @@ links:
   - node: dut
     ipv6: 2001:db8:1::1/64
     ifindex: 1
-    ifname: eth1
+    ifname: Ethernet0/1
   - node: p
     ipv6: 2001:db8:1::2/64
     ifindex: 1
@@ -8480,7 +8470,7 @@ links:
       slaac: true
     ipv6: 2001:db8:3::1/64
     ifindex: 2
-    ifname: eth2
+    ifname: Ethernet0/2
   _linkname: vrfs.overlay.links[1]
   vrf: overlay
   linkindex: 3
@@ -8518,7 +8508,7 @@ links:
   - node: dut
     ipv6: 2001:db8:2::2/64
     ifindex: 3
-    ifname: eth3
+    ifname: Ethernet0/3
   _linkname: vrfs.overlay.links[3]
   vrf: overlay
   linkindex: 5
