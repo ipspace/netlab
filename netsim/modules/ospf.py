@@ -76,10 +76,34 @@ def propagate_node_attributes(node: Box, topology: Box) -> None:
       if kw in node.ospf and kw not in vdata.ospf:
         vdata.ospf[kw] = node.ospf[kw]
 
+"""
+Adjust interface hello/dead timers -- if only one of them is specified, the other one is
+set to be four times higher/lower.
+"""
+def adjust_interface_timers(node: Box) -> None:
+  for intf in node.get('interfaces',[]):          # Scan all interfaces (function is called before moving
+    timers = intf.get('ospf.timers',None)         # ... the VRF interfaces into vrfs data)
+    if not isinstance(timers,Box):                # If the interface timers are not a dictionary
+      continue                                    # ... we have nothing to do
+
+    if 'hello' in timers and 'dead' not in timers:
+      timers.dead = timers.hello * 4
+    
+    if 'dead' in timers and 'hello' not in timers and timers.dead >= 3:
+      timers.hello = round(timers.dead / 4)
+
+    if timers.hello >= timers.dead:
+      log.error(
+        f'OSPF interface hello timer is greater or equal to dead timer',
+        more_data=f'Node {node.name} interface {intf.ifname} ({intf.name})',
+        module='ospf',
+        category=log.IncorrectValue)
+
 class OSPF(_Module):
 
   def node_post_transform(self, node: Box, topology: Box) -> None:
     features = devices.get_device_features(node,topology.defaults)
+    adjust_interface_timers(node)
 
     _routing.router_id(node,'ospf',topology.pools)
     
