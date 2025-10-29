@@ -82,7 +82,7 @@ def is_supported(data: Box, path: str) -> bool:
   for result in data.values():
     if not isinstance(result,Box):
       continue
-    if 'up' in result:
+    if 'up' in result or 'config' in result:
       return True
 
   if log.VERBOSE:  

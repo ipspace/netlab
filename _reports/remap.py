@@ -57,6 +57,7 @@ def remap_summary(results: Box, remap: Box, path: str) -> None:
 
       data = data[path]
       supported = False
+      dev_key = None
       for test,test_data in data.items():
         if test in remap.tests:
           dev_key = f'{device}/{platform}'
@@ -70,7 +71,7 @@ def remap_summary(results: Box, remap: Box, path: str) -> None:
           else:
             increase_counter(remap,summary.result)
 
-      if not supported:
+      if not supported and dev_key is not None:
         remap.results.pop(dev_key)
 
 def remap_batches(remap: Box) -> None:
