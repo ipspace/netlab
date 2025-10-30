@@ -1,16 +1,18 @@
 (netlab-report)=
 # Creating a Report
 
-The **netlab report** command creates a report from the transformed lab topology data (usually stored in `netlab.snapshot.pickle`) created by the **netlab create** or **netlab up** command. It replicates the functionality of the **netlab create -o report:*name*** command with a more convenient user interface.
+The **netlab report** command creates a report describing your lab topology. It can use the transformed lab topology data created by the **netlab create** or **netlab up** command (usually stored in `netlab.snapshot.pickle`) or the original lab topology ([more details](netlab-report-data-source)).
+
+This command replicates the functionality of the **netlab create -o report:*name*** command with a more convenient user interface.
 
 ## Usage
 
 ```text
-$ netlab report -h
-usage: netlab report [-h] [--node NODE] [-i INSTANCE] [--snapshot [SNAPSHOT]]
+usage: netlab report [-h] [--node NODE] [-q] [-i INSTANCE] [--snapshot [SNAPSHOT]]
+                     [-t TOPOLOGY]
                      report [output]
 
-Create a report from the transformed lab topology data
+Create a report from the lab topology data
 
 positional arguments:
   report                Name of the report you want to create
@@ -19,15 +21,29 @@ positional arguments:
 options:
   -h, --help            show this help message and exit
   --node NODE           Limit the report to selected node(s)
-  -i INSTANCE, --instance INSTANCE
+  -q, --quiet           Report only major errors
+  -i, --instance INSTANCE
                         Specify lab instance to report on
   --snapshot [SNAPSHOT]
                         Transformed topology snapshot file
+  -t, --topology TOPOLOGY
+                        Topology file or URL
 ```
 
 ```{tip}
 The **[netlab show reports](netlab-show-reports)** command displays up-to-date list of available system reports
 ```
+
+(netlab-report-data-source)=
+The **netlab report** command gets its data from:
+
+* The topology file specified with the `-t` argument
+* The lab instance specified with the `-i` argument
+* The snapshot file specified with the `--snapshot` argument
+* The default snapshot file (`netlab.snapshot.pickle`)
+* The default lab topology file (`topology.yml`)
+
+The `netlab.snapshot.pickle` snapshot file is created when a lab is started and deleted when you shut down the lab with the `netlab down --cleanup` command.
 
 (netlab-report-examples)=
 ## Examples

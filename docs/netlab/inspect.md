@@ -1,23 +1,22 @@
 (netlab-inspect)=
 # Inspect Data Structures in Transformed Lab Topology
 
-**netlab inspect** prints data structures in transformed lab topology (usually stored in `netlab.snapshot.pickle`) created by the **netlab create** command. You can display data in YAML or JSON format and select a subset of data from the transformed topology or an individual node.
+**netlab inspect** prints data structures in a transformed lab topology ([more details](netlab-inspect-data-source)). You can display data in YAML or JSON format and select a subset of data from the transformed topology or an individual node.
 
 When selecting data from an individual node, _netlab_ adds group variables to node data, effectively displaying what you would see in the Ansible inventory.
 
 ```{note}
-**netlab inspect** command is replicating the functionality of **netlab create -o yaml:_expression_** command with a more convenient user interface. 
+The **netlab inspect** command is replicating the functionality of the **netlab create -o yaml:_expression_** command with a more convenient user interface. 
 ```
 
 ## Usage
 
 ```text
-$ netlab inspect -h
 usage: netlab inspect [-h] [--node NODE] [--all] [--format {yaml,json}] [-q]
-                      [-i INSTANCE] [--snapshot [SNAPSHOT]]
+                      [-i INSTANCE] [--snapshot [SNAPSHOT]] [-t TOPOLOGY]
                       [expr]
 
-Inspect data structures in transformed lab topology
+Inspect data structures in a lab topology
 
 positional arguments:
   expr                  Data selection expression
@@ -28,11 +27,24 @@ options:
   --all                 Add global Ansible variables to node data
   --format {yaml,json}  Select data presentation format
   -q, --quiet           Report only major errors
-  -i INSTANCE, --instance INSTANCE
+  -i, --instance INSTANCE
                         Specify lab instance to inspect
   --snapshot [SNAPSHOT]
                         Transformed topology snapshot file
+  -t, --topology TOPOLOGY
+                        Topology file or URL
 ```
+
+(netlab-inspect-data-source)=
+The **netlab inspect** command gets its data from:
+
+* The topology file specified with the `-t` argument
+* The lab instance specified with the `-i` argument
+* The snapshot file specified with the `--snapshot` argument
+* The default snapshot file (`netlab.snapshot.pickle`)
+* The default lab topology file (`topology.yml`)
+
+The `netlab.snapshot.pickle` snapshot file is created when a lab is started and deleted when you shut down the lab with the `netlab down --cleanup` command.
 
 ## Topology Inspection Examples
 

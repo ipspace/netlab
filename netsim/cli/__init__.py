@@ -87,6 +87,24 @@ def parser_lab_location(
       const='netlab.snapshot.pickle',
       help=argparse.SUPPRESS if hide else 'Transformed topology snapshot file')
 
+'''
+Add parser parameters to specify the data source for reporting/graphing commands.
+The data source could be the snapshot file, the topology file, or the lab instance
+'''
+def parser_data_source(
+      parser: argparse.ArgumentParser,
+      i_used: bool = False,                       # -i flag is used for something else
+      t_used: bool = False,                       # -t flag is used for something else
+      action: str = '') -> None:
+
+  action = action or 'use as data source'
+  parser_lab_location(parser,i_used=i_used,instance=True,snapshot=True,action=action)
+  t_flags = ['--topology'] if t_used else ['-t', '--topology']
+  parser.add_argument(
+    *t_flags,                                     # Add '--topology' and optional '-t' flag
+    dest='topology', action='store',
+    help='Topology file or URL')
+
 def parser_subcommands(parser: argparse.ArgumentParser, sc_dict: dict) -> None:
   global NETLAB_COMMAND
   subparsers = parser.add_subparsers(
@@ -238,7 +256,6 @@ def load_snapshot(args: typing.Union[argparse.Namespace,Box],ghosts: bool = True
       more_hints=[
           "Looks like no lab was started from this directory",
           "Use 'netlab status --all' to display labs running on this system"])
-    sys.exit(1)
 
   if '.pickle' in snapshot:
     topology = _read.load_pickled_data(snapshot)
@@ -257,6 +274,47 @@ def load_snapshot(args: typing.Union[argparse.Namespace,Box],ghosts: bool = True
   global_vars.init(topology)
   check_modified_source(snapshot,topology)
   return topology
+
+"""
+Load data for a reporting/graphing command. The data source could be specified as
+
+* A lab instance -- unconditionally change directory and load the snapshot file
+* A snapshot file -- used when exist
+* A topology file
+"""
+def load_data_source(args: argparse.Namespace, ghosts: bool = True) -> Box:
+  from . import create
+
+  global NETLAB_COMMAND
+
+  if not args.topology:
+    # No topology specified, try to load data from instance/snapshot
+    # but only if the instance is specified or the snapshot file exists
+    #
+    if args.instance or os.path.isfile(args.snapshot):
+      return load_snapshot(args)
+    
+    args.topology = 'topology.yml'                # no instance/valid snapshot, try default topology
+  else:                                           # topology file was specified, so we must use it
+    if args.instance:                             # ... but not together with instance
+      error_and_exit('Cannot specify --topology together with --instance or --snapshot')
+
+  # If we got here, either the use specified topology file or we failed to
+  # load snapshot and have to try to load default topology file. In both
+  # cases, the args.topology argument will be set.
+  #
+  if os.path.isfile(args.topology):
+    if not args.quiet:
+      log.info(f'Using lab topology file {args.topology}')
+    topology = create.run([ args.topology, '-o', 'none' ])
+    log.exit_on_error()
+    if not topology:
+      error_and_exit(f'Could not transform the topology file {args.topology}')
+    return augment.nodes.ghost_buster(topology)
+
+  error_and_exit(
+    f'Could not get the data from {args.snapshot} or lab topology {args.topology}',
+    more_hints='Start the lab or specify an alternate topology file with the --topology flag')
 
 def check_modified_source(snapshot: str, topology: typing.Optional[Box] = None) -> None:
   if topology is None:

@@ -12,7 +12,7 @@ from ..data import get_empty_box
 from ..outputs import _TopologyOutput
 from ..outputs import common as outputs_common
 from ..utils import log, strings
-from . import _nodeset, load_snapshot, parser_add_verbose, parser_lab_location
+from . import _nodeset, load_data_source, parser_add_verbose, parser_data_source
 
 
 #
@@ -21,7 +21,7 @@ from . import _nodeset, load_snapshot, parser_add_verbose, parser_lab_location
 def inspect_parse(args: typing.List[str]) -> argparse.Namespace:
   parser = argparse.ArgumentParser(
     prog="netlab inspect",
-    description='Inspect data structures in transformed lab topology')
+    description='Inspect data structures in a lab topology')
   parser.add_argument(
     '--node',
     dest='node', action='store',
@@ -41,7 +41,7 @@ def inspect_parse(args: typing.List[str]) -> argparse.Namespace:
     nargs='?',
     help='Data selection expression')
   parser_add_verbose(parser,verbose=False)
-  parser_lab_location(parser,instance=True,snapshot=True,action='inspect')
+  parser_data_source(parser,action='inspect')
 
   return parser.parse_args(args)
 
@@ -94,7 +94,7 @@ def inspect_node(topology: Box, node_list: list, args: argparse.Namespace) -> No
 
 def run(cli_args: typing.List[str]) -> None:
   args = inspect_parse(cli_args)
-  topology = load_snapshot(args)
+  topology = load_data_source(args)
   log.init_log_system(False)
 
   if args.node:

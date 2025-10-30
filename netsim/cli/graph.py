@@ -13,7 +13,7 @@ from box import Box
 from ..outputs import _TopologyOutput
 from ..utils import log, strings
 from ..utils import read as _read
-from . import external_commands, load_snapshot, parser_lab_location
+from . import external_commands, load_data_source, parser_add_verbose, parser_data_source
 
 
 #
@@ -22,7 +22,7 @@ from . import external_commands, load_snapshot, parser_lab_location
 def graph_parse(args: typing.List[str]) -> argparse.Namespace:
   parser = argparse.ArgumentParser(
     prog="netlab graph",
-    description='Create a graph description in Graphviz or D2 format',
+    description='Create a graph description in Graphviz or D2 format or draw a graph',
     epilog=textwrap.dedent("""
       If you specify an image file as the output file (filename ending in
       png/svg/jpg), netlab graph command tries to run graphviz (dot) or d2 on
@@ -48,7 +48,8 @@ def graph_parse(args: typing.List[str]) -> argparse.Namespace:
     nargs='?',
     help='Optional: Output file name')
 
-  parser_lab_location(parser,instance=True,snapshot=True,action='create a graph from')
+  parser_add_verbose(parser,verbose=False)
+  parser_data_source(parser,t_used=True,action='create a graph from')
   return parser.parse_args(args)
 
 def parse_output(args: argparse.Namespace, topology: Box) -> typing.Tuple[typing.Optional[str],typing.Optional[str]]:
@@ -88,7 +89,7 @@ def create_graph(o_type: str, o_name: str, args: argparse.Namespace, topology: B
 
 def run(cli_args: typing.List[str]) -> None:
   args = graph_parse(cli_args)
-  topology = load_snapshot(args)
+  topology = load_data_source(args,ghosts=False)
   _read.include_environment_defaults(topology)
   o_module = 'graph' if args.engine == 'graphviz' else 'd2'
   o_param  = f'{o_module}:{args.g_type or "topology"}'
