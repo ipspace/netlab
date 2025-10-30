@@ -141,7 +141,11 @@ These caveats apply only to Cisco IOSv and IOSvL2
 
 Cisco IOSv SSH implementation uses RSA keys and older encryption algorithms that might not be allowed on newer Linux distributions.
 
-Most users running recent Ansible versions won't notice the problem; Ansible uses the `ansible-pylibssh` package (installed together with Ansible) as its interface to `libssh` and adjusts the SSH algorithms as needed.
+Most users running recent Ansible versions won't notice the problem; Ansible uses the `ansible-pylibssh` package (installed together with Ansible) as its interface to `libssh` and adjusts the SSH algorithms as needed. If [that fails](https://github.com/ipspace/netlab/discussions/2759), try setting the ANSIBLE_NETWORK_CLI_SSH_TYPE environment variable to force Ansible to use the **paramiko** SSH library:
+
+```
+$ export ANSIBLE_NETWORK_CLI_SSH_TYPE=paramiko
+```
 
 We added a similar mechanism to _netlab_ commands that use SSH to connect to network devices. These commands append group variable `netlab_ssh_args` (when defined) to the **ssh** command; the value of that variable for Cisco IOS/IOS-XE devices is set to:
 
