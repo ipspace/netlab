@@ -534,7 +534,9 @@ bgp_set_advertise: set bgp.advertise flag on stub links and on loopback interfac
 def bgp_set_advertise(node: Box, topology: Box) -> None:
   stub_roles = data.get_global_parameter(topology,"bgp.advertise_roles") or []
 
-  for l in node.get("interfaces",[]):
+  # Process regular interfaces and the loopback interface (if it exists)
+  #
+  for l in node.get("interfaces",[]) + ([ node.loopback ] if 'loopback' in node else []):
     if "bgp" in l:
       if l.bgp is False:                    # Skip interfaces on which we don't want to run BGP
         continue

@@ -34,14 +34,20 @@ router bgp {{ bgp.as }}
   bgp scan-time 5
 {{   redistribute.config(bgp,af=af,ospf_pid=ospf_pid)|indent(1,first=True) }}
 !
-{%   if loopback[af] is defined and bgp.advertise_loopback %}
-{{     bgpcfg.bgp_network(af,loopback[af]) }}
-{%   endif %}
+{%   for l in netlab_interfaces if l.bgp.advertise|default("") and l[af] is defined and not 'vrf' in l %}
+{%     if loop.first %}
 !
-{%   for l in interfaces|default([]) if l.bgp.advertise|default("") and l[af] is defined and not 'vrf' in l %}
+! Originate networks from connected subnets
+!
+{%     endif %}
 {{     bgpcfg.bgp_network(af,l[af]) }}
 {%   endfor %}
 {%   for pfx in bgp.originate|default([]) if af == 'ipv4' %}
+{%     if loop.first %}
+!
+! Originate networks from static routes
+!
+{%     endif %}
 {{     bgpcfg.bgp_network(af,pfx) }}
 {%   endfor %}
 !
