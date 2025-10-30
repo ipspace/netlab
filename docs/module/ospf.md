@@ -212,11 +212,9 @@ You can specify most node parameters as global values (top-level topology elemen
 * **ospf.network_type** -- Set OSPF network type. Allowed values are **point-to-point**, **point-to-multipoint**, **broadcast** and **non-broadcast**[^NS]. See also [Default Link Parameters](#default-link-parameters)
 * **ospf.passive** -- explicitly enable or disable [passive interfaces](routing_passive)
 * **ospf.password** -- OSPFv2 cleartext interface authentication password
-* **ospf.timers** -- set OSPF interface timers. A dictionary containing **dead** and **hello** values (from 1 to 8192 seconds)[^TNVC]. Setting the **dead** timer to one enables a sub-second hello timer on platforms supporting it.
+* **ospf.timers** -- set OSPF interface timers. A dictionary containing **dead** and **hello** values (from 1 to 8192 seconds)[^TNVC]. If you specify only one of the timers, the other one is set to be four times higher/lower.
 
 [^NS]: Some OSPF network types (non-broadcast or point-to-multipoint) are not supported by all platforms.
-
-[^TNVC]: The values of **hello** and **dead** timer are not checked. It is possible to configure a **hello** timer larger than the corresponding **dead** timer, resulting in potential network device configuration errors.
 
 **Notes:**
 
