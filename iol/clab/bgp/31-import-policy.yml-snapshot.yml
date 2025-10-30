@@ -73,6 +73,7 @@ defaults:
             runtime: str
             startup-delay: int
             restart-policy: str
+            network-mode: str
         interface:
           name: str
         link:
@@ -476,6 +477,10 @@ defaults:
           protocol:
           - vrrp
         sr: {}
+        srv6:
+          bgp: false
+          isis: true
+          vpn: true
       external:
         image: none
       graphite:
@@ -523,6 +528,9 @@ defaults:
           max_mtu: 9216
         ospf:
           unnumbered: true
+          password: true
+          priority: true
+          timers: true
         isis:
           circuit_type: true
           unnumbered:
@@ -1352,6 +1360,7 @@ defaults:
         image: fortinet/fortios
         build: https://netlab.tools/labs/fortios/
         create_template: fortios.xml.j2
+        create_iso: fortios
       clab:
         node:
           kind: fortinet_fortigate
@@ -1762,6 +1771,10 @@ defaults:
           protocol:
           - vrrp
         sr: {}
+        srv6:
+          bgp: false
+          isis: true
+          vpn: true
       external:
         image: none
       graphite:
@@ -1940,6 +1953,10 @@ defaults:
           protocol:
           - vrrp
         sr: {}
+        srv6:
+          bgp: false
+          isis: true
+          vpn: true
         stp:
           supported_protocols:
           - stp
@@ -2362,6 +2379,9 @@ defaults:
           max_mtu: 9216
         ospf:
           unnumbered: true
+          password: true
+          priority: true
+          timers: true
         isis:
           circuit_type: true
           unnumbered:
@@ -2452,6 +2472,8 @@ defaults:
             roles:
             - host
             - bridge
+            generate_mac:
+            - svi
           vlan:
             mixed_trunk: true
             model: router
@@ -2754,6 +2776,13 @@ defaults:
           password: true
           priority: true
           timers: true
+        ripv2:
+          ipv4: true
+          ipv6: true
+          passive: false
+          import:
+          - connected
+          - static
       libvirt:
         create_template: openbsd.xml.j2
         image: netlab/openbsd
@@ -4033,6 +4062,8 @@ defaults:
             roles:
             - host
             - router
+            generate_mac:
+            - svi
           vlan:
             mixed_trunk: true
             model: router
@@ -4122,6 +4153,8 @@ defaults:
           initial:
             roles:
             - host
+            generate_mac:
+            - svi
           vlan:
             mixed_trunk: true
             model: router
@@ -4272,6 +4305,7 @@ defaults:
       - dhcp
   outputs:
     d2:
+      command: d2 {gfile} {gname}.{gtype}
       node_address_label: true
       interface_labels: false
       as_clusters: true
@@ -4282,19 +4316,43 @@ defaults:
           shape: oval
           style:
             font-size: 20
+            fill: '#ff9f01'
+            stroke: black
         switch:
           shape: hexagon
           style:
             font-size: 20
+            fill: '#ff9f01'
+            stroke: black
+        node:
+          shape: rectangle
+          style:
+            font-size: 20
+            fill: '#ff9f01'
+            stroke: black
+            border-radius: 4
+        edge:
+          style:
+            stroke: black
         lan:
           shape: rectangle
           style:
+            fill: '#d1bfab'
+            stroke: black
+            border-radius: 8
+            font-size: 20
+        stub:
+          shape: rectangle
+          style:
+            fill: '#d1bfab'
+            stroke: black
             border-radius: 8
             font-size: 20
         container:
           style:
             fill: '#e8e8e8'
             stroke: '#c0c0c0'
+            font-size: 24
         ibgp:
           style:
             stroke: '#613913'
@@ -4339,6 +4397,13 @@ defaults:
           style:
             stroke: '#d26400'
             stroke-width: 4
+        vlan_access:
+          style:
+            stroke: '#d26400'
+        vlan_trunk:
+          style:
+            stroke: '#d26400'
+            stroke-width: 4
         title:
           shape: text
           near: top-center
@@ -4360,6 +4425,7 @@ defaults:
             type: int
             min_value: 1
             max_value: 32
+          format: dict
         link:
           color: str
           width:
@@ -4370,7 +4436,9 @@ defaults:
             type: int
             min_value: 1
             max_value: 200
+          format: dict
     graph:
+      command: dot {gfile} -T {gtype} -o {gname}.{gtype}
       interface_labels: false
       node_address_label: true
       as_clusters: true
@@ -4409,6 +4477,11 @@ defaults:
         level-1-2:
           color: '#d26400'
           penwidth: 1.5
+        vlan_access:
+          color: '#d26400'
+        vlan_trunk:
+          color: '#d26400'
+          penwidth: 3
         graph:
           bgcolor: transparent
           nodesep: 0.5
@@ -4448,6 +4521,7 @@ defaults:
             type: int
             min_value: 1
             max_value: 200
+          format: dict
         link:
           type: dict
           _keys:
@@ -4468,6 +4542,7 @@ defaults:
               type: int
               min_value: 1
               max_value: 200
+            format: dict
         shared:
         - linkorder
         - color
@@ -5381,13 +5456,7 @@ defaults:
         min_value: 1
       links: list
       loopback:
-        ipv4:
-          type: ipv4
-          use: host_prefix
-        ipv6:
-          type: ipv6
-          use: host_prefix
-        pool: addr_pool
+        type: dict
         _alt_types:
         - bool
         - prefix_str
@@ -5563,6 +5632,14 @@ defaults:
     capture:
       command: tcpdump -i {intf}
       command_args: --immediate-mode -l -vv
+    graph:
+      types:
+      - gif
+      - png
+      - pdf
+      - svg
+      - jpg
+      - jpeg
     create: {}
   paths:
     validate:
@@ -5865,6 +5942,8 @@ defaults:
       interface:
         local_as: asn
         replace_global_as: bool
+      loopback:
+        advertise: bool
       as_list:
         type: dict
         _keytype: int
@@ -6973,6 +7052,7 @@ defaults:
       iosv: true
       iosvl2: true
       none: true
+      openbsd: true
       sros: true
       srsim: true
       vyos: true
@@ -7171,7 +7251,7 @@ defaults:
     - vrf
     no_propagate:
     - locator_pool
-    allocate_loopback: true
+    allocate_loopback: false
     locator_pool: 5F00::/16
     igp:
     - isis
@@ -7256,7 +7336,10 @@ defaults:
       isis: Supports SRv6 with IS-IS
       ospf: Supports SRv6 with OSPFv3
     supported_on:
+      cat8000v: true
       frr: true
+      iol: true
+      ioll2: true
       none: true
       sros: true
       srsim: true
@@ -7585,14 +7668,18 @@ defaults:
     system: []
   interfaces:
     mtu: 1500
-  workdir: /work/netlab_cicd
-  device: iol
   groups:
+    external:
+      device: frr
+      members: []
+      _default_group: true
     all:
       vars:
         netlab_show_config: true
       members: []
       _default_group: true
+  workdir: /work/netlab_cicd
+  device: iol
   plugin:
   - multilab
   _globals:
@@ -7682,6 +7769,10 @@ groups:
     - r2
     node_data:
       provider: clab
+  external:
+    device: frr
+    members: []
+    _default_group: true
   all:
     vars:
       netlab_show_config: true
@@ -7824,6 +7915,8 @@ nodes:
       ifname: Loopback0
       ipv4: 10.0.0.1/32
       ipv6: 2001:db8:1:1::1/64
+      bgp:
+        advertise: true
       ospf:
         area: 0.0.0.0
         passive: false
@@ -7904,6 +7997,8 @@ nodes:
       ifname: lo
       ipv4: 10.0.0.2/32
       ipv6: 2001:db8:1:2::1/64
+      bgp:
+        advertise: true
   r2:
     module:
     - ospf
@@ -8109,4 +8204,4 @@ bgp:
   next_hop_self: true
 ospf:
   area: 0.0.0.0
-_netlab_version: 25.09-post1
+_netlab_version: 25.11-dev
