@@ -53,6 +53,8 @@ myst_enable_extensions = [
     "attrs_block"
 ]
 
+suppress_warnings = ["myst.strikethrough"]
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
