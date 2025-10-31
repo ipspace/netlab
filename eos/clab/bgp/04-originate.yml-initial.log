@@ -9,14 +9,14 @@ PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [x1]
-ok: [x2]
 ok: [r1]
+ok: [x2]
 ok: [dut]
 ok: [dut2]
 
 TASK [Find device readiness script] ********************************************
-ok: [x2]
 ok: [x1]
+ok: [x2]
 ok: [r1]
 ok: [dut]
 ok: [dut2]
@@ -120,8 +120,8 @@ TASK [Find configuration template for initial] *********************************
 ok: [x1]
 ok: [x2]
 ok: [r1]
-ok: [dut2]
 ok: [dut]
+ok: [dut2]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -583,9 +583,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2, r1
 
 TASK [template] ****************************************************************
+changed: [x1]
 changed: [x2]
 changed: [r1]
-changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -594,8 +594,8 @@ ok: [r1]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 changed: [x2]
-changed: [x1]
 changed: [r1]
+changed: [x1]
 
 TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
@@ -737,10 +737,10 @@ ok: [dut]
 ok: [dut2]
 
 TASK [Find configuration template for bgp] *************************************
-ok: [x2]
 ok: [x1]
-ok: [r1]
+ok: [x2]
 ok: [dut]
+ok: [r1]
 ok: [dut2]
 
 TASK [fail] ********************************************************************
@@ -751,9 +751,9 @@ skipping: [x2]
 skipping: [r1]
 
 TASK [Find configuration deployment deploy_script for bgp] *********************
+ok: [r1]
 ok: [x1]
 ok: [x2]
-ok: [r1]
 ok: [dut]
 ok: [dut2]
 
@@ -780,8 +780,9 @@ ok: [x1] =>
     !
   
     !
-      network 10.0.0.3/32
+    ! Originate networks from connected subnets
     !
+      network 10.0.0.3/32
     !
       neighbor 10.1.0.5 activate
       no neighbor 10.1.0.5 send-community all
@@ -814,8 +815,9 @@ ok: [r1] =>
     !
   
     !
-      network 10.0.0.5/32
+    ! Originate networks from connected subnets
     !
+      network 10.0.0.5/32
     !
       neighbor 10.0.0.1 activate
       neighbor 10.0.0.1 next-hop-self
@@ -827,33 +829,6 @@ ok: [r1] =>
     !
     !
     do write
-ok: [dut2] => 
-  msg: |-
-    bgp configuration for dut2
-    =========================================
-    !
-    !
-    router bgp 65001
-      bgp advertise-inactive
-      bgp log-neighbor-changes
-      no bgp default ipv4-unicast
-      no bgp default ipv6-unicast
-      router-id 10.0.0.2
-    !
-      neighbor 172.0.66.1 remote-as 65000
-      neighbor 172.0.66.1 description dut
-      neighbor 172.0.66.1 send-community standard large
-    !
-    !
-     address-family ipv4
-  
-    !
-      network 10.0.0.2/32
-    !
-    !
-      neighbor 172.0.66.1 activate
-      neighbor 172.0.66.1 next-hop-self
-    !
 ok: [dut] => 
   msg: |-
     bgp configuration for dut
@@ -894,7 +869,13 @@ ok: [dut] =>
      address-family ipv4
   
     !
+    !
+    ! Originate networks from connected subnets
+    !
       network 172.0.42.0/24
+    !
+    !
+    ! Originate networks from static routes
     !
       network 172.42.42.0/24
     !
@@ -908,6 +889,36 @@ ok: [dut] =>
       neighbor 172.0.66.2 next-hop-self
     !
     ip route 172.42.42.0/24 Null0
+ok: [dut2] => 
+  msg: |-
+    bgp configuration for dut2
+    =========================================
+    !
+    !
+    router bgp 65001
+      bgp advertise-inactive
+      bgp log-neighbor-changes
+      no bgp default ipv4-unicast
+      no bgp default ipv6-unicast
+      router-id 10.0.0.2
+    !
+      neighbor 172.0.66.1 remote-as 65000
+      neighbor 172.0.66.1 description dut
+      neighbor 172.0.66.1 send-community standard large
+    !
+    !
+     address-family ipv4
+  
+    !
+    !
+    ! Originate networks from connected subnets
+    !
+      network 10.0.0.2/32
+    !
+    !
+      neighbor 172.0.66.1 activate
+      neighbor 172.0.66.1 next-hop-self
+    !
 ok: [x2] => 
   msg: |-
     bgp configuration for x2
@@ -930,8 +941,9 @@ ok: [x2] =>
     !
   
     !
-      network 10.0.0.4/32
+    ! Originate networks from connected subnets
     !
+      network 10.0.0.4/32
     !
       neighbor 10.1.0.9 activate
       no neighbor 10.1.0.9 send-community all
@@ -944,7 +956,7 @@ ok: [x2] =>
 
 TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/eos.yml for dut, dut2
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1, r1, x2
+included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2, r1
 
 TASK [eos_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/eos.j2] ***
 changed: [dut2]
@@ -952,8 +964,8 @@ changed: [dut]
 
 TASK [template] ****************************************************************
 changed: [x1]
-changed: [r1]
 changed: [x2]
+changed: [r1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -966,9 +978,9 @@ skipping: [x2]
 skipping: [r1]
 
 TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [x1]
-changed: [x2]
 changed: [r1]
+changed: [x2]
+changed: [x1]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
