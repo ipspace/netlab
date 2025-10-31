@@ -1,0 +1,37 @@
+#
+# Use this task list to figure out when a VM in a container is started
+#
+---
+- name: Check if 'sshpass' is installed
+  local_action:
+    module: shell
+    cmd: which sshpass
+  changed_when: False
+  run_once: True
+  any_errors_fatal: True
+
+- name: Check for 'timeout' command
+  local_action:
+    module: shell
+    cmd: which timeout || echo "FAILED"
+  changed_when: False
+  register: have_timeout
+
+- name: Execute local ssh command to check {{ netlab_device_type|default(inventory_hostname) }} readiness
+  local_action:
+    module: shell
+    cmd: |
+      {{ 'timeout -k 10s 10s' if "FAILED" not in have_timeout.stdout else '' }} sshpass -p '{{ ansible_ssh_pass }}' \
+      ssh -o StrictHostKeyChecking=no {{ netlab_ssh_args|default('') }} \
+          -o UserKnownHostsFile=/dev/null {{ ansible_user }}@{{ ansible_host }} \
+          '{{ netlab_check_command | default("show version") }}'
+  changed_when: False
+  register: command_out
+  until: command_out.rc == 0
+  retries: "{{ netlab_check_retries | default(20) }}"
+  delay: "{{ netlab_check_delay | default(5) }}"
+
+- name: Confirm {{ inventory_hostname }} SSH server works
+  debug:
+    msg: "Node {{ inventory_hostname }} is ready."
+  when: command_out.rc == 0
