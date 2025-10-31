@@ -1,3 +1,4 @@
+(dev-config-vrf)=
 # Configuring VRFs
 
 This document describes the device data model parameters one should consider when creating a VRF configuration template. For a wider picture, please see [](dev-device-features) or [](../devices.md).
@@ -18,20 +19,21 @@ This document assumes you're using an Ansible task list that is able to deploy d
 
 ## Data Model
 
-VRFs used on a device are defined in the **vrfs** dictionary. Dictionary keys are VRF names, dictionary values are dictionaries of VRF parameters which can contain these elements:
+VRFs used on a device are defined in the **vrfs** dictionary. Dictionary keys are VRF names, dictionary values are dictionaries of VRF parameters, which can contain these elements:
 
 * **rd** -- VRF route distinguisher
 * **import** -- list of import route targets
 * **export** -- list of export route targets
 * **af** -- list of address families (`ipv4` and/or `ipv6`) used by the VRF
-* **ospf** -- VRF OSPF parameters (when there's an OSPF routing process running in the VRF)
-* **bgp** -- VRF BGP parameters (when the VRF contains at least one CE router running BGP) 
+* **networks** (optional) -- list of subnets advertised as BGP prefixes
+* **ospf** (optional) -- VRF OSPF parameters (when there's an OSPF routing process running in the VRF)
+* **bgp** (optional) -- VRF BGP parameters (when the VRF contains at least one CE router running BGP) 
 
 Other parameters:
 
 * VRF interfaces have **vrf** interface parameter that contains VRF name.
 * OSPF parameters within the **vrfs._vrf-name_.ospf** dictionary are identical to global OSPF parameters
-* BGP parameters within the **vrfs._vrf-name_.bgp** dictionary are identical to global BGP parameters. You will need to focus on **networks** (networks to be announced in per-VRF BGP AF) and **neighbors** (BGP sessions with CE routers)
+* BGP parameters within the **vrfs._vrf-name_.bgp** dictionary are a subset of global BGP parameters ([more details](dev-bgp-vrf)).
 
 ## Device Features
 
@@ -143,7 +145,8 @@ Cisco IOS example:
 {% endfor %}
 ```
 
-### Configuring BGP
+(dev-vrf-bgp)=
+### Configuring VRF BGP Instances
 
 In the BGP configuration process, configure VRF address families, OSPF-to-BGP redistribution, redistribution of connected interfaces, and advertise VRF-specific networks.
 
@@ -169,7 +172,7 @@ router bgp {{ bgp.as }}
 {% endfor %}
 ```
 
-**Note:** Cisco IOS template uses a macro to configure BGP network advertisement. See [](dev-config-vrf-bgp) for more details.
+**Note:** Cisco IOS template uses a macro to configure BGP network advertisement. See [](dev-vrf-bgp) for more details.
 
 Arista EOS has VRF BGP configuration mode where you specify both IPv4 and IPv6 route targets. You have to enable individual address families within that configuration mode:
 
@@ -206,8 +209,8 @@ router bgp {{ bgp.as }}
 {% endfor %}
 ```
 
-(dev-config-vrf-bgp)=
-### Configure BGP Neighbors
+(dev-vrf-bgp-neighbor)=
+### Configure VRF BGP Neighbors
 
 You could copy the BGP configuration template into the `vrf` directory and modify it to configure in-VRF BGP neighbors, or you could create a symbolic link to the Jinja2 template containing the BGP neighbor configuration macro (if it exists for your platform) within the `bgp` directory and use common code to configure BGP neighbors. The latter approach is recommended as it ensures feature parity between global- and in-VRF BGP neighbors.
 

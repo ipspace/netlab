@@ -10,6 +10,7 @@ The following implementation nodes for configuration deployment, initial device 
    deploy.md
    initial.md
    bfd.md
+   bgp.md
    gateway.md
    ospf.md
    ospf.areas.md
