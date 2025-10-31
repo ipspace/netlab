@@ -1,0 +1,13 @@
+router bgp {{ bgp.as }}
+!
+{% for af in srv6.vpn %}
+ address-family {{ af.replace('ip','vpn') }}
+  segment-routing srv6
+   locator {{ inventory_hostname }}
+   alloc-mode per-vrf
+  exit-srv6
+{%   for n in bgp.neighbors|default([]) if n.ipv6 is defined and n.type in srv6.vpn[af] %}
+  neighbor {{ n.ipv6 }} activate
+  neighbor {{ n.ipv6 }} send-community both
+{%   endfor %}
+{% endfor %}

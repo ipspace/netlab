@@ -1,0 +1,19 @@
+!
+segment-routing srv6
+ encapsulation
+  source-address {{ loopback.ipv6|ipaddr('address') }}
+ locators
+  locator {{ inventory_hostname }}
+   prefix {{ srv6.locator }}
+   format usid-f3216
+!
+{% if 'isis' in srv6.igp|default([]) and isis.instance is defined %}
+router isis {{ isis.instance }}
+ address-family ipv6 unicast
+ segment-routing srv6
+  locator {{ inventory_hostname }}
+{% endif %}
+
+{% if srv6.vpn is defined and bgp.as is defined %}
+{%   include "ios.bgp.j2" %}
+{% endif %}
