@@ -65,15 +65,22 @@ router bgp {{ bgp.as }}
 !
  address-family {{ af }}
 {{     redistribute.config(bgp,af=af) }}
-{%     if loopback[af] is defined and bgp.advertise_loopback %}
-  network {{ loopback[af]|ipaddr('0') }}
-{%     endif %}
 !
-{%     for l in interfaces|default([]) if l.bgp.advertise|default("") and l[af] is defined and not 'vrf' in l %}
+{%     for l in netlab_interfaces if l.bgp.advertise|default("") and l[af] is defined and not 'vrf' in l %}
+{%     if loop.first %}
+!
+! Originate networks from connected subnets
+!
+{%     endif %}
   network {{ l[af]|ipaddr('0') }}
 {%     endfor %}
 !
 {%     for pfx in bgp.originate|default([]) if af == 'ipv4' %}
+{%     if loop.first %}
+!
+! Originate networks from static routes
+!
+{%     endif %}
   network {{ pfx|ipaddr('0') }}
 {%     endfor %}
 !
