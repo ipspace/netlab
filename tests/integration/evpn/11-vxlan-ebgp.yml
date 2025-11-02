@@ -17,13 +17,14 @@ groups:
     device: linux
     provider: clab
   switches:
-    members: [ l1, l2 ]
+    members: [ l1, l2, l3 ]
     module: [ vlan, vxlan, bgp, evpn ]
   core:
     members: [ spine ]
-    module: [ bgp, evpn ]
+    module: [ bgp, evpn, ospf ]
+    bgp.rr: True
   x_switches:
-    members: [ l1, l2 ]
+    members: [ l1, l2, l3 ]
     device: frr
     provider: clab
 
@@ -46,14 +47,14 @@ nodes:
     bgp.as: 65201
   l2:
     bgp.as: 65202
+  l3:
+    bgp.as: 65100                 # IBGP neighbor to trigger the "rr set on EBGP session" bug
+    module: [ vlan, vxlan, bgp, ospf, evpn ]
 
 links:
-- l1:
-  spine:
+- group: core
   mtu: 1600
-- l2:
-  spine:
-  mtu: 1600
+  members: [ l1-spine, l2-spine, l3-spine ]
 
 validate:
   ebgp_adj:
