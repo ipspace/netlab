@@ -15,7 +15,7 @@ def init(topology: Box) -> None:
 
 def post_node_transform(topology: Box) -> None:
   for n, ndata in topology.nodes.items():
-    if 'bgp' not in ndata.module:                           # Skip nodes not running BGP
+    if 'bgp' not in ndata.get('module',[]):                 # Skip nodes not running BGP
       continue
 
     o_list = ndata.get('bgp.originate',[])                  # Skip nodes without the 'originate' list
