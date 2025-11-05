@@ -737,7 +737,8 @@ def init_validation(topology: Box) -> None:
 
   topo_pointer = topology
   topo_attributes = topology.defaults.attributes
-  list_of_modules = [ m for m in topology.defaults.keys() if 'supported_on' in topology.defaults[m] ]
+  list_of_modules = [ m for m in topology.defaults.keys()
+                       if isinstance(topology.defaults[m],Box) and 'supported_on' in topology.defaults[m] ]
   list_of_devices = list(topology.defaults.devices.keys())
 
 """
