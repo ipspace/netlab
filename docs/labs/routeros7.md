@@ -4,8 +4,8 @@
 Mikrotik RouterOS 7 CHR is supported by the **netlab libvirt package** command. To build it:
 
 * Create an empty directory on a Ubuntu machine with *libvirt* and *Vagrant*.
-* Download the CHR 7 vmdk disk image into that directory (unzip the ZIP archive if you downloaded a .zip file)
-* Execute **netlab libvirt package routeros7 _virtual-disk-file-name_** and follow the instructions
+* Download the CHR 7 VMDK disk image into that directory from the [Mikrotik download page](https://mikrotik.com/download) (the images are in the *Cloud Hosted Router* section of the page)
+* Execute **netlab libvirt package routeros7 _virtual-disk-file-name_** and follow the instructions (when needed, _netlab_ automatically unzips the disk image)
 
 ```{warning}
 If you're using a *‌netlab* release older than 1.8.2, or if you're using a Linux distribution other than Ubuntu, please [read the box-building caveats first](libvirt-box-caveats.md).
