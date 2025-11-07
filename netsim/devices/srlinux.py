@@ -65,7 +65,8 @@ def set_api_version(node: Box) -> None:
   # Take only major.minor parts
   version = re.search(r'^.*/srlinux:([\d]+.[\d]+).*$', node.box)
   # Assume latest (25.3.1) if unable to determine
-  node._srl_version = float( version.group(1) ) if version else 25.3
+  node._srl_version_major = int( version.group(1).split('.')[0] ) if version else 25
+  node._srl_version_minor = int( version.group(1).split('.')[1] ) if version else 3
 
 def check_nssa_default_cost(node: Box) -> None:
   for (odata,_,_) in _routing.rp_data(node,'ospf'):
@@ -120,7 +121,7 @@ class SRLINUX(_Quirks):
 
     if 'bgp' in mods:
       cleanup_neighbor_transport(node,topology)
-      if node._srl_version < 25.3:
+      if (node._srl_version_major, node._srl_version_minor) < (25, 3):
         for c,vals in topology.get('bgp.community',[]).items():
           if 'extended' not in vals:
             report_quirk(
