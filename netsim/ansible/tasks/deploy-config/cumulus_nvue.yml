@@ -1,10 +1,11 @@
-- set_fact:
+---
+- ansible.builtin.set_fact:
     nvue_config_file: "/tmp/nvue_config_{{ netsim_action }}.yaml"
 - name: "copy the cumulus nvue YAML {{ netsim_action }} config file to switch (generated from {{ config_template }})"
-  template:
+  ansible.builtin.template:
     src: "{{ config_template }}"
     dest: "{{ nvue_config_file }}"
-    mode: 0644
+    mode: "0644"
 
 - block:
 #  - name: "Start NVUE daemon"
@@ -12,22 +13,21 @@
 #    become: true
 
   - name: "Wait for nvued to start"
-    service_facts:
+    ansible.builtin.service_facts:
     until: services['nvued.service'].state == 'running'
     retries: 15
     delay: 5
-    no_log: True
+    no_log: true
 
   when: nvue_service_running is not defined
 
-- set_fact:
+- ansible.builtin.set_fact:
     nvue_service_running: 1
 
 - name: "execute on cumulus: 'nv config patch' for {{ netsim_action }} config"
-  command: nv config patch {{ nvue_config_file }}
-
+  ansible.builtin.command: nv config patch {{ nvue_config_file }}
 - name: "execute on cumulus: 'nv config apply -y' for {{ netsim_action }} config"
-  command: nv config apply -y
-  tags: [ print_action, always ]
+  ansible.builtin.command: nv config apply -y
+  tags: [print_action, always]
   register: nv_config_apply
   failed_when: "'failed' in nv_config_apply.stdout or 'Invalid config' in nv_config_apply.stderr"

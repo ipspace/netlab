@@ -1,26 +1,26 @@
-- local_action:
-    module: tempfile
+---
+- tempfile:
     state: file
     suffix: temp
     prefix: ansible.{{ inventory_hostname }}.
+  delegate_to: localhost
   register: tempfile_1
 
-- local_action:
-    module: template
+- template:
     src: "{{ config_template }}"
     dest: "{{ tempfile_1.path }}"
-
+  delegate_to: localhost
 - name: "aoscx_config: deploying {{ netsim_action }} from {{ config_template }}"
   arubanetworks.aoscx.aoscx_config:
     # auto-confirm is required for multiple config execution (i.e., running "netlab initial" multiple times)
     before: "auto-confirm"
     match: "none"
     src: "{{ tempfile_1.path }}"
-  tags: [ print_action, always ]
+  tags: [print_action, always]
   register: aoscx_output
 
-- local_action:
-    module: file
+- file:
     path: "{{ tempfile_1.path }}"
     state: absent
+  delegate_to: localhost
   when: tempfile_1.path is defined

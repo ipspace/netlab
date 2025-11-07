@@ -1,32 +1,33 @@
+---
 # get the core SONiC config file
 - name: save current SONiC configuration to config_db.json
-  command: sudo config save -y
+  ansible.builtin.command: sudo config save -y
   become: true
 
 # Create node-specific frr directory if it doesn't exist
 - name: Create node-specific frr directory
-  file:
+  ansible.builtin.file:
     path: "{{ config_dir }}/{{ inventory_hostname }}-frr"
     state: directory
   delegate_to: localhost
 
 # Capture all files in /etc/sonic/ directory
 - name: Find all files in /etc/sonic/ directory
-  find:
+  ansible.builtin.find:
     paths: /etc/sonic/
-    recurse: no
+    recurse: false
     file_type: file
   become: true
   register: sonic_files
 
 - name: Get content of file from /etc/sonic/
-  command: cat {{ item.path }}
+  ansible.builtin.command: cat {{ item.path }}
   become: true
   register: file_content
   loop: "{{ sonic_files.files }}"
 
 - name: Save files from /etc/sonic/
-  copy:
+  ansible.builtin.copy:
     content: "{{ item.stdout }}"
     dest: "{{ config_dir }}/{{ inventory_hostname }}-{{ item.item.path | basename }}"
   delegate_to: localhost
@@ -34,25 +35,25 @@
 
 # Capture all files in /etc/sonic/frr directory
 - name: Save FRR running configuration to frr.conf
-  command: vtysh -c 'write'
+  ansible.builtin.command: vtysh -c 'write'
   become: true
 
 - name: Find all files in /etc/sonic/frr/ directory
-  find:
+  ansible.builtin.find:
     paths: /etc/sonic/frr/
-    recurse: no
+    recurse: false
     file_type: file
   become: true
   register: frr_files
 
 - name: Get content of file from /etc/sonic/frr/
-  command: cat {{ item.path }}
+  ansible.builtin.command: cat {{ item.path }}
   become: true
   register: frr_file_content
   loop: "{{ frr_files.files }}"
 
 - name: Save files from /etc/sonic/frr/
-  copy:
+  ansible.builtin.copy:
     content: "{{ item.stdout }}"
     dest: "{{ config_dir }}/{{ inventory_hostname }}-frr/{{ item.item.path | basename }}"
   delegate_to: localhost

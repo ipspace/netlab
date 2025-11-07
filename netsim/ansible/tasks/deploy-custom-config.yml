@@ -8,39 +8,43 @@
 #
 ---
 - name: Find configuration template
-  set_fact:
+  ansible.builtin.set_fact:
     config_module: "{{ custom_config }}"
     config_template: "{{ lookup('first_found',params,errors='ignore') }}"
-  tags: [ always ]
+  tags: [always]
   vars:
     node_provider: "{{ provider|default(netlab_provider) }}"
     params:
       paths: "{{ paths_custom.dirs }}"
       files: "{{ [ custom_config ] if custom_config.endswith('.j2') else paths_custom.files }}"
 
-- fail: msg="Cannot find configuration template {{ custom_config }} for device {{ inventory_hostname }}"
+- ansible.builtin.fail:
+    msg: >-
+      Cannot find configuration template {{ custom_config }}
+      for device {{ inventory_hostname }}
   when: config_template == ''
-  tags: [ always ]
+  tags: [always]
 
 - name: Check is the configuration template is a file
-  stat:
+  ansible.builtin.stat:
     path: "{{ config_template }}"
   register: config_stat
   delegate_to: localhost
 
-- fail:
-    msg: Cannot find template for device {{ netlab_device_type }} in custom config directory {{ config_template }}
-  when:
-    config_stat.stat.isdir|default(False)
+- ansible.builtin.fail:
+    msg: >-
+      Cannot find template for device {{ netlab_device_type }}
+      in custom config directory {{ config_template }}
+  when: config_stat.stat.isdir|default(False)
 
 - name: "Process template {{ config_template }} for {{ inventory_hostname }}"
-  debug:
+  ansible.builtin.debug:
     msg: |
       {{ config_template }} configuration for {{ inventory_hostname }}
       =========================================
       {{ lookup('template',config_template) }}
     verbosity: 1
-  tags: [ test, custom ]
+  tags: [test, custom]
 
 # Find deployment task list. It could be a config-specific tasklist (somewhere in paths_custom directories with
 # file name from paths_custom.tasks list) or a generic deployment tasklist from deployment directories and
@@ -48,10 +52,9 @@
 # in the deployment directory is the catch-all of last resort.
 #
 - name: Find custom configuration deployment script
-  set_fact:
-    deploy_task:
-      "{{ lookup('first_found',c_params,errors='ignore')
-         or lookup('first_found',d_params,errors='ignore') }}"
+  ansible.builtin.set_fact:
+    deploy_task: >-
+      lookup('first_found',c_params,errors='ignore') or lookup('first_found',d_params,errors='ignore')
   vars:
     node_provider: "{{ provider|default(netlab_provider) }}"
     c_params:
@@ -64,8 +67,8 @@
 # Now that we have the name of the deployment task list, include it and let it run
 #
 - name: Run the configuration deployment script
-  include_tasks: "{{ deploy_task }}"
-  tags: [ custom ]
+  ansible.builtin.include_tasks: "{{ deploy_task }}"
+  tags: [custom]
   when: deploy_task is string and deploy_task != ''
   vars:
     node_provider: "{{ provider|default(netlab_provider) }}"
@@ -73,4 +76,4 @@
     apply:
       vars:
         netsim_action: "{{ custom_config|basename }}"
-      tags: [ always ]
+      tags: [always]

@@ -3,31 +3,30 @@
   block:
   - name: Download vMX eval license (60 days) from Juniper public website
     delegate_to: localhost
-    get_url:
+    ansible.builtin.get_url:
       dest: /tmp/vmx_license.txt
       url: "{{ netlab_license_url }}"
-  - set_fact:
+  - ansible.builtin.set_fact:
       netlab_license_file: /tmp/vmx_license.txt
 
 - when: netlab_license_file is defined
   block:
   - name: Copy vMX license to vMX instance
-    local_action:
-      module: command
+    command:
       cmd: >-
         sshpass -p '{{ ansible_ssh_pass }}'
         scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
         {{ netlab_license_file }} {{ ansible_user }}@{{ ansible_host }}:vmx_license.txt
-
+    delegate_to: localhost
   - name: Load vMX license
-    local_action:
-      module: command
+    command:
       cmd: >-
         sshpass -p '{{ ansible_ssh_pass }}'
         ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
         {{ ansible_user }}@{{ ansible_host }} 'request system license add vmx_license.txt'
+    delegate_to: localhost
 
 - name: "junos_config: deploying initial config from {{ config_template }}"
-  junos_config:
+  junipernetworks.junos.junos_config:
     src: "{{ config_template }}"
-  tags: [ print_action, always ]
+  tags: [print_action, always]

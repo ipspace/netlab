@@ -17,30 +17,30 @@
 #
 ---
 - name: "Figure out whether to deploy the module {{ config_module }} on current device"
-  set_fact:
-    do_deploy:
-      "{{ (config_module in module|default([]) and
-         config_module not in _daemon_config|default([]))
-         or config_module == 'initial' }}"
+  ansible.builtin.set_fact:
+    do_deploy: >-
+      (config_module in module|default([]) and
+       config_module not in _daemon_config|default([]))
+      or config_module == 'initial'
     node_provider: "{{ provider|default(netlab_provider) }}"
 
 - block:
   - name: "Find configuration template for {{ config_module }}"
-    set_fact:
+    ansible.builtin.set_fact:
       config_template: "{{ lookup('first_found',params,errors='ignore') }}"
     vars:
       params:
         paths: "{{ paths }}"
         files: "{{ paths_t_files.files }}"
 
-  - fail:
+  - ansible.builtin.fail:
       msg: >
         Cannot find {{ config_module }} configuration template for
         {{ netlab_device_type|default(ansible_network_os) }}
     when: not config_template and not (netlab_skip_missing_template|default(False))
 
   - name: "Find configuration deployment deploy_script for {{ config_module }}"
-    set_fact:
+    ansible.builtin.set_fact:
       deploy_script: "{{ lookup('first_found',params,errors='ignore') }}"
     vars:
       params:
@@ -50,7 +50,7 @@
   - when: (config_template is string and config_template != '') or (netlab_config_tasks|default(False))
     block:
     - name: "Print deployed configuration when running in verbose mode"
-      debug:
+      ansible.builtin.debug:
         msg: |
           {{ config_module }} configuration for {{ inventory_hostname }}
           =========================================
@@ -60,13 +60,13 @@
         (config_template is string and config_template != '')
 
     - name: "Deploy {{ config_module }} configuration"
-      include_tasks: "{{ deploy_script }}"
+      ansible.builtin.include_tasks: "{{ deploy_script }}"
       when: do_deploy and (deploy_script is string and deploy_script != '')
       args:
         apply:
           vars:
             config_template: "{{ config_template }}"
             netsim_action: "{{ config_module }}"
-          tags: [ always ]
+          tags: [always]
 
   when: do_deploy

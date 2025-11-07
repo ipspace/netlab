@@ -2,12 +2,12 @@
 - delegate_to: localhost
   block:
   - name: Compute final module name for {{ config_item }}
-    set_fact:
+    ansible.builtin.set_fact:
       config_module: "{{ config_item.replace('@','.') }}"
       item: "{{ config_item.replace('@','.') }}"
 
   - name: Find {{ config_module }} configuration template
-    set_fact:
+    ansible.builtin.set_fact:
       config_template: "{{ lookup('first_found',params,errors='ignore') }}"
     vars:
       params:
@@ -16,21 +16,21 @@
 
   - block:
     - name: Create {{ config_module }} configuration
-      template:
+      ansible.builtin.template:
         src: "{{ config_template }}"
         dest: "{{config_dir}}/{{inventory_hostname}}.{{item}}.cfg"
     when: config_template is string and config_template != ''
 
   - block:
     - name: Throw an error message if we can't find the configuration template
-      fail:
+      ansible.builtin.fail:
         msg: >
           Missing {{ config_module }} configuration template for device
           {{ netlab_device_type|default(ansible_network_os) }}/{{ ansible_network_os }}
       when: not netlab_skip_missing_template|default(False)
 
     - name: "Find configuration deployment deploy_script for {{ config_module }}"
-      set_fact:
+      ansible.builtin.set_fact:
         deploy_script: "{{ lookup('first_found',params,errors='ignore') }}"
       vars:
         params:
@@ -38,7 +38,7 @@
           files: "{{ paths_deploy.files }}"
 
     - name: Save {{ config_module }} configuration task list
-      copy:
+      ansible.builtin.copy:
         src: "{{ deploy_script }}"
         dest: "{{config_dir}}/{{inventory_hostname}}.{{item}}.yml"
       when: deploy_script is string and deploy_script != ''

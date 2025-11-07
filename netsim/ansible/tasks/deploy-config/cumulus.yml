@@ -1,17 +1,16 @@
+---
 - name: Render device configuration from {{ config_template }}
-  set_fact: deployed_config={{ lookup('template',config_template) }}
-
+  ansible.builtin.set_fact: deployed_config={{ lookup('template',config_template) }}
 - name: Create local temporary file
-  local_action:
-    module: tempfile
+  tempfile:
     state: file
     suffix: temp
     prefix: ansible.{{ inventory_hostname }}.
+  delegate_to: localhost
   register: tempfile_1
 
 - name: Create {{ netsim_action }} config script in local temporary file
-  local_action:
-    module: copy
+  copy:
     content: |
       {% if "#!/bin/bash" in deployed_config %}
       {{   deployed_config }}
@@ -26,17 +25,17 @@
       {% endif %}
     dest: "{{ tempfile_1.path }}"
     mode: "0755"
-
+  delegate_to: localhost
 - name: Execute local config script on Cumulus node
-  script: "{{ tempfile_1.path }}"
+  ansible.builtin.script: "{{ tempfile_1.path }}"
   args:
     executable: sudo
-  tags: [ print_action, always ]
+  tags: [print_action, always]
   when: not ansible_check_mode
 
 - name: Remove temporary file {{ tempfile_1.path }}
-  local_action:
-    module: file
+  file:
     path: "{{ tempfile_1.path }}"
     state: absent
+  delegate_to: localhost
   when: tempfile_1.path is defined

@@ -1,7 +1,8 @@
 ---
-- block:
+- tags: [print_action, always]
+  block:
   - name: Define script filename and determine whether to execute in netns
-    set_fact:
+    ansible.builtin.set_fact:
       container_script: /tmp/config-{{ inventory_hostname }}_{{ netsim_action }}.sh
       use_netns: "{{ config_template.endswith('-clab.j2') }}"
 
@@ -14,7 +15,7 @@
     delegate_to: localhost
 
   - name: "Create container setup script from {{ config_template }}"
-    template:
+    ansible.builtin.template:
       src: "{{ config_template }}"
       dest: "{{ tempfile.path }}"
     delegate_to: localhost      # Run on controller, to avoid dependency on Python
@@ -22,32 +23,29 @@
   #
   # Option 1: Run inside the container, using whatever executables it provides
   #
-  - block:
+  - when: not use_netns
+    block:
     - name: "Copy script into running container at {{ container_script }}"
-      shell: docker cp {{ tempfile.path }} {{ ansible_host }}:{{ container_script }}
+      ansible.builtin.shell: docker cp {{ tempfile.path }} {{ ansible_host }}:{{ container_script }}
       delegate_to: localhost
 
     - name: "Execute {{ container_script }} to deploy {{ netsim_action }} config based on {{ config_template }}"
       delegate_to: "{{ inventory_hostname }}"
-      raw: "{{ docker_shell|default('sh') }} {{ container_script }}"
-
-    when: not use_netns
+      ansible.builtin.raw: "{{ docker_shell|default('sh') }} {{ container_script }}"
 
   #
   # Option 2: Run on the host, within the container netns
   #
   - name: "Container configuration for {{ netsim_action }} based on {{ config_template }} executed in netns"
     when: use_netns
-    shell: |
+    ansible.builtin.shell: |
       set -e
       ip netns exec {{ ansible_host }} bash {{ tempfile.path }}
     become: true
     delegate_to: localhost
 
   - name: "Remove temporary file {{ tempfile.path }}"
-    file:
+    ansible.builtin.file:
       path: "{{ tempfile.path }}"
       state: absent
     delegate_to: localhost
-
-  tags: [ print_action, always ]
