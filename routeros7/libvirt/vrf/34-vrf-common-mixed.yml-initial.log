@@ -1,93 +1,103 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [srv]
 ok: [r1]
 ok: [r2]
+ok: [srv]
 ok: [dut]
 
+TASK [Generic readiness tests] *************************************************
+skipping: [dut]
+skipping: [r1]
+skipping: [r2]
+skipping: [srv]
+
 TASK [Find device readiness script] ********************************************
-ok: [srv]
 ok: [r1]
 ok: [r2]
+ok: [srv]
 ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
-skipping: [srv]
 skipping: [r1]
 skipping: [r2]
+skipping: [srv]
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/routeros7.yml for dut
 
 TASK [Execute local ssh command to check router readiness] *********************
 skipping: [dut]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, srv, r1, r2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, srv
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
-ok: [srv]
 ok: [r1]
 ok: [r2]
+ok: [srv]
 ok: [dut]
 
 TASK [Find configuration template for normalize] *******************************
-ok: [srv]
 ok: [r1]
 ok: [r2]
+ok: [srv]
 ok: [dut]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
-skipping: [srv]
 skipping: [r1]
 skipping: [r2]
+skipping: [srv]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
-ok: [srv]
 ok: [r1]
 ok: [r2]
+ok: [srv]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
-skipping: [srv]
 skipping: [r1]
 skipping: [r2]
+skipping: [srv]
 
 TASK [Deploy normalize configuration] ******************************************
 skipping: [dut]
-skipping: [srv]
 skipping: [r1]
 skipping: [r2]
+skipping: [srv]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, srv, r1, r2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, srv
 
 TASK [Figure out whether to deploy the module initial on current device] *******
-ok: [srv]
 ok: [r1]
 ok: [r2]
+ok: [srv]
 ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
-ok: [srv]
 ok: [r1]
 ok: [r2]
+ok: [srv]
 ok: [dut]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
-skipping: [srv]
 skipping: [r1]
 skipping: [r2]
+skipping: [srv]
 
 TASK [Find configuration deployment deploy_script for initial] *****************
-ok: [srv]
 ok: [r1]
 ok: [r2]
+ok: [srv]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -107,17 +117,17 @@ ok: [dut] =>
   
   
   
+    /ip/vrf/add place-before=0 name=red interfaces=ether2
+  
+  
+  
+  
     /ip/vrf/add place-before=0 name=blue interfaces=ether3
   
   
   
   
     /ip/vrf/add place-before=0 name=common interfaces=ether4
-  
-  
-  
-  
-    /ip/vrf/add place-before=0 name=red interfaces=ether2
   
   
   
@@ -146,108 +156,6 @@ ok: [dut] =>
   
   
     /ip neighbor discovery-settings set discover-interface-list=all
-ok: [srv] => 
-  msg: |-
-    initial configuration for srv
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)# "
-    echo
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
-    #
-    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
-    #
-    sysctl -w net.ipv4.ip_forward=1
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    # Set system defaults
-    #
-    # Send ARP requests from a sane source IP address
-    #
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Create loopbacks, stub and lag/bond devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    ip link set eth1 down
-    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
-    ip link set eth1 up
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-  
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname srv
-    !
-    ip forwarding
-    vrf mgmt
-     exit-vrf
-    !
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ip address 10.0.0.4/32
-    !
-    interface eth1
-     no shutdown
-     description srv -> dut [external]
-     ip address 10.1.0.10/30
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    exit 0
 ok: [r1] => 
   msg: |-
     initial configuration for r1
@@ -331,6 +239,9 @@ ok: [r1] =>
     cat >/tmp/config <<CONFIG
     hostname r1
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -349,6 +260,7 @@ ok: [r1] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [r2] => 
   msg: |-
@@ -433,6 +345,9 @@ ok: [r2] =>
     cat >/tmp/config <<CONFIG
     hostname r2
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -451,11 +366,118 @@ ok: [r2] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
+    exit 0
+ok: [srv] => 
+  msg: |-
+    initial configuration for srv
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname srv
+    !
+    log file /tmp/logging
+  
+    !
+    ip forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.4/32
+    !
+    interface eth1
+     no shutdown
+     description srv -> dut [external]
+     ip address 10.1.0.10/30
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    !
     exit 0
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/routeros7.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for srv, r1, r2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for r1, r2, srv
 
 TASK [load initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/routeros7.j2] ***
 ok: [dut]
@@ -464,25 +486,25 @@ TASK [Run commands on CHR] *****************************************************
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
-changed: [srv -> localhost]
+changed: [r1 -> localhost]
 
 TASK [Disable FRR management VRF when modprobe fails] **************************
-skipping: [srv]
 skipping: [r1]
 skipping: [r2]
+skipping: [srv]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for srv, r1, r2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, srv
 
 TASK [template] ****************************************************************
 changed: [srv]
-changed: [r2]
 changed: [r1]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
-ok: [srv]
 ok: [r1]
 ok: [r2]
+ok: [srv]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [r2]
@@ -490,9 +512,9 @@ changed: [r1]
 changed: [srv]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-skipping: [srv]
 skipping: [r1]
 skipping: [r2]
+skipping: [srv]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -503,109 +525,9 @@ ok: [srv]
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, srv => (item=bgp)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, srv => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, srv => (item=bgp)
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, srv => (item=vrf)
-
-TASK [Figure out whether to deploy the module bgp on current device] ***********
-ok: [r1]
-ok: [r2]
-ok: [srv]
-ok: [dut]
-
-TASK [Find configuration template for bgp] *************************************
-skipping: [r1]
-skipping: [r2]
-ok: [srv]
-ok: [dut]
-
-TASK [fail] ********************************************************************
-skipping: [dut]
-skipping: [r1]
-skipping: [r2]
-skipping: [srv]
-
-TASK [Find configuration deployment deploy_script for bgp] *********************
-skipping: [r1]
-skipping: [r2]
-ok: [srv]
-ok: [dut]
-
-TASK [Print deployed configuration when running in verbose mode] ***************
-skipping: [r1]
-skipping: [r2]
-ok: [srv] => 
-  msg: |-
-    bgp configuration for srv
-    =========================================
-    !
-    router bgp 65100
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-  
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.4
-    !
-      neighbor 10.1.0.9 remote-as 65000
-      neighbor 10.1.0.9 description dut
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-      network 10.0.0.4/32
-    !
-    !
-    !
-      neighbor 10.1.0.9 activate
-      no neighbor 10.1.0.9 send-community all
-      neighbor 10.1.0.9 send-community standard
-      neighbor 10.1.0.9 send-community large
-    !
-    !
-    !
-    do write
-ok: [dut] => 
-  msg: |-
-    bgp configuration for dut
-    =========================================
-  
-    /routing/bgp/template add name=main as=65000 output.network=bgp-networks
-  
-    /routing/bgp/template set main router-id=10.0.0.1
-  
-  
-  
-    # BGP Network now is controlled by simple ACL
-    /ip/firewall/address-list/ add list=bgp-networks address=10.0.0.1/32
-
-TASK [Deploy bgp configuration] ************************************************
-skipping: [r1]
-skipping: [r2]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/routeros7.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for srv
-
-TASK [load bgp from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/routeros7.j2] ***
-ok: [dut]
-
-TASK [Run commands on CHR] *****************************************************
-changed: [dut]
-
-TASK [template] ****************************************************************
-changed: [srv]
-
-TASK [set_fact] ****************************************************************
-ok: [srv]
-
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
-skipping: [srv]
-
-TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [srv]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [r1]
@@ -718,8 +640,107 @@ skipping: [r1]
 skipping: [r2]
 
 TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [r2]
 changed: [r1]
+changed: [r2]
+
+TASK [Figure out whether to deploy the module bgp on current device] ***********
+ok: [r1]
+ok: [r2]
+ok: [srv]
+ok: [dut]
+
+TASK [Find configuration template for bgp] *************************************
+skipping: [r1]
+skipping: [r2]
+ok: [srv]
+ok: [dut]
+
+TASK [fail] ********************************************************************
+skipping: [dut]
+skipping: [r1]
+skipping: [r2]
+skipping: [srv]
+
+TASK [Find configuration deployment deploy_script for bgp] *********************
+skipping: [r1]
+skipping: [r2]
+ok: [srv]
+ok: [dut]
+
+TASK [Print deployed configuration when running in verbose mode] ***************
+skipping: [r1]
+skipping: [r2]
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+  
+    /routing/bgp/template add name=main as=65000 output.network=bgp-networks
+  
+    /routing/bgp/template set main router-id=10.0.0.1
+  
+  
+  
+    # BGP Network now is controlled by simple ACL
+    /ip/firewall/address-list/ add list=bgp-networks address=10.0.0.1/32
+ok: [srv] => 
+  msg: |-
+    bgp configuration for srv
+    =========================================
+    !
+    router bgp 65100
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.4
+    !
+      neighbor 10.1.0.9 remote-as 65000
+      neighbor 10.1.0.9 description dut
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+    ! Originate networks from connected subnets
+    !
+      network 10.0.0.4/32
+    !
+      neighbor 10.1.0.9 activate
+      no neighbor 10.1.0.9 send-community all
+      neighbor 10.1.0.9 send-community standard
+      neighbor 10.1.0.9 send-community large
+    !
+    !
+    !
+    do write
+
+TASK [Deploy bgp configuration] ************************************************
+skipping: [r1]
+skipping: [r2]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/routeros7.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for srv
+
+TASK [load bgp from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/routeros7.j2] ***
+ok: [dut]
+
+TASK [Run commands on CHR] *****************************************************
+changed: [dut]
+
+TASK [template] ****************************************************************
+changed: [srv]
+
+TASK [set_fact] ****************************************************************
+ok: [srv]
+
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
+skipping: [srv]
+
+TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
+changed: [srv]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [r1]
@@ -754,6 +775,15 @@ ok: [dut] =>
     vrf configuration for dut
     =========================================
   
+    /routing/bgp/vpn add label-allocation-policy=per-vrf vrf=red route-distinguisher=65000:1 import.route-targets=65000:1,65000:3 export.route-targets=65000:1 export.redistribute=bgp,connected,ospf,static,vpn
+  
+    /routing/bgp/template add name=vrf_red as=65000 output.network=bgp-networks-red vrf=red routing-table=red output.redistribute=connected,bgp,bgp-mpls-vpn,vpn
+  
+    /routing/bgp/template set vrf_red router-id=10.0.0.1
+  
+    /routing/bgp/template set vrf_red output.redistribute=([get vrf_red output.redistribute],"ospf")
+  
+  
     /routing/bgp/vpn add label-allocation-policy=per-vrf vrf=blue route-distinguisher=65000:2 import.route-targets=65000:2,65000:3 export.route-targets=65000:2 export.redistribute=bgp,connected,ospf,static,vpn
   
     /routing/bgp/template add name=vrf_blue as=65000 output.network=bgp-networks-blue vrf=blue routing-table=blue output.redistribute=connected,bgp,bgp-mpls-vpn,vpn
@@ -779,40 +809,8 @@ ok: [dut] =>
   
   
   
-    /routing/bgp/vpn add label-allocation-policy=per-vrf vrf=red route-distinguisher=65000:1 import.route-targets=65000:1,65000:3 export.route-targets=65000:1 export.redistribute=bgp,connected,ospf,static,vpn
-  
-    /routing/bgp/template add name=vrf_red as=65000 output.network=bgp-networks-red vrf=red routing-table=red output.redistribute=connected,bgp,bgp-mpls-vpn,vpn
-  
-    /routing/bgp/template set vrf_red router-id=10.0.0.1
-  
-    /routing/bgp/template set vrf_red output.redistribute=([get vrf_red output.redistribute],"ospf")
   
   
-  
-  
-  
-  
-  
-    /routing/ospf/instance add name=default4_blue version=2 router-id=10.100.0.101 vrf=blue
-  
-  
-  
-    /routing/ospf/area add instance=default4_blue name="blue_2_0.0.0.0" area-id=0.0.0.0
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-    /routing/ospf/interface-template add area=[/routing ospf area find area-id=0.0.0.0 and instance=default4_blue] interface=ether3 type=ptp
-  
-  
-  
-    /routing/ospf/instance set [/routing/ospf/instance find name=default4_blue] redistribute=bgp,bgp-mpls-vpn,vpn,connected,static routing-table=blue
   
   
   
@@ -836,6 +834,29 @@ ok: [dut] =>
   
   
     /routing/ospf/instance set [/routing/ospf/instance find name=default4_red] redistribute=bgp,bgp-mpls-vpn,vpn,connected,static routing-table=red
+  
+  
+  
+    /routing/ospf/instance add name=default4_blue version=2 router-id=10.100.0.101 vrf=blue
+  
+  
+  
+    /routing/ospf/area add instance=default4_blue name="blue_2_0.0.0.0" area-id=0.0.0.0
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    /routing/ospf/interface-template add area=[/routing ospf area find area-id=0.0.0.0 and instance=default4_blue] interface=ether3 type=ptp
+  
+  
+  
+    /routing/ospf/instance set [/routing/ospf/instance find name=default4_blue] redistribute=bgp,bgp-mpls-vpn,vpn,connected,static routing-table=blue
 
 TASK [Deploy vrf configuration] ************************************************
 skipping: [r1]
@@ -847,21 +868,20 @@ TASK [load vrf from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/routeros7.
 ok: [dut]
 
 TASK [Run commands on CHR] *****************************************************
-changed: [dut]
+fatal: [dut]: FAILED! => changed=false 
+  msg: |-
+    command timeout triggered, timeout value is 60 secs.
+    See the timeout setting options in the Network Debug and Troubleshooting Guide.
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=40   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-r1                         : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
-r2                         : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
-srv                        : ok=31   changed=5    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+dut                        : ok=39   changed=3    unreachable=0    failed=1    skipped=9    rescued=0    ignored=0   
+r1                         : ok=31   changed=5    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+r2                         : ok=30   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+srv                        : ok=30   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
 
-
-
-The device under test has two user VRFs and a common services VRF.
-Routers are attached to those interfaces and run OSPF or BGP with device under test.
-
-* r1 and r2 should be able to ping srv but not each other
-
+Fatal error in netlab: Executing Ansible playbook /home/pipi/netlab_gh/netsim/ansible/initial-config.ansible failed
+Error executing ansible-playbook /home/pipi/netlab_gh/netsim/ansible/initial-config.ansible:
+  Command '['ansible-playbook', '/home/pipi/netlab_gh/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.
