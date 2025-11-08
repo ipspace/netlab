@@ -1,7 +1,3 @@
-/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
-  "cipher": algorithms.TripleDES,
-/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
-  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -11,11 +7,6 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [x1]
 ok: [x2]
 ok: [dut]
-
-TASK [Generic readiness tests] *************************************************
-skipping: [dut]
-skipping: [x1]
-skipping: [x2]
 
 TASK [Find device readiness script] ********************************************
 ok: [x1]
@@ -206,9 +197,6 @@ ok: [x1] =>
     cat >/tmp/config <<CONFIG
     hostname x1
     !
-    log file /tmp/logging
-  
-    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -227,7 +215,6 @@ ok: [x1] =>
     do write
     CONFIG
     vtysh -f /tmp/config
-    !
     exit 0
 ok: [x2] => 
   msg: |-
@@ -312,9 +299,6 @@ ok: [x2] =>
     cat >/tmp/config <<CONFIG
     hostname x2
     !
-    log file /tmp/logging
-  
-    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -333,7 +317,6 @@ ok: [x2] =>
     do write
     CONFIG
     vtysh -f /tmp/config
-    !
     exit 0
 
 TASK [Deploy initial configuration] ********************************************
@@ -365,8 +348,8 @@ ok: [x1]
 ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
@@ -414,6 +397,7 @@ ok: [x1] =>
       no bgp default ipv4-unicast
       bgp default show-hostname
       bgp default show-nexthop-hostname
+  
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
@@ -426,11 +410,8 @@ ok: [x1] =>
     !
   
     !
-    ! Originate networks from connected subnets
-    !
       network 10.0.0.10/32
     !
-    ! Originate networks from static routes
     !
       network 172.0.42.0/24
     !
@@ -453,6 +434,7 @@ ok: [x2] =>
       no bgp default ipv4-unicast
       bgp default show-hostname
       bgp default show-nexthop-hostname
+  
       ! Consider AS paths of same length but with different AS as ECMP candidates
       bgp bestpath as-path multipath-relax
   
@@ -465,9 +447,9 @@ ok: [x2] =>
     !
   
     !
-    ! Originate networks from connected subnets
-    !
       network 10.0.0.11/32
+    !
+    !
     !
       neighbor 10.1.0.5 activate
       no neighbor 10.1.0.5 send-community all
@@ -575,15 +557,12 @@ TASK [load vrf from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/routeros7.
 ok: [dut]
 
 TASK [Run commands on CHR] *****************************************************
-fatal: [dut]: FAILED! => changed=false 
-  msg: |-
-    command timeout triggered, timeout value is 60 secs.
-    See the timeout setting options in the Network Debug and Troubleshooting Guide.
+changed: [dut]
 
 PLAY [Deploy custom deployment templates] **************************************
 
 TASK [Run custom configuration deployment scripts] *****************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-custom-config.yml for x1 => (item=_n_x1)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-custom-config.yml for x1 => (item=frr-community)
 
 TASK [Find configuration template] *********************************************
 ok: [x1]
@@ -597,7 +576,7 @@ ok: [x1 -> localhost]
 TASK [fail] ********************************************************************
 skipping: [x1]
 
-TASK [Process template /work/netlab_cicd/_n_x1.j2 for x1] **********************
+TASK [Process template /home/pipi/net101/tools/tests/integration/vrf/frr-community.j2 for x1] ***
 skipping: [x1]
 
 TASK [Find custom configuration deployment script] *****************************
@@ -612,17 +591,22 @@ changed: [x1]
 TASK [set_fact] ****************************************************************
 ok: [x1]
 
-TASK [run /tmp/config.sh to deploy _n_x1 config from /work/netlab_cicd/_n_x1.j2] ***
+TASK [run /tmp/config.sh to deploy frr-community config from /home/pipi/net101/tools/tests/integration/vrf/frr-community.j2] ***
 skipping: [x1]
 
-TASK [run vtysh to import _n_x1 config from /work/netlab_cicd/_n_x1.j2] ********
+TASK [run vtysh to import frr-community config from /home/pipi/net101/tools/tests/integration/vrf/frr-community.j2] ***
 changed: [x1]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=31   changed=2    unreachable=0    failed=1    skipped=8    rescued=0    ignored=0   
-x1                         : ok=37   changed=7    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
-x2                         : ok=28   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+dut                        : ok=32   changed=3    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+x1                         : ok=37   changed=7    unreachable=0    failed=0    skipped=18   rescued=0    ignored=0   
+x2                         : ok=28   changed=4    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
 
-Fatal error in netlab: Executing Ansible playbook /home/pipi/netlab_gh/netsim/ansible/initial-config.ansible failed
-Error executing ansible-playbook /home/pipi/netlab_gh/netsim/ansible/initial-config.ansible:
-  Command '['ansible-playbook', '/home/pipi/netlab_gh/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.
+
+
+Use this topology to test in-VRF BGP community propagation. The device under
+should propagate only standard communities to VRF EBGP neighbors.
+
+Three BGP communities are attached to the prefix advertised by x1: a standard
+one, an extended one, and a long one (standard communitiy using 4-octet AS)
+

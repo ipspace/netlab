@@ -10,23 +10,16 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [r1]
 ok: [r2]
-ok: [dut]
 ok: [r3]
 ok: [r4]
-
-TASK [Generic readiness tests] *************************************************
-skipping: [dut]
-skipping: [r1]
-skipping: [r2]
-skipping: [r3]
-skipping: [r4]
+ok: [dut]
 
 TASK [Find device readiness script] ********************************************
 ok: [r1]
 ok: [r2]
-ok: [r3]
 ok: [r4]
 ok: [dut]
+ok: [r3]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [r1]
@@ -43,17 +36,17 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [r1]
+ok: [r3]
 ok: [r2]
 ok: [r4]
-ok: [r3]
 ok: [dut]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [r1]
 ok: [r2]
+ok: [r4]
 ok: [r3]
 ok: [dut]
-ok: [r4]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -63,17 +56,17 @@ skipping: [r3]
 skipping: [r4]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
-ok: [r1]
 ok: [r2]
-ok: [dut]
-ok: [r4]
 ok: [r3]
+ok: [r1]
+ok: [r4]
+ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [dut]
 skipping: [r1]
-skipping: [r3]
 skipping: [r2]
+skipping: [r3]
 skipping: [r4]
 
 TASK [Deploy normalize configuration] ******************************************
@@ -89,9 +82,9 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [r1]
 ok: [r2]
-ok: [r4]
 ok: [r3]
 ok: [dut]
+ok: [r4]
 
 TASK [Find configuration template for initial] *********************************
 ok: [r1]
@@ -387,112 +380,6 @@ ok: [r2] =>
     vtysh -f /tmp/config
     !
     exit 0
-ok: [r3] => 
-  msg: |-
-    initial configuration for r3
-    =========================================
-    #!/bin/bash
-    #
-    set -e
-    set -x
-    #
-    # Create bash profile script
-    #
-    cat <<SCRIPT >/root/.bash_profile
-    #!/bin/bash
-    #
-    export PS1="\h(bash)# "
-    echo
-    echo "Use vtysh to connect to FRR daemon"
-    echo
-    SCRIPT
-    #
-    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
-    #
-    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
-    #
-    sysctl -w net.ipv4.ip_forward=1
-    sysctl -w net.ipv6.conf.all.forwarding=0
-    #
-    #
-    # Get the current next hop for the default route
-    #
-    def_nh=$(ip route list default|awk '{ print $3 }')
-    #
-    # Create the management VRF and add eth0 to it
-    #
-    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
-      ip link add mgmt type vrf table 42
-    fi
-    ip link set mgmt up
-    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
-    ip link set eth0 master mgmt
-    #
-    # Reinstall the default route if we had it before
-    #
-    if [[ -n "$def_nh" ]]; then
-      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
-    fi
-    #
-    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
-    #
-  
-    # Set system defaults
-    #
-    # Send ARP requests from a sane source IP address
-    #
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Create loopbacks, stub and lag/bond devices
-    #
-    if [ ! -e /sys/class/net/lo ]; then
-      if [ ! -e /sys/devices/virtual/net/lo ]; then
-        ip link add lo type dummy
-        ip link set dev lo up
-      fi
-    fi
-  
-    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
-    #
-    ip link set eth1 down
-    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
-    ip link set eth1 up
-  
-    #
-    # Add vtysh.conf file
-    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
-  
-    #
-    # Rest of initial configuration done through VTYSH
-    #
-    cat >/tmp/config <<CONFIG
-    hostname r3
-    !
-    log file /tmp/logging
-  
-    !
-    ip forwarding
-    vrf mgmt
-     exit-vrf
-    !
-    frr defaults datacenter
-    !
-    interface lo
-     no shutdown
-     ip address 10.0.0.4/32
-    !
-    interface eth1
-     no shutdown
-     description r3 -> dut
-     ip address 10.1.0.10/30
-    !
-    do write
-    CONFIG
-    vtysh -f /tmp/config
-    !
-    exit 0
 ok: [r4] => 
   msg: |-
     initial configuration for r4
@@ -599,6 +486,112 @@ ok: [r4] =>
     vtysh -f /tmp/config
     !
     exit 0
+ok: [r3] => 
+  msg: |-
+    initial configuration for r3
+    =========================================
+    #!/bin/bash
+    #
+    set -e
+    set -x
+    #
+    # Create bash profile script
+    #
+    cat <<SCRIPT >/root/.bash_profile
+    #!/bin/bash
+    #
+    export PS1="\h(bash)# "
+    echo
+    echo "Use vtysh to connect to FRR daemon"
+    echo
+    SCRIPT
+    #
+    # This is an artifact of unknown provenance that should be removed in a year or two (= 2026/2027)
+    #
+    # FRR controls these parameters with 'ip forwarding' and 'ipv6 forwarding' commands
+    #
+    sysctl -w net.ipv4.ip_forward=1
+    sysctl -w net.ipv6.conf.all.forwarding=0
+    #
+    #
+    # Get the current next hop for the default route
+    #
+    def_nh=$(ip route list default|awk '{ print $3 }')
+    #
+    # Create the management VRF and add eth0 to it
+    #
+    if [ ! -e /sys/devices/virtual/net/mgmt ]; then
+      ip link add mgmt type vrf table 42
+    fi
+    ip link set mgmt up
+    sysctl -qw net.ipv6.conf.eth0.keep_addr_on_down=1
+    ip link set eth0 master mgmt
+    #
+    # Reinstall the default route if we had it before
+    #
+    if [[ -n "$def_nh" ]]; then
+      ip route add 0.0.0.0/0 vrf mgmt via $def_nh
+    fi
+    #
+    # Enable FRR modules (if not using containerlab bind-mounted /etc/frr/daemons)
+    #
+  
+    # Set system defaults
+    #
+    # Send ARP requests from a sane source IP address
+    #
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Create loopbacks, stub and lag/bond devices
+    #
+    if [ ! -e /sys/class/net/lo ]; then
+      if [ ! -e /sys/devices/virtual/net/lo ]; then
+        ip link add lo type dummy
+        ip link set dev lo up
+      fi
+    fi
+  
+    # Disable IPv6 (for IPv4-only interfaces) or SLAAC (if the device is a router)
+    #
+    ip link set eth1 down
+    sysctl -qw net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+    ip link set eth1 up
+  
+    #
+    # Add vtysh.conf file
+    echo "service integrated-vtysh-config" >/etc/frr/vtysh.conf
+  
+    #
+    # Rest of initial configuration done through VTYSH
+    #
+    cat >/tmp/config <<CONFIG
+    hostname r3
+    !
+    log file /tmp/logging
+  
+    !
+    ip forwarding
+    vrf mgmt
+     exit-vrf
+    !
+    frr defaults datacenter
+    !
+    interface lo
+     no shutdown
+     ip address 10.0.0.4/32
+    !
+    interface eth1
+     no shutdown
+     description r3 -> dut
+     ip address 10.1.0.10/30
+    !
+    do write
+    CONFIG
+    vtysh -f /tmp/config
+    !
+    exit 0
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/routeros7.yml for dut
@@ -624,20 +617,20 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for r1
 
 TASK [template] ****************************************************************
 changed: [r3]
-changed: [r4]
 changed: [r1]
 changed: [r2]
+changed: [r4]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
+ok: [r2]
 ok: [r3]
 ok: [r4]
-ok: [r2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r3]
 changed: [r1]
 changed: [r2]
+changed: [r3]
 changed: [r4]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
@@ -652,8 +645,8 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [r1]
 ok: [r2]
 ok: [r3]
-ok: [r4]
 ok: [dut]
+ok: [r4]
 
 TASK [Deploy individual configuration modules] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4 => (item=ospf)
@@ -663,14 +656,14 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [r1]
 ok: [r2]
-ok: [r4]
 ok: [r3]
+ok: [r4]
 ok: [dut]
 
 TASK [Find configuration template for ospf] ************************************
 skipping: [r2]
-skipping: [r4]
 ok: [r1]
+skipping: [r4]
 ok: [r3]
 ok: [dut]
 
@@ -783,9 +776,9 @@ changed: [r3]
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [r1]
 ok: [r2]
-ok: [r4]
-ok: [dut]
 ok: [r3]
+ok: [dut]
+ok: [r4]
 
 TASK [Find configuration template for bgp] *************************************
 skipping: [r1]
@@ -845,19 +838,6 @@ ok: [r2] =>
     !
     !
     do write
-ok: [dut] => 
-  msg: |-
-    bgp configuration for dut
-    =========================================
-  
-    /routing/bgp/template add name=main as=65000 output.network=bgp-networks
-  
-    /routing/bgp/template set main router-id=10.0.0.1
-  
-  
-  
-    # BGP Network now is controlled by simple ACL
-    /ip/firewall/address-list/ add list=bgp-networks address=10.0.0.1/32
 ok: [r4] => 
   msg: |-
     bgp configuration for r4
@@ -892,6 +872,19 @@ ok: [r4] =>
     !
     !
     do write
+ok: [dut] => 
+  msg: |-
+    bgp configuration for dut
+    =========================================
+  
+    /routing/bgp/template add name=main as=65000 output.network=bgp-networks
+  
+    /routing/bgp/template set main router-id=10.0.0.1
+  
+  
+  
+    # BGP Network now is controlled by simple ACL
+    /ip/firewall/address-list/ add list=bgp-networks address=10.0.0.1/32
 
 TASK [Deploy bgp configuration] ************************************************
 skipping: [r1]
@@ -918,8 +911,8 @@ skipping: [r2]
 skipping: [r4]
 
 TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [r4]
 changed: [r2]
+changed: [r4]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [r1]
@@ -1053,21 +1046,26 @@ TASK [load vrf from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/routeros7.
 ok: [dut]
 
 TASK [Run commands on CHR] *****************************************************
-fatal: [dut]: FAILED! => changed=false 
-  msg: |-
-    command timeout triggered, timeout value is 60 secs.
-    See the timeout setting options in the Network Debug and Troubleshooting Guide.
+changed: [dut]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=39   changed=3    unreachable=0    failed=1    skipped=9    rescued=0    ignored=0   
-r1                         : ok=31   changed=5    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
-r2                         : ok=30   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
-r3                         : ok=30   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
-r4                         : ok=30   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+dut                        : ok=40   changed=4    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+r1                         : ok=31   changed=5    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+r2                         : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+r3                         : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+r4                         : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
 
-Fatal error in netlab: Executing Ansible playbook /home/pipi/netlab_gh/netsim/ansible/initial-config.ansible failed
-Error executing ansible-playbook /home/pipi/netlab_gh/netsim/ansible/initial-config.ansible:
-  Command '['ansible-playbook', '/home/pipi/netlab_gh/netsim/ansible/initial-config.ansible']' returned non-zero exit status 2.
+
+
+The device under test has two VRFs with two interfaces in each VRF.
+Routers are attached to those interfaces and run OSPF and BGP with
+device under test. Assuming the OSPF and BGP multi-vrf test cases
+succeeded, this one tests OSPF-to-BGP two-way redistribution.
+
+* r1 and r2 should be able to ping each other
+* r3 and r4 should be able to ping each other
+* r1 should not be able to reach r3
+
