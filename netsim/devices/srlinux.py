@@ -59,16 +59,16 @@ def cleanup_neighbor_transport(node: Box, topology: Box) -> None:
       ngb.pop(af)
 
 """
-Determines the SRL version based on the box
+Determines the SRL version based on the container image
 """
 def set_api_version(node: Box) -> None:
-  # Take only major.minor parts
   version = re.search(r'^.*/srlinux:([\d]+.[\d]+).*$', node.box)
-  try:
-    node._srl_version = version.group(1).split('.')
-    node._srl_version = [ int(v) for v in node._srl_version ]
-  except:
-    node._srl_version = [ 25, 3 ]
+  node._srl_version = [ 25, 3 ]         # Assume 25.3 release
+  if version is not None:               # If we managed to match the SR Linux image name
+    try:                                # ... try to extract release info into a list of ints
+      node._srl_version = [ int(v) for v in version.group(1).split('.') ]
+    except:                             # Extraction process failed?
+      pass                              # ... no worries, we'll use the default
 
 def check_nssa_default_cost(node: Box) -> None:
   for (odata,_,_) in _routing.rp_data(node,'ospf'):
