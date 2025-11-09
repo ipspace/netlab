@@ -168,6 +168,12 @@ def abort_on_failure(cmd: str) -> None:
 def lp_create_vm_disk(args: argparse.Namespace, workdir: str) -> None:
   name = args.disk.name
 
+  if name.endswith('.zip'):
+    strings.print_colored_text('[UNZIP]   ','green',None)
+    print(f"Unzipping {name}")
+    abort_on_failure(f'unzip {name}')
+    name = name[:-4]
+
   if '.ova' in name:
     strings.print_colored_text('[UNPACK]  ','green',None)
     print(f"Unpacking OVA archive {name}")
