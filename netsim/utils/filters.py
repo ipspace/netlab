@@ -34,7 +34,8 @@ def ipaddr_filter(
     return ''
 
 MAP_IPADDR: dict = {
-  'address': 'ip'
+  'address': 'ip',
+  'prefix':  'prefixlen'
 }
 
 def j2_ipaddr(
@@ -53,7 +54,7 @@ def j2_ipaddr(
   if arg in MAP_IPADDR:
     arg = MAP_IPADDR[arg]
 
-  if arg in ['prefix','subnet']:
+  if arg in ['subnet']:
     return str(addr.network) + "/" + str(addr.prefixlen)
 
   if arg in dir(addr):
