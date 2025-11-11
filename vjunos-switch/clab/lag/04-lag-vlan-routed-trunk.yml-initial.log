@@ -15,6 +15,30 @@ ok: [h2]
 ok: [xr]
 ok: [dut]
 
+TASK [Generic readiness tests] *************************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [xr]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/ssh.yml for dut => (item=ssh)
+
+TASK [Check if 'sshpass' is installed] *****************************************
+ok: [dut -> localhost]
+
+TASK [Check for 'timeout' command] *********************************************
+ok: [dut -> localhost]
+
+TASK [Execute local ssh command to check ssh readiness] ************************
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check ssh readiness (40 retries left).
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check ssh readiness (39 retries left).
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check ssh readiness (38 retries left).
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check ssh readiness (37 retries left).
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check ssh readiness (36 retries left).
+ok: [dut -> localhost]
+
+TASK [Confirm dut SSH server works] ********************************************
+ok: [dut] => 
+  msg: Node dut is ready.
+
 TASK [Find device readiness script] ********************************************
 ok: [h1]
 ok: [h2]
@@ -25,37 +49,16 @@ TASK [Wait for device to become ready] *****************************************
 skipping: [h1]
 skipping: [h2]
 skipping: [xr]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/vjunos-switch-clab.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/junos.yml for dut
 
-TASK [Wait for SSH server] *****************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/vm-clab-ssh-check.yml for dut
+TASK [set_fact] ****************************************************************
+ok: [dut]
 
-TASK [Check if 'sshpass' is installed] *****************************************
-ok: [dut -> localhost]
-
-TASK [Check for 'timeout' command] *********************************************
-ok: [dut -> localhost]
-
-TASK [Execute local ssh command to check vjunos-switch readiness] **************
-FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-switch readiness (40 retries left).
-FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-switch readiness (39 retries left).
-FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-switch readiness (38 retries left).
-FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-switch readiness (37 retries left).
-FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-switch readiness (36 retries left).
-ok: [dut -> localhost]
-
-TASK [Confirm dut SSH server works] ********************************************
-ok: [dut] => 
-  msg: Node dut is ready.
-
-TASK [Wait for ge-0/0/0 interface] *********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/vjunos-switch.yml for dut
-
-TASK [Wait for ge-0/0/0 to appear] *********************************************
+TASK [Wait for first interface (ge-0/0/0)] *************************************
 ok: [dut]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, dut, xr
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, dut, xr
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [h1]
@@ -94,7 +97,7 @@ skipping: [dut]
 skipping: [xr]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, dut, xr
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, dut, xr
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [h1]
@@ -295,6 +298,9 @@ ok: [xr] =>
     cat >/tmp/config <<CONFIG
     hostname xr
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -333,6 +339,7 @@ ok: [xr] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [dut] => 
   msg: |-
@@ -461,19 +468,19 @@ ok: [dut] =>
     }
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for xr
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for xr
 
 TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
-TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -481,19 +488,19 @@ TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
 skipping: [h2]
 
-TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2] ***
+TASK [Execute /tmp/config-h1_initial.sh to deploy initial config based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 skipping: [h1]
 skipping: [h2]
 
-TASK [Container configuration for initial based on /home/pipi/net101/tools/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
+TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-crzv1qa6.sh] ***********************
-changed: [h2 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-x8o4mydc.sh] ***********************
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [junos_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/junos.j2] ***
+TASK [junos_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/junos.j2] ***
 changed: [dut]
 
 TASK [Attempt to load VRF kernel module] ***************************************
@@ -503,7 +510,7 @@ TASK [Disable FRR management VRF when modprobe fails] **************************
 skipping: [xr]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for xr
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for xr
 
 TASK [template] ****************************************************************
 changed: [xr]
@@ -511,10 +518,10 @@ changed: [xr]
 TASK [set_fact] ****************************************************************
 ok: [xr]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [xr]
 
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [xr]
 
 PLAY [Deploy module-specific configurations] ***********************************
@@ -526,10 +533,10 @@ ok: [xr]
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, dut, xr => (item=lag)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, dut, xr => (item=vlan)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, dut, xr => (item=routing)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for h1, h2, dut, xr => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, dut, xr => (item=lag)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, dut, xr => (item=vlan)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, dut, xr => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, dut, xr => (item=ospf)
 
 TASK [Figure out whether to deploy the module lag on current device] ***********
 ok: [h1]
@@ -625,10 +632,10 @@ ok: [dut] =>
 TASK [Deploy lag configuration] ************************************************
 skipping: [h1]
 skipping: [h2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for xr
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for xr
 
-TASK [junos_config: deploying lag from /home/pipi/net101/tools/netsim/ansible/templates/lag/junos.j2] ***
+TASK [junos_config: deploying lag from /home/pipi/netlab_gh/netsim/ansible/templates/lag/junos.j2] ***
 changed: [dut]
 
 TASK [template] ****************************************************************
@@ -637,10 +644,10 @@ changed: [xr]
 TASK [set_fact] ****************************************************************
 ok: [xr]
 
-TASK [run /tmp/config.sh to deploy lag config from /home/pipi/net101/tools/netsim/ansible/templates/lag/frr.j2] ***
+TASK [run /tmp/config.sh to deploy lag config from /home/pipi/netlab_gh/netsim/ansible/templates/lag/frr.j2] ***
 changed: [xr]
 
-TASK [run vtysh to import lag config from /home/pipi/net101/tools/netsim/ansible/templates/lag/frr.j2] ***
+TASK [run vtysh to import lag config from /home/pipi/netlab_gh/netsim/ansible/templates/lag/frr.j2] ***
 skipping: [xr]
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
@@ -670,6 +677,17 @@ ok: [dut]
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
 skipping: [h2]
+ok: [dut] => 
+  msg: |-
+    vlan configuration for dut
+    =========================================
+  
+    vlans {
+    }
+  
+    interfaces {
+  
+    }
 ok: [xr] => 
   msg: |-
     vlan configuration for xr
@@ -682,25 +700,14 @@ ok: [xr] =>
       ip link add link bond1 name bond1.1000 type vlan id 1000
       ip link set dev bond1.1000 up
     fi
-ok: [dut] => 
-  msg: |-
-    vlan configuration for dut
-    =========================================
-  
-    vlans {
-    }
-  
-    interfaces {
-  
-    }
 
 TASK [Deploy vlan configuration] ***********************************************
 skipping: [h1]
 skipping: [h2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for xr
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for xr
 
-TASK [junos_config: deploying vlan from /home/pipi/net101/tools/netsim/ansible/templates/vlan/vjunos-switch.j2] ***
+TASK [junos_config: deploying vlan from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/vjunos-switch.j2] ***
 [WARNING]: mgd: statement has no contents; ignored
 ok: [dut]
 
@@ -710,10 +717,10 @@ changed: [xr]
 TASK [set_fact] ****************************************************************
 ok: [xr]
 
-TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
+TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/frr.j2] ***
 changed: [xr]
 
-TASK [run vtysh to import vlan config from /home/pipi/net101/tools/netsim/ansible/templates/vlan/frr.j2] ***
+TASK [run vtysh to import vlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/frr.j2] ***
 skipping: [xr]
 
 TASK [Figure out whether to deploy the module routing on current device] *******
@@ -805,7 +812,7 @@ ok: [h2] =>
 TASK [Deploy routing configuration] ********************************************
 skipping: [dut]
 skipping: [xr]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
 
 TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
@@ -815,23 +822,23 @@ TASK [Create a temporary file for the rendered script] *************************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Create container setup script from /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
-changed: [h1 -> localhost]
+TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
 skipping: [h1]
 skipping: [h2]
 
-TASK [Execute /tmp/config-h1_routing.sh to deploy routing config based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2] ***
+TASK [Execute /tmp/config-h1_routing.sh to deploy routing config based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
 skipping: [h1]
 skipping: [h2]
 
-TASK [Container configuration for routing based on /home/pipi/net101/tools/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
+TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-d_yclvzo.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-pvmrappe.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -930,10 +937,10 @@ ok: [xr] =>
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [h1]
 skipping: [h2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/junos.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for xr
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for xr
 
-TASK [junos_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/junos.j2] ***
+TASK [junos_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/junos.j2] ***
 [WARNING]:  statement not found
 changed: [dut]
 
@@ -943,10 +950,10 @@ changed: [xr]
 TASK [set_fact] ****************************************************************
 ok: [xr]
 
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
 skipping: [xr]
 
-TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [xr]
 
 PLAY [Deploy custom deployment templates] **************************************
@@ -954,9 +961,9 @@ skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
 dut                        : ok=45   changed=3    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
-h1                         : ok=35   changed=8    unreachable=0    failed=0    skipped=25   rescued=0    ignored=0   
-h2                         : ok=35   changed=8    unreachable=0    failed=0    skipped=25   rescued=0    ignored=0   
-xr                         : ok=47   changed=9    unreachable=0    failed=0    skipped=18   rescued=0    ignored=0   
+h1                         : ok=35   changed=8    unreachable=0    failed=0    skipped=26   rescued=0    ignored=0   
+h2                         : ok=35   changed=8    unreachable=0    failed=0    skipped=26   rescued=0    ignored=0   
+xr                         : ok=47   changed=9    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
 
 
 

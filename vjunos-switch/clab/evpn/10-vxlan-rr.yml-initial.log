@@ -12,9 +12,34 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [h1]
 ok: [h2]
-ok: [s1]
 ok: [s2]
+ok: [s1]
 ok: [rr]
+
+TASK [Generic readiness tests] *************************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [s1]
+skipping: [s2]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/ssh.yml for rr => (item=ssh)
+
+TASK [Check if 'sshpass' is installed] *****************************************
+ok: [rr -> localhost]
+
+TASK [Check for 'timeout' command] *********************************************
+ok: [rr -> localhost]
+
+TASK [Execute local ssh command to check ssh readiness] ************************
+FAILED - RETRYING: [rr -> localhost]: Execute local ssh command to check ssh readiness (40 retries left).
+FAILED - RETRYING: [rr -> localhost]: Execute local ssh command to check ssh readiness (39 retries left).
+FAILED - RETRYING: [rr -> localhost]: Execute local ssh command to check ssh readiness (38 retries left).
+FAILED - RETRYING: [rr -> localhost]: Execute local ssh command to check ssh readiness (37 retries left).
+FAILED - RETRYING: [rr -> localhost]: Execute local ssh command to check ssh readiness (36 retries left).
+ok: [rr -> localhost]
+
+TASK [Confirm rr SSH server works] *********************************************
+ok: [rr] => 
+  msg: Node rr is ready.
 
 TASK [Find device readiness script] ********************************************
 ok: [h1]
@@ -28,33 +53,9 @@ skipping: [h1]
 skipping: [h2]
 skipping: [s1]
 skipping: [s2]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vjunos-switch-clab.yml for rr
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/junos.yml for rr
 
-TASK [Wait for SSH server] *****************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vm-clab-ssh-check.yml for rr
-
-TASK [Check if 'sshpass' is installed] *****************************************
-ok: [rr -> localhost]
-
-TASK [Check for 'timeout' command] *********************************************
-ok: [rr -> localhost]
-
-TASK [Execute local ssh command to check vjunos-switch readiness] **************
-FAILED - RETRYING: [rr -> localhost]: Execute local ssh command to check vjunos-switch readiness (40 retries left).
-FAILED - RETRYING: [rr -> localhost]: Execute local ssh command to check vjunos-switch readiness (39 retries left).
-FAILED - RETRYING: [rr -> localhost]: Execute local ssh command to check vjunos-switch readiness (38 retries left).
-FAILED - RETRYING: [rr -> localhost]: Execute local ssh command to check vjunos-switch readiness (37 retries left).
-FAILED - RETRYING: [rr -> localhost]: Execute local ssh command to check vjunos-switch readiness (36 retries left).
-ok: [rr -> localhost]
-
-TASK [Confirm rr SSH server works] *********************************************
-ok: [rr] => 
-  msg: Node rr is ready.
-
-TASK [Wait for ge-0/0/0 interface] *********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vjunos-switch.yml for rr
-
-TASK [Wait for ge-0/0/0 to appear] *********************************************
+TASK [Wait for first interface (ge-0/0/0)] *************************************
 ok: [rr]
 
 TASK [Normalize config on bridge-like devices] *********************************
@@ -63,15 +64,15 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [h1]
 ok: [h2]
-ok: [s2]
 ok: [s1]
+ok: [s2]
 ok: [rr]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [h1]
-ok: [s1]
 ok: [h2]
 ok: [s2]
+ok: [s1]
 ok: [rr]
 
 TASK [fail] ********************************************************************
@@ -114,8 +115,8 @@ ok: [rr]
 
 TASK [Find configuration template for initial] *********************************
 ok: [h1]
-ok: [s1]
 ok: [h2]
+ok: [s1]
 ok: [s2]
 ok: [rr]
 
@@ -324,6 +325,61 @@ ok: [s2] =>
     vtysh -f /tmp/config
     !
     exit 0
+ok: [rr] => 
+  msg: |-
+    initial configuration for rr
+    =========================================
+    system {
+      host-name rr;
+      static-host-mapping {
+        h1 inet 172.31.1.1;
+        h2 inet 172.31.1.2;
+        s1 inet 10.0.0.3;
+        s2 inet 10.0.0.4;
+      }
+    }
+  
+  
+    interfaces {
+      ge-0/0/0 {
+        mtu 1614;
+      }
+      ge-0/0/1 {
+        mtu 1614;
+      }
+  
+      lo0.0 {
+  
+          family inet {
+            address 10.0.0.5/32;
+          }
+  
+      }
+      ge-0/0/0.0 {
+        description "rr -> s1";
+  
+          family inet {
+            address 10.1.0.1/30;
+          }
+  
+      }
+      ge-0/0/1.0 {
+        description "rr -> s2";
+  
+          family inet {
+            address 10.1.0.5/30;
+          }
+  
+      }
+    }
+    protocols {
+      lldp {
+        interface fxp0 {
+          disable;
+        }
+        interface all;
+      }
+    }
 ok: [s1] => 
   msg: |-
     initial configuration for s1
@@ -444,65 +500,10 @@ ok: [s1] =>
     vtysh -f /tmp/config
     !
     exit 0
-ok: [rr] => 
-  msg: |-
-    initial configuration for rr
-    =========================================
-    system {
-      host-name rr;
-      static-host-mapping {
-        h1 inet 172.31.1.1;
-        h2 inet 172.31.1.2;
-        s1 inet 10.0.0.3;
-        s2 inet 10.0.0.4;
-      }
-    }
-  
-  
-    interfaces {
-      ge-0/0/0 {
-        mtu 1614;
-      }
-      ge-0/0/1 {
-        mtu 1614;
-      }
-  
-      lo0.0 {
-  
-          family inet {
-            address 10.0.0.5/32;
-          }
-  
-      }
-      ge-0/0/0.0 {
-        description "rr -> s1";
-  
-          family inet {
-            address 10.1.0.1/30;
-          }
-  
-      }
-      ge-0/0/1.0 {
-        description "rr -> s2";
-  
-          family inet {
-            address 10.1.0.5/30;
-          }
-  
-      }
-    }
-    protocols {
-      lldp {
-        interface fxp0 {
-          disable;
-        }
-        interface all;
-      }
-    }
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml for h1, h2
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for s1, s2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for s2, s1
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for rr
 
 TASK [Define script filename and determine whether to execute in netns] ********
@@ -526,10 +527,10 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-4x77hsb3.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-yyza7tts.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -544,8 +545,8 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for s1, s2
 
 TASK [template] ****************************************************************
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [set_fact] ****************************************************************
 ok: [s1]
@@ -566,8 +567,8 @@ PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [h1]
-ok: [h2]
 ok: [s1]
+ok: [h2]
 ok: [s2]
 ok: [rr]
 
@@ -580,8 +581,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h2, s1, s2, rr => (item=evpn)
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
-ok: [h2]
 ok: [h1]
+ok: [h2]
 ok: [s1]
 ok: [s2]
 ok: [rr]
@@ -679,8 +680,8 @@ ok: [rr]
 
 TASK [Find configuration template for routing] *********************************
 skipping: [s1]
-skipping: [s2]
 ok: [h1]
+skipping: [s2]
 skipping: [rr]
 ok: [h2]
 
@@ -694,13 +695,14 @@ skipping: [rr]
 TASK [Find configuration deployment deploy_script for routing] *****************
 skipping: [s1]
 skipping: [s2]
-ok: [h1]
 skipping: [rr]
+ok: [h1]
 ok: [h2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [s1]
 skipping: [s2]
+skipping: [rr]
 ok: [h1] => 
   msg: |-
     routing configuration for h1
@@ -716,7 +718,6 @@ ok: [h1] =>
     #
     # Print the final routing table
     ip route
-skipping: [rr]
 ok: [h2] => 
   msg: |-
     routing configuration for h2
@@ -763,7 +764,7 @@ TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/a
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-3wtl46ux.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-b6zauo4n.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -826,34 +827,6 @@ ok: [s1] =>
   
     !
     do write
-ok: [s2] => 
-  msg: |-
-    ospf configuration for s2
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.4
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! s2 -> rr
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    do write
 ok: [rr] => 
   msg: |-
     ospf configuration for rr
@@ -883,6 +856,34 @@ ok: [rr] =>
         }
       }
     }
+ok: [s2] => 
+  msg: |-
+    ospf configuration for s2
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.4
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! s2 -> rr
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    do write
 
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [h1]
@@ -903,8 +904,8 @@ skipping: [s1]
 skipping: [s2]
 
 TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [junos_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/junos.j2] ***
 [WARNING]:  statement not found
@@ -964,9 +965,9 @@ ok: [s1] =>
     !
   
     !
+    ! Originate networks from connected subnets
+    !
       network 10.0.0.3/32
-    !
-    !
     !
       neighbor 10.0.0.5 activate
       neighbor 10.0.0.5 next-hop-self
@@ -1001,9 +1002,9 @@ ok: [s2] =>
     !
   
     !
+    ! Originate networks from connected subnets
+    !
       network 10.0.0.4/32
-    !
-    !
     !
       neighbor 10.0.0.5 activate
       neighbor 10.0.0.5 next-hop-self
@@ -1031,7 +1032,10 @@ ok: [rr] =>
     policy-options {
       delete: policy-statement bgp-advertise;
       delete: policy-statement bgp-redistribute;
-      delete: policy-statement next-hop-self;
+      delete: policy-statement next-hop-ebgp-ipv4;
+      delete: policy-statement next-hop-all-ipv4;
+      delete: policy-statement next-hop-ebgp-ipv6;
+      delete: policy-statement next-hop-all-ipv6;
       delete: route-filter-list bgp-announce;
     }
   
@@ -1040,7 +1044,7 @@ ok: [rr] =>
       route-filter-list bgp-announce {
       }
   
-      policy-statement next-hop-self {
+      policy-statement next-hop-ebgp-ipv4 {
         term next-hop-self-ipv4 {
           from {
             family inet;
@@ -1050,6 +1054,20 @@ ok: [rr] =>
             next-hop self;
           }
         }
+      }
+  
+      policy-statement next-hop-all-ipv4 {
+        term next-hop-self-ipv4 {
+          from {
+            family inet;
+          }
+          then {
+            next-hop self;
+          }
+        }
+      }
+  
+      policy-statement next-hop-ebgp-ipv6 {
         term next-hop-self-ipv6 {
           from {
             family inet6;
@@ -1060,6 +1078,18 @@ ok: [rr] =>
           }
         }
       }
+  
+      policy-statement next-hop-all-ipv6 {
+        term next-hop-self-ipv6 {
+          from {
+            family inet6;
+          }
+          then {
+            next-hop self;
+          }
+        }
+      }
+  
   
       policy-statement bgp-advertise {
         term advertise {
@@ -1129,8 +1159,7 @@ ok: [rr] =>
         group ibgp-peers-ipv4 {
           type internal;
           export [
-              next-hop-self
-              bgp-advertise bgp-redistribute bgp-final
+              next-hop-ebgp-ipv4 bgp-advertise bgp-redistribute bgp-final
             ];
           advertise-inactive;
           cluster 10.0.0.5;
@@ -1167,8 +1196,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for s1
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for rr
 
 TASK [template] ****************************************************************
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [set_fact] ****************************************************************
 ok: [s1]
@@ -1196,8 +1225,8 @@ TASK [Find configuration template for vxlan] ***********************************
 skipping: [h1]
 skipping: [h2]
 skipping: [rr]
-ok: [s1]
 ok: [s2]
+ok: [s1]
 
 TASK [fail] ********************************************************************
 skipping: [h1]
@@ -1295,8 +1324,8 @@ skipping: [rr]
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for s1, s2
 
 TASK [template] ****************************************************************
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [set_fact] ****************************************************************
 ok: [s1]
@@ -1444,16 +1473,16 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for s1
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for rr
 
 TASK [template] ****************************************************************
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [set_fact] ****************************************************************
 ok: [s1]
 ok: [s2]
 
 TASK [run /tmp/config.sh to deploy evpn config from /home/pipi/netlab_gh/netsim/ansible/templates/evpn/frr.j2] ***
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [run vtysh to import evpn config from /home/pipi/netlab_gh/netsim/ansible/templates/evpn/frr.j2] ***
 skipping: [s1]
@@ -1467,11 +1496,11 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=39   changed=8    unreachable=0    failed=0    skipped=35   rescued=0    ignored=0   
-h2                         : ok=39   changed=8    unreachable=0    failed=0    skipped=35   rescued=0    ignored=0   
-rr                         : ok=49   changed=4    unreachable=0    failed=0    skipped=22   rescued=0    ignored=0   
-s1                         : ok=65   changed=13   unreachable=0    failed=0    skipped=22   rescued=0    ignored=0   
-s2                         : ok=64   changed=12   unreachable=0    failed=0    skipped=22   rescued=0    ignored=0   
+h1                         : ok=39   changed=8    unreachable=0    failed=0    skipped=36   rescued=0    ignored=0   
+h2                         : ok=39   changed=8    unreachable=0    failed=0    skipped=36   rescued=0    ignored=0   
+rr                         : ok=48   changed=4    unreachable=0    failed=0    skipped=22   rescued=0    ignored=0   
+s1                         : ok=65   changed=13   unreachable=0    failed=0    skipped=23   rescued=0    ignored=0   
+s2                         : ok=64   changed=12   unreachable=0    failed=0    skipped=23   rescued=0    ignored=0   
 
 
 

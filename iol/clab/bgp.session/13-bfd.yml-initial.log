@@ -1,3 +1,7 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -7,30 +11,36 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
 ok: [x1]
 
-TASK [Find device readiness script] ********************************************
-ok: [dut]
-ok: [x1]
-
-TASK [Wait for device to become ready] *****************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/iol-clab.yml for dut
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/eos-clab.yml for x1
+TASK [Generic readiness tests] *************************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/ssh.yml for dut, x1 => (item=ssh)
 
 TASK [Check if 'sshpass' is installed] *****************************************
 ok: [dut -> localhost]
 
 TASK [Check for 'timeout' command] *********************************************
+ok: [x1 -> localhost]
 ok: [dut -> localhost]
 
-TASK [Execute local ssh command to check iol readiness] ************************
-FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check iol readiness (20 retries left).
+TASK [Execute local ssh command to check ssh readiness] ************************
+FAILED - RETRYING: [x1 -> localhost]: Execute local ssh command to check ssh readiness (20 retries left).
+FAILED - RETRYING: [x1 -> localhost]: Execute local ssh command to check ssh readiness (19 retries left).
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check ssh readiness (20 retries left).
+ok: [x1 -> localhost]
 ok: [dut -> localhost]
 
 TASK [Confirm dut SSH server works] ********************************************
 ok: [dut] => 
   msg: Node dut is ready.
+ok: [x1] => 
+  msg: Node x1 is ready.
 
-TASK [Wait for cEOS SSH daemon to start] ***************************************
+TASK [Find device readiness script] ********************************************
+ok: [dut]
 ok: [x1]
+
+TASK [Wait for device to become ready] *****************************************
+skipping: [dut]
+skipping: [x1]
 
 TASK [Normalize config on bridge-like devices] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1
@@ -60,7 +70,6 @@ ok: [x1] =>
     !
     interface Ethernet1
      shutdown
-     mac-address 52dc.cafe.0201
 
 TASK [Deploy normalize configuration] ******************************************
 skipping: [dut]
@@ -157,8 +166,8 @@ ok: [x1] =>
      no switchport
      description x1 -> dut [external]
      ip address 10.1.0.2/30
+     mac-address caf0.0002.0001
     !
-     mac-address 52dc.cafe.0201
      no shutdown
     !
 
@@ -199,18 +208,18 @@ ok: [dut]
 ok: [x1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [dut] => 
-  msg: |-
-    bfd configuration for dut
-    =========================================
-    interface Ethernet0/1
-     bfd interval 500 min_rx 500 multiplier 3
-    !
 ok: [x1] => 
   msg: |-
     bfd configuration for x1
     =========================================
     interface Ethernet1
+     bfd interval 500 min_rx 500 multiplier 3
+    !
+ok: [dut] => 
+  msg: |-
+    bfd configuration for dut
+    =========================================
+    interface Ethernet0/1
      bfd interval 500 min_rx 500 multiplier 3
     !
 
@@ -260,11 +269,12 @@ ok: [dut] =>
     !
      address-family ipv4
       bgp scan-time 5
-  
+    !
+    !
+    ! Originate networks from connected subnets
     !
       network 10.0.0.1 mask 255.255.255.255
   
-    !
     !
       neighbor 10.1.0.2 activate
       neighbor 10.1.0.2 advertisement-interval 0
@@ -291,8 +301,11 @@ ok: [x1] =>
     !
      address-family ipv4
   
-      network 10.0.0.2/32
     !
+    !
+    ! Originate networks from connected subnets
+    !
+      network 10.0.0.2/32
     !
     !
       neighbor 10.1.0.1 activate
@@ -366,8 +379,8 @@ TASK [eos_config: deploying static_bfd from /home/pipi/net101/tools/tests/integr
 changed: [x1]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=39   changed=4    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
-x1                         : ok=39   changed=5    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+dut                        : ok=39   changed=4    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+x1                         : ok=41   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
 
 
 

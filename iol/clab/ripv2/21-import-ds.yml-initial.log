@@ -10,8 +10,29 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [x1]
 ok: [r2]
-ok: [dut]
 ok: [r3]
+ok: [dut]
+
+TASK [Generic readiness tests] *************************************************
+skipping: [x1]
+skipping: [r2]
+skipping: [r3]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/ssh.yml for dut => (item=ssh)
+
+TASK [Check if 'sshpass' is installed] *****************************************
+ok: [dut -> localhost]
+
+TASK [Check for 'timeout' command] *********************************************
+ok: [dut -> localhost]
+
+TASK [Execute local ssh command to check ssh readiness] ************************
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check ssh readiness (20 retries left).
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check ssh readiness (19 retries left).
+ok: [dut -> localhost]
+
+TASK [Confirm dut SSH server works] ********************************************
+ok: [dut] => 
+  msg: Node dut is ready.
 
 TASK [Find device readiness script] ********************************************
 ok: [x1]
@@ -20,28 +41,13 @@ ok: [r3]
 ok: [dut]
 
 TASK [Wait for device to become ready] *****************************************
+skipping: [dut]
 skipping: [x1]
 skipping: [r2]
 skipping: [r3]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/iol-clab.yml for dut
-
-TASK [Check if 'sshpass' is installed] *****************************************
-ok: [dut -> localhost]
-
-TASK [Check for 'timeout' command] *********************************************
-ok: [dut -> localhost]
-
-TASK [Execute local ssh command to check iol readiness] ************************
-FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check iol readiness (20 retries left).
-FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check iol readiness (19 retries left).
-ok: [dut -> localhost]
-
-TASK [Confirm dut SSH server works] ********************************************
-ok: [dut] => 
-  msg: Node dut is ready.
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, r2, r3
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, r2, r3
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [x1]
@@ -51,8 +57,8 @@ ok: [dut]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [x1]
-ok: [r3]
 ok: [r2]
+ok: [r3]
 ok: [dut]
 
 TASK [fail] ********************************************************************
@@ -80,7 +86,7 @@ skipping: [r2]
 skipping: [r3]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, r2, r3
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, r2, r3
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [x1]
@@ -191,6 +197,9 @@ ok: [x1] =>
     cat >/tmp/config <<CONFIG
     hostname x1
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     ipv6 forwarding
     vrf mgmt
@@ -214,6 +223,7 @@ ok: [x1] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [r2] => 
   msg: |-
@@ -299,6 +309,9 @@ ok: [r2] =>
     cat >/tmp/config <<CONFIG
     hostname r2
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     ipv6 forwarding
     vrf mgmt
@@ -322,6 +335,7 @@ ok: [r2] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [r3] => 
   msg: |-
@@ -418,6 +432,9 @@ ok: [r3] =>
     cat >/tmp/config <<CONFIG
     hostname r3
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     ipv6 forwarding
     vrf mgmt
@@ -449,6 +466,7 @@ ok: [r3] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [dut] => 
   msg: |-
@@ -457,6 +475,8 @@ ok: [dut] =>
     hostname dut
     !
     no ip domain lookup
+    logging buffered 256000
+  
     !
     lldp run
     !
@@ -482,6 +502,7 @@ ok: [dut] =>
      ip mtu 1500
      ipv6 mtu 1500
      ip address 10.1.0.1 255.255.255.252
+     ipv6 nd ra interval 5
      ipv6 address 2001:DB8:3::1/64
      no shutdown
     !
@@ -490,6 +511,7 @@ ok: [dut] =>
      ip mtu 1500
      ipv6 mtu 1500
      ip address 10.1.0.5 255.255.255.252
+     ipv6 nd ra interval 5
      ipv6 address 2001:DB8:3:1::1/64
      no shutdown
     !
@@ -498,6 +520,7 @@ ok: [dut] =>
      ip mtu 1500
      ipv6 mtu 1500
      ip address 10.1.0.9 255.255.255.252
+     ipv6 nd ra interval 5
      ipv6 address 2001:DB8:3:2::1/64
      no shutdown
     !
@@ -510,10 +533,10 @@ ok: [dut] =>
     no banner incoming
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for x1, r2, r3
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for x1, r2, r3
 
-TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
+TASK [ios_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/ios.j2] ***
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
 should be similar to how they appear if present in the running configuration on
 device including the indentation
@@ -528,24 +551,24 @@ skipping: [r2]
 skipping: [r3]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, r2, r3
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for x1, r2, r3
 
 TASK [template] ****************************************************************
-changed: [r2]
-changed: [r3]
 changed: [x1]
+changed: [r3]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
 ok: [r2]
 ok: [r3]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [r2]
 changed: [x1]
 changed: [r3]
 
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
 skipping: [r2]
 skipping: [r3]
@@ -559,10 +582,10 @@ ok: [r3]
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, r2, r3 => (item=routing)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, r2, r3 => (item=ospf)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, r2, r3 => (item=ripv2)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, r2, r3 => (item=bgp)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, r2, r3 => (item=routing)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, r2, r3 => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, r2, r3 => (item=ripv2)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, r2, r3 => (item=bgp)
 
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [x1]
@@ -610,9 +633,9 @@ TASK [Deploy routing configuration] ********************************************
 skipping: [x1]
 skipping: [r2]
 skipping: [r3]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
 
-TASK [ios_config: deploying routing from /home/pipi/net101/tools/netsim/ansible/templates/routing/ios.j2] ***
+TASK [ios_config: deploying routing from /home/pipi/netlab_gh/netsim/ansible/templates/routing/ios.j2] ***
 changed: [dut]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
@@ -719,7 +742,6 @@ ok: [dut] =>
     router ospfv3 1
      router-id 10.0.0.1
      address-family ipv6 unicast
-  
       redistribute rip default
   
     !
@@ -741,10 +763,10 @@ ok: [dut] =>
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [x1]
 skipping: [r3]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r2
 
-TASK [ios_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/ios.j2] ***
+TASK [ios_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/ios.j2] ***
 changed: [dut]
 
 TASK [template] ****************************************************************
@@ -753,10 +775,10 @@ changed: [r2]
 TASK [set_fact] ****************************************************************
 ok: [r2]
 
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
 skipping: [r2]
 
-TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [r2]
 
 TASK [Figure out whether to deploy the module ripv2 on current device] *********
@@ -850,10 +872,10 @@ ok: [dut] =>
 TASK [Deploy ripv2 configuration] **********************************************
 skipping: [x1]
 skipping: [r2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r3
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r3
 
-TASK [ios_config: deploying ripv2 from /home/pipi/net101/tools/netsim/ansible/templates/ripv2/ios.j2] ***
+TASK [ios_config: deploying ripv2 from /home/pipi/netlab_gh/netsim/ansible/templates/ripv2/ios.j2] ***
 changed: [dut]
 
 TASK [template] ****************************************************************
@@ -862,10 +884,10 @@ changed: [r3]
 TASK [set_fact] ****************************************************************
 ok: [r3]
 
-TASK [run /tmp/config.sh to deploy ripv2 config from /home/pipi/net101/tools/netsim/ansible/templates/ripv2/frr.j2] ***
+TASK [run /tmp/config.sh to deploy ripv2 config from /home/pipi/netlab_gh/netsim/ansible/templates/ripv2/frr.j2] ***
 skipping: [r3]
 
-TASK [run vtysh to import ripv2 config from /home/pipi/net101/tools/netsim/ansible/templates/ripv2/frr.j2] ***
+TASK [run vtysh to import ripv2 config from /home/pipi/netlab_gh/netsim/ansible/templates/ripv2/frr.j2] ***
 changed: [r3]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
@@ -920,9 +942,9 @@ ok: [x1] =>
     !
   
     !
+    ! Originate networks from connected subnets
+    !
       network 10.0.0.2/32
-    !
-    !
     !
       neighbor 10.1.0.1 activate
       no neighbor 10.1.0.1 send-community all
@@ -933,9 +955,9 @@ ok: [x1] =>
     !
   
     !
+    ! Originate networks from connected subnets
+    !
       network 2001:db8:1:2::/64
-    !
-    !
     !
       neighbor 2001:db8:3::1 activate
       no neighbor 2001:db8:3::1 send-community all
@@ -970,9 +992,11 @@ ok: [dut] =>
       redistribute rip
   
     !
+    !
+    ! Originate networks from connected subnets
+    !
       network 10.0.0.1 mask 255.255.255.255
   
-    !
     !
       neighbor 10.1.0.2 activate
       neighbor 10.1.0.2 advertisement-interval 0
@@ -983,9 +1007,11 @@ ok: [dut] =>
       redistribute rip default
   
     !
+    !
+    ! Originate networks from connected subnets
+    !
       network 2001:db8:1:1::/64
   
-    !
     !
       neighbor 2001:db8:3::2 activate
       neighbor 2001:db8:3::2 advertisement-interval 0
@@ -996,10 +1022,10 @@ ok: [dut] =>
 TASK [Deploy bgp configuration] ************************************************
 skipping: [r2]
 skipping: [r3]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for x1
 
-TASK [ios_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/ios.j2] ***
+TASK [ios_config: deploying bgp from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/ios.j2] ***
 changed: [dut]
 
 TASK [template] ****************************************************************
@@ -1008,20 +1034,20 @@ changed: [x1]
 TASK [set_fact] ****************************************************************
 ok: [x1]
 
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [x1]
 
-TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [x1]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=47   changed=5    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-r2                         : ok=32   changed=4    unreachable=0    failed=0    skipped=24   rescued=0    ignored=0   
-r3                         : ok=32   changed=4    unreachable=0    failed=0    skipped=24   rescued=0    ignored=0   
-x1                         : ok=33   changed=5    unreachable=0    failed=0    skipped=24   rescued=0    ignored=0   
+dut                        : ok=47   changed=5    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+r2                         : ok=32   changed=4    unreachable=0    failed=0    skipped=25   rescued=0    ignored=0   
+r3                         : ok=32   changed=4    unreachable=0    failed=0    skipped=25   rescued=0    ignored=0   
+x1                         : ok=33   changed=5    unreachable=0    failed=0    skipped=25   rescued=0    ignored=0   
 
 
 

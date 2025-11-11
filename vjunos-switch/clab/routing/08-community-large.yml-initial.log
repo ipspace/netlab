@@ -13,16 +13,9 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [probe]
 ok: [dut]
 
-TASK [Find device readiness script] ********************************************
-ok: [probe]
-ok: [dut]
-
-TASK [Wait for device to become ready] *****************************************
+TASK [Generic readiness tests] *************************************************
 skipping: [probe]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vjunos-switch-clab.yml for dut
-
-TASK [Wait for SSH server] *****************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vm-clab-ssh-check.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/ssh.yml for dut => (item=ssh)
 
 TASK [Check if 'sshpass' is installed] *****************************************
 ok: [dut -> localhost]
@@ -30,21 +23,27 @@ ok: [dut -> localhost]
 TASK [Check for 'timeout' command] *********************************************
 ok: [dut -> localhost]
 
-TASK [Execute local ssh command to check vjunos-switch readiness] **************
-FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-switch readiness (40 retries left).
-FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-switch readiness (39 retries left).
-FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-switch readiness (38 retries left).
-FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-switch readiness (37 retries left).
+TASK [Execute local ssh command to check ssh readiness] ************************
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check ssh readiness (40 retries left).
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check ssh readiness (39 retries left).
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check ssh readiness (38 retries left).
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check ssh readiness (37 retries left).
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check ssh readiness (36 retries left).
 ok: [dut -> localhost]
 
 TASK [Confirm dut SSH server works] ********************************************
 ok: [dut] => 
   msg: Node dut is ready.
 
-TASK [Wait for ge-0/0/0 interface] *********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vjunos-switch.yml for dut
+TASK [Find device readiness script] ********************************************
+ok: [probe]
+ok: [dut]
 
-TASK [Wait for ge-0/0/0 to appear] *********************************************
+TASK [Wait for device to become ready] *****************************************
+skipping: [probe]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/junos.yml for dut
+
+TASK [Wait for first interface (ge-0/0/0)] *************************************
 ok: [dut]
 
 TASK [Normalize config on bridge-like devices] *********************************
@@ -432,9 +431,9 @@ ok: [probe] =>
     !
   
     !
+    ! Originate networks from connected subnets
+    !
       network 10.0.0.2/32
-    !
-    !
     !
       neighbor 10.1.0.1 activate
       no neighbor 10.1.0.1 send-community all
@@ -460,6 +459,10 @@ ok: [dut] =>
     policy-options {
       delete: policy-statement bgp-advertise;
       delete: policy-statement bgp-redistribute;
+      delete: policy-statement next-hop-ebgp-ipv4;
+      delete: policy-statement next-hop-all-ipv4;
+      delete: policy-statement next-hop-ebgp-ipv6;
+      delete: policy-statement next-hop-all-ipv6;
       delete: route-filter-list bgp-announce;
     }
   
@@ -468,9 +471,10 @@ ok: [dut] =>
       route-filter-list bgp-announce {
       }
   
-      policy-statement next-hop-self {
-        term next-hop-self {
+      policy-statement next-hop-ebgp-ipv4 {
+        term next-hop-self-ipv4 {
           from {
+            family inet;
             route-type external;
           }
           then {
@@ -478,6 +482,41 @@ ok: [dut] =>
           }
         }
       }
+  
+      policy-statement next-hop-all-ipv4 {
+        term next-hop-self-ipv4 {
+          from {
+            family inet;
+          }
+          then {
+            next-hop self;
+          }
+        }
+      }
+  
+      policy-statement next-hop-ebgp-ipv6 {
+        term next-hop-self-ipv6 {
+          from {
+            family inet6;
+            route-type external;
+          }
+          then {
+            next-hop self;
+          }
+        }
+      }
+  
+      policy-statement next-hop-all-ipv6 {
+        term next-hop-self-ipv6 {
+          from {
+            family inet6;
+          }
+          then {
+            next-hop self;
+          }
+        }
+      }
+  
   
       policy-statement bgp-advertise {
         term advertise {
@@ -547,8 +586,7 @@ ok: [dut] =>
         group ibgp-peers-ipv4 {
           type internal;
           export [
-              next-hop-self
-              bgp-advertise bgp-redistribute bgp-final
+              next-hop-ebgp-ipv4 bgp-advertise bgp-redistribute bgp-final
             ];
           advertise-inactive;
         }
@@ -619,8 +657,8 @@ TASK [junos_config: deploying bgp.policy from /home/pipi/netlab_gh/netsim/extra/
 ok: [dut]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=42   changed=3    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
-probe                      : ok=36   changed=7    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
+dut                        : ok=41   changed=3    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+probe                      : ok=36   changed=7    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
 
 
 

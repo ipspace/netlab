@@ -14,6 +14,29 @@ ok: [x1]
 ok: [x2]
 ok: [dut]
 
+TASK [Generic readiness tests] *************************************************
+skipping: [x1]
+skipping: [x2]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/ssh.yml for dut => (item=ssh)
+
+TASK [Check if 'sshpass' is installed] *****************************************
+ok: [dut -> localhost]
+
+TASK [Check for 'timeout' command] *********************************************
+ok: [dut -> localhost]
+
+TASK [Execute local ssh command to check ssh readiness] ************************
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check ssh readiness (40 retries left).
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check ssh readiness (39 retries left).
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check ssh readiness (38 retries left).
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check ssh readiness (37 retries left).
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check ssh readiness (36 retries left).
+ok: [dut -> localhost]
+
+TASK [Confirm dut SSH server works] ********************************************
+ok: [dut] => 
+  msg: Node dut is ready.
+
 TASK [Find device readiness script] ********************************************
 ok: [x1]
 ok: [x2]
@@ -22,45 +45,22 @@ ok: [dut]
 TASK [Wait for device to become ready] *****************************************
 skipping: [x1]
 skipping: [x2]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vjunos-switch-clab.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/junos.yml for dut
 
-TASK [Wait for SSH server] *****************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vm-clab-ssh-check.yml for dut
-
-TASK [Check if 'sshpass' is installed] *****************************************
-ok: [dut -> localhost]
-
-TASK [Check for 'timeout' command] *********************************************
-ok: [dut -> localhost]
-
-TASK [Execute local ssh command to check vjunos-switch readiness] **************
-FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-switch readiness (40 retries left).
-FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-switch readiness (39 retries left).
-FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-switch readiness (38 retries left).
-FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-switch readiness (37 retries left).
-ok: [dut -> localhost]
-
-TASK [Confirm dut SSH server works] ********************************************
-ok: [dut] => 
-  msg: Node dut is ready.
-
-TASK [Wait for ge-0/0/0 interface] *********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vjunos-switch.yml for dut
-
-TASK [Wait for ge-0/0/0 to appear] *********************************************
+TASK [Wait for first interface (ge-0/0/0)] *************************************
 ok: [dut]
 
 TASK [Normalize config on bridge-like devices] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
-ok: [x1]
 ok: [x2]
+ok: [x1]
 ok: [dut]
 
 TASK [Find configuration template for normalize] *******************************
-ok: [x1]
 ok: [x2]
+ok: [x1]
 ok: [dut]
 
 TASK [fail] ********************************************************************
@@ -87,13 +87,13 @@ TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
-ok: [x2]
 ok: [x1]
+ok: [x2]
 ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
-ok: [x2]
 ok: [x1]
+ok: [x2]
 ok: [dut]
 
 TASK [fail] ********************************************************************
@@ -107,6 +107,72 @@ ok: [x1]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    system {
+      host-name dut;
+      static-host-mapping {
+        x1 inet 10.0.0.2;
+        x2 inet 10.0.0.3;
+      }
+    }
+  
+  
+    interfaces {
+      ge-0/0/0 {
+        mtu 1514;
+      }
+      ge-0/0/1 {
+        mtu 1514;
+      }
+  
+      lo0.0 {
+  
+          family inet {
+            address 10.0.0.1/32;
+          }
+          family inet6 {
+            address 2001:db8:1:1::1/64;
+          }
+  
+      }
+      ge-0/0/0.0 {
+        description "dut -> x1";
+  
+          family inet {
+            address 10.1.0.1/30;
+          }
+          family inet6 {
+            address 2001:db8:3::1/64;
+          }
+  
+      }
+      ge-0/0/1.0 {
+        description "dut -> x1";
+  
+          family inet {
+            address 10.1.0.5/30;
+          }
+          family inet6 {
+            address 2001:db8:3:1::1/64;
+          }
+  
+      }
+    }
+    protocols {
+      lldp {
+        interface fxp0 {
+          disable;
+        }
+        interface all;
+      }
+      router-advertisement {
+        interface ge-0/0/0.0;
+        interface ge-0/0/1.0;
+      }
+    }
 ok: [x2] => 
   msg: |-
     initial configuration for x2
@@ -234,72 +300,6 @@ ok: [x2] =>
     vtysh -f /tmp/config
     !
     exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    system {
-      host-name dut;
-      static-host-mapping {
-        x1 inet 10.0.0.2;
-        x2 inet 10.0.0.3;
-      }
-    }
-  
-  
-    interfaces {
-      ge-0/0/0 {
-        mtu 1514;
-      }
-      ge-0/0/1 {
-        mtu 1514;
-      }
-  
-      lo0.0 {
-  
-          family inet {
-            address 10.0.0.1/32;
-          }
-          family inet6 {
-            address 2001:db8:1:1::1/64;
-          }
-  
-      }
-      ge-0/0/0.0 {
-        description "dut -> x1";
-  
-          family inet {
-            address 10.1.0.1/30;
-          }
-          family inet6 {
-            address 2001:db8:3::1/64;
-          }
-  
-      }
-      ge-0/0/1.0 {
-        description "dut -> x1";
-  
-          family inet {
-            address 10.1.0.5/30;
-          }
-          family inet6 {
-            address 2001:db8:3:1::1/64;
-          }
-  
-      }
-    }
-    protocols {
-      lldp {
-        interface fxp0 {
-          disable;
-        }
-        interface all;
-      }
-      router-advertisement {
-        interface ge-0/0/0.0;
-        interface ge-0/0/1.0;
-      }
-    }
 ok: [x1] => 
   msg: |-
     initial configuration for x1
@@ -465,8 +465,8 @@ ok: [x1]
 ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
@@ -746,8 +746,8 @@ skipping: [dut]
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
@@ -758,16 +758,16 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=31   changed=2    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
-x1                         : ok=29   changed=5    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
-x2                         : ok=28   changed=4    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
+dut                        : ok=30   changed=2    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+x1                         : ok=29   changed=5    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+x2                         : ok=28   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 
 
 

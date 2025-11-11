@@ -13,27 +13,16 @@ TASK [Set variables that cannot be set with VARS] ******************************
 ok: [h1]
 ok: [s1]
 ok: [h2]
-ok: [s2]
 ok: [h3]
+ok: [s2]
 ok: [h4]
 
-TASK [Find device readiness script] ********************************************
-ok: [h1]
-ok: [h2]
-ok: [s1]
-ok: [s2]
-ok: [h3]
-ok: [h4]
-
-TASK [Wait for device to become ready] *****************************************
+TASK [Generic readiness tests] *************************************************
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vjunos-switch-clab.yml for s1, s2
-
-TASK [Wait for SSH server] *****************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vm-clab-ssh-check.yml for s1, s2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/ssh.yml for s1, s2 => (item=ssh)
 
 TASK [Check if 'sshpass' is installed] *****************************************
 ok: [s1 -> localhost]
@@ -42,17 +31,17 @@ TASK [Check for 'timeout' command] *********************************************
 ok: [s2 -> localhost]
 ok: [s1 -> localhost]
 
-TASK [Execute local ssh command to check vjunos-switch readiness] **************
-FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (40 retries left).
-FAILED - RETRYING: [s2 -> localhost]: Execute local ssh command to check vjunos-switch readiness (40 retries left).
-FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (39 retries left).
-FAILED - RETRYING: [s2 -> localhost]: Execute local ssh command to check vjunos-switch readiness (39 retries left).
-FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (38 retries left).
-FAILED - RETRYING: [s2 -> localhost]: Execute local ssh command to check vjunos-switch readiness (38 retries left).
-FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (37 retries left).
-FAILED - RETRYING: [s2 -> localhost]: Execute local ssh command to check vjunos-switch readiness (37 retries left).
-FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (36 retries left).
-FAILED - RETRYING: [s2 -> localhost]: Execute local ssh command to check vjunos-switch readiness (36 retries left).
+TASK [Execute local ssh command to check ssh readiness] ************************
+FAILED - RETRYING: [s2 -> localhost]: Execute local ssh command to check ssh readiness (40 retries left).
+FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check ssh readiness (40 retries left).
+FAILED - RETRYING: [s2 -> localhost]: Execute local ssh command to check ssh readiness (39 retries left).
+FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check ssh readiness (39 retries left).
+FAILED - RETRYING: [s2 -> localhost]: Execute local ssh command to check ssh readiness (38 retries left).
+FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check ssh readiness (38 retries left).
+FAILED - RETRYING: [s2 -> localhost]: Execute local ssh command to check ssh readiness (37 retries left).
+FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check ssh readiness (37 retries left).
+FAILED - RETRYING: [s2 -> localhost]: Execute local ssh command to check ssh readiness (36 retries left).
+FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check ssh readiness (36 retries left).
 ok: [s2 -> localhost]
 ok: [s1 -> localhost]
 
@@ -62,12 +51,24 @@ ok: [s1] =>
 ok: [s2] => 
   msg: Node s2 is ready.
 
-TASK [Wait for ge-0/0/0 interface] *********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vjunos-switch.yml for s1, s2
-
-TASK [Wait for ge-0/0/0 to appear] *********************************************
-ok: [s2]
+TASK [Find device readiness script] ********************************************
+ok: [h1]
+ok: [h3]
+ok: [h2]
 ok: [s1]
+ok: [s2]
+ok: [h4]
+
+TASK [Wait for device to become ready] *****************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [h3]
+skipping: [h4]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/junos.yml for s1, s2
+
+TASK [Wait for first interface (ge-0/0/0)] *************************************
+ok: [s1]
+ok: [s2]
 
 TASK [Normalize config on bridge-like devices] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2, h1, h2, h3, h4
@@ -99,8 +100,8 @@ skipping: [h4]
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [h1]
 ok: [h2]
-ok: [h3]
 ok: [s1]
+ok: [h3]
 ok: [h4]
 ok: [s2]
 
@@ -133,9 +134,9 @@ ok: [s2]
 
 TASK [Find configuration template for initial] *********************************
 ok: [h1]
-ok: [h3]
 ok: [h2]
 ok: [h4]
+ok: [h3]
 ok: [s1]
 ok: [s2]
 
@@ -152,10 +153,45 @@ ok: [h1]
 ok: [h2]
 ok: [h3]
 ok: [s1]
-ok: [h4]
 ok: [s2]
+ok: [h4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+  
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.0.3/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.0.3/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
 ok: [h3] => 
   msg: |-
     initial configuration for h3
@@ -224,41 +260,6 @@ ok: [h2] =>
     ip addr del 172.16.1.4/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.1.4/24 dev eth1
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
-ok: [h1] => 
-  msg: |-
-    initial configuration for h1
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Send ARP requests from a sane source IP address
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-  
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.0.3/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.0.3/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
 ok: [h4] => 
@@ -641,8 +642,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml
 
 TASK [junos_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/junos.j2] ***
 [WARNING]: mgd: statement has no contents; ignored
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
@@ -651,16 +652,16 @@ ok: [h3]
 ok: [h4]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 changed: [h4 -> localhost]
 changed: [h3 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h1 -> localhost]
-changed: [h3 -> localhost]
 changed: [h4 -> localhost]
 changed: [h2 -> localhost]
+changed: [h3 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -675,25 +676,25 @@ skipping: [h3]
 skipping: [h4]
 
 TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
-changed: [h4 -> localhost]
+changed: [h2 -> localhost]
 changed: [h3 -> localhost]
+changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-miuihsm6.sh] ***********************
+TASK [Remove temporary file /tmp/h1_initial-2ety5wec.sh] ***********************
 changed: [h2 -> localhost]
-changed: [h1 -> localhost]
 changed: [h4 -> localhost]
 changed: [h3 -> localhost]
+changed: [h1 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [h1]
+ok: [s1]
 ok: [h2]
 ok: [h3]
 ok: [h4]
-ok: [s1]
 ok: [s2]
 
 TASK [Deploy individual configuration modules] *********************************
@@ -707,9 +708,9 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for s1, s2
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [h1]
-ok: [s2]
 ok: [h2]
 ok: [h3]
+ok: [s2]
 ok: [s1]
 ok: [h4]
 
@@ -857,14 +858,14 @@ skipping: [h4]
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for s1, s2
 
 TASK [junos_config: deploying vlan from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/vjunos-switch.j2] ***
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [Figure out whether to deploy the module routing on current device] *******
 ok: [h1]
+ok: [s1]
 ok: [h2]
 ok: [h3]
-ok: [s1]
 ok: [h4]
 ok: [s2]
 
@@ -873,8 +874,8 @@ skipping: [s1]
 skipping: [s2]
 ok: [h1]
 ok: [h2]
-ok: [h3]
 ok: [h4]
+ok: [h3]
 
 TASK [fail] ********************************************************************
 skipping: [s1]
@@ -888,9 +889,9 @@ TASK [Find configuration deployment deploy_script for routing] *****************
 skipping: [s1]
 skipping: [s2]
 ok: [h1]
-ok: [h4]
 ok: [h2]
 ok: [h3]
+ok: [h4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [s1]
@@ -1025,14 +1026,14 @@ ok: [h3]
 
 TASK [Create a temporary file for the rendered script] *************************
 changed: [h1 -> localhost]
-changed: [h4 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
+changed: [h4 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
 changed: [h1 -> localhost]
-changed: [h2 -> localhost]
 changed: [h3 -> localhost]
+changed: [h2 -> localhost]
 changed: [h4 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
@@ -1049,23 +1050,23 @@ skipping: [h4]
 
 TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
 changed: [h1 -> localhost]
-changed: [h2 -> localhost]
-changed: [h3 -> localhost]
 changed: [h4 -> localhost]
+changed: [h3 -> localhost]
+changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-t_sxj2nv.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-ypod2ru5.sh] ***********************
 changed: [h1 -> localhost]
-changed: [h4 -> localhost]
-changed: [h2 -> localhost]
 changed: [h3 -> localhost]
+changed: [h2 -> localhost]
+changed: [h4 -> localhost]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [h1]
 ok: [s1]
 ok: [h2]
-ok: [s2]
-ok: [h3]
 ok: [h4]
+ok: [h3]
+ok: [s2]
 
 TASK [Find configuration template for ospf] ************************************
 skipping: [h1]
@@ -1077,8 +1078,8 @@ ok: [s2]
 
 TASK [fail] ********************************************************************
 skipping: [s1]
-skipping: [s2]
 skipping: [h1]
+skipping: [s2]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
@@ -1169,8 +1170,8 @@ TASK [Find configuration template for bgp] *************************************
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
-ok: [s1]
 skipping: [h4]
+ok: [s1]
 ok: [s2]
 
 TASK [fail] ********************************************************************
@@ -1210,7 +1211,10 @@ ok: [s1] =>
     policy-options {
       delete: policy-statement bgp-advertise;
       delete: policy-statement bgp-redistribute;
-      delete: policy-statement next-hop-self;
+      delete: policy-statement next-hop-ebgp-ipv4;
+      delete: policy-statement next-hop-all-ipv4;
+      delete: policy-statement next-hop-ebgp-ipv6;
+      delete: policy-statement next-hop-all-ipv6;
       delete: route-filter-list bgp-announce;
     }
   
@@ -1219,7 +1223,7 @@ ok: [s1] =>
       route-filter-list bgp-announce {
       }
   
-      policy-statement next-hop-self {
+      policy-statement next-hop-ebgp-ipv4 {
         term next-hop-self-ipv4 {
           from {
             family inet;
@@ -1229,6 +1233,20 @@ ok: [s1] =>
             next-hop self;
           }
         }
+      }
+  
+      policy-statement next-hop-all-ipv4 {
+        term next-hop-self-ipv4 {
+          from {
+            family inet;
+          }
+          then {
+            next-hop self;
+          }
+        }
+      }
+  
+      policy-statement next-hop-ebgp-ipv6 {
         term next-hop-self-ipv6 {
           from {
             family inet6;
@@ -1239,6 +1257,18 @@ ok: [s1] =>
           }
         }
       }
+  
+      policy-statement next-hop-all-ipv6 {
+        term next-hop-self-ipv6 {
+          from {
+            family inet6;
+          }
+          then {
+            next-hop self;
+          }
+        }
+      }
+  
   
       policy-statement bgp-advertise {
         term advertise {
@@ -1308,8 +1338,7 @@ ok: [s1] =>
         group ibgp-peers-ipv4 {
           type internal;
           export [
-              next-hop-self
-              bgp-advertise bgp-redistribute bgp-final
+              next-hop-ebgp-ipv4 bgp-advertise bgp-redistribute bgp-final
             ];
           advertise-inactive;
           neighbor 10.0.0.2 {
@@ -1345,7 +1374,10 @@ ok: [s2] =>
     policy-options {
       delete: policy-statement bgp-advertise;
       delete: policy-statement bgp-redistribute;
-      delete: policy-statement next-hop-self;
+      delete: policy-statement next-hop-ebgp-ipv4;
+      delete: policy-statement next-hop-all-ipv4;
+      delete: policy-statement next-hop-ebgp-ipv6;
+      delete: policy-statement next-hop-all-ipv6;
       delete: route-filter-list bgp-announce;
     }
   
@@ -1354,7 +1386,7 @@ ok: [s2] =>
       route-filter-list bgp-announce {
       }
   
-      policy-statement next-hop-self {
+      policy-statement next-hop-ebgp-ipv4 {
         term next-hop-self-ipv4 {
           from {
             family inet;
@@ -1364,6 +1396,20 @@ ok: [s2] =>
             next-hop self;
           }
         }
+      }
+  
+      policy-statement next-hop-all-ipv4 {
+        term next-hop-self-ipv4 {
+          from {
+            family inet;
+          }
+          then {
+            next-hop self;
+          }
+        }
+      }
+  
+      policy-statement next-hop-ebgp-ipv6 {
         term next-hop-self-ipv6 {
           from {
             family inet6;
@@ -1374,6 +1420,18 @@ ok: [s2] =>
           }
         }
       }
+  
+      policy-statement next-hop-all-ipv6 {
+        term next-hop-self-ipv6 {
+          from {
+            family inet6;
+          }
+          then {
+            next-hop self;
+          }
+        }
+      }
+  
   
       policy-statement bgp-advertise {
         term advertise {
@@ -1443,8 +1501,7 @@ ok: [s2] =>
         group ibgp-peers-ipv4 {
           type internal;
           export [
-              next-hop-self
-              bgp-advertise bgp-redistribute bgp-final
+              next-hop-ebgp-ipv4 bgp-advertise bgp-redistribute bgp-final
             ];
           advertise-inactive;
           neighbor 10.0.0.1 {
@@ -1479,17 +1536,17 @@ changed: [s2]
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [s1]
 ok: [h1]
-ok: [s2]
 ok: [h2]
 ok: [h3]
+ok: [s2]
 ok: [h4]
 
 TASK [Find configuration template for vrf] *************************************
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
-skipping: [h4]
 ok: [s1]
+skipping: [h4]
 ok: [s2]
 
 TASK [fail] ********************************************************************
@@ -1774,16 +1831,16 @@ skipping: [h4]
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for s1, s2
 
 TASK [junos_config: deploying vrf from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/junos.j2] ***
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 TASK [Figure out whether to deploy the module vxlan on current device] *********
 ok: [h1]
-ok: [s2]
 ok: [h2]
-ok: [s1]
 ok: [h3]
 ok: [h4]
+ok: [s1]
+ok: [s2]
 
 TASK [Find configuration template for vxlan] ***********************************
 skipping: [h1]
@@ -1806,8 +1863,8 @@ skipping: [h1]
 skipping: [h2]
 skipping: [h3]
 skipping: [h4]
-ok: [s1]
 ok: [s2]
+ok: [s1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [h1]
@@ -1915,10 +1972,10 @@ changed: [s2]
 changed: [s1]
 
 TASK [Figure out whether to deploy the module evpn on current device] **********
-ok: [s1]
 ok: [h1]
 ok: [h2]
 ok: [h3]
+ok: [s1]
 ok: [s2]
 ok: [h4]
 
@@ -1926,8 +1983,8 @@ TASK [Find configuration template for evpn] ************************************
 skipping: [h1]
 skipping: [h2]
 skipping: [h3]
-ok: [s1]
 skipping: [h4]
+ok: [s1]
 ok: [s2]
 
 TASK [fail] ********************************************************************
@@ -2158,19 +2215,19 @@ skipping: [h4]
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for s1, s2
 
 TASK [junos_config: deploying evpn from /home/pipi/netlab_gh/netsim/ansible/templates/evpn/vjunos-switch.j2] ***
-changed: [s2]
 changed: [s1]
+changed: [s2]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=41   changed=8    unreachable=0    failed=0    skipped=40   rescued=0    ignored=0   
-h2                         : ok=41   changed=8    unreachable=0    failed=0    skipped=40   rescued=0    ignored=0   
-h3                         : ok=41   changed=8    unreachable=0    failed=0    skipped=40   rescued=0    ignored=0   
-h4                         : ok=41   changed=8    unreachable=0    failed=0    skipped=40   rescued=0    ignored=0   
-s1                         : ok=66   changed=7    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
-s2                         : ok=65   changed=7    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+h1                         : ok=41   changed=8    unreachable=0    failed=0    skipped=41   rescued=0    ignored=0   
+h2                         : ok=41   changed=8    unreachable=0    failed=0    skipped=41   rescued=0    ignored=0   
+h3                         : ok=41   changed=8    unreachable=0    failed=0    skipped=41   rescued=0    ignored=0   
+h4                         : ok=41   changed=8    unreachable=0    failed=0    skipped=41   rescued=0    ignored=0   
+s1                         : ok=65   changed=7    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+s2                         : ok=64   changed=7    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 
 
 

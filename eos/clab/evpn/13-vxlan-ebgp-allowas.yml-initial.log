@@ -1,3 +1,7 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -10,22 +14,40 @@ ok: [h1]
 ok: [h2]
 ok: [l1]
 
-TASK [Find device readiness script] ********************************************
-ok: [spine]
-ok: [l2]
-ok: [h1]
-ok: [h2]
-ok: [l1]
-
-TASK [Wait for device to become ready] *****************************************
+TASK [Generic readiness tests] *************************************************
 skipping: [spine]
 skipping: [l2]
 skipping: [h1]
 skipping: [h2]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/eos-clab.yml for l1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/ssh.yml for l1 => (item=ssh)
 
-TASK [Wait for cEOS SSH daemon to start] ***************************************
+TASK [Check if 'sshpass' is installed] *****************************************
+ok: [l1 -> localhost]
+
+TASK [Check for 'timeout' command] *********************************************
+ok: [l1 -> localhost]
+
+TASK [Execute local ssh command to check ssh readiness] ************************
+FAILED - RETRYING: [l1 -> localhost]: Execute local ssh command to check ssh readiness (20 retries left).
+ok: [l1 -> localhost]
+
+TASK [Confirm l1 SSH server works] *********************************************
+ok: [l1] => 
+  msg: Node l1 is ready.
+
+TASK [Find device readiness script] ********************************************
+ok: [spine]
+ok: [l2]
+ok: [h2]
+ok: [h1]
 ok: [l1]
+
+TASK [Wait for device to become ready] *****************************************
+skipping: [spine]
+skipping: [l1]
+skipping: [l2]
+skipping: [h1]
+skipping: [h2]
 
 TASK [Normalize config on bridge-like devices] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for spine, l1, l2, h1, h2
@@ -119,41 +141,6 @@ ok: [h2]
 ok: [l1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [h1] => 
-  msg: |-
-    initial configuration for h1
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Send ARP requests from a sane source IP address
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-  
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.31.1.4/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.31.1.4/24 dev eth1
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
 ok: [h2] => 
   msg: |-
     initial configuration for h2
@@ -187,6 +174,41 @@ ok: [h2] =>
     ip addr del 172.31.1.5/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.31.1.5/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+  
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.31.1.4/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.31.1.4/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
 ok: [spine] => 
@@ -512,8 +534,8 @@ changed: [h2 -> localhost]
 changed: [h1 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -527,9 +549,9 @@ TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/a
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-9sv7bc7n.sh] ***********************
-changed: [h1 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-x2k_qx9z.sh] ***********************
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -724,23 +746,23 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-_urj1nxd.sh] ***********************
-changed: [h2 -> localhost]
+TASK [Remove temporary file /tmp/h1_routing-aa210txu.sh] ***********************
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [spine]
 ok: [l2]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 ok: [l1]
 
 TASK [Find configuration template for bgp] *************************************
-ok: [spine]
 skipping: [h1]
+ok: [spine]
 skipping: [h2]
 ok: [l2]
 ok: [l1]
@@ -787,9 +809,9 @@ ok: [spine] =>
     !
   
     !
+    ! Originate networks from connected subnets
+    !
       network 10.0.0.1/32
-    !
-    !
     !
       neighbor 10.1.0.1 activate
       no neighbor 10.1.0.1 send-community all
@@ -828,9 +850,9 @@ ok: [l2] =>
     !
   
     !
+    ! Originate networks from connected subnets
+    !
       network 10.0.0.3/32
-    !
-    !
     !
       neighbor 10.1.0.6 activate
       no neighbor 10.1.0.6 send-community all
@@ -861,8 +883,11 @@ ok: [l1] =>
     !
      address-family ipv4
   
-      network 10.0.0.2/32
     !
+    !
+    ! Originate networks from connected subnets
+    !
+      network 10.0.0.2/32
     !
     !
       neighbor 10.1.0.2 activate
@@ -1112,8 +1137,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for sp
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for l1
 
 TASK [template] ****************************************************************
-changed: [spine]
 changed: [l2]
+changed: [spine]
 
 TASK [set_fact] ****************************************************************
 ok: [spine]
@@ -1179,11 +1204,11 @@ TASK [run vtysh to import bgp.session config from /home/pipi/netlab_gh/netsim/ex
 skipping: [l2]
 
 PLAY RECAP *********************************************************************
-h1                         : ok=37   changed=8    unreachable=0    failed=0    skipped=30   rescued=0    ignored=0   
-h2                         : ok=37   changed=8    unreachable=0    failed=0    skipped=30   rescued=0    ignored=0   
-l1                         : ok=55   changed=7    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
-l2                         : ok=63   changed=12   unreachable=0    failed=0    skipped=24   rescued=0    ignored=0   
-spine                      : ok=42   changed=7    unreachable=0    failed=0    skipped=26   rescued=0    ignored=0   
+h1                         : ok=37   changed=8    unreachable=0    failed=0    skipped=31   rescued=0    ignored=0   
+h2                         : ok=37   changed=8    unreachable=0    failed=0    skipped=31   rescued=0    ignored=0   
+l1                         : ok=58   changed=7    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+l2                         : ok=63   changed=12   unreachable=0    failed=0    skipped=25   rescued=0    ignored=0   
+spine                      : ok=42   changed=7    unreachable=0    failed=0    skipped=27   rescued=0    ignored=0   
 
 
 
