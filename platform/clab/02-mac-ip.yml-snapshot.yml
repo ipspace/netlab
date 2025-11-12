@@ -1,17 +1,12 @@
 %YAML 1.1
 ---
 message: |
-  The test checks different combinations of Vagrant user authentication:
-
-  * SSH password + SSH private key (default)
-  * SSH password only
-  * SSH private key only
-
-  Ansible access is checked during the configuration phase, netlab access
-  during the validation phase
-provider: libvirt
+  Tests containers with custom management IP addresses and checks that netlab
+  can successfully configure them. It also checks the configuration of containers
+  disconnected from the management network.
+provider: clab
 defaults:
-  provider: libvirt
+  provider: clab
   providers:
     clab:
       description: containerlab with Docker
@@ -5629,7 +5624,7 @@ defaults:
             vifprefix: vgif_17
       addressing:
         mgmt:
-          ipv4: 192.168.17.0/24
+          ipv4: 192.42.42.0/24
           _network: nl_mgmt_17
           _bridge: nl_mgmt_17
     id: 17
@@ -5651,12 +5646,12 @@ defaults:
     - /home/pipi/netlab_gh/netsim/validate
     plugin:
     - /work/netlab_cicd
-    - /home/pipi/net101/tools/tests/platform-integration/libvirt
+    - /home/pipi/net101/tools/tests/platform-integration/clab
     - /home/pipi/.netlab
     - /home/pipi/netlab_gh/netsim/extra
     custom:
       dirs:
-      - /home/pipi/net101/tools/tests/platform-integration/libvirt
+      - /home/pipi/net101/tools/tests/platform-integration/clab
       - /work/netlab_cicd
       - /home/pipi/.netlab
       - /home/pipi/netlab_gh/netsim/extra
@@ -7661,7 +7656,7 @@ defaults:
       unknown: true
       vjunos-switch: true
       vyos: true
-  device: frr
+  device: eos
   sources:
     list: []
     extra: []
@@ -7699,316 +7694,7 @@ ospf:
   area: 0.0.0.0
   timers:
     hello: 1
-nodes:
-  r1:
-    name: r1
-    interfaces:
-    - ipv4: 10.1.0.1/30
-      linkindex: 1
-      type: p2p
-      name: r1 -> r2
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 10.1.0.2/30
-        ifname: eth1
-        node: r2
-      ospf:
-        area: 0.0.0.0
-        timers:
-          hello: 1
-          dead: 4
-        passive: false
-        network_type: point-to-point
-    device: frr
-    box: debian/bookworm64
-    module:
-    - ospf
-    ospf:
-      area: 0.0.0.0
-      timers:
-        hello: 1
-      router_id: 10.0.0.1
-      af:
-        ipv4: true
-    id: 1
-    role: router
-    mtu: 1500
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:01:00:00
-      ipv4: 192.168.17.101
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.1/32
-      ospf:
-        area: 0.0.0.0
-        passive: false
-  r2:
-    ansible_ssh_private_key_file:
-    name: r2
-    interfaces:
-    - ipv4: 10.1.0.2/30
-      linkindex: 1
-      type: p2p
-      name: r2 -> r1
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 10.1.0.1/30
-        ifname: eth1
-        node: r1
-      ospf:
-        area: 0.0.0.0
-        timers:
-          hello: 1
-          dead: 4
-        passive: false
-        network_type: point-to-point
-    - ipv4: 10.1.0.5/30
-      linkindex: 2
-      type: p2p
-      name: r2 -> r3
-      ifindex: 2
-      ifname: eth2
-      mtu: 1500
-      neighbors:
-      - ipv4: 10.1.0.6/30
-        ifname: eth1
-        node: r3
-      ospf:
-        area: 0.0.0.0
-        timers:
-          hello: 1
-          dead: 4
-        passive: false
-        network_type: point-to-point
-    - ipv4: 10.1.0.9/30
-      linkindex: 3
-      type: p2p
-      name: r2 -> r4
-      ifindex: 3
-      ifname: eth3
-      mtu: 1500
-      neighbors:
-      - ipv4: 10.1.0.10/30
-        ifname: eth1
-        node: r4
-      ospf:
-        area: 0.0.0.0
-        timers:
-          hello: 1
-          dead: 4
-        passive: false
-        network_type: point-to-point
-    device: frr
-    box: debian/bookworm64
-    module:
-    - ospf
-    ospf:
-      area: 0.0.0.0
-      timers:
-        hello: 1
-      router_id: 10.0.0.2
-      af:
-        ipv4: true
-    id: 2
-    role: router
-    mtu: 1500
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:02:00:00
-      ipv4: 192.168.17.102
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.2/32
-      ospf:
-        area: 0.0.0.0
-        passive: false
-  r3:
-    ansible_ssh_pass:
-    name: r3
-    interfaces:
-    - ipv4: 10.1.0.6/30
-      linkindex: 2
-      type: p2p
-      name: r3 -> r2
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 10.1.0.5/30
-        ifname: eth2
-        node: r2
-      ospf:
-        area: 0.0.0.0
-        timers:
-          hello: 1
-          dead: 4
-        passive: false
-        network_type: point-to-point
-    device: frr
-    box: debian/bookworm64
-    module:
-    - ospf
-    ospf:
-      area: 0.0.0.0
-      timers:
-        hello: 1
-      router_id: 10.0.0.3
-      af:
-        ipv4: true
-    id: 3
-    role: router
-    mtu: 1500
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:03:00:00
-      ipv4: 192.168.17.103
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.3/32
-      ospf:
-        area: 0.0.0.0
-        passive: false
-  r4:
-    ansible_ssh_pass:
-    netlab_quick_start: true
-    name: r4
-    interfaces:
-    - ipv4: 10.1.0.10/30
-      linkindex: 3
-      type: p2p
-      name: r4 -> r2
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 10.1.0.9/30
-        ifname: eth3
-        node: r2
-      ospf:
-        area: 0.0.0.0
-        timers:
-          hello: 1
-          dead: 4
-        passive: false
-        network_type: point-to-point
-    device: frr
-    box: debian/bookworm64
-    module:
-    - ospf
-    ospf:
-      area: 0.0.0.0
-      timers:
-        hello: 1
-      router_id: 10.0.0.4
-      af:
-        ipv4: true
-    id: 4
-    role: router
-    mtu: 1500
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:04:00:00
-      ipv4: 192.168.17.104
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.4/32
-      ospf:
-        area: 0.0.0.0
-        passive: false
-links:
-- interfaces:
-  - node: r1
-    ipv4: 10.1.0.1/30
-    ifindex: 1
-    ifname: eth1
-  - node: r2
-    ipv4: 10.1.0.2/30
-    ifindex: 1
-    ifname: eth1
-  _linkname: links[1]
-  linkindex: 1
-  node_count: 2
-  type: p2p
-  prefix:
-    ipv4: 10.1.0.0/30
-- interfaces:
-  - node: r2
-    ipv4: 10.1.0.5/30
-    ifindex: 2
-    ifname: eth2
-  - node: r3
-    ipv4: 10.1.0.6/30
-    ifindex: 1
-    ifname: eth1
-  _linkname: links[2]
-  linkindex: 2
-  node_count: 2
-  type: p2p
-  prefix:
-    ipv4: 10.1.0.4/30
-- interfaces:
-  - node: r2
-    ipv4: 10.1.0.9/30
-    ifindex: 3
-    ifname: eth3
-  - node: r4
-    ipv4: 10.1.0.10/30
-    ifindex: 1
-    ifname: eth1
-  _linkname: links[3]
-  linkindex: 3
-  node_count: 2
-  type: p2p
-  prefix:
-    ipv4: 10.1.0.8/30
-validate:
-- plugin: ospf_neighbor(nodes.r2.ospf.router_id)
-  wait: 15
-  nodes:
-  - r1
-  - r3
-  - r4
-  name: adj_r2
-- plugin: ospf_neighbor(nodes.r1.ospf.router_id)
-  nodes:
-  - r2
-  name: adj_r1
-input:
-- /home/pipi/net101/tools/tests/platform-integration/libvirt/03-authentication.yml
-- /home/pipi/.netlab.yml
-- package:topology-defaults.yml
-plugin:
-- multilab
-name: ml_17
+    dead: 4
 addressing:
   lan:
     ipv4: 172.16.0.0/16
@@ -8023,7 +7709,7 @@ addressing:
     ipv4: 10.0.0.0/24
     prefix: 32
   mgmt:
-    ipv4: 192.168.17.0/24
+    ipv4: 192.42.42.0/24
     start: 100
     mac: CA-FE-00-00-00-00
     _network: nl_mgmt_17
@@ -8033,4 +7719,250 @@ addressing:
   vrf_loopback:
     ipv4: 10.2.0.0/24
     prefix: 32
+nodes:
+  r1:
+    mgmt:
+      mac: 0a:4f:a9:01:00:00
+      ipv4: 192.42.42.110
+      ifname: Management0
+    name: r1
+    interfaces:
+    - ipv4: 10.1.0.1/30
+      linkindex: 1
+      type: p2p
+      name: r1 -> r2
+      ifindex: 1
+      ifname: Ethernet1
+      mac_address: caf0.0001.0001
+      clab:
+        name: et1
+      neighbors:
+      - ipv4: 10.1.0.2/30
+        ifname: Ethernet1
+        node: r2
+      ospf:
+        area: 0.0.0.0
+        timers:
+          hello: 1
+          dead: 4
+        passive: false
+        network_type: point-to-point
+    device: eos
+    clab:
+      kind: ceos
+      env:
+        INTFTYPE: et
+        CLAB_MGMT_VRF: management
+    box: ceos:4.34.2F
+    module:
+    - ospf
+    ospf:
+      area: 0.0.0.0
+      timers:
+        hello: 1
+        dead: 4
+      router_id: 10.0.0.1
+      af:
+        ipv4: true
+    id: 1
+    role: router
+    af:
+      ipv4: true
+    hostname: clab-ml_17-r1
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.1/32
+      ospf:
+        area: 0.0.0.0
+        passive: false
+  r2:
+    mgmt:
+      mac: 0a:4f:a9:02:00:01
+      ipv4: 192.42.42.207
+      ifname: Management0
+    name: r2
+    interfaces:
+    - ipv4: 10.1.0.2/30
+      linkindex: 1
+      type: p2p
+      name: r2 -> r1
+      ifindex: 1
+      ifname: Ethernet1
+      mac_address: caf0.0002.0001
+      clab:
+        name: et1
+      neighbors:
+      - ipv4: 10.1.0.1/30
+        ifname: Ethernet1
+        node: r1
+      ospf:
+        area: 0.0.0.0
+        timers:
+          hello: 1
+          dead: 4
+        passive: false
+        network_type: point-to-point
+    - ipv4: 10.1.0.5/30
+      linkindex: 2
+      type: p2p
+      name: r2 -> r3
+      ifindex: 2
+      ifname: Ethernet2
+      mac_address: caf0.0002.0002
+      clab:
+        name: et2
+      neighbors:
+      - ipv4: 10.1.0.6/30
+        ifname: eth1
+        node: r3
+      ospf:
+        area: 0.0.0.0
+        timers:
+          hello: 1
+          dead: 4
+        passive: false
+        network_type: point-to-point
+    device: eos
+    clab:
+      kind: ceos
+      env:
+        INTFTYPE: et
+        CLAB_MGMT_VRF: management
+    box: ceos:4.34.2F
+    module:
+    - ospf
+    ospf:
+      area: 0.0.0.0
+      timers:
+        hello: 1
+        dead: 4
+      router_id: 10.0.0.2
+      af:
+        ipv4: true
+    id: 2
+    role: router
+    af:
+      ipv4: true
+    hostname: clab-ml_17-r2
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.2/32
+      ospf:
+        area: 0.0.0.0
+        passive: false
+  r3:
+    device: frr
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts:shared
+      network-mode: none
+      binds:
+      - clab_files/r3/daemons:/etc/frr/daemons
+      - clab_files/-shared-hosts:/etc/hosts:ro
+    name: r3
+    interfaces:
+    - ipv4: 10.1.0.6/30
+      linkindex: 2
+      type: p2p
+      name: r3 -> r2
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 10.1.0.5/30
+        ifname: Ethernet2
+        node: r2
+      ospf:
+        area: 0.0.0.0
+        timers:
+          hello: 1
+          dead: 4
+        passive: false
+        network_type: point-to-point
+    box: quay.io/frrouting/frr:10.5.0
+    module:
+    - ospf
+    ospf:
+      area: 0.0.0.0
+      timers:
+        hello: 1
+        dead: 4
+      router_id: 10.0.0.3
+      af:
+        ipv4: true
+    id: 3
+    role: router
+    mtu: 1500
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:03:00:00
+      ipv4: 192.42.42.103
+    hostname: clab-ml_17-r3
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.3/32
+      ospf:
+        area: 0.0.0.0
+        passive: false
+links:
+- interfaces:
+  - node: r1
+    ipv4: 10.1.0.1/30
+    ifindex: 1
+    ifname: Ethernet1
+  - node: r2
+    ipv4: 10.1.0.2/30
+    ifindex: 1
+    ifname: Ethernet1
+  _linkname: links[1]
+  linkindex: 1
+  node_count: 2
+  type: p2p
+  prefix:
+    ipv4: 10.1.0.0/30
+- interfaces:
+  - node: r2
+    ipv4: 10.1.0.5/30
+    ifindex: 2
+    ifname: Ethernet2
+  - node: r3
+    ipv4: 10.1.0.6/30
+    ifindex: 1
+    ifname: eth1
+  _linkname: links[2]
+  linkindex: 2
+  node_count: 2
+  type: p2p
+  prefix:
+    ipv4: 10.1.0.4/30
+validate:
+- plugin: ospf_neighbor(nodes.r2.ospf.router_id)
+  wait: 15
+  nodes:
+  - r1
+  - r3
+  name: adj
+input:
+- /home/pipi/net101/tools/tests/platform-integration/clab/02-mac-ip.yml
+- /home/pipi/.netlab.yml
+- package:topology-defaults.yml
+plugin:
+- multilab
+name: ml_17
 _netlab_version: 25.11-dev
