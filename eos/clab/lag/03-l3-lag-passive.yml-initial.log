@@ -1,3 +1,7 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -8,18 +12,42 @@ ok: [dut]
 ok: [x1]
 ok: [x2]
 
+TASK [Generic readiness tests] *************************************************
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/ssh.yml for dut, x1, x2 => (item=ssh)
+
+TASK [Check if 'sshpass' is installed] *****************************************
+ok: [dut -> localhost]
+
+TASK [Check for 'timeout' command] *********************************************
+ok: [dut -> localhost]
+ok: [x1 -> localhost]
+ok: [x2 -> localhost]
+
+TASK [Execute local ssh command to check ssh readiness] ************************
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check ssh readiness (20 retries left).
+FAILED - RETRYING: [x2 -> localhost]: Execute local ssh command to check ssh readiness (20 retries left).
+FAILED - RETRYING: [x1 -> localhost]: Execute local ssh command to check ssh readiness (20 retries left).
+ok: [x2 -> localhost]
+ok: [dut -> localhost]
+ok: [x1 -> localhost]
+
+TASK [Confirm dut SSH server works] ********************************************
+ok: [dut] => 
+  msg: Node dut is ready.
+ok: [x1] => 
+  msg: Node x1 is ready.
+ok: [x2] => 
+  msg: Node x2 is ready.
+
 TASK [Find device readiness script] ********************************************
 ok: [dut]
 ok: [x1]
 ok: [x2]
 
 TASK [Wait for device to become ready] *****************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/eos-clab.yml for dut, x1, x2
-
-TASK [Wait for cEOS SSH daemon to start] ***************************************
-ok: [x2]
-ok: [x1]
-ok: [dut]
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
 
 TASK [Normalize config on bridge-like devices] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
@@ -89,8 +117,8 @@ TASK [eos_config: deploying normalize from /home/pipi/netlab_gh/netsim/ansible/t
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
 should be similar to how they appear if present in the running configuration on
 device including the indentation
-changed: [x2]
 changed: [x1]
+changed: [x2]
 changed: [dut]
 
 TASK [Deploy initial configuration] ********************************************
@@ -117,6 +145,52 @@ ok: [x1]
 ok: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [x1] => 
+  msg: |-
+    initial configuration for x1
+    =========================================
+    hostname x1
+    !
+    logging monitor debugging
+    aaa authorization exec default local
+    !
+    lldp run
+    ip routing
+    no ipv6 unicast-routing
+    !
+    !
+    ip host dut 10.0.0.1 172.16.0.1 172.16.1.1
+    ip host x2 10.0.0.3 172.16.1.3
+    !
+    interface Management0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     ip address 10.0.0.2/32
+    !
+    interface port-channel1
+     no switchport
+     description [Access VLAN red] x1 -> dut
+    !
+    interface Ethernet1
+     no switchport
+     description x1 -> dut
+     mac-address caf0.0002.0001
+    !
+     no shutdown
+    !
+    interface Ethernet2
+     no switchport
+     description x1 -> dut
+     mac-address caf0.0002.0002
+    !
+     no shutdown
+    !
+    interface Vlan1000
+     description VLAN red (1000) -> [dut]
+     ip address 172.16.0.2/24
+    !
 ok: [dut] => 
   msg: |-
     initial configuration for dut
@@ -184,52 +258,6 @@ ok: [dut] =>
     interface Vlan1001
      description VLAN blue (1001) -> [x2]
      ip address 172.16.1.1/24
-    !
-ok: [x1] => 
-  msg: |-
-    initial configuration for x1
-    =========================================
-    hostname x1
-    !
-    logging monitor debugging
-    aaa authorization exec default local
-    !
-    lldp run
-    ip routing
-    no ipv6 unicast-routing
-    !
-    !
-    ip host dut 10.0.0.1 172.16.0.1 172.16.1.1
-    ip host x2 10.0.0.3 172.16.1.3
-    !
-    interface Management0
-     no lldp transmit
-     no lldp receive
-    !
-    interface Loopback0
-     ip address 10.0.0.2/32
-    !
-    interface port-channel1
-     no switchport
-     description [Access VLAN red] x1 -> dut
-    !
-    interface Ethernet1
-     no switchport
-     description x1 -> dut
-     mac-address caf0.0002.0001
-    !
-     no shutdown
-    !
-    interface Ethernet2
-     no switchport
-     description x1 -> dut
-     mac-address caf0.0002.0002
-    !
-     no shutdown
-    !
-    interface Vlan1000
-     description VLAN red (1000) -> [dut]
-     ip address 172.16.0.2/24
     !
 ok: [x2] => 
   msg: |-
@@ -395,8 +423,8 @@ TASK [Deploy lag configuration] ************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for dut, x1, x2
 
 TASK [eos_config: deploying lag from /home/pipi/netlab_gh/netsim/ansible/templates/lag/eos.j2] ***
-changed: [x2]
 changed: [x1]
+changed: [x2]
 changed: [dut]
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
@@ -443,20 +471,6 @@ ok: [dut] =>
     interface Vlan1000
     !
     interface Vlan1001
-ok: [x1] => 
-  msg: |-
-    vlan configuration for x1
-    =========================================
-    vlan 1000
-     name red
-    !
-  
-    !
-    interface port-channel1
-     switchport
-     switchport access vlan 1000
-    !
-    interface Vlan1000
 ok: [x2] => 
   msg: |-
     vlan configuration for x2
@@ -471,6 +485,20 @@ ok: [x2] =>
      switchport access vlan 1001
     !
     interface Vlan1001
+ok: [x1] => 
+  msg: |-
+    vlan configuration for x1
+    =========================================
+    vlan 1000
+     name red
+    !
+  
+    !
+    interface port-channel1
+     switchport
+     switchport access vlan 1000
+    !
+    interface Vlan1000
 
 TASK [Deploy vlan configuration] ***********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for dut, x1, x2
@@ -501,6 +529,31 @@ ok: [x1]
 ok: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [x1] => 
+  msg: |-
+    ospf configuration for x1
+    =========================================
+    !
+    ! OSPFv2 configuration
+    !
+    router ospf 1
+     router-id 10.0.0.2
+     interface unnumbered hello mask tx 0.0.0.0
+     timers spf delay initial 100 200 500
+     timers lsa rx min interval 100
+     timers lsa tx delay initial 100 200 500
+  
+  
+    !
+    interface Loopback0
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface Vlan1000
+    ! VLAN red (1000) -> [dut]
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
 ok: [dut] => 
   msg: |-
     ospf configuration for dut
@@ -528,31 +581,6 @@ ok: [dut] =>
     !
     interface Vlan1001
     ! VLAN blue (1001) -> [x2]
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-ok: [x1] => 
-  msg: |-
-    ospf configuration for x1
-    =========================================
-    !
-    ! OSPFv2 configuration
-    !
-    router ospf 1
-     router-id 10.0.0.2
-     interface unnumbered hello mask tx 0.0.0.0
-     timers spf delay initial 100 200 500
-     timers lsa rx min interval 100
-     timers lsa tx delay initial 100 200 500
-  
-  
-    !
-    interface Loopback0
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface Vlan1000
-    ! VLAN red (1000) -> [dut]
      ip ospf area 0.0.0.0
      ip ospf network point-to-point
     !
@@ -594,9 +622,9 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=40   changed=5    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
-x1                         : ok=40   changed=5    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
-x2                         : ok=40   changed=5    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
+dut                        : ok=43   changed=5    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+x1                         : ok=42   changed=5    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+x2                         : ok=42   changed=5    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
 
 
 

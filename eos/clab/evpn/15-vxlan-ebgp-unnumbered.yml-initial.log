@@ -1,3 +1,7 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -10,22 +14,47 @@ ok: [h2]
 ok: [spine]
 ok: [l1]
 
+TASK [Generic readiness tests] *************************************************
+skipping: [h1]
+skipping: [h2]
+skipping: [l2]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/ssh.yml for spine, l1 => (item=ssh)
+
+TASK [Check if 'sshpass' is installed] *****************************************
+ok: [spine -> localhost]
+
+TASK [Check for 'timeout' command] *********************************************
+ok: [spine -> localhost]
+ok: [l1 -> localhost]
+
+TASK [Execute local ssh command to check ssh readiness] ************************
+FAILED - RETRYING: [l1 -> localhost]: Execute local ssh command to check ssh readiness (20 retries left).
+FAILED - RETRYING: [spine -> localhost]: Execute local ssh command to check ssh readiness (20 retries left).
+FAILED - RETRYING: [l1 -> localhost]: Execute local ssh command to check ssh readiness (19 retries left).
+FAILED - RETRYING: [spine -> localhost]: Execute local ssh command to check ssh readiness (19 retries left).
+FAILED - RETRYING: [spine -> localhost]: Execute local ssh command to check ssh readiness (18 retries left).
+ok: [l1 -> localhost]
+ok: [spine -> localhost]
+
+TASK [Confirm spine SSH server works] ******************************************
+ok: [spine] => 
+  msg: Node spine is ready.
+ok: [l1] => 
+  msg: Node l1 is ready.
+
 TASK [Find device readiness script] ********************************************
 ok: [l2]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 ok: [spine]
 ok: [l1]
 
 TASK [Wait for device to become ready] *****************************************
+skipping: [spine]
+skipping: [l1]
 skipping: [l2]
 skipping: [h1]
 skipping: [h2]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/eos-clab.yml for spine, l1
-
-TASK [Wait for cEOS SSH daemon to start] ***************************************
-ok: [spine]
-ok: [l1]
 
 TASK [Normalize config on bridge-like devices] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for spine, l1, l2, h1, h2
@@ -39,8 +68,8 @@ ok: [l1]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [l2]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 ok: [spine]
 ok: [l1]
 
@@ -53,8 +82,8 @@ skipping: [h2]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [l2]
-ok: [h1]
 ok: [h2]
+ok: [h1]
 ok: [spine]
 ok: [l1]
 
@@ -109,8 +138,8 @@ ok: [l1]
 TASK [Find configuration template for initial] *********************************
 ok: [l2]
 ok: [h1]
-ok: [h2]
 ok: [spine]
+ok: [h2]
 ok: [l1]
 
 TASK [fail] ********************************************************************
@@ -128,41 +157,6 @@ ok: [spine]
 ok: [l1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [h1] => 
-  msg: |-
-    initial configuration for h1
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Send ARP requests from a sane source IP address
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-  
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.31.1.4/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.31.1.4/24 dev eth1
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
 ok: [h2] => 
   msg: |-
     initial configuration for h2
@@ -196,6 +190,41 @@ ok: [h2] =>
     ip addr del 172.31.1.5/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.31.1.5/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+ok: [h1] => 
+  msg: |-
+    initial configuration for h1
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+  
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.31.1.4/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.31.1.4/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
 ok: [l2] => 
@@ -451,8 +480,8 @@ ok: [h1]
 ok: [h2]
 
 TASK [Create a temporary file for the rendered script] *************************
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h1 -> localhost]
@@ -470,9 +499,9 @@ TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/a
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-o6tp8d13.sh] ***********************
-changed: [h1 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-3nreve34.sh] ***********************
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 PLAY [Deploy module-specific configurations] ***********************************
 
@@ -522,20 +551,6 @@ TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [spine]
 skipping: [h1]
 skipping: [h2]
-ok: [l1] => 
-  msg: |-
-    vlan configuration for l1
-    =========================================
-    vlan 1000
-     name red
-    !
-  
-    !
-    interface Ethernet2
-     switchport
-     switchport access vlan 1000
-    !
-    interface Vlan1000
 ok: [l2] => 
   msg: |-
     vlan configuration for l2
@@ -554,6 +569,20 @@ ok: [l2] =>
     ip link set dev eth2 master vlan1000
   
     ip link set dev vlan1000 up
+ok: [l1] => 
+  msg: |-
+    vlan configuration for l1
+    =========================================
+    vlan 1000
+     name red
+    !
+  
+    !
+    interface Ethernet2
+     switchport
+     switchport access vlan 1000
+    !
+    interface Vlan1000
 
 TASK [Deploy vlan configuration] ***********************************************
 skipping: [spine]
@@ -655,8 +684,8 @@ changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
 skipping: [h1]
@@ -667,10 +696,10 @@ skipping: [h1]
 skipping: [h2]
 
 TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
-changed: [h1 -> localhost]
 changed: [h2 -> localhost]
+changed: [h1 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-dwfpvrsi.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-0r09h77g.sh] ***********************
 changed: [h1 -> localhost]
 changed: [h2 -> localhost]
 
@@ -727,9 +756,9 @@ ok: [l2] =>
     !
   
     !
+    ! Originate networks from connected subnets
+    !
       network 10.0.0.3/32
-    !
-    !
     !
       neighbor eth1 activate
       no neighbor eth1 send-community all
@@ -740,42 +769,6 @@ ok: [l2] =>
     !
     !
     do write
-ok: [l1] => 
-  msg: |-
-    bgp configuration for l1
-    =========================================
-    !
-    ipv6 unicast-routing
-    ip routing ipv6 interfaces
-    !
-    interface Ethernet1
-      ipv6 enable
-    !
-    !
-    router bgp 65201
-      bgp advertise-inactive
-      bgp log-neighbor-changes
-      no bgp default ipv4-unicast
-      no bgp default ipv6-unicast
-      router-id 10.0.0.2
-    !
-      neighbor ebgp_intf_Ethernet1 peer group
-      neighbor interface Ethernet1 peer-group ebgp_intf_Ethernet1
-      neighbor ebgp_intf_Ethernet1 remote-as 65100
-      neighbor ebgp_intf_Ethernet1 description spine
-      neighbor ebgp_intf_Ethernet1 send-community standard extended large
-    !
-    !
-     address-family ipv4
-  
-      network 10.0.0.2/32
-    !
-    !
-    !
-      neighbor ebgp_intf_Ethernet1 activate
-      neighbor ebgp_intf_Ethernet1 next-hop-self
-      neighbor ebgp_intf_Ethernet1 next-hop address-family ipv6 originate
-    !
 ok: [spine] => 
   msg: |-
     bgp configuration for spine
@@ -813,8 +806,11 @@ ok: [spine] =>
     !
      address-family ipv4
   
-      network 10.0.0.1/32
     !
+    !
+    ! Originate networks from connected subnets
+    !
+      network 10.0.0.1/32
     !
     !
       neighbor ebgp_intf_Ethernet1 activate
@@ -823,6 +819,45 @@ ok: [spine] =>
       neighbor ebgp_intf_Ethernet2 activate
       neighbor ebgp_intf_Ethernet2 next-hop-self
       neighbor ebgp_intf_Ethernet2 next-hop address-family ipv6 originate
+    !
+ok: [l1] => 
+  msg: |-
+    bgp configuration for l1
+    =========================================
+    !
+    ipv6 unicast-routing
+    ip routing ipv6 interfaces
+    !
+    interface Ethernet1
+      ipv6 enable
+    !
+    !
+    router bgp 65201
+      bgp advertise-inactive
+      bgp log-neighbor-changes
+      no bgp default ipv4-unicast
+      no bgp default ipv6-unicast
+      router-id 10.0.0.2
+    !
+      neighbor ebgp_intf_Ethernet1 peer group
+      neighbor interface Ethernet1 peer-group ebgp_intf_Ethernet1
+      neighbor ebgp_intf_Ethernet1 remote-as 65100
+      neighbor ebgp_intf_Ethernet1 description spine
+      neighbor ebgp_intf_Ethernet1 send-community standard extended large
+    !
+    !
+     address-family ipv4
+  
+    !
+    !
+    ! Originate networks from connected subnets
+    !
+      network 10.0.0.2/32
+    !
+    !
+      neighbor ebgp_intf_Ethernet1 activate
+      neighbor ebgp_intf_Ethernet1 next-hop-self
+      neighbor ebgp_intf_Ethernet1 next-hop address-family ipv6 originate
     !
 
 TASK [Deploy bgp configuration] ************************************************
@@ -1010,6 +1045,16 @@ ok: [l2] =>
     CONFIG
     vtysh -f /tmp/evpn_config
     vtysh -c 'clear bgp *'
+ok: [spine] => 
+  msg: |-
+    evpn configuration for spine
+    =========================================
+    !
+    router bgp 65100
+     address-family evpn
+    !
+      neighbor ebgp_intf_Ethernet1 activate
+      neighbor ebgp_intf_Ethernet2 activate
 ok: [l1] => 
   msg: |-
     evpn configuration for l1
@@ -1025,16 +1070,6 @@ ok: [l1] =>
       route-target import 65000:1000
       route-target export 65000:1000
       redistribute learned
-ok: [spine] => 
-  msg: |-
-    evpn configuration for spine
-    =========================================
-    !
-    router bgp 65100
-     address-family evpn
-    !
-      neighbor ebgp_intf_Ethernet1 activate
-      neighbor ebgp_intf_Ethernet2 activate
 
 TASK [Deploy evpn configuration] ***********************************************
 skipping: [h1]
@@ -1062,11 +1097,11 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-h1                         : ok=37   changed=8    unreachable=0    failed=0    skipped=30   rescued=0    ignored=0   
-h2                         : ok=37   changed=8    unreachable=0    failed=0    skipped=30   rescued=0    ignored=0   
-l1                         : ok=49   changed=6    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
-l2                         : ok=56   changed=11   unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
-spine                      : ok=39   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+h1                         : ok=37   changed=8    unreachable=0    failed=0    skipped=31   rescued=0    ignored=0   
+h2                         : ok=37   changed=8    unreachable=0    failed=0    skipped=31   rescued=0    ignored=0   
+l1                         : ok=51   changed=6    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+l2                         : ok=56   changed=11   unreachable=0    failed=0    skipped=21   rescued=0    ignored=0   
+spine                      : ok=42   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
 
 
 

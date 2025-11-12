@@ -15,6 +15,29 @@ ok: [ce2]
 ok: [s2]
 ok: [s1]
 
+TASK [Generic readiness tests] *************************************************
+skipping: [ce1]
+skipping: [ce2]
+skipping: [s2]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/ssh.yml for s1 => (item=ssh)
+
+TASK [Check if 'sshpass' is installed] *****************************************
+ok: [s1 -> localhost]
+
+TASK [Check for 'timeout' command] *********************************************
+ok: [s1 -> localhost]
+
+TASK [Execute local ssh command to check ssh readiness] ************************
+FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check ssh readiness (40 retries left).
+FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check ssh readiness (39 retries left).
+FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check ssh readiness (38 retries left).
+FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check ssh readiness (37 retries left).
+ok: [s1 -> localhost]
+
+TASK [Confirm s1 SSH server works] *********************************************
+ok: [s1] => 
+  msg: Node s1 is ready.
+
 TASK [Find device readiness script] ********************************************
 ok: [ce1]
 ok: [ce2]
@@ -25,33 +48,9 @@ TASK [Wait for device to become ready] *****************************************
 skipping: [ce1]
 skipping: [ce2]
 skipping: [s2]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vjunos-switch-clab.yml for s1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/junos.yml for s1
 
-TASK [Wait for SSH server] *****************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vm-clab-ssh-check.yml for s1
-
-TASK [Check if 'sshpass' is installed] *****************************************
-ok: [s1 -> localhost]
-
-TASK [Check for 'timeout' command] *********************************************
-ok: [s1 -> localhost]
-
-TASK [Execute local ssh command to check vjunos-switch readiness] **************
-FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (40 retries left).
-FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (39 retries left).
-FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (38 retries left).
-FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (37 retries left).
-FAILED - RETRYING: [s1 -> localhost]: Execute local ssh command to check vjunos-switch readiness (36 retries left).
-ok: [s1 -> localhost]
-
-TASK [Confirm s1 SSH server works] *********************************************
-ok: [s1] => 
-  msg: Node s1 is ready.
-
-TASK [Wait for ge-0/0/0 interface] *********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vjunos-switch.yml for s1
-
-TASK [Wait for ge-0/0/0 to appear] *********************************************
+TASK [Wait for first interface (ge-0/0/0)] *************************************
 ok: [s1]
 
 TASK [Normalize config on bridge-like devices] *********************************
@@ -581,8 +580,8 @@ ok: [s2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [ce2]
-changed: [ce1]
 changed: [s2]
+changed: [ce1]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [ce1]
@@ -635,14 +634,6 @@ ok: [s1]
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ce1]
 skipping: [ce2]
-ok: [s2] => 
-  msg: |-
-    vlan configuration for s2
-    =========================================
-    #!/bin/bash
-    #
-    set -e # Exit immediately when any command fails
-    #
 ok: [s1] => 
   msg: |-
     vlan configuration for s1
@@ -654,6 +645,14 @@ ok: [s1] =>
     interfaces {
   
     }
+ok: [s2] => 
+  msg: |-
+    vlan configuration for s2
+    =========================================
+    #!/bin/bash
+    #
+    set -e # Exit immediately when any command fails
+    #
 
 TASK [Deploy vlan configuration] ***********************************************
 skipping: [ce1]
@@ -704,30 +703,6 @@ ok: [s1]
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [ce1]
 skipping: [ce2]
-ok: [s1] => 
-  msg: |-
-    ospf configuration for s1
-    =========================================
-    routing-options {
-      router-id 10.0.0.3
-    }
-    protocols {
-      delete: ospf;
-    }
-  
-    protocols {
-      ospf {
-        area 0.0.0.0 {
-          interface lo0.0 {
-          }
-        }
-        area 0.0.0.0 {
-          interface ge-0/0/0.0 {
-            interface-type p2p;
-          }
-        }
-      }
-    }
 ok: [s2] => 
   msg: |-
     ospf configuration for s2
@@ -756,6 +731,30 @@ ok: [s2] =>
   
     !
     do write
+ok: [s1] => 
+  msg: |-
+    ospf configuration for s1
+    =========================================
+    routing-options {
+      router-id 10.0.0.3
+    }
+    protocols {
+      delete: ospf;
+    }
+  
+    protocols {
+      ospf {
+        area 0.0.0.0 {
+          interface lo0.0 {
+          }
+        }
+        area 0.0.0.0 {
+          interface ge-0/0/0.0 {
+            interface-type p2p;
+          }
+        }
+      }
+    }
 
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [ce1]
@@ -826,9 +825,9 @@ ok: [ce1] =>
     !
   
     !
+    ! Originate networks from connected subnets
+    !
       network 10.0.0.1/32
-    !
-    !
     !
       neighbor 10.1.0.6 activate
       no neighbor 10.1.0.6 send-community all
@@ -861,9 +860,9 @@ ok: [s2] =>
     !
   
     !
+    ! Originate networks from connected subnets
+    !
       network 10.0.0.4/32
-    !
-    !
     !
       neighbor 10.0.0.3 activate
       neighbor 10.0.0.3 next-hop-self
@@ -897,9 +896,9 @@ ok: [ce2] =>
     !
   
     !
+    ! Originate networks from connected subnets
+    !
       network 10.0.0.2/32
-    !
-    !
     !
       neighbor 10.1.0.10 activate
       no neighbor 10.1.0.10 send-community all
@@ -925,6 +924,10 @@ ok: [s1] =>
     policy-options {
       delete: policy-statement bgp-advertise;
       delete: policy-statement bgp-redistribute;
+      delete: policy-statement next-hop-ebgp-ipv4;
+      delete: policy-statement next-hop-all-ipv4;
+      delete: policy-statement next-hop-ebgp-ipv6;
+      delete: policy-statement next-hop-all-ipv6;
       delete: route-filter-list bgp-announce;
     }
   
@@ -933,9 +936,10 @@ ok: [s1] =>
       route-filter-list bgp-announce {
       }
   
-      policy-statement next-hop-self {
-        term next-hop-self {
+      policy-statement next-hop-ebgp-ipv4 {
+        term next-hop-self-ipv4 {
           from {
+            family inet;
             route-type external;
           }
           then {
@@ -943,6 +947,41 @@ ok: [s1] =>
           }
         }
       }
+  
+      policy-statement next-hop-all-ipv4 {
+        term next-hop-self-ipv4 {
+          from {
+            family inet;
+          }
+          then {
+            next-hop self;
+          }
+        }
+      }
+  
+      policy-statement next-hop-ebgp-ipv6 {
+        term next-hop-self-ipv6 {
+          from {
+            family inet6;
+            route-type external;
+          }
+          then {
+            next-hop self;
+          }
+        }
+      }
+  
+      policy-statement next-hop-all-ipv6 {
+        term next-hop-self-ipv6 {
+          from {
+            family inet6;
+          }
+          then {
+            next-hop self;
+          }
+        }
+      }
+  
   
       policy-statement bgp-advertise {
         term advertise {
@@ -1012,8 +1051,7 @@ ok: [s1] =>
         group ibgp-peers-ipv4 {
           type internal;
           export [
-              next-hop-self
-              bgp-advertise bgp-redistribute bgp-final
+              next-hop-ebgp-ipv4 bgp-advertise bgp-redistribute bgp-final
             ];
           advertise-inactive;
           neighbor 10.0.0.4 {
@@ -1040,8 +1078,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/junos.yml for 
 
 TASK [template] ****************************************************************
 changed: [ce1]
-changed: [ce2]
 changed: [s2]
+changed: [ce2]
 
 TASK [set_fact] ****************************************************************
 ok: [ce1]
@@ -1054,9 +1092,9 @@ skipping: [ce2]
 skipping: [s2]
 
 TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [ce1]
 changed: [ce2]
 changed: [s2]
+changed: [ce1]
 
 TASK [junos_config: deploying bgp from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/junos.j2] ***
 changed: [s1]
@@ -1520,10 +1558,10 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-ce1                        : ok=37   changed=5    unreachable=0    failed=0    skipped=34   rescued=0    ignored=0   
-ce2                        : ok=36   changed=4    unreachable=0    failed=0    skipped=34   rescued=0    ignored=0   
-s1                         : ok=64   changed=6    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
-s2                         : ok=71   changed=14   unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+ce1                        : ok=37   changed=5    unreachable=0    failed=0    skipped=35   rescued=0    ignored=0   
+ce2                        : ok=36   changed=4    unreachable=0    failed=0    skipped=35   rescued=0    ignored=0   
+s1                         : ok=63   changed=6    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
+s2                         : ok=71   changed=14   unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
 
 
 

@@ -42,7 +42,6 @@ def set_format_tags(data: dict) -> None:
         data['_columns'][kw] = True
 
 def create_html_page(
-      args: argparse.Namespace,
       j2: str,
       data: dict,
       output_fname: str,
@@ -57,7 +56,6 @@ def create_html_page(
   print(f'.. created {output_fname}')
 
 def create_recursive_html(
-      args: argparse.Namespace,
       results: dict,
       topology: dict,
       template: str = 'results',
@@ -72,12 +70,11 @@ def create_recursive_html(
       continue
     path = i_data['_path'].replace('/','-').replace('#','.')
     topology['results'] = i_data
-    create_html_page(args,f'{template}.html.j2',topology,path+".html")
+    create_html_page(f'{template}.html.j2',topology,path+".html")
     if recursive:
-      create_recursive_html(args,i_data,topology)
+      create_recursive_html(i_data,topology)
 
 def create(
-      p_args: argparse.Namespace,
       x_args: typing.List[str],
       results: Box,
       coverage: Box,
@@ -104,13 +101,18 @@ def create(
   coverage_dict = coverage.to_dict()
   topo_dict['results'] = results_dict
   create_html_page(
-    args,
     'index.html.j2',
     topo_dict,
     'index.html',
     output_dir='.')
   if not args.coverage:
-    create_recursive_html(args,results_dict,topo_dict,template='devices',limit=args.device)
+    create_recursive_html(results_dict,topo_dict,template='devices',limit=args.device)
   
   if not args.device:
-    create_recursive_html(args,coverage_dict,topo_dict,template='coverage',recursive=False,limit=args.coverage)
+    create_recursive_html(coverage_dict,topo_dict,template='coverage',recursive=False,limit=args.coverage)
+
+def create_release_coverage(topology: Box, tests: Box, coverage: Box) -> None:
+  topo_dict = topology.to_dict()
+  topo_dict['coverage'] = coverage.to_dict()
+  topo_dict['tests'] = tests.to_dict()
+  create_html_page(f'release-coverage.html.j2',topo_dict,"release-coverage.html")

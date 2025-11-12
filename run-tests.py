@@ -94,6 +94,11 @@ def prune_setup(setup: Box, args: argparse.Namespace) -> None:
 
     setup.devices = { k:v for k,v in setup.devices.items() if k in i_devices }
 
+  if args.all:
+    for x_device in setup.groups.get('exclude.devices',[]):
+      print(f"Device {x_device} is excluded from --all tests")
+      setup.devices.pop(x_device,None)
+
   if args.exclude:
     x_devices = args.exclude.split(',')
     setup.devices = { k:v for k,v in setup.devices.items() if k not in x_devices }

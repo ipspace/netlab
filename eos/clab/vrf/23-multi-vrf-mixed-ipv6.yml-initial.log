@@ -1,3 +1,7 @@
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/pkey.py:100: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "cipher": algorithms.TripleDES,
+/home/pipi/.local/lib/python3.10/site-packages/paramiko/transport.py:259: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+  "class": algorithms.TripleDES,
 [WARNING]: Could not match supplied host pattern, ignoring: unprovisioned
 [WARNING]: Found variable using reserved name: hosts
 
@@ -10,22 +14,41 @@ ok: [r3]
 ok: [r4]
 ok: [dut]
 
-TASK [Find device readiness script] ********************************************
-ok: [r1]
-ok: [r2]
-ok: [r3]
-ok: [r4]
-ok: [dut]
-
-TASK [Wait for device to become ready] *****************************************
+TASK [Generic readiness tests] *************************************************
 skipping: [r1]
 skipping: [r2]
 skipping: [r3]
 skipping: [r4]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/eos-clab.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/ssh.yml for dut => (item=ssh)
 
-TASK [Wait for cEOS SSH daemon to start] ***************************************
+TASK [Check if 'sshpass' is installed] *****************************************
+ok: [dut -> localhost]
+
+TASK [Check for 'timeout' command] *********************************************
+ok: [dut -> localhost]
+
+TASK [Execute local ssh command to check ssh readiness] ************************
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check ssh readiness (20 retries left).
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check ssh readiness (19 retries left).
+ok: [dut -> localhost]
+
+TASK [Confirm dut SSH server works] ********************************************
+ok: [dut] => 
+  msg: Node dut is ready.
+
+TASK [Find device readiness script] ********************************************
+ok: [r1]
+ok: [r2]
+ok: [r4]
+ok: [r3]
 ok: [dut]
+
+TASK [Wait for device to become ready] *****************************************
+skipping: [dut]
+skipping: [r1]
+skipping: [r2]
+skipping: [r3]
+skipping: [r4]
 
 TASK [Normalize config on bridge-like devices] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4
@@ -99,8 +122,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [r1]
 ok: [r2]
-ok: [r3]
 ok: [r4]
+ok: [r3]
 ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
@@ -120,8 +143,8 @@ skipping: [r4]
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [r1]
 ok: [r2]
-ok: [r3]
 ok: [r4]
+ok: [r3]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -349,6 +372,102 @@ ok: [r2] =>
     vtysh -f /tmp/config
     !
     exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    hostname dut
+    !
+    logging monitor debugging
+    aaa authorization exec default local
+    !
+    lldp run
+    ip routing
+    ipv6 unicast-routing
+    !
+    vrf instance blue
+     rd 65000:2
+    !
+    ipv6 unicast-routing vrf blue
+    !
+    vrf instance red
+     rd 65000:1
+    !
+    ip routing vrf red
+    !
+    ipv6 unicast-routing vrf red
+    !
+    !
+    ip host dut-red 10.1.0.1 10.1.0.5
+    ip host r1 10.0.0.2 10.1.0.2
+    ip host r2 10.0.0.3 10.1.0.6
+    ipv6 host dut-red 2001:db8:3::1
+    ipv6 host dut-blue 2001:db8:13::1
+    ipv6 host r1 2001:db8:1:2::1
+    ipv6 host r2 2001:db8:1:3::1
+    ipv6 host r3 2001:db8:cafe:2000::4
+    ipv6 host r4 2001:db8:cafe:2000::5
+    !
+    interface defaults
+     mtu 1500
+    !
+    interface Management0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     ip address 10.0.0.1/32
+     ipv6 nd ra interval 5
+     ipv6 address 2001:db8:1:1::1/64
+    !
+    interface Ethernet1
+     no switchport
+     vrf red
+     description dut -> r1
+     ip address 10.1.0.1/30
+     ipv6 nd ra interval 5
+     ipv6 address 2001:db8:3::1/64
+     mac-address caf0.0001.0001
+    !
+     no shutdown
+    !
+    interface Ethernet2
+     no switchport
+     vrf red
+     description dut -> r2 [external]
+     ip address 10.1.0.5/30
+     ipv6 nd ra interval 5
+     ipv6 address 2001:db8:3:1::1/64
+     mac-address caf0.0001.0002
+    !
+     no shutdown
+    !
+    interface Ethernet3
+     no switchport
+     vrf blue
+     description dut -> r3
+     ipv6 nd ra interval 5
+     ipv6 address 2001:db8:13::1/64
+     mac-address caf0.0001.0003
+    !
+     no shutdown
+    !
+    interface Ethernet4
+     no switchport
+     vrf blue
+     description dut -> r4 [external]
+     ipv6 nd ra interval 5
+     ipv6 address 2001:db8:13:1::1/64
+     mac-address caf0.0001.0004
+    !
+     no shutdown
+    !
+    interface Loopback1
+     vrf blue
+     description VRF Loopback blue
+     ipv6 nd ra interval 5
+     ipv6 address 2001:db8:cafe:2001::1/64
+    !
 ok: [r3] => 
   msg: |-
     initial configuration for r3
@@ -571,102 +690,6 @@ ok: [r4] =>
     vtysh -f /tmp/config
     !
     exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    hostname dut
-    !
-    logging monitor debugging
-    aaa authorization exec default local
-    !
-    lldp run
-    ip routing
-    ipv6 unicast-routing
-    !
-    vrf instance blue
-     rd 65000:2
-    !
-    ipv6 unicast-routing vrf blue
-    !
-    vrf instance red
-     rd 65000:1
-    !
-    ip routing vrf red
-    !
-    ipv6 unicast-routing vrf red
-    !
-    !
-    ip host dut-red 10.1.0.1 10.1.0.5
-    ip host r1 10.0.0.2 10.1.0.2
-    ip host r2 10.0.0.3 10.1.0.6
-    ipv6 host dut-red 2001:db8:3::1
-    ipv6 host dut-blue 2001:db8:13::1
-    ipv6 host r1 2001:db8:1:2::1
-    ipv6 host r2 2001:db8:1:3::1
-    ipv6 host r3 2001:db8:cafe:2000::4
-    ipv6 host r4 2001:db8:cafe:2000::5
-    !
-    interface defaults
-     mtu 1500
-    !
-    interface Management0
-     no lldp transmit
-     no lldp receive
-    !
-    interface Loopback0
-     ip address 10.0.0.1/32
-     ipv6 nd ra interval 5
-     ipv6 address 2001:db8:1:1::1/64
-    !
-    interface Ethernet1
-     no switchport
-     vrf red
-     description dut -> r1
-     ip address 10.1.0.1/30
-     ipv6 nd ra interval 5
-     ipv6 address 2001:db8:3::1/64
-     mac-address caf0.0001.0001
-    !
-     no shutdown
-    !
-    interface Ethernet2
-     no switchport
-     vrf red
-     description dut -> r2 [external]
-     ip address 10.1.0.5/30
-     ipv6 nd ra interval 5
-     ipv6 address 2001:db8:3:1::1/64
-     mac-address caf0.0001.0002
-    !
-     no shutdown
-    !
-    interface Ethernet3
-     no switchport
-     vrf blue
-     description dut -> r3
-     ipv6 nd ra interval 5
-     ipv6 address 2001:db8:13::1/64
-     mac-address caf0.0001.0003
-    !
-     no shutdown
-    !
-    interface Ethernet4
-     no switchport
-     vrf blue
-     description dut -> r4 [external]
-     ipv6 nd ra interval 5
-     ipv6 address 2001:db8:13:1::1/64
-     mac-address caf0.0001.0004
-    !
-     no shutdown
-    !
-    interface Loopback1
-     vrf blue
-     description VRF Loopback blue
-     ipv6 nd ra interval 5
-     ipv6 address 2001:db8:cafe:2001::1/64
-    !
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for dut
@@ -689,9 +712,9 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for r1
 
 TASK [template] ****************************************************************
 changed: [r3]
-changed: [r2]
-changed: [r4]
 changed: [r1]
+changed: [r4]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -700,9 +723,9 @@ ok: [r3]
 ok: [r4]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
+changed: [r3]
 changed: [r2]
 changed: [r1]
-changed: [r3]
 changed: [r4]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
@@ -734,8 +757,8 @@ ok: [dut]
 
 TASK [Find configuration template for ospf] ************************************
 skipping: [r2]
-ok: [r1]
 skipping: [r4]
+ok: [r1]
 ok: [r3]
 ok: [dut]
 
@@ -918,9 +941,9 @@ ok: [r2] =>
     !
   
     !
+    ! Originate networks from connected subnets
+    !
       network 10.0.0.3/32
-    !
-    !
     !
       neighbor 10.1.0.5 activate
       no neighbor 10.1.0.5 send-community all
@@ -931,9 +954,9 @@ ok: [r2] =>
     !
   
     !
+    ! Originate networks from connected subnets
+    !
       network 2001:db8:1:3::/64
-    !
-    !
     !
       neighbor 2001:db8:3:1::1 activate
       no neighbor 2001:db8:3:1::1 send-community all
@@ -965,9 +988,9 @@ ok: [r4] =>
     !
   
     !
+    ! Originate networks from connected subnets
+    !
       network 2001:db8:cafe:2000::5/128
-    !
-    !
     !
       neighbor 2001:db8:13:1::1 activate
       no neighbor 2001:db8:13:1::1 send-community all
@@ -993,15 +1016,21 @@ ok: [dut] =>
     !
      address-family ipv4
   
-      network 10.0.0.1/32
     !
+    !
+    ! Originate networks from connected subnets
+    !
+      network 10.0.0.1/32
     !
     !
     !
      address-family ipv6
   
-      network 2001:db8:1:1::/64
     !
+    !
+    ! Originate networks from connected subnets
+    !
+      network 2001:db8:1:1::/64
     !
     !
     !
@@ -1028,8 +1057,8 @@ skipping: [r2]
 skipping: [r4]
 
 TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [r2]
 changed: [r4]
+changed: [r2]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [r1]
@@ -1194,11 +1223,11 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=40   changed=4    unreachable=0    failed=0    skipped=5    rescued=0    ignored=0   
-r1                         : ok=31   changed=5    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
-r2                         : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
-r3                         : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
-r4                         : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+dut                        : ok=43   changed=4    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
+r1                         : ok=31   changed=5    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+r2                         : ok=30   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+r3                         : ok=30   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+r4                         : ok=30   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
 
 
 

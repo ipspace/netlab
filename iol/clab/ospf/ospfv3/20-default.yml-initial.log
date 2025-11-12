@@ -13,16 +13,10 @@ ok: [xf]
 ok: [dut_a]
 ok: [dut_c]
 
-TASK [Find device readiness script] ********************************************
-ok: [probe]
-ok: [xf]
-ok: [dut_a]
-ok: [dut_c]
-
-TASK [Wait for device to become ready] *****************************************
+TASK [Generic readiness tests] *************************************************
 skipping: [probe]
 skipping: [xf]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check/iol-clab.yml for dut_a, dut_c
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/ssh.yml for dut_a, dut_c => (item=ssh)
 
 TASK [Check if 'sshpass' is installed] *****************************************
 ok: [dut_a -> localhost]
@@ -31,11 +25,11 @@ TASK [Check for 'timeout' command] *********************************************
 ok: [dut_a -> localhost]
 ok: [dut_c -> localhost]
 
-TASK [Execute local ssh command to check iol readiness] ************************
-FAILED - RETRYING: [dut_c -> localhost]: Execute local ssh command to check iol readiness (20 retries left).
-FAILED - RETRYING: [dut_a -> localhost]: Execute local ssh command to check iol readiness (20 retries left).
-FAILED - RETRYING: [dut_c -> localhost]: Execute local ssh command to check iol readiness (19 retries left).
-FAILED - RETRYING: [dut_a -> localhost]: Execute local ssh command to check iol readiness (19 retries left).
+TASK [Execute local ssh command to check ssh readiness] ************************
+FAILED - RETRYING: [dut_a -> localhost]: Execute local ssh command to check ssh readiness (20 retries left).
+FAILED - RETRYING: [dut_c -> localhost]: Execute local ssh command to check ssh readiness (20 retries left).
+FAILED - RETRYING: [dut_c -> localhost]: Execute local ssh command to check ssh readiness (19 retries left).
+FAILED - RETRYING: [dut_a -> localhost]: Execute local ssh command to check ssh readiness (19 retries left).
 ok: [dut_c -> localhost]
 ok: [dut_a -> localhost]
 
@@ -45,8 +39,20 @@ ok: [dut_a] =>
 ok: [dut_c] => 
   msg: Node dut_c is ready.
 
+TASK [Find device readiness script] ********************************************
+ok: [probe]
+ok: [xf]
+ok: [dut_a]
+ok: [dut_c]
+
+TASK [Wait for device to become ready] *****************************************
+skipping: [dut_a]
+skipping: [dut_c]
+skipping: [probe]
+skipping: [xf]
+
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut_a, dut_c, probe, xf
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut_a, dut_c, probe, xf
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [probe]
@@ -85,7 +91,7 @@ skipping: [probe]
 skipping: [xf]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut_a, dut_c, probe, xf
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut_a, dut_c, probe, xf
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [probe]
@@ -201,6 +207,9 @@ ok: [probe] =>
     cat >/tmp/config <<CONFIG
     hostname probe
     !
+    log file /tmp/logging
+  
+    !
     ipv6 forwarding
     vrf mgmt
      exit-vrf
@@ -231,6 +240,7 @@ ok: [probe] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [xf] => 
   msg: |-
@@ -316,6 +326,9 @@ ok: [xf] =>
     cat >/tmp/config <<CONFIG
     hostname xf
     !
+    log file /tmp/logging
+  
+    !
     ipv6 forwarding
     vrf mgmt
      exit-vrf
@@ -338,6 +351,7 @@ ok: [xf] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [dut_a] => 
   msg: |-
@@ -346,6 +360,8 @@ ok: [dut_a] =>
     hostname dut_a
     !
     no ip domain lookup
+    logging buffered 256000
+  
     !
     lldp run
     !
@@ -367,6 +383,7 @@ ok: [dut_a] =>
     !
     interface Ethernet0/1
      description dut_a -> probe
+     ipv6 nd ra interval 5
      ipv6 address 2001:DB8:3::1/64
      no shutdown
     !
@@ -384,6 +401,8 @@ ok: [dut_c] =>
     hostname dut_c
     !
     no ip domain lookup
+    logging buffered 256000
+  
     !
     lldp run
     !
@@ -405,11 +424,13 @@ ok: [dut_c] =>
     !
     interface Ethernet0/1
      description dut_c -> probe
+     ipv6 nd ra interval 5
      ipv6 address 2001:DB8:3:1::1/64
      no shutdown
     !
     interface Ethernet0/2
      description dut_c -> xf [external]
+     ipv6 nd ra interval 5
      ipv6 address 2001:DB8:3:2::1/64
      no shutdown
     !
@@ -422,10 +443,10 @@ ok: [dut_c] =>
     no banner incoming
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut_a, dut_c
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for probe, xf
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut_a, dut_c
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for probe, xf
 
-TASK [ios_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/ios.j2] ***
+TASK [ios_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/ios.j2] ***
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
 should be similar to how they appear if present in the running configuration on
 device including the indentation
@@ -440,7 +461,7 @@ skipping: [probe]
 skipping: [xf]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for probe, xf
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for probe, xf
 
 TASK [template] ****************************************************************
 changed: [probe]
@@ -450,11 +471,11 @@ TASK [set_fact] ****************************************************************
 ok: [probe]
 ok: [xf]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [probe]
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [xf]
+changed: [probe]
 
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [probe]
 skipping: [xf]
 
@@ -467,8 +488,8 @@ ok: [dut_a]
 ok: [dut_c]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut_a, dut_c, probe, xf => (item=ospf)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut_a, dut_c, probe, xf => (item=bgp)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut_a, dut_c, probe, xf => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut_a, dut_c, probe, xf => (item=bgp)
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [probe]
@@ -538,7 +559,6 @@ ok: [dut_a] =>
      address-family ipv6 unicast
       default-information originate always metric-type 2 metric 40
   
-  
     !
     interface Loopback0
     !
@@ -558,7 +578,6 @@ ok: [dut_c] =>
      address-family ipv6 unicast
       default-information originate metric-type 1 metric 20
   
-  
     !
     interface Loopback0
     !
@@ -573,12 +592,12 @@ ok: [dut_c] =>
 
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [xf]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut_a, dut_c
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for probe
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut_a, dut_c
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for probe
 
-TASK [ios_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/ios.j2] ***
-changed: [dut_c]
+TASK [ios_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/ios.j2] ***
 changed: [dut_a]
+changed: [dut_c]
 
 TASK [template] ****************************************************************
 changed: [probe]
@@ -586,10 +605,10 @@ changed: [probe]
 TASK [set_fact] ****************************************************************
 ok: [probe]
 
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
 skipping: [probe]
 
-TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [probe]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
@@ -641,9 +660,9 @@ ok: [xf] =>
     !
   
     !
+    ! Originate networks from connected subnets
+    !
       network 2001:db8:1:4::/64
-    !
-    !
     !
       neighbor 2001:db8:3:2::1 activate
       no neighbor 2001:db8:3:2::1 send-community all
@@ -672,11 +691,12 @@ ok: [dut_c] =>
     !
      address-family ipv6
       bgp scan-time 5
-  
+    !
+    !
+    ! Originate networks from connected subnets
     !
       network 2001:db8:1:2::/64
   
-    !
     !
       neighbor 2001:db8:3:2::2 activate
       neighbor 2001:db8:3:2::2 advertisement-interval 0
@@ -687,10 +707,10 @@ ok: [dut_c] =>
 TASK [Deploy bgp configuration] ************************************************
 skipping: [dut_a]
 skipping: [probe]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/ios.yml for dut_c
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for xf
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for dut_c
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for xf
 
-TASK [ios_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/ios.j2] ***
+TASK [ios_config: deploying bgp from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/ios.j2] ***
 changed: [dut_c]
 
 TASK [template] ****************************************************************
@@ -699,20 +719,20 @@ changed: [xf]
 TASK [set_fact] ****************************************************************
 ok: [xf]
 
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [xf]
 
-TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [xf]
 
 PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut_a                      : ok=28   changed=2    unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
-dut_c                      : ok=32   changed=3    unreachable=0    failed=0    skipped=6    rescued=0    ignored=0   
-probe                      : ok=29   changed=5    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
-xf                         : ok=28   changed=4    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
+dut_a                      : ok=28   changed=2    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
+dut_c                      : ok=32   changed=3    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
+probe                      : ok=29   changed=5    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+xf                         : ok=28   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 
 
 

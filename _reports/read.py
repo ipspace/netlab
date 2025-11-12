@@ -7,6 +7,7 @@ from box import Box
 from netsim import __version__
 from netsim.data import get_empty_box
 from netsim.utils import read as _read,templates,log
+from netsim.cli import external_commands
 
 def skip_single_key(data: Box) -> Box:
   if len(data.keys()) == 1 and 'yml' in data:
@@ -82,7 +83,7 @@ def is_supported(data: Box, path: str) -> bool:
   for result in data.values():
     if not isinstance(result,Box):
       continue
-    if 'up' in result:
+    if 'up' in result or 'config' in result:
       return True
 
   if log.VERBOSE:  
@@ -151,3 +152,25 @@ def read_results(setup: Box) -> Box:
   for t_elem,t_data in results.items():
     (t_data._min_version,t_data._max_version) = get_min_max_version(results[t_elem])
   return results
+
+def get_git_releases() -> dict:
+  r_list = {}
+
+  git_tags = external_commands.run_command('git tag',return_stdout=True,check_result=True)
+  if not git_tags or not isinstance(git_tags,str):
+    log.fatal('Cannot get a list of Git tags')
+
+  for tag in git_tags.split('\n')[-10:]:
+    if not tag:
+      continue
+    r_date = external_commands.run_command(
+              ['git','log',tag,'-n','1','--format=format:%cd','--date=format:%Y-%m-%d %H:%M:%S'],
+              return_stdout=True,
+              check_result=True)
+    if not r_date:
+      log.fatal(f'Cannot get a commit date for {tag}')
+    tag = tag.replace('release_','')
+    r_list[tag] = r_date
+
+  return r_list
+

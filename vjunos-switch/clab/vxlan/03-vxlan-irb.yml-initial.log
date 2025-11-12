@@ -19,12 +19,40 @@ ok: [h4]
 ok: [s2]
 ok: [dut]
 
+TASK [Generic readiness tests] *************************************************
+skipping: [h1]
+skipping: [h1a]
+skipping: [h2]
+skipping: [h3]
+skipping: [h3a]
+skipping: [h4]
+skipping: [s2]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/ssh.yml for dut => (item=ssh)
+
+TASK [Check if 'sshpass' is installed] *****************************************
+ok: [dut -> localhost]
+
+TASK [Check for 'timeout' command] *********************************************
+ok: [dut -> localhost]
+
+TASK [Execute local ssh command to check ssh readiness] ************************
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check ssh readiness (40 retries left).
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check ssh readiness (39 retries left).
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check ssh readiness (38 retries left).
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check ssh readiness (37 retries left).
+FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check ssh readiness (36 retries left).
+ok: [dut -> localhost]
+
+TASK [Confirm dut SSH server works] ********************************************
+ok: [dut] => 
+  msg: Node dut is ready.
+
 TASK [Find device readiness script] ********************************************
 ok: [h1]
 ok: [h1a]
 ok: [h2]
-ok: [h3]
 ok: [h3a]
+ok: [h3]
 ok: [h4]
 ok: [s2]
 ok: [dut]
@@ -37,33 +65,9 @@ skipping: [h3]
 skipping: [h3a]
 skipping: [h4]
 skipping: [s2]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vjunos-switch-clab.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/junos.yml for dut
 
-TASK [Wait for SSH server] *****************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vm-clab-ssh-check.yml for dut
-
-TASK [Check if 'sshpass' is installed] *****************************************
-ok: [dut -> localhost]
-
-TASK [Check for 'timeout' command] *********************************************
-ok: [dut -> localhost]
-
-TASK [Execute local ssh command to check vjunos-switch readiness] **************
-FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-switch readiness (40 retries left).
-FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-switch readiness (39 retries left).
-FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-switch readiness (38 retries left).
-FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-switch readiness (37 retries left).
-FAILED - RETRYING: [dut -> localhost]: Execute local ssh command to check vjunos-switch readiness (36 retries left).
-ok: [dut -> localhost]
-
-TASK [Confirm dut SSH server works] ********************************************
-ok: [dut] => 
-  msg: Node dut is ready.
-
-TASK [Wait for ge-0/0/0 interface] *********************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/vjunos-switch.yml for dut
-
-TASK [Wait for ge-0/0/0 to appear] *********************************************
+TASK [Wait for first interface (ge-0/0/0)] *************************************
 ok: [dut]
 
 TASK [Normalize config on bridge-like devices] *********************************
@@ -83,9 +87,9 @@ TASK [Find configuration template for normalize] *******************************
 ok: [h1]
 ok: [h1a]
 ok: [h2]
-ok: [h3a]
 ok: [h3]
 ok: [h4]
+ok: [h3a]
 ok: [s2]
 ok: [dut]
 
@@ -103,9 +107,9 @@ TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [h1]
 ok: [h1a]
 ok: [h2]
+ok: [h3a]
 ok: [h3]
 ok: [h4]
-ok: [h3a]
 ok: [dut]
 ok: [s2]
 
@@ -146,9 +150,9 @@ TASK [Find configuration template for initial] *********************************
 ok: [h1]
 ok: [h1a]
 ok: [h2]
+ok: [h3a]
 ok: [h3]
 ok: [h4]
-ok: [h3a]
 ok: [s2]
 ok: [dut]
 
@@ -165,11 +169,11 @@ skipping: [s2]
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [h1]
 ok: [h1a]
+ok: [h3a]
 ok: [h2]
 ok: [h3]
-ok: [h3a]
-ok: [s2]
 ok: [h4]
+ok: [s2]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -313,41 +317,6 @@ ok: [h3] =>
     ip addr add 172.16.1.4/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
-ok: [h4] => 
-  msg: |-
-    initial configuration for h4
-    =========================================
-    #!/bin/bash
-    #
-    # This script contains the 'ip' commands needed to set up container
-    # interfaces and route table. It's executed within the container
-    # network namespace on the container host.
-    #
-    #  /etc/hosts file is generated as a clab bind.
-    #
-    set -e
-  
-    ### One-Shot configuration (non-Ubuntu VM or container)
-    #
-    # Send ARP requests from a sane source IP address
-    sysctl -w net.ipv4.conf.all.arp_announce=2
-  
-    #
-    # Disable IPv4 and IPv6 forwarding
-    #
-    sysctl -w net.ipv4.ip_forward=0
-    sysctl -w net.ipv6.conf.all.forwarding=0
-  
-    #
-    # Interface addressing, create any bond devices
-    #
-    ip link set dev eth1 up
-    set +e
-    ip addr del 172.16.1.6/24 dev eth1 2>/dev/null
-    set -e
-    ip addr add 172.16.1.6/24 dev eth1
-    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
-    ip link set dev eth1 mtu 1500
 ok: [h3a] => 
   msg: |-
     initial configuration for h3a
@@ -381,6 +350,41 @@ ok: [h3a] =>
     ip addr del 172.16.1.5/24 dev eth1 2>/dev/null
     set -e
     ip addr add 172.16.1.5/24 dev eth1
+    sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
+    ip link set dev eth1 mtu 1500
+ok: [h4] => 
+  msg: |-
+    initial configuration for h4
+    =========================================
+    #!/bin/bash
+    #
+    # This script contains the 'ip' commands needed to set up container
+    # interfaces and route table. It's executed within the container
+    # network namespace on the container host.
+    #
+    #  /etc/hosts file is generated as a clab bind.
+    #
+    set -e
+  
+    ### One-Shot configuration (non-Ubuntu VM or container)
+    #
+    # Send ARP requests from a sane source IP address
+    sysctl -w net.ipv4.conf.all.arp_announce=2
+  
+    #
+    # Disable IPv4 and IPv6 forwarding
+    #
+    sysctl -w net.ipv4.ip_forward=0
+    sysctl -w net.ipv6.conf.all.forwarding=0
+  
+    #
+    # Interface addressing, create any bond devices
+    #
+    ip link set dev eth1 up
+    set +e
+    ip addr del 172.16.1.6/24 dev eth1 2>/dev/null
+    set -e
+    ip addr add 172.16.1.6/24 dev eth1
     sysctl -w net.ipv6.conf.eth1.disable_ipv6=1
     ip link set dev eth1 mtu 1500
 ok: [s2] => 
@@ -504,12 +508,12 @@ ok: [s2] =>
     !
     interface vlan1000
      no shutdown
-     description VLAN red (1000) -> [h1,dut,h1a,h2] [external]
+     description VLAN red (1000) -> [h1,h1a,dut,h2] [external]
      ip address 172.16.0.8/24
     !
     interface vlan1001
      no shutdown
-     description VLAN blue (1001) -> [h3,dut,h3a,h4] [external]
+     description VLAN blue (1001) -> [h3,h3a,dut,h4] [external]
      ip address 172.16.1.8/24
     !
     do write
@@ -656,25 +660,25 @@ TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
 ok: [h1a]
 ok: [h2]
-ok: [h3]
 ok: [h3a]
+ok: [h3]
 ok: [h4]
 
 TASK [Create a temporary file for the rendered script] *************************
+changed: [h1 -> localhost]
+changed: [h1a -> localhost]
 changed: [h2 -> localhost]
 changed: [h3 -> localhost]
-changed: [h1a -> localhost]
-changed: [h1 -> localhost]
-changed: [h3a -> localhost]
 changed: [h4 -> localhost]
+changed: [h3a -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2] ***
 changed: [h3 -> localhost]
-changed: [h4 -> localhost]
-changed: [h2 -> localhost]
 changed: [h1 -> localhost]
-changed: [h1a -> localhost]
 changed: [h3a -> localhost]
+changed: [h2 -> localhost]
+changed: [h4 -> localhost]
+changed: [h1a -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_initial.sh] *********
 skipping: [h1]
@@ -693,20 +697,20 @@ skipping: [h3a]
 skipping: [h4]
 
 TASK [Container configuration for initial based on /home/pipi/netlab_gh/netsim/ansible/templates/initial/linux-clab.j2 executed in netns] ***
-changed: [h2 -> localhost]
-changed: [h1a -> localhost]
-changed: [h3a -> localhost]
 changed: [h1 -> localhost]
+changed: [h1a -> localhost]
 changed: [h3 -> localhost]
+changed: [h2 -> localhost]
+changed: [h3a -> localhost]
 changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_initial-8x8o5wze.sh] ***********************
-changed: [h2 -> localhost]
+TASK [Remove temporary file /tmp/h1_initial-_n6ktpc0.sh] ***********************
 changed: [h1a -> localhost]
 changed: [h1 -> localhost]
 changed: [h4 -> localhost]
-changed: [h3 -> localhost]
+changed: [h2 -> localhost]
 changed: [h3a -> localhost]
+changed: [h3 -> localhost]
 
 TASK [junos_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/junos.j2] ***
 [WARNING]: mgd: statement has no contents; ignored
@@ -754,9 +758,9 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for h1, h1
 TASK [Figure out whether to deploy the module vlan on current device] **********
 ok: [h1]
 ok: [h1a]
+ok: [h3]
 ok: [h2]
 ok: [h3a]
-ok: [h3]
 ok: [h4]
 ok: [s2]
 ok: [dut]
@@ -798,36 +802,6 @@ skipping: [h2]
 skipping: [h3]
 skipping: [h3a]
 skipping: [h4]
-ok: [s2] => 
-  msg: |-
-    vlan configuration for s2
-    =========================================
-    #!/bin/bash
-    #
-    set -e # Exit immediately when any command fails
-    #
-    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
-      ip link add vlan1000 type bridge
-      ip link set dev vlan1000 address 52:dc:ca:fd:08:00
-  
-      ip link set dev vlan1000 mtu 1500
-      ip addr flush dev vlan1000
-      ip addr add 172.16.0.8/24 dev vlan1000
-    fi
-    if [ ! -e /sys/devices/virtual/net/vlan1001 ]; then
-      ip link add vlan1001 type bridge
-      ip link set dev vlan1001 address 52:dc:ca:fd:08:01
-  
-      ip link set dev vlan1001 mtu 1500
-      ip addr flush dev vlan1001
-      ip addr add 172.16.1.8/24 dev vlan1001
-    fi
-  
-    ip link set dev eth2 master vlan1000
-    ip link set dev eth3 master vlan1001
-  
-    ip link set dev vlan1000 up
-    ip link set dev vlan1001 up
 ok: [dut] => 
   msg: |-
     vlan configuration for dut
@@ -899,6 +873,36 @@ ok: [dut] =>
   
   
     }
+ok: [s2] => 
+  msg: |-
+    vlan configuration for s2
+    =========================================
+    #!/bin/bash
+    #
+    set -e # Exit immediately when any command fails
+    #
+    if [ ! -e /sys/devices/virtual/net/vlan1000 ]; then
+      ip link add vlan1000 type bridge
+      ip link set dev vlan1000 address ca:f4:00:08:00:00
+  
+      ip link set dev vlan1000 mtu 1500
+      ip addr flush dev vlan1000
+      ip addr add 172.16.0.8/24 dev vlan1000
+    fi
+    if [ ! -e /sys/devices/virtual/net/vlan1001 ]; then
+      ip link add vlan1001 type bridge
+      ip link set dev vlan1001 address ca:f4:00:08:00:01
+  
+      ip link set dev vlan1001 mtu 1500
+      ip addr flush dev vlan1001
+      ip addr add 172.16.1.8/24 dev vlan1001
+    fi
+  
+    ip link set dev eth2 master vlan1000
+    ip link set dev eth3 master vlan1001
+  
+    ip link set dev vlan1000 up
+    ip link set dev vlan1001 up
 
 TASK [Deploy vlan configuration] ***********************************************
 skipping: [h1]
@@ -929,8 +933,8 @@ TASK [Figure out whether to deploy the module vxlan on current device] *********
 ok: [h1]
 ok: [h1a]
 ok: [h2]
-ok: [h3a]
 ok: [h3]
+ok: [h3a]
 ok: [h4]
 ok: [s2]
 ok: [dut]
@@ -1121,8 +1125,8 @@ ok: [h1]
 ok: [h1a]
 skipping: [dut]
 ok: [h2]
-ok: [h3]
 skipping: [s2]
+ok: [h3]
 ok: [h4]
 ok: [h3a]
 
@@ -1176,6 +1180,8 @@ ok: [h1] =>
     #
     # Print the final routing table
     ip route
+skipping: [dut]
+skipping: [s2]
 ok: [h1a] => 
   msg: |-
     routing configuration for h1a
@@ -1205,8 +1211,35 @@ ok: [h1a] =>
     #
     # Print the final routing table
     ip route
-skipping: [dut]
-skipping: [s2]
+ok: [h3a] => 
+  msg: |-
+    routing configuration for h3a
+    =========================================
+    #!/bin/bash
+    #
+    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
+    #
+    #
+    echo Removing existing IPv4 routes
+    while ip route del 172.16.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.0.0.0/24 2>/dev/null; do
+      : ; done
+    while ip route del 10.1.0.0/16 2>/dev/null; do
+      : ; done
+    while ip route del 10.2.0.0/24 2>/dev/null; do
+      : ; done
+    #
+    #
+    #
+    echo Adding direct static routes
+    ip route add 172.16.0.0/16 via 172.16.1.7 dev eth1 protocol static
+    ip route add 10.0.0.0/24 via 172.16.1.7 dev eth1 protocol static
+    ip route add 10.1.0.0/16 via 172.16.1.7 dev eth1 protocol static
+    ip route add 10.2.0.0/24 via 172.16.1.7 dev eth1 protocol static
+    #
+    # Print the final routing table
+    ip route
 ok: [h2] => 
   msg: |-
     routing configuration for h2
@@ -1233,35 +1266,6 @@ ok: [h2] =>
     ip route add 10.0.0.0/24 via 172.16.0.7 dev eth1 protocol static
     ip route add 10.1.0.0/16 via 172.16.0.7 dev eth1 protocol static
     ip route add 10.2.0.0/24 via 172.16.0.7 dev eth1 protocol static
-    #
-    # Print the final routing table
-    ip route
-ok: [h4] => 
-  msg: |-
-    routing configuration for h4
-    =========================================
-    #!/bin/bash
-    #
-    # Add static routes (usually IPv4 routes pointing to the first usable gateway)
-    #
-    #
-    echo Removing existing IPv4 routes
-    while ip route del 172.16.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.0.0.0/24 2>/dev/null; do
-      : ; done
-    while ip route del 10.1.0.0/16 2>/dev/null; do
-      : ; done
-    while ip route del 10.2.0.0/24 2>/dev/null; do
-      : ; done
-    #
-    #
-    #
-    echo Adding direct static routes
-    ip route add 172.16.0.0/16 via 172.16.1.7 dev eth1 protocol static
-    ip route add 10.0.0.0/24 via 172.16.1.7 dev eth1 protocol static
-    ip route add 10.1.0.0/16 via 172.16.1.7 dev eth1 protocol static
-    ip route add 10.2.0.0/24 via 172.16.1.7 dev eth1 protocol static
     #
     # Print the final routing table
     ip route
@@ -1294,9 +1298,9 @@ ok: [h3] =>
     #
     # Print the final routing table
     ip route
-ok: [h3a] => 
+ok: [h4] => 
   msg: |-
-    routing configuration for h3a
+    routing configuration for h4
     =========================================
     #!/bin/bash
     #
@@ -1332,26 +1336,26 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/linux-clab.yml
 TASK [Define script filename and determine whether to execute in netns] ********
 ok: [h1]
 ok: [h1a]
-ok: [h2]
 ok: [h3]
+ok: [h2]
 ok: [h3a]
 ok: [h4]
 
 TASK [Create a temporary file for the rendered script] *************************
 changed: [h1 -> localhost]
-changed: [h1a -> localhost]
 changed: [h2 -> localhost]
-changed: [h3 -> localhost]
-changed: [h4 -> localhost]
+changed: [h1a -> localhost]
 changed: [h3a -> localhost]
+changed: [h4 -> localhost]
+changed: [h3 -> localhost]
 
 TASK [Create container setup script from /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2] ***
-changed: [h3a -> localhost]
-changed: [h1 -> localhost]
-changed: [h2 -> localhost]
-changed: [h3 -> localhost]
 changed: [h1a -> localhost]
+changed: [h1 -> localhost]
+changed: [h3 -> localhost]
+changed: [h3a -> localhost]
 changed: [h4 -> localhost]
+changed: [h2 -> localhost]
 
 TASK [Copy script into running container at /tmp/config-h1_routing.sh] *********
 skipping: [h1]
@@ -1370,28 +1374,28 @@ skipping: [h3a]
 skipping: [h4]
 
 TASK [Container configuration for routing based on /home/pipi/netlab_gh/netsim/ansible/templates/routing/linux-clab.j2 executed in netns] ***
-changed: [h1 -> localhost]
 changed: [h1a -> localhost]
+changed: [h1 -> localhost]
 changed: [h3 -> localhost]
+changed: [h4 -> localhost]
 changed: [h2 -> localhost]
 changed: [h3a -> localhost]
-changed: [h4 -> localhost]
 
-TASK [Remove temporary file /tmp/h1_routing-mem3m6xr.sh] ***********************
+TASK [Remove temporary file /tmp/h1_routing-u6ijlw37.sh] ***********************
 changed: [h1 -> localhost]
-changed: [h2 -> localhost]
-changed: [h4 -> localhost]
 changed: [h1a -> localhost]
-changed: [h3 -> localhost]
+changed: [h2 -> localhost]
 changed: [h3a -> localhost]
+changed: [h3 -> localhost]
+changed: [h4 -> localhost]
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [h1]
 ok: [h1a]
 ok: [h2]
 ok: [h3]
-ok: [h4]
 ok: [h3a]
+ok: [h4]
 ok: [s2]
 ok: [dut]
 
@@ -1515,14 +1519,14 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=45   changed=4    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
-h1                         : ok=35   changed=8    unreachable=0    failed=0    skipped=25   rescued=0    ignored=0   
-h1a                        : ok=35   changed=8    unreachable=0    failed=0    skipped=25   rescued=0    ignored=0   
-h2                         : ok=35   changed=8    unreachable=0    failed=0    skipped=25   rescued=0    ignored=0   
-h3                         : ok=35   changed=8    unreachable=0    failed=0    skipped=25   rescued=0    ignored=0   
-h3a                        : ok=35   changed=8    unreachable=0    failed=0    skipped=25   rescued=0    ignored=0   
-h4                         : ok=35   changed=8    unreachable=0    failed=0    skipped=25   rescued=0    ignored=0   
-s2                         : ok=47   changed=9    unreachable=0    failed=0    skipped=18   rescued=0    ignored=0   
+dut                        : ok=44   changed=4    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+h1                         : ok=35   changed=8    unreachable=0    failed=0    skipped=26   rescued=0    ignored=0   
+h1a                        : ok=35   changed=8    unreachable=0    failed=0    skipped=26   rescued=0    ignored=0   
+h2                         : ok=35   changed=8    unreachable=0    failed=0    skipped=26   rescued=0    ignored=0   
+h3                         : ok=35   changed=8    unreachable=0    failed=0    skipped=26   rescued=0    ignored=0   
+h3a                        : ok=35   changed=8    unreachable=0    failed=0    skipped=26   rescued=0    ignored=0   
+h4                         : ok=35   changed=8    unreachable=0    failed=0    skipped=26   rescued=0    ignored=0   
+s2                         : ok=47   changed=9    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
 
 
 
