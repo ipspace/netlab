@@ -12,6 +12,11 @@ ok: [x1]
 ok: [x2]
 ok: [dut]
 
+TASK [Generic readiness tests] *************************************************
+skipping: [dut]
+skipping: [x1]
+skipping: [x2]
+
 TASK [Find device readiness script] ********************************************
 ok: [x1]
 ok: [x2]
@@ -23,7 +28,7 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [x1]
@@ -56,7 +61,7 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [x1]
@@ -162,6 +167,9 @@ ok: [x1] =>
     cat >/tmp/config <<CONFIG
     hostname x1
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -180,7 +188,56 @@ ok: [x1] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    hostname dut
+    !
+    lldp
+    !
+  
+    vrf red
+        rd 65000:1
+    !
+  
+        address-family ipv4 unicast
+            route-target import 65000:1
+            route-target export 65000:1
+        exit-address-family
+  
+  
+  
+    interface mgmt
+        no lldp transmit
+        no lldp receive
+    !
+  
+  
+    interface loopback 0
+        ip address 10.0.0.1/32
+    !
+  
+    interface 1/1/1
+        shutdown
+        mtu 9198
+        vrf attach red
+        description dut -> x1 [external]
+        ip address 10.1.0.1/30
+        no shutdown
+    !
+  
+    interface 1/1/2
+        shutdown
+        mtu 9198
+        vrf attach red
+        description dut -> x2 [external]
+        ip address 10.1.0.5/30
+        no shutdown
+    !
+    !
 ok: [x2] => 
   msg: |-
     initial configuration for x2
@@ -264,6 +321,9 @@ ok: [x2] =>
     cat >/tmp/config <<CONFIG
     hostname x2
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     vrf mgmt
      exit-vrf
@@ -282,59 +342,12 @@ ok: [x2] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    hostname dut
-    !
-    lldp
-    !
-  
-    vrf red
-        rd 65000:1
-    !
-  
-        address-family ipv4 unicast
-            route-target import 65000:1
-            route-target export 65000:1
-        exit-address-family
-  
-  
-  
-    interface mgmt
-        no lldp transmit
-        no lldp receive
-    !
-  
-  
-    interface loopback 0
-        ip address 10.0.0.1/32
-    !
-  
-    interface 1/1/1
-        shutdown
-        mtu 9198
-        vrf attach red
-        description dut -> x1 [external]
-        ip address 10.1.0.1/30
-        no shutdown
-    !
-  
-    interface 1/1/2
-        shutdown
-        mtu 9198
-        vrf attach red
-        description dut -> x2 [external]
-        ip address 10.1.0.5/30
-        no shutdown
-    !
-    !
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for x1, x2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/arubacx.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for x1, x2
 
 TASK [tempfile] ****************************************************************
 changed: [dut -> localhost]
@@ -342,7 +355,7 @@ changed: [dut -> localhost]
 TASK [template] ****************************************************************
 changed: [dut -> localhost]
 
-TASK [aoscx_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/arubacx.j2] ***
+TASK [aoscx_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/arubacx.j2] ***
 changed: [dut]
 
 TASK [file] ********************************************************************
@@ -356,21 +369,21 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for x1, x2
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [x1]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
 ok: [x2]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [x1]
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [x2]
+changed: [x1]
 
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [x1]
 skipping: [x2]
 
@@ -382,8 +395,8 @@ ok: [x2]
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=bgp)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=vrf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=bgp)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, x1, x2 => (item=vrf)
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [x1]
@@ -428,8 +441,11 @@ ok: [x1] =>
     !
   
     !
+    ! Originate networks from connected subnets
+    !
       network 10.0.0.10/32
     !
+    ! Originate networks from static routes
     !
       network 172.0.42.0/24
     !
@@ -464,9 +480,9 @@ ok: [x2] =>
     !
   
     !
+    ! Originate networks from connected subnets
+    !
       network 10.0.0.11/32
-    !
-    !
     !
       neighbor 10.1.0.5 activate
       no neighbor 10.1.0.5 send-community all
@@ -496,8 +512,8 @@ ok: [dut] =>
     !
 
 TASK [Deploy bgp configuration] ************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/arubacx.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for x1, x2
 
 TASK [tempfile] ****************************************************************
 changed: [dut -> localhost]
@@ -505,25 +521,25 @@ changed: [dut -> localhost]
 TASK [template] ****************************************************************
 changed: [dut -> localhost]
 
-TASK [aoscx_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/arubacx.j2] ***
+TASK [aoscx_config: deploying bgp from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/arubacx.j2] ***
 changed: [dut]
 
 TASK [file] ********************************************************************
 changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
-changed: [x1]
 changed: [x2]
+changed: [x1]
 
 TASK [set_fact] ****************************************************************
 ok: [x1]
 ok: [x2]
 
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [x1]
 skipping: [x2]
 
-TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [x2]
 changed: [x1]
 
@@ -583,7 +599,7 @@ ok: [dut] =>
 TASK [Deploy vrf configuration] ************************************************
 skipping: [x1]
 skipping: [x2]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/arubacx.yml for dut
 
 TASK [tempfile] ****************************************************************
 changed: [dut -> localhost]
@@ -591,7 +607,7 @@ changed: [dut -> localhost]
 TASK [template] ****************************************************************
 changed: [dut -> localhost]
 
-TASK [aoscx_config: deploying vrf from /home/pipi/net101/tools/netsim/ansible/templates/vrf/arubacx.j2] ***
+TASK [aoscx_config: deploying vrf from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/arubacx.j2] ***
 changed: [dut]
 
 TASK [file] ********************************************************************
@@ -600,7 +616,7 @@ changed: [dut -> localhost]
 PLAY [Deploy custom deployment templates] **************************************
 
 TASK [Run custom configuration deployment scripts] *****************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-custom-config.yml for x1 => (item=frr-community)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-custom-config.yml for x1 => (item=_n_x1)
 
 TASK [Find configuration template] *********************************************
 ok: [x1]
@@ -614,14 +630,14 @@ ok: [x1 -> localhost]
 TASK [fail] ********************************************************************
 skipping: [x1]
 
-TASK [Process template /home/pipi/net101/tools/tests/integration/vrf/frr-community.j2 for x1] ***
+TASK [Process template /work/netlab_cicd/_n_x1.j2 for x1] **********************
 skipping: [x1]
 
 TASK [Find custom configuration deployment script] *****************************
 ok: [x1]
 
 TASK [Run the configuration deployment script] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for x1
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for x1
 
 TASK [template] ****************************************************************
 changed: [x1]
@@ -629,16 +645,16 @@ changed: [x1]
 TASK [set_fact] ****************************************************************
 ok: [x1]
 
-TASK [run /tmp/config.sh to deploy frr-community config from /home/pipi/net101/tools/tests/integration/vrf/frr-community.j2] ***
+TASK [run /tmp/config.sh to deploy _n_x1 config from /work/netlab_cicd/_n_x1.j2] ***
 skipping: [x1]
 
-TASK [run vtysh to import frr-community config from /home/pipi/net101/tools/tests/integration/vrf/frr-community.j2] ***
+TASK [run vtysh to import _n_x1 config from /work/netlab_cicd/_n_x1.j2] ********
 changed: [x1]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=37   changed=12   unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-x1                         : ok=37   changed=7    unreachable=0    failed=0    skipped=18   rescued=0    ignored=0   
-x2                         : ok=28   changed=4    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
+dut                        : ok=37   changed=12   unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+x1                         : ok=37   changed=7    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+x2                         : ok=28   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 
 
 

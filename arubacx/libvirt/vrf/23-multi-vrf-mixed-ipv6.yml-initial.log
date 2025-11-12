@@ -8,18 +8,25 @@
 PLAY [Deploy initial device configuration] *************************************
 
 TASK [Set variables that cannot be set with VARS] ******************************
-ok: [r2]
 ok: [r1]
+ok: [r2]
 ok: [r3]
 ok: [dut]
 ok: [r4]
+
+TASK [Generic readiness tests] *************************************************
+skipping: [dut]
+skipping: [r1]
+skipping: [r2]
+skipping: [r3]
+skipping: [r4]
 
 TASK [Find device readiness script] ********************************************
 ok: [r1]
 ok: [r2]
 ok: [r3]
-ok: [r4]
 ok: [dut]
+ok: [r4]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [dut]
@@ -29,21 +36,21 @@ skipping: [r3]
 skipping: [r4]
 
 TASK [Normalize config on bridge-like devices] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4
 
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [r1]
 ok: [r2]
-ok: [dut]
 ok: [r3]
+ok: [dut]
 ok: [r4]
 
 TASK [Find configuration template for normalize] *******************************
 ok: [r1]
 ok: [r2]
 ok: [r3]
-ok: [dut]
 ok: [r4]
+ok: [dut]
 
 TASK [fail] ********************************************************************
 skipping: [dut]
@@ -74,20 +81,20 @@ skipping: [r3]
 skipping: [r4]
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4
 
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [r1]
 ok: [r2]
-ok: [r3]
 ok: [r4]
+ok: [r3]
 ok: [dut]
 
 TASK [Find configuration template for initial] *********************************
 ok: [r1]
-ok: [r3]
 ok: [r2]
 ok: [r4]
+ok: [r3]
 ok: [dut]
 
 TASK [fail] ********************************************************************
@@ -100,8 +107,8 @@ skipping: [r4]
 TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [r1]
 ok: [r2]
-ok: [r3]
 ok: [r4]
+ok: [r3]
 ok: [dut]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -189,6 +196,9 @@ ok: [r1] =>
     cat >/tmp/config <<CONFIG
     hostname r1
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     ipv6 forwarding
     vrf mgmt
@@ -212,6 +222,7 @@ ok: [r1] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [r2] => 
   msg: |-
@@ -297,6 +308,9 @@ ok: [r2] =>
     cat >/tmp/config <<CONFIG
     hostname r2
     !
+    log file /tmp/logging
+  
+    !
     ip forwarding
     ipv6 forwarding
     vrf mgmt
@@ -320,10 +334,11 @@ ok: [r2] =>
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
-ok: [r3] => 
+ok: [r4] => 
   msg: |-
-    initial configuration for r3
+    initial configuration for r4
     =========================================
     #!/bin/bash
     #
@@ -403,7 +418,10 @@ ok: [r3] =>
     # Rest of initial configuration done through VTYSH
     #
     cat >/tmp/config <<CONFIG
-    hostname r3
+    hostname r4
+    !
+    log file /tmp/logging
+  
     !
     ipv6 forwarding
     vrf mgmt
@@ -414,19 +432,20 @@ ok: [r3] =>
     interface lo
      no shutdown
      ! no ip address
-     ipv6 address 2001:db8:cafe:2000::4/128
+     ipv6 address 2001:db8:cafe:2000::5/128
     !
     interface eth1
      no shutdown
-     description r3 -> dut
+     description r4 -> dut [external]
      ! no ip address
-     ipv6 address 2001:db8:13::4/64
+     ipv6 address 2001:db8:13:1::5/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 ok: [dut] => 
   msg: |-
@@ -538,9 +557,9 @@ ok: [dut] =>
         ipv6 nd ra max-interval 4
     !
     !
-ok: [r4] => 
+ok: [r3] => 
   msg: |-
-    initial configuration for r4
+    initial configuration for r3
     =========================================
     #!/bin/bash
     #
@@ -620,7 +639,10 @@ ok: [r4] =>
     # Rest of initial configuration done through VTYSH
     #
     cat >/tmp/config <<CONFIG
-    hostname r4
+    hostname r3
+    !
+    log file /tmp/logging
+  
     !
     ipv6 forwarding
     vrf mgmt
@@ -631,24 +653,25 @@ ok: [r4] =>
     interface lo
      no shutdown
      ! no ip address
-     ipv6 address 2001:db8:cafe:2000::5/128
+     ipv6 address 2001:db8:cafe:2000::4/128
     !
     interface eth1
      no shutdown
-     description r4 -> dut [external]
+     description r3 -> dut
      ! no ip address
-     ipv6 address 2001:db8:13:1::5/64
+     ipv6 address 2001:db8:13::4/64
      ipv6 nd ra-interval 5
      no ipv6 nd suppress-ra
     !
     do write
     CONFIG
     vtysh -f /tmp/config
+    !
     exit 0
 
 TASK [Deploy initial configuration] ********************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/initial-clab.yml for r1, r2, r3, r4
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/arubacx.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/initial-clab.yml for r1, r2, r3, r4
 
 TASK [tempfile] ****************************************************************
 changed: [dut -> localhost]
@@ -656,7 +679,7 @@ changed: [dut -> localhost]
 TASK [template] ****************************************************************
 changed: [dut -> localhost]
 
-TASK [aoscx_config: deploying initial from /home/pipi/net101/tools/netsim/ansible/templates/initial/arubacx.j2] ***
+TASK [aoscx_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/arubacx.j2] ***
 changed: [dut]
 
 TASK [file] ********************************************************************
@@ -672,27 +695,27 @@ skipping: [r3]
 skipping: [r4]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, r3, r4
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for r2, r1, r3, r4
 
 TASK [template] ****************************************************************
-changed: [r3]
 changed: [r2]
-changed: [r1]
 changed: [r4]
+changed: [r3]
+changed: [r1]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
-ok: [r2]
 ok: [r3]
+ok: [r2]
 ok: [r4]
 
-TASK [run /tmp/config.sh to deploy initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
-changed: [r1]
-changed: [r2]
+TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [r3]
+changed: [r2]
+changed: [r1]
 changed: [r4]
 
-TASK [run vtysh to import initial config from /home/pipi/net101/tools/netsim/ansible/templates/initial/frr.j2] ***
+TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r1]
 skipping: [r2]
 skipping: [r3]
@@ -708,16 +731,16 @@ ok: [r4]
 ok: [dut]
 
 TASK [Deploy individual configuration modules] *********************************
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4 => (item=ospf)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4 => (item=bgp)
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4 => (item=vrf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4 => (item=ospf)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4 => (item=bgp)
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for dut, r1, r2, r3, r4 => (item=vrf)
 
 TASK [Figure out whether to deploy the module ospf on current device] **********
 ok: [r1]
 ok: [r2]
 ok: [r3]
-ok: [r4]
 ok: [dut]
+ok: [r4]
 
 TASK [Find configuration template for ospf] ************************************
 skipping: [r2]
@@ -827,8 +850,8 @@ ok: [r3] =>
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [r2]
 skipping: [r4]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r1, r3
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/arubacx.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r1, r3
 
 TASK [tempfile] ****************************************************************
 changed: [dut -> localhost]
@@ -836,7 +859,7 @@ changed: [dut -> localhost]
 TASK [template] ****************************************************************
 changed: [dut -> localhost]
 
-TASK [aoscx_config: deploying ospf from /home/pipi/net101/tools/netsim/ansible/templates/ospf/arubacx.j2] ***
+TASK [aoscx_config: deploying ospf from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/arubacx.j2] ***
 ok: [dut]
 
 TASK [file] ********************************************************************
@@ -850,18 +873,18 @@ TASK [set_fact] ****************************************************************
 ok: [r1]
 ok: [r3]
 
-TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run /tmp/config.sh to deploy ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
 skipping: [r1]
 skipping: [r3]
 
-TASK [run vtysh to import ospf config from /home/pipi/net101/tools/netsim/ansible/templates/ospf/frr.j2] ***
+TASK [run vtysh to import ospf config from /home/pipi/netlab_gh/netsim/ansible/templates/ospf/frr.j2] ***
 changed: [r3]
 changed: [r1]
 
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [r1]
-ok: [r2]
 ok: [r3]
+ok: [r2]
 ok: [dut]
 ok: [r4]
 
@@ -883,8 +906,8 @@ TASK [Find configuration deployment deploy_script for bgp] *********************
 skipping: [r1]
 skipping: [r3]
 ok: [r2]
-ok: [r4]
 ok: [dut]
+ok: [r4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [r1]
@@ -914,9 +937,9 @@ ok: [r2] =>
     !
   
     !
+    ! Originate networks from connected subnets
+    !
       network 10.0.0.3/32
-    !
-    !
     !
       neighbor 10.1.0.5 activate
       no neighbor 10.1.0.5 send-community all
@@ -927,9 +950,9 @@ ok: [r2] =>
     !
   
     !
+    ! Originate networks from connected subnets
+    !
       network 2001:db8:1:3::/64
-    !
-    !
     !
       neighbor 2001:db8:3:1::1 activate
       no neighbor 2001:db8:3:1::1 send-community all
@@ -985,9 +1008,9 @@ ok: [r4] =>
     !
   
     !
+    ! Originate networks from connected subnets
+    !
       network 2001:db8:cafe:2000::5/128
-    !
-    !
     !
       neighbor 2001:db8:13:1::1 activate
       no neighbor 2001:db8:13:1::1 send-community all
@@ -1001,8 +1024,8 @@ ok: [r4] =>
 TASK [Deploy bgp configuration] ************************************************
 skipping: [r1]
 skipping: [r3]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for dut
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/frr.yml for r2, r4
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/arubacx.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for r2, r4
 
 TASK [tempfile] ****************************************************************
 changed: [dut -> localhost]
@@ -1010,33 +1033,33 @@ changed: [dut -> localhost]
 TASK [template] ****************************************************************
 changed: [dut -> localhost]
 
-TASK [aoscx_config: deploying bgp from /home/pipi/net101/tools/netsim/ansible/templates/bgp/arubacx.j2] ***
+TASK [aoscx_config: deploying bgp from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/arubacx.j2] ***
 changed: [dut]
 
 TASK [file] ********************************************************************
 changed: [dut -> localhost]
 
 TASK [template] ****************************************************************
-changed: [r2]
 changed: [r4]
+changed: [r2]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
 ok: [r4]
 
-TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
+TASK [run /tmp/config.sh to deploy bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 skipping: [r2]
 skipping: [r4]
 
-TASK [run vtysh to import bgp config from /home/pipi/net101/tools/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [r4]
+TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
 changed: [r2]
+changed: [r4]
 
 TASK [Figure out whether to deploy the module vrf on current device] ***********
 ok: [r1]
 ok: [r2]
-ok: [dut]
 ok: [r3]
+ok: [dut]
 ok: [r4]
 
 TASK [Find configuration template for vrf] *************************************
@@ -1190,7 +1213,7 @@ skipping: [r1]
 skipping: [r2]
 skipping: [r3]
 skipping: [r4]
-included: /home/pipi/net101/tools/netsim/ansible/tasks/deploy-config/arubacx.yml for dut
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/arubacx.yml for dut
 
 TASK [tempfile] ****************************************************************
 changed: [dut -> localhost]
@@ -1198,7 +1221,7 @@ changed: [dut -> localhost]
 TASK [template] ****************************************************************
 changed: [dut -> localhost]
 
-TASK [aoscx_config: deploying vrf from /home/pipi/net101/tools/netsim/ansible/templates/vrf/arubacx.j2] ***
+TASK [aoscx_config: deploying vrf from /home/pipi/netlab_gh/netsim/ansible/templates/vrf/arubacx.j2] ***
 changed: [dut]
 
 TASK [file] ********************************************************************
@@ -1208,11 +1231,11 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=47   changed=15   unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-r1                         : ok=31   changed=5    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
-r2                         : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
-r3                         : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
-r4                         : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+dut                        : ok=47   changed=15   unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+r1                         : ok=31   changed=5    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+r2                         : ok=30   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+r3                         : ok=30   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+r4                         : ok=30   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
 
 
 

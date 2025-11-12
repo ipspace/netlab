@@ -10,9 +10,40 @@ PLAY [Deploy initial device configuration] *************************************
 TASK [Set variables that cannot be set with VARS] ******************************
 ok: [dut]
 ok: [r1]
-ok: [r2]
 ok: [r3]
+ok: [r2]
 ok: [r4]
+
+TASK [Generic readiness tests] *************************************************
+skipping: [dut]
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/ssh.yml for r1, r4, r2, r3 => (item=ssh)
+
+TASK [Check if 'sshpass' is installed] *****************************************
+ok: [r1 -> localhost]
+
+TASK [Check for 'timeout' command] *********************************************
+ok: [r2 -> localhost]
+ok: [r1 -> localhost]
+ok: [r3 -> localhost]
+ok: [r4 -> localhost]
+
+TASK [Execute local ssh command to check ssh readiness] ************************
+FAILED - RETRYING: [r1 -> localhost]: Execute local ssh command to check ssh readiness (20 retries left).
+FAILED - RETRYING: [r3 -> localhost]: Execute local ssh command to check ssh readiness (20 retries left).
+ok: [r4 -> localhost]
+ok: [r2 -> localhost]
+ok: [r1 -> localhost]
+ok: [r3 -> localhost]
+
+TASK [Confirm r1 SSH server works] *********************************************
+ok: [r1] => 
+  msg: Node r1 is ready.
+ok: [r2] => 
+  msg: Node r2 is ready.
+ok: [r3] => 
+  msg: Node r3 is ready.
+ok: [r4] => 
+  msg: Node r4 is ready.
 
 TASK [Find device readiness script] ********************************************
 ok: [dut]
@@ -22,14 +53,11 @@ ok: [r3]
 ok: [r4]
 
 TASK [Wait for device to become ready] *****************************************
+skipping: [r1]
+skipping: [r2]
+skipping: [r3]
+skipping: [r4]
 skipping: [dut]
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check/eos-clab.yml for r1, r2, r3, r4
-
-TASK [Wait for cEOS SSH daemon to start] ***************************************
-ok: [r4]
-ok: [r1]
-ok: [r3]
-ok: [r2]
 
 TASK [Normalize config on bridge-like devices] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for r1, r2, r3, r4, dut
@@ -71,7 +99,6 @@ ok: [r1] =>
     !
     interface Ethernet1
      shutdown
-     mac-address 52dc.cafe.0b01
 ok: [r2] => 
   msg: |-
     normalize configuration for r2
@@ -79,7 +106,6 @@ ok: [r2] =>
     !
     interface Ethernet1
      shutdown
-     mac-address 52dc.cafe.0c01
 ok: [r3] => 
   msg: |-
     normalize configuration for r3
@@ -87,7 +113,6 @@ ok: [r3] =>
     !
     interface Ethernet1
      shutdown
-     mac-address 52dc.cafe.1701
 ok: [r4] => 
   msg: |-
     normalize configuration for r4
@@ -95,7 +120,6 @@ ok: [r4] =>
     !
     interface Ethernet1
      shutdown
-     mac-address 52dc.cafe.1801
 
 TASK [Deploy normalize configuration] ******************************************
 skipping: [dut]
@@ -105,10 +129,10 @@ TASK [eos_config: deploying normalize from /home/pipi/netlab_gh/netsim/ansible/t
 [WARNING]: To ensure idempotency and correct diff the input configuration lines
 should be similar to how they appear if present in the running configuration on
 device including the indentation
-changed: [r1]
 changed: [r2]
-changed: [r4]
 changed: [r3]
+changed: [r4]
+changed: [r1]
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for r1, r2, r3, r4, dut
@@ -258,51 +282,8 @@ ok: [r1] =>
      platform tfa phy control-frame disabled
      description r1 -> dut [external]
      ip address 10.1.0.2/30
+     mac-address caf0.000b.0001
     !
-     mac-address 52dc.cafe.0b01
-     no shutdown
-    !
-ok: [r2] => 
-  msg: |-
-    initial configuration for r2
-    =========================================
-    hostname r2
-    !
-    logging monitor debugging
-    aaa authorization exec default local
-    !
-    lldp run
-    ip routing
-    ipv6 unicast-routing
-    !
-    !
-    ip host r1 10.0.0.11 10.1.0.2
-    ip host r3 10.0.0.23 10.1.0.10
-    ip host r4 10.0.0.24 10.1.0.14
-    ip host dut 10.0.0.1
-    ip host dut-red 10.1.0.1 10.1.0.5
-    ip host dut-blue 10.1.0.9 10.1.0.13
-    ipv6 host r1 2001:db8:1:b::1
-    ipv6 host r3 2001:db8:1:17::1
-    ipv6 host r4 2001:db8:1:18::1
-    ipv6 host dut 2001:db8:1:1::1
-    !
-    interface Management0
-     no lldp transmit
-     no lldp receive
-    !
-    interface Loopback0
-     ip address 10.0.0.12/32
-     ipv6 nd ra interval 5
-     ipv6 address 2001:db8:1:c::1/64
-    !
-    interface Ethernet1
-     no switchport
-     platform tfa phy control-frame disabled
-     description r2 -> dut [external]
-     ip address 10.1.0.6/30
-    !
-     mac-address 52dc.cafe.0c01
      no shutdown
     !
 ok: [r3] => 
@@ -344,8 +325,51 @@ ok: [r3] =>
      platform tfa phy control-frame disabled
      description r3 -> dut [external]
      ip address 10.1.0.10/30
+     mac-address caf0.0017.0001
     !
-     mac-address 52dc.cafe.1701
+     no shutdown
+    !
+ok: [r2] => 
+  msg: |-
+    initial configuration for r2
+    =========================================
+    hostname r2
+    !
+    logging monitor debugging
+    aaa authorization exec default local
+    !
+    lldp run
+    ip routing
+    ipv6 unicast-routing
+    !
+    !
+    ip host r1 10.0.0.11 10.1.0.2
+    ip host r3 10.0.0.23 10.1.0.10
+    ip host r4 10.0.0.24 10.1.0.14
+    ip host dut 10.0.0.1
+    ip host dut-red 10.1.0.1 10.1.0.5
+    ip host dut-blue 10.1.0.9 10.1.0.13
+    ipv6 host r1 2001:db8:1:b::1
+    ipv6 host r3 2001:db8:1:17::1
+    ipv6 host r4 2001:db8:1:18::1
+    ipv6 host dut 2001:db8:1:1::1
+    !
+    interface Management0
+     no lldp transmit
+     no lldp receive
+    !
+    interface Loopback0
+     ip address 10.0.0.12/32
+     ipv6 nd ra interval 5
+     ipv6 address 2001:db8:1:c::1/64
+    !
+    interface Ethernet1
+     no switchport
+     platform tfa phy control-frame disabled
+     description r2 -> dut [external]
+     ip address 10.1.0.6/30
+     mac-address caf0.000c.0001
+    !
      no shutdown
     !
 ok: [r4] => 
@@ -387,8 +411,8 @@ ok: [r4] =>
      platform tfa phy control-frame disabled
      description r4 -> dut [external]
      ip address 10.1.0.14/30
+     mac-address caf0.0018.0001
     !
-     mac-address 52dc.cafe.1801
      no shutdown
     !
 
@@ -398,9 +422,9 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/vyos.yml for d
 
 TASK [eos_config: deploying initial from /home/pipi/netlab_gh/netsim/ansible/templates/initial/eos.j2] ***
 changed: [r2]
+changed: [r3]
 changed: [r4]
 changed: [r1]
-changed: [r3]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
@@ -427,8 +451,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for r1, r2
 TASK [Figure out whether to deploy the module bgp on current device] ***********
 ok: [dut]
 ok: [r1]
-ok: [r2]
 ok: [r3]
+ok: [r2]
 ok: [r4]
 
 TASK [Find configuration template for bgp] *************************************
@@ -453,6 +477,126 @@ ok: [r3]
 ok: [r4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [r1] => 
+  msg: |-
+    bgp configuration for r1
+    =========================================
+    !
+    !
+    router bgp 65101
+      bgp advertise-inactive
+      bgp log-neighbor-changes
+      no bgp default ipv4-unicast
+      no bgp default ipv6-unicast
+      router-id 10.0.0.11
+    !
+      neighbor 10.1.0.1 remote-as 65000
+      neighbor 10.1.0.1 description dut
+      neighbor 10.1.0.1 send-community standard large
+    !
+    !
+     address-family ipv4
+  
+    !
+    !
+    ! Originate networks from connected subnets
+    !
+      network 10.0.0.11/32
+    !
+    !
+      neighbor 10.1.0.1 activate
+      neighbor 10.1.0.1 next-hop-self
+    !
+     address-family ipv6
+  
+    !
+    !
+    ! Originate networks from connected subnets
+    !
+      network 2001:db8:1:b::/64
+    !
+    !
+    !
+ok: [r2] => 
+  msg: |-
+    bgp configuration for r2
+    =========================================
+    !
+    !
+    router bgp 65102
+      bgp advertise-inactive
+      bgp log-neighbor-changes
+      no bgp default ipv4-unicast
+      no bgp default ipv6-unicast
+      router-id 10.0.0.12
+    !
+      neighbor 10.1.0.5 remote-as 65000
+      neighbor 10.1.0.5 description dut
+      neighbor 10.1.0.5 send-community standard large
+    !
+    !
+     address-family ipv4
+  
+    !
+    !
+    ! Originate networks from connected subnets
+    !
+      network 10.0.0.12/32
+    !
+    !
+      neighbor 10.1.0.5 activate
+      neighbor 10.1.0.5 next-hop-self
+    !
+     address-family ipv6
+  
+    !
+    !
+    ! Originate networks from connected subnets
+    !
+      network 2001:db8:1:c::/64
+    !
+    !
+    !
+ok: [r3] => 
+  msg: |-
+    bgp configuration for r3
+    =========================================
+    !
+    !
+    router bgp 65103
+      bgp advertise-inactive
+      bgp log-neighbor-changes
+      no bgp default ipv4-unicast
+      no bgp default ipv6-unicast
+      router-id 10.0.0.23
+    !
+      neighbor 10.1.0.9 remote-as 65000
+      neighbor 10.1.0.9 description dut
+      neighbor 10.1.0.9 send-community standard large
+    !
+    !
+     address-family ipv4
+  
+    !
+    !
+    ! Originate networks from connected subnets
+    !
+      network 10.0.0.23/32
+    !
+    !
+      neighbor 10.1.0.9 activate
+      neighbor 10.1.0.9 next-hop-self
+    !
+     address-family ipv6
+  
+    !
+    !
+    ! Originate networks from connected subnets
+    !
+      network 2001:db8:1:17::/64
+    !
+    !
+    !
 ok: [dut] => 
   msg: |-
     bgp configuration for dut
@@ -477,108 +621,6 @@ ok: [dut] =>
   
   
     set protocols bgp address-family ipv6-unicast network 2001:db8:1:1::/64
-ok: [r1] => 
-  msg: |-
-    bgp configuration for r1
-    =========================================
-    !
-    !
-    router bgp 65101
-      bgp advertise-inactive
-      bgp log-neighbor-changes
-      no bgp default ipv4-unicast
-      no bgp default ipv6-unicast
-      router-id 10.0.0.11
-    !
-      neighbor 10.1.0.1 remote-as 65000
-      neighbor 10.1.0.1 description dut
-      neighbor 10.1.0.1 send-community standard large
-    !
-    !
-     address-family ipv4
-  
-      network 10.0.0.11/32
-    !
-    !
-    !
-      neighbor 10.1.0.1 activate
-      neighbor 10.1.0.1 next-hop-self
-    !
-     address-family ipv6
-  
-      network 2001:db8:1:b::/64
-    !
-    !
-    !
-    !
-ok: [r2] => 
-  msg: |-
-    bgp configuration for r2
-    =========================================
-    !
-    !
-    router bgp 65102
-      bgp advertise-inactive
-      bgp log-neighbor-changes
-      no bgp default ipv4-unicast
-      no bgp default ipv6-unicast
-      router-id 10.0.0.12
-    !
-      neighbor 10.1.0.5 remote-as 65000
-      neighbor 10.1.0.5 description dut
-      neighbor 10.1.0.5 send-community standard large
-    !
-    !
-     address-family ipv4
-  
-      network 10.0.0.12/32
-    !
-    !
-    !
-      neighbor 10.1.0.5 activate
-      neighbor 10.1.0.5 next-hop-self
-    !
-     address-family ipv6
-  
-      network 2001:db8:1:c::/64
-    !
-    !
-    !
-    !
-ok: [r3] => 
-  msg: |-
-    bgp configuration for r3
-    =========================================
-    !
-    !
-    router bgp 65103
-      bgp advertise-inactive
-      bgp log-neighbor-changes
-      no bgp default ipv4-unicast
-      no bgp default ipv6-unicast
-      router-id 10.0.0.23
-    !
-      neighbor 10.1.0.9 remote-as 65000
-      neighbor 10.1.0.9 description dut
-      neighbor 10.1.0.9 send-community standard large
-    !
-    !
-     address-family ipv4
-  
-      network 10.0.0.23/32
-    !
-    !
-    !
-      neighbor 10.1.0.9 activate
-      neighbor 10.1.0.9 next-hop-self
-    !
-     address-family ipv6
-  
-      network 2001:db8:1:17::/64
-    !
-    !
-    !
-    !
 ok: [r4] => 
   msg: |-
     bgp configuration for r4
@@ -599,8 +641,11 @@ ok: [r4] =>
     !
      address-family ipv4
   
-      network 10.0.0.24/32
     !
+    !
+    ! Originate networks from connected subnets
+    !
+      network 10.0.0.24/32
     !
     !
       neighbor 10.1.0.13 activate
@@ -608,8 +653,11 @@ ok: [r4] =>
     !
      address-family ipv6
   
-      network 2001:db8:1:18::/64
     !
+    !
+    ! Originate networks from connected subnets
+    !
+      network 2001:db8:1:18::/64
     !
     !
     !
@@ -832,8 +880,8 @@ skipping: [r3]
 skipping: [r4]
 
 TASK [Check is the configuration template is a file] ***************************
-ok: [r1 -> localhost]
 ok: [r2 -> localhost]
+ok: [r1 -> localhost]
 ok: [r3 -> localhost]
 ok: [r4 -> localhost]
 
@@ -856,20 +904,20 @@ ok: [r3]
 ok: [r4]
 
 TASK [Run the configuration deployment script] *********************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for r1, r2, r3, r4
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/eos.yml for r2, r1, r3, r4
 
 TASK [eos_config: deploying bgp-xact from /home/pipi/net101/tools/tests/integration/vrf/bgp-xact.j2] ***
-changed: [r4]
+changed: [r3]
 changed: [r1]
 changed: [r2]
-changed: [r3]
+changed: [r4]
 
 PLAY RECAP *********************************************************************
-dut                        : ok=34   changed=6    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-r1                         : ok=34   changed=4    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
-r2                         : ok=34   changed=4    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
-r3                         : ok=34   changed=4    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
-r4                         : ok=34   changed=4    unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
+dut                        : ok=34   changed=6    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+r1                         : ok=37   changed=4    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+r2                         : ok=36   changed=4    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+r3                         : ok=36   changed=4    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
+r4                         : ok=36   changed=4    unreachable=0    failed=0    skipped=12   rescued=0    ignored=0   
 
 
 

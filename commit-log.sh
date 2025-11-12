@@ -5,6 +5,8 @@ find . -name '*log' -empty -print -delete
 echo
 echo "Creating HTML reports"
 ./create-reports.py html
+echo "Creating release coverage reports"
+./create-reports.py release
 echo
 echo "Submitting test results to GitHub"
 git add .

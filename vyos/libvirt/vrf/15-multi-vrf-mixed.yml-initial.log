@@ -14,6 +14,13 @@ ok: [r2]
 ok: [r3]
 ok: [r4]
 
+TASK [Generic readiness tests] *************************************************
+skipping: [dut]
+skipping: [r1]
+skipping: [r2]
+skipping: [r3]
+skipping: [r4]
+
 TASK [Find device readiness script] ********************************************
 ok: [dut]
 ok: [r1]
@@ -54,8 +61,8 @@ skipping: [r4]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
 ok: [dut]
-ok: [r1]
 ok: [r2]
+ok: [r1]
 ok: [r3]
 ok: [r4]
 
@@ -80,8 +87,8 @@ TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [dut]
 ok: [r1]
 ok: [r2]
-ok: [r4]
 ok: [r3]
+ok: [r4]
 
 TASK [Find configuration template for initial] *********************************
 ok: [dut]
@@ -101,10 +108,90 @@ TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [dut]
 ok: [r1]
 ok: [r2]
-ok: [r4]
 ok: [r3]
+ok: [r4]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [dut] => 
+  msg: |-
+    initial configuration for dut
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+  
+    configure
+    set system host-name 'dut'
+  
+    set vrf name red table 100
+    set vrf name blue table 101
+  
+    set interfaces dummy dum0 address 10.0.0.1/32
+  
+  
+  
+    set interfaces ethernet eth1 description 'dut -> r1'
+  
+    set interfaces ethernet eth1 mtu 1500
+  
+    set interfaces ethernet eth1 address 10.1.0.1/30
+  
+  
+    set interfaces ethernet eth1 vrf red
+  
+  
+  
+    set interfaces ethernet eth2 description 'dut -> r2 [external]'
+  
+    set interfaces ethernet eth2 mtu 1500
+  
+    set interfaces ethernet eth2 address 10.1.0.5/30
+  
+  
+    set interfaces ethernet eth2 vrf red
+  
+  
+  
+    set interfaces ethernet eth3 description 'dut -> r3'
+  
+    set interfaces ethernet eth3 mtu 1500
+  
+    set interfaces ethernet eth3 address 10.1.0.9/30
+  
+  
+    set interfaces ethernet eth3 vrf blue
+  
+  
+  
+    set interfaces ethernet eth4 description 'dut -> r4 [external]'
+  
+    set interfaces ethernet eth4 mtu 1500
+  
+    set interfaces ethernet eth4 address 10.1.0.13/30
+  
+  
+    set interfaces ethernet eth4 vrf blue
+  
+  
+    set service lldp interface all
+    >/dev/null 2>/dev/null set service lldp interface eth0 disable
+    >/dev/null 2>/dev/null set service lldp interface eth0 mode disable
+  
+  
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
+  
+    # Restart FRR to pick up the new hostname
+    sudo service frr restart
 ok: [r1] => 
   msg: |-
     initial configuration for r1
@@ -211,86 +298,6 @@ ok: [r1] =>
     vtysh -f /tmp/config
     !
     exit 0
-ok: [dut] => 
-  msg: |-
-    initial configuration for dut
-    =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
-  
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-    fi
-  
-    # Configuration items start here
-  
-    configure
-    set system host-name 'dut'
-  
-    set vrf name red table 100
-    set vrf name blue table 101
-  
-    set interfaces dummy dum0 address 10.0.0.1/32
-  
-  
-  
-    set interfaces ethernet eth1 description 'dut -> r1'
-  
-    set interfaces ethernet eth1 mtu 1500
-  
-    set interfaces ethernet eth1 address 10.1.0.1/30
-  
-  
-    set interfaces ethernet eth1 vrf red
-  
-  
-  
-    set interfaces ethernet eth2 description 'dut -> r2 [external]'
-  
-    set interfaces ethernet eth2 mtu 1500
-  
-    set interfaces ethernet eth2 address 10.1.0.5/30
-  
-  
-    set interfaces ethernet eth2 vrf red
-  
-  
-  
-    set interfaces ethernet eth3 description 'dut -> r3'
-  
-    set interfaces ethernet eth3 mtu 1500
-  
-    set interfaces ethernet eth3 address 10.1.0.9/30
-  
-  
-    set interfaces ethernet eth3 vrf blue
-  
-  
-  
-    set interfaces ethernet eth4 description 'dut -> r4 [external]'
-  
-    set interfaces ethernet eth4 mtu 1500
-  
-    set interfaces ethernet eth4 address 10.1.0.13/30
-  
-  
-    set interfaces ethernet eth4 vrf blue
-  
-  
-    set service lldp interface all
-    >/dev/null 2>/dev/null set service lldp interface eth0 disable
-    >/dev/null 2>/dev/null set service lldp interface eth0 mode disable
-  
-  
-  
-    # Commit, save and exit from subshell
-  
-    commit
-    save
-    exit
-  
-    # Restart FRR to pick up the new hostname
-    sudo service frr restart
 ok: [r2] => 
   msg: |-
     initial configuration for r2
@@ -636,10 +643,10 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for r1, r2, r3, r4
 
 TASK [template] ****************************************************************
-changed: [r2]
-changed: [r4]
-changed: [r1]
 changed: [r3]
+changed: [r4]
+changed: [r2]
+changed: [r1]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -649,9 +656,9 @@ ok: [r4]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [r1]
-changed: [r4]
-changed: [r3]
 changed: [r2]
+changed: [r3]
+changed: [r4]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [r1]
@@ -681,10 +688,10 @@ ok: [r3]
 ok: [r4]
 
 TASK [Find configuration template for ospf] ************************************
-ok: [dut]
 skipping: [r2]
-ok: [r1]
+ok: [dut]
 skipping: [r4]
+ok: [r1]
 ok: [r3]
 
 TASK [fail] ********************************************************************
@@ -796,8 +803,8 @@ TASK [execute config-ospf.sh to deploy ospf config from /home/pipi/netlab_gh/net
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [r1]
 changed: [r3]
+changed: [r1]
 
 TASK [set_fact] ****************************************************************
 ok: [r1]
@@ -820,8 +827,8 @@ ok: [r4]
 
 TASK [Find configuration template for bgp] *************************************
 skipping: [r1]
-ok: [dut]
 skipping: [r3]
+ok: [dut]
 ok: [r2]
 ok: [r4]
 
@@ -942,8 +949,8 @@ TASK [execute config-bgp.sh to deploy bgp config from /home/pipi/netlab_gh/netsi
 changed: [dut]
 
 TASK [template] ****************************************************************
-changed: [r4]
 changed: [r2]
+changed: [r4]
 
 TASK [set_fact] ****************************************************************
 ok: [r2]
@@ -967,8 +974,8 @@ ok: [r4]
 TASK [Find configuration template for vrf] *************************************
 skipping: [r1]
 skipping: [r2]
-skipping: [r3]
 ok: [dut]
+skipping: [r3]
 skipping: [r4]
 
 TASK [fail] ********************************************************************
@@ -1142,11 +1149,11 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-dut                        : ok=43   changed=8    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
-r1                         : ok=31   changed=5    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
-r2                         : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
-r3                         : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
-r4                         : ok=30   changed=4    unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+dut                        : ok=43   changed=8    unreachable=0    failed=0    skipped=9    rescued=0    ignored=0   
+r1                         : ok=31   changed=5    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+r2                         : ok=30   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+r3                         : ok=30   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
+r4                         : ok=30   changed=4    unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
 
 
 
