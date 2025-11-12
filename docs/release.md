@@ -1,6 +1,16 @@
 Release Notes
 =============
 
+**Release 25.11 (2025-11-12)**
+
+* SRv6 support on Cisco IOS/XE
+* RIPv2/RIPng support on OpenBSD thanks to Remi Locherer
+* The **[netlab graph](netlab-graph)** command can generate PNG/SVG/JPEG/PDF graphs if you have D2 or Graphviz installed
+* You can generate [reports](netlab-report) and [graphs](netlab-graph), or inspect transformed topology data without starting a lab
+* You can use device-based groups (for example, **eos** or **frr** groups) to set node attributes.
+
+[More details](release-25.11) and [breaking changes](release-25.11-breaking)
+
 **Release 25.10 (2025-10-08)**
 
 * You can use [wildcards or regular expressions](groups-members) to specify group- or **[as_list](bgp-aslist)** ASN/RR members.
