@@ -615,10 +615,10 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for dut, probe, x1, x2
 
 TASK [template] ****************************************************************
-changed: [dut]
-changed: [x1]
-changed: [x2]
 changed: [probe]
+changed: [x1]
+changed: [dut]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [probe]
@@ -628,9 +628,9 @@ ok: [x2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 changed: [probe]
-changed: [x1]
 changed: [dut]
 changed: [x2]
+changed: [x1]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [dut]
@@ -739,55 +739,6 @@ ok: [probe]
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [x1]
 skipping: [x2]
-ok: [probe] => 
-  msg: |-
-    ospf configuration for probe
-    =========================================
-    !
-    ! OSPFv2 FRR configuration
-    !
-    router ospf
-     ospf router-id 10.0.0.2
-     timers throttle spf 10 50 500
-     timers throttle lsa all 100
-     timers lsa min-arrival 100
-  
-  
-    exit
-    !
-    interface lo
-    !
-     ip ospf area 0.0.0.0
-    !
-    interface eth1
-    ! probe -> dut
-     ip ospf area 0.0.0.0
-     ip ospf network point-to-point
-    !
-  
-    !
-    ! OSPFv3 FRR configuration
-    !
-    interface lo
-    !
-     ipv6 ospf6 area 0.0.0.0
-    !
-    interface eth1
-    ! probe -> dut
-     ipv6 ospf6 area 0.0.0.0
-     ipv6 ospf6 network point-to-point
-    !
-    !
-    router ospf6
-     ospf6 router-id 10.0.0.2
-     timers lsa min-arrival 100
-     timers throttle spf 10 50 500
-  
-  
-    exit
-  
-    !
-    do write
 ok: [dut] => 
   msg: |-
     ospf configuration for dut
@@ -837,6 +788,55 @@ ok: [dut] =>
   
     !
     do write
+ok: [probe] => 
+  msg: |-
+    ospf configuration for probe
+    =========================================
+    !
+    ! OSPFv2 FRR configuration
+    !
+    router ospf
+     ospf router-id 10.0.0.2
+     timers throttle spf 10 50 500
+     timers throttle lsa all 100
+     timers lsa min-arrival 100
+  
+  
+    exit
+    !
+    interface lo
+    !
+     ip ospf area 0.0.0.0
+    !
+    interface eth1
+    ! probe -> dut
+     ip ospf area 0.0.0.0
+     ip ospf network point-to-point
+    !
+  
+    !
+    ! OSPFv3 FRR configuration
+    !
+    interface lo
+    !
+     ipv6 ospf6 area 0.0.0.0
+    !
+    interface eth1
+    ! probe -> dut
+     ipv6 ospf6 area 0.0.0.0
+     ipv6 ospf6 network point-to-point
+    !
+    !
+    router ospf6
+     ospf6 router-id 10.0.0.2
+     timers lsa min-arrival 100
+     timers throttle spf 10 50 500
+  
+  
+    exit
+  
+    !
+    do write
 
 TASK [Deploy ospf configuration] ***********************************************
 skipping: [x1]
@@ -844,8 +844,8 @@ skipping: [x2]
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for dut, probe
 
 TASK [template] ****************************************************************
-changed: [dut]
 changed: [probe]
+changed: [dut]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
@@ -884,6 +884,62 @@ ok: [x1]
 ok: [x2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
+ok: [probe] => 
+  msg: |-
+    bgp configuration for probe
+    =========================================
+    !
+    router bgp 65000
+      no bgp ebgp-requires-policy
+      no bgp default ipv4-unicast
+      bgp default show-hostname
+      bgp default show-nexthop-hostname
+      ! Consider AS paths of same length but with different AS as ECMP candidates
+      bgp bestpath as-path multipath-relax
+  
+      bgp router-id 10.0.0.2
+    !
+      neighbor 10.0.0.1 remote-as 65000
+      neighbor 10.0.0.1 description dut
+      neighbor 10.0.0.1 update-source lo
+    !
+      neighbor 2001:db8:1:1::1 remote-as 65000
+      neighbor 2001:db8:1:1::1 description dut
+      neighbor 2001:db8:1:1::1 update-source lo
+    !
+     address-family ipv4 unicast
+    !
+  
+    !
+    ! Originate networks from connected subnets
+    !
+      network 10.0.0.2/32
+    !
+      neighbor 10.0.0.1 activate
+      neighbor 10.0.0.1 next-hop-self
+      no neighbor 10.0.0.1 send-community all
+      neighbor 10.0.0.1 send-community standard
+      neighbor 10.0.0.1 send-community large
+      neighbor 10.0.0.1 send-community extended
+    !
+     address-family ipv6 unicast
+    !
+  
+    !
+    ! Originate networks from connected subnets
+    !
+      network 2001:db8:1:2::/64
+    !
+      neighbor 2001:db8:1:1::1 activate
+      neighbor 2001:db8:1:1::1 next-hop-self
+      no neighbor 2001:db8:1:1::1 send-community all
+      neighbor 2001:db8:1:1::1 send-community standard
+      neighbor 2001:db8:1:1::1 send-community large
+      neighbor 2001:db8:1:1::1 send-community extended
+    !
+    !
+    !
+    do write
 ok: [dut] => 
   msg: |-
     bgp configuration for dut
@@ -968,62 +1024,6 @@ ok: [dut] =>
       no neighbor 2001:db8:3:1::2 send-community all
       neighbor 2001:db8:3:1::2 send-community standard
       neighbor 2001:db8:3:1::2 send-community large
-    !
-    !
-    !
-    do write
-ok: [probe] => 
-  msg: |-
-    bgp configuration for probe
-    =========================================
-    !
-    router bgp 65000
-      no bgp ebgp-requires-policy
-      no bgp default ipv4-unicast
-      bgp default show-hostname
-      bgp default show-nexthop-hostname
-      ! Consider AS paths of same length but with different AS as ECMP candidates
-      bgp bestpath as-path multipath-relax
-  
-      bgp router-id 10.0.0.2
-    !
-      neighbor 10.0.0.1 remote-as 65000
-      neighbor 10.0.0.1 description dut
-      neighbor 10.0.0.1 update-source lo
-    !
-      neighbor 2001:db8:1:1::1 remote-as 65000
-      neighbor 2001:db8:1:1::1 description dut
-      neighbor 2001:db8:1:1::1 update-source lo
-    !
-     address-family ipv4 unicast
-    !
-  
-    !
-    ! Originate networks from connected subnets
-    !
-      network 10.0.0.2/32
-    !
-      neighbor 10.0.0.1 activate
-      neighbor 10.0.0.1 next-hop-self
-      no neighbor 10.0.0.1 send-community all
-      neighbor 10.0.0.1 send-community standard
-      neighbor 10.0.0.1 send-community large
-      neighbor 10.0.0.1 send-community extended
-    !
-     address-family ipv6 unicast
-    !
-  
-    !
-    ! Originate networks from connected subnets
-    !
-      network 2001:db8:1:2::/64
-    !
-      neighbor 2001:db8:1:1::1 activate
-      neighbor 2001:db8:1:1::1 next-hop-self
-      no neighbor 2001:db8:1:1::1 send-community all
-      neighbor 2001:db8:1:1::1 send-community standard
-      neighbor 2001:db8:1:1::1 send-community large
-      neighbor 2001:db8:1:1::1 send-community extended
     !
     !
     !
@@ -1169,8 +1169,8 @@ TASK [Deploy bgp configuration] ************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for dut, probe, x1, x2
 
 TASK [template] ****************************************************************
-changed: [dut]
 changed: [probe]
+changed: [dut]
 changed: [x2]
 changed: [x1]
 
@@ -1187,9 +1187,9 @@ skipping: [x1]
 skipping: [x2]
 
 TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
+changed: [dut]
 changed: [probe]
 changed: [x1]
-changed: [dut]
 changed: [x2]
 
 PLAY [Deploy custom deployment templates] **************************************
@@ -1225,8 +1225,8 @@ TASK [Run the configuration deployment script] *********************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for dut, x2
 
 TASK [template] ****************************************************************
-changed: [x2]
 changed: [dut]
+changed: [x2]
 
 TASK [set_fact] ****************************************************************
 ok: [dut]
