@@ -13,7 +13,7 @@
 
 Instead of wasting time creating a lab topology in a GUI and configuring boring details, you'll start with a lab preconfigured according to your specifications.
 
-Interested? [Read the documentation](https://netlab.tools) and [installation guidelines](https://netlab.tools/install/).
+Interested? [Read the documentation](https://netlab.tools) (also available on [GitHub Pages](https://ipspace.github.io/netlab/)) and [installation guidelines](https://netlab.tools/install/).
 
 ## Releases
 
