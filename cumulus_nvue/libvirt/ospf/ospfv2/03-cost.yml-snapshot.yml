@@ -1,8 +1,8 @@
 %YAML 1.1
 ---
 message: |
-  This lab tests the simple import of BGP and (optionally) static routes into
-  OSPF.
+  This lab tests whether the OSPF costs are correctly applied
+  to physical and loopback interfaces.
 defaults:
   provider: libvirt
   providers:
@@ -4856,8 +4856,6 @@ defaults:
         debug:
           type: list
           split_lines: true
-      bgp_community_type:
-        valid_values: {}
     internal:
       input:
       pools: dict
@@ -5683,7 +5681,6 @@ defaults:
     validate:
     - /home/pipi/net101/tools/netsim/validate
     plugin:
-    - /home/pipi/net101/tools/tests/integration/plugin
     - /work/netlab_cicd
     - /home/pipi/net101/tools/tests/integration/ospf/ospfv2
     - /home/pipi/.netlab
@@ -7199,7 +7196,6 @@ defaults:
         - prefix
         - nexthop
         - aspath
-      node_copy: {}
     features:
       policy:
         set: Route map SET attributes
@@ -7735,20 +7731,17 @@ defaults:
     - vlan
     - vrf
     - vxlan
-  name: ml_17
   module:
-  - routing
   - ospf
-  - bgp
-plugin:
-- static_import
-- multilab
+  name: ml_17
+module:
+- ospf
 groups:
   probes:
     device: frr
     members:
-    - r2
     - x1
+    - x2
     node_data:
       provider: clab
   all:
@@ -7756,63 +7749,19 @@ groups:
       netlab_show_config: true
     members: []
     _default_group: true
-  as65000:
-    members:
-    - dut
-  as65100:
-    members:
-    - x1
 nodes:
   dut:
-    module:
-    - routing
-    - ospf
-    - bgp
-    routing:
-      static:
-      - ipv4: 10.0.0.42/32
-        nexthop:
-          ipv4: 10.1.0.2
-          intf: swp1
-          idx: 0
-    bgp:
-      advertise_loopback: true
-      community:
-        ibgp:
-        - standard
-        - extended
-        ebgp:
-        - standard
-        localas_ibgp:
-        - standard
-        - extended
-      next_hop_self: true
-      as: 65000
-      router_id: 10.0.0.1
-      neighbors:
-      - ifindex: 1
-        name: x1
-        as: 65100
-        type: ebgp
-        ipv4: 10.1.0.2
-        activate:
-          ipv4: true
-      ipv4: true
-    ospf:
-      area: 0.0.0.0
-      import:
-        bgp: {}
-        static: {}
-      router_id: 10.0.0.1
-      af:
-        ipv4: true
     name: dut
     interfaces:
-    - ipv4: 10.1.0.1/30
+    - ospf:
+        area: 0.0.0.0
+        cost: 17
+        passive: false
+        network_type: point-to-point
+      ipv4: 10.1.0.1/30
       linkindex: 1
       type: lan
       bridge: ml_17_1
-      role: external
       name: dut -> x1
       ifindex: 1
       ifname: swp1
@@ -7821,22 +7770,30 @@ nodes:
         ifname: eth1
         node: x1
     - ipv4: 10.1.0.5/30
+      ospf:
+        area: 0.0.0.0
+        cost: 10
+        passive: false
+        network_type: point-to-point
       linkindex: 2
       type: lan
       bridge: ml_17_2
-      name: dut -> r2
+      name: dut -> x2
       ifindex: 2
       ifname: swp2
       neighbors:
       - ipv4: 10.1.0.6/30
         ifname: eth1
-        node: r2
-      ospf:
-        area: 0.0.0.0
-        passive: false
-        network_type: point-to-point
+        node: x2
     device: cumulus_nvue
     box: CumulusCommunity/cumulus-vx:5.10.0
+    module:
+    - ospf
+    ospf:
+      area: 0.0.0.0
+      router_id: 10.0.0.1
+      af:
+        ipv4: true
     id: 1
     mtu: 1500
     af:
@@ -7855,106 +7812,24 @@ nodes:
       ospf:
         area: 0.0.0.0
         passive: false
-      bgp:
-        advertise: true
-  r2:
-    provider: clab
-    module:
-    - ospf
-    name: r2
-    interfaces:
-    - ipv4: 10.1.0.6/30
-      linkindex: 2
-      type: lan
-      bridge: ml_17_2
-      name: r2 -> dut
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 10.1.0.5/30
-        ifname: swp2
-        node: dut
-      ospf:
-        area: 0.0.0.0
-        passive: false
-        network_type: point-to-point
-    device: frr
-    clab:
-      kind: linux
-      config_templates:
-      - daemons:/etc/frr/daemons
-      - hosts:/etc/hosts:shared
-      binds:
-      - clab_files/r2/daemons:/etc/frr/daemons
-      - clab_files/-shared-hosts:/etc/hosts:ro
-    box: quay.io/frrouting/frr:10.5.0
-    ospf:
-      area: 0.0.0.0
-      router_id: 10.0.0.2
-      af:
-        ipv4: true
-    id: 2
-    role: router
-    mtu: 1500
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:02:00:00
-      ipv4: 192.168.17.102
-    hostname: clab-ml_17-r2
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.2/32
-      ospf:
-        area: 0.0.0.0
-        passive: false
   x1:
     provider: clab
-    module:
-    - bgp
-    bgp:
-      advertise_loopback: true
-      community:
-        ibgp:
-        - standard
-        - large
-        - extended
-        ebgp:
-        - standard
-        - large
-        localas_ibgp:
-        - standard
-        - large
-        - extended
-      next_hop_self: true
-      as: 65100
-      router_id: 10.0.0.3
-      neighbors:
-      - ifindex: 1
-        name: dut
-        as: 65000
-        type: ebgp
-        ipv4: 10.1.0.1
-        activate:
-          ipv4: true
-      ipv4: true
+    id: 2
     name: x1
     interfaces:
     - ipv4: 10.1.0.2/30
+      ospf:
+        area: 0.0.0.0
+        cost: 10
+        passive: false
+        network_type: point-to-point
+      mtu: 1500
       linkindex: 1
       type: lan
       bridge: ml_17_1
-      role: external
       name: x1 -> dut
       ifindex: 1
       ifname: eth1
-      mtu: 1500
       neighbors:
       - ipv4: 10.1.0.1/30
         ifname: swp1
@@ -7969,7 +7844,71 @@ nodes:
       - clab_files/x1/daemons:/etc/frr/daemons
       - clab_files/-shared-hosts:/etc/hosts:ro
     box: quay.io/frrouting/frr:10.5.0
+    module:
+    - ospf
+    ospf:
+      area: 0.0.0.0
+      router_id: 10.0.0.2
+      af:
+        ipv4: true
+    role: router
+    mtu: 1500
+    af:
+      ipv4: true
+    mgmt:
+      ifname: eth0
+      mac: ca:fe:00:02:00:00
+      ipv4: 192.168.17.102
+    hostname: clab-ml_17-x1
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo
+      ipv4: 10.0.0.2/32
+      ospf:
+        area: 0.0.0.0
+        passive: false
+  x2:
+    provider: clab
     id: 3
+    name: x2
+    interfaces:
+    - ipv4: 10.1.0.6/30
+      ospf:
+        area: 0.0.0.0
+        cost: 10
+        passive: false
+        network_type: point-to-point
+      mtu: 1500
+      linkindex: 2
+      type: lan
+      bridge: ml_17_2
+      name: x2 -> dut
+      ifindex: 1
+      ifname: eth1
+      neighbors:
+      - ipv4: 10.1.0.5/30
+        ifname: swp2
+        node: dut
+    device: frr
+    clab:
+      kind: linux
+      config_templates:
+      - daemons:/etc/frr/daemons
+      - hosts:/etc/hosts:shared
+      binds:
+      - clab_files/x2/daemons:/etc/frr/daemons
+      - clab_files/-shared-hosts:/etc/hosts:ro
+    box: quay.io/frrouting/frr:10.5.0
+    module:
+    - ospf
+    ospf:
+      area: 0.0.0.0
+      router_id: 10.0.0.3
+      af:
+        ipv4: true
     role: router
     mtu: 1500
     af:
@@ -7978,7 +7917,7 @@ nodes:
       ifname: eth0
       mac: ca:fe:00:03:00:00
       ipv4: 192.168.17.103
-    hostname: clab-ml_17-x1
+    hostname: clab-ml_17-x2
     loopback:
       type: loopback
       neighbors: []
@@ -7986,11 +7925,18 @@ nodes:
       ifindex: 0
       ifname: lo
       ipv4: 10.0.0.3/32
-      bgp:
-        advertise: true
+      ospf:
+        area: 0.0.0.0
+        passive: false
 links:
-- interfaces:
-  - node: dut
+- _linkname: links[1]
+  ospf:
+    cost: 10
+  mtu: 1500
+  interfaces:
+  - ospf:
+      cost: 17
+    node: dut
     ipv4: 10.1.0.1/30
     ifindex: 1
     ifname: swp1
@@ -7998,27 +7944,28 @@ links:
     ipv4: 10.1.0.2/30
     ifindex: 1
     ifname: eth1
-  _linkname: links[1]
   linkindex: 1
   libvirt:
     provider:
       clab: true
   type: lan
   bridge: ml_17_1
-  role: external
   node_count: 2
   prefix:
     ipv4: 10.1.0.0/30
-- interfaces:
+- _linkname: links[2]
+  ospf:
+    cost: 10
+  mtu: 1500
+  interfaces:
   - node: dut
     ipv4: 10.1.0.5/30
     ifindex: 2
     ifname: swp2
-  - node: r2
+  - node: x2
     ipv4: 10.1.0.6/30
     ifindex: 1
     ifname: eth1
-  _linkname: links[2]
   linkindex: 2
   libvirt:
     provider:
@@ -8029,38 +7976,36 @@ links:
   prefix:
     ipv4: 10.1.0.4/30
 validate:
-- description: Check OSPF adjacency
+- description: Check OSPF adjacencies
+  wait: 30
   wait_msg: Waiting for OSPF adjacency process to complete
-  wait: 30
-  nodes:
-  - r2
-  plugin: ospf_neighbor(nodes.dut.ospf.router_id)
-  name: adj_ospf
-- description: Check EBGP sessions with DUT
-  wait_msg: Wait for BGP sessions to be established
-  wait: 30
   nodes:
   - x1
-  plugin: bgp_neighbor(node.bgp.neighbors,'dut')
-  name: adj_bgp
-- description: Check for redistributed BGP route (X1 loopback) on R2
-  wait: 20
-  wait_msg: Waiting for routing protocols to do their magic
+  - x2
+  plugin: ospf_neighbor(nodes.dut.ospf.router_id)
+  name: adj
+- description: Check cost X2 => X1
+  wait: 10
+  wait_msg: Wait for SPF run to complete
   nodes:
-  - r2
-  plugin: ospf_prefix(nodes.x1.loopback.ipv4)
-  name: p_bgp
-- description: Check for redistributed static route on R2
+  - x1
+  plugin: ospf_prefix(nodes.x2.loopback.ipv4,cost=20)
+  name: c_x1
+- description: Check cost X1 => X2
+  wait: 10
+  wait_msg: Wait for SPF run to complete
   nodes:
-  - r2
-  plugin: ospf_prefix(nodes.dut.routing.static[0].ipv4)
-  name: p_static
+  - x2
+  plugin: ospf_prefix(nodes.x1.loopback.ipv4,cost=27)
+  name: c_x2
 input:
-- /home/pipi/net101/tools/tests/integration/ospf/ospfv2/10-import.yml
+- /home/pipi/net101/tools/tests/integration/ospf/ospfv2/03-cost.yml
 - /home/pipi/net101/tools/tests/integration/wait_times.yml
 - /home/pipi/net101/tools/tests/integration/warnings.yml
 - /home/pipi/.netlab.yml
 - package:topology-defaults.yml
+plugin:
+- multilab
 name: ml_17
 addressing:
   lan:
@@ -8090,23 +8035,6 @@ provider: libvirt
 libvirt:
   providers:
     clab: true
-module:
-- routing
-- ospf
-- bgp
-bgp:
-  advertise_loopback: true
-  community:
-    ibgp:
-    - standard
-    - extended
-    ebgp:
-    - standard
-  next_hop_self: true
 ospf:
   area: 0.0.0.0
-prefix:
-  any:
-    ipv4: 0.0.0.0/0
-    ipv6: ::/0
 _netlab_version: 25.11-dev
