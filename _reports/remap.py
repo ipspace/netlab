@@ -3,7 +3,8 @@
 import typing
 from box import Box
 
-from .read import increase_counter
+from .read import increase_counter,get_git_releases
+from netsim.data import get_empty_box
 
 SUMMARY_MAP: dict = {
   'supported': 'unsupported',
@@ -107,3 +108,41 @@ def remap_results(results: Box, remap: typing.Optional[Box] = None, path: str = 
       remap.pop(k,None)
 
   return remap
+
+def remap_release_coverage(topology: Box, tests: Box, results: Box) -> Box:
+  devices = topology.defaults.devices + topology.defaults.daemons
+  remap_data = get_empty_box()
+  releases = get_git_releases()
+  release_timestamp = max(releases.values())
+
+  for device in list(results.keys()):
+    if device not in devices:
+      continue
+
+    dev_data = results[device]
+    test_data = None
+    for provider in list(dev_data.keys()):
+      if provider not in topology.defaults.providers:
+        continue
+
+      test_data = dev_data[provider] if test_data is None else test_data + dev_data[provider]
+
+    if test_data is None:
+      print(f'No test results for {device}')
+      continue
+
+    for t_name,t_setup in tests.items():
+      t_path = t_setup.get('from',t_name)
+      if t_path not in test_data:
+        remap_data[device][t_name] = -1
+        continue
+
+      t_scenarios = t_setup.get('tests',{})
+      ts_results  = test_data[t_path]
+      t_done = len([ test_id for test_id in t_scenarios 
+                      if test_id in ts_results 
+                        and '_timestamp' in ts_results[test_id]
+                        and ts_results[test_id]._timestamp >= release_timestamp])
+      remap_data[device][t_name] = int(t_done / len(t_scenarios) * 100)
+
+  return remap_data

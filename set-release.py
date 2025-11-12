@@ -9,28 +9,7 @@ from netsim.cli import external_commands
 from box import Box
 from netsim.data import get_empty_box
 from netsim.utils import log
-
-
-def get_git_releases() -> dict:
-  r_list = {}
-
-  git_tags = external_commands.run_command('git tag',return_stdout=True,check_result=True)
-  if not git_tags or not isinstance(git_tags,str):
-    log.fatal('Cannot get a list of Git tags')
-
-  for tag in git_tags.split('\n')[-10:]:
-    if not tag:
-      continue
-    r_date = external_commands.run_command(
-              ['git','log',tag,'-n','1','--format=format:%cd','--date=format:%Y-%m-%d %H:%M:%S'],
-              return_stdout=True,
-              check_result=True)
-    if not r_date:
-      log.fatal(f'Cannot get a commit date for {tag}')
-    tag = tag.replace('release_','')
-    r_list[tag] = r_date
-
-  return r_list
+from _reports.read import get_git_releases
 
 def get_release_from_timestamp(t: str, r_list: dict) -> typing.Optional[str]:
   post_release = [ r_key for r_key in r_list.keys() if r_list[r_key] >= t ]
