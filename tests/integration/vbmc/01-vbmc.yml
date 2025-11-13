@@ -1,0 +1,62 @@
+---
+message: |
+  This lab validates the basic function of the vbmc daemon.  A single libvirt
+  node is created and probed with the ipmitool Dockerfile provided alongside
+  the vbmc daemon.
+
+groups:
+  baremetal:
+    members: [ h1, h2, bmc ]
+    module: [ vbmc ]
+
+nodes:
+  h1:
+    device: linux
+    provider: libvirt
+    vbmc.client: true
+  h2:
+    device: linux
+    provider: libvirt
+    vbmc.client: true
+    vbmc.ipmi_user: operator
+    vbmc.ipmi_password: rotarepo
+    vbmc.ipmi_port: 62323
+  bmc:
+    device: vbmc
+    provider: clab
+    vbmc.server: true
+  ipmitool:
+    device: linux
+    provider: clab
+    image: netlab/vbmc.ipmitool:latest
+
+validate:
+  poweroff:
+    description: Validate VBMC Function
+    nodes: [ ipmitool ]
+    devices: [ linux ]
+    pass: VBMC successfully controlled the power state of the libvirt domain
+    fail: VBMC was unable to control the power state of the libvirt domain
+    plugin: poweroff_test(nodes.bmc.mgmt.ipv4, nodes.h1, topology)
+
+  #poweroff:
+  #  description: Validate VBMC Function
+  #  nodes: [ ipmitool ]
+  #  devices: [ linux ]
+  #  pass: VBMC successfully controlled the power state of the libvirt domain
+  #  fail: VBMC was unable to control the power state of the libvirt domain
+  #  exec: |
+  #    ipmitool -I lanplus -H bmc -U admin -P admin -p 6230 power off &&
+  #    ipmitool -I lanplus -H bmc -U admin -P admin -p 6230 power status
+  #  valid: |
+  #    'Chassis Power is off' in stdout
+  #customize:
+  #  description: Validate VBMC Function
+  #  nodes: [ ipmitool ]
+  #  devices: [ linux ]
+  #  pass: Alternate values for user/password/port applied successfully
+  #  fail: There was an issue using alternate values for user/password/port
+  #  exec: |
+  #    ipmitool -I lanplus -H bmc -U operator -P rotarepo -p 62323 power status
+  #  valid: |
+  #    'Chassis Power is on' in stdout

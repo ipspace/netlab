@@ -6,6 +6,7 @@ import re
 import typing
 
 from netsim.data import global_vars
+from netsim.validate.vbmc import *
 
 
 def exec_ping(
