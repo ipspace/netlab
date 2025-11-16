@@ -9,6 +9,14 @@ message: |
   Please note it might take a while for the lab to work due to
   STP learning phase
 
+defaults.sources.extra: [ ../wait_times.yml, ../warnings.yml ]
+
+plugin: [ files ]
+
+addressing:
+  loopback.ipv6: 2001:db8:cafe::/48
+  p2p.ipv6: 2001:db8:1::/48
+
 groups:
   _auto_create: True
   hosts:
@@ -24,10 +32,22 @@ groups:
     bgp.rr: True
   x_switches:
     members: [ s1, s2 ]
-    device: frr
     provider: clab
 
 bgp.as: 65000
+
+nodes:
+  rr:
+  s1:
+    device: eos
+    config.inline: |
+      router bgp {{ bgp.as }}
+        address-family evpn
+      {% for ngb in bgp.neighbors if ngb.ipv6 is defined %}
+          neighbor {{ ngb.ipv6 }} activate
+      {% endfor %}
+  s2:
+    device: frr
 
 vlans:
   red:
@@ -46,6 +66,51 @@ links:
   mtu: 1600
 
 validate:
+  ospf_ipv4:
+    description: Check OSPF adjacencies with RR
+    wait: ospfv2_adj_p2p
+    nodes: [ s1, s2 ]
+    wait_msg: Waiting for OSPF adjacency process to complete
+    plugin: ospf_neighbor(nodes.rr.ospf.router_id)
+
+  ibgp_ipv4:
+    description: Check IPv4 IBGP adjacencies with RR
+    wait: ibgp_session
+    nodes: [ s1, s2 ]
+    wait_msg: Waiting for IGBP session
+    plugin: bgp_neighbor(node.bgp.neighbors,'rr')
+
+  ospf_ipv6:
+    description: Check OSPFv3 adjacencies with RR
+    wait: ospfv3_adj_p2p
+    nodes: [ s1, s2 ]
+    wait_msg: Waiting for OSPF adjacency process to complete
+    plugin: ospf6_neighbor(nodes.rr.ospf.router_id)
+
+  ibgp_ipv6:
+    description: Check IPv6 IBGP adjacencies with RR
+    wait: ibgp_session
+    nodes: [ s1, s2 ]
+    wait_msg: Waiting for IGBP session
+    plugin: bgp_neighbor(node.bgp.neighbors,'rr',af='ipv6')
+
+  ipv4_af:
+    description: Check IPv4 AF on IBGP adjacencies with RR
+    nodes: [ s1, s2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'rr',activate='ipv4')
+
+  evpn_af:
+    description: Check EVPN AF on IBGP adjacencies with RR
+    nodes: [ s1, s2 ]
+    plugin: bgp_neighbor(node.bgp.neighbors,'rr',activate='evpn')
+    stop_on_error: True
+
+  evpn_ipv6:
+    description: Check EVPN AF on IPv6 IBGP adjacencies with RR
+    nodes: [ s1]
+    plugin: bgp_neighbor(node.bgp.neighbors,'rr',af='ipv6',activate='evpn',state='missing')
+    stop_on_error: True
+
   ping_red:
     description: Ping-based reachability test in VLAN red
     wait_msg: Waiting for OSFP and STP to wake up
