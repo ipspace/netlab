@@ -30,12 +30,23 @@ updates:
 {%   endif %}
       - group-name: {{ 'ibgp-ipv4' if type=='ibgp' else 'ebgp' }}
         def-recv-evpn-encap: {{ evpn.transport|default('vxlan') }}
-        family:
-          evpn: True
 {%   if bgp.rr|default(0) or type == 'ebgp' %}
         next-hop-unchanged:
           evpn: True
 {%   endif %}
+{% endfor %}
+{#
+    Now enable the EVPN AF on individual neighbors. We can't do it for the EBGP group
+    because that enables EVPN AF on IPv4 and IPv6 EBGP sessions
+#}
+{% for n in bgp.neighbors|default([]) if n.evpn|default(False) and n.ipv4|default(False) is string %}
+{%   if loop.first %}
+      neighbor:
+{%   endif %}
+      - ip-address: "{{ n.ipv4 }}"
+        admin-state: enable
+        family:
+          evpn: True
 {% endfor %}
 
 {% macro evpn_instance(vrf,type,vni,evi,rd,rts,is_routed=False) %}

@@ -3,7 +3,7 @@
 {# Enable BGP EVPN for specific neighbors #}
 protocols {
   bgp {
-{% for af in ['ipv4','ipv6'] if bgp[af] is defined and loopback[af] is defined %}
+{% for af in ['ipv4'] if bgp[af] is defined and loopback[af] is defined %}
     group ibgp-peers-{{ af }} {
 {%   for n in bgp.neighbors if n[af] is defined and n.type == 'ibgp' and n.evpn|default(false) %}
       neighbor {{ n[af] }} {
@@ -17,8 +17,8 @@ protocols {
 {% endfor %}
     group ebgp-peers {
 {% for n in bgp.neighbors if n.type == 'ebgp' and n.evpn|default(false) %}
-{%   for af in ['ipv4','ipv6'] if n[af] is defined %}
-      neighbor {{ n[af] }} {
+{%   set peer = n.ipv4 if n.ipv4 is string else n.local_if|default(n.ipv6) %}
+      neighbor {{ peer }} {
         accept-remote-nexthop;
         multihop no-nexthop-change;
         delete: shutdown;
@@ -26,7 +26,6 @@ protocols {
           signaling;
         }
       }
-{%   endfor %}
 {% endfor %}
     }
   }

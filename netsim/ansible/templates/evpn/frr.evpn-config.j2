@@ -18,15 +18,21 @@ router bgp {{ bgp.as }}
   exit-vni
 {% endfor %}
 
+{#
+Peer decision logic:
+
+  * IPv4 must be defined or the EVPN flag would not be set
+  * If IPv4 is not a string, we could have an interface session or a regular
+    rfc8950 session.
+  * Try local ifname first, if that's missing, we must have IPv6 peer address
+#}
 {% for n in bgp.neighbors if n.evpn|default(False) %}
-{%  for af in ['ipv4','ipv6'] if af in n %}
-{%   set peer = n[af] if n[af] is string else n.local_if|default('?') %}
+{%   set peer = n.ipv4 if n.ipv4 is string else n.local_if|default(n.ipv6) %}
   neighbor {{ peer }} activate
 #  neighbor {{ peer }} soft-reconfiguration inbound
 {%   if n.rr_client|default(False) %}
   neighbor {{ peer }} route-reflector-client
 {%   endif %}
-{%  endfor %}
 {% endfor %}
 
  exit-address-family
