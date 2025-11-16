@@ -9,182 +9,715 @@ message: |
 
   Please note it might take a while for the lab to work due to
   STP learning phase
-groups:
-  hosts:
-    members:
-    - h1
-    - h2
-    device: linux
-    node_data:
-      provider: clab
-  switches:
-    members:
-    - s1
-    - s2
-    module:
-    - vlan
-    - vxlan
-    - ospf
-    - bgp
-    - evpn
-  core:
-    members:
-    - rr
-    module:
-    - ospf
-    - bgp
-    - evpn
-    node_data:
-      bgp:
-        rr: true
-  x_switches:
-    members:
-    - s1
-    - s2
-    device: frr
-    node_data:
-      provider: clab
-  all:
-    vars:
-      netlab_show_config: true
-    members: []
-    _default_group: true
-  as65000:
-    members:
-    - s1
-    - s2
-    - rr
-bgp:
-  advertise_loopback: true
-  community:
-    ibgp:
-    - standard
-    - extended
-    ebgp:
-    - standard
-  next_hop_self: true
-  as: 65000
-vlans:
-  red:
-    mode: bridge
-    vni: 1000
-    prefix:
-      ipv4: 172.31.1.0/24
-      allocation: id_based
-    id: 1000
-    evpn:
-      evi: 1000
-      import:
-      - 65000:1000
-      export:
-      - 65000:1000
-    neighbors:
-    - ipv4: 172.31.1.1/24
-      ifname: eth1
-      node: h1
-    - ifname: vlan1000
-      node: s1
-      vlan:
-        mode: bridge
-        name: red
-    - ipv4: 172.31.1.2/24
-      ifname: eth1
-      node: h2
-    - ifname: vlan1000
-      node: s2
-      vlan:
-        mode: bridge
-        name: red
-    host_count: 2
-links:
-- _linkname: links[1]
-  mtu: 1600
-  interfaces:
-  - node: s1
-    ipv4: 10.1.0.2/30
-    ifindex: 1
-    ifname: eth1
-  - node: rr
-    ipv4: 10.1.0.1/30
-    ifindex: 1
-    ifname: ethernet-1/1
-  linkindex: 1
-  node_count: 2
-  type: p2p
-  prefix:
-    ipv4: 10.1.0.0/30
-- _linkname: links[2]
-  mtu: 1600
-  interfaces:
-  - node: rr
-    ipv4: 10.1.0.5/30
-    ifindex: 2
-    ifname: ethernet-1/2
-  - node: s2
-    ipv4: 10.1.0.6/30
-    ifindex: 1
-    ifname: eth1
-  linkindex: 2
-  node_count: 2
-  type: p2p
-  prefix:
-    ipv4: 10.1.0.4/30
-- interfaces:
-  - node: s1
-    vlan:
-      access: red
-    _vlan_mode: bridge
-    ifindex: 2
-    ifname: eth2
-  - node: h1
-    ipv4: 172.31.1.1/24
-    ifindex: 1
-    ifname: eth1
-  _linkname: vlans.red.links[1]
-  vlan:
-    access: red
-  linkindex: 3
-  prefix:
-    ipv4: 172.31.1.0/24
-    allocation: id_based
-  type: lan
-  node_count: 2
-  bridge: ml_17_3
-- interfaces:
-  - node: s2
-    vlan:
-      access: red
-    _vlan_mode: bridge
-    ifindex: 2
-    ifname: eth2
-  - node: h2
-    ipv4: 172.31.1.2/24
-    ifindex: 1
-    ifname: eth1
-  _linkname: vlans.red.links[2]
-  vlan:
-    access: red
-  linkindex: 4
-  prefix:
-    ipv4: 172.31.1.0/24
-    allocation: id_based
-  type: lan
-  node_count: 2
-  bridge: ml_17_4
-validate:
-- description: Ping-based reachability test in VLAN red
-  wait_msg: Waiting for OSFP and STP to wake up
-  wait: 50
-  nodes:
-  - h1
-  plugin: ping('h2')
-  name: ping_red
-input:
-- /home/pipi/net101/tools/tests/integration/evpn/10-vxlan-rr.yml
-- /home/pipi/net101/tools/tests/integration/evpn/topology-defaults.yml
-- /home/pipi/.netlab.yml
-- package:topology-defaults.yml
 defaults:
+  attributes:
+    global:
+      files:
+        type: list
+        _subtype:
+          path:
+            type: str
+            _required: true
+          content:
+            type: str
+            _required: true
+      addressing:
+        type: dict
+        _keytype: id
+      defaults:
+      groups:
+      links:
+      module:
+      name:
+        type: id
+        _help: |
+          Topology name should be no longer than 16 characters. It should start with a letter
+          and contain letters, underscores or numbers. netlab derives it from the directory name
+          when it's not specified in the lab topology file.
+      nodes:
+      plugin:
+        type: list
+        _subtype: str
+      prefix:
+        type: dict
+        _keytype: id
+        _subtype: _prefix
+      provider: id
+      tools:
+        type: dict
+        _subtype:
+          type: dict
+          create_empty: true
+      validate:
+        type: dict
+        _keytype: id
+        _subtype: _v_entry
+      version:
+      vlans:
+        type: dict
+        _subtype: vlan
+        _keytype: id
+        _requires:
+        - vlan
+      vrfs:
+        type: dict
+        _subtype: vrf
+        _keytype: id
+        _requires:
+        - vrf
+      frr:
+        debug:
+          type: list
+          split_lines: true
+      ios:
+        debug:
+          type: list
+          split_lines: true
+      bgp_community_type:
+        valid_values: {}
+    internal:
+      input:
+      pools: dict
+      Provider:
+      Plugin:
+      message: str
+    global_extra_ns:
+    - providers
+    - outputs
+    can_be_false:
+    - link
+    - interface
+    - loopback
+    link:
+      bandwidth: int
+      bridge: id
+      disable: bool
+      name: str
+      prefix:
+        type: dict
+        _keys:
+          ipv4:
+            type: ipv4
+            use: subnet_prefix
+          ipv6:
+            type: ipv6
+            use: subnet_prefix
+          allocation:
+            type: str
+            valid_values:
+            - p2p
+            - sequential
+            - id_based
+          _name: str
+        _alt_types:
+        - bool_false
+        - prefix_str
+        - named_pfx
+      ra:
+        disable: bool
+        slaac: bool
+        dhcp:
+          type: str
+          valid_values:
+          - all
+          - other
+        onlink: bool
+      role: id
+      pool: id
+      tc:
+        delay: time
+        jitter: time
+        loss:
+          type: float
+          min_value: 0
+          max_value: 100
+        corrupt:
+          type: float
+          min_value: 0
+          max_value: 100
+        duplicate:
+          type: float
+          min_value: 0
+          max_value: 100
+        reorder:
+          type: float
+          min_value: 0
+          max_value: 100
+        rate:
+          type: int
+          min_value: 1
+      type:
+        type: str
+        valid_values:
+        - lan
+        - p2p
+        - stub
+        - loopback
+        - tunnel
+        - vlan_member
+      unnumbered: bool
+      interfaces:
+      mtu:
+        type: int
+        min_value: 64
+        max_value: 9216
+      vlan_name: id
+    link_internal:
+      linkindex: int
+      parentindex: int
+    link_no_propagate:
+    - prefix
+    - interfaces
+    - gateway
+    link_module_no_propagate:
+    - vlan
+    - dhcp
+    interface:
+      node: node_id
+      ipv4:
+        type: ipv4
+        use: interface
+      ipv6:
+        type: ipv6
+        use: interface
+      ifindex: int
+      ifname: str
+    node_extra_ns:
+    - providers
+    - tools
+    - outputs
+    node:
+      name: str
+      interfaces: list
+      module:
+        type: list
+        _subtype: id
+      device: device
+      box: str
+      id:
+        type: int
+        min_value: 1
+        max_value: MAX_NODE_ID
+      config:
+        type: dict
+        _subtype:
+          type: error
+          _err_msg: Enable "files" plugin to use the inline node/group 
+            configuration template(s)
+        _alt_types:
+        - list
+      group: list
+      role:
+        type: str
+        valid_values:
+        - router
+        - host
+        - bridge
+        - gateway
+      mgmt:
+        ipv4:
+          type: ipv4
+          use: interface
+        ipv6:
+          type: ipv6
+          use: interface
+        mac: str
+        ifname: str
+      mtu:
+        type: int
+        min_value: 64
+        max_value: 9216
+      loopback:
+        type: dict
+        _alt_types:
+        - bool
+      provider: id
+      cpu:
+      memory: int
+      unmanaged: bool
+      vlans:
+        type: dict
+        _subtype: node_vlan
+        _keytype: id
+        _requires:
+        - vlan
+      vrfs:
+        type: dict
+        _subtype: vrf
+        _keytype: id
+        _requires:
+        - vrf
+      eos:
+        serialnumber: str
+        systemmacaddr: mac
+      frr:
+        debug:
+          type: list
+          split_lines: true
+      ios:
+        debug:
+          type: list
+          split_lines: true
+    loopback:
+      ipv4:
+        type: ipv4
+        use: host_prefix
+        _alt_types:
+        - bool
+      ipv6:
+        type: ipv6
+        use: host_prefix
+        _alt_types:
+        - bool
+      pool: addr_pool
+    pool:
+      ipv4:
+        type: ipv4
+        use: subnet_prefix
+      ipv6:
+        type: ipv6
+        use: subnet_prefix
+      start:
+        type: int
+        min_value: 0
+      prefix:
+        type: int
+        min_value: 1
+        max_value: 32
+      prefix6:
+        type: int
+        min_value: 1
+        max_value: 128
+      allocation:
+        type: str
+        valid_values:
+        - p2p
+        - sequential
+        - id_based
+      mac: mac
+      unnumbered: bool
+    pool_no_copy:
+    - start
+    - prefix
+    - prefix6
+    - mac
+    prefix:
+      ipv4:
+        type: ipv4
+        use: subnet_prefix
+      ipv6:
+        type: ipv6
+        use: subnet_prefix
+      allocation:
+        type: str
+        valid_values:
+        - p2p
+        - sequential
+        - id_based
+    node_group:
+      _description: Node groups
+      _namespace:
+      - node
+      members:
+        type: list
+        _subtype:
+          type: id
+          max_length: MAX_NODE_ID_LENGTH
+      vars: dict
+      config: list
+      node_data:
+        type: dict
+        true_value: {}
+      device: device
+      module: list
+    vlan_group:
+      _description: VLAN groups
+      _namespace:
+      - vlan
+      - link
+      type: str
+      members:
+        type: list
+        _subtype: id
+    vrf_group:
+      _description: VRF groups
+      _namespace:
+      - vrf
+      type: str
+      members:
+        type: list
+        _subtype: id
+    _prefix:
+      ipv4:
+        type: ipv4
+        use: prefix
+      ipv6:
+        type: ipv6
+        use: prefix
+      allocation:
+        type: str
+        valid_values:
+        - p2p
+        - sequential
+        - id_based
+      pool:
+        type: str
+        _valid_with:
+        - allocation
+    _v_entry:
+      _description: Single network validation test (an entry in the validate 
+        dictionary)
+      description: str
+      fail: str
+      pass: str
+      wait:
+        type: int
+        _alt_types:
+        - id
+      wait_msg: str
+      nodes:
+        type: list
+        _subtype: node_id
+      devices:
+        type: list
+        _subtype: device
+      exec: _v_option
+      show: _v_option
+      config:
+        template: str
+        variable: dict
+        inline:
+          type: error
+          _err_msg: Enable "files" plugin to use the "inline" configuration 
+            template
+        _alt_types:
+        - str
+      valid: _v_option
+      suzieq:
+        _alt_types:
+        - str
+        show: str
+        expect:
+          type: str
+          valid_values:
+          - empty
+        valid:
+          type: str
+          valid_values:
+          - all
+          - any
+      plugin: str
+      stop_on_error: bool
+      level:
+        type: str
+        valid_values:
+        - warning
+    _v_option:
+      _description: |
+        A "show", "exec" or "valid" parameter in a network validation test. It's a
+        dictionary of device types with each value being a command to execute or
+        expression to evaluate.
+      type: dict
+      _alt_types:
+      - str
+      _keytype: device
+    _r_import:
+      _description: |
+        Routing protocol import specification. Each entry specifies a protocol to
+        import. Values might contain routing policies
+      type: dict
+      _keytype: r_proto
+      _list_to_dict: true
+      _subtype:
+        _alt_types:
+        - NoneType
+        - bool
+        policy:
+          type: id
+          _requires:
+          - routing
+    bgp_session_type:
+      _description: BGP session types
+      type: str
+      valid_values:
+        ibgp:
+        ebgp:
+        localas_ibgp:
+    bgp_community_type:
+      _description: BGP community types
+      type: str
+      valid_values:
+        standard:
+        extended:
+        large:
+        2octet:
+    rp_entry:
+      _description: Routing policy entry
+      action:
+        type: str
+        valid_values:
+        - permit
+        - deny
+      sequence:
+        type: int
+        min_value: 1
+        max_value: 32767
+      set:
+        locpref:
+          type: int
+          min_value: 0
+          max_value: 4294967295
+        med:
+          type: int
+          min_value: 0
+          max_value: 32767
+        weight:
+          type: int
+          min_value: 0
+          max_value: 65535
+        prepend:
+          count:
+            type: int
+            min_value: 1
+            max_value: 32
+          path: str
+        community:
+          standard: list
+          extended: list
+          large: list
+          append:
+            type: bool
+            _valid_with:
+            - standard
+            - extended
+            - large
+          delete:
+            type: bool
+            _valid_with:
+            - standard
+            - extended
+            - large
+          delete_list:
+            type: str
+            _valid_with: []
+      match:
+        prefix: str
+        nexthop: str
+        aspath: str
+        community: str
+    pfx_entry:
+      action:
+        type: str
+        valid_values:
+        - permit
+        - deny
+      sequence:
+        type: int
+        min_value: 1
+        max_value: 32767
+      pool:
+        type: addr_pool
+        _valid_with:
+        - action
+        - sequence
+        - min
+        - max
+      prefix:
+        type: named_pfx
+        _valid_with:
+        - action
+        - sequence
+        - min
+        - max
+      min:
+        ipv4:
+          type: int
+          min_value: 0
+          max_value: 32
+        ipv6:
+          type: int
+          min_value: 0
+          max_value: 128
+        _alt_types:
+        - int
+      max:
+        ipv4:
+          type: int
+          min_value: 0
+          max_value: 32
+        ipv6:
+          type: int
+          min_value: 0
+          max_value: 128
+        _alt_types:
+        - int
+      ipv4:
+        type: ipv4
+        use: prefix
+      ipv6:
+        type: ipv6
+        use: prefix
+    aspath_entry:
+      action:
+        type: str
+        valid_values:
+        - permit
+        - deny
+      sequence:
+        type: int
+        min_value: 1
+        max_value: 32767
+      path:
+        type: list
+        _subtype: asn
+        _alt_types:
+        - str
+        - asn
+    community_entry:
+      action:
+        type: str
+        valid_values:
+        - permit
+        - deny
+      sequence:
+        type: int
+        min_value: 1
+        max_value: 32767
+      path:
+        type: list
+        _valid_with:
+        - action
+        - sequence
+      list:
+        type: list
+        _valid_with:
+        - action
+        - sequence
+      regexp:
+        type: str
+        _valid_with:
+        - action
+        - sequence
+    static_entry:
+      ipv4:
+        type: ipv4
+        use: prefix
+      ipv6:
+        type: ipv6
+        use: prefix
+      prefix:
+        type: named_pfx
+        _valid_with:
+        - nexthop
+        - vrf
+      node:
+        type: node_id
+        _valid_with:
+        - nexthop
+        - vrf
+      pool:
+        type: addr_pool
+        _valid_with:
+        - nexthop
+        - vrf
+      vrf:
+        type: id
+      nexthop:
+        node:
+          type: node_id
+          _valid_with:
+          - vrf
+          - link
+        ipv4:
+          type: ipv4
+          use: address
+        ipv6:
+          type: ipv6
+          use: address
+        discard:
+          type: bool
+          valid_values:
+          - true
+          _valid_with:
+          - none
+        gateway:
+          type: bool
+          _valid_with:
+          - vrf
+          - link
+        link: str
+        vrf:
+          type: id
+          _alt_types: NoneType
+      include:
+        type: id
+        _valid_with:
+        - nexthop
+        - vrf
+    node_vlan:
+      stp:
+        priority:
+          type: int
+          min_value: 0
+          max_value: 61440
+        enable: bool
+      _description: Node VLAN definition
+      id:
+        type: int
+        min_value: 1
+        max_value: 4095
+      vni:
+        type: int
+        min_value: 1
+        max_value: 16777215
+      mode:
+        type: str
+        valid_values:
+        - bridge
+        - irb
+        - route
+      links: list
+      prefix:
+      _namespace:
+      - link
+      - interface
+    vlan:
+      _description: Global VLAN definition
+      id:
+        type: int
+        min_value: 1
+        max_value: 4095
+      vni:
+        type: int
+        min_value: 1
+        max_value: 16777215
+      mode:
+        type: str
+        valid_values:
+        - bridge
+        - irb
+        - route
+      links: list
+      prefix:
+      _namespace:
+      - link
+    vrf:
+      _description: Global or node-level VRF definition
+      rd: rd
+      import: list
+      export: list
+      id:
+        type: int
+        min_value: 1
+      links: list
+      loopback:
+        type: dict
+        _alt_types:
+        - bool
+        - prefix_str
+        - NoneType
+      _namespace:
+      - link
   provider: clab
   providers:
     clab:
@@ -1535,6 +2068,8 @@ defaults:
           eos:
             serialnumber: str
             systemmacaddr: mac
+      warnings:
+        ospf_stub: false
     fortios:
       description: Fortinet FortiOS firewall
       support:
@@ -1609,7 +2144,7 @@ defaults:
           - -c
           - show $@
           netlab_mgmt_vrf: true
-        image: quay.io/frrouting/frr:10.4.1
+        image: quay.io/frrouting/frr:10.5.0
         kmods:
         node:
           kind: linux
@@ -3065,6 +3600,9 @@ defaults:
         ansible_ssh_pass: admin
         netlab_device_type: routeros7
       features:
+        initial:
+          roles:
+          - router
         bgp: {}
         mpls:
           ldp: true
@@ -3079,7 +3617,7 @@ defaults:
           ospfv2: true
           bgp: true
       clab:
-        image: vrnetlab/vr-routeros:7.6
+        image: vrnetlab/mikrotik_routeros:7.18.2
         build: https://containerlab.dev/manual/kinds/vr-ros/
         node:
           kind: vr-ros
@@ -3399,6 +3937,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        loopback_ipv6: false
     srsim:
       description: Nokia SR-SIM (SR-OS) container
       mgmt_if: A/1
@@ -3537,6 +4077,8 @@ defaults:
         image: none
       graphite:
         icon: router
+      warnings:
+        loopback_ipv6: false
       _parents:
       - sros
     unknown:
@@ -4973,705 +5515,6 @@ defaults:
     vrf_loopback:
       ipv4: 10.2.0.0/24
       prefix: 32
-  attributes:
-    global:
-      addressing:
-        type: dict
-        _keytype: id
-      defaults:
-      groups:
-      links:
-      module:
-      name:
-        type: id
-        _help: |
-          Topology name should be no longer than 16 characters. It should start with a letter
-          and contain letters, underscores or numbers. netlab derives it from the directory name
-          when it's not specified in the lab topology file.
-      nodes:
-      plugin:
-        type: list
-        _subtype: str
-      prefix:
-        type: dict
-        _keytype: id
-        _subtype: _prefix
-      provider: id
-      tools:
-        type: dict
-        _subtype:
-          type: dict
-          create_empty: true
-      validate:
-        type: dict
-        _keytype: id
-        _subtype: _v_entry
-      version:
-      vlans:
-        type: dict
-        _subtype: vlan
-        _keytype: id
-        _requires:
-        - vlan
-      vrfs:
-        type: dict
-        _subtype: vrf
-        _keytype: id
-        _requires:
-        - vrf
-      frr:
-        debug:
-          type: list
-          split_lines: true
-      ios:
-        debug:
-          type: list
-          split_lines: true
-      bgp_community_type:
-        valid_values: {}
-    internal:
-      input:
-      pools: dict
-      Provider:
-      Plugin:
-      message: str
-    global_extra_ns:
-    - providers
-    - outputs
-    can_be_false:
-    - link
-    - interface
-    - loopback
-    link:
-      bandwidth: int
-      bridge: id
-      disable: bool
-      name: str
-      prefix:
-        type: dict
-        _keys:
-          ipv4:
-            type: ipv4
-            use: subnet_prefix
-          ipv6:
-            type: ipv6
-            use: subnet_prefix
-          allocation:
-            type: str
-            valid_values:
-            - p2p
-            - sequential
-            - id_based
-          _name: str
-        _alt_types:
-        - bool_false
-        - prefix_str
-        - named_pfx
-      ra:
-        disable: bool
-        slaac: bool
-        dhcp:
-          type: str
-          valid_values:
-          - all
-          - other
-        onlink: bool
-      role: id
-      pool: id
-      tc:
-        delay: time
-        jitter: time
-        loss:
-          type: float
-          min_value: 0
-          max_value: 100
-        corrupt:
-          type: float
-          min_value: 0
-          max_value: 100
-        duplicate:
-          type: float
-          min_value: 0
-          max_value: 100
-        reorder:
-          type: float
-          min_value: 0
-          max_value: 100
-        rate:
-          type: int
-          min_value: 1
-      type:
-        type: str
-        valid_values:
-        - lan
-        - p2p
-        - stub
-        - loopback
-        - tunnel
-        - vlan_member
-      unnumbered: bool
-      interfaces:
-      mtu:
-        type: int
-        min_value: 64
-        max_value: 9216
-      vlan_name: id
-    link_internal:
-      linkindex: int
-      parentindex: int
-    link_no_propagate:
-    - prefix
-    - interfaces
-    - gateway
-    link_module_no_propagate:
-    - vlan
-    - dhcp
-    interface:
-      node: node_id
-      ipv4:
-        type: ipv4
-        use: interface
-      ipv6:
-        type: ipv6
-        use: interface
-      ifindex: int
-      ifname: str
-    node_extra_ns:
-    - providers
-    - tools
-    - outputs
-    node:
-      name: str
-      interfaces: list
-      module:
-        type: list
-        _subtype: id
-      device: device
-      box: str
-      id:
-        type: int
-        min_value: 1
-        max_value: MAX_NODE_ID
-      config:
-        type: dict
-        _subtype:
-          type: error
-          _err_msg: Enable "files" plugin to use the inline node/group 
-            configuration template(s)
-        _alt_types:
-        - list
-      group: list
-      role:
-        type: str
-        valid_values:
-        - router
-        - host
-        - bridge
-        - gateway
-      mgmt:
-        ipv4:
-          type: ipv4
-          use: interface
-        ipv6:
-          type: ipv6
-          use: interface
-        mac: str
-        ifname: str
-      mtu:
-        type: int
-        min_value: 64
-        max_value: 9216
-      loopback:
-        type: dict
-        _alt_types:
-        - bool
-      provider: id
-      cpu:
-      memory: int
-      unmanaged: bool
-      vlans:
-        type: dict
-        _subtype: node_vlan
-        _keytype: id
-        _requires:
-        - vlan
-      vrfs:
-        type: dict
-        _subtype: vrf
-        _keytype: id
-        _requires:
-        - vrf
-      eos:
-        serialnumber: str
-        systemmacaddr: mac
-      frr:
-        debug:
-          type: list
-          split_lines: true
-      ios:
-        debug:
-          type: list
-          split_lines: true
-    loopback:
-      ipv4:
-        type: ipv4
-        use: host_prefix
-        _alt_types:
-        - bool
-      ipv6:
-        type: ipv6
-        use: host_prefix
-        _alt_types:
-        - bool
-      pool: addr_pool
-    pool:
-      ipv4:
-        type: ipv4
-        use: subnet_prefix
-      ipv6:
-        type: ipv6
-        use: subnet_prefix
-      start:
-        type: int
-        min_value: 0
-      prefix:
-        type: int
-        min_value: 1
-        max_value: 32
-      prefix6:
-        type: int
-        min_value: 1
-        max_value: 128
-      allocation:
-        type: str
-        valid_values:
-        - p2p
-        - sequential
-        - id_based
-      mac: mac
-      unnumbered: bool
-    pool_no_copy:
-    - start
-    - prefix
-    - prefix6
-    - mac
-    prefix:
-      ipv4:
-        type: ipv4
-        use: subnet_prefix
-      ipv6:
-        type: ipv6
-        use: subnet_prefix
-      allocation:
-        type: str
-        valid_values:
-        - p2p
-        - sequential
-        - id_based
-    node_group:
-      _description: Node groups
-      _namespace:
-      - node
-      members:
-        type: list
-        _subtype:
-          type: id
-          max_length: MAX_NODE_ID_LENGTH
-      vars: dict
-      config: list
-      node_data:
-        type: dict
-        true_value: {}
-      device: device
-      module: list
-    vlan_group:
-      _description: VLAN groups
-      _namespace:
-      - vlan
-      - link
-      type: str
-      members:
-        type: list
-        _subtype: id
-    vrf_group:
-      _description: VRF groups
-      _namespace:
-      - vrf
-      type: str
-      members:
-        type: list
-        _subtype: id
-    _prefix:
-      ipv4:
-        type: ipv4
-        use: prefix
-      ipv6:
-        type: ipv6
-        use: prefix
-      allocation:
-        type: str
-        valid_values:
-        - p2p
-        - sequential
-        - id_based
-      pool:
-        type: str
-        _valid_with:
-        - allocation
-    _v_entry:
-      _description: Single network validation test (an entry in the validate 
-        dictionary)
-      description: str
-      fail: str
-      pass: str
-      wait:
-        type: int
-        _alt_types:
-        - id
-      wait_msg: str
-      nodes:
-        type: list
-        _subtype: node_id
-      devices:
-        type: list
-        _subtype: device
-      exec: _v_option
-      show: _v_option
-      config:
-        template: str
-        variable: dict
-        inline:
-          type: error
-          _err_msg: Enable "files" plugin to use the "inline" configuration 
-            template
-        _alt_types:
-        - str
-      valid: _v_option
-      suzieq:
-        _alt_types:
-        - str
-        show: str
-        expect:
-          type: str
-          valid_values:
-          - empty
-        valid:
-          type: str
-          valid_values:
-          - all
-          - any
-      plugin: str
-      stop_on_error: bool
-      level:
-        type: str
-        valid_values:
-        - warning
-    _v_option:
-      _description: |
-        A "show", "exec" or "valid" parameter in a network validation test. It's a
-        dictionary of device types with each value being a command to execute or
-        expression to evaluate.
-      type: dict
-      _alt_types:
-      - str
-      _keytype: device
-    _r_import:
-      _description: |
-        Routing protocol import specification. Each entry specifies a protocol to
-        import. Values might contain routing policies
-      type: dict
-      _keytype: r_proto
-      _list_to_dict: true
-      _subtype:
-        _alt_types:
-        - NoneType
-        - bool
-        policy:
-          type: id
-          _requires:
-          - routing
-    bgp_session_type:
-      _description: BGP session types
-      type: str
-      valid_values:
-        ibgp:
-        ebgp:
-        localas_ibgp:
-    bgp_community_type:
-      _description: BGP community types
-      type: str
-      valid_values:
-        standard:
-        extended:
-        large:
-        2octet:
-    rp_entry:
-      _description: Routing policy entry
-      action:
-        type: str
-        valid_values:
-        - permit
-        - deny
-      sequence:
-        type: int
-        min_value: 1
-        max_value: 32767
-      set:
-        locpref:
-          type: int
-          min_value: 0
-          max_value: 4294967295
-        med:
-          type: int
-          min_value: 0
-          max_value: 32767
-        weight:
-          type: int
-          min_value: 0
-          max_value: 65535
-        prepend:
-          count:
-            type: int
-            min_value: 1
-            max_value: 32
-          path: str
-        community:
-          standard: list
-          extended: list
-          large: list
-          append:
-            type: bool
-            _valid_with:
-            - standard
-            - extended
-            - large
-          delete:
-            type: bool
-            _valid_with:
-            - standard
-            - extended
-            - large
-          delete_list:
-            type: str
-            _valid_with: []
-      match:
-        prefix: str
-        nexthop: str
-        aspath: str
-        community: str
-    pfx_entry:
-      action:
-        type: str
-        valid_values:
-        - permit
-        - deny
-      sequence:
-        type: int
-        min_value: 1
-        max_value: 32767
-      pool:
-        type: addr_pool
-        _valid_with:
-        - action
-        - sequence
-        - min
-        - max
-      prefix:
-        type: named_pfx
-        _valid_with:
-        - action
-        - sequence
-        - min
-        - max
-      min:
-        ipv4:
-          type: int
-          min_value: 0
-          max_value: 32
-        ipv6:
-          type: int
-          min_value: 0
-          max_value: 128
-        _alt_types:
-        - int
-      max:
-        ipv4:
-          type: int
-          min_value: 0
-          max_value: 32
-        ipv6:
-          type: int
-          min_value: 0
-          max_value: 128
-        _alt_types:
-        - int
-      ipv4:
-        type: ipv4
-        use: prefix
-      ipv6:
-        type: ipv6
-        use: prefix
-    aspath_entry:
-      action:
-        type: str
-        valid_values:
-        - permit
-        - deny
-      sequence:
-        type: int
-        min_value: 1
-        max_value: 32767
-      path:
-        type: list
-        _subtype: asn
-        _alt_types:
-        - str
-        - asn
-    community_entry:
-      action:
-        type: str
-        valid_values:
-        - permit
-        - deny
-      sequence:
-        type: int
-        min_value: 1
-        max_value: 32767
-      path:
-        type: list
-        _valid_with:
-        - action
-        - sequence
-      list:
-        type: list
-        _valid_with:
-        - action
-        - sequence
-      regexp:
-        type: str
-        _valid_with:
-        - action
-        - sequence
-    static_entry:
-      ipv4:
-        type: ipv4
-        use: prefix
-      ipv6:
-        type: ipv6
-        use: prefix
-      prefix:
-        type: named_pfx
-        _valid_with:
-        - nexthop
-        - vrf
-      node:
-        type: node_id
-        _valid_with:
-        - nexthop
-        - vrf
-      pool:
-        type: addr_pool
-        _valid_with:
-        - nexthop
-        - vrf
-      vrf:
-        type: id
-      nexthop:
-        node:
-          type: node_id
-          _valid_with:
-          - vrf
-          - link
-        ipv4:
-          type: ipv4
-          use: address
-        ipv6:
-          type: ipv6
-          use: address
-        discard:
-          type: bool
-          valid_values:
-          - true
-          _valid_with:
-          - none
-        gateway:
-          type: bool
-          _valid_with:
-          - vrf
-          - link
-        link: str
-        vrf:
-          type: id
-          _alt_types: NoneType
-      include:
-        type: id
-        _valid_with:
-        - nexthop
-        - vrf
-    node_vlan:
-      stp:
-        priority:
-          type: int
-          min_value: 0
-          max_value: 61440
-        enable: bool
-      _description: Node VLAN definition
-      id:
-        type: int
-        min_value: 1
-        max_value: 4095
-      vni:
-        type: int
-        min_value: 1
-        max_value: 16777215
-      mode:
-        type: str
-        valid_values:
-        - bridge
-        - irb
-        - route
-      links: list
-      prefix:
-      _namespace:
-      - link
-      - interface
-    vlan:
-      _description: Global VLAN definition
-      id:
-        type: int
-        min_value: 1
-        max_value: 4095
-      vni:
-        type: int
-        min_value: 1
-        max_value: 16777215
-      mode:
-        type: str
-        valid_values:
-        - bridge
-        - irb
-        - route
-      links: list
-      prefix:
-      _namespace:
-      - link
-    vrf:
-      _description: Global or node-level VRF definition
-      rd: rd
-      import: list
-      export: list
-      id:
-        type: int
-        min_value: 1
-      links: list
-      loopback:
-        type: dict
-        _alt_types:
-        - bool
-        - prefix_str
-        - NoneType
-      _namespace:
-      - link
   automation:
     ansible:
       cleanup:
@@ -5701,6 +5544,41 @@ defaults:
       neighbors: 5
       maxlength: 255
     MAX_NODE_ID: 150
+    validate:
+      ping: 5
+      ping_long: 15
+      vxlan_ping: 20
+      ping_xx_long: 40
+      ra_send: 30
+      ospfv2_adj_p2p: 30
+      ospfv2_adj_lan: 50
+      ospfv2_spf: 10
+      ospfv3_adj_p2p: 30
+      ospfv3_adj_lan: 50
+      ospfv3_spf: 10
+      ospf_import: 20
+      ebgp_session: 30
+      ibgp_session: 30
+      bgp_scan_time: 5
+      bgp_scan_long: 15
+      bgp_v4_originate: 15
+      bgp_v6_originate: 15
+      bgp_v4_redist: 15
+      bgp_v6_redist: 15
+      isis_adj_p2p: 20
+      isis_adj_lan: 50
+      isis_spf: 15
+      isis_spf_long: 45
+      rip_start: 60
+      rip_update: 20
+      ldp_adj: 30
+      stp_forwarding: 40
+      lacp_setup: 10
+      xr:
+        bgp_v4_originate: 80
+        bgp_v6_originate: 80
+      ios:
+        bgp_v6_redist: 60
   hints:
     evpn:
       irb_group: >
@@ -5814,21 +5692,23 @@ defaults:
       - svg
       - jpg
       - jpeg
-    create: {}
+    create:
+      output:
+      - files
   paths:
     validate:
-    - /home/pipi/netlab_gh/netsim/validate
+    - /home/pipi/net101/tools/netsim/validate
     plugin:
     - /work/netlab_cicd
     - /home/pipi/net101/tools/tests/integration/evpn
     - /home/pipi/.netlab
-    - /home/pipi/netlab_gh/netsim/extra
+    - /home/pipi/net101/tools/netsim/extra
     custom:
       dirs:
       - /home/pipi/net101/tools/tests/integration/evpn
       - /work/netlab_cicd
       - /home/pipi/.netlab
-      - /home/pipi/netlab_gh/netsim/extra
+      - /home/pipi/net101/tools/netsim/extra
       files:
       - "{{ custom_config + '/' + inventory_hostname + '.' + netlab_device_type +
         '-' + node_provider + '.j2' }}"
@@ -5859,7 +5739,7 @@ defaults:
       - '{{ custom_config }}/deploy.yml'
     deploy:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks
+      - /home/pipi/net101/tools/netsim/ansible/tasks
       tasks_generic:
       - deploy-config/{{ netlab_device_type }}-{{ node_provider }}.yml
       - deploy-config/{{ netlab_device_type }}.yml
@@ -5880,8 +5760,8 @@ defaults:
       - deploy-config/{{ ansible_network_os }}.yml
     templates:
       dirs:
-      - /home/pipi/netlab_gh/netsim/daemons
-      - /home/pipi/netlab_gh/netsim/ansible/templates
+      - /home/pipi/net101/tools/netsim/daemons
+      - /home/pipi/net101/tools/netsim/ansible/templates
     t_files:
       files:
       - '{{config_module}}/{{netlab_device_type}}-{{provider|default(netlab_provider)}}.j2'
@@ -5893,7 +5773,7 @@ defaults:
       - '{{netlab_device_type}}/{{config_module}}.j2'
     ready:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks/readiness-check
+      - /home/pipi/net101/tools/netsim/ansible/tasks/readiness-check
       files:
       - '{{netlab_device_type}}-{{provider|default(netlab_provider)}}.yml'
       - '{{netlab_device_type}}.yml'
@@ -5901,7 +5781,7 @@ defaults:
       - '{{ansible_network_os}}.yml'
     collect:
       dirs:
-      - /home/pipi/netlab_gh/netsim/ansible/tasks/fetch-config
+      - /home/pipi/net101/tools/netsim/ansible/tasks/fetch-config
   ports:
     ssh: 22
     http: 80
@@ -5909,6 +5789,8 @@ defaults:
     netconf: 830
   warnings:
     duplicate_address: true
+    providers:
+      change: false
   bfd:
     min_echo_rx: 0
     multiplier: 3
@@ -7838,18 +7720,24 @@ defaults:
       vjunos-switch: true
       vyos: true
   sources:
+    extra:
+    - ../wait_times.yml
+    - ../warnings.yml
     list: []
-    extra: []
     user: []
     system: []
-  workdir: /work/netlab_cicd
-  device: srlinux
   groups:
+    external:
+      device: frr
+      members: []
+      _default_group: true
     all:
       vars:
         netlab_show_config: true
       members: []
       _default_group: true
+  workdir: /work/netlab_cicd
+  device: srlinux
   plugin:
   - multilab
   _globals:
@@ -7881,115 +7769,269 @@ defaults:
   - vxlan
   - evpn
 plugin:
+- files
 - multilab
-name: ml_17
-nodes:
-  h1:
-    name: h1
-    interfaces:
-    - ipv4: 172.31.1.1/24
-      linkindex: 3
-      type: lan
-      bridge: ml_17_3
-      name: h1 -> [s1,h2,s2]
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ifname: vlan1000
-        node: s1
-        vlan:
-          mode: bridge
-          name: red
-      - ipv4: 172.31.1.2/24
-        ifname: eth1
-        node: h2
-      - ifname: vlan1000
-        node: s2
-        vlan:
-          mode: bridge
-          name: red
+addressing:
+  lan:
+    ipv4: 172.16.0.0/16
+    prefix: 24
+  loopback:
+    ipv4: 10.0.0.0/24
+    prefix: 32
+    ipv6: 2001:db8:cafe::/48
+  p2p:
+    ipv4: 10.1.0.0/16
+    prefix: 30
+    ipv6: 2001:db8:1::/48
+  router_id:
+    ipv4: 10.0.0.0/24
+    prefix: 32
+  mgmt:
+    ipv4: 192.168.17.0/24
+    start: 100
+    mac: CA-FE-00-00-00-00
+    _network: nl_mgmt_17
+    _bridge: nl_mgmt_17
+    prefix: 24
+  l2only: {}
+  vrf_loopback:
+    ipv4: 10.2.0.0/24
+    prefix: 32
+groups:
+  hosts:
+    members:
+    - h1
+    - h2
     device: linux
+    node_data:
+      provider: clab
+  switches:
+    members:
+    - s1
+    - s2
+    module:
+    - vlan
+    - vxlan
+    - ospf
+    - bgp
+    - evpn
+  core:
+    members:
+    - rr
+    module:
+    - ospf
+    - bgp
+    - evpn
+    node_data:
+      bgp:
+        rr: true
+  x_switches:
+    members:
+    - s1
+    - s2
+    node_data:
+      provider: clab
+  external:
+    device: frr
+    members: []
+    _default_group: true
+  all:
+    vars:
+      netlab_show_config: true
+    members: []
+    _default_group: true
+  as65000:
+    members:
+    - rr
+    - s1
+    - s2
+bgp:
+  advertise_loopback: true
+  community:
+    ibgp:
+    - standard
+    - extended
+    ebgp:
+    - standard
+  next_hop_self: true
+  as: 65000
+nodes:
+  rr:
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      next_hop_self: true
+      as: 65000
+      rr: true
+      router_id: 10.0.0.1
+      rr_cluster_id: 10.0.0.1
+      neighbors:
+      - name: s1
+        as: 65000
+        type: ibgp
+        ipv4: 10.0.0.2
+        ipv6: 2001:db8:cafe:2::1
+        _source_intf:
+          type: loopback
+          neighbors: []
+          virtual_interface: true
+          ifindex: 0
+          ifname: lo0.0
+          ipv4: 10.0.0.1/32
+          ipv6: 2001:db8:cafe:1::1/64
+          ospf:
+            area: 0.0.0.0
+            passive: false
+        next_hop_self: ebgp
+        rr_client: true
+        activate:
+          ipv4: true
+          ipv6: true
+        evpn: true
+      - name: s2
+        as: 65000
+        type: ibgp
+        ipv4: 10.0.0.3
+        ipv6: 2001:db8:cafe:3::1
+        _source_intf:
+          type: loopback
+          neighbors: []
+          virtual_interface: true
+          ifindex: 0
+          ifname: lo0.0
+          ipv4: 10.0.0.1/32
+          ipv6: 2001:db8:cafe:1::1/64
+          ospf:
+            area: 0.0.0.0
+            passive: false
+        next_hop_self: ebgp
+        rr_client: true
+        activate:
+          ipv4: true
+          ipv6: true
+        evpn: true
+      ipv4: true
+      ipv6: true
+    name: rr
+    interfaces:
+    - ipv4: 10.1.0.1/30
+      ipv6: 2001:db8:1::1/64
+      mtu: 1600
+      linkindex: 1
+      type: p2p
+      name: rr -> s1
+      ifindex: 1
+      ifname: ethernet-1/1
+      clab:
+        name: e1-1
+      neighbors:
+      - ipv4: 10.1.0.2/30
+        ipv6: 2001:db8:1::2/64
+        ifname: Ethernet1
+        node: s1
+      ospf:
+        area: 0.0.0.0
+        passive: false
+        network_type: point-to-point
+    - ipv4: 10.1.0.5/30
+      ipv6: 2001:db8:1:1::1/64
+      mtu: 1600
+      linkindex: 2
+      type: p2p
+      name: rr -> s2
+      ifindex: 2
+      ifname: ethernet-1/2
+      clab:
+        name: e1-2
+      neighbors:
+      - ipv4: 10.1.0.6/30
+        ipv6: 2001:db8:1:1::2/64
+        ifname: eth1
+        node: s2
+      ospf:
+        area: 0.0.0.0
+        passive: false
+        network_type: point-to-point
+    module:
+    - ospf
+    - bgp
+    - evpn
+    device: srlinux
     clab:
-      kind: linux
+      kind: srl
+      type: ixr-d2
       config_templates:
-      - hosts:/etc/hosts:shared
+      - hosts:/etc/hosts
       binds:
-      - clab_files/-shared-hosts:/etc/hosts:ro
-    box: python:3.13-alpine
+      - clab_files/rr/hosts:/etc/hosts
+    box: ghcr.io/nokia/srlinux:25.10.1
+    ospf:
+      area: 0.0.0.0
+      router_id: 10.0.0.1
+      af:
+        ipv4: true
+        ipv6: true
+    evpn:
+      session:
+      - ibgp
+      vlans: []
     id: 1
-    role: host
-    mtu: 1500
+    provider: clab
     af:
       ipv4: true
+      ipv6: true
     mgmt:
-      ifname: eth0
+      ifname: mgmt0
       mac: ca:fe:00:01:00:00
       ipv4: 192.168.17.101
-    hostname: clab-ml_17-h1
-    routing:
-      static: []
-    module:
-    - routing
-  h2:
-    name: h2
-    interfaces:
-    - ipv4: 172.31.1.2/24
-      linkindex: 4
-      type: lan
-      bridge: ml_17_4
-      name: h2 -> [h1,s1,s2]
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 172.31.1.1/24
-        ifname: eth1
-        node: h1
-      - ifname: vlan1000
-        node: s1
-        vlan:
-          mode: bridge
-          name: red
-      - ifname: vlan1000
-        node: s2
-        vlan:
-          mode: bridge
-          name: red
-    device: linux
-    clab:
-      kind: linux
-      config_templates:
-      - hosts:/etc/hosts:shared
-      binds:
-      - clab_files/-shared-hosts:/etc/hosts:ro
-    box: python:3.13-alpine
-    id: 2
-    role: host
-    mtu: 1500
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:02:00:00
-      ipv4: 192.168.17.102
-    hostname: clab-ml_17-h2
-    routing:
-      static: []
-    module:
-    - routing
+    hostname: clab-ml_17-rr
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: lo0.0
+      ipv4: 10.0.0.1/32
+      ipv6: 2001:db8:cafe:1::1/64
+      ospf:
+        area: 0.0.0.0
+        passive: false
+      bgp:
+        advertise: true
+    _srl_version:
+    - 25
+    - 10
   s1:
+    device: eos
+    config:
+    - _n_s1
     name: s1
     interfaces:
     - ipv4: 10.1.0.2/30
+      ipv6: 2001:db8:1::2/64
       mtu: 1600
       linkindex: 1
       type: p2p
       name: s1 -> rr
       ifindex: 1
-      ifname: eth1
+      ifname: Ethernet1
+      mac_address: caf0.0002.0001
+      clab:
+        name: et1
       neighbors:
       - ipv4: 10.1.0.1/30
+        ipv6: 2001:db8:1::1/64
         ifname: ethernet-1/1
         node: rr
       ospf:
@@ -8003,10 +8045,11 @@ nodes:
       type: lan
       bridge: ml_17_3
       ifindex: 2
-      ifname: eth2
-      mtu: 1500
+      ifname: Ethernet2
+      clab:
+        name: et2
       neighbors:
-      - ipv4: 172.31.1.1/24
+      - ipv4: 172.31.1.4/24
         ifname: eth1
         node: h1
       name: '[Access VLAN red] s1 -> h1'
@@ -8015,15 +8058,14 @@ nodes:
         name: red
       type: svi
       ifindex: 40000
-      mac_address: caf4.0003.0000
-      ifname: vlan1000
+      ifname: Vlan1000
       name: VLAN red (1000) -> [h1,h2,s2]
       virtual_interface: true
       neighbors:
-      - ipv4: 172.31.1.1/24
+      - ipv4: 172.31.1.4/24
         ifname: eth1
         node: h1
-      - ipv4: 172.31.1.2/24
+      - ipv4: 172.31.1.5/24
         ifname: eth1
         node: h2
       - ifname: vlan1000
@@ -8032,7 +8074,181 @@ nodes:
           mode: bridge
           name: red
       bridge_group: 1
+    module:
+    - vlan
+    - ospf
+    - bgp
+    - vxlan
+    - evpn
+    clab:
+      kind: ceos
+      env:
+        INTFTYPE: et
+        CLAB_MGMT_VRF: management
+    box: ceos:4.34.2F
+    vxlan:
+      domain: global
+      flooding: evpn
+      vlans:
+      - red
+      vtep: 10.0.0.2
+      vtep_interface: Loopback0
+    ospf:
+      area: 0.0.0.0
+      router_id: 10.0.0.2
+      af:
+        ipv4: true
+        ipv6: true
+    bgp:
+      advertise_loopback: true
+      community:
+        ibgp:
+        - standard
+        - large
+        - extended
+        ebgp:
+        - standard
+        - large
+        localas_ibgp:
+        - standard
+        - large
+        - extended
+      next_hop_self: true
+      _cprop_order:
+      - standard
+      - extended
+      - large
+      - link-bandwidth
+      as: 65000
+      router_id: 10.0.0.2
+      neighbors:
+      - rr: true
+        name: rr
+        as: 65000
+        type: ibgp
+        ipv4: 10.0.0.1
+        ipv6: 2001:db8:cafe:1::1
+        _source_intf:
+          type: loopback
+          neighbors: []
+          virtual_interface: true
+          ifindex: 0
+          ifname: Loopback0
+          ipv4: 10.0.0.2/32
+          ipv6: 2001:db8:cafe:2::1/64
+          ospf:
+            area: 0.0.0.0
+            passive: false
+        next_hop_self: ebgp
+        activate:
+          ipv4: true
+          ipv6: true
+        evpn: true
+      ipv4: true
+      ipv6: true
+    evpn:
+      session:
+      - ibgp
+      vlans:
+      - red
+    id: 2
+    role: router
+    af:
+      ipv4: true
+      ipv6: true
+    mgmt:
+      ifname: Management0
+      mac: ca:fe:00:02:00:00
+      ipv4: 192.168.17.102
+    hostname: clab-ml_17-s1
+    loopback:
+      type: loopback
+      neighbors: []
+      virtual_interface: true
+      ifindex: 0
+      ifname: Loopback0
+      ipv4: 10.0.0.2/32
+      ipv6: 2001:db8:cafe:2::1/64
+      ospf:
+        area: 0.0.0.0
+        passive: false
+      bgp:
+        advertise: true
+    vlans:
+      red:
+        mode: bridge
+        vni: 1000
+        prefix:
+          ipv4: 172.31.1.0/24
+          allocation: id_based
+        id: 1000
+        evpn:
+          evi: 1000
+          import:
+          - 65000:1000
+          export:
+          - 65000:1000
+          rd: 10.0.0.2:1000
+        bridge_group: 1
+    vlan:
+      max_bridge_group: 1
+  s2:
     device: frr
+    name: s2
+    interfaces:
+    - ipv4: 10.1.0.6/30
+      ipv6: 2001:db8:1:1::2/64
+      mtu: 1600
+      linkindex: 2
+      type: p2p
+      name: s2 -> rr
+      ifindex: 1
+      ifname: eth1
+      neighbors:
+      - ipv4: 10.1.0.5/30
+        ipv6: 2001:db8:1:1::1/64
+        ifname: ethernet-1/2
+        node: rr
+      ospf:
+        area: 0.0.0.0
+        passive: false
+        network_type: point-to-point
+    - vlan:
+        access: red
+        access_id: 1000
+      linkindex: 4
+      type: lan
+      bridge: ml_17_4
+      ifindex: 2
+      ifname: eth2
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.31.1.5/24
+        ifname: eth1
+        node: h2
+      name: '[Access VLAN red] s2 -> h2'
+    - vlan:
+        mode: bridge
+        name: red
+      type: svi
+      ifindex: 40000
+      mac_address: caf4.0003.0000
+      ifname: vlan1000
+      name: VLAN red (1000) -> [h1,s1,h2]
+      virtual_interface: true
+      neighbors:
+      - ipv4: 172.31.1.4/24
+        ifname: eth1
+        node: h1
+      - ifname: Vlan1000
+        node: s1
+        vlan:
+          mode: bridge
+          name: red
+      - ipv4: 172.31.1.5/24
+        ifname: eth1
+        node: h2
+      bridge_group: 1
     module:
     - vlan
     - ospf
@@ -8045,9 +8261,9 @@ nodes:
       - daemons:/etc/frr/daemons
       - hosts:/etc/hosts:shared
       binds:
-      - clab_files/s1/daemons:/etc/frr/daemons
+      - clab_files/s2/daemons:/etc/frr/daemons
       - clab_files/-shared-hosts:/etc/hosts:ro
-    box: quay.io/frrouting/frr:10.4.1
+    box: quay.io/frrouting/frr:10.5.0
     vxlan:
       domain: global
       flooding: evpn
@@ -8060,6 +8276,7 @@ nodes:
       router_id: 10.0.0.3
       af:
         ipv4: true
+        ipv6: true
     bgp:
       advertise_loopback: true
       community:
@@ -8082,7 +8299,8 @@ nodes:
         name: rr
         as: 65000
         type: ibgp
-        ipv4: 10.0.0.5
+        ipv4: 10.0.0.1
+        ipv6: 2001:db8:cafe:1::1
         _source_intf:
           type: loopback
           neighbors: []
@@ -8090,14 +8308,17 @@ nodes:
           ifindex: 0
           ifname: lo
           ipv4: 10.0.0.3/32
+          ipv6: 2001:db8:cafe:3::1/64
           ospf:
             area: 0.0.0.0
             passive: false
         next_hop_self: ebgp
         activate:
           ipv4: true
+          ipv6: true
         evpn: true
       ipv4: true
+      ipv6: true
     evpn:
       session:
       - ibgp
@@ -8108,11 +8329,12 @@ nodes:
     mtu: 1500
     af:
       ipv4: true
+      ipv6: true
     mgmt:
       ifname: eth0
       mac: ca:fe:00:03:00:00
       ipv4: 192.168.17.103
-    hostname: clab-ml_17-s1
+    hostname: clab-ml_17-s2
     loopback:
       type: loopback
       neighbors: []
@@ -8120,6 +8342,7 @@ nodes:
       ifindex: 0
       ifname: lo
       ipv4: 10.0.0.3/32
+      ipv6: 2001:db8:cafe:3::1/64
       ospf:
         area: 0.0.0.0
         passive: false
@@ -8143,133 +8366,41 @@ nodes:
         bridge_group: 1
     vlan:
       max_bridge_group: 1
-  s2:
-    name: s2
+  h1:
+    name: h1
     interfaces:
-    - ipv4: 10.1.0.6/30
-      mtu: 1600
-      linkindex: 2
-      type: p2p
-      name: s2 -> rr
+    - ipv4: 172.31.1.4/24
+      linkindex: 3
+      type: lan
+      bridge: ml_17_3
+      name: h1 -> [s1,h2,s2]
       ifindex: 1
       ifname: eth1
-      neighbors:
-      - ipv4: 10.1.0.5/30
-        ifname: ethernet-1/2
-        node: rr
-      ospf:
-        area: 0.0.0.0
-        passive: false
-        network_type: point-to-point
-    - vlan:
-        access: red
-        access_id: 1000
-      linkindex: 4
-      type: lan
-      bridge: ml_17_4
-      ifindex: 2
-      ifname: eth2
       mtu: 1500
       neighbors:
-      - ipv4: 172.31.1.2/24
-        ifname: eth1
-        node: h2
-      name: '[Access VLAN red] s2 -> h2'
-    - vlan:
-        mode: bridge
-        name: red
-      type: svi
-      ifindex: 40000
-      mac_address: caf4.0004.0000
-      ifname: vlan1000
-      name: VLAN red (1000) -> [h1,s1,h2]
-      virtual_interface: true
-      neighbors:
-      - ipv4: 172.31.1.1/24
-        ifname: eth1
-        node: h1
-      - ifname: vlan1000
+      - ifname: Vlan1000
         node: s1
         vlan:
           mode: bridge
           name: red
-      - ipv4: 172.31.1.2/24
+      - ipv4: 172.31.1.5/24
         ifname: eth1
         node: h2
-      bridge_group: 1
-    device: frr
-    module:
-    - vlan
-    - ospf
-    - bgp
-    - vxlan
-    - evpn
+      - ifname: vlan1000
+        node: s2
+        vlan:
+          mode: bridge
+          name: red
+    device: linux
     clab:
       kind: linux
       config_templates:
-      - daemons:/etc/frr/daemons
       - hosts:/etc/hosts:shared
       binds:
-      - clab_files/s2/daemons:/etc/frr/daemons
       - clab_files/-shared-hosts:/etc/hosts:ro
-    box: quay.io/frrouting/frr:10.4.1
-    vxlan:
-      domain: global
-      flooding: evpn
-      vlans:
-      - red
-      vtep: 10.0.0.4
-      vtep_interface: lo
-    ospf:
-      area: 0.0.0.0
-      router_id: 10.0.0.4
-      af:
-        ipv4: true
-    bgp:
-      advertise_loopback: true
-      community:
-        ibgp:
-        - standard
-        - large
-        - extended
-        ebgp:
-        - standard
-        - large
-        localas_ibgp:
-        - standard
-        - large
-        - extended
-      next_hop_self: true
-      as: 65000
-      router_id: 10.0.0.4
-      neighbors:
-      - rr: true
-        name: rr
-        as: 65000
-        type: ibgp
-        ipv4: 10.0.0.5
-        _source_intf:
-          type: loopback
-          neighbors: []
-          virtual_interface: true
-          ifindex: 0
-          ifname: lo
-          ipv4: 10.0.0.4/32
-          ospf:
-            area: 0.0.0.0
-            passive: false
-        next_hop_self: ebgp
-        activate:
-          ipv4: true
-        evpn: true
-      ipv4: true
-    evpn:
-      session:
-      - ibgp
-      vlans:
-      - red
+    box: python:3.13-alpine
     id: 4
-    role: router
+    role: host
     mtu: 1500
     af:
       ipv4: true
@@ -8277,203 +8408,247 @@ nodes:
       ifname: eth0
       mac: ca:fe:00:04:00:00
       ipv4: 192.168.17.104
-    hostname: clab-ml_17-s2
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo
-      ipv4: 10.0.0.4/32
-      ospf:
-        area: 0.0.0.0
-        passive: false
-      bgp:
-        advertise: true
-    vlans:
-      red:
-        mode: bridge
-        vni: 1000
-        prefix:
-          ipv4: 172.31.1.0/24
-          allocation: id_based
-        id: 1000
-        evpn:
-          evi: 1000
-          import:
-          - 65000:1000
-          export:
-          - 65000:1000
-          rd: 10.0.0.4:1000
-        bridge_group: 1
-    vlan:
-      max_bridge_group: 1
-  rr:
-    bgp:
-      advertise_loopback: true
-      community:
-        ibgp:
-        - standard
-        - large
-        - extended
-        ebgp:
-        - standard
-        - large
-        localas_ibgp:
-        - standard
-        - large
-        - extended
-      next_hop_self: true
-      as: 65000
-      rr: true
-      router_id: 10.0.0.5
-      rr_cluster_id: 10.0.0.5
-      neighbors:
-      - name: s1
-        as: 65000
-        type: ibgp
-        ipv4: 10.0.0.3
-        _source_intf:
-          type: loopback
-          neighbors: []
-          virtual_interface: true
-          ifindex: 0
-          ifname: lo0.0
-          ipv4: 10.0.0.5/32
-          ospf:
-            area: 0.0.0.0
-            passive: false
-        next_hop_self: ebgp
-        rr_client: true
-        activate:
-          ipv4: true
-        evpn: true
-      - name: s2
-        as: 65000
-        type: ibgp
-        ipv4: 10.0.0.4
-        _source_intf:
-          type: loopback
-          neighbors: []
-          virtual_interface: true
-          ifindex: 0
-          ifname: lo0.0
-          ipv4: 10.0.0.5/32
-          ospf:
-            area: 0.0.0.0
-            passive: false
-        next_hop_self: ebgp
-        rr_client: true
-        activate:
-          ipv4: true
-        evpn: true
-      ipv4: true
-    name: rr
-    interfaces:
-    - ipv4: 10.1.0.1/30
-      mtu: 1600
-      linkindex: 1
-      type: p2p
-      name: rr -> s1
-      ifindex: 1
-      ifname: ethernet-1/1
-      clab:
-        name: e1-1
-      neighbors:
-      - ipv4: 10.1.0.2/30
-        ifname: eth1
-        node: s1
-      ospf:
-        area: 0.0.0.0
-        passive: false
-        network_type: point-to-point
-    - ipv4: 10.1.0.5/30
-      mtu: 1600
-      linkindex: 2
-      type: p2p
-      name: rr -> s2
-      ifindex: 2
-      ifname: ethernet-1/2
-      clab:
-        name: e1-2
-      neighbors:
-      - ipv4: 10.1.0.6/30
-        ifname: eth1
-        node: s2
-      ospf:
-        area: 0.0.0.0
-        passive: false
-        network_type: point-to-point
+    hostname: clab-ml_17-h1
+    routing:
+      static: []
     module:
-    - ospf
-    - bgp
-    - evpn
-    device: srlinux
+    - routing
+  h2:
+    name: h2
+    interfaces:
+    - ipv4: 172.31.1.5/24
+      linkindex: 4
+      type: lan
+      bridge: ml_17_4
+      name: h2 -> [h1,s1,s2]
+      ifindex: 1
+      ifname: eth1
+      mtu: 1500
+      neighbors:
+      - ipv4: 172.31.1.4/24
+        ifname: eth1
+        node: h1
+      - ifname: Vlan1000
+        node: s1
+        vlan:
+          mode: bridge
+          name: red
+      - ifname: vlan1000
+        node: s2
+        vlan:
+          mode: bridge
+          name: red
+    device: linux
     clab:
-      kind: srl
-      type: ixr-d2
+      kind: linux
       config_templates:
-      - hosts:/etc/hosts
+      - hosts:/etc/hosts:shared
       binds:
-      - clab_files/rr/hosts:/etc/hosts
-    box: ghcr.io/nokia/srlinux:25.10.1
-    ospf:
-      area: 0.0.0.0
-      router_id: 10.0.0.5
-      af:
-        ipv4: true
-    evpn:
-      session:
-      - ibgp
-      vlans: []
+      - clab_files/-shared-hosts:/etc/hosts:ro
+    box: python:3.13-alpine
     id: 5
-    provider: clab
+    role: host
+    mtu: 1500
     af:
       ipv4: true
     mgmt:
-      ifname: mgmt0
+      ifname: eth0
       mac: ca:fe:00:05:00:00
       ipv4: 192.168.17.105
-    hostname: clab-ml_17-rr
-    loopback:
-      type: loopback
-      neighbors: []
-      virtual_interface: true
-      ifindex: 0
-      ifname: lo0.0
-      ipv4: 10.0.0.5/32
-      ospf:
-        area: 0.0.0.0
-        passive: false
-      bgp:
-        advertise: true
-    _srl_version:
-    - 25
-    - 10
-addressing:
-  lan:
-    ipv4: 172.16.0.0/16
-    prefix: 24
-  loopback:
-    ipv4: 10.0.0.0/24
-    prefix: 32
-  p2p:
-    ipv4: 10.1.0.0/16
-    prefix: 30
-  router_id:
-    ipv4: 10.0.0.0/24
-    prefix: 32
-  mgmt:
-    ipv4: 192.168.17.0/24
-    start: 100
-    mac: CA-FE-00-00-00-00
-    _network: nl_mgmt_17
-    _bridge: nl_mgmt_17
-    prefix: 24
-  l2only: {}
-  vrf_loopback:
-    ipv4: 10.2.0.0/24
-    prefix: 32
+    hostname: clab-ml_17-h2
+    routing:
+      static: []
+    module:
+    - routing
+vlans:
+  red:
+    mode: bridge
+    vni: 1000
+    prefix:
+      ipv4: 172.31.1.0/24
+      allocation: id_based
+    id: 1000
+    evpn:
+      evi: 1000
+      import:
+      - 65000:1000
+      export:
+      - 65000:1000
+    neighbors:
+    - ipv4: 172.31.1.4/24
+      ifname: eth1
+      node: h1
+    - ifname: Vlan1000
+      node: s1
+      vlan:
+        mode: bridge
+        name: red
+    - ipv4: 172.31.1.5/24
+      ifname: eth1
+      node: h2
+    - ifname: vlan1000
+      node: s2
+      vlan:
+        mode: bridge
+        name: red
+    host_count: 2
+links:
+- _linkname: links[1]
+  mtu: 1600
+  interfaces:
+  - node: s1
+    ipv4: 10.1.0.2/30
+    ipv6: 2001:db8:1::2/64
+    ifindex: 1
+    ifname: Ethernet1
+  - node: rr
+    ipv4: 10.1.0.1/30
+    ipv6: 2001:db8:1::1/64
+    ifindex: 1
+    ifname: ethernet-1/1
+  linkindex: 1
+  node_count: 2
+  type: p2p
+  prefix:
+    ipv4: 10.1.0.0/30
+    ipv6: 2001:db8:1::/64
+- _linkname: links[2]
+  mtu: 1600
+  interfaces:
+  - node: rr
+    ipv4: 10.1.0.5/30
+    ipv6: 2001:db8:1:1::1/64
+    ifindex: 2
+    ifname: ethernet-1/2
+  - node: s2
+    ipv4: 10.1.0.6/30
+    ipv6: 2001:db8:1:1::2/64
+    ifindex: 1
+    ifname: eth1
+  linkindex: 2
+  node_count: 2
+  type: p2p
+  prefix:
+    ipv4: 10.1.0.4/30
+    ipv6: 2001:db8:1:1::/64
+- interfaces:
+  - node: s1
+    vlan:
+      access: red
+    _vlan_mode: bridge
+    ifindex: 2
+    ifname: Ethernet2
+  - node: h1
+    ipv4: 172.31.1.4/24
+    ifindex: 1
+    ifname: eth1
+  _linkname: vlans.red.links[1]
+  vlan:
+    access: red
+  linkindex: 3
+  prefix:
+    ipv4: 172.31.1.0/24
+    allocation: id_based
+  type: lan
+  node_count: 2
+  bridge: ml_17_3
+- interfaces:
+  - node: s2
+    vlan:
+      access: red
+    _vlan_mode: bridge
+    ifindex: 2
+    ifname: eth2
+  - node: h2
+    ipv4: 172.31.1.5/24
+    ifindex: 1
+    ifname: eth1
+  _linkname: vlans.red.links[2]
+  vlan:
+    access: red
+  linkindex: 4
+  prefix:
+    ipv4: 172.31.1.0/24
+    allocation: id_based
+  type: lan
+  node_count: 2
+  bridge: ml_17_4
+validate:
+- description: Check OSPF adjacencies with RR
+  wait: 30
+  nodes:
+  - s1
+  - s2
+  wait_msg: Waiting for OSPF adjacency process to complete
+  plugin: ospf_neighbor(nodes.rr.ospf.router_id)
+  name: ospf_ipv4
+- description: Check IPv4 IBGP adjacencies with RR
+  wait: 30
+  nodes:
+  - s1
+  - s2
+  wait_msg: Waiting for IGBP session
+  plugin: bgp_neighbor(node.bgp.neighbors,'rr')
+  name: ibgp_ipv4
+- description: Check OSPFv3 adjacencies with RR
+  wait: 30
+  nodes:
+  - s1
+  - s2
+  wait_msg: Waiting for OSPF adjacency process to complete
+  plugin: ospf6_neighbor(nodes.rr.ospf.router_id)
+  name: ospf_ipv6
+- description: Check IPv6 IBGP adjacencies with RR
+  wait: 30
+  nodes:
+  - s1
+  - s2
+  wait_msg: Waiting for IGBP session
+  plugin: bgp_neighbor(node.bgp.neighbors,'rr',af='ipv6')
+  name: ibgp_ipv6
+- description: Check IPv4 AF on IBGP adjacencies with RR
+  nodes:
+  - s1
+  - s2
+  plugin: bgp_neighbor(node.bgp.neighbors,'rr',activate='ipv4')
+  name: ipv4_af
+- description: Check EVPN AF on IBGP adjacencies with RR
+  nodes:
+  - s1
+  - s2
+  plugin: bgp_neighbor(node.bgp.neighbors,'rr',activate='evpn')
+  stop_on_error: true
+  name: evpn_af
+- description: Check EVPN AF on IPv6 IBGP adjacencies with RR
+  nodes:
+  - s1
+  plugin: 
+    bgp_neighbor(node.bgp.neighbors,'rr',af='ipv6',activate='evpn',state='missing')
+  stop_on_error: true
+  name: evpn_ipv6
+- description: Ping-based reachability test in VLAN red
+  wait_msg: Waiting for OSFP and STP to wake up
+  wait: 50
+  nodes:
+  - h1
+  plugin: ping('h2')
+  name: ping_red
+input:
+- /home/pipi/net101/tools/tests/integration/evpn/10-vxlan-rr.yml
+- /home/pipi/net101/tools/tests/integration/wait_times.yml
+- /home/pipi/net101/tools/tests/integration/warnings.yml
+- /home/pipi/net101/tools/tests/integration/evpn/topology-defaults.yml
+- /home/pipi/.netlab.yml
+- package:topology-defaults.yml
+name: ml_17
+files:
+- path: _n_s1.j2
+  content: |
+    router bgp {{ bgp.as }}
+      address-family evpn
+    {% for ngb in bgp.neighbors if ngb.ipv6 is defined %}
+        neighbor {{ ngb.ipv6 }} activate
+    {% endfor %}
 provider: clab
 module:
 - vlan
@@ -8495,4 +8670,7 @@ vxlan:
   vlans:
   - red
   use_v6_vtep: false
-_netlab_version: 25.11-dev
+_cleanup:
+  files:
+  - _n_s1.j2
+_netlab_version: '25.11'
