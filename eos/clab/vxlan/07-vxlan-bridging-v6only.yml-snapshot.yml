@@ -1,14 +1,14 @@
 %YAML 1.1
 ---
 message: |
-  The devices under test are VLAN-to-VXLAN layer-3 switches between two access
-  VLANs and two VXLAN VNIs. Both switches perform inter-VLAN bridging, resulting
-  in asymmetrical IRB.
+  The devices under test are VLAN-to-VXLAN bridges running
+  VXLAN between IPv6 endpoints. A single VLAN with two
+  hosts is bridged between two switches
 
-  All hosts should be able to ping each other and all switch loopback IPs
+  * h1 and h2 should be able to ping each other
 
   Please note it might take a while for the lab to work due to
-  STP learning phase.
+  OSPF adjacency setup process and STP learning phase
 defaults:
   provider: clab
   providers:
@@ -7677,7 +7677,7 @@ defaults:
     no_propagate:
     - use_v6_vtep
     - start_vni
-    use_v6_vtep: false
+    use_v6_vtep: true
     features:
       vtep6: VXLAN over IPv6
     supported_on:
@@ -7744,9 +7744,6 @@ groups:
     - h1
     - h1a
     - h2
-    - h3
-    - h3a
-    - h4
     device: linux
     node_data:
       provider: clab
@@ -7772,100 +7769,99 @@ groups:
 vlans:
   red:
     vni: 5000
-    role: external
+    mode: bridge
     id: 1000
     prefix:
       ipv4: 172.16.0.0/24
+      ipv6: 2001:db8:a::/64
       allocation: id_based
     neighbors:
     - ipv4: 172.16.0.1/24
+      ipv6: 2001:db8:a::1/64
       ifname: eth1
       node: h1
     - ipv4: 172.16.0.2/24
+      ipv6: 2001:db8:a::2/64
       ifname: eth1
       node: h1a
     - ifname: Vlan1000
       node: dut
-      ipv4: 172.16.0.7/24
       vlan:
-        mode: irb
+        mode: bridge
         name: red
     - ipv4: 172.16.0.3/24
+      ipv6: 2001:db8:a::3/64
       ifname: eth1
       node: h2
     - ifname: vlan1000
       node: s2
-      ipv4: 172.16.0.8/24
       vlan:
-        mode: irb
+        mode: bridge
         name: red
     host_count: 3
-  blue:
-    vni: 5001
-    role: external
-    id: 1001
-    prefix:
-      ipv4: 172.16.1.0/24
-      allocation: id_based
-    neighbors:
-    - ipv4: 172.16.1.4/24
-      ifname: eth1
-      node: h3
-    - ipv4: 172.16.1.5/24
-      ifname: eth1
-      node: h3a
-    - ifname: Vlan1001
-      node: dut
-      ipv4: 172.16.1.7/24
-      vlan:
-        mode: irb
-        name: blue
-    - ipv4: 172.16.1.6/24
-      ifname: eth1
-      node: h4
-    - ifname: vlan1001
-      node: s2
-      ipv4: 172.16.1.8/24
-      vlan:
-        mode: irb
-        name: blue
-    host_count: 3
+addressing:
+  lan:
+    ipv4: 172.16.0.0/16
+    prefix: 24
+    ipv6: 2001:db8:a::/48
+  loopback:
+    prefix: 32
+    ipv6: 2001:db8::/48
+  p2p:
+    prefix: 30
+    ipv6: 2001:db8:f::/48
+  router_id:
+    ipv4: 10.0.0.0/24
+    prefix: 32
+  mgmt:
+    ipv4: 192.168.17.0/24
+    start: 100
+    mac: CA-FE-00-00-00-00
+    _network: nl_mgmt_17
+    _bridge: nl_mgmt_17
+    prefix: 24
+  l2only: {}
+  vrf_loopback:
+    ipv4: 10.2.0.0/24
+    prefix: 32
 links:
 - _linkname: links[1]
   mtu: 1600
   interfaces:
   - node: dut
-    ipv4: 10.1.0.1/30
+    ipv6: 2001:db8:f::1/64
     ifindex: 1
     ifname: Ethernet1
   - node: s2
-    ipv4: 10.1.0.2/30
+    ipv6: 2001:db8:f::2/64
     ifindex: 1
     ifname: eth1
   linkindex: 1
   node_count: 2
   type: p2p
   prefix:
-    ipv4: 10.1.0.0/30
+    ipv6: 2001:db8:f::/64
 - interfaces:
   - node: dut
     vlan:
       access: red
-    _vlan_mode: irb
-    ipv4: 172.16.0.7/24
+    _vlan_mode: bridge
+    ra:
+      slaac: true
     ifindex: 2
     ifname: Ethernet2
   - node: h1
     ipv4: 172.16.0.1/24
+    ipv6: 2001:db8:a::1/64
     ifindex: 1
     ifname: eth1
   _linkname: vlans.red.links[1]
   vlan:
     access: red
   linkindex: 2
-  role: external
   prefix:
     ipv4: 172.16.0.0/24
+    ipv6: 2001:db8:a::/64
     allocation: id_based
   type: lan
   node_count: 2
@@ -7874,21 +7870,23 @@ links:
   - node: dut
     vlan:
       access: red
-    _vlan_mode: irb
-    ipv4: 172.16.0.7/24
+    _vlan_mode: bridge
+    ra:
+      slaac: true
     ifindex: 3
     ifname: Ethernet3
   - node: h1a
     ipv4: 172.16.0.2/24
+    ipv6: 2001:db8:a::2/64
     ifindex: 1
     ifname: eth1
   _linkname: vlans.red.links[2]
   vlan:
     access: red
   linkindex: 3
-  role: external
   prefix:
     ipv4: 172.16.0.0/24
+    ipv6: 2001:db8:a::/64
     allocation: id_based
   type: lan
   node_count: 2
@@ -7897,103 +7895,36 @@ links:
   - node: s2
     vlan:
       access: red
-    _vlan_mode: irb
-    ipv4: 172.16.0.8/24
+    _vlan_mode: bridge
+    ra:
+      slaac: true
     ifindex: 2
     ifname: eth2
   - node: h2
     ipv4: 172.16.0.3/24
+    ipv6: 2001:db8:a::3/64
     ifindex: 1
     ifname: eth1
   _linkname: vlans.red.links[3]
   vlan:
     access: red
   linkindex: 4
-  role: external
   prefix:
     ipv4: 172.16.0.0/24
+    ipv6: 2001:db8:a::/64
     allocation: id_based
   type: lan
   node_count: 2
   bridge: ml_17_4
-- interfaces:
-  - node: dut
-    vlan:
-      access: blue
-    _vlan_mode: irb
-    ipv4: 172.16.1.7/24
-    ifindex: 4
-    ifname: Ethernet4
-  - node: h3
-    ipv4: 172.16.1.4/24
-    ifindex: 1
-    ifname: eth1
-  _linkname: vlans.blue.links[1]
-  vlan:
-    access: blue
-  linkindex: 5
-  role: external
-  prefix:
-    ipv4: 172.16.1.0/24
-    allocation: id_based
-  type: lan
-  node_count: 2
-  bridge: ml_17_5
-- interfaces:
-  - node: dut
-    vlan:
-      access: blue
-    _vlan_mode: irb
-    ipv4: 172.16.1.7/24
-    ifindex: 5
-    ifname: Ethernet5
-  - node: h3a
-    ipv4: 172.16.1.5/24
-    ifindex: 1
-    ifname: eth1
-  _linkname: vlans.blue.links[2]
-  vlan:
-    access: blue
-  linkindex: 6
-  role: external
-  prefix:
-    ipv4: 172.16.1.0/24
-    allocation: id_based
-  type: lan
-  node_count: 2
-  bridge: ml_17_6
-- interfaces:
-  - node: s2
-    vlan:
-      access: blue
-    _vlan_mode: irb
-    ipv4: 172.16.1.8/24
-    ifindex: 3
-    ifname: eth3
-  - node: h4
-    ipv4: 172.16.1.6/24
-    ifindex: 1
-    ifname: eth1
-  _linkname: vlans.blue.links[3]
-  vlan:
-    access: blue
-  linkindex: 7
-  role: external
-  prefix:
-    ipv4: 172.16.1.0/24
-    allocation: id_based
-  type: lan
-  node_count: 2
-  bridge: ml_17_7
 validate:
-- description: Check OSPF adjacencies
-  wait_msg: Waiting for OSPF adjacency process to complete
+- description: Check OSPFv3 adjacencies
+  wait_msg: Waiting for OSPFv3 adjacency process to complete
   wait: 30
   nodes:
   - s2
-  plugin: ospf_neighbor(nodes.dut.ospf.router_id)
+  plugin: ospf6_neighbor(nodes.dut.ospf.router_id)
   stop_on_error: true
-  name: ospf_adj
+  name: ospf6_adj
 - description: Waiting for STP to enable ports in red VLAN
   wait: 40
   wait_msg: Waiting for STP to go from 'learning' to 'forwarding'
@@ -8002,63 +7933,28 @@ validate:
   plugin: ping('h1a')
   stop_on_error: true
   name: stp_red
-- description: Waiting for STP to enable ports in blue VLAN
-  wait: 40
-  wait_msg: Waiting for STP to go from 'learning' to 'forwarding'
-  nodes:
-  - h3
-  plugin: ping('h3a')
-  stop_on_error: true
-  name: stp_blue
-- description: Host-to-host ping-based reachability test
-  wait_msg: We might have to wait a bit longer
-  wait: 20
+- description: Ping-based reachability test in VLAN red
+  wait_msg: Waiting for OSFP and STP to wake up
+  wait: 10
   nodes:
   - h1
-  - h2
-  plugin: ping('h3')
-  name: ping_h3
-- description: Host-to-switch ping-based reachability test
-  wait_msg: We might have to wait a bit longer
-  wait: 5
-  nodes:
-  - h1
-  - h2
-  - h3
-  - h4
-  plugin: ping('dut')
-  name: ping_sw
-plugin:
-- test.fixup
-- multilab
-_fixup:
-  arubacx:
-    groups:
-      probes:
-        device: eos
-    validate:
-      warning:
-        wait: 0
-        level: warning
-        fail: VXLAN-encapsulated ARP packets sent by Aruba CX have invalid IP 
-          packet length
-    _delete:
-      groups:
-        probes:
-          provider:
+  plugin: ping('h2')
+  name: ping
 input:
-- /home/pipi/net101/tools/tests/integration/vxlan/03-vxlan-irb.yml
+- /home/pipi/net101/tools/tests/integration/vxlan/07-vxlan-bridging-v6only.yml
 - /home/pipi/net101/tools/tests/integration/wait_times.yml
 - /home/pipi/.netlab.yml
 - package:topology-defaults.yml
+plugin:
+- multilab
 name: ml_17
 nodes:
   h1:
     name: h1
     interfaces:
     - ipv4: 172.16.0.1/24
+      ipv6: 2001:db8:a::1/64
       linkindex: 2
-      role: external
       type: lan
       bridge: ml_17_2
       name: h1 -> [h1a,dut,h2,s2]
@@ -8067,25 +7963,23 @@ nodes:
       mtu: 1500
       neighbors:
       - ipv4: 172.16.0.2/24
+        ipv6: 2001:db8:a::2/64
         ifname: eth1
         node: h1a
       - ifname: Vlan1000
         node: dut
-        ipv4: 172.16.0.7/24
         vlan:
-          mode: irb
+          mode: bridge
           name: red
       - ipv4: 172.16.0.3/24
+        ipv6: 2001:db8:a::3/64
         ifname: eth1
         node: h2
       - ifname: vlan1000
         node: s2
-        ipv4: 172.16.0.8/24
         vlan:
-          mode: irb
+          mode: bridge
           name: red
-      gateway:
-        ipv4: 172.16.0.7/24
     device: linux
     clab:
       kind: linux
@@ -8099,41 +7993,22 @@ nodes:
     mtu: 1500
     af:
       ipv4: true
+      ipv6: true
     mgmt:
       ifname: eth0
       mac: ca:fe:00:01:00:00
       ipv4: 192.168.17.101
     hostname: clab-ml_17-h1
     routing:
-      static:
-      - ipv4: 172.16.0.0/16
-        nexthop:
-          ipv4: 172.16.0.7
-          intf: eth1
-          idx: 0
-      - ipv4: 10.0.0.0/24
-        nexthop:
-          ipv4: 172.16.0.7
-          intf: eth1
-          idx: 0
-      - ipv4: 10.1.0.0/16
-        nexthop:
-          ipv4: 172.16.0.7
-          intf: eth1
-          idx: 0
-      - ipv4: 10.2.0.0/24
-        nexthop:
-          ipv4: 172.16.0.7
-          intf: eth1
-          idx: 0
+      static: []
     module:
     - routing
   h1a:
     name: h1a
     interfaces:
     - ipv4: 172.16.0.2/24
+      ipv6: 2001:db8:a::2/64
       linkindex: 3
-      role: external
       type: lan
       bridge: ml_17_3
       name: h1a -> [h1,dut,h2,s2]
@@ -8142,25 +8017,23 @@ nodes:
       mtu: 1500
       neighbors:
       - ipv4: 172.16.0.1/24
+        ipv6: 2001:db8:a::1/64
         ifname: eth1
         node: h1
       - ifname: Vlan1000
         node: dut
-        ipv4: 172.16.0.7/24
         vlan:
-          mode: irb
+          mode: bridge
           name: red
       - ipv4: 172.16.0.3/24
+        ipv6: 2001:db8:a::3/64
         ifname: eth1
         node: h2
       - ifname: vlan1000
         node: s2
-        ipv4: 172.16.0.8/24
         vlan:
-          mode: irb
+          mode: bridge
           name: red
-      gateway:
-        ipv4: 172.16.0.7/24
     device: linux
     clab:
       kind: linux
@@ -8174,41 +8047,22 @@ nodes:
     mtu: 1500
     af:
       ipv4: true
+      ipv6: true
     mgmt:
       ifname: eth0
       mac: ca:fe:00:02:00:00
       ipv4: 192.168.17.102
     hostname: clab-ml_17-h1a
     routing:
-      static:
-      - ipv4: 172.16.0.0/16
-        nexthop:
-          ipv4: 172.16.0.7
-          intf: eth1
-          idx: 0
-      - ipv4: 10.0.0.0/24
-        nexthop:
-          ipv4: 172.16.0.7
-          intf: eth1
-          idx: 0
-      - ipv4: 10.1.0.0/16
-        nexthop:
-          ipv4: 172.16.0.7
-          intf: eth1
-          idx: 0
-      - ipv4: 10.2.0.0/24
-        nexthop:
-          ipv4: 172.16.0.7
-          intf: eth1
-          idx: 0
+      static: []
     module:
     - routing
   h2:
     name: h2
     interfaces:
     - ipv4: 172.16.0.3/24
+      ipv6: 2001:db8:a::3/64
       linkindex: 4
-      role: external
       type: lan
       bridge: ml_17_4
       name: h2 -> [h1,h1a,dut,s2]
@@ -8217,25 +8071,23 @@ nodes:
       mtu: 1500
       neighbors:
       - ipv4: 172.16.0.1/24
+        ipv6: 2001:db8:a::1/64
         ifname: eth1
         node: h1
       - ipv4: 172.16.0.2/24
+        ipv6: 2001:db8:a::2/64
         ifname: eth1
         node: h1a
       - ifname: Vlan1000
         node: dut
-        ipv4: 172.16.0.7/24
         vlan:
-          mode: irb
+          mode: bridge
           name: red
       - ifname: vlan1000
         node: s2
-        ipv4: 172.16.0.8/24
         vlan:
-          mode: irb
+          mode: bridge
           name: red
-      gateway:
-        ipv4: 172.16.0.7/24
     device: linux
     clab:
       kind: linux
@@ -8249,275 +8101,31 @@ nodes:
     mtu: 1500
     af:
       ipv4: true
+      ipv6: true
     mgmt:
       ifname: eth0
       mac: ca:fe:00:03:00:00
       ipv4: 192.168.17.103
     hostname: clab-ml_17-h2
     routing:
-      static:
-      - ipv4: 172.16.0.0/16
-        nexthop:
-          ipv4: 172.16.0.7
-          intf: eth1
-          idx: 0
-      - ipv4: 10.0.0.0/24
-        nexthop:
-          ipv4: 172.16.0.7
-          intf: eth1
-          idx: 0
-      - ipv4: 10.1.0.0/16
-        nexthop:
-          ipv4: 172.16.0.7
-          intf: eth1
-          idx: 0
-      - ipv4: 10.2.0.0/24
-        nexthop:
-          ipv4: 172.16.0.7
-          intf: eth1
-          idx: 0
-    module:
-    - routing
-  h3:
-    name: h3
-    interfaces:
-    - ipv4: 172.16.1.4/24
-      linkindex: 5
-      role: external
-      type: lan
-      bridge: ml_17_5
-      name: h3 -> [h3a,dut,h4,s2]
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 172.16.1.5/24
-        ifname: eth1
-        node: h3a
-      - ifname: Vlan1001
-        node: dut
-        ipv4: 172.16.1.7/24
-        vlan:
-          mode: irb
-          name: blue
-      - ipv4: 172.16.1.6/24
-        ifname: eth1
-        node: h4
-      - ifname: vlan1001
-        node: s2
-        ipv4: 172.16.1.8/24
-        vlan:
-          mode: irb
-          name: blue
-      gateway:
-        ipv4: 172.16.1.7/24
-    device: linux
-    clab:
-      kind: linux
-      config_templates:
-      - hosts:/etc/hosts:shared
-      binds:
-      - clab_files/-shared-hosts:/etc/hosts:ro
-    box: python:3.13-alpine
-    id: 4
-    role: host
-    mtu: 1500
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:04:00:00
-      ipv4: 192.168.17.104
-    hostname: clab-ml_17-h3
-    routing:
-      static:
-      - ipv4: 172.16.0.0/16
-        nexthop:
-          ipv4: 172.16.1.7
-          intf: eth1
-          idx: 0
-      - ipv4: 10.0.0.0/24
-        nexthop:
-          ipv4: 172.16.1.7
-          intf: eth1
-          idx: 0
-      - ipv4: 10.1.0.0/16
-        nexthop:
-          ipv4: 172.16.1.7
-          intf: eth1
-          idx: 0
-      - ipv4: 10.2.0.0/24
-        nexthop:
-          ipv4: 172.16.1.7
-          intf: eth1
-          idx: 0
-    module:
-    - routing
-  h3a:
-    name: h3a
-    interfaces:
-    - ipv4: 172.16.1.5/24
-      linkindex: 6
-      role: external
-      type: lan
-      bridge: ml_17_6
-      name: h3a -> [h3,dut,h4,s2]
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 172.16.1.4/24
-        ifname: eth1
-        node: h3
-      - ifname: Vlan1001
-        node: dut
-        ipv4: 172.16.1.7/24
-        vlan:
-          mode: irb
-          name: blue
-      - ipv4: 172.16.1.6/24
-        ifname: eth1
-        node: h4
-      - ifname: vlan1001
-        node: s2
-        ipv4: 172.16.1.8/24
-        vlan:
-          mode: irb
-          name: blue
-      gateway:
-        ipv4: 172.16.1.7/24
-    device: linux
-    clab:
-      kind: linux
-      config_templates:
-      - hosts:/etc/hosts:shared
-      binds:
-      - clab_files/-shared-hosts:/etc/hosts:ro
-    box: python:3.13-alpine
-    id: 5
-    role: host
-    mtu: 1500
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:05:00:00
-      ipv4: 192.168.17.105
-    hostname: clab-ml_17-h3a
-    routing:
-      static:
-      - ipv4: 172.16.0.0/16
-        nexthop:
-          ipv4: 172.16.1.7
-          intf: eth1
-          idx: 0
-      - ipv4: 10.0.0.0/24
-        nexthop:
-          ipv4: 172.16.1.7
-          intf: eth1
-          idx: 0
-      - ipv4: 10.1.0.0/16
-        nexthop:
-          ipv4: 172.16.1.7
-          intf: eth1
-          idx: 0
-      - ipv4: 10.2.0.0/24
-        nexthop:
-          ipv4: 172.16.1.7
-          intf: eth1
-          idx: 0
-    module:
-    - routing
-  h4:
-    name: h4
-    interfaces:
-    - ipv4: 172.16.1.6/24
-      linkindex: 7
-      role: external
-      type: lan
-      bridge: ml_17_7
-      name: h4 -> [h3,h3a,dut,s2]
-      ifindex: 1
-      ifname: eth1
-      mtu: 1500
-      neighbors:
-      - ipv4: 172.16.1.4/24
-        ifname: eth1
-        node: h3
-      - ipv4: 172.16.1.5/24
-        ifname: eth1
-        node: h3a
-      - ifname: Vlan1001
-        node: dut
-        ipv4: 172.16.1.7/24
-        vlan:
-          mode: irb
-          name: blue
-      - ifname: vlan1001
-        node: s2
-        ipv4: 172.16.1.8/24
-        vlan:
-          mode: irb
-          name: blue
-      gateway:
-        ipv4: 172.16.1.7/24
-    device: linux
-    clab:
-      kind: linux
-      config_templates:
-      - hosts:/etc/hosts:shared
-      binds:
-      - clab_files/-shared-hosts:/etc/hosts:ro
-    box: python:3.13-alpine
-    id: 6
-    role: host
-    mtu: 1500
-    af:
-      ipv4: true
-    mgmt:
-      ifname: eth0
-      mac: ca:fe:00:06:00:00
-      ipv4: 192.168.17.106
-    hostname: clab-ml_17-h4
-    routing:
-      static:
-      - ipv4: 172.16.0.0/16
-        nexthop:
-          ipv4: 172.16.1.7
-          intf: eth1
-          idx: 0
-      - ipv4: 10.0.0.0/24
-        nexthop:
-          ipv4: 172.16.1.7
-          intf: eth1
-          idx: 0
-      - ipv4: 10.1.0.0/16
-        nexthop:
-          ipv4: 172.16.1.7
-          intf: eth1
-          idx: 0
-      - ipv4: 10.2.0.0/24
-        nexthop:
-          ipv4: 172.16.1.7
-          intf: eth1
-          idx: 0
+      static: []
     module:
     - routing
   dut:
     name: dut
     interfaces:
-    - ipv4: 10.1.0.1/30
+    - ipv6: 2001:db8:f::1/64
       mtu: 1600
       linkindex: 1
       type: p2p
       name: dut -> s2
       ifindex: 1
       ifname: Ethernet1
-      mac_address: caf0.0007.0001
+      mac_address: caf0.0004.0001
       clab:
         name: et1
       neighbors:
-      - ipv4: 10.1.0.2/30
+      - ipv6: 2001:db8:f::2/64
         ifname: eth1
         node: s2
       ospf:
@@ -8536,6 +8144,7 @@ nodes:
         name: et2
       neighbors:
       - ipv4: 172.16.0.1/24
+        ipv6: 2001:db8:a::1/64
         ifname: eth1
         node: h1
       name: '[Access VLAN red] dut -> h1'
@@ -8551,42 +8160,12 @@ nodes:
         name: et3
       neighbors:
       - ipv4: 172.16.0.2/24
+        ipv6: 2001:db8:a::2/64
         ifname: eth1
         node: h1a
       name: '[Access VLAN red] dut -> h1a'
     - vlan:
-        access: blue
-        access_id: 1001
-      linkindex: 5
-      type: lan
-      bridge: ml_17_5
-      ifindex: 4
-      ifname: Ethernet4
-      clab:
-        name: et4
-      neighbors:
-      - ipv4: 172.16.1.4/24
-        ifname: eth1
-        node: h3
-      name: '[Access VLAN blue] dut -> h3'
-    - vlan:
-        access: blue
-        access_id: 1001
-      linkindex: 6
-      type: lan
-      bridge: ml_17_6
-      ifindex: 5
-      ifname: Ethernet5
-      clab:
-        name: et5
-      neighbors:
-      - ipv4: 172.16.1.5/24
-        ifname: eth1
-        node: h3a
-      name: '[Access VLAN blue] dut -> h3a'
-    - ipv4: 172.16.0.7/24
-      vlan:
-        mode: irb
+        mode: bridge
         name: red
       type: svi
       ifindex: 40000
@@ -8595,49 +8174,23 @@ nodes:
       virtual_interface: true
       neighbors:
       - ipv4: 172.16.0.1/24
+        ipv6: 2001:db8:a::1/64
         ifname: eth1
         node: h1
       - ipv4: 172.16.0.2/24
+        ipv6: 2001:db8:a::2/64
         ifname: eth1
         node: h1a
       - ipv4: 172.16.0.3/24
+        ipv6: 2001:db8:a::3/64
         ifname: eth1
         node: h2
       - ifname: vlan1000
         node: s2
-        ipv4: 172.16.0.8/24
         vlan:
-          mode: irb
+          mode: bridge
           name: red
-      role: external
       bridge_group: 1
-    - ipv4: 172.16.1.7/24
-      vlan:
-        mode: irb
-        name: blue
-      type: svi
-      ifindex: 40001
-      ifname: Vlan1001
-      name: VLAN blue (1001) -> [h3,h3a,h4,s2]
-      virtual_interface: true
-      neighbors:
-      - ipv4: 172.16.1.4/24
-        ifname: eth1
-        node: h3
-      - ipv4: 172.16.1.5/24
-        ifname: eth1
-        node: h3a
-      - ipv4: 172.16.1.6/24
-        ifname: eth1
-        node: h4
-      - ifname: vlan1001
-        node: s2
-        ipv4: 172.16.1.8/24
-        vlan:
-          mode: irb
-          name: blue
-      role: external
-      bridge_group: 2
     module:
     - vlan
     - vxlan
@@ -8654,25 +8207,25 @@ nodes:
       flooding: static
       vlans:
       - red
-      - blue
-      vtep: 10.0.0.7
+      transport: ipv6
+      vtep: 2001:db8:0:4::1
       vtep_interface: Loopback0
       vtep_list:
-      - 10.0.0.8
+      - 2001:db8:0:5::1
     ospf:
       area: 0.0.0.0
-      router_id: 10.0.0.7
+      router_id: 10.0.0.4
       af:
-        ipv4: true
-    id: 7
+        ipv6: true
+    id: 4
     role: router
     provider: clab
     af:
-      ipv4: true
+      ipv6: true
     mgmt:
       ifname: Management0
-      mac: ca:fe:00:07:00:00
-      ipv4: 192.168.17.107
+      mac: ca:fe:00:04:00:00
+      ipv4: 192.168.17.104
     hostname: clab-ml_17-dut
     loopback:
       type: loopback
@@ -8680,39 +8233,29 @@ nodes:
       virtual_interface: true
       ifindex: 0
       ifname: Loopback0
-      ipv4: 10.0.0.7/32
+      ipv6: 2001:db8:0:4::1/64
       ospf:
         area: 0.0.0.0
         passive: false
     vlans:
       red:
         vni: 5000
-        role: external
+        mode: bridge
         id: 1000
         prefix:
           ipv4: 172.16.0.0/24
+          ipv6: 2001:db8:a::/64
           allocation: id_based
-        mode: irb
         bridge_group: 1
         vtep_list:
-        - 10.0.0.8
-      blue:
-        vni: 5001
-        role: external
-        id: 1001
-        prefix:
-          ipv4: 172.16.1.0/24
-          allocation: id_based
-        mode: irb
-        bridge_group: 2
-        vtep_list:
-        - 10.0.0.8
+        - 2001:db8:0:5::1
     vlan:
-      max_bridge_group: 2
+      max_bridge_group: 1
+    router_id: 10.0.0.4
   s2:
     name: s2
     interfaces:
-    - ipv4: 10.1.0.2/30
+    - ipv6: 2001:db8:f::2/64
       mtu: 1600
       linkindex: 1
       type: p2p
@@ -8720,7 +8263,7 @@ nodes:
       ifindex: 1
       ifname: eth1
       neighbors:
-      - ipv4: 10.1.0.1/30
+      - ipv6: 2001:db8:f::1/64
         ifname: Ethernet1
         node: dut
       ospf:
@@ -8738,81 +8281,38 @@ nodes:
       mtu: 1500
       neighbors:
       - ipv4: 172.16.0.3/24
+        ipv6: 2001:db8:a::3/64
         ifname: eth1
         node: h2
       name: '[Access VLAN red] s2 -> h2'
     - vlan:
-        access: blue
-        access_id: 1001
-      linkindex: 7
-      type: lan
-      bridge: ml_17_7
-      ifindex: 3
-      ifname: eth3
-      mtu: 1500
-      neighbors:
-      - ipv4: 172.16.1.6/24
-        ifname: eth1
-        node: h4
-      name: '[Access VLAN blue] s2 -> h4'
-    - ipv4: 172.16.0.8/24
-      vlan:
-        mode: irb
+        mode: bridge
         name: red
       type: svi
       ifindex: 40000
-      mac_address: caf4.0008.0000
+      mac_address: caf4.0005.0000
       ifname: vlan1000
       name: VLAN red (1000) -> [h1,h1a,dut,h2]
       virtual_interface: true
       neighbors:
       - ipv4: 172.16.0.1/24
+        ipv6: 2001:db8:a::1/64
         ifname: eth1
         node: h1
       - ipv4: 172.16.0.2/24
+        ipv6: 2001:db8:a::2/64
         ifname: eth1
         node: h1a
       - ifname: Vlan1000
         node: dut
-        ipv4: 172.16.0.7/24
         vlan:
-          mode: irb
+          mode: bridge
           name: red
       - ipv4: 172.16.0.3/24
+        ipv6: 2001:db8:a::3/64
         ifname: eth1
         node: h2
-      role: external
       bridge_group: 1
-      mtu: 1500
-    - ipv4: 172.16.1.8/24
-      vlan:
-        mode: irb
-        name: blue
-      type: svi
-      ifindex: 40001
-      mac_address: caf4.0008.0001
-      ifname: vlan1001
-      name: VLAN blue (1001) -> [h3,h3a,dut,h4]
-      virtual_interface: true
-      neighbors:
-      - ipv4: 172.16.1.4/24
-        ifname: eth1
-        node: h3
-      - ipv4: 172.16.1.5/24
-        ifname: eth1
-        node: h3a
-      - ifname: Vlan1001
-        node: dut
-        ipv4: 172.16.1.7/24
-        vlan:
-          mode: irb
-          name: blue
-      - ipv4: 172.16.1.6/24
-        ifname: eth1
-        node: h4
-      role: external
-      bridge_group: 2
-      mtu: 1500
     device: frr
     module:
     - vlan
@@ -8832,25 +8332,25 @@ nodes:
       flooding: static
       vlans:
       - red
-      - blue
-      vtep: 10.0.0.8
+      transport: ipv6
+      vtep: 2001:db8:0:5::1
       vtep_interface: lo
       vtep_list:
-      - 10.0.0.7
+      - 2001:db8:0:4::1
     ospf:
       area: 0.0.0.0
-      router_id: 10.0.0.8
+      router_id: 10.0.0.5
       af:
-        ipv4: true
-    id: 8
+        ipv6: true
+    id: 5
     role: router
     mtu: 1500
     af:
-      ipv4: true
+      ipv6: true
     mgmt:
       ifname: eth0
-      mac: ca:fe:00:08:00:00
-      ipv4: 192.168.17.108
+      mac: ca:fe:00:05:00:00
+      ipv4: 192.168.17.105
     hostname: clab-ml_17-s2
     loopback:
       type: loopback
@@ -8858,59 +8358,25 @@ nodes:
       virtual_interface: true
       ifindex: 0
       ifname: lo
-      ipv4: 10.0.0.8/32
+      ipv6: 2001:db8:0:5::1/64
       ospf:
         area: 0.0.0.0
         passive: false
     vlans:
       red:
         vni: 5000
-        role: external
+        mode: bridge
         id: 1000
         prefix:
           ipv4: 172.16.0.0/24
+          ipv6: 2001:db8:a::/64
           allocation: id_based
-        mode: irb
         bridge_group: 1
         vtep_list:
-        - 10.0.0.7
-      blue:
-        vni: 5001
-        role: external
-        id: 1001
-        prefix:
-          ipv4: 172.16.1.0/24
-          allocation: id_based
-        mode: irb
-        bridge_group: 2
-        vtep_list:
-        - 10.0.0.7
+        - 2001:db8:0:4::1
     vlan:
-      max_bridge_group: 2
-addressing:
-  lan:
-    ipv4: 172.16.0.0/16
-    prefix: 24
-  loopback:
-    ipv4: 10.0.0.0/24
-    prefix: 32
-  p2p:
-    ipv4: 10.1.0.0/16
-    prefix: 30
-  router_id:
-    ipv4: 10.0.0.0/24
-    prefix: 32
-  mgmt:
-    ipv4: 192.168.17.0/24
-    start: 100
-    mac: CA-FE-00-00-00-00
-    _network: nl_mgmt_17
-    _bridge: nl_mgmt_17
-    prefix: 24
-  l2only: {}
-  vrf_loopback:
-    ipv4: 10.2.0.0/24
-    prefix: 32
+      max_bridge_group: 1
+    router_id: 10.0.0.5
 provider: clab
 module:
 - vlan
@@ -8924,6 +8390,5 @@ vxlan:
   flooding: static
   vlans:
   - red
-  - blue
-  use_v6_vtep: false
+  use_v6_vtep: true
 _netlab_version: '25.11'
