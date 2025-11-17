@@ -13,6 +13,12 @@ ok: [ce2]
 ok: [s1]
 ok: [s2]
 
+TASK [Generic readiness tests] *************************************************
+skipping: [ce1]
+skipping: [ce2]
+skipping: [s1]
+skipping: [s2]
+
 TASK [Find device readiness script] ********************************************
 ok: [ce1]
 ok: [ce2]
@@ -98,63 +104,6 @@ ok: [s1]
 ok: [s2]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
-ok: [s1] => 
-  msg: |-
-    initial configuration for s1
-    =========================================
-    #!/bin/vbash
-    source /opt/vyatta/etc/functions/script-template
-  
-    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
-        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
-    fi
-  
-    # Configuration items start here
-  
-    configure
-    set system host-name 's1'
-  
-    set vrf name tenant table 100
-  
-    set interfaces dummy dum0 address 10.0.0.3/32
-  
-  
-  
-    set interfaces ethernet eth1 description 's1 -> s2'
-  
-    set interfaces ethernet eth1 mtu 1600
-  
-    set interfaces ethernet eth1 address 10.1.0.1/30
-  
-  
-  
-  
-  
-    set interfaces ethernet eth2 description 's1 -> ce1 [external]'
-  
-    set interfaces ethernet eth2 mtu 1500
-  
-    set interfaces ethernet eth2 address 10.1.0.6/30
-  
-  
-    set interfaces ethernet eth2 vrf tenant
-  
-  
-    set service lldp interface all
-    >/dev/null 2>/dev/null set service lldp interface eth0 disable
-    >/dev/null 2>/dev/null set service lldp interface eth0 mode disable
-  
-  
-    set service ssh
-  
-    # Commit, save and exit from subshell
-  
-    commit
-    save
-    exit
-  
-    # Restart FRR to pick up the new hostname
-    sudo service frr restart
 ok: [ce1] => 
   msg: |-
     initial configuration for ce1
@@ -261,6 +210,63 @@ ok: [ce1] =>
     vtysh -f /tmp/config
     !
     exit 0
+ok: [s1] => 
+  msg: |-
+    initial configuration for s1
+    =========================================
+    #!/bin/vbash
+    source /opt/vyatta/etc/functions/script-template
+  
+    if [ "$(id -g -n)" != 'vyattacfg' ] ; then
+        exec sg vyattacfg -c "/bin/vbash $(readlink -f $0) $@"
+    fi
+  
+    # Configuration items start here
+  
+    configure
+    set system host-name 's1'
+  
+    set vrf name tenant table 100
+  
+    set interfaces dummy dum0 address 10.0.0.3/32
+  
+  
+  
+    set interfaces ethernet eth1 description 's1 -> s2'
+  
+    set interfaces ethernet eth1 mtu 1600
+  
+    set interfaces ethernet eth1 address 10.1.0.1/30
+  
+  
+  
+  
+  
+    set interfaces ethernet eth2 description 's1 -> ce1 [external]'
+  
+    set interfaces ethernet eth2 mtu 1500
+  
+    set interfaces ethernet eth2 address 10.1.0.6/30
+  
+  
+    set interfaces ethernet eth2 vrf tenant
+  
+  
+    set service lldp interface all
+    >/dev/null 2>/dev/null set service lldp interface eth0 disable
+    >/dev/null 2>/dev/null set service lldp interface eth0 mode disable
+  
+  
+    set service ssh
+  
+    # Commit, save and exit from subshell
+  
+    commit
+    save
+    exit
+  
+    # Restart FRR to pick up the new hostname
+    sudo service frr restart
 ok: [ce2] => 
   msg: |-
     initial configuration for ce2
@@ -499,9 +505,9 @@ TASK [include_tasks] ***********************************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for ce1, ce2, s2
 
 TASK [template] ****************************************************************
-changed: [ce2]
 changed: [s2]
 changed: [ce1]
+changed: [ce2]
 
 TASK [set_fact] ****************************************************************
 ok: [ce1]
@@ -509,9 +515,9 @@ ok: [ce2]
 ok: [s2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [ce2]
-changed: [ce1]
 changed: [s2]
+changed: [ce1]
+changed: [ce2]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
 skipping: [ce1]
@@ -790,9 +796,9 @@ ok: [ce1] =>
     !
   
     !
+    ! Originate networks from connected subnets
+    !
       network 10.0.0.1/32
-    !
-    !
     !
       neighbor 10.1.0.6 activate
       no neighbor 10.1.0.6 send-community all
@@ -824,9 +830,9 @@ ok: [ce2] =>
     !
   
     !
+    ! Originate networks from connected subnets
+    !
       network 10.0.0.2/32
-    !
-    !
     !
       neighbor 10.1.0.10 activate
       no neighbor 10.1.0.10 send-community all
@@ -890,9 +896,9 @@ ok: [s2] =>
     !
   
     !
+    ! Originate networks from connected subnets
+    !
       network 10.0.0.4/32
-    !
-    !
     !
       neighbor 10.0.0.3 activate
       neighbor 10.0.0.3 next-hop-self
@@ -910,9 +916,9 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/frr.yml for ce
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/vyos.yml for s1
 
 TASK [template] ****************************************************************
-changed: [s2]
-changed: [ce2]
 changed: [ce1]
+changed: [ce2]
+changed: [s2]
 
 TASK [set_fact] ****************************************************************
 ok: [ce1]
@@ -925,8 +931,8 @@ skipping: [ce2]
 skipping: [s2]
 
 TASK [run vtysh to import bgp config from /home/pipi/netlab_gh/netsim/ansible/templates/bgp/frr.j2] ***
-changed: [ce2]
 changed: [ce1]
+changed: [ce2]
 changed: [s2]
 
 TASK [set_fact] ****************************************************************
@@ -1266,7 +1272,6 @@ ok: [s1] =>
     set protocols bgp neighbor 10.0.0.4 address-family l2vpn-evpn soft-reconfiguration inbound
   
   
-  
     # Configure VNI params
   
     # Work on L3VNI
@@ -1378,10 +1383,10 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-ce1                        : ok=37   changed=5    unreachable=0    failed=0    skipped=34   rescued=0    ignored=0   
-ce2                        : ok=36   changed=4    unreachable=0    failed=0    skipped=34   rescued=0    ignored=0   
-s1                         : ok=73   changed=14   unreachable=0    failed=0    skipped=10   rescued=0    ignored=0   
-s2                         : ok=71   changed=14   unreachable=0    failed=0    skipped=19   rescued=0    ignored=0   
+ce1                        : ok=37   changed=5    unreachable=0    failed=0    skipped=35   rescued=0    ignored=0   
+ce2                        : ok=36   changed=4    unreachable=0    failed=0    skipped=35   rescued=0    ignored=0   
+s1                         : ok=73   changed=14   unreachable=0    failed=0    skipped=11   rescued=0    ignored=0   
+s2                         : ok=71   changed=14   unreachable=0    failed=0    skipped=20   rescued=0    ignored=0   
 
 
 
