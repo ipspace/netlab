@@ -100,10 +100,21 @@ nodes:
 (caveats-cat8000v)=
 ## Cisco Catalyst 8000v
 
-* Apart from the VLAN configuration, Catalyst 8000v implementation uses the same configuration templates as CSR 1000v.
+Licensing:
+
+* Catalyst 8000v uses a boot-level license to enable additional features. The _netlab_-built Vagrant box configures the **premier** license, while the _vrnetlab_-built container has no add-on license. You can specify the license available to your Catalyst 8000v nodes using the node **cat8000v.license** attribute (set by default to **premier** for Vagrant VMs).
+* The **premier** license is required for new-style VLAN configuration (see below), MPLS, SR-MPLS, and SRv6.
+
+VLAN caveats:
+
 * You cannot use reserved VLANs (1002..1005) on Catalyst 8000v
+* _netlab_ uses new-style VLAN configuration (service instance configured as a **member** of the **bridge-domain**) on Catalyst 8000v nodes with the **premier** license, and old-style VLAN configuration (**bridge-domain** configured under **service instance**) on other Catalyst 8000v nodes.
+* Recent _vrnetlab_ code uses **virtio** NICs for Catalyst 8000v VMs ([GitHub issue](https://github.com/srl-labs/vrnetlab/issues/414)). Ethernet subinterfaces on Catalyst 8000v [do not work with **virtio** NICs](https://developer.cisco.com/docs/modeling-labs/cat-8000v/#limitations); scenarios such as router-on-a-stick thus fail when using recent _vrnetlab_-built Catalyst 8000v containers.
+
+Other caveats:
+
+* Apart from the VLAN configuration, Catalyst 8000v implementation uses the same configuration templates as CSR 1000v or Cisco IOL.
 * Catalyst 8000v accepts CSR 1000v-based VXLAN configuration, but the validation tests fail. You cannot configure VXLAN on Catalyst 8000v with the current _netlab_ release.
-* MPLS and SR-MPLS require a license that enables the advanced functionality after a reboot. That license is automatically enabled in recent _netlab_ and _vrnetlab_ releases, but you cannot apply it to a running lab; you have to rebuild the Catalyst 8000v Vagrant box or container.
 
 See also [CSR 1000v](caveats-csr) and [Cisco IOSv](caveats-iosv) caveats.
 
