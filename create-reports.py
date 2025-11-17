@@ -24,6 +24,8 @@ def main() -> None:
     _reports.html.create(x_args,results,coverage,topology)
   elif args.action == 'errors':
     _reports.errors.create(x_args,results)
+  elif args.action == 'recent':
+    _reports.recent.create(x_args,results)
   elif args.action == 'release':
     tests = Box.from_yaml(filename=f'map-tests.yml',default_box=True,box_dots=True)
     coverage = _reports.remap.remap_release_coverage(topology,tests,results)
