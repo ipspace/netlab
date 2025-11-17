@@ -110,6 +110,7 @@ def node_set_vtep(node: Box, topology: Box) -> bool:
   if topology.defaults.vxlan.use_v6_vtep:
     vtep_af = 'ipv6'
     features = devices.get_device_features(node,topology.defaults)
+    node.vxlan.transport = vtep_af
     if not features.get('vxlan.vtep6'):
       log.error(
         f'Device {node.device} (node {node.name}) does not support VXLAN over IPv6',
