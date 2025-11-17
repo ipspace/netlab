@@ -5,6 +5,8 @@ message: |
 
   h1 and h2 should be able to ping s1 and each other
 
+defaults.sources.extra: [ ../wait_times.yml ]
+
 addressing.lan.ipv6: 2001:db8:cafe::/56
 addressing.loopback.ipv6: 2001:db8:e001::/56
 
@@ -28,24 +30,22 @@ vlans:
 
 links: [ s1-h3 ]
 
-defaults.devices.vjunos-router.netlab_validate.ping_sw_4.wait: 90
-
 validate:
   ping_host:
     description: Intra-VLAN reachability
     wait_msg: Waiting for STP to enable the ports
-    wait: 45
+    wait: ping_stp
     nodes: [ h1 ]
     plugin: ping('h2')
   ping_sw_4:
     description: Host-to-switch reachability (IPv4)
     wait_msg: Waiting for IRB interface to become ready
-    wait: 5
+    wait: ping_irb
     nodes: [ h1, h2 ]
     plugin: ping('s1',af='ipv4')
   ra:
     description: Check RA-generated default route
-    wait: 30
+    wait: ra_send
     wait_msg: Waiting for RA message to generate the default route
     nodes: [ h1, h2 ]
     plugin: default6()
@@ -54,7 +54,7 @@ validate:
     description: Host-to-switch reachability (IPv6)
     wait_msg: Waiting for IRB interface to become ready
     level: warning
-    wait: 5
+    wait: ping
     nodes: [ h1, h2 ]
     plugin: ping('s1',af='ipv6')
   ping_h3:
