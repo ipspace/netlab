@@ -16,7 +16,8 @@ domain {{ h_af }} host {{ k }} {{ v.interfaces[0][h_af]|ipaddr('address') }}
 {% endfor %}
 !
 {% for l in netlab_interfaces %}
-interface {{ l.ifname }}
+interface {{ l.ifname }}{%
+  if l.type == 'vlan_member' and l.vlan.mode|default('irb') != 'route' %} l2transport{% endif +%}
  no shutdown
 {% if l.name is defined %}
  description {{ l.name }}{{ " ["+l.role+"]" if l.role is defined else "" }}
@@ -65,7 +66,9 @@ interface {{ l.ifname }}
 {%   else %}
 ! Invalid IPv6 address {{ l.ipv6 }}
 {%   endif %}
+{%   if l.type != 'loopback' %}
  ipv6 nd ra-interval 5
+{%   endif %}
 {% endif %}
 !
 {% endfor %}
