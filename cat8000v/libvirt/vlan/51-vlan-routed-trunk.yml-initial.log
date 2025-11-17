@@ -14,12 +14,19 @@ ok: [r2]
 ok: [ros]
 ok: [r1]
 
+TASK [Generic readiness tests] *************************************************
+skipping: [ros]
+skipping: [s1]
+skipping: [s2]
+skipping: [r1]
+skipping: [r2]
+
 TASK [Find device readiness script] ********************************************
 ok: [s1]
-ok: [s2]
-ok: [r2]
 ok: [r1]
+ok: [s2]
 ok: [ros]
+ok: [r2]
 
 TASK [Wait for device to become ready] *****************************************
 skipping: [ros]
@@ -34,8 +41,8 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ros, s
 TASK [Figure out whether to deploy the module normalize on current device] *****
 ok: [s1]
 ok: [s2]
-ok: [r1]
 ok: [r2]
+ok: [r1]
 ok: [ros]
 
 TASK [Find configuration template for normalize] *******************************
@@ -53,10 +60,10 @@ skipping: [r1]
 skipping: [r2]
 
 TASK [Find configuration deployment deploy_script for normalize] ***************
-ok: [s1]
 ok: [s2]
-ok: [r2]
 ok: [r1]
+ok: [s1]
+ok: [r2]
 ok: [ros]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -79,16 +86,16 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ros, s
 TASK [Figure out whether to deploy the module initial on current device] *******
 ok: [s1]
 ok: [s2]
-ok: [r1]
 ok: [r2]
+ok: [r1]
 ok: [ros]
 
 TASK [Find configuration template for initial] *********************************
 ok: [s1]
-ok: [r1]
 ok: [s2]
-ok: [ros]
+ok: [r1]
 ok: [r2]
+ok: [ros]
 
 TASK [fail] ********************************************************************
 skipping: [ros]
@@ -101,8 +108,8 @@ TASK [Find configuration deployment deploy_script for initial] *****************
 ok: [s1]
 ok: [r2]
 ok: [s2]
-ok: [r1]
 ok: [ros]
+ok: [r1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 ok: [s1] => 
@@ -355,6 +362,60 @@ ok: [r2] =>
     vtysh -f /tmp/config
     !
     exit 0
+ok: [ros] => 
+  msg: |-
+    initial configuration for ros
+    =========================================
+    hostname ros
+    !
+    no ip domain lookup
+    logging buffered 256000
+  
+    !
+    lldp run
+    !
+    ip host s1 10.0.0.2 172.16.0.2 172.16.1.2
+    ip host s2 10.0.0.3 172.16.1.3 172.16.0.3
+    ip host r1 10.0.0.4 172.16.0.4
+    ip host r2 10.0.0.5 172.16.1.5
+    !
+    ip routing
+    !
+    no ipv6 unicast-routing
+    !
+  
+    !
+    !
+    interface Loopback0
+     ip address 10.0.0.1 255.255.255.255
+    !
+    interface GigabitEthernet1
+     no lldp transmit
+     no lldp receive
+    !
+    interface GigabitEthernet2
+     description ros -> s2
+     no shutdown
+    !
+    interface GigabitEthernet2.1
+     encapsulation dot1Q 701
+     description ros -> [r2,s1,s2]
+     ip address 172.16.1.1 255.255.255.0
+     no shutdown
+    !
+    interface GigabitEthernet2.2
+     encapsulation dot1Q 700
+     description ros -> [r1,s1,s2]
+     ip address 172.16.0.1 255.255.255.0
+     no shutdown
+    !
+    !
+    line vty 0 4
+     exec-timeout 0 0
+    !
+    no banner exec
+    no banner login
+    no banner incoming
 ok: [s2] => 
   msg: |-
     initial configuration for s2
@@ -606,60 +667,6 @@ ok: [r1] =>
     vtysh -f /tmp/config
     !
     exit 0
-ok: [ros] => 
-  msg: |-
-    initial configuration for ros
-    =========================================
-    hostname ros
-    !
-    no ip domain lookup
-    logging buffered 256000
-  
-    !
-    lldp run
-    !
-    ip host s1 10.0.0.2 172.16.0.2 172.16.1.2
-    ip host s2 10.0.0.3 172.16.1.3 172.16.0.3
-    ip host r1 10.0.0.4 172.16.0.4
-    ip host r2 10.0.0.5 172.16.1.5
-    !
-    ip routing
-    !
-    no ipv6 unicast-routing
-    !
-  
-    !
-    !
-    interface Loopback0
-     ip address 10.0.0.1 255.255.255.255
-    !
-    interface GigabitEthernet1
-     no lldp transmit
-     no lldp receive
-    !
-    interface GigabitEthernet2
-     description ros -> s2
-     no shutdown
-    !
-    interface GigabitEthernet2.1
-     encapsulation dot1Q 701
-     description ros -> [r2,s1,s2]
-     ip address 172.16.1.1 255.255.255.0
-     no shutdown
-    !
-    interface GigabitEthernet2.2
-     encapsulation dot1Q 700
-     description ros -> [r1,s1,s2]
-     ip address 172.16.0.1 255.255.255.0
-     no shutdown
-    !
-    !
-    line vty 0 4
-     exec-timeout 0 0
-    !
-    no banner exec
-    no banner login
-    no banner incoming
 
 TASK [Deploy initial configuration] ********************************************
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-config/ios.yml for ros
@@ -681,13 +688,13 @@ skipping: [r1]
 skipping: [r2]
 
 TASK [include_tasks] ***********************************************************
-included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for s1, s2, r1, r2
+included: /home/pipi/netlab_gh/netsim/ansible/tasks/frr/deploy-config.yml for s1, s2, r2, r1
 
 TASK [template] ****************************************************************
-changed: [r1]
-changed: [s1]
-changed: [s2]
 changed: [r2]
+changed: [s1]
+changed: [r1]
+changed: [s2]
 
 TASK [set_fact] ****************************************************************
 ok: [s1]
@@ -696,9 +703,9 @@ ok: [r1]
 ok: [r2]
 
 TASK [run /tmp/config.sh to deploy initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
-changed: [s2]
-changed: [r1]
 changed: [s1]
+changed: [r1]
+changed: [s2]
 changed: [r2]
 
 TASK [run vtysh to import initial config from /home/pipi/netlab_gh/netsim/ansible/templates/initial/frr.j2] ***
@@ -721,17 +728,17 @@ included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ros, s
 included: /home/pipi/netlab_gh/netsim/ansible/tasks/deploy-module.yml for ros, s1, s2, r1, r2 => (item=ospf)
 
 TASK [Figure out whether to deploy the module vlan on current device] **********
-ok: [s1]
 ok: [s2]
-ok: [r1]
+ok: [s1]
 ok: [r2]
+ok: [r1]
 ok: [ros]
 
 TASK [Find configuration template for vlan] ************************************
 skipping: [r1]
+ok: [s1]
 skipping: [r2]
 ok: [s2]
-ok: [s1]
 ok: [ros]
 
 TASK [fail] ********************************************************************
@@ -744,8 +751,8 @@ skipping: [r2]
 TASK [Find configuration deployment deploy_script for vlan] ********************
 skipping: [r1]
 skipping: [r2]
-ok: [s2]
 ok: [s1]
+ok: [s2]
 ok: [ros]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
@@ -872,8 +879,8 @@ ok: [s1]
 ok: [s2]
 
 TASK [run /tmp/config.sh to deploy vlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/frr.j2] ***
-changed: [s1]
 changed: [s2]
+changed: [s1]
 
 TASK [run vtysh to import vlan config from /home/pipi/netlab_gh/netsim/ansible/templates/vlan/frr.j2] ***
 skipping: [s1]
@@ -903,9 +910,9 @@ skipping: [r2]
 TASK [Find configuration deployment deploy_script for ospf] ********************
 skipping: [s1]
 skipping: [s2]
-ok: [r1]
 ok: [r2]
 ok: [ros]
+ok: [r1]
 
 TASK [Print deployed configuration when running in verbose mode] ***************
 skipping: [s1]
@@ -971,7 +978,6 @@ ok: [ros] =>
     router ospf 1
      router-id 10.0.0.1
   
-  
     !
     interface Loopback0
     !
@@ -1015,11 +1021,11 @@ PLAY [Deploy custom deployment templates] **************************************
 skipping: no hosts matched
 
 PLAY RECAP *********************************************************************
-r1                         : ok=28   changed=4    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
-r2                         : ok=28   changed=4    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
-ros                        : ok=28   changed=3    unreachable=0    failed=0    skipped=7    rescued=0    ignored=0   
-s1                         : ok=29   changed=5    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
-s2                         : ok=28   changed=4    unreachable=0    failed=0    skipped=14   rescued=0    ignored=0   
+r1                         : ok=28   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+r2                         : ok=28   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+ros                        : ok=28   changed=3    unreachable=0    failed=0    skipped=8    rescued=0    ignored=0   
+s1                         : ok=29   changed=5    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
+s2                         : ok=28   changed=4    unreachable=0    failed=0    skipped=15   rescued=0    ignored=0   
 
 
 
