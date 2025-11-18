@@ -11,6 +11,8 @@ message: |
   Please note it might take a while for the lab to work due to
   STP learning phase
 
+defaults.sources.extra: [ ../wait_times.yml ]
+
 groups:
   _auto_create: True
   hosts:
@@ -39,18 +41,27 @@ links:
   s2:
   vlan.trunk: [ red, blue ]
 
-defaults.devices.vjunos-router.netlab_validate:
-  ping_h.wait: 90
-  ping_s1.wait: 10
-
 validate:
+  ping_red:
+    description: Intra-VLAN reachability (red)
+    wait: ping_stp
+    wait_msg: Waiting for STP to enable the ports
+    nodes: [ h1 ]
+    plugin: ping('h2')
+  ping_blue:
+    description: Intra-VLAN reachability (blue)
+    wait: ping_stp
+    wait_msg: Waiting for STP to enable the ports
+    nodes: [ h3 ]
+    plugin: ping('h4')
   ping_h:
     description: Cross-VLAN reachability
-    wait: 45
-    wait_msg: Waiting for STP to enable the ports
+    wait: ping_irb
+    wait_msg: Waiting for IRB interface to become ready
     nodes: [ h1, h2, h3 ]
     plugin: ping('h4')
   ping_s1:
     description: Ping default gateway (S1)
+    wait: ping_irb
     nodes: [ h1, h2, h3, h4 ]
     plugin: ping('s1')
