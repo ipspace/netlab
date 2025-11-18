@@ -1,4 +1,6 @@
+{% import "templates/routing/_redistribute.iosxr.j2" as redistribute with context %}
 {% set KW_TYPE = {'level-1': 'level-1','level-1-2': 'level-1-2', 'level-2': 'level-2-only' } %}
+{% set ospf_pid=ospf.process|default(1) %}
 router isis Gandalf
  log adjacency changes
  lsp-gen-interval initial-wait 50 secondary-wait 100 maximum-wait 500
@@ -14,6 +16,9 @@ router isis Gandalf
 {%   if naf == 'ipv6' %}
   no single-topology
 {%   endif %}
+{% if isis.import is defined %}
+{{  redistribute.config(isis,af=naf,ospf_pid=ospf_pid)|indent(1,first=True) }}
+{% endif %}
 {% endfor %}
 !
 {% for l in netlab_interfaces|default([]) if 'isis' in l %}
