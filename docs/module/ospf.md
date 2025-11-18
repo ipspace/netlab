@@ -55,7 +55,7 @@ The following table describes the per-platform support of individual router-leve
 | Arista EOS               | ✅| ✅| ✅| ✅| ✅|
 | Aruba AOS-CX             | ✅| ✅| ✅| ✅| ✅|
 | Cisco IOSv/IOSvL2        | ✅| ✅| ✅| ✅| ✅|
-| Cisco IOS XR[^XR]        | ✅| ✅| ✅| ❌ | ❌ |
+| Cisco IOS XR[^XR]        | ✅| ✅| ✅| ❌ | ✅|
 | Cisco IOS XE[^18v]       | ✅| ✅| ✅| ✅| ✅|
 | Cisco Nexus OS           | ✅| ✅| ✅| ❌ | ❌ |
 | Cumulus Linux            | ✅| ✅| ✅| ✅| ✅|
