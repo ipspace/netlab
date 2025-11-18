@@ -12,19 +12,17 @@ configure
 set protocols bgp address-family l2vpn-evpn advertise-svi-ip
 set protocols bgp address-family l2vpn-evpn advertise-all-vni
 
+{# See FRR template for the explanation of the peer calculation logic #}
 {% for n in bgp.neighbors if n.evpn|default(False) %}
-{%   for af in ['ipv4','ipv6'] if af in n %}
-{%     set peer = n[af] if n[af] is string else n.local_if|default('?') %}
-{%     if n.type == 'ibgp' %}
+{%   set peer = n.ipv4 if n.ipv4 is string else n.local_if|default(n.ipv6) %}
+{%   if n.type == 'ibgp' %}
 set protocols bgp neighbor {{ peer }} address-family l2vpn-evpn nexthop-self
-{%     endif %}
+{%   endif %}
 set protocols bgp neighbor {{ peer }} address-family l2vpn-evpn soft-reconfiguration inbound
 
-{%   if bgp.rr|default('') and not n.rr|default('') and n.type == 'ibgp' %}
+{%   if n.rr_client|default(False) %}
 set protocols bgp neighbor {{ peer }} address-family l2vpn-evpn route-reflector-client
 {%   endif %}
-
-{%   endfor %}
 {% endfor %}
 
 # Configure VNI params

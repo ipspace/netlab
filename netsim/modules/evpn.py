@@ -56,6 +56,8 @@ def enable_evpn_af(node: Box, topology: Box) -> None:
   #
   for bn in node.bgp.get('neighbors',[]):
     if bn.type in bgp_session and 'evpn' in topology.nodes[bn.name].get('module'):
+      if 'ipv4' not in bn:
+        continue
       bn.evpn = True
 
       # Now check if the user enabled extended BGP communities on the BGP session type

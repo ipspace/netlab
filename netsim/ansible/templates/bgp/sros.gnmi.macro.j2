@@ -70,12 +70,16 @@
 
 {% macro bgp_families(neighbor,ipv4=True,ipv6=True) %}
 {% set activate = neighbor.activate|default( {'ipv4': True,'ipv6': True } ) %}
+{% set act_ipv4 = activate.ipv4|default(False) and ipv4 %}
+{% set act_ipv6 = activate.ipv6|default(False) and ipv6 %}
     family:
-      ipv4: {{ activate.ipv4|default(False) and ipv4 }}
-      ipv6: {{ activate.ipv6|default(False) and ipv6 }}
-{%  if 'evpn' in neighbor and neighbor.evpn %}
-      evpn: True # Must have at least 1 address family enabled
-{%  endif %}
+      ipv4: {{ act_ipv4 }}
+      ipv6: {{ act_ipv6 }}
+{% if neighbor.evpn|default(False) and not act_ipv4 and not act_ipv6 %}
+      evpn: True    # EVPN-only neighbor (for example, IBGP session in IBGP-over-EBGP design)
+                    # have to enable EVPN AF here to have at least one AF active otherwise the
+                    # neighbor cannot be configured
+{% endif %}
 {% endmacro %}
 
 {% macro bgp_peer_group(name,type,neighbor,transport_ip) %}
