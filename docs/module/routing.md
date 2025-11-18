@@ -24,18 +24,19 @@ The following table describes high-level per-platform support of generic routing
 | Operating system      | Routing<br>policies | Prefix<br>filters| AS-path<br>filters | BGP<br>communities | Static<br>routes|
 | ------------------ |:--:|:--:|:--:|:--:|:--:|
 | Arista EOS         | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Aruba AOS-CX       | ✅ | ✅ | ✅ | ✅ |
+| Aruba AOS-CX       | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Cisco IOS/XE[^18v] | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Cisco IOS/XR[^XR]  | ❌  | ❌  | ❌  | ❌  | ✅ |
 | Cumulus Linux      | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Cumulus NVUE 5.x   | ❌  | ❌  | ❌  | ❌  | ✅ |
 | Dell OS10          | ✅ | ✅ | ✅ | ✅ | ✅ |
 | FRR                | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Linux              | ❌  | ❌  | ❌  | ❌  | ✅ |
 | Junos              | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Nokia SR Linux     |  ✅ |  ✅ [❗](caveats-srlinux) |
-| Nokia SR OS[^SROS] |  ✅ |
+| Nokia SR Linux     |  ✅ | ✅ [❗](caveats-srlinux) | ❌  | ❌  | ❌  |
+| Nokia SR OS[^SROS] | ✅ | ❌  | ❌  | ❌  | ❌ |
 | OpenBSD            | ❌  | ❌  | ❌  | ❌  | ✅ |
-| VyOS               |  ✅ |  ✅ | ✅ |  ✅  |
+| VyOS               | ✅ | ✅ | ✅ | ✅ | ❌ |
 
 ```{tip}
 See [Routing Integration Tests Results](https://release.netlab.tools/_html/coverage.routing) for more details.
@@ -44,6 +45,8 @@ See [Routing Integration Tests Results](https://release.netlab.tools/_html/cover
 [^18v]: Includes Cisco IOSv, Cisco IOSvL2, Cisco CSR 1000v, Cisco Catalyst 8000v, Cisco IOS-on-Linux (IOL), and IOL Layer-2 image.
 
 [^SROS]: Includes the Nokia SR-SIM container and the Virtualized 7750 SR and 7950 XRS Simulator (vSIM) virtual machine
+
+[^XR]: Includes IOS XRv, IOS XRd, and Cisco 8000v
 
 (generic-routing-policies)=
 ## Routing Policies

@@ -1,0 +1,15 @@
+!
+! Static routes
+!
+{% if routing.static is defined %}
+router static
+{%   for sr_data in routing.static|default([]) %}
+{%     for sr_af in ['ipv4','ipv6'] if sr_af in sr_data %}
+{%       set cmd_vrf = 'vrf ' + sr_data.vrf + ' ' if 'vrf' in sr_data else '' %}
+{%       set cmd_evrf = 'vrf '+(sr_data.nexthop.vrf or 'default')+ ' ' if 'vrf' in sr_data.nexthop else '' %}
+{%       set cmd_intf = sr_data.nexthop.intf + ' ' if 'intf' in sr_data.nexthop else '' %}
+{%       set cmd_nh = 'Null0' if 'discard' in sr_data.nexthop else sr_data.nexthop[sr_af] %}
+ {{ cmd_vrf }} address-family {{ sr_af }} unicast {{ sr_data[sr_af] }} {{ cmd_evrf }}{{ cmd_intf }}{{ cmd_nh }}
+{%     endfor %}
+{%   endfor %}
+{% endif %}
