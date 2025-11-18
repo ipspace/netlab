@@ -1,6 +1,10 @@
 Release Notes
 =============
 
+**Release 25.11.01 (2025-11-18)**
+
+Release 25.11.01 fixes [two bugs](bug-fixes-25.11.01) that could prevent the use of SR-OS/SR-SIM or some external tools.
+
 **Release 25.11 (2025-11-12)**
 
 * SRv6 support on Cisco IOS/XE
